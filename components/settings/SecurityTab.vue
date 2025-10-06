@@ -1,0 +1,69 @@
+<template>
+  <form @submit.prevent="save" class="p-4 space-y-4">
+    <div>
+      <label class="block text-sm font-medium">Current password</label>
+      <input v-model="form.current" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium">New password</label>
+      <input v-model="form.password" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium">Confirm new password</label>
+      <input v-model="form.password_confirm" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button :disabled="submitting" type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
+        <span v-if="!submitting">Change password</span>
+        <span v-else>Updating…</span>
+      </button>
+    </div>
+  </form>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { useAppAlert } from '~/composables/useAppAlert'
+
+const alert = useAppAlert()
+const form = ref({ current: '', password: '', password_confirm: '' })
+const submitting = ref(false)
+
+async function save() {
+  if (!form.value.password || form.value.password !== form.value.password_confirm) {
+    alert.push({ type: 'error', message: 'Passwords do not match' })
+    return
+  }
+  if (form.value.password.length < 6) {
+    alert.push({ type: 'error', message: 'Password must be at least 6 characters' })
+    return
+  }
+  submitting.value = true
+  try {
+    const cfg = useRuntimeConfig()
+    const payload = {
+      current_password: form.value.current,
+      password: form.value.password,
+      password_confirmation: form.value.password_confirm,
+    }
+    const res = await fetch(cfg.public.apiBase + '/api/me/password', { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+    if (!res.ok) {
+      let msg = 'Failed to change password'
+      try {
+        const json = await res.json()
+        if (json?.message) msg = json.message
+      } catch (e) {}
+      throw new Error(msg)
+    }
+    alert.push({ type: 'success', message: 'Password changed' })
+    form.value.current = form.value.password = form.value.password_confirm = ''
+  } catch (e) {
+    alert.push({ type: 'error', message: e.message || 'Failed to change password' })
+  } finally {
+    submitting.value = false
+  }
+}
+</script>
