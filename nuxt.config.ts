@@ -32,7 +32,7 @@ export default defineNuxtConfig({
     public: {
       // Base URL for API requests. Prefer the environment variable (NUXT_API_BASE_URL)
       // provided by Vite/Nuxt via import.meta.env. Fall back to 127.0.0.1 for local dev.
-      apiBase: import.meta.env?.NUXT_API_BASE_URL ?? 'http://127.0.0.1:8000',
+      apiBase: import.meta.env?.NUXT_API_BASE_URL ?? 'https://admin.modeh.co.ke',
       // Pusher / Echo runtime keys (used by plugins/echo.client.js)
       pusherKey: import.meta.env?.NUXT_PUSHER_KEY ?? import.meta.env?.VITE_PUSHER_KEY ?? '',
       pusherCluster: import.meta.env?.NUXT_PUSHER_CLUSTER ?? import.meta.env?.VITE_PUSHER_CLUSTER ?? '',
