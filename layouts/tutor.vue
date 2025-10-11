@@ -1,10 +1,10 @@
 <template>
   <div>
-    <!-- If authenticated show tutor sidebar/topbar layout, else show public header -->
+    <!-- If authenticated show quiz-master sidebar/topbar layout, else show public header -->
     <div v-if="isAuthed" class="min-h-screen flex bg-gray-100">
       <!-- hide permanent sidebar on small screens; mobile drawer remains available -->
       <div class="hidden lg:block">
-        <TutorSidebar />
+        <quiz-masterSidebar />
       </div>
       <div class="flex-1 flex flex-col">
         <TopBar />
@@ -31,7 +31,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import TutorSidebar from '~/components/TutorSidebar.vue'
+import quiz-masterSidebar from '~/components/quiz-masterSidebar.vue'
 import TopBar from '~/components/TopBar.vue'
 import GlobalAlert from '~/components/GlobalAlert.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'

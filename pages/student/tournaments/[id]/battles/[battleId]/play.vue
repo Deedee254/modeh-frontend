@@ -171,8 +171,8 @@
 </template>
 
 <script setup lang="ts">
-// Use the student layout
-definePageMeta({ layout: 'student' })
+// Use the quizee layout
+definePageMeta({ layout: 'quizee' })
 
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -312,7 +312,7 @@ const submitBattle = async () => {
       { method: 'POST' }
     )
     const qs = useBot.value ? '?bot=1' : ''
-    router.push(`/student/tournaments/${route.params.id}/battles/${route.params.battleId}/results${qs}`)
+    router.push(`/quizee/tournaments/${route.params.id}/battles/${route.params.battleId}/results${qs}`)
   } catch (error) {
     console.error('Error submitting battle:', error)
   } finally {

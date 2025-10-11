@@ -136,8 +136,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-// page meta and student layout
-definePageMeta({ layout: 'student' })
+// page meta and quizee layout
+definePageMeta({ layout: 'quizee' })
 useHead({
   title: 'Battle Room — Modeh',
   meta: [
@@ -271,19 +271,19 @@ function ensureAuthRedirect(redirectTo) {
 }
 
 async function enterBattle() {
-  if (!ensureAuthRedirect(`/student/battles/${id}/play`)) return
+  if (!ensureAuthRedirect(`/quizee/battles/${id}/play`)) return
   try {
     await fetch(cfg.public.apiBase + `/api/battles/${id}/join`, { method: 'POST', credentials: 'include' })
   } catch (e) {}
-  router.push(`/student/battles/${id}/play`)
+  router.push(`/quizee/battles/${id}/play`)
 }
 
 async function submitAnswers() {
-  if (!ensureAuthRedirect(`/student/battles/${id}`)) return
+  if (!ensureAuthRedirect(`/quizee/battles/${id}`)) return
   try {
     const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid], time_taken: perQuestionTimings.value[qid] || null })), meta: { score: score.value } }
     const res = await fetch(cfg.public.apiBase + `/api/battles/${id}/submit`, { method: 'POST', credentials: 'include', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } })
-    if (res.ok) { router.push(`/student/battles/${id}/result`) }
+    if (res.ok) { router.push(`/quizee/battles/${id}/result`) }
   } catch (e) { console.error(e) }
 }
 

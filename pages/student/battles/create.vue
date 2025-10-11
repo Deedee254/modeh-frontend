@@ -50,7 +50,7 @@
             <span v-else>Create Battle</span>
           </button>
 
-          <NuxtLink to="/student/battles" class="text-sm text-gray-600 underline">Back to Battles</NuxtLink>
+          <NuxtLink to="/quizee/battles" class="text-sm text-gray-600 underline">Back to Battles</NuxtLink>
         </div>
       </div>
     </div>
@@ -69,11 +69,11 @@ const cfg = useRuntimeConfig()
 const auth = useAuthStore()
 const { push } = useAppAlert()
 
-// Use student layout so student sidebar/topbar are shown
-definePageMeta({ layout: 'student' })
+// Use quizee layout so quizee sidebar/topbar are shown
+definePageMeta({ layout: 'quizee' })
 useHead({ title: 'Create Battle — Modeh', meta: [{ name: 'description', content: 'Create a custom quiz battle on Modeh' }] })
 
-const defaultRedirect = '/student/battles'
+const defaultRedirect = '/quizee/battles'
 const filters = ref({ topic: '', difficulty: '', grade: '', count: 10 })
 const attaching = ref(false)
 const createBattleUrl = computed(() => `${cfg.public.apiBase}/api/battles`)
@@ -120,7 +120,7 @@ async function createFilteredBattle() {
 
   if (!battleId) throw new Error('Server did not return a battle id')
 
-  await router.push(`/student/battles/${battleId}`)
+  await router.push(`/quizee/battles/${battleId}`)
   } catch (error) {
     console.error(error)
     push({

@@ -8,63 +8,63 @@
     <nav class="flex-1 w-full">
       <ul class="flex flex-col gap-2 px-2">
         <li>
-          <NuxtLink to="/student/dashboard" :class="linkClass('/student/dashboard')" title="Dashboard">
+          <NuxtLink to="/quizee/dashboard" :class="linkClass('/quizee/dashboard')" title="Dashboard">
             <HomeIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Dashboard</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/student/quizzes" :class="linkClass('/student/quizzes')" title="Quizzes">
+          <NuxtLink to="/quizee/quizzes" :class="linkClass('/quizee/quizzes')" title="Quizzes">
             <ClipboardDocumentListIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Quizzes</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/student/battles" :class="linkClass('/student/battles')" title="Battles">
+          <NuxtLink to="/quizee/battles" :class="linkClass('/quizee/battles')" title="Battles">
             <TrophyIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Battles</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/student/tournaments" :class="linkClass('/student/tournaments')" title="Tournaments">
+          <NuxtLink to="/quizee/tournaments" :class="linkClass('/quizee/tournaments')" title="Tournaments">
             <FlagIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Tournaments</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/student/points" :class="linkClass('/student/points')" title="Points">
+          <NuxtLink to="/quizee/points" :class="linkClass('/quizee/points')" title="Points">
             <StarIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Points</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/student/subscription" :class="linkClass('/student/subscription')" title="Subscription">
+          <NuxtLink to="/quizee/subscription" :class="linkClass('/quizee/subscription')" title="Subscription">
             <CreditCardIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Subscription</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/student/chat" :class="linkClass('/student/chat')" title="Messages">
+          <NuxtLink to="/quizee/chat" :class="linkClass('/quizee/chat')" title="Messages">
             <ChatBubbleLeftRightIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Messages</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/tutors" :class="linkClass('/tutors')" title="Tutors">
+          <NuxtLink to="/quiz-masters" :class="linkClass('/quiz-masters')" title="quiz-masters">
             <UserGroupIcon class="w-6 h-6" />
-            <span v-if="!collapsed" class="ml-3">Tutors</span>
+            <span v-if="!collapsed" class="ml-3">quiz-masters</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/student/settings" :class="linkClass('/student/settings')" title="Settings">
+          <NuxtLink to="/quizee/settings" :class="linkClass('/quizee/settings')" title="Settings">
             <CogIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Settings</span>
           </NuxtLink>
@@ -73,7 +73,7 @@
     </nav>
   <div class="mb-4 w-full px-2">
     <template v-if="user && user.id">
-      <NuxtLink to="/student/profile" class="p-2 rounded flex items-center w-full" :class="[collapsed ? 'justify-center' : '', 'hover:bg-gray-100']">
+      <NuxtLink to="/quizee/profile" class="p-2 rounded flex items-center w-full" :class="[collapsed ? 'justify-center' : '', 'hover:bg-gray-100']">
         <img :src="userAvatar" class="w-8 h-8 rounded-full" />
         <span v-if="!collapsed" class="ml-3 text-sm font-medium">{{ user.name }}</span>
       </NuxtLink>
@@ -106,17 +106,17 @@
       </div>
       <nav>
         <ul class="flex flex-col gap-2">
-          <li><NuxtLink to="/student/dashboard" :class="linkClass('/student/dashboard')">Dashboard</NuxtLink></li>
-          <li><NuxtLink to="/student/quizzes" :class="linkClass('/student/quizzes')">Quizzes</NuxtLink></li>
-          <li><NuxtLink to="/student/battles" :class="linkClass('/student/battles')">Battles</NuxtLink></li>
-          <li><NuxtLink to="/student/points" :class="linkClass('/student/points')">Points</NuxtLink></li>
+          <li><NuxtLink to="/quizee/dashboard" :class="linkClass('/quizee/dashboard')">Dashboard</NuxtLink></li>
+          <li><NuxtLink to="/quizee/quizzes" :class="linkClass('/quizee/quizzes')">Quizzes</NuxtLink></li>
+          <li><NuxtLink to="/quizee/battles" :class="linkClass('/quizee/battles')">Battles</NuxtLink></li>
+          <li><NuxtLink to="/quizee/points" :class="linkClass('/quizee/points')">Points</NuxtLink></li>
           <!-- Pricing link moved to header/topbar only -->
-          <li><NuxtLink to="/tutors" :class="linkClass('/tutors')">Tutors</NuxtLink></li>
-          <li><NuxtLink to="/student/subscription" :class="linkClass('/student/subscription')">Subscription</NuxtLink></li>
+          <li><NuxtLink to="/quiz-masters" :class="linkClass('/quiz-masters')">quiz-masters</NuxtLink></li>
+          <li><NuxtLink to="/quizee/subscription" :class="linkClass('/quizee/subscription')">Subscription</NuxtLink></li>
         </ul>
       </nav>
       <div class="mt-6">
-        <NuxtLink to="/student/profile" class="flex items-center gap-3">
+        <NuxtLink to="/quizee/profile" class="flex items-center gap-3">
           <img :src="userAvatar" class="w-8 h-8 rounded-full" />
           <div>
             <div class="font-medium">{{ user.name }}</div>
@@ -140,10 +140,10 @@ const user = computed(() => auth.user || {})
 const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
 
 const collapsed = ref(false)
-const STORAGE_KEY = 'sidebar:collapsed:student'
+const STORAGE_KEY = 'sidebar:collapsed:quizee'
 const route = useRoute()
 const mobileOpen = ref(false)
-const MOBILE_KEY = 'sidebar:mobileOpen:student'
+const MOBILE_KEY = 'sidebar:mobileOpen:quizee'
 
 function linkClass(path) {
   const active = route.path.startsWith(path)

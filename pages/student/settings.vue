@@ -19,6 +19,6 @@
 import SettingsTabs from '~/components/SettingsTabs.vue'
 import Container from '~/components/ui/Container.vue'
 
-// Use the student layout for student settings
-definePageMeta({ layout: 'student', title: 'Account settings' })
+// Use the quizee layout for quizee settings
+definePageMeta({ layout: 'quizee', title: 'Account settings' })
 </script>

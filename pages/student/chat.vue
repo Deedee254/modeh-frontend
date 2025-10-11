@@ -1,5 +1,5 @@
 <script setup>
-definePageMeta({ layout: 'student' })
+definePageMeta({ layout: 'quizee' })
 import ChatWidget from '~/components/ChatWidget.vue'
 </script>
 

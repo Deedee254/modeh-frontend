@@ -12,26 +12,26 @@
           </button>
         </div>
 
-        <NuxtLink :to="isStudent ? '/student/dashboard' : '/tutor/dashboard'" class="flex items-center gap-3">
+        <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="flex items-center gap-3">
           <div class="w-10 h-10 rounded bg-indigo-100 flex items-center justify-center overflow-hidden">
             <img :src="logoSrc" alt="logo" class="w-8 h-8 object-contain" />
           </div>
           <div>
             <div class="text-lg font-semibold">Dashboard</div>
-            <div class="text-xs text-gray-500">{{ isStudent ? 'Student' : 'Tutor' }}</div>
+            <div class="text-xs text-gray-500">{{ isquizee ? 'quizee' : 'quiz-master' }}</div>
           </div>
         </NuxtLink>
 
         <nav class="hidden md:flex items-center gap-3 ml-6">
-          <template v-if="isStudent">
-            <NuxtLink to="/student/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-            <NuxtLink to="/student/battles" class="text-sm text-gray-600 hover:text-gray-900">Battles</NuxtLink>
-            <NuxtLink to="/tutors" class="text-sm text-gray-600 hover:text-gray-900">Tutors</NuxtLink>
+          <template v-if="isquizee">
+            <NuxtLink to="/quizee/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
+            <NuxtLink to="/quizee/battles" class="text-sm text-gray-600 hover:text-gray-900">Battles</NuxtLink>
+            <NuxtLink to="/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900">quiz-masters</NuxtLink>
           </template>
           <template v-else>
-            <NuxtLink to="/tutor/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-            <NuxtLink to="/tutor/students" class="text-sm text-gray-600 hover:text-gray-900">Students</NuxtLink>
-            <NuxtLink to="/tutor/analytics" class="text-sm text-gray-600 hover:text-gray-900">Analytics</NuxtLink>
+            <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
+            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900">quizees</NuxtLink>
+            <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900">Analytics</NuxtLink>
           </template>
         </nav>
       </div>
@@ -51,8 +51,8 @@
           <MagnifyingGlassIcon class="w-6 h-6" />
         </button>
 
-        <!-- Wallet for tutors -->
-        <button v-if="!isStudent" class="relative p-2 rounded hover:bg-gray-100" title="Wallet">
+        <!-- Wallet for quiz-masters -->
+        <button v-if="!isquizee" class="relative p-2 rounded hover:bg-gray-100" title="Wallet">
           <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor"><path d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM3 6h18v12H3V6zm1 12h16v-2H4v2zm0-4h16V8H4v6z"/></svg>
           <span class="ml-2 text-sm font-medium text-gray-700">{{ walletAmount }}</span>
         </button>
@@ -87,7 +87,7 @@
               </template>
 
               <template #items="{ close }">
-                <NuxtLink :to="isStudent ? '/student/profile' : '/tutor/profile'" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</NuxtLink>
+                <NuxtLink :to="isquizee ? '/quizee/profile' : '/quiz-master/profile'" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</NuxtLink>
                 <button @click="() => { onLogout(); close && close() }" class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
               </template>
             </ActionMenu>
@@ -130,13 +130,13 @@ const notificationsCount = computed(() => notifications.unreadCount || 0)
 
 const auth = useAuthStore()
 const router = useRouter()
-const { isStudent } = useUserRole()
+const { isquizee } = useUserRole()
 
 const searchInput = ref(null)
 const mobileSearchInput = ref(null)
 const { isDark, toggleTheme } = useAppTheme()
 
-const searchPlaceholder = computed(() => isStudent.value
+const searchPlaceholder = computed(() => isquizee.value
   ? 'Search quizzes, topics, subjects... (press / to focus)'
   : 'Search questions, topics, subjects... (press / to focus)'
 )
@@ -157,12 +157,12 @@ function onLogout() {
 function performSearch() {
   const term = (q.value || '').trim()
   if (!term) return
-  const base = isStudent.value ? '/student/search' : '/tutor/search'
+  const base = isquizee.value ? '/quizee/search' : '/quiz-master/search'
   router.push({ path: base, query: { q: term } })
 }
 
 function goToChat() {
-  router.push(isStudent.value ? '/student/chat' : '/tutor/chat')
+  router.push(isquizee.value ? '/quizee/chat' : '/quiz-master/chat')
 }
 
 function onOpenNotifications() {

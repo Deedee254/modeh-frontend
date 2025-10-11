@@ -32,7 +32,7 @@
               <template v-if="qitem.approval_requested_at">Requested</template>
               <template v-else>Request approval</template>
             </button>
-            <NuxtLink :to="`/tutor/questions/${qitem.id}/edit`" class="text-sm text-blue-600">Edit</NuxtLink>
+            <NuxtLink :to="`/quiz-master/questions/${qitem.id}/edit`" class="text-sm text-blue-600">Edit</NuxtLink>
           </div>
         </li>
       </ul>
@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 import { ref, onMounted, computed } from 'vue'
 import Pagination from '~/components/Pagination.vue'
 import { useAppAlert } from '~/composables/useAppAlert'

@@ -7,9 +7,9 @@
           <NuxtLink to="/subjects" class="text-gray-600 hover:text-gray-900">Subjects</NuxtLink>
           <NuxtLink to="/topics" class="text-gray-600 hover:text-gray-900">Topics</NuxtLink>
           <NuxtLink to="/quizzes" class="text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-          <NuxtLink to="/student/battles" class="text-gray-600 hover:text-gray-900">Battles</NuxtLink>
+          <NuxtLink to="/quizee/battles" class="text-gray-600 hover:text-gray-900">Battles</NuxtLink>
           <NuxtLink to="/pricing" class="text-gray-600 hover:text-gray-900">Pricing</NuxtLink>
-          <NuxtLink to="/tutors" class="text-gray-600 hover:text-gray-900">Tutors</NuxtLink>
+          <NuxtLink to="/quiz-masters" class="text-gray-600 hover:text-gray-900">quiz-masters</NuxtLink>
           <NuxtLink to="/about" class="text-gray-600 hover:text-gray-900">About</NuxtLink>
         </nav>
         <button @click="showMobileMenu = !showMobileMenu" class="md:hidden">
@@ -24,9 +24,9 @@
           <NuxtLink to="/subjects" class="text-gray-600 hover:text-gray-900">Subjects</NuxtLink>
           <NuxtLink to="/topics" class="text-gray-600 hover:text-gray-900">Topics</NuxtLink>
           <NuxtLink to="/quizzes" class="text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-          <NuxtLink to="/student/battles" class="text-gray-600 hover:text-gray-900">Battles</NuxtLink>
+          <NuxtLink to="/quizee/battles" class="text-gray-600 hover:text-gray-900">Battles</NuxtLink>
           <NuxtLink to="/pricing" class="text-gray-600 hover:text-gray-900">Pricing</NuxtLink>
-          <NuxtLink to="/tutors" class="text-gray-600 hover:text-gray-900">Tutors</NuxtLink>
+          <NuxtLink to="/quiz-masters" class="text-gray-600 hover:text-gray-900">quiz-masters</NuxtLink>
           <NuxtLink to="/about" class="text-gray-600 hover:text-gray-900">About</NuxtLink>
         </nav>
       </div>
@@ -35,7 +35,7 @@
         <ThemeToggle />
         <template v-if="!isAuthed">
           <NuxtLink to="/login" class="px-3 py-1 border rounded text-sm">Sign in</NuxtLink>
-          <NuxtLink to="/register?role=student" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Get started</NuxtLink>
+          <NuxtLink to="/register?role=quizee" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Get started</NuxtLink>
         </template>
         <template v-else>
           <div class="relative">
@@ -78,8 +78,8 @@ const userInitials = computed(() => {
 
 const profileLink = computed(() => {
   if (!auth?.user) return '/'
-  const role = auth.user.role || 'student'
-  return role === 'tutor' ? '/tutor/profile' : '/student/profile'
+  const role = auth.user.role || 'quizee'
+  return role === 'quiz-master' ? '/quiz-master/profile' : '/quizee/profile'
 })
 
 function logout() {

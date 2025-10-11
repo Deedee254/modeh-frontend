@@ -1,5 +1,5 @@
 <script setup>
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 import ChatWidget from '~/components/ChatWidget.vue'
 </script>
 

@@ -13,9 +13,9 @@
                 <p class="mt-2 text-sm opacity-90">Quick access to quizzes, challenges and your progress. Keep your streak going!</p>
 
                 <div class="mt-4 flex flex-wrap gap-3">
-                  <NuxtLink to="/student/quizzes" class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm">Browse Quizzes</NuxtLink>
-                  <NuxtLink to="/student/battles" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Start a Battle</NuxtLink>
-                  <NuxtLink to="/student/subscription" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Subscription</NuxtLink>
+                  <NuxtLink to="/quizee/quizzes" class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm">Browse Quizzes</NuxtLink>
+                  <NuxtLink to="/quizee/battles" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Start a Battle</NuxtLink>
+                  <NuxtLink to="/quizee/subscription" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Subscription</NuxtLink>
                 </div>
               </div>
               <div class="hidden md:block w-48">
@@ -56,12 +56,12 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="text-lg font-semibold">Recommended for you</div>
-                <NuxtLink to="/student/quizzes" class="text-sm text-indigo-600">Browse all</NuxtLink>
+                <NuxtLink to="/quizee/quizzes" class="text-sm text-indigo-600">Browse all</NuxtLink>
               </div>
             </template>
 
             <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <UiHorizontalCard v-for="q in recQuizzes" :key="q.id" :title="q.title || q.name || 'Untitled Quiz'" :subtitle="q.description || ''" :to="`/student/quizzes/${q.id}`" v-if="recQuizzes.length" />
+              <UiHorizontalCard v-for="q in recQuizzes" :key="q.id" :title="q.title || q.name || 'Untitled Quiz'" :subtitle="q.description || ''" :to="`/quizee/quizzes/${q.id}`" v-if="recQuizzes.length" />
               <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
             </div>
           </UiCard>
@@ -71,14 +71,14 @@
               <template #header>
                 <div class="flex items-center justify-between">
                   <div class="font-medium">Recent Attempts</div>
-                  <NuxtLink to="/student/attempts" class="text-sm text-indigo-600">See all</NuxtLink>
+                  <NuxtLink to="/quizee/attempts" class="text-sm text-indigo-600">See all</NuxtLink>
                 </div>
               </template>
               <div class="mt-2 text-sm text-gray-600">
                 <ul class="space-y-3">
                   <li v-for="a in recentAttempts" :key="a.id" class="flex items-center justify-between">
                     <div class="truncate">{{ a.quiz_title || 'Quiz #' + a.quiz_id }} <span class="text-xs text-gray-400">• {{ a.score }}%</span></div>
-                    <NuxtLink :to="`/student/quizzes/result/${a.id}`" class="text-xs text-indigo-600">View</NuxtLink>
+                    <NuxtLink :to="`/quizee/quizzes/result/${a.id}`" class="text-xs text-indigo-600">View</NuxtLink>
                   </li>
                   <li v-if="!recentAttempts.length" class="text-xs text-gray-500">No attempts yet</li>
                 </ul>
@@ -89,7 +89,7 @@
               <template #header>
                 <div class="flex items-center justify-between">
                   <div class="font-medium">Recent Badges</div>
-                  <NuxtLink to="/student/badges" class="text-sm text-indigo-600">All badges</NuxtLink>
+                  <NuxtLink to="/quizee/badges" class="text-sm text-indigo-600">All badges</NuxtLink>
                 </div>
               </template>
               <div class="mt-2 text-sm text-gray-600">
@@ -119,7 +119,7 @@
               <div class="font-medium">Quizzes</div>
             </template>
             <template #footer>
-              <NuxtLink to="/student/quizzes" class="text-sm text-indigo-600">My quizzes</NuxtLink>
+              <NuxtLink to="/quizee/quizzes" class="text-sm text-indigo-600">My quizzes</NuxtLink>
             </template>
           </UiCard>
 
@@ -127,7 +127,7 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="font-medium">Subscription</div>
-                <NuxtLink to="/student/subscription" class="text-sm text-indigo-600">Manage</NuxtLink>
+                <NuxtLink to="/quizee/subscription" class="text-sm text-indigo-600">Manage</NuxtLink>
               </div>
             </template>
             <div class="mt-3 text-sm text-gray-600">View and manage your subscription packages.</div>
@@ -143,8 +143,8 @@
 </template>
 
 <script setup>
-// set page layout meta for student
-definePageMeta({ layout: 'student' })
+// set page layout meta for quizee
+definePageMeta({ layout: 'quizee' })
 import ChatBubble from '~/components/ChatBubble.vue'
 import RuntimeImg from '~/components/RuntimeImg.vue'
 import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
@@ -156,10 +156,10 @@ const config = useRuntimeConfig()
   const auth = useAuthStore()
   const grade = auth.user?.grade ?? 8
   const { data: subjectsData, pending: subjectsPending, error: subjectsError } = await useFetch(config.public.apiBase + `/api/subjects?for_grade=${grade}`)
-  const { data: tutorsData, pending: tutorsPending, error: tutorsError } = await useFetch(config.public.apiBase + `/api/tutors?grade=${grade}`)
+  const { data: quiz-mastersData, pending: quiz-mastersPending, error: quiz-mastersError } = await useFetch(config.public.apiBase + `/api/quiz-masters?grade=${grade}`)
 const { data: rewardsData, pending: rewardsPending, error: rewardsError } = await useFetch(config.public.apiBase + '/api/rewards/my', { credentials: 'include' })
 
-// normalize paginated or direct shapes for subjects and tutors
+// normalize paginated or direct shapes for subjects and quiz-masters
 const subjects = (() => {
   if (subjectsData?.value?.subjects?.data && Array.isArray(subjectsData.value.subjects.data)) return subjectsData.value.subjects.data
   if (Array.isArray(subjectsData?.value?.subjects)) return subjectsData.value.subjects
@@ -167,10 +167,10 @@ const subjects = (() => {
   return []
 })()
 
-const tutors = (() => {
-  if (tutorsData?.value?.tutors?.data && Array.isArray(tutorsData.value.tutors.data)) return tutorsData.value.tutors.data
-  if (Array.isArray(tutorsData?.value?.tutors)) return tutorsData.value.tutors
-  if (Array.isArray(tutorsData?.value)) return tutorsData.value
+const quiz-masters = (() => {
+  if (quiz-mastersData?.value?.quiz-masters?.data && Array.isArray(quiz-mastersData.value.quiz-masters.data)) return quiz-mastersData.value.quiz-masters.data
+  if (Array.isArray(quiz-mastersData?.value?.quiz-masters)) return quiz-mastersData.value.quiz-masters
+  if (Array.isArray(quiz-mastersData?.value)) return quiz-mastersData.value
   return []
 })()
 
@@ -236,7 +236,7 @@ let recentBadges = []
     recentBadges = []
   }
 
-// Recommended quizzes for student (public API call, fallback to empty)
+// Recommended quizzes for quizee (public API call, fallback to empty)
 let recQuizzes = []
   try {
     const { data: recData } = await useFetch(config.public.apiBase + '/api/recommendations/quizzes?per_page=5')

@@ -21,21 +21,21 @@
         <div class="relative px-6 py-24 sm:py-32">
           <div class="mx-auto max-w-2xl text-center">
             <h1 class="bg-gradient-to-r from-indigo-600 via-sky-600 to-violet-600 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-6xl">
-              Create beautiful quizzes. Engage students. Grow results.
+              Create beautiful quizzes. Engage quizees. Grow results.
             </h1>
             <p class="mt-6 text-lg leading-8 text-slate-700">
-              Modeh helps tutors and schools build, assign, and analyze quizzes in minutes — not hours.
+              Modeh helps quiz-masters and schools build, assign, and analyze quizzes in minutes — not hours.
             </p>
             <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <NuxtLink
-                to="/register?role=tutor"
+                to="/register?role=quiz-master"
                 class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 p-[2px] font-semibold text-white transition hover:shadow-lg hover:shadow-indigo-500/25 w-full sm:w-auto"
               >
                 <span class="inline-flex h-full items-center gap-2 rounded-[10px] bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 px-6 py-3 transition group-hover:bg-none w-full sm:w-auto">
                   <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
-                  <span>Become a tutor</span>
+                  <span>Become a quiz-master</span>
                 </span>
               </NuxtLink>
               <NuxtLink
@@ -59,7 +59,7 @@
           <!-- Section header with center layout -->
           <div class="max-w-3xl mx-auto text-center mb-16">
             <div class="inline-block px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-medium mb-4">Success Stories</div>
-            <h2 class="text-4xl font-bold text-indigo-900 mb-6">Loved by educators and students alike</h2>
+            <h2 class="text-4xl font-bold text-indigo-900 mb-6">Loved by educators and quizees alike</h2>
             <p class="text-lg text-indigo-700/80">Join thousands of satisfied users who've transformed their teaching and learning experience with Modeh.</p>
           </div>
 
@@ -160,7 +160,7 @@
           </div>
           <div class="text-center">
             <NuxtLink
-              to="/register?role=tutor"
+              to="/register?role=quiz-master"
               class="inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 px-8 py-4 font-semibold text-white transition hover:shadow-lg hover:shadow-indigo-500/25"
             >
               Get Started Free
@@ -194,7 +194,7 @@
               </svg>
             </div>
             <h3 class="mb-2 font-semibold text-rose-900">Assign & engage</h3>
-            <p class="text-sm text-rose-700/80">Invite students, set timers, and deliver instant feedback that motivates.</p>
+            <p class="text-sm text-rose-700/80">Invite quizees, set timers, and deliver instant feedback that motivates.</p>
           </div>
         </div>
 
@@ -253,7 +253,7 @@
                   <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 font-bold text-white shadow-lg shadow-violet-200">2</div>
                   <div>
                     <h3 class="mb-2 font-semibold text-violet-900">Assign</h3>
-                    <p class="text-sm text-slate-600">Share with students and control time limits and retries. Set deadlines and access rules.</p>
+                    <p class="text-sm text-slate-600">Share with quizees and control time limits and retries. Set deadlines and access rules.</p>
                   </div>
                 </div>
               </div>
@@ -276,15 +276,15 @@
         </div>
       </section>
 
-      <!-- Featured Tutors Section -->
+      <!-- Featured quiz-masters Section -->
       <section class="w-full bg-gradient-to-br from-violet-50 via-white to-sky-50 py-20">
         <div class="mx-auto max-w-7xl px-6">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <!-- Left side: Text content -->
             <div>
               <div class="inline-block px-4 py-2 rounded-full bg-violet-100 text-violet-700 font-medium mb-6">Expert Educators</div>
-              <h2 class="text-4xl font-bold text-violet-900 mb-6">Learn from top tutors around the world</h2>
-              <p class="text-lg text-violet-700/80 mb-8">Join a community of passionate educators who create engaging quizzes and help students excel in their studies.</p>
+              <h2 class="text-4xl font-bold text-violet-900 mb-6">Learn from top quiz-masters around the world</h2>
+              <p class="text-lg text-violet-700/80 mb-8">Join a community of passionate educators who create engaging quizzes and help quizees excel in their studies.</p>
               <div class="flex flex-wrap gap-6">
                 <div class="flex items-center gap-3">
                   <div class="w-12 h-12 rounded-full bg-violet-100 grid place-items-center">
@@ -294,7 +294,7 @@
                   </div>
                   <div>
                     <div class="text-2xl font-bold text-violet-900">500+</div>
-                    <div class="text-sm text-violet-600">Active Tutors</div>
+                    <div class="text-sm text-violet-600">Active quiz-masters</div>
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
@@ -311,10 +311,10 @@
               </div>
             </div>
 
-            <!-- Right side: Tutor cards -->
+            <!-- Right side: quiz-master cards -->
             <div class="relative">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <template v-for="(tutor, index) in featuredTutors" :key="index">
+                <template v-for="(quiz-master, index) in featuredquiz-masters" :key="index">
                   <div class="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-xl">
                     <div class="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-sky-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                     <div class="relative">
@@ -322,15 +322,15 @@
                       <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center gap-3">
                           <div class="h-12 w-12 rounded-full bg-gradient-to-br from-violet-100 to-sky-100 grid place-items-center text-lg font-semibold text-violet-700">
-                            {{ (tutor.name || 'A').charAt(0) }}
+                            {{ (quiz-master.name || 'A').charAt(0) }}
                           </div>
                           <div>
-                            <h3 class="font-semibold text-gray-900">{{ tutor.name || 'Tutor' }}</h3>
-                            <p class="text-sm text-violet-600">{{ tutor.role || tutor.experience ? tutor.experience + ' yrs experience' : 'Tutor' }}</p>
+                            <h3 class="font-semibold text-gray-900">{{ quiz-master.name || 'quiz-master' }}</h3>
+                            <p class="text-sm text-violet-600">{{ quiz-master.role || quiz-master.experience ? quiz-master.experience + ' yrs experience' : 'quiz-master' }}</p>
                           </div>
                         </div>
-                        <div v-if="tutor.badges && tutor.badges.length" class="flex gap-1">
-                          <div v-for="badge in tutor.badges" :key="badge"
+                        <div v-if="quiz-master.badges && quiz-master.badges.length" class="flex gap-1">
+                          <div v-for="badge in quiz-master.badges" :key="badge"
                                class="px-2 py-1 text-xs font-medium rounded-full"
                                :class="badge.includes('Top') ? 'bg-violet-100 text-violet-700' : 'bg-sky-100 text-sky-700'">
                             {{ badge }}
@@ -341,22 +341,22 @@
                       <!-- Stats -->
                       <div class="grid grid-cols-3 gap-4 mb-4">
                         <div class="text-center">
-                          <div class="text-lg font-semibold text-gray-900">{{ tutor.rating || 'N/A' }}</div>
+                          <div class="text-lg font-semibold text-gray-900">{{ quiz-master.rating || 'N/A' }}</div>
                           <div class="text-xs text-gray-600">Rating</div>
                         </div>
                         <div class="text-center">
-                          <div class="text-lg font-semibold text-gray-900">{{ tutor.students || 'N/A' }}</div>
-                          <div class="text-xs text-gray-600">Students</div>
+                          <div class="text-lg font-semibold text-gray-900">{{ quiz-master.quizees || 'N/A' }}</div>
+                          <div class="text-xs text-gray-600">quizees</div>
                         </div>
                         <div class="text-center">
-                          <div class="text-lg font-semibold text-gray-900">{{ tutor.quizzes || 'N/A' }}</div>
+                          <div class="text-lg font-semibold text-gray-900">{{ quiz-master.quizzes || 'N/A' }}</div>
                           <div class="text-xs text-gray-600">Quizzes</div>
                         </div>
                       </div>
 
                       <!-- Subjects -->
-                      <div v-if="tutor.subjects && tutor.subjects.length" class="flex flex-wrap gap-2">
-                        <span v-for="subject in tutor.subjects" :key="subject" 
+                      <div v-if="quiz-master.subjects && quiz-master.subjects.length" class="flex flex-wrap gap-2">
+                        <span v-for="subject in quiz-master.subjects" :key="subject" 
                               class="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
                           {{ subject }}
                         </span>
@@ -379,7 +379,7 @@
               <div class="inline-block px-4 py-2 rounded-full bg-rose-100 text-rose-700 font-medium mb-4">Trending Content</div>
               <h2 class="text-4xl font-bold text-rose-900">Discover our latest & featured quizzes</h2>
             </div>
-            <p class="text-lg text-rose-700/80">Explore our curated collection of high-quality quizzes created by expert educators and trusted by thousands of students.</p>
+            <p class="text-lg text-rose-700/80">Explore our curated collection of high-quality quizzes created by expert educators and trusted by thousands of quizees.</p>
           </div>
 
           <!-- Tabs: Top / Featured / New -->
@@ -445,7 +445,7 @@
                   :topic="quiz.topic?.name || quiz.topic_name"
                   :cover="quiz.cover_image || quiz.cover"
                   :difficulty="quiz.difficulty"
-                  :tutor="quiz.tutor?.name || quiz.user?.name"
+                  :quiz-master="quiz.quiz-master?.name || quiz.user?.name"
                   :palette="pickPaletteClass(quiz.topic?.id || quiz.id)"
                 />
               </div>
@@ -606,7 +606,7 @@
             </div>
             <div class="flex flex-wrap gap-4">
               <NuxtLink 
-                to="/register?role=tutor" 
+                to="/register?role=quiz-master" 
                 class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-white p-[2px] font-semibold text-indigo-600 transition hover:shadow-lg hover:shadow-white/25"
               >
                 <span class="inline-flex h-full items-center gap-2 rounded-[10px] bg-white px-6 py-3 transition group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-indigo-50 group-hover:text-indigo-700">
@@ -677,9 +677,9 @@ const displayedQuizzes = computed(() => {
 const { data: topicsData } = await useFetch(config.public.apiBase + '/api/topics', { credentials: 'include' })
 const topicsList = safeArray(topicsData?.value?.topics?.data || topicsData?.value?.topics || topicsData?.value).slice(0, 12)
 
-// Featured tutors
-const { data: tutorsData } = await useFetch(config.public.apiBase + '/api/tutors', { credentials: 'include' })
-const featuredTutors = safeArray(tutorsData?.value?.tutors?.data || tutorsData?.value?.tutors || tutorsData?.value).slice(0, 4)
+// Featured quiz-masters
+const { data: quiz-mastersData } = await useFetch(config.public.apiBase + '/api/quiz-masters', { credentials: 'include' })
+const featuredquiz-masters = safeArray(quiz-mastersData?.value?.quiz-masters?.data || quiz-mastersData?.value?.quiz-masters || quiz-mastersData?.value).slice(0, 4)
 
 // Testimonials
 const { data: testimonialsData } = await useFetch(config.public.apiBase + '/api/testimonials', { credentials: 'include' })

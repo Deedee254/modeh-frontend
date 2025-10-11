@@ -41,7 +41,7 @@
         <div v-if="badges.length" class="mt-6">
           <h3 class="font-semibold flex items-center justify-between">
             <span>New badges <small class="text-xs text-gray-500">(earned in this attempt)</small></span>
-            <NuxtLink to="/student/badges" class="text-sm text-indigo-600">View all</NuxtLink>
+            <NuxtLink to="/quizee/badges" class="text-sm text-indigo-600">View all</NuxtLink>
           </h3>
 
           <div class="mt-3 flex gap-3 flex-wrap">
@@ -67,8 +67,8 @@
         </div>
 
         <div class="mt-6 flex gap-2">
-          <NuxtLink to="/student/quizzes" class="px-4 py-2 bg-gray-100 rounded">Back to quizzes</NuxtLink>
-          <NuxtLink :to="`/student/quizzes/take/${quizId}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Retake</NuxtLink>
+          <NuxtLink to="/quizee/quizzes" class="px-4 py-2 bg-gray-100 rounded">Back to quizzes</NuxtLink>
+          <NuxtLink :to="`/quizee/quizzes/take/${quizId}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Retake</NuxtLink>
         </div>
       </div>
     </div>
@@ -80,8 +80,8 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
 
-// ensure this page uses the student layout
-definePageMeta({ layout: 'student' })
+// ensure this page uses the quizee layout
+definePageMeta({ layout: 'quizee' })
 
 const route = useRoute()
 const attemptId = route.params.id

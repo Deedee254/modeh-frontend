@@ -5,12 +5,12 @@
       <div class="rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 shadow-lg mb-6">
         <div class="flex items-center justify-between gap-6">
           <div class="flex-1">
-            <h1 class="text-3xl font-extrabold">Tutor Dashboard</h1>
-            <p class="mt-1 text-sm opacity-90">Create quizzes, track performance, and grow your tutoring business.</p>
+            <h1 class="text-3xl font-extrabold">quiz-master Dashboard</h1>
+            <p class="mt-1 text-sm opacity-90">Create quizzes, track performance, and grow your quiz-mastering business.</p>
             <div class="mt-4 flex flex-wrap gap-3">
-              <NuxtLink to="/tutor/quizzes" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm">My Quizzes</NuxtLink>
-              <NuxtLink to="/tutor/quizzes/create" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Create Quiz</NuxtLink>
-              <NuxtLink to="/tutor/wallet" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Wallet</NuxtLink>
+              <NuxtLink to="/quiz-master/quizzes" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm">My Quizzes</NuxtLink>
+              <NuxtLink to="/quiz-master/quizzes/create" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Create Quiz</NuxtLink>
+              <NuxtLink to="/quiz-master/wallet" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm border border-white/10">Wallet</NuxtLink>
             </div>
           </div>
           <div class="hidden lg:block w-44">
@@ -62,7 +62,7 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="text-lg font-semibold">Recent Activity</div>
-                <NuxtLink to="/tutor/quizzes" class="text-sm text-indigo-600 hover:underline">View all</NuxtLink>
+                <NuxtLink to="/quiz-master/quizzes" class="text-sm text-indigo-600 hover:underline">View all</NuxtLink>
               </div>
             </template>
 
@@ -75,8 +75,8 @@
                 <UiHorizontalCard v-for="q in recentQuizzes" :key="q.id" :title="q.title" :subtitle="q.description || 'No description'" eyebrow="Quiz">
                   <template #actions>
                     <div class="flex gap-2">
-                      <NuxtLink :to="`/tutor/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Open</NuxtLink>
-                      <NuxtLink :to="`/tutor/quizzes/${q.id}/analytics`" class="text-sm text-indigo-600 hover:underline">Analytics</NuxtLink>
+                      <NuxtLink :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Open</NuxtLink>
+                      <NuxtLink :to="`/quiz-master/quizzes/${q.id}/analytics`" class="text-sm text-indigo-600 hover:underline">Analytics</NuxtLink>
                     </div>
                   </template>
                 </UiHorizontalCard>
@@ -92,16 +92,16 @@
               </div>
             </template>
             <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <template v-if="isTutor">
-                <NuxtLink to="/tutor/quizzes/create" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Create Quiz</NuxtLink>
-                <NuxtLink to="/tutor/questions" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Question Bank</NuxtLink>
-                <NuxtLink to="/tutor/topics" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Manage Topics</NuxtLink>
-                <NuxtLink to="/tutor/subjects" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Manage Subjects</NuxtLink>
-                <NuxtLink to="/tutor/wallet" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Wallet</NuxtLink>
-                <NuxtLink to="/tutor/profile" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Profile</NuxtLink>
+              <template v-if="isquiz-master">
+                <NuxtLink to="/quiz-master/quizzes/create" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Create Quiz</NuxtLink>
+                <NuxtLink to="/quiz-master/questions" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Question Bank</NuxtLink>
+                <NuxtLink to="/quiz-master/topics" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Manage Topics</NuxtLink>
+                <NuxtLink to="/quiz-master/subjects" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Manage Subjects</NuxtLink>
+                <NuxtLink to="/quiz-master/wallet" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Wallet</NuxtLink>
+                <NuxtLink to="/quiz-master/profile" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Profile</NuxtLink>
               </template>
               <template v-else>
-                <div class="col-span-full text-sm text-gray-500">Quick actions are available to tutors only. <NuxtLink to="/login" class="text-indigo-600">Sign in as tutor</NuxtLink></div>
+                <div class="col-span-full text-sm text-gray-500">Quick actions are available to quiz-masters only. <NuxtLink to="/login" class="text-indigo-600">Sign in as quiz-master</NuxtLink></div>
               </template>
             </div>
           </UiCard>
@@ -113,7 +113,7 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="font-medium">Pending Approvals</div>
-                <NuxtLink to="/tutor/quizzes" class="text-sm text-indigo-600">Manage</NuxtLink>
+                <NuxtLink to="/quiz-master/quizzes" class="text-sm text-indigo-600">Manage</NuxtLink>
               </div>
             </template>
             <div v-if="pendingApprovalsPending" class="text-sm text-gray-500">Loading…</div>
@@ -121,7 +121,7 @@
             <ul v-else class="space-y-2">
               <li v-for="q in pendingApprovals.slice(0,3)" :key="q.id" class="flex items-center justify-between">
                 <div class="text-sm truncate">{{ q.title || q.name }}</div>
-                <NuxtLink :to="`/tutor/quizzes/${q.id}`" class="text-sm text-indigo-600">Review</NuxtLink>
+                <NuxtLink :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600">Review</NuxtLink>
               </li>
             </ul>
           </UiCard>
@@ -160,14 +160,14 @@ import SettingsTabs from '~/components/SettingsTabs.vue'
 import { useAuthStore } from '~/stores/auth'
 import { computed } from 'vue'
 
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 
 const config = useRuntimeConfig()
 
 const auth = useAuthStore()
-const isTutor = computed(() => auth.user?.role === 'tutor' || auth.role === 'tutor')
+const isquiz-master = computed(() => auth.user?.role === 'quiz-master' || auth.role === 'quiz-master')
 
-// Fetch recent quizzes (paginated) for this tutor
+// Fetch recent quizzes (paginated) for this quiz-master
 const { data: quizzesData, pending: quizzesPending, error: quizzesError } = await useFetch(
   config.public.apiBase + '/api/quizzes?per_page=5',
   { credentials: 'include' }
@@ -177,7 +177,7 @@ const { data: publishedData } = await useFetch(
   config.public.apiBase + '/api/quizzes?approved=1&per_page=1',
   { credentials: 'include' }
 )
-// Fetch total questions in tutor's bank
+// Fetch total questions in quiz-master's bank
 const { data: questionsData } = await useFetch(
   config.public.apiBase + '/api/questions?per_page=1',
   { credentials: 'include' }

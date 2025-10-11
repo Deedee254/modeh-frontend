@@ -2,7 +2,7 @@
   <div class="min-h-screen">
     <div class="max-w-4xl mx-auto space-y-6">
       <ProfileHeader
-        :title="form.name || user?.name || 'Student'"
+        :title="form.name || user?.name || 'quizee'"
         :subtitle="user?.email"
         :avatar-url="preview || userAvatar"
       >
@@ -13,10 +13,10 @@
           </span>
         </template>
         <template #actions>
-          <label for="student-avatar-upload" class="px-3 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 cursor-pointer">
+          <label for="quizee-avatar-upload" class="px-3 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 cursor-pointer">
             Change photo
           </label>
-          <input id="student-avatar-upload" type="file" @change="onFile" class="hidden" accept="image/*" />
+          <input id="quizee-avatar-upload" type="file" @change="onFile" class="hidden" accept="image/*" />
         </template>
       </ProfileHeader>
 
@@ -42,7 +42,7 @@
           </div>
 
           <div class="flex flex-col sm:flex-row justify-end gap-3">
-            <NuxtLink to="/student/dashboard" class="px-4 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 w-full sm:w-auto text-center">Cancel</NuxtLink>
+            <NuxtLink to="/quizee/dashboard" class="px-4 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 w-full sm:w-auto text-center">Cancel</NuxtLink>
             <button type="submit" class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">Save</button>
           </div>
         </form>
@@ -60,7 +60,7 @@ import UiTextarea from '~/components/ui/UiTextarea.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useAccountApi } from '~/composables/useAccountApi'
 
-definePageMeta({ layout: 'student' })
+definePageMeta({ layout: 'quizee' })
 
 const auth = useAuthStore()
 const alert = useAppAlert()

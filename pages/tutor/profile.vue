@@ -3,7 +3,7 @@
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
       <div class="max-w-4xl mx-auto space-y-6">
         <ProfileHeader
-          :title="form.name || user?.name || 'Tutor'"
+          :title="form.name || user?.name || 'quiz-master'"
           :subtitle="user?.email"
           :avatar-url="preview || userAvatar"
           cover-url="/placeholder/cover.jpg"
@@ -41,7 +41,7 @@
             </div>
 
             <div class="flex flex-col sm:flex-row justify-end gap-3">
-              <NuxtLink to="/tutor/dashboard" class="px-4 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 w-full sm:w-auto text-center">Cancel</NuxtLink>
+              <NuxtLink to="/quiz-master/dashboard" class="px-4 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 w-full sm:w-auto text-center">Cancel</NuxtLink>
               <button type="submit" class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">Save</button>
             </div>
           </form>
@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 import { ref, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'

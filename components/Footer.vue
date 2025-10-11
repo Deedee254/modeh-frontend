@@ -3,10 +3,10 @@
     <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8 items-start">
       <div>
         <div class="text-2xl font-extrabold">Modeh</div>
-        <div class="mt-3 text-sm opacity-90">Create and take beautiful quizzes — for tutoring, classrooms and practice. Fast to build, fun to take.</div>
+        <div class="mt-3 text-sm opacity-90">Create and take beautiful quizzes — for quiz-mastering, classrooms and practice. Fast to build, fun to take.</div>
         <div class="mt-4 flex gap-3">
-          <NuxtLink to="/register?role=tutor" class="px-4 py-2 bg-white text-indigo-700 rounded font-medium">Tutor register</NuxtLink>
-          <NuxtLink to="/register?role=student" class="px-4 py-2 bg-white text-indigo-700 rounded font-medium">Student register</NuxtLink>
+          <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-white text-indigo-700 rounded font-medium">quiz-master register</NuxtLink>
+          <NuxtLink to="/register?role=quizee" class="px-4 py-2 bg-white text-indigo-700 rounded font-medium">quizee register</NuxtLink>
         </div>
       </div>
 

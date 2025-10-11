@@ -170,8 +170,8 @@
 </template>
 
 <script setup>
-// set page layout meta for student
-definePageMeta({ layout: 'student' })
+// set page layout meta for quizee
+definePageMeta({ layout: 'quizee' })
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -418,7 +418,7 @@ async function submitAnswers() {
       const attemptId = body?.attempt_id ?? body?.attempt?.id
       if (attemptId) {
         // navigate to result page
-        router.push(`/student/quizzes/result/${attemptId}`)
+        router.push(`/quizee/quizzes/result/${attemptId}`)
         return
       }
 
@@ -462,7 +462,7 @@ function selectMcq(qid, opt) {
   autosave(qid)
 }
 
-function cancel() { router.push('/student/quizzes') }
+function cancel() { router.push('/quizee/quizzes') }
 
 function nextQuestion() {
   if (currentQuestion.value < quiz.value.questions.length - 1) {

@@ -8,7 +8,7 @@
           <p class="mt-2 text-indigo-100 max-w-2xl">Discover organized subjects and jump straight into curated quizzes. Filter by subject, search by name, or explore popular areas below.</p>
           <div class="mt-5 flex gap-3">
             <NuxtLink to="/quizzes" class="px-4 py-2 bg-white text-indigo-700 rounded-md font-medium">Browse quizzes</NuxtLink>
-            <NuxtLink to="/register?role=tutor" class="px-4 py-2 border border-white/30 rounded-md text-white">Create a subject</NuxtLink>
+            <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 border border-white/30 rounded-md text-white">Create a subject</NuxtLink>
           </div>
         </div>
         <div class="w-full lg:w-1/3">
@@ -70,7 +70,7 @@
           <h3 class="text-lg font-semibold text-indigo-800">Want to help build content?</h3>
           <p class="text-sm text-indigo-700/90">Create subjects and topics to organize your quizzes for learners worldwide.</p>
         </div>
-        <NuxtLink to="/register?role=tutor" class="px-4 py-2 bg-indigo-600 text-white rounded">Become a tutor</NuxtLink>
+        <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-indigo-600 text-white rounded">Become a quiz-master</NuxtLink>
       </div>
     </div>
   </div>

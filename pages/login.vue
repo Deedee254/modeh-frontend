@@ -86,8 +86,8 @@ async function submit() {
   try {
     const res = await auth.login(email.value, password.value)
     const user = res.data?.user || res.data
-    if (user?.role === 'tutor') router.push('/tutor/dashboard')
-    else if (user?.role === 'student') router.push('/student/dashboard')
+    if (user?.role === 'quiz-master') router.push('/quiz-master/dashboard')
+    else if (user?.role === 'quizee') router.push('/quizee/dashboard')
     else if (user?.role === 'admin') window.location.href = `${config.public.apiBase}/admin`
     else router.push('/')
   } catch (e) {

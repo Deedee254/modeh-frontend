@@ -1,6 +1,6 @@
 <script setup>
-// set page layout meta for student
-definePageMeta({ layout: 'student' })
+// set page layout meta for quizee
+definePageMeta({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
 
 const subscription = ref(null)

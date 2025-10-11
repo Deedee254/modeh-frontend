@@ -28,7 +28,7 @@
         </ul>
       </div>
       <div class="p-2 text-center text-xs text-gray-500 border-t">
-        <NuxtLink to="/student/notifications" class="text-indigo-600">View all</NuxtLink>
+        <NuxtLink to="/quizee/notifications" class="text-indigo-600">View all</NuxtLink>
       </div>
     </div>
   </div>

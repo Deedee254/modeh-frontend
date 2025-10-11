@@ -1,5 +1,5 @@
 <script setup>
-definePageMeta({ layout: 'student' })
+definePageMeta({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
 const route = useRoute()
 const q = ref(route.query.q || '')
@@ -9,7 +9,7 @@ const q = ref(route.query.q || '')
   <div class="p-4">
     <h1 class="text-2xl font-semibold mb-4">Search</h1>
     <p class="text-gray-600 mb-2">Query: <span class="font-medium">{{ q }}</span></p>
-    <!-- TODO: implement student search results -->
+    <!-- TODO: implement quizee search results -->
     <div class="text-gray-400 text-sm">Results coming soon.</div>
   </div>
 </template>

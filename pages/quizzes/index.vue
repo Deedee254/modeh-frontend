@@ -11,8 +11,8 @@
             <UiSearch v-model="query" placeholder="Search quizzes by title or topic" class="w-full" @search="onServerSearch" @submit="onServerSubmit" />
           </div>
           <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-            <NuxtLink to="/register?role=tutor" class="px-4 py-3 bg-indigo-600 text-white rounded-md text-sm w-full sm:w-auto text-center">Create a quiz</NuxtLink>
-            <NuxtLink to="/student/quizzes" class="px-4 py-3 border rounded-md text-sm w-full sm:w-auto text-center">Take a quiz</NuxtLink>
+            <NuxtLink to="/register?role=quiz-master" class="px-4 py-3 bg-indigo-600 text-white rounded-md text-sm w-full sm:w-auto text-center">Create a quiz</NuxtLink>
+            <NuxtLink to="/quizee/quizzes" class="px-4 py-3 border rounded-md text-sm w-full sm:w-auto text-center">Take a quiz</NuxtLink>
           </div>
         </div>
 
@@ -78,7 +78,7 @@
               :updated-at="q.updated_at"
               :cover="q.cover_image || q.cover || q.image || ''"
               :difficulty="q.difficulty"
-              :tutor="q.tutor?.name || q.user?.name"
+              :quiz-master="q.quiz-master?.name || q.user?.name"
               :palette="pickPaletteClass(q.topic_id || q.topic?.id || q.id)"
             />
           </div>
@@ -121,7 +121,7 @@
         </div>
         <div class="flex flex-col sm:flex-row gap-3">
           <NuxtLink to="/quizzes" class="px-4 py-2 bg-white text-indigo-700 rounded w-full sm:w-auto text-center">Browse all</NuxtLink>
-          <NuxtLink to="/register?role=tutor" class="px-4 py-2 border rounded w-full sm:w-auto text-center">Create quiz</NuxtLink>
+          <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 border rounded w-full sm:w-auto text-center">Create quiz</NuxtLink>
         </div>
       </div>
     </div>

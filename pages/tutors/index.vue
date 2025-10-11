@@ -2,31 +2,31 @@
   <div class="min-h-screen bg-gray-50">
     <div class="container mx-auto p-6 max-w-7xl">
       <PageHero
-        title="Our Tutors"
-        description="Meet our team of dedicated and experienced tutors."
+        title="Our quiz-masters"
+        description="Meet our team of dedicated and experienced quiz-masters."
         align="center"
         padding="py-12"
       />
 
       <div v-if="pending" class="text-center text-gray-500">
-        Loading tutors...
+        Loading quiz-masters...
       </div>
       <div v-else-if="error" class="text-center text-red-500">
-        Failed to load tutors. Please try again later.
+        Failed to load quiz-masters. Please try again later.
       </div>
-      <div v-else-if="tutors.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <UCard v-for="tutor in tutors" :key="tutor.id" class="hover:shadow-lg transition">
+      <div v-else-if="quiz-masters.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <UCard v-for="quiz-master in quiz-masters" :key="quiz-master.id" class="hover:shadow-lg transition">
           <div class="flex flex-col items-center text-center">
             <div class="w-24 h-24 rounded-full overflow-hidden mb-4">
-              <img v-if="tutor.avatar" :src="tutor.avatar" :alt="tutor.name" class="w-full h-full object-cover">
+              <img v-if="quiz-master.avatar" :src="quiz-master.avatar" :alt="quiz-master.name" class="w-full h-full object-cover">
               <div v-else class="w-full h-full bg-indigo-100 text-indigo-700 grid place-items-center font-bold text-3xl">
-                {{ (tutor.name || '').charAt(0).toUpperCase() }}
+                {{ (quiz-master.name || '').charAt(0).toUpperCase() }}
               </div>
             </div>
-            <h3 class="font-semibold text-lg text-gray-800">{{ tutor.name }}</h3>
-            <p class="text-sm text-gray-500">{{ tutor.headline || 'Experienced Tutor' }}</p>
+            <h3 class="font-semibold text-lg text-gray-800">{{ quiz-master.name }}</h3>
+            <p class="text-sm text-gray-500">{{ quiz-master.headline || 'Experienced quiz-master' }}</p>
             <div class="mt-4">
-              <NuxtLink :to="`/tutors/${tutor.id}`" class="text-indigo-600 font-medium text-sm hover:underline">
+              <NuxtLink :to="`/quiz-masters/${quiz-master.id}`" class="text-indigo-600 font-medium text-sm hover:underline">
                 View Profile
               </NuxtLink>
             </div>
@@ -34,7 +34,7 @@
         </UCard>
       </div>
       <div v-else class="text-center text-gray-500">
-        No tutors found.
+        No quiz-masters found.
       </div>
     </div>
   </div>
@@ -45,21 +45,21 @@ import PageHero from '~/components/ui/PageHero.vue'
 
 const config = useRuntimeConfig()
 
-const { data: tutorsData, pending, error } = await useAsyncData(
-  'tutors',
-  () => $fetch(config.public.apiBase + '/api/tutors')
+const { data: quiz-mastersData, pending, error } = await useAsyncData(
+  'quiz-masters',
+  () => $fetch(config.public.apiBase + '/api/quiz-masters')
 )
 
-const tutors = computed(() => {
-  if (!tutorsData.value) return []
+const quiz-masters = computed(() => {
+  if (!quiz-mastersData.value) return []
   // Handle paginated or direct array response
-  return Array.isArray(tutorsData.value) ? tutorsData.value : (tutorsData.value.data || [])
+  return Array.isArray(quiz-mastersData.value) ? quiz-mastersData.value : (quiz-mastersData.value.data || [])
 })
 
 useHead({
-  title: 'Our Tutors',
+  title: 'Our quiz-masters',
   meta: [
-    { name: 'description', content: 'Browse our list of expert tutors.' }
+    { name: 'description', content: 'Browse our list of expert quiz-masters.' }
   ]
 })
 </script>

@@ -75,7 +75,7 @@ async function onSubscribe(pkg) {
         return
       }
       // If subscribe returned success without tx, go to subscription
-      if (res?.ok) await router.push('/student/subscription')
+      if (res?.ok) await router.push('/quizee/subscription')
     } catch (err) {
       console.error(err)
       // attempt a friendly fallback: show a toast if available, otherwise alert

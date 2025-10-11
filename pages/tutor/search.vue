@@ -1,5 +1,5 @@
 <script setup>
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 
 import { ref, computed, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -34,7 +34,7 @@ watchEffect(() => {
 })
 
 function openItem(type, id) {
-  router.push(`/tutor/${type}/${id}`)
+  router.push(`/quiz-master/${type}/${id}`)
 }
 </script>
 

@@ -100,7 +100,7 @@
             <div class="flex justify-between items-center mb-4">
               <h2 class="text-xl font-bold">Top Players</h2>
               <button 
-                @click="router.push(`/student/tournaments/${tournament.id}/leaderboard`)"
+                @click="router.push(`/quizee/tournaments/${tournament.id}/leaderboard`)"
                 class="text-primary hover:underline"
               >
                 View All
@@ -142,8 +142,8 @@
 </template>
 
 <script setup lang="ts">
-// Ensure this page uses the student layout when rendered
-definePageMeta?.({ layout: 'student' })
+// Ensure this page uses the quizee layout when rendered
+definePageMeta?.({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -251,7 +251,7 @@ const registerForTournament = async () => {
 
 // View battles
 const viewBattles = () => {
-  router.push(`/student/tournaments/${tournament.value?.id}/battles`)
+  router.push(`/quizee/tournaments/${tournament.value?.id}/battles`)
 }
 
 // Format helpers

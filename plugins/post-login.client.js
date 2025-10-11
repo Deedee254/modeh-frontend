@@ -24,7 +24,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           // navigate to My Subscription detail
           const router = useRouter()
           // use a short timeout so this is executed after login navigation completes
-          setTimeout(() => router.push('/student/subscription'), 50)
+          setTimeout(() => router.push('/quizee/subscription'), 50)
         } catch (err) {
           // keep intent so the user can retry; log for debugging
           console.error('Post-login subscribe failed', err)

@@ -32,7 +32,7 @@
               <template v-else-if="s.approval_requested_at">Requested</template>
               <template v-else>Request approval</template>
             </button>
-            <NuxtLink :to="`/tutor/subjects/${s.id}/edit`" class="text-sm text-blue-600">Edit</NuxtLink>
+            <NuxtLink :to="`/quiz-master/subjects/${s.id}/edit`" class="text-sm text-blue-600">Edit</NuxtLink>
           </div>
         </li>
       </ul>
@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'

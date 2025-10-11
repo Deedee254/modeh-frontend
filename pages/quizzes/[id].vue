@@ -46,7 +46,7 @@
               <h1 class="text-3xl font-extrabold mt-1">{{ quiz.title }}</h1>
               <p class="text-sm text-gray-600 mt-2">{{ quiz.short_description || 'Practice and improve.' }}</p>
               <div class="mt-4 flex items-center gap-3">
-                <NuxtLink :to="`/student/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Start Quiz</NuxtLink>
+                <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Start Quiz</NuxtLink>
                 <NuxtLink :to="`/quizzes/${quiz.id}/preview`" class="px-3 py-2 border rounded">Preview</NuxtLink>
                 <div class="ml-3 text-sm text-gray-500">{{ quiz.marks || 10 }} pts • {{ questionCount }} questions</div>
               </div>
@@ -133,7 +133,7 @@
               </div>
             </div>
             <div class="mt-4">
-              <NuxtLink :to="`/student/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Play now</NuxtLink>
+              <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Play now</NuxtLink>
             </div>
           </div>
 
@@ -211,7 +211,7 @@ onMounted(() => {
     setup() {
       const router = useRouter()
       function start() {
-        router.push(`/student/quizzes/take/${quiz.id}`)
+        router.push(`/quizee/quizzes/take/${quiz.id}`)
       }
       return () => h('button', { onClick: start, class: 'bg-indigo-600 text-white rounded-full p-4 shadow-lg transform -translate-y-2 hover:scale-105 transition' }, [
         h('svg', { class: 'w-6 h-6', xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor' }, [

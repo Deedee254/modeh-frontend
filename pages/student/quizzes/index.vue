@@ -45,13 +45,13 @@
         <QuizCard
           v-for="qitem in normalizedQuizzes"
           :key="qitem.id || qitem.quiz_id"
-          :to="`/student/quizzes/take/${qitem.id}`"
+          :to="`/quizee/quizzes/take/${qitem.id}`"
           :title="qitem.title"
           :topic="qitem.topic?.name || qitem.topic_name || 'General'"
           :cover="qitem.cover_image || qitem.cover || qitem.image || ''"
           :marks="qitem.marks"
           :difficulty="qitem.difficulty"
-          :tutor="qitem.tutor?.name || qitem.user?.name"
+          :quiz-master="qitem.quiz-master?.name || qitem.user?.name"
           :palette="pickPaletteClass(qitem.topic_id || qitem.topic?.id || qitem.id)"
         />
       </div>
@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'student' })
+definePageMeta({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
 import UiGrid from '~/components/ui/UiGrid.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'

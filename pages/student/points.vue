@@ -28,8 +28,8 @@
 </template>
 
 <script setup>
-// ensure student layout (topbar + sidebar) when authenticated
-definePageMeta({ layout: 'student' })
+// ensure quizee layout (topbar + sidebar) when authenticated
+definePageMeta({ layout: 'quizee' })
 
 const points = 120
 const history = []

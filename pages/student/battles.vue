@@ -21,7 +21,7 @@
             </div>
             <h3 class="text-xl font-bold text-gray-900 mb-2">Quick Match</h3>
             <p class="text-gray-600 mb-6">Jump into an instant battle with a random opponent. Fast-paced and exciting!</p>
-            <NuxtLink to="/student/battles/create" class="inline-block w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 text-center">
+            <NuxtLink to="/quizee/battles/create" class="inline-block w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 text-center">
               Start Quick Match
             </NuxtLink>
           </div>
@@ -37,7 +37,7 @@
             </div>
             <h3 class="text-xl font-bold text-gray-900 mb-2">Create Battle</h3>
             <p class="text-gray-600 mb-6">Design your own battle with custom settings. Challenge friends or classmates!</p>
-            <NuxtLink to="/student/battles/create" class="inline-block w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 text-center">
+            <NuxtLink to="/quizee/battles/create" class="inline-block w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 text-center">
               Create Battle
             </NuxtLink>
           </div>
@@ -53,7 +53,7 @@
             </div>
             <h3 class="text-xl font-bold text-gray-900 mb-2">Tournaments</h3>
             <p class="text-gray-600 mb-6">Join competitive tournaments and climb the leaderboards for ultimate glory!</p>
-            <NuxtLink to="/student/tournaments" class="inline-block w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-green-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 text-center">
+            <NuxtLink to="/quizee/tournaments" class="inline-block w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-green-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 text-center">
               Explore Tournaments
             </NuxtLink>
           </div>
@@ -131,8 +131,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-// Page meta — use student layout so student sidebar/topbar are shown when authenticated
-definePageMeta({ layout: 'student' })
+// Page meta — use quizee layout so quizee sidebar/topbar are shown when authenticated
+definePageMeta({ layout: 'quizee' })
 useHead({
   title: 'Battle Arena — Modeh',
   meta: [
@@ -169,11 +169,11 @@ function ensureAuthRedirect(redirectTo) {
 }
 
 function joinBattle(id) {
-  if (!ensureAuthRedirect(`/student/battles/${id}`)) return
+  if (!ensureAuthRedirect(`/quizee/battles/${id}`)) return
   // Attempt to join the battle via API so backend can assign opponent and broadcast
   try {
     fetch(cfg.public.apiBase + `/api/battles/${id}/join`, { method: 'POST', credentials: 'include' }).catch(() => {})
   } catch (e) {}
-  window.location.href = `/student/battles/${id}`
+  window.location.href = `/quizee/battles/${id}`
 }
 </script>

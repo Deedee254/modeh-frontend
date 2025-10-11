@@ -1,6 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-  // Only guard tutor routes
-  if (!to.path.startsWith('/tutor')) return
+  // Only guard quiz-master routes
+  if (!to.path.startsWith('/quiz-master')) return
 
   const auth = await import('~/stores/auth').then(m => m.useAuthStore())
 

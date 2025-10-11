@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto py-10">
     <header class="mb-6">
-      <h1 class="text-3xl font-bold">Tutor Wallet</h1>
+      <h1 class="text-3xl font-bold">quiz-master Wallet</h1>
       <p class="text-sm text-gray-600">Overview of your available balance and transactions.</p>
     </header>
 
@@ -43,7 +43,7 @@
               <tr v-for="t in transactions" :key="t.id" class="border-t">
                 <td class="px-2 py-3 text-sm text-gray-700">{{ formatDate(t.created_at) }}</td>
                 <td class="px-2 py-3 text-sm">{{ t.quiz_title || t.quiz_id || '—' }}</td>
-                <td class="px-2 py-3 font-semibold">KES {{ formatMoney(t.tutor_share) }}</td>
+                <td class="px-2 py-3 font-semibold">KES {{ formatMoney(t.quiz-master_share) }}</td>
                 <td class="px-2 py-3 text-sm"><span class="px-2 py-1 rounded text-xs" :class="statusClass(t.status)">{{ t.status }}</span></td>
               </tr>
             </tbody>
@@ -94,7 +94,7 @@ import { ref, onMounted } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '~/stores/auth'
 
-definePageMeta({ layout: 'tutor', title: 'Tutor Wallet' })
+definePageMeta({ layout: 'quiz-master', title: 'quiz-master Wallet' })
 
 const config = useRuntimeConfig()
 const auth = useAuthStore()

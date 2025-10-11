@@ -2,7 +2,7 @@
   <div class="p-6">
     <div class="mb-8">
       <h1 class="text-3xl font-bold mb-2">Tournaments</h1>
-      <p class="text-gray-600">Compete with other students and win amazing rewards!</p>
+      <p class="text-gray-600">Compete with other quizees and win amazing rewards!</p>
     </div>
 
     <!-- Tournament filters -->
@@ -78,7 +78,7 @@
               <span class="font-medium">{{ formatPrize(tournament.prize_pool) }}</span>
             </div>
             <button 
-              @click="router.push(`/student/tournaments/${tournament.id}`)"
+              @click="router.push(`/quizee/tournaments/${tournament.id}`)"
               class="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-dark"
             >
               View Details
@@ -94,10 +94,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
-// Use the `student` layout for tournament pages
+// Use the `quizee` layout for tournament pages
 // Nuxt provides `definePageMeta` in single-file components
 // so page-level layout selection works during SSR/CSR
-definePageMeta({ layout: 'student' })
+definePageMeta({ layout: 'quizee' })
 import { useRouter } from 'vue-router'
 
 interface Tournament {
@@ -119,7 +119,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const isAdmin = computed(() => {
   const u: any = auth.user
-  return u?.role === 'admin' || u?.role === 'tutor'
+  return u?.role === 'admin' || u?.role === 'quiz-master'
 })
 
 const fetchTournaments = async () => {

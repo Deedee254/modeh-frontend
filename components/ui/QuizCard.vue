@@ -28,7 +28,7 @@
           </div>
           <div class="mt-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <span class="i-heroicons-user-circle text-[18px]"></span>
-            <span>{{ tutor || 'Anonymous Tutor' }}</span>
+            <span>{{ quiz-master || 'Anonymous quiz-master' }}</span>
           </div>
         </div>
         <div class="shrink-0 text-xs text-gray-500">{{ updatedAtLabel }}</div>
@@ -50,8 +50,8 @@ const props = defineProps({
   difficulty: { type: [String, Number], default: null },
   // optional palette class for fallback tile
   palette: { type: String, default: '' },
-  // tutor who owns the quiz
-  tutor: { type: String, default: '' }
+  // quiz-master who owns the quiz
+  quiz-master: { type: String, default: '' }
 })
 
 const difficultyLabel = computed(() => {

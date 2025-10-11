@@ -43,10 +43,10 @@ const props = defineProps({
   initial: { type: String, default: 'profile' }
 })
 
-const { isTutor, isStudent } = useUserRole()
+const { isquiz-master, isquizee } = useUserRole()
 
 const tabs = computed(() => {
-  const defs = getSettingsTabs({ isTutor: isTutor.value, isStudent: isStudent.value })
+  const defs = getSettingsTabs({ isquiz-master: isquiz-master.value, isquizee: isquizee.value })
   const map: Record<string, any> = {
     profile: ProfileTab(),
     security: SecurityTab(),

@@ -8,49 +8,49 @@
     <nav class="flex-1 w-full">
       <ul class="flex flex-col gap-2 px-2">
         <li>
-          <NuxtLink to="/tutor/dashboard" :class="linkClass('/tutor/dashboard')" title="Dashboard">
+          <NuxtLink to="/quiz-master/dashboard" :class="linkClass('/quiz-master/dashboard')" title="Dashboard">
             <HomeIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Dashboard</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/tutor/subjects" :class="linkClass('/tutor/subjects')" title="Subjects">
+          <NuxtLink to="/quiz-master/subjects" :class="linkClass('/quiz-master/subjects')" title="Subjects">
             <BookOpenIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Subjects</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/tutor/topics" :class="linkClass('/tutor/topics')" title="Topics">
+          <NuxtLink to="/quiz-master/topics" :class="linkClass('/quiz-master/topics')" title="Topics">
             <RectangleStackIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Topics</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/tutor/quizzes" :class="linkClass('/tutor/quizzes')" title="My Quizzes">
+          <NuxtLink to="/quiz-master/quizzes" :class="linkClass('/quiz-master/quizzes')" title="My Quizzes">
             <ClipboardDocumentListIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">My Quizzes</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/tutor/quizzes/create" :class="linkClass('/tutor/quizzes/create')" title="Create Quiz">
+          <NuxtLink to="/quiz-master/quizzes/create" :class="linkClass('/quiz-master/quizzes/create')" title="Create Quiz">
             <PlusIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Create Quiz</span>
           </NuxtLink>
         </li>
 
         <li>
-          <NuxtLink to="/tutor/questions" :class="linkClass('/tutor/questions')" title="Question Bank">
+          <NuxtLink to="/quiz-master/questions" :class="linkClass('/quiz-master/questions')" title="Question Bank">
             <QuestionMarkCircleIcon class="w-6 h-6" />
             <span v-if="!collapsed" class="ml-3">Question Bank</span>
           </NuxtLink>
         </li>
         
         <li>
-          <NuxtLink to="/tutor/wallet" :class="linkClass('/tutor/wallet')" title="Wallet">
+          <NuxtLink to="/quiz-master/wallet" :class="linkClass('/quiz-master/wallet')" title="Wallet">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 3v4M8 3v4" />
@@ -59,7 +59,7 @@
           </NuxtLink>
         </li>
         <li>
-          <NuxtLink to="/tutor/settings" :class="linkClass('/tutor/settings')" title="Settings">
+          <NuxtLink to="/quiz-master/settings" :class="linkClass('/quiz-master/settings')" title="Settings">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m0 14v1m8-8h1M4 12H3m15.364-6.364l.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
@@ -70,7 +70,7 @@
     </nav>
   <div class="mb-4 w-full px-2">
     <template v-if="user && user.id">
-      <NuxtLink to="/tutor/profile" class="p-2 rounded flex items-center w-full" :class="[collapsed ? 'justify-center' : '', 'hover:bg-gray-100']">
+      <NuxtLink to="/quiz-master/profile" class="p-2 rounded flex items-center w-full" :class="[collapsed ? 'justify-center' : '', 'hover:bg-gray-100']">
         <img :src="userAvatar" class="w-8 h-8 rounded-full" />
         <span v-if="!collapsed" class="ml-3 text-sm font-medium">{{ user.name }}</span>
       </NuxtLink>
@@ -103,18 +103,18 @@
       </div>
       <nav>
         <ul class="flex flex-col gap-2">
-          <li><NuxtLink to="/tutor/dashboard" :class="linkClass('/tutor/dashboard')">Dashboard</NuxtLink></li>
-          <li><NuxtLink to="/tutor/subjects" :class="linkClass('/tutor/subjects')">Subjects</NuxtLink></li>
-          <li><NuxtLink to="/tutor/topics" :class="linkClass('/tutor/topics')">Topics</NuxtLink></li>
-          <li><NuxtLink to="/tutor/quizzes" :class="linkClass('/tutor/quizzes')">My Quizzes</NuxtLink></li>
-          <li><NuxtLink to="/tutor/quizzes/create" :class="linkClass('/tutor/quizzes/create')">Create Quiz</NuxtLink></li>
-          <li><NuxtLink to="/tutor/questions" :class="linkClass('/tutor/questions')">Question Bank</NuxtLink></li>
-          <li><NuxtLink to="/tutor/wallet" :class="linkClass('/tutor/wallet')">Wallet</NuxtLink></li>
-          <li><NuxtLink to="/tutor/settings" :class="linkClass('/tutor/settings')">Settings</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/dashboard" :class="linkClass('/quiz-master/dashboard')">Dashboard</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/subjects" :class="linkClass('/quiz-master/subjects')">Subjects</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/topics" :class="linkClass('/quiz-master/topics')">Topics</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/quizzes" :class="linkClass('/quiz-master/quizzes')">My Quizzes</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/quizzes/create" :class="linkClass('/quiz-master/quizzes/create')">Create Quiz</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/questions" :class="linkClass('/quiz-master/questions')">Question Bank</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/wallet" :class="linkClass('/quiz-master/wallet')">Wallet</NuxtLink></li>
+          <li><NuxtLink to="/quiz-master/settings" :class="linkClass('/quiz-master/settings')">Settings</NuxtLink></li>
         </ul>
       </nav>
       <div class="mt-6">
-        <NuxtLink to="/tutor/profile" class="flex items-center gap-3">
+        <NuxtLink to="/quiz-master/profile" class="flex items-center gap-3">
           <img :src="userAvatar" class="w-8 h-8 rounded-full" />
           <div>
             <div class="font-medium">{{ user.name }}</div>
@@ -138,10 +138,10 @@ const user = computed(() => auth.user || {})
 const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
 
 const collapsed = ref(false)
-const STORAGE_KEY = 'sidebar:collapsed:tutor'
+const STORAGE_KEY = 'sidebar:collapsed:quiz-master'
 const route = useRoute()
 const mobileOpen = ref(false)
-const MOBILE_KEY = 'sidebar:mobileOpen:tutor'
+const MOBILE_KEY = 'sidebar:mobileOpen:quiz-master'
 
 function linkClass(path) {
   const active = route.path.startsWith(path)

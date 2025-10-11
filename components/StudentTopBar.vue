@@ -2,20 +2,20 @@
   <div class="bg-white border-b shadow-sm">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
       <div class="flex items-center gap-4">
-        <NuxtLink to="/student/dashboard" class="flex items-center gap-3">
+        <NuxtLink to="/quizee/dashboard" class="flex items-center gap-3">
           <div class="w-10 h-10 rounded bg-indigo-100 flex items-center justify-center overflow-hidden">
             <img :src="logoSrc" alt="logo" class="w-8 h-8 object-contain" />
           </div>
           <div>
             <div class="text-lg font-semibold">Dashboard</div>
-            <div class="text-xs text-gray-500">Student</div>
+            <div class="text-xs text-gray-500">quizee</div>
           </div>
         </NuxtLink>
         <nav class="hidden md:flex items-center gap-3 ml-6">
           <NuxtLink to="#" class="text-sm text-gray-600 hover:text-gray-900">Overview</NuxtLink>
-          <NuxtLink to="/student/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-          <NuxtLink to="/student/battles" class="text-sm text-gray-600 hover:text-gray-900">Battles <span v-if="onlineCount>0" class="ml-2 text-xs text-gray-500">({{ onlineCount }})</span></NuxtLink>
-          <NuxtLink to="/tutors" class="text-sm text-gray-600 hover:text-gray-900">Tutors</NuxtLink>
+          <NuxtLink to="/quizee/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
+          <NuxtLink to="/quizee/battles" class="text-sm text-gray-600 hover:text-gray-900">Battles <span v-if="onlineCount>0" class="ml-2 text-xs text-gray-500">({{ onlineCount }})</span></NuxtLink>
+          <NuxtLink to="/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900">quiz-masters</NuxtLink>
 
         </nav>
         <button @click="onMobileToggle" class="md:hidden">
@@ -33,14 +33,14 @@
           <span class="ml-2 text-sm font-medium text-gray-700">{{ points }}</span>
         </button>
 
-        <!-- Chat icon to open student chat page -->
-        <NuxtLink to="/student/chat" class="p-2 rounded-full text-gray-600 hover:bg-gray-100" aria-label="Chat">
+        <!-- Chat icon to open quizee chat page -->
+        <NuxtLink to="/quizee/chat" class="p-2 rounded-full text-gray-600 hover:bg-gray-100" aria-label="Chat">
           <ChatBubbleOvalLeftEllipsisIcon class="w-6 h-6" />
         </NuxtLink>
 
         <div class="ml-3 relative">
           <client-only>
-            <div id="student-topbar-user-menu">
+            <div id="quizee-topbar-user-menu">
               <ActionMenu>
                 <template #trigger>
                   <button class="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="User menu">
@@ -52,7 +52,7 @@
                 </template>
 
                 <template #items="{ close }">
-                  <NuxtLink to="/student/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</NuxtLink>
+                  <NuxtLink to="/quizee/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</NuxtLink>
                   <button @click="() => { onLogout(); close && close() }" class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
                 </template>
               </ActionMenu>
@@ -83,7 +83,7 @@ import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/vue/24/outline'
 const avatarSrc = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect fill='%23e5e7eb' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='24'>?</text></svg>"
 const logoSrc = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect fill='%23eef2ff' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23638' font-size='18'>M</text></svg>"
 
-const displayName = ref('Student')
+const displayName = ref('quizee')
 const points = ref(0)
 const unreadCount = ref(0)
 const onlineCount = ref(0)

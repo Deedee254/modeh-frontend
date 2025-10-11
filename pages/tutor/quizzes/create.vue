@@ -213,9 +213,9 @@ let MathExt = null
 const EditorContentComp = ref(null)
 const tiptapLoaded = ref(false)
 
-// set page layout meta for tutor
+// set page layout meta for quiz-master
 if (typeof definePageMeta === 'function') {
-  definePageMeta({ layout: 'tutor' })
+  definePageMeta({ layout: 'quiz-master' })
 }
 
 const router = useRouter()
@@ -596,7 +596,7 @@ async function submit() {
     const res = await fetch(config.public.apiBase + '/api/quizzes', { method: 'POST', body: data, credentials: 'include' })
     if (res.ok) {
       successMessage.value = 'Quiz published — submitted for approval if required'
-      setTimeout(() => router.push('/tutor/quizzes'), 900)
+      setTimeout(() => router.push('/quiz-master/quizzes'), 900)
     } else {
       let errText = 'Error'
       try { const err = await res.json(); errText = JSON.stringify(err) } catch (e) { errText = await res.text() }
@@ -691,7 +691,7 @@ async function saveDraft() {
     const res = await fetch(config.public.apiBase + '/api/quizzes', { method: 'POST', body: data, credentials: 'include' })
     if (res.ok) {
       successMessage.value = 'Draft saved successfully'
-      setTimeout(() => { successMessage.value = ''; router.push('/tutor/quizzes') }, 1100)
+      setTimeout(() => { successMessage.value = ''; router.push('/quiz-master/quizzes') }, 1100)
     } else {
       let errText = 'Error'
       try { const err = await res.json(); errText = JSON.stringify(err) } catch (e) { errText = await res.text() }

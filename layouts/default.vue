@@ -11,7 +11,7 @@
     <Footer />
 
     <!-- Chat is intentionally omitted from the global default layout.
-         Chat widgets should be added to authenticated role layouts (student/tutor) only.
+         Chat widgets should be added to authenticated role layouts (quizee/quiz-master) only.
          This prevents server-side composable invocation errors and keeps public pages minimal. -->
   </div>
 </template>

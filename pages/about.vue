@@ -14,11 +14,11 @@
           Empowering Education Through Innovation
         </h1>
         <p class="mt-6 text-lg leading-8 text-slate-600">
-          We help tutors create engaging quizzes and students learn faster with instant feedback. Our platform combines simplicity with powerful features to transform the learning experience.
+          We help quiz-masters create engaging quizzes and quizees learn faster with instant feedback. Our platform combines simplicity with powerful features to transform the learning experience.
         </p>
         <div class="mt-10 flex items-center justify-center gap-4">
           <NuxtLink 
-            to="/register?role=tutor" 
+            to="/register?role=quiz-master" 
             class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 p-[2px] font-semibold text-white transition hover:shadow-lg hover:shadow-indigo-500/25"
           >
             <span class="inline-flex h-full items-center gap-2 rounded-[10px] bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 px-8 py-3 transition group-hover:bg-none">
@@ -48,7 +48,7 @@
               </svg>
             </div>
             <h2 class="mb-4 text-2xl font-bold text-indigo-900">Our Mission</h2>
-            <p class="text-slate-600">We exist to make practice and assessment delightful, fast, and actionable. Tutors should spend time teaching — not wrestling with tools. Students should get immediate feedback that helps them improve.</p>
+            <p class="text-slate-600">We exist to make practice and assessment delightful, fast, and actionable. quiz-masters should spend time teaching — not wrestling with tools. quizees should get immediate feedback that helps them improve.</p>
             <div class="mt-6 flex flex-wrap gap-2">
               <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">Accessibility</span>
               <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">Speed</span>
@@ -67,7 +67,7 @@
               </svg>
             </div>
             <h2 class="mb-4 text-2xl font-bold text-violet-900">Our Vision</h2>
-            <p class="text-slate-600">To create a world where quality education is accessible to all, where technology enhances rather than complicates the learning process, and where every student has the tools they need to succeed.</p>
+            <p class="text-slate-600">To create a world where quality education is accessible to all, where technology enhances rather than complicates the learning process, and where every quizee has the tools they need to succeed.</p>
             <div class="mt-6 flex flex-wrap gap-2">
               <span class="rounded-full bg-violet-100 px-3 py-1 text-sm text-violet-700">Innovation</span>
               <span class="rounded-full bg-violet-100 px-3 py-1 text-sm text-violet-700">Accessibility</span>
@@ -110,7 +110,7 @@
               </svg>
             </div>
             <h3 class="mb-2 text-xl font-semibold text-gray-900">Real-time Analytics</h3>
-            <p class="text-slate-600">Track student progress in real-time with detailed analytics and performance insights.</p>
+            <p class="text-slate-600">Track quizee progress in real-time with detailed analytics and performance insights.</p>
           </div>
         </div>
 
@@ -138,7 +138,7 @@
               </svg>
             </div>
             <h3 class="mb-2 text-xl font-semibold text-gray-900">Collaboration Tools</h3>
-            <p class="text-slate-600">Work together with other tutors, share resources, and build a knowledge base.</p>
+            <p class="text-slate-600">Work together with other quiz-masters, share resources, and build a knowledge base.</p>
           </div>
         </div>
 
@@ -152,7 +152,7 @@
               </svg>
             </div>
             <h3 class="mb-2 text-xl font-semibold text-gray-900">Instant Feedback</h3>
-            <p class="text-slate-600">Provide immediate feedback to help students understand and learn from their mistakes.</p>
+            <p class="text-slate-600">Provide immediate feedback to help quizees understand and learn from their mistakes.</p>
           </div>
         </div>
 
@@ -180,11 +180,11 @@
           <div class="relative flex flex-col items-center text-center md:flex-row md:justify-between md:text-left">
             <div class="mb-6 md:mb-0">
               <h2 class="text-2xl font-bold text-white sm:text-3xl">Ready to transform your teaching?</h2>
-              <p class="mt-2 text-indigo-100">Join thousands of tutors already using Modeh to improve learning outcomes.</p>
+              <p class="mt-2 text-indigo-100">Join thousands of quiz-masters already using Modeh to improve learning outcomes.</p>
             </div>
             <div class="flex flex-wrap justify-center gap-4">
               <NuxtLink 
-                to="/register?role=tutor" 
+                to="/register?role=quiz-master" 
                 class="inline-flex items-center rounded-xl bg-white px-6 py-3 font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50"
               >
                 Start Free Trial

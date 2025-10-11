@@ -37,8 +37,8 @@ async function callStep(step) {
     // If profile is complete now, navigate to appropriate dashboard
     const me = await $fetch(config.public.apiBase + '/api/me', { credentials: 'include' })
     if (me?.is_profile_completed) {
-      if (me.role === 'tutor') router.push('/tutor/dashboard')
-      else router.push('/student/dashboard')
+      if (me.role === 'quiz-master') router.push('/quiz-master/dashboard')
+      else router.push('/quizee/dashboard')
     }
   } catch (err) {
     console.error(err)
@@ -46,7 +46,7 @@ async function callStep(step) {
   }
 }
 
-function markRole() { callStep('role_student') }
+function markRole() { callStep('role_quizee') }
 function markInstitution() { callStep('institution') }
 async function finalize() {
   message.value = null; error.value = null
@@ -57,8 +57,8 @@ async function finalize() {
     // clear any skip flag
     try { localStorage.removeItem('modeh:onboarding:skipped') } catch (e) {}
     message.value = 'Profile finalized.'
-  if (me && me.role === 'tutor') router.push('/tutor/dashboard')
-  else router.push('/student/dashboard')
+  if (me && me.role === 'quiz-master') router.push('/quiz-master/dashboard')
+  else router.push('/quizee/dashboard')
   } catch (err) {
     console.error(err)
     error.value = err?.message || 'Finalize failed'
@@ -68,8 +68,8 @@ async function finalize() {
 function skipToDashboard() {
   try { localStorage.setItem('modeh:onboarding:skipped', '1') } catch (e) {}
   const me = auth.user || null
-  if (me && me.role === 'tutor') router.push('/tutor/dashboard')
-  else router.push('/student/dashboard')
+  if (me && me.role === 'quiz-master') router.push('/quiz-master/dashboard')
+  else router.push('/quizee/dashboard')
 }
 </script>
 

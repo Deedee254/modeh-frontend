@@ -19,6 +19,6 @@
 import SettingsTabs from '~/components/SettingsTabs.vue'
 import Container from '~/components/ui/Container.vue'
 
-// Use the tutor layout for settings page
-definePageMeta({ layout: 'tutor', title: 'Account settings' })
+// Use the quiz-master layout for settings page
+definePageMeta({ layout: 'quiz-master', title: 'Account settings' })
 </script>

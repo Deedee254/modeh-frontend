@@ -14,7 +14,7 @@
           </div>
         </div>
         <div>
-          <NuxtLink :to="`/student/battles/${route.params.id}`" class="text-sm text-indigo-600">Back</NuxtLink>
+          <NuxtLink :to="`/quizee/battles/${route.params.id}`" class="text-sm text-indigo-600">Back</NuxtLink>
         </div>
       </div>
 
@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'student' })
+definePageMeta({ layout: 'quizee' })
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
@@ -189,7 +189,7 @@ async function submitBattle() {
     const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })) }
     await fetch(cfg.public.apiBase + `/api/battles/${id}/submit`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
     const qs = useBot.value ? '?bot=1' : ''
-    router.push(`/student/battles/${id}/result${qs}`)
+    router.push(`/quizee/battles/${id}/result${qs}`)
   } catch (e) {
     console.error(e)
   } finally {

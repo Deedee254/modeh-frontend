@@ -1,5 +1,5 @@
 <script setup>
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 import { useNotificationsStore } from '~/stores/notifications'
 const store = useNotificationsStore()
 import { onMounted } from 'vue'

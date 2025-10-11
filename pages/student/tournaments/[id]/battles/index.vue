@@ -104,8 +104,8 @@
 </template>
 
 <script setup lang="ts">
-// Ensure this page uses the student layout when rendered
-definePageMeta({ layout: 'student' })
+// Ensure this page uses the quizee layout when rendered
+definePageMeta({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -186,12 +186,12 @@ const canParticipate = (battle: Battle): boolean => {
 
 // Start battle
 const startBattle = (battleId: number) => {
-  router.push(`/student/tournaments/${route.params.id}/battles/${battleId}`)
+  router.push(`/quizee/tournaments/${route.params.id}/battles/${battleId}`)
 }
 
 // View battle results
 const viewResults = (battleId: number) => {
-  router.push(`/student/tournaments/${route.params.id}/battles/${battleId}/results`)
+  router.push(`/quizee/tournaments/${route.params.id}/battles/${battleId}/results`)
 }
 
 // Get battle status message

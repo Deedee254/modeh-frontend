@@ -338,7 +338,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'student' })
+definePageMeta({ layout: 'quizee' })
 
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -446,7 +446,7 @@ function getDifficultyEmoji(difficulty) {
 
 // Actions
 function startQuiz() {
-  router.push(`/student/quizzes/take/${quiz.id}`)
+  router.push(`/quizee/quizzes/take/${quiz.id}`)
 }
 
 function showPreview() {

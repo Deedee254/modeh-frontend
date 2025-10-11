@@ -7,7 +7,7 @@
           <p class="text-gray-600">Craft clear, answerable questions for your quizzes in just a few steps.</p>
         </div>
         <NuxtLink
-          to="/tutor/questions"
+          to="/quiz-master/questions"
           class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-indigo-400 hover:text-indigo-600 w-full sm:w-auto justify-center"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -232,7 +232,7 @@
               <h3 class="text-base font-semibold text-indigo-800">Live preview</h3>
               <p class="text-xs text-indigo-600">See how learners will experience this question.</p>
             </div>
-            <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-600">Tutor view</span>
+            <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-600">quiz-master view</span>
           </header>
 
           <div class="space-y-4">
@@ -278,7 +278,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 
 const cfg = useRuntimeConfig()
 const minOptions = 2
@@ -410,7 +410,7 @@ async function handleSubmit() {
       body: JSON.stringify(payload)
     })
     if (res.ok) {
-      window.location.href = '/tutor/questions'
+      window.location.href = '/quiz-master/questions'
     } else {
       window.alert('Failed to save the question. Please try again.')
     }

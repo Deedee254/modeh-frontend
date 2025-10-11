@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-gray-800">{{ quiz.title || 'Quiz Details' }}</h1>
         <div class="space-x-2">
-          <NuxtLink :to="`/tutor/quizzes/${quiz.id}/edit`" class="px-3 py-2 bg-blue-600 text-white rounded text-sm">Edit Quiz</NuxtLink>
+          <NuxtLink :to="`/quiz-master/quizzes/${quiz.id}/edit`" class="px-3 py-2 bg-blue-600 text-white rounded text-sm">Edit Quiz</NuxtLink>
         </div>
       </div>
 
@@ -127,7 +127,7 @@
 import { ref, onMounted } from 'vue'
 import { useRuntimeConfig, useRoute } from '#imports'
 
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 
 const config = useRuntimeConfig()
 const route = useRoute()

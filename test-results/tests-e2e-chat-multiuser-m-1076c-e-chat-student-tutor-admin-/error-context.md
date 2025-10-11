@@ -11,27 +11,27 @@
         - list [ref=e11]:
           - listitem [ref=e12]:
             - link "Dashboard" [ref=e13] [cursor=pointer]:
-              - /url: /student/dashboard
+              - /url: /quizee/dashboard
               - img [ref=e14] [cursor=pointer]
               - generic [ref=e16] [cursor=pointer]: Dashboard
           - listitem [ref=e17]:
             - link "Quizzes" [ref=e18] [cursor=pointer]:
-              - /url: /student/quizzes
+              - /url: /quizee/quizzes
               - img [ref=e19] [cursor=pointer]
               - generic [ref=e21] [cursor=pointer]: Quizzes
           - listitem [ref=e22]:
             - link "Battles" [ref=e23] [cursor=pointer]:
-              - /url: /student/battles
+              - /url: /quizee/battles
               - img [ref=e24] [cursor=pointer]
               - generic [ref=e26] [cursor=pointer]: Battles
           - listitem [ref=e27]:
             - link "Tournaments" [ref=e28] [cursor=pointer]:
-              - /url: /student/tournaments
+              - /url: /quizee/tournaments
               - img [ref=e29] [cursor=pointer]
               - generic [ref=e31] [cursor=pointer]: Tournaments
           - listitem [ref=e32]:
             - link "Points" [ref=e33] [cursor=pointer]:
-              - /url: /student/points
+              - /url: /quizee/points
               - img [ref=e34] [cursor=pointer]
               - generic [ref=e36] [cursor=pointer]: Points
           - listitem [ref=e37]:
@@ -41,17 +41,17 @@
               - generic [ref=e41] [cursor=pointer]: Pricing
           - listitem [ref=e42]:
             - link "Messages" [ref=e43] [cursor=pointer]:
-              - /url: /student/chat
+              - /url: /quizee/chat
               - img [ref=e44] [cursor=pointer]
               - generic [ref=e46] [cursor=pointer]: Messages
           - listitem [ref=e47]:
-            - link "Tutors" [ref=e48] [cursor=pointer]:
-              - /url: /tutors
+            - link "quiz-masters" [ref=e48] [cursor=pointer]:
+              - /url: /quiz-masters
               - img [ref=e49] [cursor=pointer]
-              - generic [ref=e51] [cursor=pointer]: Tutors
+              - generic [ref=e51] [cursor=pointer]: quiz-masters
           - listitem [ref=e52]:
             - link "Settings" [ref=e53] [cursor=pointer]:
-              - /url: /student/settings
+              - /url: /quizee/settings
               - img [ref=e54] [cursor=pointer]
               - generic [ref=e56] [cursor=pointer]: Settings
       - link "Login" [ref=e58] [cursor=pointer]:
@@ -62,21 +62,21 @@
     - generic [ref=e64]:
       - generic [ref=e66]:
         - generic [ref=e67]:
-          - link "logo Dashboard Student" [ref=e68] [cursor=pointer]:
-            - /url: /student/dashboard
+          - link "logo Dashboard quizee" [ref=e68] [cursor=pointer]:
+            - /url: /quizee/dashboard
             - img "logo" [ref=e70] [cursor=pointer]
             - generic [ref=e71] [cursor=pointer]:
               - generic [ref=e72] [cursor=pointer]: Dashboard
-              - generic [ref=e73] [cursor=pointer]: Student
+              - generic [ref=e73] [cursor=pointer]: quizee
           - navigation [ref=e74]:
             - link "Overview" [ref=e75] [cursor=pointer]:
               - /url: "#"
             - link "Quizzes" [ref=e76] [cursor=pointer]:
-              - /url: /student/quizzes
+              - /url: /quizee/quizzes
             - link "Battles" [ref=e77] [cursor=pointer]:
-              - /url: /student/battles
-            - link "Tutors" [ref=e78] [cursor=pointer]:
-              - /url: /tutors
+              - /url: /quizee/battles
+            - link "quiz-masters" [ref=e78] [cursor=pointer]:
+              - /url: /quiz-masters
         - generic [ref=e79]:
           - button "Notifications" [ref=e81] [cursor=pointer]:
             - generic [ref=e82] [cursor=pointer]: Notifications
@@ -85,10 +85,10 @@
             - img [ref=e86] [cursor=pointer]
             - generic [ref=e88] [cursor=pointer]: "0"
           - link "Chat" [ref=e89] [cursor=pointer]:
-            - /url: /student/chat
+            - /url: /quizee/chat
             - img [ref=e90] [cursor=pointer]
           - button "User menu" [ref=e96] [cursor=pointer]:
-            - generic [ref=e99] [cursor=pointer]: Student
+            - generic [ref=e99] [cursor=pointer]: quizee
       - main [ref=e100]:
         - alert [ref=e101]
         - generic [ref=e102]:

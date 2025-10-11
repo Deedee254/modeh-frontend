@@ -3,10 +3,10 @@
     <div v-if="isAuthed" class="min-h-screen flex bg-gray-100">
       <!-- hide permanent sidebar on small screens; use mobile drawer triggered from topbar instead -->
       <div class="hidden lg:block">
-        <StudentSidebar />
+        <quizeeSidebar />
       </div>
       <div class="flex-1 flex flex-col">
-        <StudentTopBar />
+        <quizeeTopBar />
         <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
           <slot />
         </main>
@@ -29,8 +29,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import StudentSidebar from '~/components/StudentSidebar.vue'
-import StudentTopBar from '~/components/StudentTopBar.vue'
+import quizeeSidebar from '~/components/quizeeSidebar.vue'
+import quizeeTopBar from '~/components/quizeeTopBar.vue'
 import GlobalAlert from '~/components/GlobalAlert.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import Header from '~/components/Header.vue'

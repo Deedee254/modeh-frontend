@@ -21,15 +21,15 @@
       </div>
 
       <div class="mt-6">
-        <NuxtLink to="/tutor/topics" class="text-sm text-gray-600">Back to topics</NuxtLink>
+        <NuxtLink to="/quiz-master/topics" class="text-sm text-gray-600">Back to topics</NuxtLink>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-// Use the tutor layout and provide a page title
-definePageMeta({ layout: 'tutor', title: 'Edit Topic' })
+// Use the quiz-master layout and provide a page title
+definePageMeta({ layout: 'quiz-master', title: 'Edit Topic' })
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppAlert } from '~/composables/useAppAlert'

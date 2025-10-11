@@ -37,7 +37,7 @@
                   <template v-else-if="qitem.approval_requested_at">Requested</template>
                   <template v-else>Request approval</template>
                 </button>
-                <NuxtLink :to="`/tutor/quizzes/${qitem.id}/edit`" class="text-sm text-blue-600">Edit</NuxtLink>
+                <NuxtLink :to="`/quiz-master/quizzes/${qitem.id}/edit`" class="text-sm text-blue-600">Edit</NuxtLink>
               </div>
             </div>
           </UiCard>
@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'tutor' })
+definePageMeta({ layout: 'quiz-master' })
 import { ref, onMounted, computed } from 'vue'
 import UiGrid from '~/components/ui/UiGrid.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'

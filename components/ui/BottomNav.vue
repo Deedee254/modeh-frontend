@@ -78,8 +78,8 @@ function centerAction() {
   if (typeof props.onCenter === 'function') return props.onCenter()
   if (typeof bottomNav.centerHandler === 'function' || typeof bottomNav.centerHandler?.value === 'function') return (bottomNav.centerHandler?.value || bottomNav.centerHandler)()
   const role = auth?.role || auth?.user?.role || null
-  if (role === 'tutor') return router.push('/create/editor')
-  return router.push('/student/quizzes')
+  if (role === 'quiz-master') return router.push('/create/editor')
+  return router.push('/quizee/quizzes')
 }
 
 function rightAction() {

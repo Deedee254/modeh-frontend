@@ -29,7 +29,7 @@
         </div>
       </div>
       <div class="p-3 border-t">
-        <NuxtLink to="/student/chat" class="block text-center px-3 py-2 bg-blue-600 text-white rounded">Open full chat</NuxtLink>
+        <NuxtLink to="/quizee/chat" class="block text-center px-3 py-2 bg-blue-600 text-white rounded">Open full chat</NuxtLink>
       </div>
     </div>
   </div>
@@ -66,9 +66,9 @@ function openThread(t) {
   if (typeof window !== 'undefined') {
     if (String(t.other_user_id).startsWith('group-')) {
       const gid = String(t.other_user_id).replace('group-', '')
-      window.location.href = '/student/chat?group_id=' + gid
+      window.location.href = '/quizee/chat?group_id=' + gid
     } else {
-      window.location.href = '/student/chat?user_id=' + t.other_user_id
+      window.location.href = '/quizee/chat?user_id=' + t.other_user_id
     }
   }
 }
