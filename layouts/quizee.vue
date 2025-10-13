@@ -30,7 +30,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import quizeeSidebar from '~/components/quizeeSidebar.vue'
-import quizeeTopBar from '~/components/quizeeTopBar.vue'
+import quizeeTopBar from '~/components/QuizeeTopBar.vue'
 import GlobalAlert from '~/components/GlobalAlert.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import Header from '~/components/Header.vue'
