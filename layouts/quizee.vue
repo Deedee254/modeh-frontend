@@ -29,7 +29,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import quizeeSidebar from '~/components/quizeeSidebar.vue'
+import quizeeSidebar from '~/components/QuizeeSidebar.vue'
 import quizeeTopBar from '~/components/QuizeeTopBar.vue'
 import GlobalAlert from '~/components/GlobalAlert.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
