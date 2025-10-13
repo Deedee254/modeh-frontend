@@ -1,65 +1,77 @@
+
 <template>
-  <NuxtLink :to="to" class="group block rounded-2xl border border-transparent bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition overflow-hidden relative">
-    <!-- Accent gradient border on hover -->
-    <div class="absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 transition" aria-hidden="true"
-         style="background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(16,185,129,.06));"></div>
-    <!-- Top media -->
-    <div class="w-full h-40 bg-gray-100 overflow-hidden">
-      <template v-if="cover">
-        <img :src="cover" alt="cover" class="w-full h-full object-cover" />
-      </template>
-      <template v-else>
-        <div :class="['w-full h-full grid place-items-center font-bold', paletteClass]">
-          <span class="text-white text-2xl">{{ (title||'').charAt(0).toUpperCase() }}</span>
-        </div>
-      </template>
-    </div>
-    <div class="p-4 sm:p-5">
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-          <h3 class="font-semibold text-indigo-900 dark:text-indigo-200 truncate text-base">{{ title }}</h3>
-          <div class="text-xs text-gray-500 mt-2 flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
-              <span class="i-heroicons-book-open text-[14px]"></span>
-              <span>{{ topic || 'General' }}</span>
-            </span>
-            <span v-if="marks" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{{ marks }} pts</span>
-            <span v-if="difficulty" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">{{ difficultyLabel }}</span>
-          </div>
-          <div class="mt-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <span class="i-heroicons-user-circle text-[18px]"></span>
-            <span>{{ quiz-master || 'Anonymous quiz-master' }}</span>
-          </div>
-        </div>
-        <div class="shrink-0 text-xs text-gray-500">{{ updatedAtLabel }}</div>
+  <div class="w-full group block rounded-2xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-transform transform hover:-translate-y-0.5 hover:scale-[1.01] overflow-hidden relative">
+    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
+  <div class="relative h-28 sm:h-40 bg-gray-100 overflow-hidden">
+      <img v-if="cover" :src="cover" alt="cover" class="w-full h-full object-cover" />
+      <div v-else :class="['w-full h-full grid place-items-center font-bold', paletteClass]">
+        <span class="text-white text-2xl">{{ (title||'').charAt(0).toUpperCase() }}</span>
       </div>
+          <!-- Grade badge (top-left) -->
+          <div v-if="showGrade && displayGrade" class="absolute left-3 top-3 z-30">
+            <div class="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-800/70 text-xs font-semibold text-gray-800 dark:text-gray-100">Grade {{ displayGrade }}</div>
+          </div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
+      <div class="absolute left-4 bottom-4 right-4 text-white z-10">
+        <h4 class="text-lg sm:text-xl font-semibold line-clamp-2">{{ title }}</h4>
+      </div>
+      <button @click.stop="toggleLike" aria-label="Like quiz" class="absolute top-2 right-2 z-20 bg-white/90 dark:bg-slate-800/80 rounded-full p-2 shadow-sm hover:scale-105 transition-transform inline-flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <span class="text-xs text-gray-700 dark:text-gray-200">{{ localLikes }}</span>
+      </button>
     </div>
-  </NuxtLink>
+  <div class="p-3 sm:p-4 flex flex-col gap-3">
+      <div>
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-500 flex flex-wrap items-center gap-2">
+            <span v-if="showSubject && displaySubject">{{ displaySubject }}</span>
+            <span v-if="showTopic && displayTopic">{{ displayTopic }}</span>
+          </div>
+          <div v-if="difficultyLabel" :class="['px-2 py-0.5 rounded-full text-xs font-semibold', difficultyClass]">{{ difficultyLabel }}</div>
+        </div>
+        <div class="mt-2 text-sm text-gray-600">{{ questionsCount }} questions</div>
+        <div v-if="description" class="mt-2 text-sm text-gray-700 line-clamp-3">{{ description }}</div>
+      </div>
+
+      <!-- Footer CTAs: primary (Take) and secondary (View/Preview) -->
+          <div class="mt-auto flex gap-3">
+            <template v-if="primaryOnRight">
+              <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
+              <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
+            </template>
+            <template v-else>
+              <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
+              <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
+            </template>
+          </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   to: { type: String, required: true },
   title: { type: String, required: true },
-  topic: { type: String, default: '' },
-  marks: { type: [String, Number], default: '' },
-  updatedAt: { type: [String, Number, Date], default: '' },
-  cover: { type: String, default: '' },
+  description: { type: String, default: '' },
+  subject: { type: [String, Object], default: '' },
+  grade: { type: [String, Number, Object], default: null },
+  topic: { type: [String, Object], default: '' },
   difficulty: { type: [String, Number], default: null },
-  // optional palette class for fallback tile
+  cover: { type: String, default: '' },
   palette: { type: String, default: '' },
-  // quiz-master who owns the quiz
-  quiz-master: { type: String, default: '' }
-})
-
-const difficultyLabel = computed(() => {
-  const d = props.difficulty
-  if (d == null) return null
-  if (d <= 1) return 'Easy'
-  if (d === 2) return 'Medium'
-  return 'Hard'
+  likes: { type: [Number, String], default: null },
+  questionsCount: { type: [Number, String], default: null },
+  quizId: { type: [String, Number], default: null },
+  liked: { type: Boolean, default: false },
+  showGrade: { type: Boolean, default: false },
+  showSubject: { type: Boolean, default: false },
+  showTopic: { type: Boolean, default: true },
+  startLink: { type: [String, Object], default: null },
+  takeLink: { type: [String, Object], default: null }
+  ,
+  primaryOnRight: { type: Boolean, default: false }
 })
 
 const paletteClass = computed(() => {
@@ -67,14 +79,83 @@ const paletteClass = computed(() => {
   return 'bg-gradient-to-br from-indigo-400 to-indigo-600'
 })
 
-const updatedAtLabel = computed(() => {
-  if (!props.updatedAt) return '—'
-  try {
-    const d = new Date(props.updatedAt)
-    if (Number.isNaN(+d)) return '—'
-    return `Updated ${d.toLocaleDateString()}`
-  } catch (e) {
-    return '—'
-  }
+const displaySubject = computed(() => {
+  const s = props.subject
+  if (!s && s !== 0) return ''
+  if (typeof s === 'string') return s
+  // handle object shapes
+  return s.name || s.title || s.label || s.slug || String(s.id || '')
 })
+
+const displayTopic = computed(() => {
+  const t = props.topic
+  if (!t && t !== 0) return ''
+  if (typeof t === 'string') return t
+  return t.name || t.title || t.label || t.slug || String(t.id || '')
+})
+
+const displayGrade = computed(() => {
+  const g = props.grade
+  if (g === null || g === undefined || g === '') return ''
+  if (typeof g === 'string' || typeof g === 'number') return g
+  return g.name || g.title || g.label || String(g.id || '')
+})
+
+const difficultyLabel = computed(() => {
+  const d = props.difficulty
+  if (d === null || d === undefined || d === '') return ''
+  const num = Number(d)
+  if (!isFinite(num)) return String(d)
+  if (num <= 1.6) return 'Easy'
+  if (num <= 2.3) return 'Medium'
+  return 'Hard'
+})
+
+const difficultyClass = computed(() => {
+  const d = props.difficulty
+  const num = Number(d)
+  if (!isFinite(num)) return 'bg-gray-200 text-gray-800'
+  if (num <= 1.6) return 'bg-emerald-100 text-emerald-800'
+  if (num <= 2.3) return 'bg-amber-100 text-amber-800'
+  return 'bg-rose-100 text-rose-800'
+})
+
+const emit = defineEmits(['like'])
+const localLikes = ref(Number(props.likes) || 0)
+const localLiked = ref(Boolean(props.liked))
+const config = useRuntimeConfig()
+
+const primaryHref = computed(() => {
+  // prefer explicit takeLink, fallback to `to` prop
+  return props.takeLink || props.to || null
+})
+
+async function toggleLike(e) {
+  e.stopPropagation()
+  if (!localLiked.value) {
+    localLikes.value = (localLikes.value || 0) + 1
+    localLiked.value = true
+    emit('like', { liked: true })
+    try {
+      const id = props.quizId || (props.to && String(props.to).split('/').pop())
+      await $fetch(config.public.apiBase + `/api/quizzes/${id}/like`, { method: 'POST', credentials: 'include' })
+    } catch (err) {
+      localLikes.value = Math.max(0, (localLikes.value || 1) - 1)
+      localLiked.value = false
+      console.error('Like failed', err)
+    }
+  } else {
+    localLikes.value = Math.max(0, (localLikes.value || 1) - 1)
+    localLiked.value = false
+    emit('like', { liked: false })
+    try {
+      const id = props.quizId || (props.to && String(props.to).split('/').pop())
+      await $fetch(config.public.apiBase + `/api/quizzes/${id}/unlike`, { method: 'POST', credentials: 'include' })
+    } catch (err) {
+      localLikes.value = (localLikes.value || 0) + 1
+      localLiked.value = true
+      console.error('Unlike failed', err)
+    }
+  }
+}
 </script>

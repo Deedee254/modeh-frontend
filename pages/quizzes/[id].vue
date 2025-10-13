@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 py-12">
     <div class="min-h-screen bg-gray-50">
-      <div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="max-w-7xl mx-auto p-6 grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
         <section class="lg:col-span-2 space-y-6">
           <div v-if="pending" class="bg-white rounded-lg shadow p-6 flex gap-6 items-center animate-pulse">
             <div class="w-40 h-40 rounded bg-gray-200"></div>
@@ -47,8 +47,24 @@
               <p class="text-sm text-gray-600 mt-2">{{ quiz.short_description || 'Practice and improve.' }}</p>
               <div class="mt-4 flex items-center gap-3">
                 <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Start Quiz</NuxtLink>
-                <NuxtLink :to="`/quizzes/${quiz.id}/preview`" class="px-3 py-2 border rounded">Preview</NuxtLink>
-                <div class="ml-3 text-sm text-gray-500">{{ quiz.marks || 10 }} pts • {{ questionCount }} questions</div>
+                <button @click="toggleLike" :class="['px-3 py-2 border rounded', liked ? 'bg-rose-50 text-rose-600' : 'text-gray-700']">
+                  <span v-if="liked">♥</span>
+                  <span v-else>♡</span>
+                  <span class="ml-2">Like<span v-if="likesCount"> ({{ likesCount }})</span></span>
+                </button>
+                <div class="ml-3 text-sm text-gray-500">{{ quiz.marks || 10 }} pts • {{ questionCount }} questions
+                  <span v-if="avgDifficulty" class="mx-2">•</span>
+                  <span v-if="avgDifficulty" class="text-xs text-gray-500">Avg diff: {{ avgDifficulty }}</span>
+                </div>
+              </div>
+
+              <!-- Summary badges: timer / attempts / shuffle / access -->
+              <div class="mt-3 ml-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                <div v-if="quiz.timer_seconds" class="px-2 py-1 bg-gray-100 rounded">⏱ {{ Math.round((quiz.timer_seconds||0)/60) }} min</div>
+                <div v-if="quiz.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded">🔁 {{ quiz.attempts_allowed === 'unlimited' ? 'Unlimited' : quiz.attempts_allowed + ' attempts' }}</div>
+                <div v-if="quiz.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded">🔀 Questions shuffled</div>
+                <div v-if="quiz.shuffle_answers" class="px-2 py-1 bg-gray-100 rounded">🔀 Answers shuffled</div>
+                <div v-if="quiz.access && quiz.access !== 'free'" class="px-2 py-1 bg-amber-50 text-amber-700 rounded">🔒 Paywalled</div>
               </div>
             </div>
             <!-- small actions menu (three-dot) -->
@@ -62,7 +78,7 @@
 
                 <template #items="{ close }">
                   <button @click="onShare(close)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Share</button>
-                  <button @click="onPreview(close)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Preview</button>
+                  <button @click="onLike(close)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Like</button>
                   <button @click="onBookmark(close)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Bookmark</button>
                   <button @click="onReport(close)" class="w-full text-left px-3 py-2 text-sm text-rose-600 hover:bg-gray-50">Report</button>
                 </template>
@@ -79,15 +95,32 @@
 
             <div v-show="quizTab === 'screenshots'" class="mt-4">
               <div class="flex gap-3 overflow-x-auto p-2">
-                <div v-for="(s, i) in (quiz.screenshots || [])" :key="i" class="w-56 h-36 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                <div v-for="(s, i) in (quiz.screenshots || [])" :key="i" class="w-40 sm:w-56 h-28 sm:h-36 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                   <img :src="s" class="object-cover w-full h-full" onerror="this.style.display='none'" />
                 </div>
-                <div v-if="!(quiz.screenshots || []).length" class="w-56 h-36 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-500">No screenshots</div>
+                <div v-if="!(quiz.screenshots || []).length" class="w-40 sm:w-56 h-28 sm:h-36 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-500">No screenshots</div>
               </div>
             </div>
 
             <div v-show="quizTab === 'overview'" class="mt-4">
               <div class="prose max-w-none" v-html="quiz.description || '<p>Practice questions with instant feedback.</p>'"></div>
+
+              <!-- Sample question preview -->
+              <div class="mt-6">
+                <h3 class="text-lg font-semibold mb-2">Try a sample question</h3>
+                <div v-if="quiz.questions && quiz.questions.length" class="bg-white border rounded p-4">
+                  <div class="text-sm text-gray-500 mb-2">Question 1</div>
+                  <div class="prose max-w-none" v-html="sampleQuestionText()"></div>
+
+                  <div class="mt-3 space-y-2">
+                    <div v-for="(opt, i) in (quiz.questions[0].options || [])" :key="i" class="p-2 border rounded bg-gray-50">
+                      <span v-html="opt?.text || opt"></span>
+                    </div>
+                  </div>
+
+                  <div class="text-xs text-gray-400 mt-2">Answers and explanations are shown after you complete the quiz.</div>
+                </div>
+              </div>
             </div>
 
             <div v-show="quizTab === 'features'" class="mt-4">
@@ -142,7 +175,7 @@
             <div class="mt-3 space-y-2">
               <div v-for="r in related" :key="r.id" class="flex items-center gap-3">
                 <div class="w-12 h-8 bg-gray-100 rounded overflow-hidden flex items-center justify-center"><img :src="r.cover" class="w-full h-full object-cover" onerror="this.style.display='none'" /></div>
-                <div class="flex-1 text-sm"><NuxtLink :to="`/quizzes/${r.id}`" class="font-medium text-indigo-700">{{ r.title }}</NuxtLink></div>
+                <div class="flex-1 text-sm"><NuxtLink :to="`/quizee/quizzes/${r.id}`" class="font-medium text-indigo-700">{{ r.title }}</NuxtLink></div>
               </div>
             </div>
           </div>
@@ -196,7 +229,46 @@ const isVideoFile = (url) => typeof url === 'string' && /\.(mp4|webm|ogg|mov)(\?
 const related = [ { id: 21, title: 'Fractions Practice', cover: null }, { id: 22, title: 'Decimals Quick', cover: null } ]
 const bottomNav = useBottomNavStore()
 const quizTab = ref('overview')
+const liked = ref(false)
+// defensive: quiz is a plain object (not a ref), read properties directly
+const likesCount = ref((quiz && (quiz.likes_count ?? quiz.likes)) ?? 0)
+const likeAnimating = ref(false)
+async function toggleLike(){
+  // optimistic
+  liked.value = !liked.value
+  likesCount.value = Math.max(0, likesCount.value + (liked.value ? 1 : -1))
+  // small pulse animation
+  likeAnimating.value = true
+  setTimeout(() => (likeAnimating.value = false), 350)
+  try{
+    if (liked.value) await $fetch(config.public.apiBase + `/api/quizzes/${quiz.id}/like`, { method: 'POST', credentials: 'include' })
+    else await $fetch(config.public.apiBase + `/api/quizzes/${quiz.id}/unlike`, { method: 'POST', credentials: 'include' })
+  }catch(err){
+    // revert on error
+    liked.value = !liked.value
+    likesCount.value = Math.max(0, likesCount.value + (liked.value ? 1 : -1))
+    console.error('Like failed', err)
+  }
+}
+function onLike(close){ if (typeof close === 'function') close(); toggleLike(); }
 function quizTabClass(t) { return quizTab.value === t ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }
+
+const avgDifficulty = computed(() => {
+  try {
+    if (!Array.isArray(quiz.questions) || quiz.questions.length === 0) return null
+    const vals = quiz.questions.map(q => Number(q.difficulty) || 0).filter(Boolean)
+    if (!vals.length) return null
+    const avg = (vals.reduce((a,b)=>a+b,0) / vals.length)
+    return Math.round(avg * 100) / 100
+  } catch (e) { return null }
+})
+
+function sampleQuestionText() {
+  try {
+    const q = Array.isArray(quiz.questions) && quiz.questions.length ? quiz.questions[0] : null
+    return q ? (q.text || q.body || q.question || '') : ''
+  } catch (e) { return '' }
+}
 
 // Action handlers accept an optional close callback (provided by ActionMenu slot)
 function onShare(close) { if (typeof close === 'function') close(); void navigator.clipboard?.writeText(window.location.href).then(()=> alert('Link copied to clipboard')) }

@@ -212,10 +212,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
   // automatically attach when the auth user is set (consumer can also call manually)
   // Note: pinia stores don't have lifecycle hooks for auth changes — callers should call attachEchoListeners() after login/fetchUser
 
-  // Cleanup helper for components
-  onBeforeUnmount(() => {
-    detachEchoListeners()
-  })
+  // Note: stores don't run inside a component lifecycle. Consumers (components)
+  // should call `attachEchoListeners()` and `detachEchoListeners()` from
+  // their own lifecycle hooks (e.g., onMounted/onBeforeUnmount).
 
   return { drawerOpen, items, unreadCount, openDrawer, closeDrawer, toggleDrawer, markRead, fetchNotifications, prependNotification, attachEchoListeners, detachEchoListeners }
 })

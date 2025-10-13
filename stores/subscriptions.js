@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+const config = useRuntimeConfig()
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
   const packages = ref([])
@@ -8,8 +9,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   async function fetchPackages() {
     loading.value = true
     try {
-      const res = await $fetch('/api/packages', { method: 'GET' })
-      packages.value = res?.packages || []
+      const res = await $fetch(config.public.apiBase + '/api/packages', { method: 'GET', credentials: 'include' })
+        packages.value = res?.packages || res?.data || []
     } catch (e) {
       packages.value = []
     } finally {
@@ -19,8 +20,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
   async function subscribeToPackage(pkg, opts = {}) {
     // expects server route POST /api/packages/{package}/subscribe
-    const res = await $fetch(`/api/packages/${pkg.id}/subscribe`, {
+    const res = await $fetch(config.public.apiBase + `/api/packages/${pkg.id}/subscribe`, {
       method: 'POST',
+      credentials: 'include',
       body: opts,
     })
     return res

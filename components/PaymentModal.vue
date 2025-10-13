@@ -31,15 +31,17 @@ const phoneInput = ref('')
 
 watch(() => props.open, (v) => { if (v) { phone.value = ''; phoneInput.value = '' } })
 
+const config = useRuntimeConfig()
+
 async function pay() {
   const p = phone.value && phone.value !== '' ? phone.value : phoneInput.value
   if (!p) { alert('Enter phone'); return }
   // create subscription
-  const sub = await $fetch(`/api/packages/${props.pkg.id}/subscribe`, { method: 'POST', body: { phone: p } })
-  if (!sub.ok) { alert('failed'); return }
+  const sub = await $fetch(config.public.apiBase + `/api/packages/${props.pkg.id}/subscribe`, { method: 'POST', credentials: 'include', body: { phone: p } })
+  if (!sub || !(sub.ok === true || sub.subscription)) { alert('failed'); return }
   // initiate
-  const init = await $fetch(`/api/payments/subscriptions/${sub.subscription.id}/mpesa/initiate`, { method: 'POST' })
-  if (init.ok) {
+  const init = await $fetch(config.public.apiBase + `/api/payments/subscriptions/${sub.subscription?.id}/mpesa/initiate`, { method: 'POST', credentials: 'include' })
+  if (init && (init.ok === true || init.success === true)) {
     alert('Payment initiated. You will receive STK Push on phone (simulated)')
     emit('paid')
     emit('close')

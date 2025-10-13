@@ -1,44 +1,71 @@
 <template>
-  <nav class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-[92%] max-w-md px-4" role="navigation" aria-label="Bottom quick actions">
-    <div class="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg px-2 py-2 flex items-center justify-between">
-      <!-- left action group: allow override via prop or slot -->
-      <div class="flex-1 flex items-center justify-center">
+  <nav
+    v-if="isMobile"
+    class="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[420px] px-4 pb-6"
+    role="navigation"
+    aria-label="primary mobile"
+  >
+    <div class="relative flex items-center gap-3 rounded-3xl bg-white/95 p-3 shadow-xl shadow-indigo-100/60 backdrop-blur-md">
+      <!-- Ring accent -->
+      <span class="pointer-events-none absolute inset-0 rounded-3xl border border-indigo-100/60"></span>
+
+      <!-- Menu / Explorer -->
+      <div class="flex-1">
         <slot name="left">
           <template v-if="bottomNav.leftSlot">
             <component :is="bottomNav.leftSlot" />
           </template>
           <template v-else>
-            <button @click="leftAction" class="p-2 rounded-md hover:bg-gray-50 transition flex items-center justify-center w-full">
-              <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"></path></svg>
+            <button
+              @click="leftAction"
+              class="group flex w-full flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
+            >
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition group-hover:bg-indigo-50 group-hover:text-indigo-600">
+                <Icon name="heroicons:bars-3" class="h-5 w-5" />
+              </div>
+              Explore
             </button>
           </template>
         </slot>
       </div>
 
-      <!-- center big action: slot preferred, fallback to default primary -->
-      <div class="-mx-6 flex-0">
+      <!-- Primary CTA -->
+      <div class="flex-0">
         <slot name="center">
           <template v-if="bottomNav.centerSlot">
             <component :is="bottomNav.centerSlot" />
           </template>
           <template v-else>
-            <button @click="centerAction" class="bg-indigo-600 text-white rounded-full p-4 shadow-lg transform -translate-y-2 hover:scale-105 transition" aria-label="Primary action">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <button
+              @click="centerAction"
+              class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white shadow-[0_20px_45px_-20px] shadow-indigo-600/80 transition hover:scale-105"
+              aria-label="Start"
+            >
+              <Icon name="heroicons:play-solid" class="h-6 w-6" />
             </button>
           </template>
         </slot>
       </div>
 
-      <!-- right action group: include unread badge -->
-      <div class="flex-1 flex items-center justify-center">
+      <!-- Notifications / Profile -->
+      <div class="flex-1">
         <slot name="right">
           <template v-if="bottomNav.rightSlot">
             <component :is="bottomNav.rightSlot" />
           </template>
           <template v-else>
-            <button @click="rightAction" class="p-2 rounded-md hover:bg-gray-50 transition flex items-center justify-center w-full relative" aria-label="Notifications">
-              <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-              <span v-if="unread > 0" class="absolute -top-1 -right-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold leading-none text-white bg-red-500 rounded-full">{{ unread > 99 ? '99+' : unread }}</span>
+            <button
+              @click="rightAction"
+              class="group relative flex w-full flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
+            >
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition group-hover:bg-indigo-50 group-hover:text-indigo-600">
+                <Icon name="heroicons:bell-alert" class="h-5 w-5" />
+              </div>
+              Alerts
+              <span
+                v-if="unread > 0"
+                class="absolute -top-1 -right-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm"
+              >{{ unread > 99 ? '99+' : unread }}</span>
             </button>
           </template>
         </slot>
@@ -48,13 +75,12 @@
 </template>
 
 <script setup>
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from '#imports'
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationsStore } from '~/stores/notifications'
 import { useBottomNavStore } from '~/stores/bottomNav'
-import { computed } from 'vue'
 
-// Props: allow pages to override actions by passing functions
 const props = defineProps({
   onLeft: { type: Function, required: false },
   onCenter: { type: Function, required: false },
@@ -67,6 +93,23 @@ const notif = useNotificationsStore()
 const bottomNav = useBottomNavStore()
 
 const unread = computed(() => notif.unreadCount || 0)
+
+const width = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+const isMobile = computed(() => width.value < 768)
+
+function updateWidth() {
+  if (typeof window === 'undefined') return
+  width.value = window.innerWidth
+}
+
+onMounted(() => {
+  updateWidth()
+  if (typeof window !== 'undefined') window.addEventListener('resize', updateWidth)
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') window.removeEventListener('resize', updateWidth)
+})
 
 function leftAction() {
   if (typeof props.onLeft === 'function') return props.onLeft()
@@ -90,7 +133,6 @@ function rightAction() {
 </script>
 
 <style scoped>
-/* Slightly larger hit area on mobile */
 @media (min-width: 768px) {
   nav { display: none; }
 }

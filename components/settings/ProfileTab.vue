@@ -30,7 +30,7 @@
         <textarea v-model="form.bio" rows="4" class="mt-1 block w-full border rounded px-3 py-2"></textarea>
       </div>
 
-      <div v-if="isquiz-master" class="space-y-2">
+      <div v-if="isQuizMaster" class="space-y-2">
         <label class="block text-sm font-medium">Teaching subjects (comma separated)</label>
         <input v-model="form.teaching_subjects" class="mt-1 block w-full border rounded px-3 py-2" />
       </div>
@@ -54,7 +54,7 @@ import { useAccountApi } from '~/composables/useAccountApi'
 const { patchMe } = useAccountApi()
 const auth = useAuthStore()
 const alert = useAppAlert()
-const { isquiz-master } = useUserRole()
+const { isQuizMaster } = useUserRole()
 
 const user = auth.user
 
@@ -92,7 +92,7 @@ async function save() {
     const data = new FormData()
     data.append('name', form.value.display_name)
     data.append('bio', form.value.bio)
-    if (isquiz-master.value) data.append('teaching_subjects', form.value.teaching_subjects || '')
+  if (isQuizMaster.value) data.append('teaching_subjects', form.value.teaching_subjects || '')
     if (avatarFile) data.append('avatar', avatarFile)
 
     const json = await patchMe(data)

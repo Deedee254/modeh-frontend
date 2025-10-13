@@ -1,29 +1,61 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-12">
-    <!-- Hero -->
-    <section class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg p-8 lg:p-12">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div>
-          <h1 class="text-3xl lg:text-4xl font-extrabold">Subjects & learning pathways</h1>
-          <p class="mt-2 text-indigo-100 max-w-2xl">Discover organized subjects and jump straight into curated quizzes. Filter by subject, search by name, or explore popular areas below.</p>
-          <div class="mt-5 flex gap-3">
-            <NuxtLink to="/quizzes" class="px-4 py-2 bg-white text-indigo-700 rounded-md font-medium">Browse quizzes</NuxtLink>
-            <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 border border-white/30 rounded-md text-white">Create a subject</NuxtLink>
-          </div>
-        </div>
-        <div class="w-full lg:w-1/3">
-          <div class="bg-white rounded-md p-3 shadow-sm">
-            <UiSearch v-model="query" icon="i-heroicons-magnifying-glass" placeholder="Search subjects" class="w-full" @search="onServerSearch" @submit="onServerSubmit" />
-            <div class="mt-3 flex gap-2">
-              <USelectMenu v-model="sortBy" :options="sortOptions" placeholder="Sort by" class="w-full" />
+  <div>
+    <PageHero
+      title="Subjects & learning pathways"
+      description="Discover organized subjects and jump into curated quizzes. Filter, search, or explore popular learning pathways below."
+      :showSearch="true"
+      :flush="true"
+      @search="onServerSearch"
+    >
+      <template #eyebrow>
+        Subject library
+      </template>
+
+      <template #actions>
+        <div class="flex flex-col gap-6">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex-1 max-w-2xl">
+                <!-- Search is handled by PageHero's built-in search input -->
+            </div>
+            <div class="flex items-center gap-3">
+              <NuxtLink
+                to="/topics"
+                class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
+              >
+                Explore topics
+              </NuxtLink>
+              <NuxtLink
+                to="/register?role=quiz-master"
+                class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
+              >
+                Create a subject
+              </NuxtLink>
             </div>
           </div>
+          <!-- stats removed per request -->
         </div>
-      </div>
-    </section>
+      </template>
+
+      <template #highlight>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-white/70">Curated pathways</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ subjectsCount }} subjects ready to explore</p>
+          <p class="mt-2 text-sm text-white/70">Use the search box to jump directly into a learning path.</p>
+        </div>
+      </template>
+
+      <template #highlight-icon>
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h12M4 18h8" />
+        </svg>
+      </template>
+
+      <!-- stats slot intentionally removed for this page -->
+    </PageHero>
 
     <!-- Compact filters (replaces subject pills) -->
-    <div class="mt-6">
+    <div class="max-w-7xl mx-auto px-4 py-12">
+      <div class="mt-6">
       <div class="flex items-center gap-3">
         <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="subject-filters">
           <button @click="setFilter('')" :class="filterBtnClass('')" :aria-pressed="activeFilter === ''">All</button>
@@ -35,29 +67,33 @@
       </div>
     </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 mt-6">
         <aside class="lg:col-span-1">
-          <FiltersSidebar storageKey="filters:subjects" :subject-options="[]" :topic-options="[]" :grade-options="GRADES" :grade="gradeFilter" @update:grade="val => gradeFilter.value = val" />
+          <FiltersSidebar storageKey="filters:subjects" :subject-options="[]" :topic-options="[]" :grade-options="allGrades" :grade="gradeFilter" @update:grade="val => gradeFilter.value = val" />
         </aside>
         <main class="lg:col-span-3">
           <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
           <div v-else-if="error" class="mt-6 text-red-600 dark:text-red-400">Failed to load subjects.</div>
           <div v-else class="mt-6">
             <div v-if="filtered.length === 0" class="p-6 border rounded-md text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">No subjects found.</div>
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-3">
-              <PillCard
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6 mt-3">
+              <SubjectCard
                 v-for="s in filtered"
                 :key="s.id"
-                eyebrow="Subject"
                 :title="s.name"
                 :subtitle="`${s.quizzes_count} quizzes available`"
-                color="indigo"
-                :badge-text="(s.name || '').charAt(0).toUpperCase()"
                 :image="resolveIcon(s)"
-                fallback="/images/subject-icon.svg"
+                :badgeText="(s.name || '').charAt(0).toUpperCase()"
+                :topicsCount="s.topics_count || s.topics?.length || 0"
+                :startLink="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
+                :description="s.description || s.summary || ''"
+                :grade="s.grade?.name || s.grade_id || ''"
+                startLabel="Explore Topics"
               >
-                <NuxtLink :to="`/quizzes?subject=${encodeURIComponent(s.id)}`" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">Explore quizzes →</NuxtLink>
-              </PillCard>
+                <div class="text-sm text-indigo-600">
+                  <span>Grades {{ Array.isArray(s.grades) ? s.grades.map(g => g.name || g.id).join(', ') : s.grade?.name || s.grade_id || 'All' }}</span>
+                </div>
+              </SubjectCard>
             </div>
           </div>
         </main>
@@ -73,114 +109,100 @@
         <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-indigo-600 text-white rounded">Become a quiz-master</NuxtLink>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
+// HeroFilterBar removed — using PageHero search instead
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
-import PillCard from '~/components/ui/PillCard.vue'
+import SubjectCard from '~/components/ui/SubjectCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
-import UiSearch from '~/components/ui/UiSearch.vue'
 import { ref, computed } from 'vue'
 
 const config = useRuntimeConfig()
 const { data, pending, error } = await useFetch(config.public.apiBase + '/api/subjects')
 const subjects = data?.value?.subjects?.data || []
 
-const query = ref('')
-const sortBy = ref('popular')
-const sortOptions = [
-  { label: 'Most quizzes', value: 'popular' },
-  { label: 'A → Z', value: 'az' },
-  { label: 'Z → A', value: 'za' },
-]
+const subjectsCount = computed(() => (subjects || []).length)
+const subjectsForFilters = computed(() => (subjects || []).map(s => ({ id: s.id, name: s.name })))
 
-// Subject quick-filter state used by the UI pills
+const query = ref('')
+const gradeFilter = ref('')
 const subjectFilter = ref('')
-const topSubjects = computed(() => {
-  const all = subjects || []
-  return all.slice().sort((a,b) => (b.quizzes_count||0) - (a.quizzes_count||0)).slice(0, 12)
+
+const gradesResponse = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
+const allGrades = computed(() => {
+  const list = gradesResponse?.data?.value?.grades || []
+  return Array.isArray(list) ? list.slice(0, 12) : []
 })
 
-function selectSubject(v) { subjectFilter.value = v }
+const gradesCount = computed(() => allGrades.value.length)
 
-const gradeFilter = ref('')
+const topicsResponse = await useFetch(config.public.apiBase + '/api/topics')
+const topicsCount = computed(() => {
+  const list = topicsResponse?.data?.value?.topics?.data || topicsResponse?.data?.value?.topics || []
+  return Array.isArray(list) ? list.length : 0
+})
+
+const quizzesResponse = await useFetch(config.public.apiBase + '/api/quizzes?per_page=1')
+const totalQuizzes = computed(() => {
+  const raw = quizzesResponse?.data?.value
+  if (!raw) return 0
+  return raw.quizzes?.total || raw.total || (Array.isArray(raw.quizzes) ? raw.quizzes.length : 0)
+})
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   let list = subjects || []
   if (q) list = list.filter(s => (s.name || '').toLowerCase().includes(q))
   if (gradeFilter.value) list = list.filter(s => String(s.grade || s.grade_id || '') === String(gradeFilter.value))
-
-  // apply compact filter buttons: top -> top by quizzes_count; featured -> filter by featured flag; new -> sort by created_at desc
-  if (activeFilter.value === 'top') {
-    list = list.slice().sort((a,b) => (b.quizzes_count||0) - (a.quizzes_count||0)).slice(0, 12)
-  } else if (activeFilter.value === 'featured') {
-    list = list.filter(s => s.featured || s.is_featured || s.curated)
-  } else if (activeFilter.value === 'new') {
-    list = list.slice().sort((a,b) => new Date(b.created_at || b.published_at || b.updated_at || 0) - new Date(a.created_at || a.published_at || a.updated_at || 0))
-  }
-
-  if (sortBy.value === 'az') list = [...list].sort((a,b) => a.name.localeCompare(b.name))
-  else if (sortBy.value === 'za') list = [...list].sort((a,b) => b.name.localeCompare(a.name))
-  else list = [...list].sort((a,b) => (b.quizzes_count||0) - (a.quizzes_count||0))
+  if (subjectFilter.value) list = list.filter(s => String(s.id) === String(subjectFilter.value) || String(s.slug || s.id) === String(subjectFilter.value))
   return list
 })
 
-// Server search: update `subjects` with server response when user searches
-let serverActive = false
 async function onServerSearch(q) {
-  serverActive = true
   try {
     const res = await $fetch(config.public.apiBase + '/api/subjects', { params: { query: q }, credentials: 'include' })
     const items = res?.subjects?.data || res?.subjects || res?.data || []
-    if (Array.isArray(items) && items.length) {
-      // replace the local list so filtered computed uses server results
-      // prefer keeping the same reactive reference
-      // eslint-disable-next-line no-unused-expressions
+    if (Array.isArray(items)) {
       subjects.length = 0
       subjects.push(...items)
     }
   } catch (e) {
-    // ignore network errors and fall back to client filtering
-  } finally {
-    serverActive = false
+    // ignore network errors
   }
 }
 
-function onServerSubmit(q) { onServerSearch(q) }
+function filterBtnClass(v) {
+  const active = activeFilter.value === v
+  const base = 'px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md border'
+  return `${base} ${active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200'}`
+}
+
+const activeFilter = ref('')
+
+function setFilter(v) {
+  if (activeFilter.value === v) activeFilter.value = ''
+  else activeFilter.value = v
+
+  if (activeFilter.value === 'top') {
+    subjects.sort((a, b) => (b.quizzes_count || 0) - (a.quizzes_count || 0))
+  } else if (activeFilter.value === 'featured') {
+    subjects.sort((a, b) => ((b.is_featured || b.featured || 0) - (a.is_featured || a.featured || 0)))
+  } else if (activeFilter.value === 'new') {
+    subjects.sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))
+  }
+}
 
 function resolveIcon(s) {
   if (!s) return '/images/subject-icon.svg'
   return s.icon || s.image || s.cover_image || '/images/subject-icon.svg'
 }
 
-// helper used by the template to style the quick-pills
-function pillClass(v) {
-  // subjectFilter is not defined in this file; try to derive from subjects list or fallback to empty
-  // We keep behaviour consistent with quizzes page where selected pill is highlighted
-  const active = typeof subjectFilter !== 'undefined' ? subjectFilter.value === v : false
-  return `px-3 py-1.5 text-sm rounded-full border ${active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200'}`
-}
-
-// New compact filter control state and helper
-const activeFilter = ref('')
-function filterBtnClass(v) {
-  const base = 'px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md border bg-white text-gray-700 border-gray-200'
-  if (v === activeFilter.value) {
-    return 'px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md border bg-indigo-600 text-white border-indigo-600'
-  }
-  return base
-}
-
-function setFilter(v) {
-  // toggle: clicking the same filter clears it
-  if (activeFilter.value === v) activeFilter.value = ''
-  else activeFilter.value = v
-}
-
-// Fetch grades for subjects sidebar
-const { data: gradesData } = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
-const GRADES = (gradesData?.value?.grades || []).slice(0, 12)
+useHead({
+  title: `Subjects • Browse learning pathways | Modeh`,
+  meta: [{ name: 'description', content: 'Browse subjects and curated learning pathways. Find quizzes organized by subject and skill level.' }]
+})
 </script>

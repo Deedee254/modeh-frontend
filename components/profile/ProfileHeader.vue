@@ -11,7 +11,7 @@
     <!-- Avatar + Meta -->
     <div class="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-end gap-4">
       <div class="-mt-14 sm:-mt-16">
-        <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full ring-4 ring-white overflow-hidden bg-slate-200">
+  <div class="w-20 h-20 sm:w-28 sm:h-28 rounded-full ring-4 ring-white overflow-hidden bg-slate-200">
           <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="w-full h-full object-cover" />
           <div v-else class="w-full h-full grid place-items-center text-slate-400">NA</div>
         </div>

@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRuntimeConfig } from '#app'
 
 const open = ref(false)
@@ -82,25 +82,22 @@ async function markRead(n) {
   }
 }
 
-// subscribe to real-time notification events via Echo when available
-if (process.client) {
+// subscribe to real-time notification events via Echo when available (client-only)
+onMounted(() => {
   try {
     const echo = (typeof window !== 'undefined' && window.Echo) || null
-    if (echo) {
-  // prefer `users.{id}` private channel naming
-  const ch = echo.private('users.' + (window.__authUserId || ''))
-      ch.listen('NotificationSent', (payload) => {
-        // push into notifications list and update unread
-        const n = payload.notification
-        if (n) {
-          notifications.value.unshift(n)
-          unreadCount.value = Math.max(0, unreadCount.value + 1)
-          emit('update:unread', unreadCount.value)
-        }
-      })
-    }
+    if (!echo) return
+    const ch = echo.private('users.' + (window.__authUserId || ''))
+    ch.listen('NotificationSent', (payload) => {
+      const n = payload.notification
+      if (n) {
+        notifications.value.unshift(n)
+        unreadCount.value = Math.max(0, unreadCount.value + 1)
+        emit('update:unread', unreadCount.value)
+      }
+    })
   } catch (e) { /* ignore */ }
-}
+})
 
 // load when dropdown opens
 watch(open, (v) => { if (v) load() })

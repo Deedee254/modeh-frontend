@@ -2,19 +2,19 @@
   <div>
     <div v-if="isAuthed && isquizee" class="min-h-screen flex bg-gray-100">
       <div class="hidden lg:block">
-        <quizeeSidebar />
+        <QuizeeSidebar />
       </div>
       <div class="flex-1 flex flex-col">
-        <quizeeTopBar />
+        <QuizeeTopBar />
         <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
           <slot />
         </main>
       </div>
     </div>
 
-    <div v-else-if="isAuthed && isquiz-master" class="min-h-screen flex bg-gray-100">
+    <div v-else-if="isAuthed && isQuizMaster" class="min-h-screen flex bg-gray-100">
       <div class="hidden lg:block">
-        <quiz-masterSidebar />
+        <QuizMasterSidebar />
       </div>
       <div class="flex-1 flex flex-col">
         <TopBar />
@@ -44,9 +44,9 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import quizeeSidebar from '~/components/quizeeSidebar.vue'
-import quizeeTopBar from '~/components/quizeeTopBar.vue'
-import quiz-masterSidebar from '~/components/quiz-masterSidebar.vue'
+import QuizeeSidebar from '~/components/QuizeeSidebar.vue'
+import QuizeeTopBar from '~/components/QuizeeTopBar.vue'
+import QuizMasterSidebar from '~/components/QuizMasterSidebar.vue'
 import TopBar from '~/components/TopBar.vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
@@ -58,7 +58,7 @@ import BottomNav from '~/components/ui/BottomNav.vue'
 const auth = useAuthStore?.() || null
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
 const isquizee = computed(() => !!auth.user && (auth.user.role === 'quizee' || (auth.user.roles && auth.user.roles.includes('quizee'))))
-const isquiz-master = computed(() => !!auth.user && (auth.user.role === 'quiz-master' || (auth.user.roles && auth.user.roles.includes('quiz-master'))))
+const isQuizMaster = computed(() => !!auth.user && (auth.user.role === 'quiz-master' || (auth.user.roles && auth.user.roles.includes('quiz-master'))))
 </script>
 
 <style scoped></style>

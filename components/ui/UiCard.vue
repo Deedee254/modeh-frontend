@@ -2,7 +2,8 @@
   <component :is="compName" :class="[baseClass, cardClass, $attrs.class]" v-bind="$attrs">
     <div v-if="$slots.image" class="relative">
       <div :class="[
-        imageLayout === 'top' ? 'w-full h-48' : 'absolute inset-0',
+  // default to a slightly smaller top image height for denser layout
+  imageLayout === 'top' ? 'w-full h-24 sm:h-40' : 'absolute inset-0',
         imageLayout === 'side' ? 'lg:relative lg:w-48 lg:h-full' : ''
       ]">
         <slot name="image" />
@@ -59,7 +60,7 @@ const cardClass = computed(() => {
   }
 })
 
-const contentPadding = 'p-4 sm:p-5'
+const contentPadding = 'p-3 sm:p-4'
 
 const inst = getCurrentInstance()
 const hasNuxtCard = !!(inst && inst.appContext && inst.appContext.components && (inst.appContext.components['NUXCard'] || inst.appContext.components['NuxtCard']))

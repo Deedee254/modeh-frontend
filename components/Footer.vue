@@ -2,7 +2,10 @@
   <footer class="flex-shrink-0 border-t border-indigo-200/50 bg-indigo-700 text-white dark:bg-slate-950 dark:border-slate-800">
     <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8 items-start">
       <div>
-        <div class="text-2xl font-extrabold">Modeh</div>
+        <div class="flex items-center gap-3">
+          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8" />
+          <div class="text-2xl font-extrabold">Modeh</div>
+        </div>
         <div class="mt-3 text-sm opacity-90">Create and take beautiful quizzes — for quiz-mastering, classrooms and practice. Fast to build, fun to take.</div>
         <div class="mt-4 flex gap-3">
           <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-white text-indigo-700 rounded font-medium">quiz-master register</NuxtLink>
@@ -35,7 +38,7 @@
           <input placeholder="Your email" class="px-3 py-2 rounded w-full text-indigo-900" />
           <button class="px-4 py-2 bg-yellow-400 text-indigo-800 rounded font-semibold">Subscribe</button>
         </div>
-        <div class="mt-4 text-sm opacity-90">© {{ new Date().getFullYear() }} Modeh — Built with Nuxt</div>
+  <div class="mt-4 text-sm opacity-90">© {{ new Date().getFullYear() }} Modeh — Built with Nuxt</div>
       </div>
     </div>
   </footer>

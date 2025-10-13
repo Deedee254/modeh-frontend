@@ -66,7 +66,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useRuntimeConfig } from '#app'
 
@@ -76,6 +76,7 @@ const error = ref(null)
 const isLoading = ref(false)
 const showPassword = ref(false)
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const config = useRuntimeConfig()
 
@@ -86,6 +87,31 @@ async function submit() {
   try {
     const res = await auth.login(email.value, password.value)
     const user = res.data?.user || res.data
+
+    // If a `next` query parameter is present and is a safe local path, prefer it
+    // but only when it belongs to the same role-area as the logged-in user.
+    const nextParam = route.query?.next
+    const isLocalPath = typeof nextParam === 'string' && nextParam.startsWith('/') && !nextParam.startsWith('//')
+    if (isLocalPath) {
+      // allow root always
+      if (nextParam === '/') {
+        router.push(nextParam)
+        return
+      }
+
+      // role-area guard: only allow next within the user's role area
+      const role = user?.role
+      if (role === 'quiz-master' && nextParam.startsWith('/quiz-master')) {
+        router.push(nextParam)
+        return
+      }
+      if (role === 'quizee' && nextParam.startsWith('/quizee')) {
+        router.push(nextParam)
+        return
+      }
+      // for other roles (admin etc.) we don't honor next by default
+    }
+
     if (user?.role === 'quiz-master') router.push('/quiz-master/dashboard')
     else if (user?.role === 'quizee') router.push('/quizee/dashboard')
     else if (user?.role === 'admin') window.location.href = `${config.public.apiBase}/admin`

@@ -1,31 +1,67 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-12">
-    <!-- Hero -->
-    <section class="bg-white rounded-lg p-8 lg:p-12 shadow-sm">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div>
-          <h1 class="text-3xl lg:text-4xl font-extrabold">Topics and micro-skills</h1>
-          <p class="mt-2 text-gray-600 max-w-2xl">Focus on specific topics and sharpen skills with topic-aligned quizzes. Use search and filters to find what you need fast.</p>
-        </div>
-        <div class="w-full lg:w-1/3">
-          <div class="bg-gray-50 rounded-md p-3">
-            <UiSearch v-model="query" icon="i-heroicons-magnifying-glass" placeholder="Search topics" class="w-full" @search="onServerSearch" @submit="onServerSubmit" />
-            <div class="mt-3">
-              <USelectMenu v-model="sortBy" :options="sortOptions" placeholder="Sort by" class="w-full" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+  <div>
+    <PageHero
+      title="Find topic-aligned quizzes"
+      description="Focus on a single topic and sharpen the exact skill with short, topic-aligned quizzes."
+      :showSearch="true"
+      :flush="true"
+      @search="onSearch"
+      :breadcrumbs="[{ text: 'Home', href: '/' }, { text: 'Topics', current: true }]"
+    >
+      <template #eyebrow>
+        Topics
+      </template>
 
-    <!-- Quick action tabs: New / Top / Featured -->
-    <div class="mt-6 flex gap-2 items-center">
+      <template #actions>
+        <div class="flex flex-col gap-4">
+          <div class="max-w-2xl">
+              <!-- Search is handled by PageHero's built-in search input -->
+          </div>
+          <!-- topic stats moved to the stats slot to render in the right-hand panel -->
+        </div>
+      </template>
+
+      <template #highlight>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-white/70">Explore all topics</p>
+          <p class="mt-1 text-2xl font-semibold text-white">Master specific skills</p>
+          <p class="mt-2 text-sm text-white/70">Short, focused quizzes aligned to each topic</p>
+        </div>
+      </template>
+
+      <template #stats>
+        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
+          <p class="text-xs uppercase tracking-wide text-white/60">Topics</p>
+          <p class="mt-2 text-xl font-semibold">{{ topics.length || 0 }}</p>
+        </div>
+        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
+          <p class="text-xs uppercase tracking-wide text-white/60">Subjects</p>
+          <p class="mt-2 text-xl font-semibold">{{ SUBJECTS.length || 0 }}</p>
+        </div>
+        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
+          <p class="text-xs uppercase tracking-wide text-white/60">Quizzes</p>
+          <p class="mt-2 text-xl font-semibold">{{ totalQuizzes || 0 }}</p>
+        </div>
+      </template>
+
+      <template #highlight-icon>
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </template>
+
+
+    </PageHero>
+
+    <div class="max-w-7xl mx-auto px-4 py-12">
+      <!-- Quick action tabs: New / Top / Featured -->
+      <div class="mt-6 flex gap-2 items-center">
       <button @click="sortBy = 'popular'" :class="sortBy === 'popular' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">New</button>
       <button @click="sortBy = 'az'" :class="sortBy === 'az' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Top</button>
       <button @click="sortBy = 'za'" :class="sortBy === 'za' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Featured</button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6">
       <aside class="lg:col-span-1">
         <FiltersSidebar
           :subject-options="SUBJECTS"
@@ -44,38 +80,46 @@
         <div v-if="pending" class="mt-6"><SkeletonGrid :count="3" /></div>
         <div v-else>
           <div v-if="(!filtered || filtered.length === 0)" class="p-6 border rounded-md text-sm text-gray-600 bg-white border-gray-200">0 results returned</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-3">
-            <PillCard
-              v-for="t in filtered"
-              :key="t.id"
-              eyebrow="Topic"
-              :title="t.name"
-              :subtitle="`${t.quizzes_count || 0} quizzes`"
-              color="emerald"
-              :badge-text="(t.name || '').charAt(0).toUpperCase()"
-              :image="t.image || t.cover_image || ''"
-              :palette="pickPaletteClass(t.subject_id || t.id)"
-            >
-              <NuxtLink :to="`/quizzes?topic_id=${t.id}`" class="inline-flex items-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm">Explore →</NuxtLink>
-            </PillCard>
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mt-3">
+              <TopicCard
+                v-for="t in filtered"
+                :key="t.id"
+                :title="t.name"
+                :image="t.image || t.cover_image || ''"
+                :grade="t.grade?.name || t.grade_name || ''"
+                :subject="t.subject?.name || t.subject_name || ''"
+                :description="t.description || t.summary || ''"
+                :quizzesCount="t.quizzes_count || 0"
+                :startLink="`/topics/${t.id}`"
+                startLabel="View Quizzes"
+              >
+              </TopicCard>
           </div>
         </div>
       </main>
+    </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
+// HeroFilterBar removed — PageHero provides a single search input
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
-import PillCard from '~/components/ui/PillCard.vue'
+import TopicCard from '~/components/ui/TopicCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
-import UiSearch from '~/components/ui/UiSearch.vue'
 import { ref, computed } from 'vue'
+import { getHeroClass } from '~/utils/heroPalettes'
 
 const config = useRuntimeConfig()
 const { data, pending } = await useFetch(config.public.apiBase + '/api/topics')
 const topics = safeArray(data?.value?.topics || data?.value || [])
+
+// SEO: page title + description (use topics count if available)
+useHead({
+  title: `${topics.length || 0} Topics • Find topic-aligned quizzes | Modeh`,
+  meta: [{ name: 'description', content: 'Explore topics and micro-skills. Find short, focused quizzes aligned to each topic to practice and improve.' }]
+})
 
 // Helper to coerce API responses into arrays (defensive: handles HTML error pages or wrapped shapes)
 function safeArray(v) {
@@ -168,6 +212,9 @@ async function onServerSearch(q) {
 
 function onServerSubmit(q) { onServerSearch(q) }
 
+// Local handler used by HeroFilterBar
+function onSearch(q) { query.value = q; onServerSearch(q) }
+
 // Top topics to show as pills (popular by quizzes_count)
 const topTopics = computed(() => {
   const all = topics || []
@@ -183,4 +230,9 @@ const { data: subjectsData } = await useFetch(config.public.apiBase + '/api/subj
 const SUBJECTS = safeArray(subjectsData?.value?.subjects || subjectsData?.value || []).slice(0, 12).map(s => ({ id: s.id, name: s.name }))
 const { data: gradesData } = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
 const GRADES = (gradesData?.value?.grades || []).slice(0, 12)
+
+// fetch quizzes meta for totals
+const { data: quizzesData } = await useFetch(config.public.apiBase + '/api/quizzes?per_page=1', { credentials: 'include' })
+let totalQuizzes = 0
+try { totalQuizzes = quizzesData?.value?.quizzes?.total || quizzesData?.value?.total || 0 } catch (e) { totalQuizzes = 0 }
 </script>

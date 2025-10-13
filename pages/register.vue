@@ -47,7 +47,7 @@
         <form @submit.prevent="submit" class="space-y-6">
           <!-- quizee Form -->
           <template v-if="role === 'quizee'">
-            <div class="grid grid-cols-1 gap-6">
+            <div class="grid grid-cols-1 gap-3">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
                 <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
@@ -80,7 +80,7 @@
 
           <!-- quiz-master Form -->
           <template v-else>
-            <div class="grid grid-cols-1 gap-6">
+            <div class="grid grid-cols-1 gap-3">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
                 <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />

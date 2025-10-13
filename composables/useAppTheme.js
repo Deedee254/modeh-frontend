@@ -1,22 +1,25 @@
 import { useState } from '#app'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 export function useAppTheme() {
   // store theme as 'light' | 'dark'
-  const theme = useState('app_theme', () => 'light')
+  // prefer cookie-backed value so server can render the user's preference
+  const themeCookie = useCookie('app_theme')
+  const theme = useState('app_theme', () => themeCookie.value || 'light')
+  // detected on the client in onMounted
+  const systemPrefersDark = ref(false)
 
   const isDark = computed(() => {
-    if (process.client) {
-      return theme.value === 'dark' || (theme.value === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    }
-    return theme.value === 'dark'
+    // During SSR we fall back to explicit 'dark' only. The system preference
+    // is detected on the client and stored in `systemPrefersDark`.
+    return theme.value === 'dark' || (theme.value === 'system' && systemPrefersDark.value)
   })
 
   function applyHtmlClass(dark) {
     try {
-      const el = process.client ? document.documentElement : null
-      if (!el) return
+      if (typeof document === 'undefined') return
+      const el = document.documentElement
       if (dark) el.classList.add('dark')
       else el.classList.remove('dark')
     } catch (e) {}
@@ -25,10 +28,11 @@ export function useAppTheme() {
   function setTheme(val) {
     theme.value = val
     try { localStorage.setItem('app_theme', val) } catch (e) {}
-    applyHtmlClass(val === 'dark' || (val === 'system' && process.client && window.matchMedia('(prefers-color-scheme: dark)').matches))
+    try { themeCookie.value = val } catch (e) {}
+    applyHtmlClass(val === 'dark' || (val === 'system' && systemPrefersDark.value))
     // if logged-in, attempt to sync preference to backend
     try {
-      if (process.client) {
+      if (typeof window !== 'undefined') {
         const auth = useAuthStore()
         if (auth?.user) {
           // best-effort, do not block
@@ -45,15 +49,33 @@ export function useAppTheme() {
 
   onMounted(() => {
     try {
-      const saved = localStorage.getItem('app_theme')
-      if (saved) theme.value = saved
-      applyHtmlClass(isDark.value)
-      // listen to system changes if theme is 'system'
-      if (process.client && theme.value === 'system' && window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-          applyHtmlClass(e.matches)
+      // detect system preference on the client and listen for changes. We
+      // avoid any matchMedia access during SSR.
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        const mql = window.matchMedia('(prefers-color-scheme: dark)')
+        // initialize
+        systemPrefersDark.value = !!mql.matches
+        const handler = (e) => {
+          systemPrefersDark.value = !!(e && e.matches)
+          // if user theme is 'system', update html class
+          if (theme.value === 'system') applyHtmlClass(systemPrefersDark.value)
+        }
+        // use addEventListener when available; fallback to addListener
+        if (mql.addEventListener) mql.addEventListener('change', handler)
+        else if (mql.addListener) mql.addListener(handler)
+        // cleanup on unmount
+        onUnmounted(() => {
+          try {
+            if (mql.removeEventListener) mql.removeEventListener('change', handler)
+            else if (mql.removeListener) mql.removeListener(handler)
+          } catch (e) {}
         })
       }
+
+      const saved = localStorage.getItem('app_theme')
+      if (saved) theme.value = saved
+      // apply initial class based on computed isDark (which now uses systemPrefersDark)
+      applyHtmlClass(isDark.value)
     } catch (e) {}
   })
 
