@@ -229,6 +229,8 @@ const lastSubmitFailed = ref(false)
 const submissionMessage = ref('')
 let submissionInterval = null
 const { push: pushAlert } = useAppAlert()
+import useApi from '~/composables/useApi'
+const api = useApi()
 const showConfirm = ref(false)
 
 
@@ -339,26 +341,8 @@ async function submitAnswers() {
     const cfg = useRuntimeConfig()
   const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })), defer_marking: true }
 
-    // Ensure we have Sanctum CSRF cookie set for session-based authentication.
-    // This prevents 419 responses when Laravel expects an XSRF token.
-    try {
-      await fetch(cfg.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include' })
-    } catch (e) {
-      // non-fatal; we'll proceed and the backend will respond appropriately
-    }
-
-    // Build headers and include XSRF token from cookie when available
-    const headers = { 'Content-Type': 'application/json' }
-    try {
-      const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-      if (match) {
-        headers['X-XSRF-TOKEN'] = decodeURIComponent(match[1])
-      }
-    } catch (e) {
-      // ignore cookie read failures
-    }
-
-    const res = await fetch(cfg.public.apiBase + `/api/quizzes/${id}/submit`, { method: 'POST', credentials: 'include', headers, body: JSON.stringify(payload) })
+    const res = await api.postJson(`/api/quizzes/${id}/submit`, payload)
+    if (api.handleAuthStatus(res)) { pushAlert({ message: 'Session expired — please sign in again', type: 'warning' }); lastSubmitFailed.value = true; submissionMessage.value = ''; submitting.value = false; showConfirm.value = false; return }
     if (res.ok) {
       // stop saving message
       submissionMessage.value = ''
@@ -376,15 +360,15 @@ async function submitAnswers() {
       // No attempt id returned — redirect to checkout with quiz id so user can continue to payment flow
       router.push(`/quizee/payments/checkout?type=quiz&quiz_id=${id}`)
       return
-    } else {
+  } else {
       // restore optimistic to null to indicate failure
   if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
   submissionMessage.value = ''
   // ensure no inline result is shown — stay on page with answers preserved for retry
       // show error alert and keep answers saved to allow retry
-      let errMsg = 'Failed to submit quiz. Please try again.'
-      try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message } catch(e) {}
-      pushAlert({ message: errMsg, type: 'error' })
+  let errMsg = 'Failed to submit quiz. Please try again.'
+  try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message } catch(e) {}
+  pushAlert({ message: errMsg, type: 'error' })
       // Keep answers in-place so user can retry; showConfirm dialog will be closed and user can press Retry
     }
   } catch (e) {

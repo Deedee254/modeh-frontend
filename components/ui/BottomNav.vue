@@ -1,6 +1,6 @@
 <template>
   <nav
-    v-show="isMobile && !sidebarOpen"
+    v-show="isMobile && !ui.sidebarOpen"
     class="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[420px] px-4 pb-6"
     role="navigation"
     aria-label="primary mobile"
@@ -80,7 +80,7 @@ import { useRouter } from '#imports'
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationsStore } from '~/stores/notifications'
 import { useBottomNavStore } from '~/stores/bottomNav'
-import { useSidebar } from '~/composables/useSidebar'
+import { useUiStore } from '~/stores/ui'
 
 const props = defineProps({
   onLeft: { type: Function, required: false },
@@ -92,12 +92,11 @@ const router = useRouter()
 const auth = useAuthStore?.() || null
 const notif = useNotificationsStore()
 const bottomNav = useBottomNavStore()
+const ui = useUiStore()
 
 const unread = computed(() => notif.unreadCount || 0)
 
 const width = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
-const { sidebarMobileOpen, toggleSidebar, setSidebar } = useSidebar()
-const sidebarOpen = computed(() => sidebarMobileOpen.value)
 const isMobile = computed(() => width.value < 768)
 
 function updateWidth() {
@@ -105,38 +104,20 @@ function updateWidth() {
   width.value = window.innerWidth
 }
 
-// named handlers so we can remove them on unmount
-const onSidebarClosedEvent = () => { if (process.client) setSidebar(false) }
-const onToggleSidebarEvent = () => { if (process.client) toggleSidebar() }
-
 onMounted(() => {
   updateWidth()
   if (typeof window !== 'undefined') window.addEventListener('resize', updateWidth)
-  if (typeof window !== 'undefined') {
-    window.addEventListener('toggle-sidebar', onToggleSidebarEvent)
-    window.addEventListener('sidebar-closed', onSidebarClosedEvent)
-  }
 })
 
 onBeforeUnmount(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', updateWidth)
-    window.removeEventListener('toggle-sidebar', onToggleSidebarEvent)
-    window.removeEventListener('sidebar-closed', onSidebarClosedEvent)
-  }
+  if (typeof window !== 'undefined') window.removeEventListener('resize', updateWidth)
 })
 
 function leftAction() {
   if (typeof props.onLeft === 'function') return props.onLeft()
   if (typeof bottomNav.leftHandler === 'function' || typeof bottomNav.leftHandler?.value === 'function') return (bottomNav.leftHandler?.value || bottomNav.leftHandler)()
-  // If on mobile, open the sidebar drawer via the shared composable
-  if (isMobile.value) {
-    try { window.dispatchEvent(new CustomEvent('toggle-sidebar')) } catch (e) {}
-    // Also call the composable toggle as a fallback so the sidebar changes even if
-    // no listener handled the custom event (ensures mobile Explore reliably opens it)
-    try { toggleSidebar() } catch (e) {}
-    return
-  }
+  // On mobile, open the sidebar drawer via the UI store
+  ui.toggleSidebar()
   // route to role-specific listing when not mobile
   const role = auth?.role || auth?.user?.role || null
   if (role === 'quiz-master') return router.push('/quiz-master/quizzes')

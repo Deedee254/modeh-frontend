@@ -37,6 +37,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRuntimeConfig } from '#app'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 const open = ref(false)
 const loading = ref(false)
@@ -45,6 +47,8 @@ const unreadCount = ref(0)
 const emit = defineEmits(['update:unread'])
 
 const config = useRuntimeConfig()
+const api = useApi()
+const alert = useAppAlert()
 
 function formatDate(s) {
   try { return new Date(s).toLocaleString() } catch { return s }
@@ -71,14 +75,17 @@ async function load() {
 
 async function markRead(n) {
   try {
-    const res = await fetch(config.public.apiBase + `/api/notifications/${n.id}/mark-read`, { method: 'POST', credentials: 'include' })
+    const res = await api.postJson(`/api/notifications/${n.id}/mark-read`, {})
+    if (api.handleAuthStatus(res)) return
     if (res.ok) {
       n.read = true
       unreadCount.value = Math.max(0, unreadCount.value - 1)
       emit('update:unread', unreadCount.value)
+    } else {
+      alert.push({ message: 'Could not mark notification as read', type: 'error' })
     }
   } catch (e) {
-    // ignore
+    alert.push({ message: 'Network error', type: 'error' })
   }
 }
 

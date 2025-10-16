@@ -56,6 +56,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 const props = defineProps({
   to: { type: String, required: true },
@@ -152,8 +154,15 @@ async function toggleLike(e) {
     localLiked.value = true
     emit('like', { liked: true })
     try {
+      const api = useApi()
+      const alert = useAppAlert()
       const id = props.quizId || (props.to && String(props.to).split('/').pop())
-      await $fetch(config.public.apiBase + `/api/quizzes/${id}/like`, { method: 'POST', credentials: 'include' })
+      const res = await api.postJson(`/api/quizzes/${id}/like`, {})
+      if (api.handleAuthStatus(res)) {
+        alert.push({ message: 'Session expired — please sign in again', type: 'warning' })
+        return
+      }
+      if (!res.ok) throw new Error('Like failed')
     } catch (err) {
       localLikes.value = Math.max(0, (localLikes.value || 1) - 1)
       localLiked.value = false
@@ -164,8 +173,15 @@ async function toggleLike(e) {
     localLiked.value = false
     emit('like', { liked: false })
     try {
+      const api = useApi()
+      const alert = useAppAlert()
       const id = props.quizId || (props.to && String(props.to).split('/').pop())
-      await $fetch(config.public.apiBase + `/api/quizzes/${id}/unlike`, { method: 'POST', credentials: 'include' })
+      const res = await api.postJson(`/api/quizzes/${id}/unlike`, {})
+      if (api.handleAuthStatus(res)) {
+        alert.push({ message: 'Session expired — please sign in again', type: 'warning' })
+        return
+      }
+      if (!res.ok) throw new Error('Unlike failed')
     } catch (err) {
       localLikes.value = (localLikes.value || 0) + 1
       localLiked.value = true

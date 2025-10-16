@@ -1,7 +1,5 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
-const env = (import.meta as any).env ?? {}
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -20,7 +18,8 @@ export default defineNuxtConfig({
   // PWA configuration for @vite-pwa/nuxt
   pwa: {
     registerType: 'autoUpdate',
-    includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+  // ensure index.html is precached so Workbox's navigation fallback can bind to it
+  includeAssets: ['index.html', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
     manifest: {
       name: 'Modeh',
       short_name: 'Modeh',
@@ -33,6 +32,9 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
+      // createHandlerBoundToURL requires the fallback URL to be precached.
+      // point to the explicit 'index.html' file which we also include in precache.
+      navigateFallback: '/index.html',
       runtimeCaching: [
         {
           urlPattern: 'https://fonts.googleapis.com/.*',
@@ -71,13 +73,13 @@ export default defineNuxtConfig({
   // Runtime config (public)
   runtimeConfig: {
     public: {
-      apiBase: env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
-      pusherKey: env.NUXT_PUSHER_KEY ?? env.VITE_PUSHER_KEY ?? '',
-      pusherCluster: env.NUXT_PUSHER_CLUSTER ?? env.VITE_PUSHER_CLUSTER ?? '',
-      pusherForceTLS: (env.NUXT_PUSHER_FORCE_TLS ?? env.VITE_PUSHER_FORCE_TLS) === 'true' || false,
-      wsHost: env.NUXT_WS_HOST ?? env.VITE_WS_HOST ?? '127.0.0.1',
-      wsPort: env.NUXT_WS_PORT ?? env.VITE_WS_PORT ?? 6001,
-      wsProtocol: env.NUXT_WS_PROTOCOL ?? env.VITE_WS_PROTOCOL ?? 'ws'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
+      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? '',
+      pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? '',
+      pusherForceTLS: process.env.NUXT_PUBLIC_PUSHER_FORCE_TLS === 'true',
+      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? '127.0.0.1',
+  wsPort: Number(process.env.NUXT_PUBLIC_WS_PORT ?? 6001),
+      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? 'ws'
     }
   }
-} as any)
+})

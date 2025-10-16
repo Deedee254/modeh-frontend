@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import useApi from '~/composables/useApi'
 
 export const useCheckoutStore = defineStore('checkout', () => {
   const router = useRouter()
@@ -38,7 +39,8 @@ export const useCheckoutStore = defineStore('checkout', () => {
 
       const resultPath = type === 'battle' ? `/quizee/battles/${id}/result` : `/quizee/quizzes/result/${attemptId}`
 
-      const res = await $fetch(endpoint, { method: 'POST', credentials: 'include' }).catch(() => null)
+      const api = useApi()
+      const res = await api.postJson(endpoint.replace(cfg.public.apiBase, ''), {}).catch(() => null)
 
       if (res && (res.ok || res.status === 'success')) {
         pendingMessage.value = 'Completed. Redirecting to results...'

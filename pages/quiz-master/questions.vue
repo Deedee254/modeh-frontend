@@ -79,11 +79,13 @@ import PageHero from '~/components/ui/PageHero.vue'
 import { useRouter } from 'vue-router'
 import Pagination from '~/components/Pagination.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
 
 const alert = useAppAlert()
 const auth = useAuthStore()
 const isAdmin = computed(() => !!auth.user?.is_admin)
+const api = useApi()
 
 const paginator = ref(null)
 const loading = ref(false)
@@ -155,7 +157,8 @@ async function requestApproval(item) {
   const prevRequested = item.approval_requested_at
   item.approval_requested_at = new Date().toISOString()
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + `/api/questions/${item.id}/request-approval`, { method: 'POST', credentials: 'include' })
+    const res = await api.postJson(`/api/questions/${item.id}/request-approval`, {})
+    if (api.handleAuthStatus(res)) { item.approval_requested_at = prevRequested; alert.push({ type: 'warning', message: 'Session expired — please sign in again' }); return }
     if (res.ok) alert.push({ type: 'success', message: 'Approval requested', icon: 'heroicons:check-circle' })
     else { item.approval_requested_at = prevRequested; alert.push({ type: 'error', message: 'Failed to request approval', icon: 'heroicons:exclamation-circle' }) }
   } catch (e) { item.approval_requested_at = prevRequested; alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' }) }
@@ -178,6 +181,7 @@ function goToEdit(item) {
 async function deleteQuestion(id) {
   try {
     const res = await fetch(useRuntimeConfig().public.apiBase + `/api/questions/${id}`, { method: 'DELETE', credentials: 'include' })
+    if (api.handleAuthStatus(res)) { throw new Error('Session expired') }
     if (!res.ok) throw new Error('Delete failed')
     // remove from paginator.data if present
     if (paginator.value?.data && Array.isArray(paginator.value.data)) {

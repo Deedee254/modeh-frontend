@@ -27,8 +27,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 
 const alert = useAppAlert()
+const api = useApi()
 const form = ref({ current: '', password: '', password_confirm: '' })
 const submitting = ref(false)
 
@@ -43,13 +45,13 @@ async function save() {
   }
   submitting.value = true
   try {
-    const cfg = useRuntimeConfig()
     const payload = {
       current_password: form.value.current,
       password: form.value.password,
       password_confirmation: form.value.password_confirm,
     }
-    const res = await fetch(cfg.public.apiBase + '/api/me/password', { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+    const res = await api.postJson('/api/me/password', payload)
+    if (api.handleAuthStatus(res)) return
     if (!res.ok) {
       let msg = 'Failed to change password'
       try {

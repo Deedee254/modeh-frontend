@@ -20,6 +20,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from '#imports'
 import QuestionBuilder from '~/components/question/QuestionBuilder.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,10 +54,13 @@ function onCancel() {
   router.push('/quiz-master/questions')
 }
 
+const api = useApi()
+
 async function onDelete() {
   if (!confirm('Delete this question? This action cannot be undone.')) return
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + `/api/questions/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' })
+    const res = await api.del(`/api/questions/${encodeURIComponent(id)}`)
+    if (api.handleAuthStatus(res)) { alert.push({ message: 'Session expired', type: 'warning' }); return }
     if (!res.ok) throw new Error('Failed to delete')
     // signal list page to remove item optimistically
     try { sessionStorage.setItem('question:deleted', JSON.stringify({ id })) } catch (e) {}

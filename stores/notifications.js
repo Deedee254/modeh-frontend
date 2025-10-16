@@ -4,12 +4,14 @@ import { useRuntimeConfig } from '#app'
 import { useAuthStore } from './auth'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useBadgeToast } from '~/composables/useBadgeToast'
+import useApi from '~/composables/useApi'
 
 export const useNotificationsStore = defineStore('notifications', () => {
   const drawerOpen = ref(false)
   const items = ref([])
   const config = useRuntimeConfig()
   const auth = useAuthStore()
+  const api = useApi()
 
   // computed unread count for badges
   const unreadCount = computed(() => items.value.filter(i => !i.read).length)
@@ -67,9 +69,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     // optimistic update
     markReadLocal(id)
     try {
-      const xsrf = readXsrfTokenFromCookie()
-      const headers = xsrf ? { 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' } : { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' }
-      const res = await fetch(config.public.apiBase + `/api/notifications/${id}/mark-read`, { method: 'POST', credentials: 'include', headers })
+      const res = await api.postJson(`/api/notifications/${id}/mark-read`, {})
+      if (api.handleAuthStatus(res)) return
       if (!res.ok) {
         // revert on server error by refetching (simple strategy)
         await fetchNotifications()

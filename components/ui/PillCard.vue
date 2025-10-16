@@ -73,7 +73,8 @@ const props = defineProps({
   quizzesCount: { type: [Number, String], default: null },
   topicsCount: { type: [Number, String], default: null },
   subjectsCount: { type: [Number, String], default: null },
-  tutor: { type: String, default: '' }
+  tutor: { type: String, default: '' },
+  quizMaster: { type: String, default: '' }
 })
 
 const palettes = {
@@ -111,7 +112,9 @@ const metaChips = computed(() => {
   if (props.quizzesCount != null) out.push({ key: 'quizzes', label: `${props.quizzesCount} quizzes` })
   if (props.topicsCount != null) out.push({ key: 'topics', label: `${props.topicsCount} topics` })
   if (props.subjectsCount != null) out.push({ key: 'subjects', label: `${props.subjectsCount} subjects` })
-  if (props.tutor) out.push({ key: 'tutor', label: props.tutor })
+  // Support both legacy `tutor` prop and newer `quizMaster` naming
+  const qmLabel = props.quizMaster || props.tutor
+  if (qmLabel) out.push({ key: 'quiz-master', label: qmLabel })
   return out
 })
 </script>

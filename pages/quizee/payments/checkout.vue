@@ -123,6 +123,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import useApi from '~/composables/useApi'
+const api = useApi()
 import { useRoute, useRouter } from 'vue-router'
 import PaymentAwaitingModal from '~/components/PaymentAwaitingModal.vue'
 import { useSubscriptionsStore } from '~/stores/subscriptions'
@@ -211,19 +213,22 @@ async function initiatePayment(type, details) {
 
   try {
     const cfg = useRuntimeConfig();
-    let res;
+    let res
     if (type === 'subscription') {
-      res = await $fetch(`${cfg.public.apiBase}/api/packages/${details.id}/subscribe`, { method: 'POST', credentials: 'include', body: { phone: phoneForPayment.value } });
-    } else { // one-off
-      const payload = { item_type: q.type || 'quiz', item_id: details.id, amount: details.price, phone: phoneForPayment.value };
-      res = await $fetch(`${cfg.public.apiBase}/api/one-off-purchases`, { method: 'POST', credentials: 'include', body: payload });
+      res = await api.postJson(`/api/packages/${details.id}/subscribe`, { phone: phoneForPayment.value })
+    } else {
+      const payload = { item_type: q.type || 'quiz', item_id: details.id, amount: details.price, phone: phoneForPayment.value }
+      res = await api.postJson('/api/one-off-purchases', payload)
     }
 
-    if (res?.ok && (res.tx || res.purchase?.gateway_meta?.tx)) {
-      checkout.setTx(res.tx || res.purchase.gateway_meta.tx);
-      showAwaitingModal.value = true;
+    if (api.handleAuthStatus(res)) { checkout.setError('Session expired — please sign in again'); return }
+
+    const body = await res.json().catch(() => null)
+    if (res?.ok && (body?.tx || body?.purchase?.gateway_meta?.tx)) {
+      checkout.setTx(body.tx || body.purchase.gateway_meta.tx)
+      showAwaitingModal.value = true
     } else {
-      throw new Error(res.message || 'Failed to initiate payment.');
+      throw new Error(body?.message || 'Failed to initiate payment.')
     }
   } catch (e) {
     checkout.setError(e.data?.message || e.message || 'An unexpected error occurred.');

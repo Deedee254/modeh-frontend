@@ -296,6 +296,7 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 
 const threads = ref([])
 const groups = ref([])
@@ -318,6 +319,7 @@ const alert = useAppAlert()
 const auth = useAuthStore()
 const userId = computed(() => auth.user?.id)
 const apiBase = useRuntimeConfig().public.apiBase
+const api = useApi()
 const messageInput = ref(null)
 const dmInput = ref(null)
 
@@ -397,7 +399,7 @@ function upsertThreadFromMessage(msg) {
 function markThreadRead(otherId) {
   // server-side persist read state
   try {
-    fetch(apiBase + '/api/chat/threads/mark-read', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ other_user_id: otherId }) })
+    api.postJson('/api/chat/threads/mark-read', { other_user_id: otherId }).catch(()=>{})
   } catch (e) {}
   const idx = threads.value.findIndex(c => String(c.other_user_id || c.otherId || c.id) === String(otherId))
   if (idx !== -1) threads.value[idx].unread_count = 0
@@ -484,7 +486,7 @@ function selectGroup(g) {
   }).catch(() => { messages.value = [] })
   .finally(() => {
     // mark group read on server once opened
-    try { fetch(apiBase + '/api/chat/groups/mark-read', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_id: g.id }) }) } catch (e) {}
+    try { api.postJson('/api/chat/groups/mark-read', { group_id: g.id }).catch(()=>{}) } catch (e) {}
     nextTick(() => scrollToBottom())
   })
 }
@@ -509,15 +511,8 @@ async function startDMByEmail() {
       const admin = json.contact
 
       // Create or get support thread
-      await fetch(apiBase + '/api/chat/threads', { 
-        method: 'POST', 
-        credentials: 'include', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ 
-          recipient_id: admin.id,
-          type: 'support'
-        }) 
-      })
+      const threadRes = await api.postJson('/api/chat/threads', { recipient_id: admin.id, type: 'support' })
+      if (api.handleAuthStatus(threadRes)) return
 
       dmEmail.value = ''
       await loadThreads()
@@ -538,7 +533,7 @@ async function startDMByEmail() {
 
   // Regular DM flow
   try {
-    const r = await fetch(apiBase + '/api/users/find-by-email?email=' + encodeURIComponent(email), { credentials: 'include' })
+  const r = await fetch(apiBase + '/api/users/find-by-email?email=' + encodeURIComponent(email), { credentials: 'include' })
     if (r.status === 404) { 
       alert.push({ message: 'User not found', type: 'error', icon: 'heroicons:exclamation-circle' }); 
       return 
@@ -551,19 +546,11 @@ async function startDMByEmail() {
     const user = j.user
     
     // ensure thread on server
-    const res = await fetch(apiBase + '/api/chat/threads', { 
-      method: 'POST', 
-      credentials: 'include', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ 
-        recipient_id: user.id,
-        type: 'direct'
-      }) 
-    })
-    
-    if (!res.ok) { 
-      alert.push({ message: 'Could not create thread', type: 'error', icon: 'heroicons:exclamation-circle' }); 
-      return 
+    const threadRes = await api.postJson('/api/chat/threads', { recipient_id: user.id, type: 'direct' })
+    if (api.handleAuthStatus(threadRes)) return
+    if (!threadRes.ok) {
+      alert.push({ message: 'Could not create thread', type: 'error', icon: 'heroicons:exclamation-circle' })
+      return
     }
     
     dmEmail.value = ''
@@ -611,7 +598,8 @@ async function sendMessage() {
   nextTick(() => scrollToBottom())
 
   try {
-  const res = await fetch(apiBase + '/api/chat/send', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+  const res = await api.postJson('/api/chat/send', payload)
+    if (api.handleAuthStatus(res)) return
     if (res.ok) {
       const json = await res.json()
       // replace optimistic message with server message
@@ -634,7 +622,8 @@ async function sendMessage() {
 async function createGroup() {
   const emails = selectedUsers.value.map(u => u.email).concat(newGroupEmails.value.split(',').map(s => s.trim()).filter(Boolean))
   try {
-    const res = await fetch(apiBase + '/api/chat/groups', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newGroupName.value, emails }) })
+    const res = await api.postJson('/api/chat/groups', { name: newGroupName.value, emails })
+    if (api.handleAuthStatus(res)) return
     if (res.ok) {
       const json = await res.json()
   groups.value.unshift(json.group)
@@ -833,7 +822,8 @@ async function resendMessage(m) {
   const payload = { content: m.content ?? m.body }
   if (m.group_id) payload.group_id = m.group_id
   else if (m.recipient_id) payload.recipient_id = m.recipient_id
-    const res = await fetch(apiBase + '/api/chat/send', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    const res = await api.postJson('/api/chat/send', payload)
+    if (api.handleAuthStatus(res)) return
     if (res.ok) {
       const json = await res.json()
       // replace message in messages array

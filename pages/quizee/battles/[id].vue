@@ -154,6 +154,8 @@ const loading = ref(true)
 const answers = ref({})
 const battle = ref({})
 const cfg = useRuntimeConfig()
+import useApi from '~/composables/useApi'
+const api = useApi()
 
 // UI tabs (kept minimal for now)
 const activeTab = ref('questions')
@@ -273,7 +275,8 @@ function ensureAuthRedirect(redirectTo) {
 async function enterBattle() {
   if (!ensureAuthRedirect(`/quizee/battles/${id}/play`)) return
   try {
-    await fetch(cfg.public.apiBase + `/api/battles/${id}/join`, { method: 'POST', credentials: 'include' })
+    const res = await api.postJson(`/api/battles/${id}/join`, {})
+    if (api.handleAuthStatus(res)) return
   } catch (e) {}
   router.push(`/quizee/battles/${id}/play`)
 }
@@ -282,7 +285,8 @@ async function submitAnswers() {
   if (!ensureAuthRedirect(`/quizee/battles/${id}`)) return
   try {
     const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid], time_taken: perQuestionTimings.value[qid] || null })), meta: { score: score.value } }
-    const res = await fetch(cfg.public.apiBase + `/api/battles/${id}/submit`, { method: 'POST', credentials: 'include', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } })
+    const res = await api.postJson(`/api/battles/${id}/submit`, payload)
+    if (api.handleAuthStatus(res)) return
     if (res.ok) { router.push(`/quizee/battles/${id}/result`) }
   } catch (e) { console.error(e) }
 }

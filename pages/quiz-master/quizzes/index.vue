@@ -80,23 +80,25 @@
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <QuizCard
-          v-for="quiz in (paginator?.data || [])"
+          v-for="quiz in normalizedQuizzes"
           :key="quiz.id"
           :to="''"
-          :startLink="`/quiz-master/quizzes/${quiz.id}`"
-          :title="quiz.title || quiz.name || ''"
-          :description="quiz.description || quiz.summary || ''"
-          :subject="quiz.subject?.name || quiz.subject_name || ''"
-          :topic="quiz.topic?.name || quiz.topic_name || ''"
-          :grade="quiz.grade?.name || quiz.grade_name || quiz.grade_id || ''"
-          :questionsCount="quiz.questions_count || quiz.questions?.length || 0"
-          :likes="quiz.likes_count || quiz.likes || 0"
+          :startLink="quiz.startLink"
+          :title="quiz.title"
+          :description="quiz.description"
+          :subject="quiz.subject"
+          :topic="quiz.topic"
+          :subjectId="quiz.subject_id"
+          :topicId="quiz.topic_id"
+          :grade="quiz.grade"
+          :questionsCount="quiz.questionsCount"
+          :likes="quiz.likes"
           :quizId="quiz.id"
           :show-approval="true"
           :showEdit="true"
-          :editLink="`/quiz-master/quizzes/${quiz.id}/edit`"
+          :editLink="quiz.editLink"
           @approve="toggleApprove(quiz)"
-          @edit="() => router.push(`/quiz-master/quizzes/${quiz.id}/edit`)"
+          @edit="() => router.push(`/quiz-master/quizzes/${quiz?.id || ''}/edit`)"
         />
       </div>
 
@@ -108,6 +110,8 @@
 <script setup>
 definePageMeta({ layout: 'quiz-master' })
 import { ref, onMounted, computed } from 'vue'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 import { useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
@@ -117,6 +121,7 @@ import Pagination from '~/components/Pagination.vue'
 const router = useRouter()
 import { useAppAlert } from '~/composables/useAppAlert'
 const alert = useAppAlert()
+const api = useApi()
 import { useAuthStore } from '~/stores/auth'
 const auth = useAuthStore()
 const isAdmin = computed(() => !!auth.user?.is_admin)
@@ -128,6 +133,27 @@ const q = ref('')
 const perPage = ref(10)
 const page = ref(1)
 const topicId = ref(0)
+
+const normalizedQuizzes = computed(() => {
+  const quizzes = paginator.value?.data || []
+  return quizzes
+    .filter(q => q && q.id) // Ensure quiz and quiz.id exist
+    .map(quiz => ({
+      ...quiz, // Pass through original properties like is_approved
+      id: quiz.id,
+      title: quiz.title || quiz.name || 'Untitled Quiz',
+      description: quiz.description || quiz.summary || '',
+      subject: quiz.subject?.name || quiz.subject_name || 'N/A',
+      topic: quiz.topic?.name || quiz.topic_name || 'N/A',
+      subject_id: quiz.subject?.id || quiz.subject_id,
+      topic_id: quiz.topic?.id || quiz.topic_id,
+      grade: quiz.grade?.name || quiz.grade_name || quiz.grade_id || 'N/A',
+      questionsCount: quiz.questions_count ?? quiz.questions?.length ?? 0,
+      likes: quiz.likes_count ?? quiz.likes ?? 0,
+      startLink: `/quiz-master/quizzes/${quiz.id}`,
+      editLink: `/quiz-master/quizzes/${quiz.id}/edit`,
+    }))
+})
 
 function onServerSearch(search) {
   q.value = search || ''
@@ -142,9 +168,12 @@ async function fetchTopics() {
     const res = await fetch(useRuntimeConfig().public.apiBase + '/api/topics?approved=1', { credentials: 'include' })
     if (res.ok) {
       const json = await res.json()
-      topics.value = json.topics || json.data || []
+      const rawTopics = json.topics || json.data || []
+      topics.value = Array.isArray(rawTopics) ? rawTopics.filter(t => t) : []
     }
-  } catch (e) {}
+  } catch (e) {
+    alert.push({ type: 'error', message: 'Failed to load topics.', icon: 'heroicons:x-circle' })
+  }
 }
 
 async function fetchItems() {
@@ -169,29 +198,32 @@ async function fetchItems() {
 }
 
 async function toggleApprove(item) {
+  if (!item || !item.id) return
   if (isAdmin.value) {
     const prev = item.is_approved
     item.is_approved = !prev
     try {
-      const res = await fetch(useRuntimeConfig().public.apiBase + `/api/quizzes/${item.id}/approve`, { method: 'POST', credentials: 'include' })
-  if (!res.ok) { item.is_approved = prev; alert.push({ type: 'error', message: 'Failed to change approve status', icon: 'heroicons:exclamation-circle' }) }
-  else alert.push({ type: 'success', message: 'Approval status updated', icon: 'heroicons:check-circle' })
-  } catch (e) { item.is_approved = prev; alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' }) }
+      const res = await api.postJson(`/api/quizzes/${item.id}/approve`, {})
+      if (api.handleAuthStatus(res)) { item.is_approved = prev; alert.push({ type: 'warning', message: 'Session expired — please sign in again' }); return }
+      if (!res.ok) { item.is_approved = prev; alert.push({ type: 'error', message: 'Failed to change approve status', icon: 'heroicons:exclamation-circle' }) }
+      else alert.push({ type: 'success', message: 'Approval status updated', icon: 'heroicons:check-circle' })
+    } catch (e) { item.is_approved = prev; alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' }) }
   } else {
     // Optimistic: mark as requested locally immediately, revert on failure
     const prevRequested = item.approval_requested_at
     item.approval_requested_at = new Date().toISOString()
     try {
-      const res = await fetch(useRuntimeConfig().public.apiBase + `/api/quizzes/${item.id}/request-approval`, { method: 'POST', credentials: 'include' })
-        if (res.ok) {
-          alert.push({ type: 'success', message: 'Approval requested', icon: 'heroicons:check-circle' })
-        } else {
-          item.approval_requested_at = prevRequested
-          alert.push({ type: 'error', message: 'Failed to request approval', icon: 'heroicons:exclamation-circle' })
-        }
+      const res = await api.postJson(`/api/quizzes/${item.id}/request-approval`, {})
+      if (api.handleAuthStatus(res)) { item.approval_requested_at = prevRequested; alert.push({ type: 'warning', message: 'Session expired — please sign in again' }); return }
+      if (res.ok) {
+        alert.push({ type: 'success', message: 'Approval requested', icon: 'heroicons:check-circle' })
+      } else {
+        item.approval_requested_at = prevRequested
+        alert.push({ type: 'error', message: 'Failed to request approval', icon: 'heroicons:exclamation-circle' })
+      }
     } catch (e) {
-  item.approval_requested_at = prevRequested
-  alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' })
+      item.approval_requested_at = prevRequested
+      alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' })
     }
   }
 }

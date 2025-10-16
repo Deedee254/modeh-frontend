@@ -33,7 +33,9 @@ definePageMeta({ layout: 'quiz-master', title: 'Edit Topic' })
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 const alert = useAppAlert()
+const api = useApi()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
@@ -69,7 +71,8 @@ async function upload() {
   if (!selectedFile) { alert.push({ type: 'error', message: 'No file selected', icon: 'heroicons:exclamation-circle' }); return }
   const fd = new FormData()
   fd.append('image', selectedFile)
-  const res = await fetch(useRuntimeConfig().public.apiBase + `/api/topics/${id}/upload-image`, { method: 'POST', body: fd, credentials: 'include' })
+  const res = await api.postFormData(`/api/topics/${id}/upload-image`, fd)
+  if (api.handleAuthStatus(res)) { alert.push({ type: 'warning', message: 'Session expired — please sign in again' }); return }
   if (res.ok) {
     const json = await res.json()
     topic.value = json.topic

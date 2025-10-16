@@ -3,7 +3,10 @@
 definePageMeta({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 const config = useRuntimeConfig()
+const api = useApi()
+const alert = useAppAlert()
 
 const subscription = ref(null)
 const packages = ref([])
@@ -56,9 +59,9 @@ async function doSubscribe(pkg) {
   subscribing.value = pkg.id
   try {
     // Subscribe to package
-    const res = await $fetch(config.public.apiBase + `/api/packages/${pkg.id}/subscribe`, { method: 'POST', credentials: 'include' })
-    // some backends return { ok: true } others return the object
-    if (res && (res.ok === true || res.success === true || res.subscription)) {
+      const res = await api.postJson(`/api/packages/${pkg.id}/subscribe`, {})
+      if (api.handleAuthStatus(res)) return
+      if (res.ok) {
       await fetchSubscription()
       useAppAlert().push({ message: 'Subscription created!', type: 'success' })
     } else {
@@ -73,9 +76,10 @@ async function doSubscribe(pkg) {
 
 async function initiate() {
   if (!subscription.value) return
-  const res = await $fetch(config.public.apiBase + `/api/payments/subscriptions/${subscription.value.id}/mpesa/initiate`, { method: 'POST', credentials: 'include' })
-  if (res.ok) useAppAlert().push({ message: 'Payment initiated (simulated)', type: 'success' })
-  else useAppAlert().push({ message: 'Failed to initiate payment', type: 'error' })
+  const res = await api.postJson(`/api/payments/subscriptions/${subscription.value.id}/mpesa/initiate`, {})
+    if (api.handleAuthStatus(res)) return
+    if (res.ok) alert.push({ message: 'Payment initiated (simulated)', type: 'success' })
+    else alert.push({ message: 'Failed to initiate payment', type: 'error' })
 }
 
 onMounted(async () => {

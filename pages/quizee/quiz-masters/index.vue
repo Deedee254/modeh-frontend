@@ -34,6 +34,8 @@
 
 <script setup>
 import { computed, ref, watchEffect } from 'vue'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
@@ -54,6 +56,8 @@ const auth = useAuthStore()
 const router = useRouter()
 const following = ref({})
 const loadingFollow = ref({})
+const api = useApi()
+const alert = useAppAlert()
 
 async function toggleFollow(qm) {
   if (!auth.user) return router.push('/login')
@@ -62,8 +66,14 @@ async function toggleFollow(qm) {
   following.value = { ...following.value, [id]: !cur }
   loadingFollow.value = { ...loadingFollow.value, [id]: true }
   try {
-    if (!cur) await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/follow`, { method: 'POST', credentials: 'include' })
-    else await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/unfollow`, { method: 'POST', credentials: 'include' })
+    let res
+    if (!cur) res = await api.postJson(`/api/quiz-masters/${id}/follow`, {})
+    else res = await api.postJson(`/api/quiz-masters/${id}/unfollow`, {})
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) {
+      following.value = { ...following.value, [id]: cur }
+      alert.push({ message: 'Failed to follow/unfollow. Try again.', type: 'error' })
+    }
   } catch (err) {
     following.value = { ...following.value, [id]: cur }
     console.error('Follow failed', err)

@@ -65,6 +65,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 
 const props = defineProps({
   open: Boolean,
@@ -77,6 +78,7 @@ const emits = defineEmits(['close', 'paid'])
 
 const cfg = useRuntimeConfig()
 const alert = useAppAlert()
+const api = useApi()
 
 const isOpen = ref(props.open)
 const loading = ref(false)
@@ -122,18 +124,19 @@ async function initiatePayment() {
   try {
     let res
     if (paymentDetails.value.type === 'subscription') {
-      res = await $fetch(`${cfg.public.apiBase}/api/packages/${props.pkg.id}/subscribe`, { method: 'POST', credentials: 'include', body: { phone: phoneForPayment.value } })
+      res = await api.postJson(`/api/packages/${props.pkg.id}/subscribe`, { phone: phoneForPayment.value })
     } else {
       const payload = { item_type: props.item.type || 'quiz', item_id: props.item.id, amount: paymentDetails.value.price, phone: phoneForPayment.value }
-      res = await $fetch(`${cfg.public.apiBase}/api/one-off-purchases`, { method: 'POST', credentials: 'include', body: payload })
+      res = await api.postJson('/api/one-off-purchases', payload)
     }
-
+    if (api.handleAuthStatus(res)) return
     if (res?.ok && (res.tx || res.purchase?.gateway_meta?.tx)) {
       currentTx.value = res.tx || res.purchase.gateway_meta.tx
       showAwaitingModal.value = true
       isOpen.value = false // Hide this modal, show the awaiting one
     } else {
-      throw new Error(res.message || 'Failed to initiate payment.')
+      const t = await res.text().catch(() => null)
+      throw new Error(res?.message || t || 'Failed to initiate payment.')
     }
   } catch (e) {
     error.value = e.data?.message || e.message || 'An unexpected error occurred.'

@@ -50,6 +50,8 @@
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
 import { ref } from 'vue'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 
@@ -71,6 +73,8 @@ const following = ref({})
 const followLoading = ref({})
 const auth = useAuthStore()
 const router = useRouter()
+const api = useApi()
+const alert = useAppAlert()
 
 async function toggleFollow(quizMaster) {
   if (!auth.user) return router.push('/login')
@@ -80,10 +84,18 @@ async function toggleFollow(quizMaster) {
   following.value = { ...following.value, [id]: !current }
   followLoading.value = { ...followLoading.value, [id]: true }
   try {
+    let res
     if (!current) {
-      await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/follow`, { method: 'POST', credentials: 'include' })
+      res = await api.postJson(`/api/quiz-masters/${id}/follow`, {})
     } else {
-      await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/unfollow`, { method: 'POST', credentials: 'include' })
+      res = await api.postJson(`/api/quiz-masters/${id}/unfollow`, {})
+    }
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) {
+      // rollback
+      following.value = { ...following.value, [id]: current }
+      console.error('Follow toggle failed', await res.text())
+      alert.push({ message: 'Failed to follow/unfollow. Please try again.', type: 'error' })
     }
   } catch (err) {
     // rollback

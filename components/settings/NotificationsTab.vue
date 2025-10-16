@@ -61,8 +61,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 
 const alert = useAppAlert()
+const api = useApi()
 const notifications = ref([])
 const loading = ref(false)
 
@@ -74,10 +76,9 @@ const prefsSaving = ref(false)
 async function loadPrefs() {
   prefsLoading.value = true
   try {
-    const cfg = useRuntimeConfig()
-    const res = await fetch(cfg.public.apiBase + '/api/me/notification-preferences', { credentials: 'include' })
-    if (!res.ok) throw new Error('Failed to load notification preferences')
-    const json = await res.json()
+  const res = await $fetch('/api/me/notification-preferences', { credentials: 'include' }).catch(() => null)
+  if (!res) throw new Error('Failed to load notification preferences')
+  const json = res
     const p = json.preferences ?? null
     if (p && typeof p === 'object') {
       // Ensure boolean values
@@ -96,12 +97,11 @@ async function loadPrefs() {
 async function savePrefs() {
   prefsSaving.value = true
   try {
-    const cfg = useRuntimeConfig()
-    const body = { preferences: { ...prefs.value } }
-    const res = await fetch(cfg.public.apiBase + '/api/me/notification-preferences', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (!res.ok) throw new Error('Failed to save preferences')
-    const json = await res.json()
-    alert.push({ type: 'success', message: 'Preferences saved' })
+  const body = { preferences: { ...prefs.value } }
+  const res = await api.postJson('/api/me/notification-preferences', body)
+  if (api.handleAuthStatus(res)) return
+  if (!res.ok) throw new Error('Failed to save preferences')
+  alert.push({ type: 'success', message: 'Preferences saved' })
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to save preferences' })
   } finally {
@@ -120,11 +120,10 @@ function formatDate(s) {
 async function load() {
   loading.value = true
   try {
-    const cfg = useRuntimeConfig()
-    const res = await fetch(cfg.public.apiBase + '/api/notifications', { credentials: 'include' })
-    if (!res.ok) throw new Error('Failed to load notifications')
-    const json = await res.json()
-    notifications.value = Array.isArray(json) ? json : (json.data || [])
+  const res = await $fetch('/api/notifications', { credentials: 'include' }).catch(() => null)
+  if (!res) throw new Error('Failed to load notifications')
+  const json = res
+  notifications.value = Array.isArray(json) ? json : (json.data || [])
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to load notifications' })
   } finally {
@@ -134,12 +133,11 @@ async function load() {
 
 async function markRead(item) {
   try {
-    const cfg = useRuntimeConfig()
-    const res = await fetch(`${cfg.public.apiBase}/api/notifications/${item.id}/mark-read`, { method: 'POST', credentials: 'include' })
-    if (!res.ok) throw new Error('Failed to mark read')
-    // mark locally
-    item.read = true
-    alert.push({ type: 'success', message: 'Marked read' })
+  const res = await api.postJson(`/api/notifications/${item.id}/mark-read`, {})
+  if (api.handleAuthStatus(res)) return
+  if (!res.ok) throw new Error('Failed to mark read')
+  item.read = true
+  alert.push({ type: 'success', message: 'Marked read' })
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to mark notification' })
   }

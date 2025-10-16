@@ -104,6 +104,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRuntimeConfig } from '#imports'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 const router = useRouter()
 const cfg = useRuntimeConfig()
 
@@ -111,6 +112,7 @@ const activeTab = ref('details')
 const saving = ref(false)
 const draft = ref({})
 const questions = ref([])
+const api = useApi()
 
 function tabClass(name) {
   return [
@@ -173,7 +175,8 @@ async function saveQuiz() {
 
     fd.append('questions', JSON.stringify(questionsCopy))
 
-    const res = await fetch(cfg.public.apiBase + '/api/quizzes', { method: 'POST', credentials: 'include', body: fd })
+    const res = await api.postFormData('/api/quizzes', fd)
+    if (api.handleAuthStatus(res)) return
     if (res.ok) {
       // clear temp store
       try { sessionStorage.removeItem('quiz:draft') } catch(e){}
@@ -196,7 +199,8 @@ async function uploadFile(file, type = 'file') {
     const fdata = new FormData()
     fdata.append('file', file)
     fdata.append('type', type)
-    const res = await fetch(cfg.public.apiBase + '/api/uploads', { method: 'POST', credentials: 'include', body: fdata })
+    const res = await api.postFormData('/api/uploads', fdata)
+    if (api.handleAuthStatus(res)) return null
     if (res.ok) return await res.json()
   } catch (e) {}
   return null

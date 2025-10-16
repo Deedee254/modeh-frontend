@@ -110,6 +110,8 @@ const displayTime = computed(() => {
 const allAnswered = computed(() => Object.keys(answers.value).length === questions.value.length)
 
 const cfg = useRuntimeConfig()
+import useApi from '~/composables/useApi'
+const api = useApi()
 
 function startTimer() {
   stopTimer()
@@ -197,7 +199,8 @@ async function soloComplete() {
       // show short saving message; defer marking to checkout
       submissionMessage.value = 'Saving answers...'
       const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })), defer_marking: true }
-      const res = await fetch(cfg.public.apiBase + `/api/battles/${id}/solo-complete`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const res = await api.postJson(`/api/battles/${id}/solo-complete`, payload)
+    if (api.handleAuthStatus(res)) { loading.value = false; return }
     if (!res.ok) throw new Error('Solo completion failed')
     const json = await res.json()
     // Check subscription before showing detailed results
@@ -237,8 +240,9 @@ async function submitBattle() {
   // only show a short saving note; actual marking happens after checkout
   submissionMessage.value = 'Saving answers...'
   const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })), defer_marking: true }
-  await fetch(cfg.public.apiBase + `/api/battles/${id}/submit`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
-    const qs = useBot.value ? '?bot=1' : ''
+  const res = await api.postJson(`/api/battles/${id}/submit`, payload)
+  if (api.handleAuthStatus(res)) { loading.value = false; return }
+  const qs = useBot.value ? '?bot=1' : ''
     // redirect to centralized checkout for marking/results
     if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
     submissionMessage.value = ''

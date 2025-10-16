@@ -145,6 +145,8 @@
 // Ensure this page uses the quizee layout when rendered
 definePageMeta?.({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
+import useApi from '~/composables/useApi'
+const api = useApi()
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 
@@ -230,11 +232,10 @@ const fetchLeaderboard = async () => {
 const registerForTournament = async () => {
   try {
     loading.value = true
-    // Use the server endpoint defined in backend: POST /api/tournaments/{tournament}/join
-    const json = await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/join`, { method: 'POST', credentials: 'include' })
-    // If $fetch throws for non-2xx responses it will be caught; otherwise assume success
+    const res = await api.postJson(`/api/tournaments/${route.params.id}/join`, {})
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Registration failed')
     isRegistered.value = true
-    // Refresh details (server adds is_participant on show)
     await fetchTournament()
   } catch (error) {
     console.error('Error registering for tournament:', error)

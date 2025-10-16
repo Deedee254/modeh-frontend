@@ -190,6 +190,7 @@ definePageMeta({ layout: 'auth' })
 
 import { ref, computed, onMounted, onBeforeUnmount, h } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 import { useBottomNavStore } from '~/stores/bottomNav'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
 const config = useRuntimeConfig()
@@ -234,6 +235,8 @@ const liked = ref(false)
 // defensive: quiz is a plain object (not a ref), read properties directly
 const likesCount = ref((quiz && (quiz.likes_count ?? quiz.likes)) ?? 0)
 const likeAnimating = ref(false)
+const api = useApi()
+const alert = useAppAlert()
 async function toggleLike(){
   // optimistic
   liked.value = !liked.value
@@ -242,13 +245,22 @@ async function toggleLike(){
   likeAnimating.value = true
   setTimeout(() => (likeAnimating.value = false), 350)
   try{
-    if (liked.value) await $fetch(config.public.apiBase + `/api/quizzes/${quiz.id}/like`, { method: 'POST', credentials: 'include' })
-    else await $fetch(config.public.apiBase + `/api/quizzes/${quiz.id}/unlike`, { method: 'POST', credentials: 'include' })
+    let res
+    if (liked.value) res = await api.postJson(`/api/quizzes/${quiz.id}/like`, {})
+    else res = await api.postJson(`/api/quizzes/${quiz.id}/unlike`, {})
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) {
+      // revert on error
+      liked.value = !liked.value
+      likesCount.value = Math.max(0, likesCount.value + (liked.value ? 1 : -1))
+      alert.push({ message: 'Could not like/unlike quiz. Please try again.', type: 'error' })
+    }
   }catch(err){
     // revert on error
     liked.value = !liked.value
     likesCount.value = Math.max(0, likesCount.value + (liked.value ? 1 : -1))
     console.error('Like failed', err)
+    alert.push({ message: 'Network error while liking. Try again.', type: 'error' })
   }
 }
 function onLike(close){ if (typeof close === 'function') close(); toggleLike(); }

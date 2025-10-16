@@ -121,6 +121,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 definePageMeta({
   layout: 'quiz-master',
@@ -177,6 +179,9 @@ const createImagePreview = (file) => {
   reader.readAsDataURL(file)
 }
 
+const api = useApi()
+const alert = useAppAlert()
+
 // Form submission
 const handleSubmit = async () => {
   errors.value = {}
@@ -193,19 +198,26 @@ const handleSubmit = async () => {
       formData.append('image', form.value.image)
     }
 
-    // Create the topic via API
-    const response = await fetch(useRuntimeConfig().public.apiBase + '/api/topics', {
-      method: 'POST',
-      credentials: 'include',
-      body: formData
-    })
+    // debug: show if XSRF exists and cookie keys
+    try { console.debug('[topics/create] cookie keys:', document.cookie.split(';').map(s=>s.trim().split('=')[0]), 'XSRF present:', !!document.cookie.match(/XSRF-TOKEN=/)) } catch(e) {}
+    const response = await api.postFormData('/api/topics', formData)
+
+    // If auth/session expired, handle centrally (redirect + message)
+    if (api.handleAuthStatus(response)) {
+      alert.push({ type: 'warning', message: 'Session expired — please sign in again' })
+      return
+    }
 
     if (!response.ok) {
-      const data = await response.json()
-      if (data.errors) {
+      // backend may return HTML (e.g. 419 page); try JSON but fall back to text
+      let data = null
+      try { data = await response.json() } catch (e) { data = null }
+      if (data && data.errors) {
         errors.value = data.errors
         return
       }
+      const txt = await response.text().catch(() => null)
+      console.error('Topic create failed response:', txt)
       throw new Error('Failed to create topic')
     }
 

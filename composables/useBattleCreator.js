@@ -112,9 +112,11 @@ export function useBattleCreator(options = {}) {
           random: 1
         }
       }
-      const res = await fetch(cfg.public.apiBase + '/api/battles', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const api = (await import('~/composables/useApi')).default()
+      const res = await api.postJson('/api/battles', payload)
+      if (api.handleAuthStatus(res)) return { error: 'auth' }
       if (!res.ok) {
-        const txt = await res.text()
+        const txt = await res.text().catch(() => '')
         throw new Error('Failed to create battle: ' + txt)
       }
       return { battle: await res.json() }

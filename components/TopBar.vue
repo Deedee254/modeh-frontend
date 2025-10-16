@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white border-b shadow-sm relative" :class="{ 'z-50': mobileNavOpen || sidebarMobileOpen }">
+  <div class="bg-white border-b shadow-sm sticky top-0 z-30" :class="{ 'z-50': ui.mobileNavOpen || ui.sidebarOpen }">
     <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-0 sm:gap-2">
       <div class="flex items-center gap-1 sm:gap-2 w-full">
-        <!-- Bars / hamburger: on desktop open sidebar, on mobile open the topbar mobile menu -->
-        <button class="inline-flex p-1 rounded-md text-gray-500 hover:bg-gray-100" @click="onBarsClick" aria-label="Open menu">
+        <!-- Bars / hamburger: hidden on md+ (desktop). Visible only on small screens -->
+        <button class="inline-flex p-1 rounded-md text-gray-500 hover:bg-gray-100 md:hidden" @click="onBarsClick" aria-label="Open menu">
           <Bars3Icon class="w-5 h-5" />
         </button>
 
@@ -29,7 +29,7 @@
         </nav>
       </div>
 
-  <div class="flex items-center gap-1 sm:gap-3">
+  <div class="flex items-center gap-2 sm:gap-4">
         <!-- Notifications (icon-only) -->
         <NotificationsDropdown @update:unread="(v) => { unreadCount.value = v }" />
 
@@ -56,18 +56,27 @@
             <template v-if="auth.user && auth.user.id">
               <ActionMenu>
                 <template #trigger>
-                  <button class="flex items-center p-0.5 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="User menu">
-                    <img :src="userAvatar" class="w-6 h-6 sm:w-8 sm:h-8 rounded-full" alt="User avatar" />
+                  <!-- Avatar: use consistent size and minimal extra padding so it looks good on mobile and desktop -->
+                  <button class="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" aria-label="User menu">
+                    <img :src="userAvatar" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover object-center" alt="User avatar" />
                   </button>
                 </template>
 
                 <template #items="{ close }">
-                  <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</NuxtLink>
-                  <NuxtLink :to="isquizee ? '/quizee/profile' : '/quiz-master/profile'" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</NuxtLink>
-                  <NuxtLink :to="isquizee ? '/quizee/settings' : '/quiz-master/settings'" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</NuxtLink>
-                  <div class="px-4 py-2"><ThemeToggle /></div>
-                  <div class="border-t border-gray-200"></div>
-                  <button @click="() => { onLogout(); close && close() }" class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+                  <div class="px-4 py-3">
+                    <p class="text-sm text-gray-900 dark:text-white">Signed in as</p>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ auth.user.email }}</p>
+                  </div>
+                  <div class="border-t border-gray-200 dark:border-slate-700"></div>
+                  <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Dashboard</NuxtLink>
+                  <NuxtLink :to="isquizee ? '/quizee/profile' : '/quiz-master/profile'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Profile</NuxtLink>
+                  <NuxtLink :to="isquizee ? '/quizee/settings' : '/quiz-master/settings'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Settings</NuxtLink>
+                  <div class="border-t border-gray-200 dark:border-slate-700"></div>
+                  <div class="px-4 py-2">
+                    <ThemeToggle />
+                  </div>
+                  <div class="border-t border-gray-200 dark:border-slate-700"></div>
+                  <button @click="() => { onLogout(); close && close() }" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Sign out</button>
                 </template>
               </ActionMenu>
             </template>
@@ -75,7 +84,7 @@
             <template v-else>
               <div class="flex items-center gap-2">
                 <NuxtLink to="/login" class="text-sm text-gray-700 hover:text-gray-900">Sign in</NuxtLink>
-                <NuxtLink to="/register" class="text-sm text-indigo-600 hover:text-indigo-700">Register</NuxtLink>
+                <NuxtLink to="/register" class="hidden sm:block text-sm text-indigo-600 hover:text-indigo-700">Register</NuxtLink>
                 <ThemeToggle />
               </div>
             </template>
@@ -85,13 +94,16 @@
     </div>
 
     <!-- Mobile topbar menu (opened by hamburger on small screens) -->
-    <div v-if="mobileNavOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 sm:hidden" role="dialog" aria-modal="true">
+    <div v-if="ui.mobileNavOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 sm:hidden" role="dialog" aria-modal="true">
       <div class="absolute top-0 left-0 right-0 bg-white p-4">
         <div class="flex items-center justify-between">
           <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="flex items-center">
             <img src="/logo/modeh-logo.png" alt="Modeh" class="h-6 w-auto" />
           </NuxtLink>
           <button @click="() => { mobileNavOpen = false }" class="p-2 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Close menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          </button>
+          <button @click="() => { ui.mobileNavOpen = false }" class="p-2 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Close menu">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
           </button>
         </div>
@@ -102,20 +114,28 @@
             <NuxtLink @click="mobileNavOpen = false" to="/quizee/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
             <NuxtLink @click="mobileNavOpen = false" to="/quizee/battles" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Battles</NuxtLink>
             <NuxtLink @click="mobileNavOpen = false" to="/quiz-masters" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quiz-masters</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/battles" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Battles</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-masters" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quiz-masters</NuxtLink>
           </template>
           <template v-else>
             <NuxtLink @click="mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
             <NuxtLink @click="mobileNavOpen = false" to="/quiz-master/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
             <NuxtLink @click="mobileNavOpen = false" to="/quiz-master/quizees" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quizees</NuxtLink>
             <NuxtLink @click="mobileNavOpen = false" to="/quiz-master/analytics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Analytics</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizees" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quizees</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/analytics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Analytics</NuxtLink>
           </template>
 
           <div class="border-t border-gray-100 my-2" />
 
           <!-- Mobile overlay only contains navigation; profile/settings/sign out available from the avatar ActionMenu -->
           <div v-if="!auth.user || !auth.user.id" class="flex flex-col gap-2">
-            <NuxtLink @click="mobileNavOpen = false" to="/login" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Sign in</NuxtLink>
-            <NuxtLink @click="mobileNavOpen = false" to="/register" class="block px-3 py-2 text-sm text-indigo-600 hover:bg-gray-50 rounded">Register</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/login" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Sign in</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/register" class="block px-3 py-2 text-sm text-indigo-600 hover:bg-gray-50 rounded">Register</NuxtLink>
           </div>
         </nav>
       </div>
@@ -157,8 +177,9 @@ import { BellIcon, MagnifyingGlassIcon, ChatBubbleOvalLeftEllipsisIcon, Bars3Ico
 import { useNotificationsStore } from '~/stores/notifications'
 import { useAppTheme } from '~/composables/useAppTheme'
 import { useUserRole } from '~/composables/useUserRole'
+import { useUiStore } from '~/stores/ui'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
-import { useSidebar } from '~/composables/useSidebar'
+import ThemeToggle from '~/components/ThemeToggle.vue'
 
 const q = ref('')
 const showSearch = ref(false)
@@ -177,45 +198,27 @@ const searchInput = ref(null)
 const mobileSearchInput = ref(null)
 const { isDark, toggleTheme } = useAppTheme()
 const route = useRoute()
-const mobileNavOpen = ref(false)
-const MOBILE_NAV_KEY = 'topbar:mobileNavOpen'
-
-if (import.meta.client) {
-  try {
-    const stored = localStorage.getItem(MOBILE_NAV_KEY)
-    if (stored !== null) {
-      mobileNavOpen.value = stored === 'true'
-    }
-  } catch (e) {}
-}
-
-watch(mobileNavOpen, (value) => {
-  if (!import.meta.client) return
-  try {
-    localStorage.setItem(MOBILE_NAV_KEY, String(value))
-  } catch (e) {}
-})
+const { mobileNavOpen } = useMobileNav()
 
 const searchPlaceholder = computed(() => isquizee.value ? 'Search quizzes, topics, subjects... (press / to focus)' : 'Search questions, topics, subjects... (press / to focus)')
 
 const { sidebarMobileOpen, toggleSidebar } = useSidebar()
 
-function onToggleSidebar() {
-  // keep sidebar toggle for desktop; on mobile we open the topbar mobile nav instead
-  if (import.meta.client && window.innerWidth < 640) {
-    mobileNavOpen.value = true
-    return
-  }
-  toggleSidebar()
-}
-
 function onBarsClick() {
-  // On small screens, open the topbar mobile nav. On larger screens, open the sidebar.
-  if (import.meta.client && window.innerWidth < 640) {
-    mobileNavOpen.value = true
-    return
+  if (import.meta.client) {
+    // On small screens, open the mobile navigation drawer.
+    if (window.innerWidth < 768) { // 768px is md breakpoint in Tailwind
+      mobileNavOpen.value = true
+    } else {
+      // On larger screens, dispatch a global event to toggle the sidebar.
+      try {
+      window.dispatchEvent(new Event('toggle-sidebar'))
+    } catch (e) {
+      // Fallback: call composable if event dispatch fails
+      try { toggleSidebar() } catch (err) {}
+    }
   }
-  toggleSidebar()
+}
 }
 
 function onLogout() {
@@ -348,8 +351,6 @@ onBeforeUnmount(() => {
 const userName = computed(() => auth.user?.name || 'User')
 const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
-
-watch(() => route.fullPath, () => { mobileNavOpen.value = false })
 
 const showUserMenu = ref(false)
 function toggleUserMenu() { showUserMenu.value = !showUserMenu.value }

@@ -1,10 +1,12 @@
 import { useRouter } from 'vue-router'
+import { useApi } from '~/composables/useApi'
 
 // Client-only plugin: process a post-login intent saved to localStorage under 'modeh:postLoginIntent'
 export default defineNuxtPlugin((nuxtApp) => {
   // Expose a function on the Nuxt app for other modules to call after login/fetchUser
   nuxtApp.$processPostLoginIntent = async function processPostLoginIntent() {
     if (typeof window === 'undefined') return
+    const api = useApi()
     try {
       const raw = localStorage.getItem('modeh:postLoginIntent')
       if (!raw) return
@@ -18,10 +20,11 @@ export default defineNuxtPlugin((nuxtApp) => {
       // Only known intent supported for now: subscribe
       if (intent.type === 'subscribe' && intent.packageId) {
         try {
-          // Use global $fetch (Nuxt) so credentials and baseURL are applied
-          await $fetch(`/api/packages/${intent.packageId}/subscribe`, { method: 'POST', credentials: 'include' })
+          const res = await api.postJson(`/api/packages/${intent.packageId}/subscribe`, {})
+          // if session expired or unauthorized, do not clear intent so user can retry after login
+          if (api.handleAuthStatus(res)) return
+          // success: clear intent and navigate to subscription
           localStorage.removeItem('modeh:postLoginIntent')
-          // navigate to My Subscription detail
           const router = useRouter()
           // use a short timeout so this is executed after login navigation completes
           setTimeout(() => router.push('/quizee/subscription'), 50)

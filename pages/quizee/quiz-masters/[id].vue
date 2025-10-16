@@ -92,11 +92,15 @@ const quizMaster = computed(() => {
 import { ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 const auth = useAuthStore()
 const router = useRouter()
 const following = ref(false)
 const loadingFollow = ref(false)
+const api = useApi()
+const alert = useAppAlert()
 
 // initialize following based on returned payload (if API includes) - defensive
 if (quizMasterData.value && (quizMasterData.value.data?.is_following || quizMasterData.value.is_following)) {
@@ -110,10 +114,13 @@ async function followHandler() {
   following.value = !current
   loadingFollow.value = true
   try {
-    if (!current) {
-      await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/follow`, { method: 'POST', credentials: 'include' })
-    } else {
-      await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/unfollow`, { method: 'POST', credentials: 'include' })
+    let res
+    if (!current) res = await api.postJson(`/api/quiz-masters/${id}/follow`, {})
+    else res = await api.postJson(`/api/quiz-masters/${id}/unfollow`, {})
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) {
+      following.value = current
+      alert.push({ message: 'Failed to follow/unfollow. Please try again.', type: 'error' })
     }
   } catch (err) {
     following.value = current

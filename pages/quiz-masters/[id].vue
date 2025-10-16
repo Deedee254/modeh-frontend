@@ -92,6 +92,8 @@ const { data: quizMasterData, pending, error } = await useAsyncData(
 
 import { ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 const quizMaster = computed(() => {
     if (!quizMasterData.value) return null
@@ -116,10 +118,15 @@ async function followHandler() {
   following.value = !current
   loadingFollow.value = true
   try {
-    if (!current) {
-      await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/follow`, { method: 'POST', credentials: 'include' })
-    } else {
-      await $fetch(config.public.apiBase + `/api/quiz-masters/${id}/unfollow`, { method: 'POST', credentials: 'include' })
+    const api = useApi()
+    const alert = useAppAlert()
+    let res
+    if (!current) res = await api.postJson(`/api/quiz-masters/${id}/follow`, {})
+    else res = await api.postJson(`/api/quiz-masters/${id}/unfollow`, {})
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) {
+      following.value = current
+      alert.push({ message: 'Failed to follow/unfollow. Try again.', type: 'error' })
     }
   } catch (err) {
     following.value = current
