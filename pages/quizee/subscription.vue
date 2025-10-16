@@ -76,7 +76,7 @@ async function doSubscribe(pkg) {
 
 async function initiate() {
   if (!subscription.value) return
-  const res = await api.postJson(`/api/payments/subscriptions/${subscription.value.id}/mpesa/initiate`, {})
+  const res = await api.postJson(`/api/payments/subscriptions/${subscription.value.id}/mpesa/initiate`, {});
     if (api.handleAuthStatus(res)) return
     if (res.ok) alert.push({ message: 'Payment initiated (simulated)', type: 'success' })
     else alert.push({ message: 'Failed to initiate payment', type: 'error' })
@@ -146,4 +146,3 @@ onMounted(async () => {
     </ClientOnly>
   </div>
 </template>
-
