@@ -71,7 +71,7 @@ export default defineNuxtConfig({
   // Runtime config (public)
   runtimeConfig: {
     public: {
-      apiBase: env.NUXT_PUBLIC_API_BASE ?? 'http://127.0.0.1:8000',
+      apiBase: env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
       pusherKey: env.NUXT_PUSHER_KEY ?? env.VITE_PUSHER_KEY ?? '',
       pusherCluster: env.NUXT_PUSHER_CLUSTER ?? env.VITE_PUSHER_CLUSTER ?? '',
       pusherForceTLS: (env.NUXT_PUSHER_FORCE_TLS ?? env.VITE_PUSHER_FORCE_TLS) === 'true' || false,
