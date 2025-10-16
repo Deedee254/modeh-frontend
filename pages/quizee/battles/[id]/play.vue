@@ -27,7 +27,8 @@
           <div class="mb-2 font-semibold">Waiting for an opponent to join...</div>
           <div class="text-sm text-gray-700">You can wait or start immediately with a bot opponent.</div>
           <div class="mt-4">
-            <button @click="startWithBot" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Start with Bot</button>
+                  <button @click="startWithBot" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Start with Bot</button>
+                  <button v-if="isInitiator" @click="enableSoloMode" class="ml-3 px-4 py-2 bg-green-600 text-white rounded-lg">Take Solo (subscription required)</button>
           </div>
         </div>
 
@@ -89,9 +90,13 @@ const timePerQuestion = ref(20)
 const questionRemaining = ref(0)
 const questionStartTs = ref(0)
 let timer = null
+const submissionMessage = ref('')
+let submissionInterval = null
 
 const waitingForOpponent = ref(false)
 const useBot = ref(false)
+const useSolo = ref(false)
+// payment handled via centralized checkout page
 let pollTimer = null
 let _echoChannel = null
 
@@ -178,18 +183,67 @@ function detachEchoForJoin() {
 
 function startWithBot() { useBot.value = true; waitingForOpponent.value = false }
 
+function enableSoloMode() { useSolo.value = true; waitingForOpponent.value = false }
+
 function finishBattle() {
   if (!allAnswered.value) return
+  if (useSolo.value) return soloComplete()
   submitBattle()
 }
 
+async function soloComplete() {
+  try {
+    loading.value = true
+      // show short saving message; defer marking to checkout
+      submissionMessage.value = 'Saving answers...'
+      const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })), defer_marking: true }
+      const res = await fetch(cfg.public.apiBase + `/api/battles/${id}/solo-complete`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    if (!res.ok) throw new Error('Solo completion failed')
+    const json = await res.json()
+    // Check subscription before showing detailed results
+    // check subscription; if inactive, show modal instead of redirect
+    try {
+      const { fetchSubscription, subscription } = await import('~/composables/useSubscription.js').then(m => m.useSubscription())
+      await fetchSubscription(cfg)
+      const sub = subscription.value
+      const isActive = sub && (sub.status === 'active' || sub.status === 'paid')
+      if (!isActive) {
+        router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
+        return
+      }
+    } catch (e) {
+      console.warn('Subscription check failed', e)
+    }
+
+  // stop saving message and redirect to checkout for marking/results
+  if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
+  submissionMessage.value = ''
+  router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function onPaid() {
+  // re-check subscription and navigate to results when payment finishes
+  const cfg = useRuntimeConfig()
+    // payment handled on /quizee/payments/checkout
+}
 async function submitBattle() {
   try {
     loading.value = true
-    const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })) }
-    await fetch(cfg.public.apiBase + `/api/battles/${id}/submit`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+  // only show a short saving note; actual marking happens after checkout
+  submissionMessage.value = 'Saving answers...'
+  const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })), defer_marking: true }
+  await fetch(cfg.public.apiBase + `/api/battles/${id}/submit`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
     const qs = useBot.value ? '?bot=1' : ''
-    router.push(`/quizee/battles/${id}/result${qs}`)
+    // redirect to centralized checkout for marking/results
+    if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
+    submissionMessage.value = ''
+    window.$toast?.info?.('Results are available for subscribed users. Please subscribe to view results.')
+    router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
   } catch (e) {
     console.error(e)
   } finally {
@@ -225,3 +279,6 @@ onBeforeUnmount(() => {
   detachEchoForJoin()
 })
 </script>
+
+<!-- Payment handled centrally on checkout page; no inline modal -->
+

@@ -1,131 +1,127 @@
 <template>
-  <aside :class="[collapsed ? 'w-20' : 'w-64', 'bg-white border-r min-h-screen flex flex-col py-4 transition-all duration-300']">
-    <div class="mb-6 flex items-center" :class="{'justify-center': collapsed, 'px-6': !collapsed}">
-  <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8 transition-all duration-300" :class="{'h-8': collapsed, 'h-10': !collapsed}" />
+  <aside ref="asideRef" class="w-64 w-20 bg-white border-r h-screen sticky top-0 flex flex-col py-4 transition-all duration-300">
+    <div class="mb-6 flex items-center px-6">
+      <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8 h-10 transition-all duration-300" />
     </div>
 
     <nav class="flex-1 w-full">
-      <ul class="flex flex-col gap-2 px-2">
-        <li>
-          <NuxtLink to="/quiz-master/dashboard" :class="linkClass('/quiz-master/dashboard')" title="Dashboard">
-            <HomeIcon class="w-6 h-6" />
-            <span v-if="!collapsed" class="ml-3">Dashboard</span>
-          </NuxtLink>
-        </li>
+      <ul class="flex flex-col gap-1 px-2">
+          <li>
+            <NuxtLink to="/quiz-master/dashboard" :class="linkClass('/quiz-master/dashboard')" title="Dashboard">
+              <HomeIcon class="w-5 h-5" />
+              <span class="ml-2 nav-label">Dashboard</span>
+            </NuxtLink>
+          </li>
 
         <li>
           <NuxtLink to="/quiz-master/subjects" :class="linkClass('/quiz-master/subjects')" title="Subjects">
-            <BookOpenIcon class="w-6 h-6" />
-            <span v-if="!collapsed" class="ml-3">Subjects</span>
+            <BookOpenIcon class="w-5 h-5" />
+            <span class="ml-2 nav-label">Subjects</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quiz-master/topics" :class="linkClass('/quiz-master/topics')" title="Topics">
-            <RectangleStackIcon class="w-6 h-6" />
-            <span v-if="!collapsed" class="ml-3">Topics</span>
+            <RectangleStackIcon class="w-5 h-5" />
+            <span class="ml-2 nav-label">Topics</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quiz-master/quizzes" :class="linkClass('/quiz-master/quizzes')" title="My Quizzes">
-            <ClipboardDocumentListIcon class="w-6 h-6" />
-            <span v-if="!collapsed" class="ml-3">My Quizzes</span>
+            <ClipboardDocumentListIcon class="w-5 h-5" />
+            <span class="ml-2 nav-label">My Quizzes</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quiz-master/quizzes/create" :class="linkClass('/quiz-master/quizzes/create')" title="Create Quiz">
-            <PlusIcon class="w-6 h-6" />
-            <span v-if="!collapsed" class="ml-3">Create Quiz</span>
+            <PlusIcon class="w-5 h-5" />
+            <span class="ml-2 nav-label">Create Quiz</span>
           </NuxtLink>
         </li>
 
+
         <li>
           <NuxtLink to="/quiz-master/questions" :class="linkClass('/quiz-master/questions')" title="Question Bank">
-            <QuestionMarkCircleIcon class="w-6 h-6" />
-            <span v-if="!collapsed" class="ml-3">Question Bank</span>
+            <QuestionMarkCircleIcon class="w-5 h-5" />
+            <span class="ml-2 nav-label">Question Bank</span>
           </NuxtLink>
         </li>
         
         <li>
           <NuxtLink to="/quiz-master/wallet" :class="linkClass('/quiz-master/wallet')" title="Wallet">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 3v4M8 3v4" />
-            </svg>
-            <span v-if="!collapsed" class="ml-3">Wallet</span>
+            </svg> 
+            <span class="ml-2 nav-label">Wallet</span>
           </NuxtLink>
         </li>
         <li>
           <NuxtLink to="/quiz-master/settings" :class="linkClass('/quiz-master/settings')" title="Settings">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m0 14v1m8-8h1M4 12H3m15.364-6.364l.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            <span v-if="!collapsed" class="ml-3">Settings</span>
+            <span class="ml-2 nav-label">Settings</span>
           </NuxtLink>
         </li>
       </ul>
     </nav>
-  <div class="mb-4 w-full px-2">
-    <template v-if="user && user.id">
-      <NuxtLink to="/quiz-master/profile" class="p-2 rounded flex items-center w-full" :class="[collapsed ? 'justify-center' : '', 'hover:bg-gray-100']">
-        <img :src="userAvatar" class="w-8 h-8 rounded-full" />
-        <span v-if="!collapsed" class="ml-3 text-sm font-medium">{{ user.name }}</span>
-      </NuxtLink>
-    </template>
-    <template v-else>
-      <NuxtLink to="/login" class="block w-full text-center px-3 py-2 bg-indigo-600 text-white rounded">Login</NuxtLink>
-    </template>
-  </div>
+  <!-- Desktop profile removed to avoid duplication with TopBar; profile remains in mobile drawer -->
 
     <div class="px-2">
-    <button @click="toggleCollapse" class="w-full p-2 rounded text-sm text-gray-600 hover:bg-gray-100">
-    <XMarkIcon v-if="!collapsed" class="w-4 h-4 inline-block mr-2" />
-    <Bars3Icon v-else class="w-4 h-4 inline-block mr-2" />
-    <span v-if="!collapsed">Collapse</span>
+    <button @click="toggleCollapse" class="w-full p-2 rounded text-sm text-gray-600 hover:bg-gray-100 control-btn">
+      <XMarkIcon class="w-4 h-4 inline-block mr-2 icon-close" />
+      <Bars3Icon class="w-4 h-4 inline-block mr-2 icon-open" />
+      <span class="control-label">Collapse</span>
     </button>
   </div>
   </aside>
   <!-- Mobile drawer -->
-  <div v-if="mobileOpen" class="fixed inset-0 z-50 lg:hidden">
-    <div class="absolute inset-0 bg-black/40" @click="mobileOpen = false"></div>
-    <aside class="absolute left-0 top-0 h-full w-64 bg-white border-r p-4 overflow-auto">
+  <div v-if="sidebarMobileOpen" class="fixed inset-0 z-50 lg:hidden">
+    <div class="absolute inset-0 bg-black/40" @click="setSidebar(false)"></div>
+  <aside class="absolute left-0 top-0 h-screen w-64 bg-white border-r p-4 overflow-auto">
         <div class="flex items-center justify-between mb-4">
         <div class="flex items-center">
           <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8" />
         </div>
-        <button @click="mobileOpen = false" class="p-2 rounded hover:bg-gray-100">
+        <button @click="setSidebar(false)" class="p-2 rounded hover:bg-gray-100">
           <XMarkIcon class="w-5 h-5" />
         </button>
       </div>
       <nav>
         <ul class="flex flex-col gap-2">
-          <li><NuxtLink to="/quiz-master/dashboard" :class="linkClass('/quiz-master/dashboard')">Dashboard</NuxtLink></li>
-          <li><NuxtLink to="/quiz-master/subjects" :class="linkClass('/quiz-master/subjects')">Subjects</NuxtLink></li>
-          <li><NuxtLink to="/quiz-master/topics" :class="linkClass('/quiz-master/topics')">Topics</NuxtLink></li>
-          <li><NuxtLink to="/quiz-master/quizzes" :class="linkClass('/quiz-master/quizzes')">My Quizzes</NuxtLink></li>
-          <li><NuxtLink to="/quiz-master/quizzes/create" :class="linkClass('/quiz-master/quizzes/create')">Create Quiz</NuxtLink></li>
-          <li><NuxtLink to="/quiz-master/questions" :class="linkClass('/quiz-master/questions')">Question Bank</NuxtLink></li>
-          <li><NuxtLink to="/quiz-master/wallet" :class="linkClass('/quiz-master/wallet')">Wallet</NuxtLink></li>
-          <li><NuxtLink to="/quiz-master/settings" :class="linkClass('/quiz-master/settings')">Settings</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/dashboard" :class="linkClass('/quiz-master/dashboard')">Dashboard</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/subjects" :class="linkClass('/quiz-master/subjects')">Subjects</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/topics" :class="linkClass('/quiz-master/topics')">Topics</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/quizzes" :class="linkClass('/quiz-master/quizzes')">My Quizzes</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/quizzes/create" :class="linkClass('/quiz-master/quizzes/create')">Create Quiz</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/questions" :class="linkClass('/quiz-master/questions')">Question Bank</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/wallet" :class="linkClass('/quiz-master/wallet')">Wallet</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/settings" :class="linkClass('/quiz-master/settings')">Settings</NuxtLink></li>
         </ul>
       </nav>
       <div class="mt-6">
-        <NuxtLink to="/quiz-master/profile" class="flex items-center gap-3">
-          <img :src="userAvatar" class="w-8 h-8 rounded-full" />
-          <div>
-            <div class="font-medium">{{ user.name }}</div>
-            <div class="text-sm text-gray-500">View profile</div>
-          </div>
-        </NuxtLink>
+        <template v-if="user && user.id">
+          <NuxtLink to="/quiz-master/profile" class="flex items-center gap-3">
+            <img :src="userAvatar" class="w-8 h-8 rounded-full" />
+            <div>
+              <div class="font-medium">{{ user.name }}</div>
+              <div class="text-sm text-gray-500">View profile</div>
+            </div>
+          </NuxtLink>
+        </template>
+        <template v-else>
+          <NuxtLink to="/login" class="block w-full text-center px-3 py-2 bg-indigo-600 text-white rounded">Login</NuxtLink>
+        </template>
       </div>
     </aside>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 // Heroicons outline
@@ -138,61 +134,76 @@ const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeho
 const collapsed = ref(false)
 const STORAGE_KEY = 'sidebar:collapsed:quiz-master'
 const route = useRoute()
-const mobileOpen = ref(false)
-const MOBILE_KEY = 'sidebar:mobileOpen:quiz-master'
+const { sidebarMobileOpen, toggleSidebar, setSidebar } = useSidebar()
+const asideRef = ref(null)
 
 function linkClass(path) {
   const active = route.path.startsWith(path)
   return [
     'p-3 rounded flex items-center text-gray-700 transition-colors',
-    collapsed.value ? 'justify-center' : '',
     active ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'
   ]
 }
 
 function toggleCollapse() {
   collapsed.value = !collapsed.value
-  // persist preference across reloads
   if (process.client) {
     try { localStorage.setItem(STORAGE_KEY, String(collapsed.value)) } catch (e) {}
   }
 }
 
 if (process.client) {
-  // restore persisted collapsed state if available, otherwise default to small-screen behaviour
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw !== null) {
-      collapsed.value = raw === 'true'
-    } else {
+  onMounted(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw !== null) {
+        collapsed.value = raw === 'true'
+      } else {
+        if (window.innerWidth < 768) collapsed.value = true
+      }
+    } catch (e) {
       if (window.innerWidth < 768) collapsed.value = true
     }
-  } catch (e) {
-    if (window.innerWidth < 768) collapsed.value = true
-  }
 
-  window.addEventListener('toggle-sidebar', () => {
-    // small screens use drawer, larger screens toggle collapse
-    if (window.innerWidth < 1024) {
-      mobileOpen.value = !mobileOpen.value
-    } else {
-      toggleCollapse()
-    }
+    nextTick(() => applyCollapseToDom(collapsed.value))
+
+    window.addEventListener('toggle-sidebar', () => {
+      if (window.innerWidth < 1024) {
+        toggleSidebar()
+      } else {
+        toggleCollapse()
+      }
+    })
   })
-
-  // also keep collapse default for very small viewports if no persisted value
 }
 
-// persist mobile drawer changes
-watch(mobileOpen, (v) => {
-  if (process.client) {
-    try { localStorage.setItem(MOBILE_KEY, String(v)) } catch (e) {}
-  }
-})
+function applyCollapseToDom(isCollapsed) {
+  const aside = asideRef.value
+  if (!aside) return
+
+  aside.style.width = isCollapsed ? '5rem' : '16rem'
+
+  aside.querySelectorAll('a').forEach(a => {
+    a.classList.toggle('justify-center', isCollapsed)
+  })
+
+  aside.querySelectorAll('.nav-label').forEach(l => {
+    if (l instanceof HTMLElement) l.style.display = isCollapsed ? 'none' : ''
+  })
+
+  const iconOpen = aside.querySelector('.icon-open')
+  const iconClose = aside.querySelector('.icon-close')
+  if (iconOpen instanceof HTMLElement) iconOpen.style.display = isCollapsed ? '' : 'none'
+  if (iconClose instanceof HTMLElement) iconClose.style.display = isCollapsed ? 'none' : ''
+  const controlLabel = aside.querySelector('.control-label')
+  if (controlLabel instanceof HTMLElement) controlLabel.style.display = isCollapsed ? 'none' : ''
+}
+
+function onMobileNavClick() {
+  setSidebar(false)
+  try { window.dispatchEvent(new CustomEvent('sidebar-closed')) } catch (e) {}
+}
 </script>
 
 <style scoped>
-.transition-width {
-  transition: width 0.3s ease-in-out;
-}
 </style>

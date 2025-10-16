@@ -10,7 +10,7 @@
 
 <script setup>
 import { computed } from 'vue'
-defineProps({ paginator: { type: Object, required: false, default: null } })
+const { paginator } = defineProps({ paginator: { type: Object, required: false, default: null } })
 const emit = defineEmits(['change-page'])
 
 const pages = computed(() => {

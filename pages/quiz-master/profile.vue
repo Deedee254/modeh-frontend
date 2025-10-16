@@ -17,7 +17,7 @@
           <template #meta>
             <span v-if="user?.wallet" class="inline-flex items-center gap-1">
               <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor"><path d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM3 6h18v12H3V6zm1 12h16v-2H4v2zm0-4h16V8H4v6z"/></svg>
-              <span class="font-medium">${{ user.wallet }}</span>
+              <span class="font-medium">${{ (user as any).wallet }}</span>
             </span>
           </template>
         </ProfileHeader>
@@ -37,7 +37,7 @@
 
             <div>
               <label for="bio" class="block text-sm font-medium text-slate-700">Bio</label>
-              <textarea id="bio" v-model="form.bio" rows="4" class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+              <UTextarea id="bio" v-model="form.bio" :rows="4" class="mt-1 block w-full" />
             </div>
 
             <div class="flex flex-col sm:flex-row justify-end gap-3">
@@ -58,6 +58,7 @@ import { useAuthStore } from '~/stores/auth'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useAccountApi } from '~/composables/useAccountApi'
+import UiTextarea from '~/components/ui/UiTextarea.vue'
 
 const auth = useAuthStore()
 const { patchMe } = useAccountApi()

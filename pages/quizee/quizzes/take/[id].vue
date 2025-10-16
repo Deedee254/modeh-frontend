@@ -19,7 +19,7 @@
 
             <!-- Accessible announcements -->
             <div class="sr-only" aria-live="polite">{{ lastAnnouncement }}</div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3" v-if="quiz.questions.length > 0">
               <div class="text-sm px-3 py-1 rounded-full" :class="[
                 quiz.timer_seconds && timeLeft.value < 60 
                   ? 'bg-red-100 text-red-700' 
@@ -30,12 +30,7 @@
                 <span class="font-mono font-semibold">{{ displayTime }}</span>
               </div>
 
-              <!-- Autosave indicator -->
-              <div class="text-sm px-3 py-1 rounded-full bg-gray-100 text-gray-700 flex items-center gap-2" aria-hidden="false">
-                <svg v-if="isAutosaving" class="w-4 h-4 animate-spin text-indigo-600" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-                <span v-if="isAutosaving" class="text-indigo-700">Saving…</span>
-                <span v-else class="text-gray-600">Saved {{ lastSavedHuman }}</span>
-              </div>
+
             </div>
           </div>
 
@@ -111,7 +106,7 @@
                       <!-- Multiple Choice Questions (MCQ, Image MCQ, Audio MCQ, Video MCQ) -->
                       <template v-if="['mcq', 'image_mcq', 'audio_mcq', 'video_mcq'].includes(currentQuestionData.type)">
                         <div v-for="(opt, i) in currentQuestionData.options" :key="i" class="flex items-center gap-3 p-3 bg-gray-50 border rounded-lg hover:bg-white cursor-pointer transition-colors" @click="selectMcq(currentQuestionData.id, opt)">
-                          <input type="radio" :name="'q-'+currentQuestionData.id" :value="opt" v-model="answers[currentQuestionData.id]" @change="autosave(currentQuestionData.id)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" />
+                          <input type="radio" :name="'q-'+currentQuestionData.id" :value="opt" v-model="answers[currentQuestionData.id]" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" />
                           <span class="text-gray-700" v-html="opt?.body || opt?.text || opt"></span>
                         </div>
                       </template>
@@ -119,7 +114,7 @@
                       <!-- Multiple Select -->
                       <template v-if="currentQuestionData.type === 'multi'">
                         <div v-for="(opt, i) in currentQuestionData.options" :key="i" class="flex items-center gap-3 p-3 bg-gray-50 border rounded-lg hover:bg-white cursor-pointer transition-colors" @click="toggleMulti(currentQuestionData.id, opt)">
-                          <input type="checkbox" :value="opt" @change="toggleMulti(currentQuestionData.id, opt)" :checked="(answers[currentQuestionData.id] || []).includes(opt)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" />
+                          <input type="checkbox" :value="opt" @change="() => toggleMulti(currentQuestionData.id, opt)" :checked="(answers[currentQuestionData.id] || []).includes(opt)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" />
                           <span class="text-gray-700" v-html="opt?.body || opt?.text || opt"></span>
                         </div>
                       </template>
@@ -133,17 +128,17 @@
 
                       <!-- Short Answer -->
                       <template v-if="currentQuestionData.type === 'short'">
-                        <textarea v-model="answers[currentQuestionData.id]" @input="autosave(currentQuestionData.id)" placeholder="Type your answer here..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none" rows="3"></textarea>
+                        <UTextarea v-model="answers[currentQuestionData.id]" placeholder="Type your answer here..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none" rows="3" />
                       </template>
 
                       <!-- Numeric -->
                       <template v-if="currentQuestionData.type === 'numeric'">
-                        <input type="number" v-model.number="answers[currentQuestionData.id]" @input="autosave(currentQuestionData.id)" placeholder="Enter a number..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                        <input type="number" v-model.number="answers[currentQuestionData.id]" placeholder="Enter a number..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
                       </template>
                     </div>
                     <div class="text-xs text-gray-500 mt-3 flex items-center gap-1">
                       <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                      Last saved: {{ lastSaved[currentQuestionData.id] ? new Date(lastSaved[currentQuestionData.id]).toLocaleTimeString() : 'never' }}
+
                     </div>
                   </div>
                 </div>
@@ -163,7 +158,11 @@
                   <svg v-if="submitting.value" class="w-4 h-4 inline-block mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
                   <span>{{ submitting.value ? 'Submitting…' : 'Submit Quiz' }}</span>
                 </button>
+                <button v-if="lastSubmitFailed" type="button" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors" @click="submitAnswers" :disabled="submitting.value">
+                  Retry
+                </button>
               </div>
+              <div v-if="submissionMessage" class="mt-3 text-sm text-slate-600">{{ submissionMessage }}</div>
             </div>
           </div>
         </div>
@@ -201,189 +200,43 @@
 </template>
 
 <script setup>
+import UiTextarea from '~/components/ui/UiTextarea.vue'
 // set page layout meta for quizee
 definePageMeta({ layout: 'quizee' })
-import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAppAlert } from '~/composables/useAppAlert'
+import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
+import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
+import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
+import { useQuizNavigation } from '~/composables/quiz/useQuizNavigation'
+import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
 
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 
-// Media type helpers
-function isImage(url) {
-  if (!url) return false
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url) || url.startsWith('data:image/')
-}
-
-function isAudio(url) {
-  if (!url) return false
-  return /\.(mp3|wav|ogg|m4a)$/i.test(url) || url.startsWith('data:audio/')
-}
-
-function isYouTube(url) {
-  if (!url) return false
-  return /youtube\.com|youtu\.be/.test(url)
-}
-
-function getAudioType(url) {
-  if (!url) return ''
-  if (url.endsWith('.mp3')) return 'audio/mpeg'
-  if (url.endsWith('.wav')) return 'audio/wav'
-  if (url.endsWith('.ogg')) return 'audio/ogg'
-  if (url.endsWith('.m4a')) return 'audio/mp4'
-  return ''
-}
-
-function formatYouTubeUrl(url) {
-  if (!url) return ''
-  // Convert standard YouTube URLs to embed format
-  return url.replace(
-    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/,
-    'https://www.youtube.com/embed/$1'
-  )
-}
-
-function formatFillBlanks(text, qid) {
-  if (!text) return ''
-  // Find all blanks marked with [blank] or ____ and replace with input fields
-  const blankRegex = /\[blank\]|_{2,}/g
-  let index = 0
-  
-  return text.replace(blankRegex, () => {
-    const inputId = `blank-${qid}-${index}`
-    const value = (answers.value[qid] || [])[index] || ''
-    
-    // Increment the blank index
-    index++
-    
-    // Return an input field
-    return `<input type="text" 
-      id="${inputId}" 
-      value="${value}"
-      @input="updateBlank('${qid}', ${index-1}, $event.target.value)"
-      class="mx-1 px-2 py-1 border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 min-w-[100px] bg-transparent" 
-    />`
-  })
-}
-
+// --- Core State ---
 const quiz = ref({ questions: [] })
 const loading = ref(true)
 const submitting = ref(false)
-const answers = ref({})
-const result = ref(null)
-const lastSaved = ref({})
+const lastSubmitFailed = ref(false)
+const submissionMessage = ref('')
+let submissionInterval = null
+const { push: pushAlert } = useAppAlert()
 const showConfirm = ref(false)
-const currentQuestion = ref(0)
 
-// Autosave / UI indicators
-const isAutosaving = ref(false)
-const lastAnnouncement = ref('')
 
-const timer = ref(null)
-const timeLeft = ref(0)
-const currentStreak = ref(0)
-const answeredCorrectly = ref({})
-const achievements = ref([])
 
-// Timer visuals
-const timerPercent = computed(() => {
-  if (!quiz.value.timer_seconds) return 0
-  const total = Number(quiz.value.timer_seconds) || 1
-  const used = Math.max(0, total - Number(timeLeft.value))
-  return Math.round((used / total) * 100)
+// Cache the quiz questions length to avoid recomputing
+const quizQuestionsLength = ref(0)
+watch(() => quiz.value?.questions?.length, len => {
+  quizQuestionsLength.value = len || 0
 })
 
-const timerColorClass = computed(() => {
-  if (!quiz.value.timer_seconds) return 'bg-gray-400'
-  const pct = timerPercent.value
-  if (pct >= 75) return 'bg-red-500'
-  if (pct >= 50) return 'bg-amber-500'
-  return 'bg-green-500'
-})
-
-const lastSavedHuman = computed(() => {
-  // use the current question's lastSaved timestamp if available
-  const ts = lastSaved.value[currentQuestionData.value?.id]
-  if (!ts) return 'never'
-  const diff = Math.floor((Date.now() - Number(ts)) / 1000)
-  if (diff < 5) return 'just now'
-  if (diff < 60) return `${diff}s ago`
-  const m = Math.floor(diff / 60)
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  return `${h}h ago`
-})
-
-// Computed property for encouragement messages
-const encouragementMessage = computed(() => {
-  const progress = progressPercent.value
-  const questionsLeft = quiz.value.questions.length - currentQuestion.value
-
-  // Streaks and momentum
-  if (currentStreak.value >= 3) {
-    return "You're on fire!"
-  }
-  
-  // Progress-based encouragement
-  if (progress >= 90) return "Almost there!"
-  if (progress >= 75) return "You're doing great!"
-  if (progress >= 50) return "Halfway there!"
-  if (progress >= 25) return "Keep going!"
-  
-  // Questions-left based encouragement
-  if (questionsLeft === 1) return "Last question!"
-  if (questionsLeft === 2) return "Almost done!"
-  
-  return "You've got this!" // Default encouragement
-})
-
-// Style classes for the encouragement badge
-const encouragementStyle = computed(() => {
-  if (currentStreak.value >= 3) {
-    return 'from-orange-500 to-red-500 text-white'
-  }
-  
-  const progress = progressPercent.value
-  if (progress >= 90) return 'from-green-500 to-emerald-500 text-white'
-  if (progress >= 75) return 'from-blue-500 to-indigo-500 text-white'
-  if (progress >= 50) return 'from-indigo-500 to-violet-500 text-white'
-  return 'from-violet-500 to-fuchsia-500 text-white'
-})
-
-// Computed property for score-based messages
-const scoreMessage = computed(() => {
-  if (!result.value?.score) return ''
-  
-  const score = result.value.score
-  if (score >= 90) return "Outstanding! You've mastered this topic! 🌟"
-  if (score >= 80) return "Excellent work! Keep up the great performance! 🎉"
-  if (score >= 70) return "Great job! You're showing strong understanding! 👏"
-  if (score >= 60) return "Good effort! You're on the right track! 💪"
-  if (score >= 50) return "You're making progress! Keep practicing! 📚"
-  return "Don't give up! Each attempt helps you learn more! 🌱"
-})
-
-function formatTime(sec) {
-  const m = Math.floor(sec/60).toString().padStart(2,'0')
-  const s = Math.floor(sec%60).toString().padStart(2,'0')
-  return `${m}:${s}`
-}
-
-const displayTime = computed(() => {
-  if (quiz.value.timer_seconds) {
-    // For timed quizzes - show time remaining
-    return `Time left: ${formatTime(timeLeft.value)}`
-  } else {
-    // For untimed quizzes - show time elapsed
-    return `Time spent: ${formatTime(timeLeft.value)}`
-  }
-})
-
-const currentQuestionData = computed(() => quiz.value.questions[currentQuestion.value] || {})
-
+// Optimize progress calculation to use cached length
 const progressPercent = computed(() => {
-  const total = Array.isArray(quiz.value.questions) ? quiz.value.questions.length : 0
+  const total = quizQuestionsLength.value
   if (!total) return 0
   let answered = 0
   for (const q of quiz.value.questions) {
@@ -396,6 +249,38 @@ const progressPercent = computed(() => {
   return Math.round((answered / total) * 100)
 })
 
+// --- Composables ---
+const { isImage, isAudio, isYouTube, getAudioType, formatYouTubeUrl } = useQuizMedia()
+const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, startTimer, stopTimer } = useQuizTimer(quiz, () => submitAnswers())
+const { answers, initializeAnswers, selectMcq, toggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
+const { currentQuestion, nextQuestion, previousQuestion } = useQuizNavigation(computed(() => quiz.value.questions))
+const { currentStreak, achievements, encouragementMessage, encouragementStyle, calculateAchievements, resetAchievements } = useQuizEnhancements(quiz, progressPercent, currentQuestion, answers)
+
+const currentQuestionData = computed(() => quiz.value.questions[currentQuestion.value] || {})
+// centralized checkout handles payments and result viewing
+
+// --- Methods ---
+
+function formatFillBlanks(text, qid) {
+  if (!text) return ''
+  const blankRegex = /\[blank\]|_{2,}/g
+  let index = 0
+  
+  return text.replace(blankRegex, () => {
+    const inputId = `blank-${qid}-${index}`
+    const value = (answers.value[qid] || [])[index] || ''
+    index++
+    
+    // The input now calls the method from the composable
+    return `<input type="text" 
+      id="${inputId}" 
+      value="${value}"
+      oninput="this.dispatchEvent(new CustomEvent('updateblank', { bubbles: true, detail: { qid: '${qid}', index: ${index-1}, value: this.value } }))"
+      class="mx-1 px-2 py-1 border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 min-w-[100px] bg-transparent" 
+    />`
+  })
+}
+
 onMounted(async () => {
   const cfg = useRuntimeConfig()
   try {
@@ -403,55 +288,38 @@ onMounted(async () => {
     if (res.ok) {
       const body = await res.json()
       quiz.value = body.quiz || body
-      // init answers and timer
-      quiz.value.questions.forEach(q => { 
-        // support different types; restore saved answer if present
-        const key = `quiz:${id}:q:${q.id}`
-        const saved = process.client ? localStorage.getItem(key) : null
-        if (saved) {
-          try { answers.value[q.id] = JSON.parse(saved) } catch { answers.value[q.id] = saved }
-          lastSaved.value[q.id] = process.client ? Number(localStorage.getItem(key + ':ts')) : null
-        } else {
-          answers.value[q.id] = (q.type === 'multi') ? [] : null
-        }
-      })
-      // Initialize timer for both timed and untimed quizzes
-      if (quiz.value.timer_seconds) {
-        // For timed quizzes - count down
-        timeLeft.value = quiz.value.timer_seconds
-        timer.value = setInterval(() => {
-          timeLeft.value = Math.max(0, timeLeft.value - 1)
-          if (timeLeft.value === 0) submitAnswers()
-        }, 1000)
-      } else {
-        // For untimed quizzes - count up
-        timeLeft.value = 0
-        timer.value = setInterval(() => {
-          timeLeft.value++
-        }, 1000)
+      initializeAnswers()
+      startTimer()
+
+      // Add event listener for fill-in-the-blanks custom event
+      if (process.client) {
+        document.addEventListener('updateblank', (e) => {
+          const { qid, index, value } = e.detail
+          updateBlank(qid, index, value)
+        })
       }
+
+    } else {
+      // Handle quiz not found or other errors
+      console.error("Failed to load quiz", res.status)
+      // Optionally redirect or show an error message
     }
   } catch (e) {}
   loading.value = false
 })
 
-onBeforeUnmount(() => {
-  try { if (timer.value) clearInterval(timer.value) } catch (e) {}
-})
-
 async function submitAnswers() {
   if (submitting.value) return
   submitting.value = true
-  
+  lastSubmitFailed.value = false
   // Calculate achievements before submitting
   calculateAchievements()
-  
-  // optimistic UI: show submitting state
-  const optimistic = { score: null }
-  result.value = optimistic
+
+  // show a short saving message while answers persist; actual marking happens on checkout
+  submissionMessage.value = 'Saving answers...'
   try {
     const cfg = useRuntimeConfig()
-    const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })) }
+  const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })), defer_marking: true }
 
     // Ensure we have Sanctum CSRF cookie set for session-based authentication.
     // This prevents 419 responses when Laravel expects an XSRF token.
@@ -474,30 +342,39 @@ async function submitAnswers() {
 
     const res = await fetch(cfg.public.apiBase + `/api/quizzes/${id}/submit`, { method: 'POST', credentials: 'include', headers, body: JSON.stringify(payload) })
     if (res.ok) {
+      // stop saving message
+      submissionMessage.value = ''
       const body = await res.json()
-      // stop timer
-      if (timer.value) { clearInterval(timer.value); timer.value = null }
-      // clear saved answers for this quiz
-      if (process.client) {
-        quiz.value.questions.forEach(q => { localStorage.removeItem(`quiz:${id}:q:${q.id}`); localStorage.removeItem(`quiz:${id}:q:${q.id}:ts`) })
-      }
+      stopTimer()
+      clearSavedAnswers()
 
-      // If backend returned an attempt id, redirect to the formatted result page
+      // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
       const attemptId = body?.attempt_id ?? body?.attempt?.id
       if (attemptId) {
-        // navigate to result page
-        router.push(`/quizee/quizzes/result/${attemptId}`)
+        router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptId}`)
         return
       }
 
-      // fallback: set result inline
-      result.value = body
+      // No attempt id returned — redirect to checkout with quiz id so user can continue to payment flow
+      router.push(`/quizee/payments/checkout?type=quiz&quiz_id=${id}`)
+      return
     } else {
       // restore optimistic to null to indicate failure
-      result.value = null
+  if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
+  submissionMessage.value = ''
+  // ensure no inline result is shown — stay on page with answers preserved for retry
+      // show error alert and keep answers saved to allow retry
+      let errMsg = 'Failed to submit quiz. Please try again.'
+      try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message } catch(e) {}
+      pushAlert({ message: errMsg, type: 'error' })
+      // Keep answers in-place so user can retry; showConfirm dialog will be closed and user can press Retry
     }
   } catch (e) {
-    result.value = null
+    if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
+    submissionMessage.value = ''
+  // keep answers saved locally so user can retry
+    pushAlert({ message: 'Network error while submitting quiz. Your answers are still saved — try again.', type: 'error' })
+    lastSubmitFailed.value = true
   } finally {
     submitting.value = false
     showConfirm.value = false
@@ -506,145 +383,19 @@ async function submitAnswers() {
 
 function confirmSubmit() { showConfirm.value = true }
 
-function autosave(qid) {
-  if (!process.client) return
-  try {
-    // indicate saving state briefly
-    isAutosaving.value = true
-    const key = `quiz:${id}:q:${qid}`
-    localStorage.setItem(key, JSON.stringify(answers.value[qid]))
-    localStorage.setItem(key + ':ts', String(Date.now()))
-    lastSaved.value[qid] = Date.now()
-    // show saved status shortly after write
-    setTimeout(() => { isAutosaving.value = false }, 800)
-  } catch (e) {}
-}
-
-// Announcements for low time thresholds
-watch(timeLeft, (val, oldVal) => {
-  if (!quiz.value.timer_seconds) return
-  if (val === 60) {
-    lastAnnouncement.value = 'One minute remaining'
-    // Use polite aria live by mutating a reactive visible string
-  }
-  if (val === 10) {
-    lastAnnouncement.value = 'Ten seconds remaining'
-  }
-})
-
-function toggleMulti(qid, opt) {
-  const arr = answers.value[qid] || []
-  const idx = arr.indexOf(opt)
-  if (idx === -1) arr.push(opt)
-  else arr.splice(idx, 1)
-  answers.value[qid] = arr
-  autosave(qid)
-}
-
-function selectMcq(qid, opt) {
-  answers.value[qid] = opt
-  autosave(qid)
-}
-
 function cancel() { router.push('/quizee/quizzes') }
-
-function nextQuestion() {
-  if (currentQuestion.value < quiz.value.questions.length - 1) {
-    currentQuestion.value++
-  }
-}
-
-function previousQuestion() {
-  if (currentQuestion.value > 0) {
-    currentQuestion.value--
-  }
-}
 
 function retakeQuiz() {
   // Clear local storage and reload to retake
-  if (process.client) {
-    quiz.value.questions.forEach(q => {
-      localStorage.removeItem(`quiz:${id}:q:${q.id}`)
-      localStorage.removeItem(`quiz:${id}:q:${q.id}:ts`)
-    })
-  }
+  clearSavedAnswers()
   // Reset achievement tracking
-  currentStreak.value = 0
-  answeredCorrectly.value = {}
-  achievements.value = []
+  resetAchievements()
   window.location.reload()
 }
 
-function calculateAchievements() {
-  // Count answered questions robustly (same rules as progressPercent)
-  const total = Array.isArray(quiz.value.questions) ? quiz.value.questions.length : 0
-  let totalAnswered = 0
-  for (const q of quiz.value.questions) {
-    const val = answers.value[q.id]
-    if (val === null || val === undefined) continue
-    if (typeof val === 'string' && val === '') continue
-    if (Array.isArray(val) && val.length === 0) continue
-    totalAnswered++
-  }
-  const correctCount = Object.values(answeredCorrectly.value).filter(Boolean).length
-  
-  // Achievement badges based on performance
-  if (currentStreak.value >= 5) {
-    achievements.value.push({
-      title: "Hot Streak",
-      description: "Answered 5 questions correctly in a row!",
-      icon: "🔥"
-    })
-  }
-  
-  if (totalAnswered === total && total > 0) {
-    achievements.value.push({
-      title: "Completionist",
-      description: "Answered all questions!",
-      icon: "🎯"
-    })
-  }
-  
-  const accuracy = totalAnswered > 0 ? (correctCount / totalAnswered) * 100 : 0
-  if (accuracy >= 90) {
-    achievements.value.push({
-      title: "Excellence",
-      description: "Achieved 90% or higher accuracy!",
-      icon: "🌟"
-    })
-  }
-}
-
-// Function to update streak on each answer
-function updateStreak(isCorrect) {
-  if (isCorrect) {
-    currentStreak.value++
-    // Show encouraging toast or message for streaks
-    if (currentStreak.value === 3) {
-      // You could add a toast notification here
-      console.log("3 correct answers in a row! Keep it up! 🔥")
-    }
-  } else {
-    currentStreak.value = 0
-  }
-}
-
-// Handle fill-in-the-blanks answers
-function updateBlank(qid, index, value) {
-  // Initialize the answers array if it doesn't exist
-  if (!Array.isArray(answers.value[qid])) {
-    answers.value[qid] = []
-  }
-  
-  // Update the specific blank's answer
-  const currentAnswers = [...answers.value[qid]]
-  currentAnswers[index] = value
-  answers.value[qid] = currentAnswers
-  
-  // Auto-save after updating
-  autosave(qid)
-}
 </script>
+
+
 
 <style scoped>
 </style>

@@ -35,8 +35,12 @@
                   <NuxtLink to="/login" class="text-sm text-indigo-600 underline">Forgot?</NuxtLink>
                 </div>
                 <div>
-                  <button type="submit" :disabled="loading" class="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-white font-semibold">Log in</button>
+                  <button type="submit" :disabled="loading" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-75 flex items-center justify-center">
+                    <svg v-if="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    <span>{{ loading ? 'Logging in...' : 'Log in' }}</span>
+                  </button>
                 </div>
+                <!-- errors shown via toasts; inline error removed -->
               </form>
 
               <div class="mt-4">
@@ -177,11 +181,11 @@
     <!-- Subjects, Grades, Topics sections share the richer hero layout used on listing pages -->
     <section class="px-6 py-10">
       <div class="mx-auto max-w-6xl">
-        <header class="text-center max-w-2xl mx-auto">
-          <div class="flex items-center justify-center gap-4">
+          <header class="text-center max-w-2xl mx-auto">
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
             <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Subjects</div>
-            <div>
-              <select v-model="selectedGrade" class="rounded-md border px-3 py-1 text-sm">
+            <div class="w-full sm:w-auto">
+              <select v-model="selectedGrade" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation">
                 <option :value="null">All grades</option>
                 <option v-for="g in GRADES" :key="g.id" :value="g.id">{{ g.name || g.id }}</option>
               </select>
@@ -244,15 +248,15 @@
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Explore topics with rich context</h3>
           <p class="mt-3 text-slate-600">We're now reusing the enhanced topic cards so you can see quiz counts, linked subjects, and more immediately.</p>
         </div>
-  <div class="mt-6 flex items-center justify-center gap-3">
-    <div>
-      <select v-model="homeTopicGrade" class="rounded-md border px-3 py-1 text-sm">
+  <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+    <div class="w-full sm:w-auto">
+      <select v-model="homeTopicGrade" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation mb-3 sm:mb-0">
         <option :value="null">All grades</option>
         <option v-for="g in GRADES" :key="g.id" :value="g.id">{{ g.name || g.id }}</option>
       </select>
     </div>
-    <div>
-      <select v-model="homeTopicSubject" class="rounded-md border px-3 py-1 text-sm">
+    <div class="w-full sm:w-auto">
+      <select v-model="homeTopicSubject" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation mb-3 sm:mb-0">
         <option :value="null">All subjects</option>
         <option v-for="s in SUBJECTS" :key="s.id" :value="s.id">{{ s.name || s.id }}</option>
       </select>
@@ -364,9 +368,12 @@
       <div class="mx-auto max-w-4xl text-center">
         <h3 class="text-2xl font-bold text-indigo-900">Get weekly practice tips</h3>
         <p class="mt-2 text-slate-600">Subscribe for curated quizzes and quizee tips.</p>
-        <form @submit.prevent class="mt-6 flex gap-2 justify-center">
-          <input type="email" placeholder="Your email" class="rounded-l-xl border px-4 py-2 w-64" />
-          <button class="rounded-r-xl bg-indigo-600 px-4 py-2 text-white">Subscribe</button>
+        <form @submit.prevent class="mt-6">
+          <label for="homepage-newsletter" class="sr-only">Email address</label>
+          <div class="mx-auto max-w-xl grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+            <input id="homepage-newsletter" type="email" placeholder="Your email" class="w-full rounded-xl border px-4 py-2" />
+            <button class="w-full sm:w-auto rounded-xl bg-indigo-600 px-4 py-2 text-white">Subscribe</button>
+          </div>
         </form>
       </div>
     </section>
@@ -375,7 +382,7 @@
 </template>
 
 <script setup>
-import { computed, ref, unref } from 'vue'
+import { computed, ref, unref, watch } from 'vue'
 import Carousel from '~/components/ui/Carousel.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
@@ -383,6 +390,7 @@ import UiQuizCard from '~/components/ui/QuizCard.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 const config = useRuntimeConfig()
 // helpers
@@ -657,18 +665,52 @@ function onQuizLike(quiz, payload) {
 }
 
 // Login state and handler
+import { useAuthStore } from '~/stores/auth'
+
 const email = ref('')
 const password = ref('')
 const remember = ref(false)
 const loading = ref(false)
+const error = ref(null)
 const router = useRouter()
+const auth = useAuthStore()
+const alert = useAppAlert()
+
+// clear inline error when user starts typing
+watch([email, password], () => { error.value = null })
+
 async function login(){
   if (loading.value) return
   loading.value = true
   try{
-    await $fetch(config.public.apiBase + '/api/login', { method: 'POST', body: { email: email.value, password: password.value, remember: remember.value }, credentials: 'include' })
-    router.push('/grades')
-  }catch(e){ console.error('Login failed', e) }
+    const res = await auth.login(email.value, password.value)
+    const user = res.data?.user || res.data || null
+
+    // Honor a `next` query param where present, but only if it's a local path
+    // and matches the user's role area (same logic as pages/login.vue).
+    const route = useRoute()
+    const nextParam = route.query?.next
+    const isLocalPath = typeof nextParam === 'string' && nextParam.startsWith('/') && !nextParam.startsWith('//')
+    if (isLocalPath) {
+      if (nextParam === '/') { router.push(nextParam); return }
+
+      const role = user?.role
+      if (role === 'quiz-master' && nextParam.startsWith('/quiz-master')) { router.push(nextParam); return }
+      if (role === 'quizee' && nextParam.startsWith('/quizee')) { router.push(nextParam); return }
+      // don't honor `next` for other roles (admin etc.)
+    }
+
+    if (user?.role === 'quiz-master') router.push('/quiz-master/dashboard')
+    else if (user?.role === 'quizee') router.push('/quizee/dashboard')
+    else if (user?.role === 'admin') window.location.href = `${config.public.apiBase}/admin`
+    else router.push('/grades')
+  }catch(e){
+    console.error('Login failed', e)
+    const msg = e?.response?.data?.message || e?.message || 'Login failed. Please check your credentials and try again.'
+    try { alert.push({ message: msg, type: 'error', icon: 'heroicons:exclamation-circle' }) } catch (err) {}
+    // keep inline error null since we show toasts
+    error.value = null
+  }
   finally{ loading.value = false }
 }
 

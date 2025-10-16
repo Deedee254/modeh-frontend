@@ -1,6 +1,6 @@
 <template>
   <div class="relative" ref="root">
-    <div @click.stop>
+    <div @click.stop="toggle">
       <slot name="trigger">
         <button @click.stop="toggle" aria-haspopup="true" :aria-expanded="open" class="p-2 rounded-md hover:bg-gray-100">
           <svg class="w-5 h-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 10a2 2 0 110-4 2 2 0 010 4zm4 0a2 2 0 110-4 2 2 0 010 4zm4 0a2 2 0 110-4 2 2 0 010 4z"/></svg>
@@ -9,7 +9,7 @@
     </div>
 
     <div v-if="open" class="mt-2" @click.stop>
-      <div :class="['w-40 bg-white border rounded shadow-lg py-1', alignClass]" ref="menu">
+      <div :class="['absolute z-50 w-40 bg-white border rounded shadow-lg py-1', alignClass]" ref="menu">
         <slot name="items" :close="close"></slot>
       </div>
     </div>

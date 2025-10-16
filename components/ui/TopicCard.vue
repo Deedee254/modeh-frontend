@@ -45,6 +45,8 @@ const props = defineProps({
   subject: { type: String, default: '' },
   quizzesCount: { type: [String, Number], default: 0 },
   startLink: { type: [String, Object], default: null }
+  ,
+  startLabel: { type: String, default: 'View Quizzes' }
 })
 const quizzesCountText = computed(() => `${props.quizzesCount || 0} quizzes`)
 const metaText = computed(() => {

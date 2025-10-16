@@ -76,7 +76,7 @@
                   <template #actions>
                     <div class="flex gap-2">
                       <NuxtLink :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Open</NuxtLink>
-                      <NuxtLink :to="`/quiz-master/quizzes/${q.id}/analytics`" class="text-sm text-indigo-600 hover:underline">Analytics</NuxtLink>
+                      <NuxtLink :to="`/quiz-master/analytics/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Analytics</NuxtLink>
                     </div>
                   </template>
                 </UiHorizontalCard>

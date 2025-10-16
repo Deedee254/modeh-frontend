@@ -169,6 +169,7 @@
 
 <script setup>
 import { ref, unref } from 'vue'
+import { useAppAlert } from '~/composables/useAppAlert'
 import PageHero from '~/components/ui/PageHero.vue'
 import { getHeroClass } from '~/utils/heroPalettes'
 import { useAuthStore } from '~/stores/auth'
@@ -232,12 +233,8 @@ async function onSubscribe(pkg) {
       if (res?.ok) await router.push('/quizee/subscription')
     } catch (err) {
       console.error(err)
-      // attempt a friendly fallback: show a toast if available, otherwise alert
-      if (process.client && window.$toast) {
-        window.$toast.error('Subscription failed. Please try again.')
-      } else {
-        alert('Subscription failed. Please try again.')
-      }
+      // attempt a friendly fallback: use app alert composable
+      try { useAppAlert().push({ message: 'Subscription failed. Please try again.', type: 'error' }) } catch (e) { console.error(e) }
     }
     return
   }

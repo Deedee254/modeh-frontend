@@ -1,4 +1,5 @@
 <script setup>
+import UiTextarea from '~/components/ui/UiTextarea.vue'
 import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
@@ -34,7 +35,7 @@ async function save() {
       </div>
       <div>
         <label class="block text-sm font-medium">Billing address</label>
-        <textarea v-model="billing.address" class="mt-1 block w-full border rounded px-2 py-1" rows="3"></textarea>
+  <UTextarea v-model="billing.address" class="mt-1 block w-full" rows="3" />
       </div>
       <div class="flex justify-end">
         <button :disabled="submitting" class="px-4 py-2 bg-indigo-600 text-white rounded" type="submit">

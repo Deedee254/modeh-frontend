@@ -7,9 +7,9 @@
           <div class="text-2xl font-extrabold">Modeh</div>
         </div>
         <div class="mt-3 text-sm opacity-90">Create and take beautiful quizzes — for quiz-mastering, classrooms and practice. Fast to build, fun to take.</div>
-        <div class="mt-4 flex gap-3">
-          <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-white text-indigo-700 rounded font-medium">quiz-master register</NuxtLink>
-          <NuxtLink to="/register?role=quizee" class="px-4 py-2 bg-white text-indigo-700 rounded font-medium">quizee register</NuxtLink>
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <NuxtLink to="/register?role=quiz-master" class="w-full text-center px-4 py-2 bg-white text-indigo-700 rounded font-medium block">Quiz‑master register</NuxtLink>
+          <NuxtLink to="/register?role=quizee" class="w-full text-center px-4 py-2 bg-white text-indigo-700 rounded font-medium block">Quizee register</NuxtLink>
         </div>
       </div>
 
@@ -33,12 +33,14 @@
       </div>
 
       <div>
-        <div class="font-semibold">Stay in touch</div>
-        <div class="mt-3 flex gap-2">
-          <input placeholder="Your email" class="px-3 py-2 rounded w-full text-indigo-900" />
-          <button class="px-4 py-2 bg-yellow-400 text-indigo-800 rounded font-semibold">Subscribe</button>
+        <div class="font-semibold">Contact</div>
+        <div class="mt-3 text-sm opacity-90 space-y-1">
+          <div>Modeh Ltd.</div>
+          <div>Nairobi, Kenya</div>
+          <div>Email: <a href="mailto:hello@modeh.co" class="underline">hello@modeh.co</a></div>
+          <div>Phone: <a href="tel:+254700000000" class="underline">+254 700 000 000</a></div>
         </div>
-  <div class="mt-4 text-sm opacity-90">© {{ new Date().getFullYear() }} Modeh — Built with Nuxt</div>
+        <div class="mt-4 text-sm opacity-90">© {{ new Date().getFullYear() }} Modeh — Built with Nuxt</div>
       </div>
     </div>
   </footer>

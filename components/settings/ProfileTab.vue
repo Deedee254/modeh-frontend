@@ -27,7 +27,7 @@
 
       <div>
         <label class="block text-sm font-medium">Bio</label>
-        <textarea v-model="form.bio" rows="4" class="mt-1 block w-full border rounded px-3 py-2"></textarea>
+  <UTextarea v-model="form.bio" rows="4" class="mt-1 block w-full" />
       </div>
 
       <div v-if="isQuizMaster" class="space-y-2">
@@ -44,6 +44,7 @@
 </template>
 
 <script setup>
+import UiTextarea from '~/components/ui/UiTextarea.vue'
 import { ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'

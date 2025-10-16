@@ -1,16 +1,56 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+import { defineNuxtConfig } from 'nuxt/config'
+
+const env = (import.meta as any).env ?? {}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  // Using @nuxtjs/tailwindcss module for auto-configuration
+
+  // Modules
   modules: [
     '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxt/ui',
+    '@vite-pwa/nuxt'
   ],
-  tailwindcss: {
-    exposeConfig: true
+
+  // Tailwind
+  tailwindcss: { exposeConfig: true },
+
+  // PWA configuration for @vite-pwa/nuxt
+  pwa: {
+    registerType: 'autoUpdate',
+    includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+    manifest: {
+      name: 'Modeh',
+      short_name: 'Modeh',
+      description: 'Your ultimate learning platform',
+      theme_color: '#ffffff',
+      lang: 'en',
+      icons: [
+        { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png' }
+      ]
+    },
+    workbox: {
+      runtimeCaching: [
+        {
+          urlPattern: 'https://fonts.googleapis.com/.*',
+          handler: 'CacheFirst',
+          method: 'GET',
+          options: { cacheableResponse: { statuses: [0, 200] } }
+        },
+        {
+          urlPattern: 'https://fonts.gstatic.com/.*',
+          handler: 'CacheFirst',
+          method: 'GET',
+          options: { cacheableResponse: { statuses: [0, 200] } }
+        }
+      ]
+    }
   },
+
+  // Vite aliases
   vite: {
     resolve: {
       alias: {
@@ -21,25 +61,23 @@ export default defineNuxtConfig({
       }
     }
   },
-  nitro: {
-    // No dev proxy: during development the frontend will call the backend directly.
-    // Keep nitro config object available for future customizations.
-  },
-  css: [
-    'katex/dist/katex.min.css'
-  ],
+
+  // Nitro
+  nitro: {},
+
+  // Global CSS
+  css: ['katex/dist/katex.min.css'],
+
+  // Runtime config (public)
   runtimeConfig: {
     public: {
-      // Base URL for API requests. Prefer the environment variable (NUXT_API_BASE_URL)
-      // provided by Vite/Nuxt via import.meta.env. Fall back to 127.0.0.1 for local dev.
-      apiBase: import.meta.env?.NUXT_API_BASE_URL ?? 'https://admin.modeh.co.ke',
-      // Pusher / Echo runtime keys (used by plugins/echo.client.js)
-      pusherKey: import.meta.env?.NUXT_PUSHER_KEY ?? import.meta.env?.VITE_PUSHER_KEY ?? '',
-      pusherCluster: import.meta.env?.NUXT_PUSHER_CLUSTER ?? import.meta.env?.VITE_PUSHER_CLUSTER ?? '',
-      pusherForceTLS: (import.meta.env?.NUXT_PUSHER_FORCE_TLS ?? import.meta.env?.VITE_PUSHER_FORCE_TLS) === 'true' || false,
-      wsHost: import.meta.env?.NUXT_WS_HOST ?? import.meta.env?.VITE_WS_HOST ?? '127.0.0.1',
-      wsPort: import.meta.env?.NUXT_WS_PORT ?? import.meta.env?.VITE_WS_PORT ?? 6001,
-      wsProtocol: import.meta.env?.NUXT_WS_PROTOCOL ?? import.meta.env?.VITE_WS_PROTOCOL ?? 'ws'
+      apiBase: env.NUXT_PUBLIC_API_BASE ?? 'http://127.0.0.1:8000',
+      pusherKey: env.NUXT_PUSHER_KEY ?? env.VITE_PUSHER_KEY ?? '',
+      pusherCluster: env.NUXT_PUSHER_CLUSTER ?? env.VITE_PUSHER_CLUSTER ?? '',
+      pusherForceTLS: (env.NUXT_PUSHER_FORCE_TLS ?? env.VITE_PUSHER_FORCE_TLS) === 'true' || false,
+      wsHost: env.NUXT_WS_HOST ?? env.VITE_WS_HOST ?? '127.0.0.1',
+      wsPort: env.NUXT_WS_PORT ?? env.VITE_WS_PORT ?? 6001,
+      wsProtocol: env.NUXT_WS_PROTOCOL ?? env.VITE_WS_PROTOCOL ?? 'ws'
     }
   }
-})
+} as any)

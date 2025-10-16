@@ -10,13 +10,14 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Description (optional)</label>
-          <textarea v-model="description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"></textarea>
+          <UTextarea v-model="description" rows="3" class="mt-1 block w-full" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Subject</label>
           <select v-model="subjectId" class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md">
             <option value="">-- Select Subject --</option>
-            <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
+            <!-- subjects may be a paginated object (with `data`) or an array -->
+            <option v-for="s in (Array.isArray(subjects) ? subjects : (subjects.data || []))" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
         </div>
       </div>
@@ -31,8 +32,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import UiTextarea from '~/components/ui/UiTextarea.vue'
 import { useRuntimeConfig } from '#imports'
-const props = defineProps({ modelValue: { type: Boolean, default: false }, subjects: { type: Array, default: () => [] }, defaultSubjectId: { type: [String,Number], default: '' } })
+const props = defineProps({ modelValue: { type: Boolean, default: false }, subjects: { type: [Array, Object], default: () => [] }, defaultSubjectId: { type: [String,Number], default: '' } })
 const emit = defineEmits(['update:modelValue', 'created'])
 const name = ref('')
 const description = ref('')

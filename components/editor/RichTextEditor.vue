@@ -1,181 +1,80 @@
 <template>
-  <div>
-    <!-- Toolbar -->
-    <div v-if="ready" class="flex items-center gap-2 mb-2">
-      <UButton size="2xs" color="gray" @click="cmd('bold')" title="Bold"><strong>B</strong></UButton>
-      <UButton size="2xs" color="gray" @click="cmd('italic')" title="Italic"><em>I</em></UButton>
-      <UButton size="2xs" color="gray" @click="cmd('code')" title="Inline code">code</UButton>
-      <UButton size="2xs" color="gray" @click="cmd('codeBlock')" title="Code block">code block</UButton>
-      <UDivider orientation="vertical" />
-      <UButton size="2xs" color="gray" @click="insertInlineMath" title="Inline math">Inline Math</UButton>
-      <UButton size="2xs" color="gray" @click="insertBlockMath" title="Block math">Block Math</UButton>
-    </div>
-
-    <!-- Editor -->
-    <component
-      v-if="ready"
-      :is="EditorContent"
-      :editor="editor"
-      class="prose max-w-none"
+  <div @click="focusInput">
+    <!-- Simple textarea fallback to isolate TipTap during debugging -->
+    <UTextarea
+      ref="inputRef"
+      v-model="localValue"
+      :rows="6"
+      :disabled="props.editable === false"
+      class="w-full"
     />
-
-    <!-- Skeleton fallback -->
-    <div v-else>
-      <UiSkeleton variant="list" :count="2" />
-      <UiTextarea v-model="localValue" class="mt-2" placeholder="Loading editor..." />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-// lightweight debounce implementation to avoid external dependency
-function debounce<T extends (...args: any[]) => any>(fn: T, wait = 200) {
-  let timer: ReturnType<typeof setTimeout> | null = null
-  return function (this: any, ...args: Parameters<T>) {
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(() => {
-      timer = null
-      fn.apply(this, args)
-    }, wait)
-  }
-}
-import UiSkeleton from '~/components/ui/UiSkeleton.vue'
-import UiTextarea from '~/components/ui/UiTextarea.vue'
+import { ref, watch, onMounted, defineExpose } from 'vue'
+import UTextarea from '~/components/ui/UiTextarea.vue'
 
-const props = defineProps<{ modelValue: string, editable?: boolean }>()
-const emit = defineEmits<{
-  (e: 'update:modelValue', v: string): void
-  (e: 'ready'): void
-}>()
+const props = defineProps<{ modelValue?: string; editable?: boolean; features?: { math?: boolean; code?: boolean } }>()
+const emit = defineEmits<{ (e: 'update:modelValue', v: string): void; (e: 'ready'): void; (e: 'error', err: Error): void }>()
 
-// Editor refs
-const EditorContent = ref<any>(null)
-const editor = ref<any>(null)
-const ready = ref(false)
-const localValue = ref(props.modelValue || '<p></p>')
+const localValue = ref(props.modelValue ?? '')
+const inputRef = ref<any>(null)
 
-// Keep modelValue in sync
-watch(() => props.modelValue, (v) => {
-  if (!editor.value) {
-    localValue.value = v || '<p></p>'
-    return
+watch(
+  () => props.modelValue,
+  (v) => {
+    if (v !== localValue.value) localValue.value = v ?? ''
   }
-  const html = v || '<p></p>'
-  if (html !== editor.value.getHTML()) {
-    editor.value.commands.setContent(html, false)
-  }
+)
+
+watch(localValue, (v) => emit('update:modelValue', v))
+
+onMounted(() => {
+  emit('ready')
 })
 
-onMounted(async () => {
-  if (typeof window === 'undefined') return
+function focusInput() {
   try {
-    const [{ Editor }, { default: StarterKit }, tipVue] = await Promise.all([
-      import('@tiptap/core'),
-      import('@tiptap/starter-kit'),
-      import('@tiptap/vue-3')
-    ])
-
-    // Try the preferred package first (@aarkue/tiptap-math-extension),
-    // then fall back to the older tiptap-extension-math-katex if available.
-    let MathKatex: any = null
-    try {
-      // @ts-ignore - optional dependency, may not be installed in some environments
-      const mod = await import('@aarkue/tiptap-math-extension')
-      MathKatex = mod?.default ?? mod
-    } catch (e) {
-      try {
-        // @ts-ignore - optional dependency fallback
-        const mod2 = await import('tiptap-extension-math-katex')
-        MathKatex = mod2?.default ?? mod2
-      } catch (e2) {
-        MathKatex = null
-      }
+    // prefer exposed focus method from UiTextarea (component ref)
+    if (inputRef.value && typeof inputRef.value.focus === 'function') {
+      inputRef.value.focus()
+      return
     }
+    // fallback: try underlying DOM element
+    const el = inputRef.value && inputRef.value.$el ? inputRef.value.$el : inputRef.value
+    if (el && typeof el.focus === 'function') el.focus()
+  } catch (e) {}
+}
 
-    const extensions = [StarterKit]
-    if (MathKatex) {
-      // Some extensions export a factory with `.configure()`, others export
-      // the extension object directly. Handle both safely.
-      try {
-        if (typeof MathKatex.configure === 'function') {
-          extensions.push(MathKatex.configure({ katexOptions: { throwOnError: false } }))
-        } else {
-          extensions.push(MathKatex)
-        }
-      } catch (e) {
-        // If configuration fails, still attempt to use the raw extension
-        extensions.push(MathKatex)
-      }
-    }
-
-    editor.value = new Editor({
-      editable: props.editable !== false,
-      content: localValue.value || '<p></p>',
-      extensions,
-      onUpdate: debounce(({ editor: ed }: any) => {
-        emit('update:modelValue', ed.getHTML())
-      }, 200)
-    })
-
-    EditorContent.value = tipVue.EditorContent
-    await nextTick()
-    ready.value = true
-    emit('ready')
-  } catch (e) {
-    console.warn('Failed to init TipTap', e)
-  }
+// Expose a compact imperative API similar to the full editor (safe no-op / simple implementations)
+defineExpose({
+  focus: () => inputRef.value?.focus(),
+  insertInlineMath: (content = 'a = b + c') => {
+    localValue.value = (localValue.value || '') + ` \\(${content}\\)`
+  },
+  insertBlockMath: (content = 'E = mc^2') => {
+    localValue.value = (localValue.value || '') + `\n$$${content}$$\n`
+  },
+  toggleCodeBlock: () => { localValue.value = (localValue.value || '') + "\n```\ncode\n```\n" },
+  toggleInlineCode: () => { localValue.value = (localValue.value || '') + '`code`' },
+  getHTML: () => localValue.value || '',
+  setHTML: (html: string) => { localValue.value = html }
 })
-
-onBeforeUnmount(() => {
-  editor.value?.destroy?.()
-})
-
-/** Toolbar commands */
-function cmd(action: 'bold'|'italic'|'code'|'codeBlock') {
-  if (!editor.value) return
-  const chain = editor.value.chain().focus()
-  if (action === 'bold') chain.toggleBold()
-  else if (action === 'italic') chain.toggleItalic()
-  else if (action === 'code') chain.toggleCode()
-  else if (action === 'codeBlock') chain.toggleCodeBlock()
-  chain.run()
-}
-
-/** Inline Math insertion */
-function insertInlineMath() {
-  if (!editor.value) return
-  try {
-    editor.value.chain().focus()
-      .insertContent({ type: 'mathInline', attrs: { content: 'a = b + c' } })
-      .run()
-  } catch {
-    // Fallback: raw KaTeX syntax (can be post-processed)
-    editor.value.commands.insertContent('<span class="katex-fallback">\\(a = b + c\\)</span>')
-  }
-}
-
-/** Block Math insertion */
-function insertBlockMath() {
-  if (!editor.value) return
-  try {
-    editor.value.chain().focus()
-      .insertContent({ type: 'mathBlock', attrs: { content: 'E = mc^2' } })
-      .run()
-  } catch {
-    editor.value.commands.insertContent('<div class="katex-fallback">$$E = mc^2$$</div>')
-  }
-}
 </script>
 
 <style scoped>
-.prose :deep(.katex) {
-  font-size: inherit;
-}
 .katex-fallback {
   font-family: monospace;
   background: #f5f5f5;
   padding: 2px 4px;
   border-radius: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Basic styling for the textarea fallback */
+.w-full {
+  width: 100%;
 }
 </style>

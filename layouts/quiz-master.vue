@@ -4,7 +4,9 @@
     <div v-if="isAuthed" class="min-h-screen flex bg-gray-100">
       <!-- hide permanent sidebar on small screens; mobile drawer remains available -->
       <div class="hidden lg:block">
-        <QuizMasterSidebar />
+        <ClientOnly>
+          <QuizMasterSidebar />
+        </ClientOnly>
       </div>
       <div class="flex-1 flex flex-col">
         <TopBar />
@@ -26,12 +28,16 @@
 
     <GlobalAlert />
     <NotificationDrawer />
+    <!-- Add bottom navigation for mobile -->
+    <BottomNav v-if="isAuthed" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth'
 import QuizMasterSidebar from '~/components/QuizMasterSidebar.vue'
+import BottomNav from '~/components/ui/BottomNav.vue'
 import TopBar from '~/components/TopBar.vue'
 import GlobalAlert from '~/components/GlobalAlert.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
@@ -41,6 +47,12 @@ import Container from '~/components/ui/Container.vue'
 
 const auth = useAuthStore?.() || null
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
+
+onMounted(() => {
+  if (auth && typeof auth.fetchUser === 'function') {
+    auth.fetchUser()
+  }
+})
 </script>
 
 <style scoped>

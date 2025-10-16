@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-4xl mx-auto px-4">
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Hero (using shared PageHero for consistent styling) -->
         <PageHero
           title="Daily Challenge"
           description="Test your knowledge with today's daily quiz challenge. Complete it to earn points and climb the leaderboard!"
           variant="gradient"
           align="center"
-          padding="pt-12 pb-10"
+          padding="py-8"
         >
         <template #stats>
           <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
@@ -32,27 +32,36 @@
         </PageHero>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Main column -->
+        <!-- Main content -->
         <div class="lg:col-span-2">
-          <!-- Header with timer & meta -->
-          <div class="flex items-center justify-between gap-4 mb-6">
-            <div>
-              <h3 class="text-lg font-semibold">A new quiz every day. Test your knowledge and compete with others!</h3>
+          <!-- Header with stat cards -->
+          <div class="mb-6">
+            <div class="mb-4">
+              <h3 class="text-xl font-semibold text-gray-800">A new quiz every day.</h3>
               <p class="text-sm text-gray-500">Today's Theme: <strong class="text-gray-700">{{ challenge?.theme_name || challenge?.subject?.name || 'General' }}</strong></p>
             </div>
-            <div class="flex items-center gap-4">
-              <div class="text-center">
-                <div class="text-xs text-gray-500">Time Remaining</div>
-                <div class="text-lg font-mono font-semibold">{{ timeRemaining }}</div>
-              </div>
-              <div class="text-center">
-                <div class="text-xs text-gray-500">Top Prize</div>
-                <div class="text-lg font-semibold">{{ challenge?.top_prize || challenge?.points_reward || '—' }} Coins</div>
-              </div>
-              <div class="text-center">
-                <div class="text-xs text-gray-500">Your Streak</div>
-                <div class="text-lg font-semibold">{{ streak || 0 }} Days</div>
-              </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <UCard>
+                <div class="text-center">
+                  <div class="text-xs text-gray-500">Time Remaining</div>
+                  <div class="text-2xl font-mono font-bold text-gray-800">{{ timeRemaining }}</div>
+                </div>
+              </UCard>
+              <UCard>
+                <div class="text-center">
+                  <div class="text-xs text-gray-500">Top Prize</div>
+                  <div class="text-2xl font-bold text-gray-800">
+                    <Icon name="heroicons:trophy" class="w-5 h-5 inline-block mr-1 text-amber-500" />
+                    {{ challenge?.top_prize || challenge?.points_reward || '—' }}
+                  </div>
+                </div>
+              </UCard>
+              <UCard>
+                <div class="text-center">
+                  <div class="text-xs text-gray-500">Your Streak</div>
+                  <div class="text-2xl font-bold text-gray-800">{{ streak || 0 }} Days</div>
+                </div>
+              </UCard>
             </div>
           </div>
 

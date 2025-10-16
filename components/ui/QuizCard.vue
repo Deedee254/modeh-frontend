@@ -36,13 +36,19 @@
       <!-- Footer CTAs: primary (Take) and secondary (View/Preview) -->
           <div class="mt-auto flex gap-3">
             <template v-if="primaryOnRight">
-              <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
-              <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
-            </template>
-            <template v-else>
-              <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
-              <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
-            </template>
+                <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
+                <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
+              </template>
+              <template v-else>
+                <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
+                <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
+              </template>
+
+            <!-- optional edit CTA for admins/content managers -->
+            <div v-if="showEdit" class="flex-1">
+              <button @click.stop="handleEdit" v-if="!editLink" class="w-full inline-flex justify-center items-center px-3 py-3 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">Edit</button>
+              <NuxtLink v-else :to="editLink" class="w-full inline-flex justify-center items-center px-3 py-3 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">Edit</NuxtLink>
+            </div>
           </div>
     </div>
   </div>
@@ -72,6 +78,10 @@ const props = defineProps({
   takeLink: { type: [String, Object], default: null }
   ,
   primaryOnRight: { type: Boolean, default: false }
+  ,
+  // admin/edit support
+  showEdit: { type: Boolean, default: false },
+  editLink: { type: [String, Object], default: null }
 })
 
 const paletteClass = computed(() => {
@@ -120,7 +130,7 @@ const difficultyClass = computed(() => {
   return 'bg-rose-100 text-rose-800'
 })
 
-const emit = defineEmits(['like'])
+const emit = defineEmits(['like', 'edit'])
 const localLikes = ref(Number(props.likes) || 0)
 const localLiked = ref(Boolean(props.liked))
 const config = useRuntimeConfig()
@@ -129,6 +139,11 @@ const primaryHref = computed(() => {
   // prefer explicit takeLink, fallback to `to` prop
   return props.takeLink || props.to || null
 })
+
+function handleEdit(e) {
+  e.stopPropagation()
+  emit('edit')
+}
 
 async function toggleLike(e) {
   e.stopPropagation()

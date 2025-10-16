@@ -8,6 +8,12 @@
 
       <div v-if="loading" class="p-6 bg-white rounded shadow">Loading...</div>
 
+      <div v-else-if="!user.isSubscribed && !attempt.id" class="p-6 bg-white rounded shadow text-center">
+        <h3 class="text-lg font-semibold">Subscribe to view results</h3>
+        <p class="text-sm text-gray-600 mt-2">You need to subscribe to view your quiz results.</p>
+        <button @click="showPaymentModal = true" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded">Subscribe Now</button>
+      </div>
+
       <div v-else class="bg-white rounded shadow p-6">
         <div class="flex items-center justify-between">
           <div>
@@ -72,6 +78,9 @@
         </div>
       </div>
     </div>
+
+    <PaymentModal :open="showPaymentModal" :pkg="paymentPackage" :phones="userPhones" @close="onPaymentModalClose" @paid="onPaymentModalPaid" />
+    <PaymentAwaitingModal :open="showAwaitingPaymentModal" @complete="onPaymentComplete" />
   </div>
 </template>
 
@@ -79,6 +88,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
+import PaymentModal from '~/components/PaymentModal.vue'
+import PaymentAwaitingModal from '~/components/PaymentAwaitingModal.vue'
+import { useUserStore } from '~/stores/auth'
 
 // ensure this page uses the quizee layout
 definePageMeta({ layout: 'quizee' })
@@ -90,8 +102,13 @@ const badges = ref([])
 const points = ref(0)
 const loading = ref(true)
 const quizId = ref(null)
+const showPaymentModal = ref(false)
+const showAwaitingPaymentModal = ref(false)
+const paymentPackage = ref(null)
+const userPhones = ref([])
+const user = useUserStore()
 
-onMounted(async () => {
+async function fetchResults() {
   try {
     const cfg = useRuntimeConfig()
     const res = await fetch(cfg.public.apiBase + `/quiz-attempts/${attemptId}`, { credentials: 'include' })
@@ -118,7 +135,48 @@ onMounted(async () => {
     }
   } catch (e) {}
   loading.value = false
+}
+
+onMounted(async () => {
+  // check subscription
+  if (user.isSubscribed) {
+    await fetchResults()
+  } else {
+    // fetch default package
+    const cfg = useRuntimeConfig()
+    const pkgRes = await fetch(cfg.public.apiBase + '/packages/default', { credentials: 'include' })
+    if (pkgRes.ok) {
+      const body = await pkgRes.json()
+      if (body.ok) {
+        paymentPackage.value = body.package
+      }
+    }
+    // fetch user phones
+    const phonesRes = await fetch(cfg.public.apiBase + '/user/phones', { credentials: 'include' })
+    if (phonesRes.ok) {
+      const body = await phonesRes.json()
+      if (body.ok) {
+        userPhones.value = body.phones
+      }
+    }
+    showPaymentModal.value = true
+  }
 })
+
+function onPaymentModalClose() {
+  showPaymentModal.value = false
+}
+
+function onPaymentModalPaid() {
+  showPaymentModal.value = false
+  showAwaitingPaymentModal.value = true
+}
+
+async function onPaymentComplete() {
+  showAwaitingPaymentModal.value = false
+  await user.fetchUser() // refresh user store
+  await fetchResults()
+}
 
 function formatProvided(p) {
   if (p === null || p === undefined) return 'No answer'

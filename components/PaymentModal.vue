@@ -24,6 +24,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useAppAlert } from '~/composables/useAppAlert'
 const props = defineProps({ pkg: Object, open: Boolean, phones: { type: Array, default: () => [] } })
 const emit = defineEmits(['close','paid'])
 const phone = ref('')
@@ -35,18 +36,18 @@ const config = useRuntimeConfig()
 
 async function pay() {
   const p = phone.value && phone.value !== '' ? phone.value : phoneInput.value
-  if (!p) { alert('Enter phone'); return }
+  if (!p) { useAppAlert().push({ message: 'Enter phone', type: 'warning' }); return }
   // create subscription
   const sub = await $fetch(config.public.apiBase + `/api/packages/${props.pkg.id}/subscribe`, { method: 'POST', credentials: 'include', body: { phone: p } })
-  if (!sub || !(sub.ok === true || sub.subscription)) { alert('failed'); return }
+  if (!sub || !(sub.ok === true || sub.subscription)) { useAppAlert().push({ message: 'Failed to create subscription', type: 'error' }); return }
   // initiate
   const init = await $fetch(config.public.apiBase + `/api/payments/subscriptions/${sub.subscription?.id}/mpesa/initiate`, { method: 'POST', credentials: 'include' })
   if (init && (init.ok === true || init.success === true)) {
-    alert('Payment initiated. You will receive STK Push on phone (simulated)')
+    useAppAlert().push({ message: 'Payment initiated. You will receive STK Push on phone (simulated)', type: 'success' })
     emit('paid')
     emit('close')
   } else {
-    alert('Failed to initiate payment')
+    useAppAlert().push({ message: 'Failed to initiate payment', type: 'error' })
   }
 }
 </script>

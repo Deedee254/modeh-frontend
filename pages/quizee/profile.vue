@@ -38,7 +38,7 @@
 
           <div>
             <label for="bio" class="block text-sm font-medium text-slate-700">Bio</label>
-            <UiTextarea id="bio" v-model="form.bio" :rows="4" placeholder="Tell us about yourself" />
+            <UTextarea id="bio" v-model="form.bio" :rows="4" placeholder="Tell us about yourself" />
           </div>
 
           <div class="flex flex-col sm:flex-row justify-end gap-3">
@@ -66,8 +66,8 @@ const auth = useAuthStore()
 const alert = useAppAlert()
 const { patchMe } = useAccountApi()
 
-const user = computed(() => auth.user || {})
-const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
+const user = computed<any>(() => auth.user || {})
+const userAvatar = computed(() => (user.value && (user.value as any).avatar_url) ? (user.value as any).avatar_url : '/logo/avatar-placeholder.png')
 const pointsDisplay = computed(() => {
   const p = (auth.user as any)?.points ?? (auth.user as any)?.rewards?.points
   return typeof p === 'number' ? `${p} points` : ''

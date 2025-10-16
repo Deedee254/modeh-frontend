@@ -3,7 +3,7 @@
     <!-- Top bar -->
     <div class="bg-slate-900 text-white py-2 px-4">
       <div class="max-w-6xl mx-auto flex justify-between items-center text-xs">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
           <span>info@modeh.com</span>
           <span>+1 234 567 890</span>
         </div>
@@ -19,17 +19,17 @@
     </div>
 
     <!-- Main header -->
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
       <!-- Logo -->
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center gap-2">
-          <!-- larger logo for a stronger brand presence -->
-          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-16 w-auto" />
+          <!-- slightly smaller logo for compact header -->
+          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-12 w-auto" />
         </NuxtLink>
       </div>
 
       <!-- Search bar -->
-      <div class="flex-1 flex justify-center px-8 hidden md:flex">
+  <div class="flex-1 flex justify-center px-6 hidden md:flex">
         <div class="w-full max-w-md">
           <div class="relative">
             <input type="search" placeholder="Search for quizzes, topics..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
@@ -41,9 +41,9 @@
       </div>
 
       <!-- Right side -->
-      <div class="flex items-center gap-4">
+  <div class="flex items-center gap-3">
         <!-- Desktop Navigation -->
-        <nav class="hidden md:flex gap-4 text-sm font-medium text-slate-700 dark:text-slate-300 items-center">
+          <nav class="hidden md:flex gap-3 text-sm font-medium text-slate-700 dark:text-slate-300 items-center">
           <div class="relative" @mouseenter="showQuizzesDropdown = true" @mouseleave="showQuizzesDropdown = false">
             <NuxtLink to="/quizzes" class="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 py-2 px-2 rounded-md transition">
               <span>Quizzes</span>
@@ -124,14 +124,14 @@
         </div>
 
         <!-- Mobile menu button -->
-        <div class="flex items-center md:hidden">
-            <button @click="showSearch = !showSearch" class="mr-4">
-                <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </button>
-            <button @click="showMobileMenu = !showMobileMenu" class="relative z-60">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </div>
+    <div class="flex items-center md:hidden">
+      <button @click="showSearch = !showSearch" class="mr-3">
+        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </button>
+      <button @click="showMobileMenu = !showMobileMenu" class="relative z-60">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+      </button>
+    </div>
       </div>
     </div>
 

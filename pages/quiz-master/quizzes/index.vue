@@ -1,47 +1,104 @@
 <template>
-  <div class="p-6">
-    <h1 class="text-xl font-semibold mb-4">My Quizzes</h1>
+  <div>
+    <PageHero
+      title="My Quiz Collection"
+      description="Create, manage and track your quizzes. Monitor approval status and engage with learners."
+      :showSearch="true"
+      :flush="true"
+      @search="onServerSearch"
+    >
+      <template #eyebrow>
+        Quiz Management
+      </template>
 
-    <div class="mb-4 flex items-center gap-3">
-      <input v-model="q" @keyup.enter="fetchItems" placeholder="Search quizzes..." class="border p-2" />
-      <select v-model.number="perPage" @change="fetchItems" class="border p-2">
-        <option :value="5">5</option>
-        <option :value="10">10</option>
-        <option :value="20">20</option>
-      </select>
-      <select v-model.number="topicId" @change="fetchItems" class="border p-2">
+      <template #actions>
+        <div class="flex items-center gap-3">
+          <button 
+            @click="router.push('/quiz-master/quizzes/create')"
+            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
+          >
+            <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
+            Create Quiz
+          </button>
+        </div>
+      </template>
+
+      <template #highlight>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-white/70">Your Stats</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ paginator?.total || 0 }} quizzes</p>
+          <p class="mt-2 text-sm text-white/70">Track your content creation journey.</p>
+        </div>
+      </template>
+
+      <template #highlight-icon>
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </template>
+    </PageHero>
+
+    <!-- Search and Filters -->
+    <div class="flex flex-wrap gap-4">
+      <div class="flex-1 min-w-[200px]">
+        <input 
+          v-model="q" 
+          @keyup.enter="fetchItems" 
+          placeholder="Search quizzes..." 
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+        />
+      </div>
+      <select 
+        v-model.number="topicId" 
+        @change="fetchItems" 
+        class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+      >
         <option :value="0">All topics</option>
         <option v-for="t in topics" :key="t.id" :value="t.id">{{ t.name }}</option>
       </select>
+      <select 
+        v-model.number="perPage" 
+        @change="fetchItems" 
+        class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+      >
+        <option :value="5">5 per page</option>
+        <option :value="10">10 per page</option>
+        <option :value="20">20 per page</option>
+      </select>
     </div>
 
-  <div v-if="loading"><UiSkeleton :count="3" /></div>
-  <div v-else>
-      <div v-if="!paginator?.data || paginator.data.length === 0" class="text-gray-500">0 results returned</div>
-        <UiGrid>
-          <UiCard v-for="qitem in (paginator?.data || [])" :key="qitem.id" variant="elevated">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="font-medium">{{ qitem.title }}</div>
-                <div class="text-sm text-gray-500">Topic: {{ qitem.topic?.name || '—' }} • {{ qitem.is_paid ? 'Paid' : 'Free' }}</div>
-              </div>
+    <!-- Loading State -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <UiSkeleton :count="perPage" />
+    </div>
 
-              <div class="flex items-center gap-3">
-                <button
-                  @click="toggleApprove(qitem)"
-                  :disabled="qitem.is_approved || qitem.approval_requested_at"
-                  :class="qitem.is_approved ? 'bg-green-600 text-white' : (qitem.approval_requested_at ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-200 text-gray-800')"
-                  class="px-3 py-1 rounded text-sm"
-                >
-                  <template v-if="qitem.is_approved">Approved</template>
-                  <template v-else-if="qitem.approval_requested_at">Requested</template>
-                  <template v-else>Request approval</template>
-                </button>
-                <NuxtLink :to="`/quiz-master/quizzes/${qitem.id}/edit`" class="text-sm text-blue-600">Edit</NuxtLink>
-              </div>
-            </div>
-          </UiCard>
-        </UiGrid>
+    <!-- Quiz Grid -->
+    <div v-else>
+      <div v-if="!paginator?.data || paginator.data.length === 0" 
+        class="text-center py-12 text-gray-500">
+        No quizzes found. Create your first quiz to get started.
+      </div>
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <QuizCard
+          v-for="quiz in (paginator?.data || [])"
+          :key="quiz.id"
+          :to="''"
+          :startLink="`/quiz-master/quizzes/${quiz.id}`"
+          :title="quiz.title || quiz.name || ''"
+          :description="quiz.description || quiz.summary || ''"
+          :subject="quiz.subject?.name || quiz.subject_name || ''"
+          :topic="quiz.topic?.name || quiz.topic_name || ''"
+          :grade="quiz.grade?.name || quiz.grade_name || quiz.grade_id || ''"
+          :questionsCount="quiz.questions_count || quiz.questions?.length || 0"
+          :likes="quiz.likes_count || quiz.likes || 0"
+          :quizId="quiz.id"
+          :show-approval="true"
+          :showEdit="true"
+          :editLink="`/quiz-master/quizzes/${quiz.id}/edit`"
+          @approve="toggleApprove(quiz)"
+          @edit="() => router.push(`/quiz-master/quizzes/${quiz.id}/edit`)"
+        />
+      </div>
 
       <div class="mt-4"><Pagination :paginator="paginator" @change-page="onPageChange" /></div>
     </div>
@@ -51,10 +108,13 @@
 <script setup>
 definePageMeta({ layout: 'quiz-master' })
 import { ref, onMounted, computed } from 'vue'
-import UiGrid from '~/components/ui/UiGrid.vue'
+import { useRouter } from 'vue-router'
+import PageHero from '~/components/ui/PageHero.vue'
+import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
-import UiCard from '~/components/ui/UiCard.vue'
 import Pagination from '~/components/Pagination.vue'
+
+const router = useRouter()
 import { useAppAlert } from '~/composables/useAppAlert'
 const alert = useAppAlert()
 import { useAuthStore } from '~/stores/auth'
@@ -68,6 +128,12 @@ const q = ref('')
 const perPage = ref(10)
 const page = ref(1)
 const topicId = ref(0)
+
+function onServerSearch(search) {
+  q.value = search || ''
+  page.value = 1
+  fetchItems()
+}
 
 onMounted(async () => { await Promise.all([fetchItems(), fetchTopics()]) })
 

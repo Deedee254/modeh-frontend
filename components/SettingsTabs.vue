@@ -32,12 +32,14 @@ import { ref, computed } from 'vue'
 import { useUserRole } from '~/composables/useUserRole'
 import { getSettingsTabs } from '~/utils/getSettingsTabs'
 
-// Lazy-load lightweight tab components — replace with real implementations later
-const ProfileTab = () => import('~/components/settings/ProfileTab.vue').catch(() => ({ template: '<div class="p-4">Profile tab placeholder</div>' }))
-const SecurityTab = () => import('~/components/settings/SecurityTab.vue').catch(() => ({ template: '<div class="p-4">Security tab placeholder</div>' }))
-const NotificationsTab = () => import('~/components/settings/NotificationsTab.vue').catch(() => ({ template: '<div class="p-4">Notifications tab placeholder</div>' }))
-const PayoutsTab = () => import('~/components/settings/PayoutsTab.vue').catch(() => ({ template: '<div class="p-4">Payouts tab placeholder</div>' }))
-const BillingTab = () => import('~/components/settings/BillingTab.vue').catch(() => ({ template: '<div class="p-4">Billing tab placeholder</div>' }))
+// Lazy-load lightweight tab components — pass factories (do NOT invoke) and wrap them
+import { defineAsyncComponent } from 'vue'
+
+const ProfileTab = defineAsyncComponent(() => import('~/components/settings/ProfileTab.vue').catch(() => ({ template: '<div class="p-4">Profile tab placeholder</div>' })))
+const SecurityTab = defineAsyncComponent(() => import('~/components/settings/SecurityTab.vue').catch(() => ({ template: '<div class="p-4">Security tab placeholder</div>' })))
+const NotificationsTab = defineAsyncComponent(() => import('~/components/settings/NotificationsTab.vue').catch(() => ({ template: '<div class="p-4">Notifications tab placeholder</div>' })))
+const PayoutsTab = defineAsyncComponent(() => import('~/components/settings/PayoutsTab.vue').catch(() => ({ template: '<div class="p-4">Payouts tab placeholder</div>' })))
+const BillingTab = defineAsyncComponent(() => import('~/components/settings/BillingTab.vue').catch(() => ({ template: '<div class="p-4">Billing tab placeholder</div>' })))
 
 const props = defineProps({
   initial: { type: String, default: 'profile' }
@@ -48,11 +50,11 @@ const { isQuizMaster, isquizee } = useUserRole()
 const tabs = computed(() => {
   const defs = getSettingsTabs({ isQuizMaster: isQuizMaster.value, isquizee: isquizee.value })
   const map: Record<string, any> = {
-    profile: ProfileTab(),
-    security: SecurityTab(),
-    notifications: NotificationsTab(),
-    payouts: PayoutsTab(),
-    billing: BillingTab()
+    profile: ProfileTab,
+    security: SecurityTab,
+    notifications: NotificationsTab,
+    payouts: PayoutsTab,
+    billing: BillingTab,
   }
   return defs.map(d => ({ key: d.key, label: d.label, icon: d.icon, component: map[d.key] }))
 })

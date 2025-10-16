@@ -7,10 +7,6 @@
         description="Meet our team of dedicated and experienced quiz-masters."
         align="center"
         padding="py-12"
-        variant="image"
-        :image="'/hero-quiz-masters.jpg'"
-        image-position="center"
-        overlay-class="bg-black/30"
       />
 
       <div v-if="pending" class="text-center text-gray-500">

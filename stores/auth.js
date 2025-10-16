@@ -84,20 +84,26 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    try {
-      await $fetch('/api/logout', {
-        baseURL: config.public.apiBase || '',
-        method: 'POST',
-        credentials: 'include'
-      })
-    } catch (e) {
-      // ignore network errors on logout
-    }
+    // Always clear local state first for a responsive UI,
+    // then attempt to log out from the server.
     clear();
     if (process.client) {
       try { localStorage.removeItem('token') } catch (e) {}
       // notify other tabs about logout
       try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) {}
+    }
+    try {
+      const xsrf = readXsrfTokenFromCookie()
+      await $fetch('/api/logout', {
+        baseURL: config.public.apiBase || '',
+        method: 'POST',
+        credentials: 'include',
+        // Add the X-XSRF-TOKEN header to prevent 419 errors
+        headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : undefined
+      })
+    } catch (error) {
+      // Silently ignore network errors on logout. The client-side state is already cleared.
+      // The server session will eventually expire.
     }
   }
 
@@ -160,25 +166,24 @@ export const useAuthStore = defineStore('auth', () => {
   if (process.client) {
     window.addEventListener('storage', (e) => {
       try {
-        // explicit auth event (login/logout) with structured payload
+        // An explicit auth event was fired from another tab.
         if (e.key === 'modeh:auth:event' && e.newValue) {
           const payload = JSON.parse(e.newValue)
           if (payload?.type === 'logout') {
-            // another tab logged out -> clear local auth state
+            // Another tab logged out, so clear local auth state.
             clear()
           } else if (payload?.type === 'login') {
-            // another tab logged in -> refresh user from server
+            // Another tab logged in, so refresh the user from the server.
             fetchUser().catch(() => {})
           }
+          return // Handled by explicit event, no need to check token key.
         }
 
-        // token key changed: if token removed -> clear; if token added/changed -> attempt fetchUser
+        // Fallback for when the token is changed directly (e.g., by another app or manual intervention).
         if (e.key === 'token') {
           if (!e.newValue) {
-            // token removed
             clear()
           } else {
-            // token added/changed
             fetchUser().catch(() => {})
           }
         }

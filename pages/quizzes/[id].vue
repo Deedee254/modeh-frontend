@@ -189,6 +189,7 @@
 definePageMeta({ layout: 'auth' })
 
 import { ref, computed, onMounted, onBeforeUnmount, h } from 'vue'
+import { useAppAlert } from '~/composables/useAppAlert'
 import { useBottomNavStore } from '~/stores/bottomNav'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
 const config = useRuntimeConfig()
@@ -271,10 +272,10 @@ function sampleQuestionText() {
 }
 
 // Action handlers accept an optional close callback (provided by ActionMenu slot)
-function onShare(close) { if (typeof close === 'function') close(); void navigator.clipboard?.writeText(window.location.href).then(()=> alert('Link copied to clipboard')) }
+function onShare(close) { if (typeof close === 'function') close(); void navigator.clipboard?.writeText(window.location.href).then(()=> useAppAlert().push({ message: 'Link copied to clipboard', type: 'success' })) }
 function onPreview(close) { if (typeof close === 'function') close(); window.location.href = `/quizzes/${quiz.id}/preview` }
-function onBookmark(close) { if (typeof close === 'function') close(); alert('Bookmarked (demo)') }
-function onReport(close) { if (typeof close === 'function') close(); alert('Reported (demo)') }
+function onBookmark(close) { if (typeof close === 'function') close(); useAppAlert().push({ message: 'Bookmarked (demo)', type: 'info' }) }
+function onReport(close) { if (typeof close === 'function') close(); useAppAlert().push({ message: 'Reported (demo)', type: 'info' }) }
 
 onMounted(() => {
   // Provide a custom center slot component: Play button that starts the quiz

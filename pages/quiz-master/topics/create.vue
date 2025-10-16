@@ -1,0 +1,242 @@
+<template>
+  <div class="max-w-3xl mx-auto space-y-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-semibold">Create New Topic</h1>
+      <button 
+        @click="router.back()" 
+        class="text-gray-600 hover:text-gray-800"
+      >
+        <Icon name="heroicons:x-mark" class="w-6 h-6" />
+      </button>
+    </div>
+
+    <form @submit.prevent="handleSubmit" class="space-y-6">
+      <!-- Name -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700">Topic Name</label>
+        <input 
+          v-model="form.name" 
+          type="text" 
+          required
+          placeholder="Enter topic name"
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          :class="{ 'border-red-300': errors.name }"
+        />
+        <p v-if="errors.name" class="text-sm text-red-600">{{ errors.name }}</p>
+      </div>
+
+      <!-- Description -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700">Description</label>
+        <textarea 
+          v-model="form.description" 
+          rows="4" 
+          placeholder="Describe the topic"
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          :class="{ 'border-red-300': errors.description }"
+        ></textarea>
+        <p v-if="errors.description" class="text-sm text-red-600">{{ errors.description }}</p>
+      </div>
+
+      <!-- Grade Selection -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700">Grade</label>
+        <select 
+          v-model="form.gradeId"
+          required
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          :class="{ 'border-red-300': errors.gradeId }"
+        >
+          <option value="">Select a grade</option>
+          <option v-for="grade in grades" :key="grade.id" :value="grade.id">
+            {{ grade.name }}
+          </option>
+        </select>
+        <p v-if="errors.gradeId" class="text-sm text-red-600">{{ errors.gradeId }}</p>
+      </div>
+
+      <!-- Subject Selection -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700">Subject</label>
+        <select 
+          v-model="form.subjectId"
+          required
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          :class="{ 'border-red-300': errors.subjectId }"
+        >
+          <option value="">Select a subject</option>
+          <option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
+            {{ subject.name }}
+          </option>
+        </select>
+        <p v-if="errors.subjectId" class="text-sm text-red-600">{{ errors.subjectId }}</p>
+      </div>
+
+      <!-- Image Upload -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700">Topic Image (Optional)</label>
+        <div 
+          class="border-2 border-dashed rounded-lg p-4 text-center hover:bg-gray-50 cursor-pointer"
+          @click="$refs.fileInput.click()"
+          @dragover.prevent
+          @drop.prevent="handleFileDrop"
+        >
+          <input 
+            ref="fileInput"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="handleFileSelect"
+          />
+          <div v-if="!form.image" class="space-y-2">
+            <Icon name="heroicons:photo" class="w-12 h-12 mx-auto text-gray-400" />
+            <p class="text-sm text-gray-500">Click or drag image to upload</p>
+          </div>
+          <img 
+            v-else 
+            :src="imagePreview" 
+            class="max-h-48 mx-auto rounded"
+            alt="Topic image preview"
+          />
+        </div>
+        <p v-if="errors.image" class="text-sm text-red-600">{{ errors.image }}</p>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex justify-end pt-4">
+        <button 
+          type="submit" 
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-75 flex items-center gap-2"
+          :disabled="isSubmitting"
+        >
+          <Icon v-if="isSubmitting" name="heroicons:arrow-path" class="w-5 h-5 animate-spin" />
+          <span>{{ isSubmitting ? 'Creating...' : 'Create Topic' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+definePageMeta({
+  layout: 'quiz-master',
+})
+
+const router = useRouter()
+const fileInput = ref(null)
+
+// Form state
+const form = ref({
+  name: '',
+  description: '',
+  gradeId: '',
+  subjectId: '',
+  image: null
+})
+
+const errors = ref({})
+const isSubmitting = ref(false)
+const imagePreview = ref('')
+
+// Data from API
+const grades = ref([])
+const subjects = ref([])
+
+// Filter subjects based on selected grade
+const filteredSubjects = computed(() => {
+  if (!form.value.gradeId) return subjects.value
+  return subjects.value.filter(subject => subject.gradeId === form.value.gradeId)
+})
+
+// File handling functions
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    form.value.image = file
+    createImagePreview(file)
+  }
+}
+
+const handleFileDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (file && file.type.startsWith('image/')) {
+    form.value.image = file
+    createImagePreview(file)
+  }
+}
+
+const createImagePreview = (file) => {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    imagePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+// Form submission
+const handleSubmit = async () => {
+  errors.value = {}
+  isSubmitting.value = true
+
+  try {
+    // Create FormData for file upload
+    const formData = new FormData()
+    formData.append('name', form.value.name)
+    formData.append('description', form.value.description)
+    formData.append('grade_id', form.value.gradeId)
+    formData.append('subject_id', form.value.subjectId)
+    if (form.value.image) {
+      formData.append('image', form.value.image)
+    }
+
+    // Create the topic via API
+    const response = await fetch(useRuntimeConfig().public.apiBase + '/api/topics', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      if (data.errors) {
+        errors.value = data.errors
+        return
+      }
+      throw new Error('Failed to create topic')
+    }
+
+    // Successfully created - redirect to topics list
+    router.push('/quiz-master/topics')
+  } catch (error) {
+    console.error('Error creating topic:', error)
+    errors.value = { _form: 'Failed to create topic. Please try again.' }
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Fetch initial data
+onMounted(async () => {
+  try {
+    // Fetch grades and subjects in parallel
+    const [gradesRes, subjectsRes] = await Promise.all([
+      fetch(useRuntimeConfig().public.apiBase + '/api/grades', { credentials: 'include' }),
+      fetch(useRuntimeConfig().public.apiBase + '/api/subjects', { credentials: 'include' })
+    ])
+
+    if (gradesRes.ok && subjectsRes.ok) {
+      const gradesData = await gradesRes.json()
+      const subjectsData = await subjectsRes.json()
+
+      grades.value = gradesData?.grades || gradesData?.data || gradesData || []
+      subjects.value = subjectsData?.subjects || subjectsData?.data || subjectsData || []
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error)
+  }
+})
+</script>

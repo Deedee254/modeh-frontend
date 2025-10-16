@@ -6,7 +6,7 @@
         <quizeeSidebar />
       </div>
       <div class="flex-1 flex flex-col">
-        <quizeeTopBar />
+        <TopBar />
         <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
           <slot />
         </main>
@@ -23,6 +23,8 @@
 
     <GlobalAlert />
     <NotificationDrawer />
+    <!-- Mobile bottom navigation for quizee role -->
+    <BottomNav v-if="isAuthed" />
   </div>
 </template>
 
@@ -30,12 +32,13 @@
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import quizeeSidebar from '~/components/QuizeeSidebar.vue'
-import quizeeTopBar from '~/components/QuizeeTopBar.vue'
+import TopBar from '~/components/TopBar.vue'
 import GlobalAlert from '~/components/GlobalAlert.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
+import BottomNav from '~/components/ui/BottomNav.vue'
 
 // ensure we call the auth store so we can detect authenticated users
 const auth = useAuthStore ? useAuthStore() : null
