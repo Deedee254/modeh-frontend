@@ -77,6 +77,7 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from '#imports'
+import { useUserRole } from '~/composables/useUserRole'
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationsStore } from '~/stores/notifications'
 import { useBottomNavStore } from '~/stores/bottomNav'
@@ -89,7 +90,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const auth = useAuthStore?.() || null
+const { isQuizMaster, isQuizee } = useUserRole()
 const notif = useNotificationsStore()
 const bottomNav = useBottomNavStore()
 const ui = useUiStore()
@@ -117,31 +118,29 @@ function leftAction() {
   if (typeof props.onLeft === 'function') return props.onLeft()
   if (typeof bottomNav.leftHandler === 'function' || typeof bottomNav.leftHandler?.value === 'function') return (bottomNav.leftHandler?.value || bottomNav.leftHandler)()
   // On mobile, open the sidebar drawer via the UI store
-  ui.toggleSidebar()
-  // route to role-specific listing when not mobile
-  const role = auth?.role || auth?.user?.role || null
-  if (role === 'quiz-master') return router.push('/quiz-master/quizzes')
-  if (role === 'quizee') return router.push('/quizee/quizzes')
-  return router.push('/quizzes')
+  if (isMobile.value) {
+    ui.toggleSidebar()
+  } else {
+    // Default desktop action if not on mobile
+    if (isQuizMaster.value) return router.push('/quiz-master/quizzes')
+    if (isQuizee.value) return router.push('/quizee/quizzes')
+    return router.push('/quizzes')
+  }
 }
 
 function centerAction() {
   if (typeof props.onCenter === 'function') return props.onCenter()
   if (typeof bottomNav.centerHandler === 'function' || typeof bottomNav.centerHandler?.value === 'function') return (bottomNav.centerHandler?.value || bottomNav.centerHandler)()
-  const role = auth?.role || auth?.user?.role || null
-  // ensure quiz-master gets routed to the create-quiz page consistent with sidebar
-  if (role === 'quiz-master') return router.push('/quiz-master/quizzes/create')
-  return router.push('/quizee/quizzes')
+  if (isQuizMaster.value) return router.push('/quiz-master/quizzes/create')
+  if (isQuizee.value) return router.push('/quizee/quizzes')
 }
 
 function rightAction() {
   if (typeof props.onRight === 'function') return props.onRight()
   if (typeof bottomNav.rightHandler === 'function' || typeof bottomNav.rightHandler?.value === 'function') return (bottomNav.rightHandler?.value || bottomNav.rightHandler)()
-  const role = auth?.role || auth?.user?.role || null
-  // route to role-appropriate chat page (consistent with TopBar behaviour)
-  if (role === 'quiz-master') return router.push('/quiz-master/chat')
-  if (role === 'quizee') return router.push('/quizee/chat')
-  return router.push('/profile')
+  if (isQuizMaster.value) return router.push('/quiz-master/chat')
+  if (isQuizee.value) return router.push('/quizee/chat')
+  return router.push('/profile') // Fallback for any other case
 }
 </script>
 

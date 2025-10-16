@@ -2,11 +2,11 @@
   <div>
     <div v-if="isAuthed" class="min-h-screen flex bg-gray-100">
       <!-- Sidebar: permanent on lg+, drawer on smaller screens -->
-      <div>
+      <div :class="['transition-all duration-300', { 'hidden lg:block': !ui.sidebarOpen, 'fixed inset-y-0 left-0 z-40 lg:static': ui.sidebarOpen }]">
         <quizeeSidebar />
       </div>
       <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
-      <div class="flex-1 flex flex-col h-screen overflow-y-auto transition-all duration-300" :class="[ui.sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64']">
+      <div class="flex-1 flex flex-col h-screen overflow-y-auto">
         <TopBar v-if="!route.meta.hideTopBar" />
         <main class="p-6 flex-1 pb-20 md:pb-6">
           <slot />

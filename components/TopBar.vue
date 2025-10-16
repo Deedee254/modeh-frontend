@@ -178,6 +178,7 @@ import { useNotificationsStore } from '~/stores/notifications'
 import { useAppTheme } from '~/composables/useAppTheme'
 import { useUserRole } from '~/composables/useUserRole'
 import { useUiStore } from '~/stores/ui'
+import { useMobileNav } from '~/composables/useMobileNav'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
 import ThemeToggle from '~/components/ThemeToggle.vue'
 

@@ -119,7 +119,6 @@ import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import Pagination from '~/components/Pagination.vue'
 
 const router = useRouter()
-import { useAppAlert } from '~/composables/useAppAlert'
 const alert = useAppAlert()
 const api = useApi()
 import { useAuthStore } from '~/stores/auth'
