@@ -1,53 +1,168 @@
 <template>
-  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md">
-      <h3 class="text-lg font-semibold">Subscribe to {{ pkg.title }}</h3>
-      <p class="text-sm text-gray-600 mt-2">Amount: {{ pkg.currency }} {{ pkg.price }}</p>
+  <div>
+    <UModal v-model="isOpen" prevent-close>
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-slate-100 dark:divide-slate-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">
+              Confirm Payment
+            </h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="closeModal" />
+          </div>
+        </template>
 
-      <div class="mt-4">
-        <label class="block text-sm">Phone</label>
-        <select v-if="phones.length" v-model="phone" class="w-full border rounded px-2 py-1">
-          <option value="">Enter new number</option>
-          <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
-        </select>
-        <input v-model="phoneInput" v-if="!phone || phone === ''" type="text" placeholder="2547...." class="w-full border rounded px-2 py-1 mt-2" />
-        <input v-model="phoneInput" v-else type="hidden" />
-      </div>
+        <div class="p-4">
+          <div v-if="error" class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">
+            {{ error }}
+          </div>
 
-      <div class="mt-4 flex gap-2">
-        <button @click="pay" class="bg-indigo-600 text-white px-4 py-2 rounded">Pay (Mpesa)</button>
-        <button @click="$emit('close')" class="px-4 py-2 border rounded">Cancel</button>
-      </div>
-    </div>
+          <!-- Payment Details -->
+          <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="flex justify-between items-center">
+              <div>
+                <div class="font-semibold text-slate-800 dark:text-slate-200">{{ paymentDetails.title }}</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ paymentDetails.description }}</div>
+              </div>
+              <div class="text-xl font-bold text-slate-900 dark:text-slate-50">{{ paymentDetails.priceDisplay }}</div>
+            </div>
+          </div>
+
+          <!-- Phone Input -->
+          <div class="mb-2">
+            <label for="phone-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Phone number for M-Pesa</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <select v-if="phones.length" v-model="selectedPhonePreset" class="border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full sm:w-auto focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="">Enter a new number</option>
+                <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
+              </select>
+              <input id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-indigo-500 focus:border-indigo-500" />
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">An STK push will be sent to this number. Please use international format (e.g., 254...)</p>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton color="gray" variant="ghost" @click="closeModal" :disabled="loading">Cancel</UButton>
+            <UButton 
+              @click="initiatePayment" 
+              :loading="loading" 
+              :disabled="!phoneForPayment" 
+              icon="i-heroicons-lock-closed" 
+              :label="`Pay ${paymentDetails.priceDisplay}`"
+              class="bg-indigo-600 hover:bg-indigo-700"
+            >
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <PaymentAwaitingModal :tx="currentTx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed" />
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
-const props = defineProps({ pkg: Object, open: Boolean, phones: { type: Array, default: () => [] } })
-const emit = defineEmits(['close','paid'])
-const phone = ref('')
-const phoneInput = ref('')
 
-watch(() => props.open, (v) => { if (v) { phone.value = ''; phoneInput.value = '' } })
+const props = defineProps({
+  open: Boolean,
+  pkg: { type: Object, default: null },
+  item: { type: Object, default: null },
+  phones: { type: Array, default: () => [] }
+})
 
-const config = useRuntimeConfig()
+const emits = defineEmits(['close', 'paid'])
 
-async function pay() {
-  const p = phone.value && phone.value !== '' ? phone.value : phoneInput.value
-  if (!p) { useAppAlert().push({ message: 'Enter phone', type: 'warning' }); return }
-  // create subscription
-  const sub = await $fetch(config.public.apiBase + `/api/packages/${props.pkg.id}/subscribe`, { method: 'POST', credentials: 'include', body: { phone: p } })
-  if (!sub || !(sub.ok === true || sub.subscription)) { useAppAlert().push({ message: 'Failed to create subscription', type: 'error' }); return }
-  // initiate
-  const init = await $fetch(config.public.apiBase + `/api/payments/subscriptions/${sub.subscription?.id}/mpesa/initiate`, { method: 'POST', credentials: 'include' })
-  if (init && (init.ok === true || init.success === true)) {
-    useAppAlert().push({ message: 'Payment initiated. You will receive STK Push on phone (simulated)', type: 'success' })
-    emit('paid')
-    emit('close')
-  } else {
-    useAppAlert().push({ message: 'Failed to initiate payment', type: 'error' })
+const cfg = useRuntimeConfig()
+const alert = useAppAlert()
+
+const isOpen = ref(props.open)
+const loading = ref(false)
+const error = ref('')
+const currentTx = ref(null)
+const showAwaitingModal = ref(false)
+
+const selectedPhonePreset = ref('')
+const phoneInputLocal = ref('')
+
+const phoneForPayment = computed(() => selectedPhonePreset.value || phoneInputLocal.value)
+
+const paymentDetails = computed(() => {
+  if (props.pkg) {
+    return {
+      type: 'subscription',
+      title: props.pkg.name || 'Subscription',
+      description: props.pkg.short_description || `Access for ${props.pkg.duration_days || 30} days`,
+      price: props.pkg.price,
+      priceDisplay: `${props.pkg.currency || 'KES'} ${props.pkg.price}`
+    }
+  }
+  if (props.item) {
+    return {
+      type: 'one-off',
+      title: props.item.name || props.item.title || 'One-off Purchase',
+      description: `Unlock results for this item`,
+      price: props.item.price,
+      priceDisplay: `${props.item.currency || 'KES'} ${props.item.price}`
+    }
+  }
+  return { title: 'Invalid Item', description: '', price: 0, priceDisplay: 'KES 0' }
+})
+
+async function initiatePayment() {
+  if (!phoneForPayment.value) {
+    error.value = 'Please provide a phone number.'
+    return
+  }
+  loading.value = true
+  error.value = ''
+
+  try {
+    let res
+    if (paymentDetails.value.type === 'subscription') {
+      res = await $fetch(`${cfg.public.apiBase}/api/packages/${props.pkg.id}/subscribe`, { method: 'POST', credentials: 'include', body: { phone: phoneForPayment.value } })
+    } else {
+      const payload = { item_type: props.item.type || 'quiz', item_id: props.item.id, amount: paymentDetails.value.price, phone: phoneForPayment.value }
+      res = await $fetch(`${cfg.public.apiBase}/api/one-off-purchases`, { method: 'POST', credentials: 'include', body: payload })
+    }
+
+    if (res?.ok && (res.tx || res.purchase?.gateway_meta?.tx)) {
+      currentTx.value = res.tx || res.purchase.gateway_meta.tx
+      showAwaitingModal.value = true
+      isOpen.value = false // Hide this modal, show the awaiting one
+    } else {
+      throw new Error(res.message || 'Failed to initiate payment.')
+    }
+  } catch (e) {
+    error.value = e.data?.message || e.message || 'An unexpected error occurred.'
+    alert.push({ type: 'error', message: error.value })
+  } finally {
+    loading.value = false
   }
 }
+
+function onPaymentAttemptClosed() {
+  showAwaitingModal.value = false
+  emits('paid') // Signal to parent to re-check status
+  closeModal()
+}
+
+function closeModal() {
+  isOpen.value = false
+  emits('close')
+}
+
+watch(() => props.open, (newVal) => {
+  isOpen.value = newVal
+  if (newVal) {
+    error.value = ''
+    loading.value = false
+    if (props.phones.length > 0) {
+      selectedPhonePreset.value = props.phones[0]
+      phoneInputLocal.value = ''
+    }
+  }
+})
 </script>

@@ -1,11 +1,11 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4 md:p-6">
+  <div class="min-h-screen bg-gray-50 md:p-6">
     <div class="max-w-4xl mx-auto">
-      <div class="bg-white rounded-lg shadow-sm border">
-        <div class="p-6 border-b">
+      <div class="bg-white md:rounded-lg md:shadow-sm md:border pb-24 md:pb-0">
+        <div class="p-4 md:p-6 border-b">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <div class="text-xl font-semibold text-gray-900">{{ quiz.title || 'Loading...' }}</div>
+              <div class="text-lg md:text-xl font-semibold text-gray-900">{{ quiz.title || 'Loading...' }}</div>
               <div class="text-sm text-gray-600">{{ quiz.description }}</div>
 
               <!-- Quiz rules badges -->
@@ -59,7 +59,7 @@
 
         <div v-if="loading" class="p-6"><UiSkeleton :count="5" /></div>
 
-        <div v-else-if="quiz.questions.length > 0" class="p-6">
+        <div v-else-if="quiz.questions.length > 0" class="p-4 md:p-6">
           <div class="max-w-4xl mx-auto">
             <!-- Question Card -->
             <div class="bg-white rounded-lg shadow-sm border mb-6">
@@ -128,7 +128,7 @@
 
                       <!-- Short Answer -->
                       <template v-if="currentQuestionData.type === 'short'">
-                        <UTextarea v-model="answers[currentQuestionData.id]" placeholder="Type your answer here..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none" rows="3" />
+                        <UTextarea v-model="currentShortAnswer" placeholder="Type your answer here..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none" :rows="3" />
                       </template>
 
                       <!-- Numeric -->
@@ -146,23 +146,25 @@
             </div>
 
             <!-- Navigation -->
-            <div class="flex items-center justify-between">
-              <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" :disabled="currentQuestion === 0" @click="previousQuestion">
-                Previous
-              </button>
-              <div class="flex gap-2">
-                <button v-if="currentQuestion < quiz.questions.length - 1" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="nextQuestion">
-                  Next
+            <div class="fixed bottom-0 left-0 right-0 md:relative bg-white/80 backdrop-blur-sm md:bg-transparent border-t md:border-0 p-4 md:p-0">
+              <div class="max-w-4xl mx-auto flex items-center justify-between">
+                <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" :disabled="currentQuestion === 0" @click="previousQuestion">
+                  Previous
                 </button>
-                <button v-else type="button" :disabled="submitting.value" :class="['px-6 py-2 rounded-lg transition-colors', submitting.value ? 'bg-green-500 text-white opacity-60 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700']" @click="confirmSubmit">
-                  <svg v-if="submitting.value" class="w-4 h-4 inline-block mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-                  <span>{{ submitting.value ? 'Submitting…' : 'Submit Quiz' }}</span>
-                </button>
-                <button v-if="lastSubmitFailed" type="button" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors" @click="submitAnswers" :disabled="submitting.value">
-                  Retry
-                </button>
+                <div class="flex gap-2">
+                  <button v-if="currentQuestion < quiz.questions.length - 1" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="nextQuestion">
+                    Next
+                  </button>
+                  <button v-else type="button" :disabled="submitting.value" :class="['px-6 py-2 rounded-lg transition-colors', submitting.value ? 'bg-green-500 text-white opacity-60 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700']" @click="confirmSubmit">
+                    <svg v-if="submitting.value" class="w-4 h-4 inline-block mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+                    <span>{{ submitting.value ? 'Submitting…' : 'Submit Quiz' }}</span>
+                  </button>
+                  <button v-if="lastSubmitFailed" type="button" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors" @click="submitAnswers" :disabled="submitting.value">
+                    Retry
+                  </button>
+                </div>
+                <div v-if="submissionMessage" class="mt-3 text-sm text-slate-600">{{ submissionMessage }}</div>
               </div>
-              <div v-if="submissionMessage" class="mt-3 text-sm text-slate-600">{{ submissionMessage }}</div>
             </div>
           </div>
         </div>
@@ -202,7 +204,10 @@
 <script setup>
 import UiTextarea from '~/components/ui/UiTextarea.vue'
 // set page layout meta for quizee
-definePageMeta({ layout: 'quizee' })
+definePageMeta({
+  layout: 'quizee',
+  hideBottomNav: true
+})
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -257,6 +262,19 @@ const { currentQuestion, nextQuestion, previousQuestion } = useQuizNavigation(co
 const { currentStreak, achievements, encouragementMessage, encouragementStyle, calculateAchievements, resetAchievements } = useQuizEnhancements(quiz, progressPercent, currentQuestion, answers)
 
 const currentQuestionData = computed(() => quiz.value.questions[currentQuestion.value] || {})
+// For short-answer questions, expose a computed value with getter/setter so v-model doesn't bind to a read-only expression
+const currentShortAnswer = computed({
+  get() {
+    const q = currentQuestionData.value
+    if (!q || !q.id) return ''
+    return answers.value[q.id] ?? ''
+  },
+  set(v) {
+    const q = currentQuestionData.value
+    if (!q || !q.id) return
+    answers.value[q.id] = v
+  }
+})
 // centralized checkout handles payments and result viewing
 
 // --- Methods ---

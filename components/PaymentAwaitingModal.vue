@@ -23,7 +23,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import { useAppAlert } from '~/composables/useAppAlert'
 
 const props = defineProps({ tx: String, open: Boolean })
 const emits = defineEmits(['close','update:open'])
@@ -67,8 +66,6 @@ function _attachEchoListeners() {
           if (tx === props.tx) {
             // update status if provided
             status.value = subscription?.status ?? payload?.status ?? 'active'
-            // show a small success alert if available
-            try { const alert = useAppAlert(); alert.push({ message: 'Payment confirmed', type: 'success' }) } catch (e) {}
             // close modal shortly after
             setTimeout(() => { emits('update:open', false); emits('close') }, 600)
           }

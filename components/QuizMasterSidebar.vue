@@ -1,10 +1,10 @@
 <template>
-  <aside ref="asideRef" class="w-64 w-20 bg-white border-r h-screen sticky top-0 flex flex-col py-4 transition-all duration-300">
-    <div class="mb-6 flex items-center px-6">
-      <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8 h-10 transition-all duration-300" />
+  <aside :class="[collapsed ? 'w-20' : 'w-64']" class="bg-white border-r h-screen sticky top-0 flex flex-col py-4 transition-all duration-300">
+    <div class="mb-6 flex items-center px-4" :class="[collapsed ? 'justify-center' : '']">
+      <img src="/logo/modeh-logo.png" alt="Modeh" :class="[collapsed ? 'h-8' : 'h-10']" class="transition-all duration-300" />
     </div>
 
-    <nav class="flex-1 w-full">
+    <nav class="flex-1 w-full" :class="[collapsed ? 'px-0' : 'px-2']">
       <ul class="flex flex-col gap-1 px-2">
           <li>
             <NuxtLink to="/quiz-master/dashboard" :class="linkClass('/quiz-master/dashboard')" title="Dashboard">
@@ -71,10 +71,10 @@
   <!-- Desktop profile removed to avoid duplication with TopBar; profile remains in mobile drawer -->
 
     <div class="px-2">
-    <button @click="toggleCollapse" class="w-full p-2 rounded text-sm text-gray-600 hover:bg-gray-100 control-btn">
-      <XMarkIcon class="w-4 h-4 inline-block mr-2 icon-close" />
-      <Bars3Icon class="w-4 h-4 inline-block mr-2 icon-open" />
-      <span class="control-label">Collapse</span>
+    <button @click="toggleCollapse" class="w-full p-2 rounded text-sm text-gray-600 hover:bg-gray-100 flex items-center" :class="[collapsed ? 'justify-center' : '']">
+      <XMarkIcon v-if="!collapsed" class="w-4 h-4 inline-block mr-2" />
+      <Bars3Icon v-else class="w-4 h-4 inline-block" />
+      <span v-if="!collapsed">Collapse</span>
     </button>
   </div>
   </aside>
@@ -135,13 +135,13 @@ const collapsed = ref(false)
 const STORAGE_KEY = 'sidebar:collapsed:quiz-master'
 const route = useRoute()
 const { sidebarMobileOpen, toggleSidebar, setSidebar } = useSidebar()
-const asideRef = ref(null)
 
 function linkClass(path) {
   const active = route.path.startsWith(path)
   return [
     'p-3 rounded flex items-center text-gray-700 transition-colors',
-    active ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'
+    active ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100',
+    collapsed.value ? 'justify-center' : ''
   ]
 }
 
@@ -165,8 +165,6 @@ if (process.client) {
       if (window.innerWidth < 768) collapsed.value = true
     }
 
-    nextTick(() => applyCollapseToDom(collapsed.value))
-
     window.addEventListener('toggle-sidebar', () => {
       if (window.innerWidth < 1024) {
         toggleSidebar()
@@ -177,28 +175,6 @@ if (process.client) {
   })
 }
 
-function applyCollapseToDom(isCollapsed) {
-  const aside = asideRef.value
-  if (!aside) return
-
-  aside.style.width = isCollapsed ? '5rem' : '16rem'
-
-  aside.querySelectorAll('a').forEach(a => {
-    a.classList.toggle('justify-center', isCollapsed)
-  })
-
-  aside.querySelectorAll('.nav-label').forEach(l => {
-    if (l instanceof HTMLElement) l.style.display = isCollapsed ? 'none' : ''
-  })
-
-  const iconOpen = aside.querySelector('.icon-open')
-  const iconClose = aside.querySelector('.icon-close')
-  if (iconOpen instanceof HTMLElement) iconOpen.style.display = isCollapsed ? '' : 'none'
-  if (iconClose instanceof HTMLElement) iconClose.style.display = isCollapsed ? 'none' : ''
-  const controlLabel = aside.querySelector('.control-label')
-  if (controlLabel instanceof HTMLElement) controlLabel.style.display = isCollapsed ? 'none' : ''
-}
-
 function onMobileNavClick() {
   setSidebar(false)
   try { window.dispatchEvent(new CustomEvent('sidebar-closed')) } catch (e) {}
@@ -206,4 +182,7 @@ function onMobileNavClick() {
 </script>
 
 <style scoped>
+.nav-label {
+  display: v-bind("collapsed ? 'none' : ''");
+}
 </style>

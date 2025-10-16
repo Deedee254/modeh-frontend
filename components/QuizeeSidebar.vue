@@ -1,89 +1,89 @@
 <template>
-  <aside ref="asideRef" class="w-64 w-20 bg-white border-r h-screen sticky top-0 flex flex-col py-4 transition-all duration-300">
-    <div class="mb-6 flex items-center px-6">
-      <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8 h-10 transition-all duration-300" />
+  <aside :class="[collapsed ? 'w-20' : 'w-64']" class="bg-white border-r h-screen sticky top-0 flex flex-col py-4 transition-all duration-300">
+    <div class="mb-6 flex items-center px-4" :class="[collapsed ? 'justify-center' : '']">
+      <img src="/logo/modeh-logo.png" alt="Modeh" :class="[collapsed ? 'h-8' : 'h-10']" class="transition-all duration-300" />
     </div>
 
-    <nav class="flex-1 w-full">
-      <ul class="flex flex-col gap-1 px-2">
+    <nav class="flex-1 w-full" :class="[collapsed ? 'px-0' : 'px-2']">
+      <ul class="flex flex-col gap-1" :class="[collapsed ? 'px-2' : 'px-2']">
         <li>
           <NuxtLink to="/quizee/dashboard" :class="linkClass('/quizee/dashboard')" title="Dashboard">
             <HomeIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Dashboard</span>
+            <span v-if="!collapsed" class="ml-2">Dashboard</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/quizzes" :class="linkClass('/quizee/quizzes')" title="Quizzes">
             <ClipboardDocumentListIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Quizzes</span>
+            <span v-if="!collapsed" class="ml-2">Quizzes</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/daily-challenges" :class="linkClass('/quizee/daily-challenges')" title="Daily Challenges">
             <CalendarDaysIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Daily Challenges</span>
+            <span v-if="!collapsed" class="ml-2">Daily Challenges</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/battles" :class="linkClass('/quizee/battles')" title="Battles">
             <TrophyIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Battles</span>
+            <span v-if="!collapsed" class="ml-2">Battles</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/tournaments" :class="linkClass('/quizee/tournaments')" title="Tournaments">
             <FlagIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Tournaments</span>
+            <span v-if="!collapsed" class="ml-2">Tournaments</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/points" :class="linkClass('/quizee/points')" title="Points">
             <StarIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Points</span>
+            <span v-if="!collapsed" class="ml-2">Points</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/subscription" :class="linkClass('/quizee/subscription')" title="Subscription">
             <CreditCardIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Subscription</span>
+            <span v-if="!collapsed" class="ml-2">Subscription</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/chat" :class="linkClass('/quizee/chat')" title="Messages">
             <ChatBubbleLeftRightIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Messages</span>
+            <span v-if="!collapsed" class="ml-2">Messages</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/quiz-masters" :class="linkClass('/quizee/quiz-masters')" title="quiz-masters">
             <UserGroupIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Quiz Masters</span>
+            <span v-if="!collapsed" class="ml-2">Quiz Masters</span>
           </NuxtLink>
         </li>
 
         <li>
           <NuxtLink to="/quizee/settings" :class="linkClass('/quizee/settings')" title="Settings">
             <CogIcon class="w-5 h-5" />
-            <span class="ml-2 nav-label">Settings</span>
+            <span v-if="!collapsed" class="ml-2">Settings</span>
           </NuxtLink>
         </li>
       </ul>
     </nav>
   <!-- Profile shown in the mobile drawer only to avoid duplication with the TopBar on desktop -->
 
-    <div class="px-2">
-    <button @click="toggleCollapse" class="w-full p-2 rounded text-sm text-gray-600 hover:bg-gray-100 control-btn">
-      <XMarkIcon class="w-4 h-4 inline-block mr-2 icon-close" />
-      <Bars3Icon class="w-4 h-4 inline-block mr-2 icon-open" />
-      <span class="control-label">Collapse</span>
+    <div class="px-2 mt-auto">
+    <button @click="toggleCollapse" class="w-full p-2 rounded text-sm text-gray-600 hover:bg-gray-100 flex items-center" :class="[collapsed ? 'justify-center' : '']">
+      <XMarkIcon v-if="!collapsed" class="w-4 h-4 inline-block mr-2" />
+      <Bars3Icon v-else class="w-4 h-4 inline-block" />
+      <span v-if="!collapsed">Collapse</span>
     </button>
   </div>
   </aside>
@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 // Heroicons outline
@@ -222,8 +222,4 @@ function onMobileNavClick() {
 }
 </script>
 
-<style scoped>
-.transition-width {
-  transition: width 0.3s ease-in-out;
-}
-</style>
+<style scoped></style>

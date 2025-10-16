@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white border-b shadow-sm relative" :class="{ 'z-50': mobileNavOpen || sidebarMobileOpen }">
     <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-0 sm:gap-2">
-      <div class="flex items-center gap-0 sm:gap-2 w-full">
+      <div class="flex items-center gap-1 sm:gap-2 w-full">
         <!-- Bars / hamburger: on desktop open sidebar, on mobile open the topbar mobile menu -->
         <button class="inline-flex p-1 rounded-md text-gray-500 hover:bg-gray-100" @click="onBarsClick" aria-label="Open menu">
           <Bars3Icon class="w-5 h-5" />
@@ -14,7 +14,7 @@
 
   <!-- Navigation (hidden on mobile) -->
   <nav class="hidden md:flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6">
-          <template v-if="isquizee">
+          <template v-if="isquizee && auth.user">
             <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900">Grades</NuxtLink>
             <NuxtLink to="/quizee/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
             <NuxtLink to="/quizee/battles" class="text-sm text-gray-600 hover:text-gray-900">Battles <span v-if="onlineCount>0" class="ml-2 text-xs text-gray-500">({{ onlineCount }})</span></NuxtLink>
@@ -29,7 +29,7 @@
         </nav>
       </div>
 
-  <div class="flex items-center gap-0 sm:gap-3">
+  <div class="flex items-center gap-1 sm:gap-3">
         <!-- Notifications (icon-only) -->
         <NotificationsDropdown @update:unread="(v) => { unreadCount.value = v }" />
 
@@ -97,7 +97,7 @@
         </div>
 
         <nav class="mt-3 flex flex-col gap-2">
-          <template v-if="isquizee">
+          <template v-if="isquizee && auth.user">
             <NuxtLink @click="mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
             <NuxtLink @click="mobileNavOpen = false" to="/quizee/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
             <NuxtLink @click="mobileNavOpen = false" to="/quizee/battles" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Battles</NuxtLink>

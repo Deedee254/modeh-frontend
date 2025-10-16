@@ -6,7 +6,7 @@
         <quizeeSidebar />
       </div>
       <div class="flex-1 flex flex-col">
-        <TopBar />
+        <TopBar v-if="!route.meta.hideTopBar" />
         <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
           <slot />
         </main>
@@ -24,12 +24,13 @@
     <GlobalAlert />
     <NotificationDrawer />
     <!-- Mobile bottom navigation for quizee role -->
-    <BottomNav v-if="isAuthed" />
+    <BottomNav v-if="isAuthed && !route.meta.hideBottomNav" />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import quizeeSidebar from '~/components/QuizeeSidebar.vue'
 import TopBar from '~/components/TopBar.vue'
@@ -40,6 +41,7 @@ import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'
 
+const route = useRoute()
 // ensure we call the auth store so we can detect authenticated users
 const auth = useAuthStore ? useAuthStore() : null
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
