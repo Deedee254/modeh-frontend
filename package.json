@@ -49,6 +49,7 @@
     "pusher-js": "^8.4.0",
     "sharp": "^0.34.4",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^1.3.0"
+    "vitest": "^1.3.0",
+    "@tailwindcss/postcss": "^2.0.0"
   }
 }
