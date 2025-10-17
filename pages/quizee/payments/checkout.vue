@@ -124,12 +124,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import useApi from '~/composables/useApi'
+import { useSubscription } from '~/composables/useSubscription'
 const api = useApi()
 import { useRoute, useRouter } from 'vue-router'
 import PaymentAwaitingModal from '~/components/PaymentAwaitingModal.vue'
 import { useSubscriptionsStore } from '~/stores/subscriptions'
 import ReviewAnswers from '~/components/ReviewAnswers.vue'
 import { useCheckoutStore } from '~/stores/checkout'
+import { useUiStore } from '~/stores/ui'
 
 definePageMeta({
   layout: 'quizee',
@@ -163,8 +165,8 @@ const selectedPhonePreset = ref('')
 const phoneInputLocal = ref('')
 
 const checkout = useCheckoutStore()
-
 const subscriptionsStore = useSubscriptionsStore()
+const ui = useUiStore()
 
 const canRedo = ref(false)
 const canSeeResults = computed(() => { // Renamed from canSeeResults for clarity
@@ -187,14 +189,18 @@ async function loadPackages() {
 
 async function checkSubscription() {
   loading.value = true
-  const cfg = useRuntimeConfig()
   try {
-    const { fetchSubscription, subscription } = await import('~/composables/useSubscription.js').then(m => m.useSubscription())
-    await fetchSubscription(cfg)
-    const sub = subscription.value
-    isActive.value = !!(sub && (sub.status === 'active' || sub.status === 'paid'))
-    activePackageName.value = sub?.package?.title || sub?.package?.name || ''
+    const res = await api.get('/api/subscriptions/mine')
+    if (res?.ok) {
+      const data = await res.json()
+      const sub = data?.subscription || data?.data?.subscription || data || null
+      isActive.value = !!(sub && (sub.status === 'active' || sub.status === 'paid'))
+      activePackageName.value = sub?.package?.title || sub?.package?.name || ''
+    } else {
+      throw new Error('Failed to fetch subscription status')
+    }
   } catch (e) {
+    console.error('Subscription check failed:', e)
     isActive.value = false
     activePackageName.value = ''
   } finally {
@@ -253,23 +259,47 @@ async function openAnswerReview() {
   showReview.value = true;
   reviewLoading.value = true;
   reviewError.value = '';
-  try {
-    const cfg = useRuntimeConfig();
-    // NOTE: This assumes an endpoint exists to fetch attempt details without correctness info.
-    // If your existing endpoint `/api/quiz-attempts/${attemptId}` already provides this
-    // without `correct` or `correct_answers` fields for un-paid attempts, you can use it.
-    // Otherwise, a new endpoint like `/api/quiz-attempts/${attemptId}/review` might be needed.
-    const data = await $fetch(cfg.public.apiBase + `/api/quiz-attempts/${attemptId}`, { credentials: 'include' });
-    reviewDetails.value = data?.attempt?.details || [];
-    if (!reviewDetails.value.length) {
-      reviewError.value = "Could not load the details for this attempt.";
+  
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      // Use the review-specific endpoint with api composable
+      const res = await api.get(`/api/quiz-attempts/${attemptId}/review`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+
+      if (res?.ok) {
+        const data = await res.json();
+        if (data?.attempt?.details) {
+          reviewDetails.value = data.attempt.details;
+          if (reviewDetails.value.length > 0) {
+            reviewError.value = '';
+            break;
+          }
+        }
+      }
+      
+      // If we got a response but no details, show specific error
+      if (retries === 1) {
+        reviewError.value = "No answers found for this attempt. Please try again later.";
+      }
+    } catch (e) {
+      console.error("Failed to fetch attempt review:", e);
+      if (retries === 1) {
+        reviewError.value = "Failed to fetch your answers. Please try again.";
+      }
     }
-  } catch (e) {
-    reviewError.value = "Failed to fetch your answers. Please try again.";
-    console.error("Failed to fetch attempt review:", e);
-  } finally {
-    reviewLoading.value = false;
+    
+    retries--;
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
+  
+  reviewLoading.value = false;
 }
 
 function seeResults() {
@@ -292,10 +322,10 @@ onMounted(async () => {
   // fetch quiz or battle to display one_off_price if available
   try {
     if (id) {
-      const cfg = useRuntimeConfig()
-      const res = await $fetch(cfg.public.apiBase + `/api/${type === 'quiz' ? 'quizzes' : 'battles'}/${id}`, { credentials: 'include' }).catch(() => null)
-      if (res) {
-        item.value = res.quiz || res.battle || res || null
+      const res = await api.get(`/api/${type === 'quiz' ? 'quizzes' : 'battles'}/${id}`)
+      if (res?.ok) {
+        const data = await res.json()
+        item.value = data.quiz || data.battle || data || null
         itemPrice.value = item.value?.one_off_price ?? null
       }
     }
@@ -307,9 +337,11 @@ onMounted(async () => {
   canRedo.value = !!(id && type === 'quiz')
   // try to extract phone presets from user profile or local storage
   try {
-    const cfg = useRuntimeConfig()
-    const res = await $fetch(cfg.public.apiBase + '/api/me', { credentials: 'include' }).catch(() => null)
-    if (res && res.phones) phones.value = res.phones
+    const res = await api.get('/api/me')
+    if (res?.ok) {
+      const data = await res.json()
+      if (data && data.phones) phones.value = data.phones
+    }
   } catch (e) { phones.value = [] }
 })
 </script>

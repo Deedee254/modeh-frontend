@@ -24,7 +24,7 @@
     </div>
 
     <div class="mt-6">
-      <UButton variant="primary" class="w-full" @click="startBattle" :disabled="starting || !canStart">Create 1 vs 1 Battle</UButton>
+      <UButton color="primary" class="w-full" @click="startBattle" :disabled="starting || !canStart">Create 1 vs 1 Battle</UButton>
     </div>
 
     <div v-if="starting" class="mt-3 text-sm text-center text-gray-500 dark:text-gray-400">Creating battle...</div>

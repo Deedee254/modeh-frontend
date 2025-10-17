@@ -1,55 +1,89 @@
 
 <template>
-  <div class="w-full group block rounded-2xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-transform transform hover:-translate-y-0.5 hover:scale-[1.01] overflow-hidden relative">
+  <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
-  <div class="relative h-28 sm:h-40 bg-gray-100 overflow-hidden">
-      <img v-if="cover" :src="cover" alt="cover" class="w-full h-full object-cover" />
-      <div v-else :class="['w-full h-full grid place-items-center font-bold', paletteClass]">
-        <span class="text-white text-2xl">{{ (title||'').charAt(0).toUpperCase() }}</span>
+    <div class="relative h-32 overflow-hidden rounded-t-2xl bg-slate-100 sm:h-40">
+      <img v-if="cover" :src="cover" :alt="title" class="h-full w-full object-cover" />
+      <div v-else :class="['grid h-full w-full place-items-center font-bold', paletteClass]">
+        <span class="text-2xl text-white">{{ (title || '').charAt(0).toUpperCase() }}</span>
       </div>
-          <!-- Grade badge (top-left) -->
-          <div v-if="showGrade && displayGrade" class="absolute left-3 top-3 z-30">
-            <div class="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-800/70 text-xs font-semibold text-gray-800 dark:text-gray-100">Grade {{ displayGrade }}</div>
-          </div>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
-      <div class="absolute left-4 bottom-4 right-4 text-white z-10">
-        <h4 class="text-lg sm:text-xl font-semibold line-clamp-2">{{ title }}</h4>
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+
+      <!-- Grade badge (top-left) -->
+      <div v-if="showGrade && displayGrade" class="absolute left-3 top-3 z-10">
+        <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
+          Grade {{ displayGrade }}
+        </div>
       </div>
-      <button @click.stop="toggleLike" aria-label="Like quiz" class="absolute top-2 right-2 z-20 bg-white/90 dark:bg-slate-800/80 rounded-full p-2 shadow-sm hover:scale-105 transition-transform inline-flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        <span class="text-xs text-gray-700 dark:text-gray-200">{{ localLikes }}</span>
+
+      <!-- Like button (top-right) -->
+      <button @click.stop="toggleLike" aria-label="Like quiz" class="absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-full bg-white/90 p-2 text-rose-500 shadow-sm transition-transform hover:scale-105 dark:bg-slate-800/80">
+        <Icon :name="localLiked ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-5 w-5" />
+        <span v-if="localLikes > 0" class="pr-1 text-xs font-medium text-slate-700 dark:text-slate-200">{{ localLikes }}</span>
       </button>
     </div>
-  <div class="p-3 sm:p-4 flex flex-col gap-3">
-      <div>
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-gray-500 flex flex-wrap items-center gap-2">
-            <span v-if="showSubject && displaySubject">{{ displaySubject }}</span>
-            <span v-if="showTopic && displayTopic">{{ displayTopic }}</span>
-          </div>
-          <div v-if="difficultyLabel" :class="['px-2 py-0.5 rounded-full text-xs font-semibold', difficultyClass]">{{ difficultyLabel }}</div>
+
+    <div class="flex flex-1 flex-col p-4">
+      <!-- Title -->
+      <h4 class="text-base font-semibold text-slate-800 line-clamp-2 dark:text-slate-100">{{ title }}</h4>
+
+      <!-- Description -->
+      <p v-if="description" class="mt-1 text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ description }}</p>
+
+      <!-- Metadata -->
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
+        <div v-if="difficultyLabel" :class="['inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold', difficultyClass]">
+          <Icon name="heroicons:chart-bar" class="h-4 w-4" />
+          {{ difficultyLabel }}
         </div>
-        <div class="mt-2 text-sm text-gray-600">{{ questionsCount }} questions</div>
-        <div v-if="description" class="mt-2 text-sm text-gray-700 line-clamp-3">{{ description }}</div>
+        <div class="inline-flex items-center gap-1.5">
+          <Icon name="heroicons:question-mark-circle" class="h-4 w-4" />
+          <span>{{ questionsCount }} {{ questionsCount === 1 ? 'question' : 'questions' }}</span>
+        </div>
       </div>
 
-      <!-- Footer CTAs: primary (Take) and secondary (View/Preview) -->
-          <div class="mt-auto flex gap-3">
-            <template v-if="primaryOnRight">
-                <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
-                <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
-              </template>
-              <template v-else>
-                <NuxtLink v-if="primaryHref" :to="primaryHref" class="flex-1 inline-flex justify-center items-center px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold">Take Quiz</NuxtLink>
-                <NuxtLink v-if="startLink" :to="startLink" class="flex-1 inline-flex justify-center items-center px-3 py-3 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200">Open</NuxtLink>
-              </template>
+      <!-- Topic and Subject -->
+      <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-300">
+        <span v-if="showSubject && displaySubject" class="inline-flex items-center gap-1.5">
+          <Icon name="heroicons:academic-cap" class="h-4 w-4" />
+          {{ displaySubject }}
+        </span>
+        <span v-if="showTopic && displayTopic" class="inline-flex items-center gap-1.5">
+          <Icon name="heroicons:book-open" class="h-4 w-4" />
+          {{ displayTopic }}
+        </span>
+      </div>
 
-            <!-- optional edit CTA for admins/content managers -->
-            <div v-if="showEdit" class="flex-1">
-              <button @click.stop="handleEdit" v-if="!editLink" class="w-full inline-flex justify-center items-center px-3 py-3 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">Edit</button>
-              <NuxtLink v-else :to="editLink" class="w-full inline-flex justify-center items-center px-3 py-3 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">Edit</NuxtLink>
+      <!-- Creator Info & Actions -->
+      <div class="mt-auto flex items-center gap-3 pt-4">
+        <div v-if="createdBy" class="flex flex-1 items-center gap-2">
+          <div class="h-8 w-8 overflow-hidden rounded-full bg-slate-100">
+            <img v-if="createdBy.avatar" :src="createdBy.avatar" :alt="createdBy.name" class="h-full w-full object-cover" />
+            <div v-else class="grid h-full w-full place-items-center text-xs font-semibold text-slate-600">
+              {{ createdBy.name?.[0]?.toUpperCase() || 'U' }}
             </div>
           </div>
+          <NuxtLink :to="`/quiz-masters/${createdBy.id}`" class="relative z-10 text-sm font-medium text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400">
+            {{ createdBy.name }}
+          </NuxtLink>
+        </div>
+
+        <!-- CTAs -->
+        <div class="relative z-10 flex items-center gap-2">
+          <NuxtLink v-if="to" :to="to" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            View Details
+          </NuxtLink>
+          <NuxtLink v-if="primaryHref" :to="primaryHref" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">
+            Take Quiz
+          </NuxtLink>
+          <button @click.stop="handleEdit" v-if="showEdit && !editLink" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            Edit
+          </button>
+          <NuxtLink v-if="showEdit && editLink" :to="editLink" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            Edit
+          </NuxtLink>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -74,13 +108,16 @@ const props = defineProps({
   quizId: { type: [String, Number], default: null },
   liked: { type: Boolean, default: false },
   showGrade: { type: Boolean, default: false },
-  showSubject: { type: Boolean, default: false },
+  showSubject: { type: Boolean, default: true },
   showTopic: { type: Boolean, default: true },
   startLink: { type: [String, Object], default: null },
-  takeLink: { type: [String, Object], default: null }
-  ,
-  primaryOnRight: { type: Boolean, default: false }
-  ,
+  takeLink: { type: [String, Object], default: null },
+  primaryOnRight: { type: Boolean, default: false },
+  // Quiz master info
+  createdBy: { 
+    type: Object, 
+    default: () => null
+  },
   // admin/edit support
   showEdit: { type: Boolean, default: false },
   editLink: { type: [String, Object], default: null }
@@ -142,10 +179,6 @@ const primaryHref = computed(() => {
   return props.takeLink || props.to || null
 })
 
-function handleEdit(e) {
-  e.stopPropagation()
-  emit('edit')
-}
 
 async function toggleLike(e) {
   e.stopPropagation()
@@ -188,5 +221,10 @@ async function toggleLike(e) {
       console.error('Unlike failed', err)
     }
   }
+}
+
+function handleEdit(e) {
+  e.stopPropagation()
+  emit('edit')
 }
 </script>

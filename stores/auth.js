@@ -1,57 +1,27 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { useRuntimeConfig } from '#app';
+import useApi from '~/composables/useApi';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
   const role = ref(null);
-
-  const config = useRuntimeConfig()
-
-  // Helper: ensure CSRF cookie is obtained from backend
-  async function ensureCsrf() {
-    // Use global $fetch provided by Nuxt/Nitro. Request must include credentials so cookie is set.
-    await $fetch('/sanctum/csrf-cookie', {
-      baseURL: config.public.apiBase || '',
-      credentials: 'include',
-      method: 'GET'
-    })
-  }
-
-  // Helper: read XSRF token from cookie (client only)
-  function readXsrfTokenFromCookie() {
-    if (process.client) {
-      const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-      return match ? decodeURIComponent(match[1]) : null
-    }
-    return null
-  }
+  const api = useApi();
 
   async function login(email, password) {
     const payload = { email, password }
     try {
-      // Ensure CSRF cookie is set
-      await ensureCsrf()
-
-      // Read XSRF token from cookie and include as header (fetch doesn't auto-map Laravel cookie)
-      const xsrf = readXsrfTokenFromCookie()
-
-      const res = await $fetch('/api/login', {
-        baseURL: config.public.apiBase || '',
-        method: 'POST',
-        credentials: 'include',
-        body: payload,
-        headers: xsrf ? { 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' } : { 'X-Requested-With': 'XMLHttpRequest' }
-      })
+      const res = await api.postJson('/api/login', payload)
+      if (!res.ok) throw new Error('Login failed')
+      const json = await res.json()
 
       // If backend returns a token, store it (some setups use cookies only)
-      const token = res?.token || res?.access_token
+      const token = json?.token || json?.access_token
       if (process.client && token) {
         localStorage.setItem('token', token)
       }
 
       // backend returns the authenticated user directly from login; normalize
-      const returnedUser = res?.user || res?.data || res || null
+      const returnedUser = json?.user || json?.data || json || null
       if (returnedUser) setUser(returnedUser)
       // After login, attempt to attach Echo listeners for realtime notifications
       if (process.client) {
@@ -76,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
           // ignore when running in contexts without useNuxtApp
         }
       }
-      return { data: res }
+      return { data: json }
     } catch (error) {
       // rethrow so callers can handle
       throw error
@@ -93,14 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
       try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) {}
     }
     try {
-      const xsrf = readXsrfTokenFromCookie()
-      await $fetch('/api/logout', {
-        baseURL: config.public.apiBase || '',
-        method: 'POST',
-        credentials: 'include',
-        // Add the X-XSRF-TOKEN header to prevent 419 errors
-        headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : undefined
-      })
+      await api.postJson('/api/logout', {})
     } catch (error) {
       // Silently ignore network errors on logout. The client-side state is already cleared.
       // The server session will eventually expire.
@@ -109,12 +72,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     try {
-      const res = await $fetch('/api/me', {
-        baseURL: config.public.apiBase || '',
-        credentials: 'include',
-        method: 'GET'
-      })
-      setUser(res)
+      const res = await api.get('/api/me')
+      if (!res.ok) throw new Error('Failed to fetch user')
+      setUser(await res.json())
       // ensure realtime listeners attached after fetching user on page load
       if (process.client) {
         import('~/stores/notifications').then((m) => {

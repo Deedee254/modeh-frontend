@@ -107,7 +107,7 @@ async function fetchItems() {
     if (q.value) params.set('q', q.value)
     params.set('per_page', perPage.value)
     params.set('page', page.value)
-    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/questions?' + params.toString(), { credentials: 'include' })
+    const res = await api.get('/api/questions?' + params.toString())
     if (res.ok) {
       const json = await res.json()
       paginator.value = json.questions || json.data || json
@@ -180,7 +180,7 @@ function goToEdit(item) {
 
 async function deleteQuestion(id) {
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + `/api/questions/${id}`, { method: 'DELETE', credentials: 'include' })
+    const res = await api.del(`/api/questions/${id}`)
     if (api.handleAuthStatus(res)) { throw new Error('Session expired') }
     if (!res.ok) throw new Error('Delete failed')
     // remove from paginator.data if present

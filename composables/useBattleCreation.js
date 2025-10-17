@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import useApi from '~/composables/useApi'
 
 /**
  * Composable for managing the logic of creating a quiz battle.
@@ -12,7 +12,7 @@ import { useRuntimeConfig } from '#imports'
 export function useBattleCreation(options = { battleType: '1v1' }) {
   const { battleName, battleType, maxPlayers } = options
 
-  const cfg = useRuntimeConfig()
+  const api = useApi()
 
   // --- Reactive State ---
   const grade = ref('')
@@ -53,7 +53,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   // --- Data Fetching ---
   async function fetchGrades() {
     try {
-      const res = await fetch(cfg.public.apiBase + '/api/grades')
+      const res = await api.get('/api/grades')
       if (res.ok) {
         const j = await res.json()
         grades.value = j.grades || []
@@ -70,7 +70,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
     topics.value = []
     if (!g) return
     try {
-      const res = await fetch(cfg.public.apiBase + `/api/subjects?grade_id=${g}`)
+      const res = await api.get(`/api/subjects?grade_id=${g}`)
       if (res.ok) {
         const j = await res.json()
         subjects.value = (j.subjects?.data || j.subjects || []).map(s => ({ label: s.name, value: s.id }))
@@ -85,7 +85,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
     topics.value = []
     if (!s || !grade.value) return
     try {
-      const res = await fetch(cfg.public.apiBase + `/api/topics?subject_id=${s}`)
+      const res = await api.get(`/api/topics?subject_id=${s}`)
       if (res.ok) {
         const j = await res.json()
         topics.value = (j.topics?.data || j.topics || []).map(t => ({ label: t.name, value: t.id }))
@@ -115,7 +115,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
         }
       }
 
-      const res = await fetch(cfg.public.apiBase + '/api/battles', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const res = await api.postJson('/api/battles', payload)
       if (!res.ok) {
         const txt = await res.text()
         throw new Error('Failed to create battle: ' + txt)

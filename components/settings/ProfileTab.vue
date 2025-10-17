@@ -6,51 +6,96 @@
       :avatar-url="avatarPreview || user?.avatar_url || user?.avatar"
     >
       <template #actions>
-        <label class="px-3 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 cursor-pointer">
-          <input type="file" class="hidden" @change="onFile" accept="image/*" />
+        <UButton color="white" @click="triggerAvatarUpload">
           Change photo
-        </label>
+        </UButton>
+        <input ref="avatarInput" type="file" class="hidden" @change="onFile" accept="image/*" />
       </template>
     </ProfileHeader>
 
     <form @submit.prevent="save" class="space-y-4 p-4 rounded-xl border bg-white shadow-sm">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium">Display name</label>
-          <input v-model="form.display_name" class="mt-1 block w-full border rounded px-3 py-2" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium">Email</label>
-          <input :value="user?.email" class="mt-1 block w-full border rounded px-3 py-2 bg-gray-50" readonly />
-        </div>
+        <UFormGroup label="Display name" name="display_name" required>
+          <UInput v-model="form.display_name" />
+        </UFormGroup>
+        <UFormGroup label="Email" name="email">
+          <UInput :model-value="user?.email" readonly disabled />
+        </UFormGroup>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium">Bio</label>
-  <UTextarea v-model="form.bio" rows="4" class="mt-1 block w-full" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <UFormGroup label="Institution" name="institution">
+          <UInput v-model="form.institution" />
+        </UFormGroup>
+        <UFormGroup label="Grade" name="grade_id">
+          <USelect
+            v-model="form.grade_id"
+            :options="[{ name: 'Select a grade', id: '' }, ...grades]"
+            option-attribute="name"
+            value-attribute="id"
+          />
+        </UFormGroup>
       </div>
 
-      <div v-if="isQuizMaster" class="space-y-2">
-        <label class="block text-sm font-medium">Teaching subjects (comma separated)</label>
-        <input v-model="form.teaching_subjects" class="mt-1 block w-full border rounded px-3 py-2" />
-      </div>
+      <!-- Subject Selection -->
+      <fieldset>
+        <legend class="block text-sm font-medium mb-2">Subjects</legend>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-lg p-4">
+          <UCheckbox
+            v-for="subject in subjects"
+            :key="subject?.id"
+            v-if="subject && subject.id"
+            :value="subject.id"
+            v-model="form.subjects"
+            :label="subject.name || 'Unknown Subject'"
+            class="p-2 hover:bg-gray-50 rounded"
+          />
+        </div>
+      </fieldset>
+
+      <!-- Quiz Master specific fields -->
+      <template v-if="isQuizMaster">
+        <UFormGroup label="Headline" name="headline">
+          <UInput v-model="form.headline" />
+        </UFormGroup>
+
+        <UFormGroup label="Bio" name="bio">
+          <UTextarea v-model="form.bio" :rows="4" class="mt-1 block w-full" />
+        </UFormGroup>
+
+        <UFormGroup label="Teaching subjects (comma separated)" name="teaching_subjects">
+          <UInput v-model="form.teaching_subjects" />
+        </UFormGroup>
+      </template>
+
+      <!-- Quizee specific fields -->
+      <template v-else>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormGroup label="First Name" name="first_name">
+            <UInput v-model="form.first_name" />
+          </UFormGroup>
+          <UFormGroup label="Last Name" name="last_name">
+            <UInput v-model="form.last_name" />
+          </UFormGroup>
+        </div>
+      </template>
 
       <div class="flex items-center justify-end gap-2">
-        <button type="button" class="px-3 py-2 bg-gray-100 rounded" @click="reset">Reset</button>
-        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Save profile</button>
+        <UButton type="button" color="white" variant="soft" @click="reset">Reset</UButton>
+        <UButton type="submit">Save profile</UButton>
       </div>
     </form>
   </div>
 </template>
 
 <script setup>
-import UiTextarea from '~/components/ui/UiTextarea.vue'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useUserRole } from '~/composables/useUserRole'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import { useAccountApi } from '~/composables/useAccountApi'
+import useApi from '~/composables/useApi'
 
 const { patchMe } = useAccountApi()
 const auth = useAuthStore()
@@ -58,15 +103,66 @@ const alert = useAppAlert()
 const { isQuizMaster } = useUserRole()
 
 const user = auth.user
+const api = useApi()
 
-const form = ref({
-  display_name: user?.name || '',
-  bio: user?.bio || '',
-  teaching_subjects: (user?.teaching_subjects || []).join ? (user?.teaching_subjects || []).join(', ') : (user?.teaching_subjects || '')
-})
+const avatarInput = ref(null)
+// Data lists
+const grades = ref([])
+const subjects = ref([])
 
+/**
+ * Creates a clean form state object from the user data.
+ * @param {object | null} u - The user object from the auth store.
+ * @returns {object} A form state object.
+ */
+function createFormState(u) {
+  return {
+    display_name: u?.name || '',
+    institution: u?.institution || '',
+    grade_id: u?.grade?.id || '',
+    subjects: Array.isArray(u?.subjects) ? u.subjects.map(s => s.id).filter(Boolean) : [],
+    headline: u?.headline || '',
+    bio: u?.bio || '',
+    teaching_subjects: Array.isArray(u?.teaching_subjects) ? u.teaching_subjects.join(', ') : (u?.teaching_subjects || ''),
+    first_name: u?.first_name || '',
+    last_name: u?.last_name || ''
+  }
+}
+
+const form = ref(createFormState(user))
 const avatarPreview = ref(user?.avatar_url || user?.avatar || null)
 let avatarFile = null
+
+/**
+ * Fetches grades and subjects from the API and populates the refs.
+ */
+async function fetchGradesAndSubjects() {
+  try {
+    const [gradesRes, subjectsRes] = await Promise.all([
+      api.get('/api/grades'),
+      api.get('/api/subjects')
+    ]);
+
+    const processResponse = (res, key) => {
+      if (!res?.ok) return [];
+      const list = res.json?.()[key] || res.json?.().data || [];
+      return Array.isArray(list) ? list.filter(item => item && typeof item === 'object' && item.id) : [];
+    };
+
+    grades.value = processResponse(await gradesRes, 'grades');
+    subjects.value = processResponse(await subjectsRes, 'subjects');
+
+  } catch (err) {
+    console.error('Failed to fetch form data:', err);
+    alert.push({ type: 'error', message: 'Failed to load form options.' });
+    grades.value = [];
+    subjects.value = [];
+  }
+}
+
+onMounted(async () => {
+  await fetchGradesAndSubjects();
+});
 
 function onFile(e) {
   const input = e.target
@@ -77,11 +173,14 @@ function onFile(e) {
   avatarPreview.value = url
 }
 
+function triggerAvatarUpload() {
+  avatarInput.value?.click()
+}
+
 function reset() {
-  form.value.display_name = user?.display_name || user?.name || ''
-  form.value.bio = user?.bio || ''
-  form.value.teaching_subjects = (user?.teaching_subjects || []).join ? (user?.teaching_subjects || []).join(', ') : (user?.teaching_subjects || '')
+  form.value = createFormState(user)
   avatarPreview.value = user?.avatar_url || user?.avatar || null
+  avatarFile = null
 }
 
 async function save() {
@@ -90,11 +189,25 @@ async function save() {
       alert.push({ type: 'error', message: 'Please enter a display name' })
       return
     }
+
     const data = new FormData()
     data.append('name', form.value.display_name)
-    data.append('bio', form.value.bio)
-  if (isQuizMaster.value) data.append('teaching_subjects', form.value.teaching_subjects || '')
-    if (avatarFile) data.append('avatar', avatarFile)
+    institution: user.institution || '',
+    data.append('grade_id', form.value.grade_id)
+    data.append('subjects', JSON.stringify(form.value.subjects))
+
+    if (isQuizMaster.value) {
+      data.append('headline', form.value.headline)
+      data.append('bio', form.value.bio)
+      data.append('teaching_subjects', form.value.teaching_subjects || '')
+    } else {
+      data.append('first_name', form.value.first_name)
+      data.append('last_name', form.value.last_name)
+    }
+
+    if (avatarFile) {
+      data.append('avatar', avatarFile)
+    }
 
     const json = await patchMe(data)
     auth.setUser(json)
@@ -104,4 +217,3 @@ async function save() {
   }
 }
 </script>
-

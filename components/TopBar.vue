@@ -16,14 +16,14 @@
   <nav class="hidden md:flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6">
           <template v-if="isquizee && auth.user">
             <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900">Grades</NuxtLink>
-            <NuxtLink to="/quizee/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-            <NuxtLink to="/quizee/battles" class="text-sm text-gray-600 hover:text-gray-900">Battles <span v-if="onlineCount>0" class="ml-2 text-xs text-gray-500">({{ onlineCount }})</span></NuxtLink>
-            <NuxtLink to="/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900">quiz-masters</NuxtLink>
+            <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900">Subjects</NuxtLink>
+            <NuxtLink to="/topics" class="text-sm text-gray-600 hover:text-gray-900">Topics</NuxtLink>
+            <NuxtLink to="/quizee/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900">Quiz Masters</NuxtLink>
           </template>
           <template v-else>
             <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900">Grades</NuxtLink>
             <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900">quizees</NuxtLink>
+            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900">Quizees</NuxtLink>
             <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900">Analytics</NuxtLink>
           </template>
         </nav>
@@ -100,9 +100,6 @@
           <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="flex items-center">
             <img src="/logo/modeh-logo.png" alt="Modeh" class="h-6 w-auto" />
           </NuxtLink>
-          <button @click="() => { mobileNavOpen = false }" class="p-2 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Close menu">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-          </button>
           <button @click="() => { ui.mobileNavOpen = false }" class="p-2 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Close menu">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
           </button>
@@ -110,23 +107,15 @@
 
         <nav class="mt-3 flex flex-col gap-2">
           <template v-if="isquizee && auth.user">
-            <NuxtLink @click="mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
-            <NuxtLink @click="mobileNavOpen = false" to="/quizee/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
-            <NuxtLink @click="mobileNavOpen = false" to="/quizee/battles" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Battles</NuxtLink>
-            <NuxtLink @click="mobileNavOpen = false" to="/quiz-masters" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quiz-masters</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/battles" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Battles</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-masters" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quiz-masters</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/subjects" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Subjects</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/topics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Topics</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/quiz-masters" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quiz Masters</NuxtLink>
           </template>
           <template v-else>
-            <NuxtLink @click="mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
-            <NuxtLink @click="mobileNavOpen = false" to="/quiz-master/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
-            <NuxtLink @click="mobileNavOpen = false" to="/quiz-master/quizees" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quizees</NuxtLink>
-            <NuxtLink @click="mobileNavOpen = false" to="/quiz-master/analytics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Analytics</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizees" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">quizees</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizees" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizees</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/analytics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Analytics</NuxtLink>
           </template>
 
@@ -198,18 +187,19 @@ const { isquizee } = useUserRole()
 const searchInput = ref(null)
 const mobileSearchInput = ref(null)
 const { isDark, toggleTheme } = useAppTheme()
+const ui = useUiStore()
 const route = useRoute()
-const { mobileNavOpen } = useMobileNav()
 
 const searchPlaceholder = computed(() => isquizee.value ? 'Search quizzes, topics, subjects... (press / to focus)' : 'Search questions, topics, subjects... (press / to focus)')
 
-const { sidebarMobileOpen, toggleSidebar } = useSidebar()
+// This composable seems to be unused or defined elsewhere, so I'm commenting it out.
+// const { sidebarMobileOpen, toggleSidebar } = useSidebar()
 
 function onBarsClick() {
   if (import.meta.client) {
     // On small screens, open the mobile navigation drawer.
     if (window.innerWidth < 768) { // 768px is md breakpoint in Tailwind
-      mobileNavOpen.value = true
+      ui.mobileNavOpen = true
     } else {
       // On larger screens, dispatch a global event to toggle the sidebar.
       try {
@@ -226,7 +216,7 @@ function onLogout() {
   if (auth.logout) {
     auth.logout()
   }
-  mobileNavOpen.value = false
+  ui.mobileNavOpen = false
   router.push('/login')
 }
 

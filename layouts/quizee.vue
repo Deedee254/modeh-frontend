@@ -3,12 +3,14 @@
     <div v-if="isAuthed" class="min-h-screen flex bg-gray-100">
       <!-- Sidebar: permanent on lg+, drawer on smaller screens -->
       <div :class="['transition-all duration-300', { 'hidden lg:block': !ui.sidebarOpen, 'fixed inset-y-0 left-0 z-40 lg:static': ui.sidebarOpen }]">
-        <quizeeSidebar />
+        <ClientOnly>
+          <quizeeSidebar />
+        </ClientOnly>
       </div>
       <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
-      <div class="flex-1 flex flex-col h-screen overflow-y-auto">
+      <div class="flex-1 flex flex-col h-screen transition-all duration-300" :class="[ui.sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64']">
         <TopBar v-if="!route.meta.hideTopBar" />
-        <main class="p-6 flex-1 pb-20 md:pb-6">
+        <main class="flex-1 overflow-y-auto pb-20 md:pb-6">
           <slot />
         </main>
       </div>
@@ -16,9 +18,7 @@
 
     <div v-else class="min-h-screen flex flex-col bg-white">
       <Header />
-      <main class="flex-1 py-8">
-        <slot />
-      </main>
+      <main class="flex-1 py-8"><slot /></main>
       <Footer />
     </div>
 
@@ -45,7 +45,7 @@ import BottomNav from '~/components/ui/BottomNav.vue'
 
 const route = useRoute()
 // ensure we call the auth store so we can detect authenticated users
-const auth = useAuthStore ? useAuthStore() : null
+const auth = useAuthStore()
 const ui = useUiStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
 </script>

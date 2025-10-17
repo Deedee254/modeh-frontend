@@ -134,6 +134,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 import CreateBattle from '~/components/quizee/battle/CreateBattle.vue'
 import CreateGroupBattle from '~/components/quizee/battle/CreateGroupBattle.vue'
 import PageHero from '~/components/ui/PageHero.vue'
@@ -163,13 +164,15 @@ const tabs = [
 ]
 
 const cfg = useRuntimeConfig()
+const api = useApi()
 const auth = useAuthStore()
 const { push } = useAppAlert()
 
 async function fetchActiveBattles() {
   loading.value = true
   try {
-    const res = await fetch(cfg.public.apiBase + '/api/battles', { credentials: 'include' })
+    const res = await api.get('/api/battles')
+    if (api.handleAuthStatus(res)) return
     if (res.ok) {
       const j = await res.json()
       battles.value = j.battles || j || []
@@ -185,8 +188,12 @@ async function fetchMyBattles() {
   if (!auth.user) return;
   historyLoading.value = true
   try {
-    const res = await $fetch('/api/me/battles', { baseURL: cfg.public.apiBase, credentials: 'include' })
-    battleHistory.value = res.data || res || []
+    const res = await api.get('/api/me/battles')
+    if (api.handleAuthStatus(res)) return
+    if (res.ok) {
+      const j = await res.json()
+      battleHistory.value = j.data || j || []
+    }
   } catch (e) { console.error("Failed to fetch battle history", e) }
   historyLoading.value = false
 }

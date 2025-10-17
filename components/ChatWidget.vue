@@ -1,25 +1,30 @@
 <template>
-  <div class="flex h-full bg-gray-50">
+  <div class="md:flex h-full overflow-y-auto bg-background">
+    <button @click="sidebarOpen = true" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md md:hidden m-4">Open Chat</button>
     <!-- Conversations list -->
-  <aside :class="['w-full lg:w-80 xl:w-96 bg-white border-r border-gray-200 flex-col transition-all', sidebarOpen ? 'flex' : 'hidden lg:flex']">
-      <div class="p-4 border-b border-gray-200">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-3">
-            <button class="lg:hidden p-2 rounded-full text-gray-500 hover:bg-gray-100" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
-            <h2 class="text-lg font-semibold text-gray-900">Messages</h2>
-          </div>
-          <button @click="showCreate = true" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
+    <div :class="['w-72 duration-300 xl:w-80 border-r flex flex-col max-md:absolute max-md:top-0 max-md:border-t max-md:left-0 max-md:h-full max-md:z-10 max-md:bg-background', sidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full']">
+      <div class="p-4 border-b flex items-center justify-between">
+        <div class="relative flex-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
+          <input class="flex h-10 w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-8 rounded-full" placeholder="Search contacts..." type="search" v-model="searchQuery">
+        </div>
+        <div class="ml-2">
+          <button class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:text-accent-foreground size-10 rounded-full h-9 w-9 hover:bg-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings h-4 w-4" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </button>
         </div>
       </div>
+      <div class="flex flex-col h-full">
+        <div class="p-2 border-b">
+          <div class="h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full grid grid-cols-3">
+            <button @click="activeTab = 'all'" :class="['inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-full', activeTab === 'all' ? 'bg-background text-foreground shadow-sm' : '']">All</button>
+            <button @click="activeTab = 'online'" :class="['inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-full', activeTab === 'online' ? 'bg-background text-foreground shadow-sm' : '']">Online</button>
+            <button @click="activeTab = 'unread'" :class="['inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-full', activeTab === 'unread' ? 'bg-background text-foreground shadow-sm' : '']">Unread</button>
+          </div>
+      </div>
 
       <!-- Unified Create Chat Modal -->
-  <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" @keydown.esc="closeCreate">
+      <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" @keydown.esc="closeCreate">
         <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
           <button @click="showCreate = false" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,83 +73,41 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-auto px-4">
-        <!-- Groups Section -->
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="text-sm font-medium text-gray-900">Groups</h4>
-            <div class="flex bg-gray-100 rounded-lg p-1">
-              <button
-                :class="['px-3 py-1 text-xs font-medium rounded-md transition-colors', activeTab === 'unread' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']"
-                @click="activeTab = 'unread'"
-              >
-                Unread
-              </button>
-              <button
-                :class="['px-3 py-1 text-xs font-medium rounded-md transition-colors', activeTab === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']"
-                @click="activeTab = 'all'"
-              >
-                All
-              </button>
+        <div class="flex items-center justify-between p-3 border-b">
+          <h3 class="font-medium text-sm">Conversations</h3>
+          <div class="flex space-x-1">
+            <button @click="showCreate = true" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:text-accent-foreground size-10 h-8 w-8 rounded-full hover:bg-muted" aria-label="New conversation">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-4 w-4" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+          <div>
+            <div v-for="t in allConversations" :key="t.id" @click="selectConversation(t)" :class="['flex items-center p-3 cursor-pointer transition-colors hover:bg-muted/50', t.id === activeConversation?.id ? 'bg-accent text-accent-foreground' : '']">
+              <div class="relative flex-shrink-0">
+                <img alt="User" class="rounded-full object-cover border border-border w-12 h-12" :src="t.avatar || `https://i.pravatar.cc/48?u=${t.id}`">
+                <span v-if="t.status" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background" :class="statusColor(t.status)"></span>
+              </div>
+              <div class="ml-3 flex-1 overflow-hidden">
+                <div class="flex justify-between items-center">
+                  <h4 class="truncate font-semibold" :class="{'font-semibold': t.unread > 0, 'font-medium': !t.unread}">{{ t.name }}</h4>
+                  <span class="text-xs text-muted-foreground">{{ t.last_at ? formatTime(t.last_at) : '' }}</span>
+                </div>
+                <div class="flex justify-between items-center mt-0.5">
+                  <p class="text-sm truncate max-w-[160px]" :class="t.unread > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'">{{ t.last_preview || 'No messages yet' }}</p>
+                  <div v-if="t.unread > 0" class="inline-flex items-center border py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-500 hover:bg-indigo-600 text-white ml-2 rounded-full px-1.5 min-w-[20px] h-5">{{ t.unread }}</div>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div v-if="groups.length === 0" class="text-center py-8 text-gray-500">
-            <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            <p class="text-sm">No group chats yet</p>
-            <button @click="showCreate = true" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium mt-1">Create your first group</button>
-          </div>
-
-          <ul v-else class="space-y-1">
-            <li v-for="g in filteredGroups" :key="g.id" @click="selectGroup(g)" class="p-3 rounded-lg cursor-pointer transition-colors flex items-center gap-3" :class="g.id === selectedGroupId ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50'">
-              <img v-if="g.avatar" :src="g.avatar" class="w-10 h-10 rounded-full object-cover" alt="group avatar" />
-              <div v-else class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">{{ (g.name||'G').slice(0,1).toUpperCase() }}</div>
-              <div class="flex-1 min-w-0">
-                <div class="font-medium text-gray-900 truncate">{{ g.name }}</div>
-                <div class="text-xs text-gray-500">{{ g.members?.length || 0 }} members</div>
-              </div>
-              <div v-if="g.unread_count > 0" class="ml-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{{ g.unread_count }}</div>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Direct Messages Section -->
-        <div>
-          <h4 class="text-sm font-medium text-gray-900 mb-3">Direct Messages</h4>
-
-          <div v-if="filteredThreads.length === 0" class="text-center py-8 text-gray-500">
-            <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-            </svg>
-            <p class="text-sm">No conversations yet</p>
-            <p class="text-xs text-gray-400 mt-1">Start chatting with someone!</p>
-          </div>
-
-          <ul v-else class="space-y-1">
-            <li v-for="t in filteredThreads" :key="t.id || t.otherId" @click="selectThread(t)" class="p-3 rounded-lg cursor-pointer transition-colors flex items-center gap-3" :class="t.otherId === selectedThreadId ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50'">
-              <img v-if="t.avatar" :src="t.avatar" class="w-10 h-10 rounded-full object-cover" alt="avatar" />
-              <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm', t.unread > 0 ? 'bg-indigo-500 text-white' : 'bg-gray-300 text-gray-600']" v-else>
-                {{ (t.otherName||'U').slice(0,1).toUpperCase() }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between mb-1">
-                  <div class="font-medium text-gray-900 truncate">{{ t.otherName || ('User ' + t.otherId) }}</div>
-                  <div class="text-xs text-gray-500 flex-shrink-0 ml-2">{{ t.last_at ? formatTime(t.last_at) : '' }}</div>
-                </div>
-                <div class="text-xs text-gray-500 truncate">{{ t.last_preview || 'No messages yet' }}</div>
-              </div>
-              <div v-if="t.unread > 0" class="ml-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{{ t.unread }}</div>
-            </li>
-          </ul>
         </div>
       </div>
-    </aside>
+    </div>
 
     <!-- Messages pane -->
-    <section class="flex-1 bg-white flex-col" :class="activeConversation ? 'flex' : 'hidden lg:flex'">
-      <header class="px-6 py-4 border-b border-gray-200 bg-white">
+    <div class="flex-1 flex flex-col" :class="activeConversation ? 'flex' : 'hidden md:flex'">
+      <div class="flex flex-col h-full">
+      <header class="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <button @click="activeConversation = null" class="lg:hidden p-2 rounded-full text-gray-500 hover:bg-gray-100">
@@ -153,28 +116,24 @@
               </svg>
             </button>
             <div class="relative">
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                {{ activeTitleInitial }}
-              </div>
-              <div v-if="isOnline" class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+              <img :alt="activeConversationName" class="rounded-full object-cover w-10 h-10" :src="activeConversation?.avatar || `https://i.pravatar.cc/40?u=${activeConversation?.id}`">
+              <span v-if="activeConversation?.status" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background" :class="statusColor(activeConversation.status)"></span>
             </div>
             <div>
-              <div class="font-semibold text-gray-900">{{ activeConversationName }}</div>
-              <div class="text-sm text-gray-500">{{ activeConversationSubtitle }}</div>
+              <h3 class="font-medium">{{ activeConversationName }}</h3>
+              <p class="text-xs text-muted-foreground">{{ activeConversation?.status || 'Offline' }}</p>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="text-sm text-gray-500">{{ messages.length }} messages</div>
-            <button class="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-              </svg>
-            </button>
-          </div>
+        </div>
+        <div class="flex items-center space-x-1">
+            <button class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone h-5 w-5"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"></path></svg></button>
+            <button class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-video h-5 w-5"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg></button>
+            <button class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search h-5 w-5"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button>
+            <button><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-vertical h-5 w-5"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
         </div>
       </header>
 
-      <div class="flex-1 overflow-auto px-6 py-4 space-y-4" ref="messagesPane">
+      <div class="relative overflow-hidden flex-1 p-4 bg-gradient-to-b from-muted/30 to-background" ref="messagesPane">
         <div v-if="!activeConversation" class="flex flex-col items-center justify-center h-full text-center">
           <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,32 +145,30 @@
         </div>
 
         <template v-else>
+          <div class="space-y-6">
             <div v-for="(chunk, idx) in groupedMessages" :key="idx" class="space-y-4">
-            <div class="flex justify-center">
-              <div class="px-3 py-1 bg-gray-100 rounded-full">
-                <span class="text-xs text-gray-500 font-medium">{{ chunk.timeLabel }}</span>
+              <div class="flex justify-center">
+                <span class="text-xs bg-muted/80 px-3 py-1 rounded-full text-muted-foreground font-medium shadow-sm">{{ chunk.timeLabel }}</span>
               </div>
-            </div>
-            <div v-for="m in chunk.messages" :key="m.id" class="flex" :class="m.sender_id === userId.value ? 'justify-end' : 'justify-start'">
-              <div class="max-w-xs lg:max-w-md xl:max-w-lg">
-                <div :class="[
-                  'px-4 py-3 rounded-xl shadow-sm break-words',
-                  m.sender_id === userId.value
-                    ? 'bg-emerald-500 text-white rounded-br-none'
-                    : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none'
-                ]" style="border-radius: 16px;">
-                  <div class="text-sm leading-relaxed">{{ m.content }}</div>
-                  <div v-if="m.sending" class="text-xs text-white opacity-80 mt-2">Sending…</div>
-                  <div v-if="m.failed" class="text-xs text-red-600 mt-2 flex items-center gap-2">
-                    <span>Failed to send</span>
-                    <button @click="resendMessage(m)" class="text-xs px-2 py-1 bg-gray-100 rounded">Retry</button>
-                  </div>
+              <div v-for="m in chunk.messages" :key="m.id" class="flex items-end gap-2 group" :class="m.sender_id === userId ? 'flex-row-reverse' : 'flex-row'">
+                <div v-if="m.sender_id !== userId" class="flex-shrink-0">
+                    <div class="relative w-7 h-7">
+                        <img :alt="m.sender?.name || 'User'" class="rounded-full object-cover mb-1 border border-border" :src="m.sender?.avatar || `https://i.pravatar.cc/28?u=${m.sender_id}`">
+                    </div>
                 </div>
-                <div :class="[
-                  'text-xs mt-1',
-                  m.sender_id === userId.value ? 'text-right text-gray-500' : 'text-left text-gray-500'
-                ]">
-                  {{ formatTime(m.created_at) }}
+                <div class="max-w-[75%]">
+                  <div :class="['rounded-2xl px-4 py-2.5 shadow-sm', m.sender_id === userId ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted text-foreground rounded-tl-none']">
+                    <p class="whitespace-pre-wrap break-words text-sm">{{ m.content }}</p>
+                  </div>
+                  <div class="flex items-center gap-1 mt-1 text-[10px]" :class="m.sender_id === userId ? 'justify-end pr-1 text-primary-foreground/70' : 'justify-start pl-1 text-muted-foreground'">
+                    <span>{{ formatTime(m.created_at) }}</span>
+                    <svg v-if="m.sender_id === userId" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-check h-3.5 w-3.5 text-primary"><path d="M18 6 7 17l-5-5"></path><path d="m22 10-7.5 7.5L13 16"></path></svg>
+                    <div v-if="m.sending" class="text-xs opacity-80">Sending…</div>
+                    <div v-if="m.failed" class="text-xs text-red-600 flex items-center gap-2">
+                      <span>Failed</span>
+                      <button @click="resendMessage(m)" class="text-xs px-2 py-1 bg-gray-100 rounded">Retry</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -233,61 +190,39 @@
         </template>
       </div>
 
-      <footer class="px-6 py-4 border-t border-gray-200 bg-white">
-        <form @submit.prevent="sendMessage" class="flex items-end gap-3">
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-              @click="toggleEmoji"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-              </svg>
+      <footer class="p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <form @submit.prevent="sendMessage" class="flex items-end gap-2">
+          <div class="flex space-x-1">
+            <button type="button" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paperclip h-5 w-5"><path d="M13.234 20.252 21 12.3"></path><path d="m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486"></path></svg>
             </button>
-
+            <button type="button" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image h-5 w-5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+            </button>
             <input ref="fileInput" type="file" class="hidden" @change="onFileChange" />
-            <button
-              type="button"
-              class="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-              @click="$refs.fileInput.click()"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
-              </svg>
-            </button>
           </div>
-
-          <div class="flex-1 relative">
+          <div class="relative flex items-center gap-2 flex-1">
             <textarea
               v-model="body"
               @keydown.enter.exact.prevent="sendMessage"
               @keydown.enter.shift="onShiftEnter"
               placeholder="Type a message..."
-              class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none min-h-[2.5rem] max-h-32 text-sm placeholder-gray-500"
+              class="flex h-10 w-full border border-input bg-background py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none rounded-2xl transition-all px-5 !py-4"
               rows="1"
-              style="height: 2.5rem;"
               ref="messageInput"
             ></textarea>
+            <button type="submit" :disabled="!body.trim()" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-indigo-500 hover:bg-indigo-600 size-9 rounded-full transition-colors text-muted-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send h-4 w-4 text-white"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></svg>
+            </button>
           </div>
-
-          <button
-            type="submit"
-            :disabled="!body.trim()"
-            :class="[
-              'p-3 rounded-full transition-all duration-200 flex items-center justify-center',
-              body.trim()
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            ]"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-            </svg>
-          </button>
+          <div class="flex space-x-1">
+            <button type="button" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-smile h-5 w-5"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" x2="9.01" y1="9" y2="9"></line><line x1="15" x2="15.01" y1="9" y2="9"></line></svg></button>
+            <button type="button" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic h-5 w-5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg></button>
+          </div>
         </form>
       </footer>
-    </section>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -315,6 +250,7 @@ const creating = ref(false)
 const createType = ref('dm')
 const dmEmail = ref('')
 const activeTab = ref('unread')
+const searchQuery = ref('')
 const alert = useAppAlert()
 const auth = useAuthStore()
 const userId = computed(() => auth.user?.id)
@@ -349,23 +285,31 @@ const activeConversationSubtitle = computed(() => {
 
 const activeTitleInitial = computed(() => (activeConversationName.value || 'M').slice(0,1))
 
-// threads.value will now store the server-provided `conversations` array
-// shape: { other_user_id, other_name, last_message, last_at, unread_count }
-const filteredThreads = computed(() => {
+const allConversations = computed(() => {
   const convs = threads.value.map(c => ({
-    otherId: c.other_user_id || c.otherId || c.id,
-    otherName: c.other_name || c.otherName || c.name,
+    id: String(c.other_user_id || c.otherId || c.id),
+    type: 'direct',
+    name: c.other_name || c.otherName || c.name,
     last_preview: c.last_message || c.last_preview,
     last_at: c.last_at || c.updated_at,
-    unread: c.unread_count || 0
+    unread: c.unread_count || 0,
+    status: c.status || 'offline', // You need to add status to your user data
+    avatar: c.avatar_url,
   }))
-  if (activeTab.value === 'unread') return convs.filter(x => (x.unread || 0) > 0)
-  return convs.sort((a,b) => new Date(b.last_at || 0) - new Date(a.last_at || 0))
-})
-
-const filteredGroups = computed(() => {
-  if (activeTab.value === 'unread') return groups.value.filter(g => (g.unread_count || 0) > 0)
-  return groups.value.sort((a,b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
+  const grps = groups.value.map(g => ({
+    id: String(g.id),
+    type: 'group',
+    name: g.name,
+    last_preview: g.last_message,
+    last_at: g.updated_at,
+    unread: g.unread_count || 0,
+    status: null, // Groups don't have a single status
+    avatar: g.avatar_url,
+  }))
+  let all = [...convs, ...grps].sort((a,b) => new Date(b.last_at || 0) - new Date(a.last_at || 0));
+  if (activeTab.value === 'unread') all = all.filter(x => (x.unread || 0) > 0);
+  if (searchQuery.value) all = all.filter(c => c.name.toLowerCase().includes(searchQuery.value.toLowerCase()));
+  return all;
 })
 
 const isOnline = computed(() => {
@@ -377,6 +321,14 @@ const isTyping = computed(() => {
   // Placeholder - would need real-time typing indicators from backend
   return false
 })
+
+function statusColor(status) {
+    switch (status) {
+        case 'online': return 'bg-green-500';
+        case 'away': return 'bg-yellow-500';
+        default: return 'bg-gray-400';
+    }
+}
 
 function upsertThreadFromMessage(msg) {
   // Expect server message to use new fields: sender_id, recipient_id, content
@@ -409,7 +361,12 @@ function groupedByTime(list) {
   // naive grouping by date (day)
   const out = []
   list.forEach(m => {
-    const day = new Date(m.created_at).toLocaleDateString()
+    const date = new Date(m.created_at);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const day = date.toDateString() === today.toDateString() ? 'Today' : date.toDateString() === yesterday.toDateString() ? 'Yesterday' : date.toLocaleDateString();
+
     let grp = out.find(g => g.timeLabel === day)
     if (!grp) { grp = { timeLabel: day, messages: [] }; out.push(grp) }
     grp.messages.push(m)
@@ -421,17 +378,16 @@ const groupedMessages = computed(() => groupedByTime(messages.value))
 
 function formatTime(dateString) {
   const date = new Date(dateString)
-  const now = new Date()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
+  if (isNaN(date)) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+}
 
-  if (minutes < 1) return 'now'
-  if (minutes < 60) return `${minutes}m`
-  if (hours < 24) return `${hours}h`
-  if (days < 7) return `${days}d`
-  return date.toLocaleDateString()
+function selectConversation(conv) {
+  if (conv.type === 'group') {
+    selectGroup(conv);
+  } else {
+    selectThread(conv);
+  }
 }
 
 function toggleEmoji() {
@@ -443,7 +399,7 @@ function autoResizeTextarea() {
   const textarea = messageInput.value
   if (textarea) {
     textarea.style.height = 'auto'
-    textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px'
+    textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px';
   }
 }
 
@@ -462,8 +418,8 @@ async function loadThreads() {
 }
 
 function selectThread(t) {
-  selectedGroupId.value = null
-  selectedThreadId.value = t.otherId || t.other_user_id || t.id
+  selectedGroupId.value = null;
+  selectedThreadId.value = t.id || t.otherId || t.other_user_id;
   // load messages for this direct conversation
   fetch(apiBase + `/api/chat/messages?user_id=${selectedThreadId.value}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(json => {
     if (json && json.messages) messages.value = json.messages
@@ -474,12 +430,13 @@ function selectThread(t) {
     messages.value = []
     markThreadRead(selectedThreadId.value)
   })
+  if (window.innerWidth < 768) sidebarOpen.value = false;
   nextTick(() => scrollToBottom())
 }
 
 function selectGroup(g) {
-  selectedThreadId.value = null
-  selectedGroupId.value = g.id
+  selectedThreadId.value = null;
+  selectedGroupId.value = g.id;
   // load messages for the group from server
   fetch(apiBase + `/api/chat/messages?group_id=${g.id}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(json => {
     messages.value = json && json.messages ? json.messages : []
@@ -488,6 +445,7 @@ function selectGroup(g) {
     // mark group read on server once opened
     try { api.postJson('/api/chat/groups/mark-read', { group_id: g.id }).catch(()=>{}) } catch (e) {}
     nextTick(() => scrollToBottom())
+    if (window.innerWidth < 768) sidebarOpen.value = false;
   })
 }
 
@@ -671,7 +629,7 @@ function removeSelectedUser(u) { selectedUsers.value = selectedUsers.value.filte
 
 function onShiftEnter() { body.value += '\n' }
 
-function onFileChange(e) { /* TODO: implement file upload */ }
+function onFileChange(e) { /* TODO: implement file upload */ alert.push({message: "File uploads not implemented yet."}) }
 
 function formatDate(s) { try { return new Date(s).toLocaleString() } catch (e) { return s } }
 
@@ -798,7 +756,7 @@ onMounted(() => {
   // Global key handling: ESC to close modal or sidebar on small screens
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (showCreate.value) closeCreate()
+      if (showCreate.value) closeCreate();
       else if (window.innerWidth < 1024 && sidebarOpen.value) sidebarOpen.value = false
     }
   })

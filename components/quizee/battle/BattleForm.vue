@@ -6,7 +6,7 @@
         <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="battle-type">Battle Type</label>
         <div class="grid grid-cols-2 gap-2">
           <UButton
-            :variant="battleType === 'public' ? 'primary' : 'outline'"
+            :color="battleType === 'public' ? 'primary' : 'white'"
             class="w-full"
             :disabled="loading"
             @click="$emit('update:battleType', 'public')"
@@ -15,7 +15,7 @@
             <span>Public</span>
           </UButton>
           <UButton
-            :variant="battleType === 'private' ? 'primary' : 'outline'"
+            :color="battleType === 'private' ? 'primary' : 'white'"
             class="w-full"
             :disabled="loading"
             @click="$emit('update:battleType', 'private')"
@@ -98,7 +98,7 @@
 
     <div class="flex items-center pt-4">
       <UButton
-        variant="primary"
+        color="primary"
         class="w-full"
         :disabled="loading || !canStart"
         @click="!loading && canStart && $emit('start')"

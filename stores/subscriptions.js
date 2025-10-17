@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-const config = useRuntimeConfig()
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
+  const config = useRuntimeConfig()
   const packages = ref([])
   const loading = ref(false)
 

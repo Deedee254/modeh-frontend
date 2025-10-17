@@ -1,6 +1,7 @@
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 /* small helper to ensure body background uses Tailwind */
-body { @apply bg-white; }
+body { @apply bg-white dark:bg-gray-900; }
+/* stylelint-enable at-rule-no-unknown */

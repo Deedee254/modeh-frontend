@@ -32,21 +32,36 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
       // createHandlerBoundToURL requires the fallback URL to be precached.
       // point to the explicit 'index.html' file which we also include in precache.
       navigateFallback: '/index.html',
       runtimeCaching: [
         {
-          urlPattern: 'https://fonts.googleapis.com/.*',
+          urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
           handler: 'CacheFirst',
-          method: 'GET',
-          options: { cacheableResponse: { statuses: [0, 200] } }
+          options: {
+            cacheName: 'google-fonts-cache',
+            expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }, // 1 year
+            cacheableResponse: { statuses: [0, 200] }
+          }
         },
         {
-          urlPattern: 'https://fonts.gstatic.com/.*',
+          urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
           handler: 'CacheFirst',
-          method: 'GET',
-          options: { cacheableResponse: { statuses: [0, 200] } }
+          options: {
+            cacheName: 'gstatic-fonts-cache',
+            expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }, // 1 year
+            cacheableResponse: { statuses: [0, 200] }
+          }
+        },
+        {
+          urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'api-cache',
+            cacheableResponse: { statuses: [0, 200] }
+          }
         }
       ]
     }

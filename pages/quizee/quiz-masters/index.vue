@@ -1,30 +1,79 @@
 <template>
-  <div>
-    <h1 class="text-2xl font-semibold mb-4">Browse Quiz Masters</h1>
-    <div v-if="pending">
-      <SkeletonGrid :count="3" />
-    </div>
-    <div v-else>
-      <div v-if="(!quizMasters || quizMasters.length === 0)" class="p-6 bg-white rounded shadow text-gray-600">0 results returned</div>
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div v-for="t in quizMasters" :key="t.id" class="block p-4 bg-white rounded shadow hover:shadow-md transition">
-          <div class="flex items-center gap-3 justify-between">
-            <NuxtLink :to="`/quizee/quiz-masters/${t.id}`" class="flex items-center gap-3">
-              <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                <img v-if="t.avatar" :src="t.avatar" :alt="t.name" class="w-full h-full object-cover rounded-full" />
-                <span v-else>T</span>
-              </div>
-              <div>
-                <div class="font-semibold">{{ t.name }}</div>
-                <div class="text-xs text-gray-500">{{ t.experience ? t.experience + ' yrs' : '' }}</div>
-              </div>
-            </NuxtLink>
-            <div>
-              <button @click="() => toggleFollow(t)" :disabled="loadingFollow[t.id]" class="px-3 py-1 rounded-md border text-sm" :class="following[t.id] ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'">
-                <span v-if="following[t.id]">Following</span>
-                <span v-else>Follow</span>
-              </button>
-            </div>
+  <div class="min-h-screen bg-gray-50">
+    <div class="container mx-auto p-6 max-w-7xl">
+      <PageHero
+        :breadcrumbs="[{ text: 'Home', href: '/quizee' }, { text: 'Quiz Masters', current: true }]"
+        title="Find Your Quiz Masters"
+        description="Connect with expert quiz masters in your grade and institution who create engaging quizzes and guide your learning journey."
+        align="center"
+        padding="py-16 sm:py-20"
+      >
+        <template #actions>
+          <div class="flex flex-wrap items-center justify-center gap-4">
+            <UButton
+              size="lg"
+              color="primary"
+              variant="solid"
+              class="min-w-[200px] shadow-lg hover:-translate-y-0.5 transition-transform"
+              to="/quizzes"
+            >
+              Browse All Quizzes
+            </UButton>
+          </div>
+        </template>
+        
+        <template #highlight>
+          <div>
+            <p class="text-xs uppercase tracking-wide">Discover</p>
+            <p class="mt-1 text-2xl font-semibold">Expert Educators</p>
+          </div>
+        </template>
+        
+        <template #highlight-icon>
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+        </template>
+        
+        <template #stats>
+          <div class="flex flex-col rounded-2xl bg-white/5 p-4 text-center">
+            <p class="text-3xl font-bold text-white">1000+</p>
+            <p class="text-sm text-white/70">Active Quizzes</p>
+          </div>
+          <div class="flex flex-col rounded-2xl bg-white/5 p-4 text-center">
+            <p class="text-3xl font-bold text-white">500+</p>
+            <p class="text-sm text-white/70">Quiz Masters</p>
+          </div>
+        </template>
+      </PageHero>
+
+      <div v-if="pending">
+        <SkeletonGrid :count="8" />
+      </div>
+      <div v-else>
+        <div v-if="(!quizMasters || quizMasters.length === 0)" class="p-6 bg-white rounded shadow text-gray-600">No quiz masters found</div>
+        <div v-else>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <QuizMasterCard
+              v-for="quizMaster in quizMasters"
+              :key="quizMaster.id"
+              :quiz-master="quizMaster"
+              :is-following="following[quizMaster.id]"
+              :loading="loadingFollow[quizMaster.id]"
+              @follow="toggleFollow(quizMaster)"
+            />
+          </div>
+          
+          <!-- Pagination -->
+          <div v-if="paginator && paginator.last_page > 1" class="mt-8">
+            <UPagination
+              v-model="currentPage"
+              :total="paginator.total"
+              :per-page="paginator.per_page"
+              :max-links="5"
+              class="justify-center"
+              @change="onPageChange"
+            />
           </div>
         </div>
       </div>
@@ -39,17 +88,48 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
+import PageHero from '~/components/ui/PageHero.vue'
+import UPagination from '~/components/ui/UPagination.vue'
+import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
 
 definePageMeta({ layout: 'quizee' })
 
+useHead({
+  title: 'Browse Quiz Masters',
+  meta: [
+    { name: 'description', content: 'Find and follow expert quiz masters in your grade and institution.' }
+  ]
+})
+
 const config = useRuntimeConfig()
-const { data, pending } = await useFetch(config.public.apiBase + '/api/quiz-masters')
+const currentPage = ref(1)
+
+// Fetch quiz masters with pagination
+const { data: response, pending, refresh } = await useFetch(() => ({
+  url: config.public.apiBase + '/api/quiz-masters',
+  params: {
+    page: currentPage.value
+  }
+}), {
+  watch: [currentPage]
+})
+
+async function onPageChange(page) {
+  currentPage.value = page
+  await refresh()
+}
 
 const quizMasters = computed(() => {
-  if (data.value && data.value.data && Array.isArray(data.value.data)) {
-    return data.value.data.filter(Boolean)
+  if (response.value?.data && Array.isArray(response.value.data)) {
+    return response.value.data.filter(Boolean)
   }
   return []
+})
+
+const paginator = computed(() => {
+  if (!response.value) return null
+  const { current_page, last_page, total, per_page, links } = response.value
+  return { current_page, last_page, total, per_page, links }
 })
 
 const auth = useAuthStore()

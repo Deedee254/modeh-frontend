@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showInstallPrompt" class="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-primary/5 py-1">
+  <div v-if="showInstallPrompt" class="sticky top-0 left-0 right-0 z-50 flex items-center justify-center bg-primary/5 py-1 backdrop-blur-sm">
     <div class="flex items-center gap-2">
       <span class="text-sm">Install Modeh for a better experience</span>
       <UButton
@@ -25,7 +25,9 @@ onMounted(() => {
   beforeInstallHandler = (e) => {
     e.preventDefault()
     deferredPrompt = e
-    showInstallPrompt.value = true
+    setTimeout(() => {
+      showInstallPrompt.value = true
+    }, 5000) // 5-second delay
   }
 
   window.addEventListener('beforeinstallprompt', beforeInstallHandler)

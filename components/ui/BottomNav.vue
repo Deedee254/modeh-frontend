@@ -117,15 +117,9 @@ onBeforeUnmount(() => {
 function leftAction() {
   if (typeof props.onLeft === 'function') return props.onLeft()
   if (typeof bottomNav.leftHandler === 'function' || typeof bottomNav.leftHandler?.value === 'function') return (bottomNav.leftHandler?.value || bottomNav.leftHandler)()
-  // On mobile, open the sidebar drawer via the UI store
-  if (isMobile.value) {
-    ui.toggleSidebar()
-  } else {
-    // Default desktop action if not on mobile
-    if (isQuizMaster.value) return router.push('/quiz-master/quizzes')
-    if (isQuizee.value) return router.push('/quizee/quizzes')
-    return router.push('/quizzes')
-  }
+  
+  // Default action on mobile is to toggle the main sidebar/drawer
+  ui.toggleSidebar()
 }
 
 function centerAction() {

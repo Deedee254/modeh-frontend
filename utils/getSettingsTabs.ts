@@ -1,15 +1,27 @@
 export type TabDef = { key: string; label: string; icon?: string }
 
-export function getSettingsTabs(opts: { isQuizMaster: boolean; isquizee: boolean }): TabDef[] {
-  const all: TabDef[] = [
+// Keep compatibility: accept either { isQuizMaster, isquizee } or { isTutor, isStudent }
+export function getSettingsTabs(opts: { isQuizMaster?: boolean; isquizee?: boolean } | { isTutor?: boolean; isStudent?: boolean }): TabDef[] {
+  const isTutor = (opts as any).isTutor ?? (opts as any).isQuizMaster ?? false
+  const isStudent = (opts as any).isStudent ?? (opts as any).isquizee ?? false
+
+  // Base tabs available to everyone
+  const base: TabDef[] = [
     { key: 'profile', label: 'Profile', icon: 'i-heroicons-user-circle' },
-    { key: 'account', label: 'Account', icon: 'i-heroicons-cog-8-tooth' }
+    { key: 'security', label: 'Account', icon: 'i-heroicons-cog-8-tooth' },
+    { key: 'notifications', label: 'Notifications', icon: 'i-heroicons-bell' },
   ]
-  const quizMasterOnly: TabDef[] = [{ key: 'payouts', label: 'Payouts', icon: 'i-heroicons-banknotes' }]
 
-  const out = [...all]
+  const studentOnly: TabDef[] = [
+    { key: 'billing', label: 'Billing', icon: 'i-heroicons-credit-card' },
+  ]
 
-  if (opts.isQuizMaster) out.push(...quizMasterOnly)
+  const tutorOnly: TabDef[] = [
+    { key: 'payouts', label: 'Payouts', icon: 'i-heroicons-banknotes' }
+  ]
 
+  const out = [...base]
+  if (isTutor) out.push(...tutorOnly)
+  if (isStudent) out.push(...studentOnly)
   return out
 }

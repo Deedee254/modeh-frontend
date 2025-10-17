@@ -58,7 +58,7 @@ useHead({
 
 const { data, pending, error } = await useAsyncData(
   'quiz-master-followers',
-  () => $fetch('/api/quiz-master/followers')
+  () => $fetch(config.public.apiBase + '/api/quiz-master/followers')
 )
 
 const quizees = computed(() => (data.value?.followers || data.value || []).filter(Boolean))

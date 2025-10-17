@@ -5,11 +5,18 @@ import { ref, onMounted } from 'vue'
 const attempts = ref([])
 const loading = ref(true)
 
+import useApi from '~/composables/useApi'
+
+const api = useApi()
 // Fetch attempts on mount
 onMounted(async () => {
   try {
-    const res = await $fetch('/api/quiz-attempts', { credentials: 'include' })
-    attempts.value = res.attempts || []
+    const res = await api.get('/api/quiz-attempts')
+    if (api.handleAuthStatus(res)) return
+    if (res.ok) {
+      const j = await res.json()
+      attempts.value = j.attempts || []
+    }
   } catch (e) {
     console.error('Failed to fetch attempts:', e)
   } finally {

@@ -6,73 +6,10 @@
 
     <nav class="flex-1 w-full" :class="[ui.sidebarCollapsed ? 'px-2' : 'px-2']">
       <ul class="flex flex-col gap-1">
-        <li>
-          <NuxtLink to="/quizee/dashboard" :class="linkClass('/quizee/dashboard')" title="Dashboard">
-            <HomeIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Dashboard</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/quizzes" :class="linkClass('/quizee/quizzes')" title="Quizzes">
-            <ClipboardDocumentListIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Quizzes</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/daily-challenges" :class="linkClass('/quizee/daily-challenges')" title="Daily Challenges">
-            <CalendarDaysIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Daily Challenges</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/battles" :class="linkClass('/quizee/battles')" title="Battles">
-            <TrophyIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Battles</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/tournaments" :class="linkClass('/quizee/tournaments')" title="Tournaments">
-            <FlagIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Tournaments</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/points" :class="linkClass('/quizee/points')" title="Points">
-            <StarIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Points</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/subscription" :class="linkClass('/quizee/subscription')" title="Subscription">
-            <CreditCardIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Subscription</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/chat" :class="linkClass('/quizee/chat')" title="Messages">
-            <ChatBubbleLeftRightIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Messages</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/quiz-masters" :class="linkClass('/quizee/quiz-masters')" title="quiz-masters">
-            <UserGroupIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Quiz Masters</span>
-          </NuxtLink>
-        </li>
-
-        <li>
-          <NuxtLink to="/quizee/settings" :class="linkClass('/quizee/settings')" title="Settings">
-            <CogIcon class="w-5 h-5" />
-            <span v-if="!ui.sidebarCollapsed" class="ml-2">Settings</span>
+        <li v-for="item in navItems" :key="item.to">
+          <NuxtLink :to="item.to" :class="linkClass(item.to)" :title="item.label">
+            <component :is="item.icon" class="w-5 h-5" />
+            <span v-if="!ui.sidebarCollapsed" class="ml-2">{{ item.label }}</span>
           </NuxtLink>
         </li>
       </ul>
@@ -95,13 +32,11 @@
       </div>
       <nav>
         <ul class="flex flex-col gap-2">
-          <li><NuxtLink @click="onMobileNavClick" to="/quizee/dashboard" :class="linkClass('/quizee/dashboard')">Dashboard</NuxtLink></li>
-          <li><NuxtLink @click="onMobileNavClick" to="/quizee/quizzes" :class="linkClass('/quizee/quizzes')">Quizzes</NuxtLink></li>
-          <li><NuxtLink @click="onMobileNavClick" to="/quizee/daily-challenges" :class="linkClass('/quizee/daily-challenges')">Daily Challenges</NuxtLink></li>
-          <li><NuxtLink @click="onMobileNavClick" to="/quizee/battles" :class="linkClass('/quizee/battles')">Battles</NuxtLink></li>
-          <li><NuxtLink @click="onMobileNavClick" to="/quizee/points" :class="linkClass('/quizee/points')">Points</NuxtLink></li>
-          <li><NuxtLink @click="onMobileNavClick" to="/quiz-masters" :class="linkClass('/quiz-masters')">quiz-masters</NuxtLink></li>
-          <li><NuxtLink @click="onMobileNavClick" to="/quizee/subscription" :class="linkClass('/quizee/subscription')">Subscription</NuxtLink></li>
+          <li v-for="item in navItems" :key="item.to">
+            <NuxtLink @click="onMobileNavClick" :to="item.to" :class="linkClass(item.to)">
+              {{ item.label }}
+            </NuxtLink>
+          </li>
         </ul>
       </nav>
       <div class="mt-6">
@@ -131,6 +66,20 @@ const user = computed(() => auth.user || {})
 const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
 
 const route = useRoute()
+
+const navItems = [
+  { to: '/quizee/dashboard', label: 'Dashboard', icon: HomeIcon },
+  { to: '/quizee/quizzes', label: 'Quizzes', icon: ClipboardDocumentListIcon },
+  { to: '/quizee/daily-challenges', label: 'Daily Challenges', icon: CalendarDaysIcon },
+  { to: '/quizee/battles', label: 'Battles', icon: TrophyIcon },
+  { to: '/quizee/tournaments', label: 'Tournaments', icon: FlagIcon },
+  { to: '/quizee/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+  { to: '/quizee/points', label: 'Points', icon: StarIcon },
+  { to: '/quizee/subscription', label: 'Subscription', icon: CreditCardIcon },
+  { to: '/quizee/chat', label: 'Messages', icon: ChatBubbleLeftRightIcon },
+  { to: '/quizee/quiz-masters', label: 'Quiz Masters', icon: UserGroupIcon },
+  { to: '/quizee/settings', label: 'Settings', icon: CogIcon },
+]
 
 function linkClass(path) {
   const active = route.path.startsWith(path)

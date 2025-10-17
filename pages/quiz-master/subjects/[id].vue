@@ -25,16 +25,42 @@
     </div>
 
     <!-- Topics List -->
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <NuxtLink
-        v-for="topic in topics"
-        :key="topic.id"
-        :to="`/quiz-master/topics/${topic.id}`"
-        class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition"
-      >
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900">{{ topic.name }}</h5>
-        <p class="font-normal text-gray-700">{{ topic.quizzes_count || 0 }} quizzes</p>
-      </NuxtLink>
+    <div v-else class="container mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <NuxtLink
+          v-for="topic in topics"
+          :key="topic.id"
+          :to="`/quiz-master/topics/${topic.id}`"
+          class="group relative block p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-200"
+        >
+          <!-- Topic Icon -->
+          <div class="mb-4 inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+            <Icon name="heroicons:book-open" class="w-6 h-6" />
+          </div>
+
+          <!-- Topic Details -->
+          <h5 class="mb-2 text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+            {{ topic.name }}
+          </h5>
+          
+          <!-- Topic Stats -->
+          <div class="mt-4 flex items-center gap-4 text-sm text-gray-600">
+            <div class="flex items-center gap-1">
+              <Icon name="heroicons:document-text" class="w-4 h-4" />
+              <span>{{ topic.quizzes_count || 0 }} {{ topic.quizzes_count === 1 ? 'quiz' : 'quizzes' }}</span>
+            </div>
+            <div v-if="topic.grade" class="flex items-center gap-1">
+              <Icon name="heroicons:academic-cap" class="w-4 h-4" />
+              <span>{{ topic.grade.name }}</span>
+            </div>
+          </div>
+
+          <!-- Hover State Arrow -->
+          <div class="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Icon name="heroicons:arrow-right" class="w-5 h-5 text-indigo-600" />
+          </div>
+        </NuxtLink>
+      </div>
     </div>
   </div>
 </template>

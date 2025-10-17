@@ -32,30 +32,75 @@
       <button @click="createQuiz" class="text-indigo-600 hover:underline">Create the first one!</button>
     </div>
 
-    <!-- Quiz Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <QuizCard
-        v-for="quiz in normalizedQuizzes"
-        :key="quiz.id"
-        :startLink="quiz.startLink"
-        :title="quiz.title"
-        :description="quiz.description"
-        :subject="quiz.subject"
-        :topic="quiz.topic"
-        :subjectId="quiz.subject_id"
-        :topicId="quiz.topic_id"
-        :grade="quiz.grade"
-        :questionsCount="quiz.questionsCount"
-        :likes="quiz.likes"
-        :quizId="quiz.id"
-        :show-approval="true"
-        :showEdit="true"
-        :editLink="quiz.editLink"
-        :is_approved="quiz.is_approved"
-        :approval_requested_at="quiz.approval_requested_at"
-        @approve="() => {}"
-        @edit="() => router.push(quiz.editLink)"
-      />
+    <!-- Filters and Sorting -->
+    <div v-else class="container mx-auto px-4 py-8">
+      <div class="mb-6 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4">
+        <!-- Filters -->
+        <div class="flex w-full sm:w-auto items-center gap-2 sm:gap-4">
+          <select
+            v-model="filters.status" 
+            class="rounded-lg border border-gray-200 px-4 py-2 text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="approved">Approved</option>
+            <option value="pending">Pending Approval</option>
+            <option value="draft">Draft</option>
+          </select>
+
+          <select
+            v-model="filters.sortBy" 
+            class="rounded-lg border border-gray-200 px-4 py-2 text-sm"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="likes">Most Liked</option>
+            <option value="questions">Most Questions</option>
+          </select>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex w-full sm:w-auto items-center gap-3">
+          <button
+            @click="createQuiz"
+            class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
+          >
+            <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
+            Create Quiz
+          </button>
+        </div>
+      </div>
+
+      <!-- Quiz Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <QuizCard
+          v-for="quiz in filteredQuizzes"
+          :key="quiz.id"
+          :startLink="quiz.startLink"
+          :title="quiz.title"
+          :description="quiz.description"
+          :subject="quiz.subject"
+          :topic="quiz.topic"
+          :subjectId="quiz.subject_id"
+          :topicId="quiz.topic_id"
+          :grade="quiz.grade"
+          :questionsCount="quiz.questionsCount"
+          :likes="quiz.likes"
+          :quizId="quiz.id"
+          :show-approval="true"
+          :showEdit="true"
+          :editLink="quiz.editLink"
+          :is_approved="quiz.is_approved"
+          :approval_requested_at="quiz.approval_requested_at"
+          @approve="() => {}"
+          @edit="() => router.push(quiz.editLink)"
+        />
+      </div>
+
+      <!-- Empty State for Filtered Results -->
+      <div v-if="filteredQuizzes.length === 0 && normalizedQuizzes.length > 0" class="text-center py-12 text-gray-500">
+        No quizzes match your current filters.
+        <button @click="resetFilters" class="text-indigo-600 hover:underline">Reset filters</button>
+      </div>
     </div>
   </div>
 </template>
@@ -79,6 +124,19 @@ const topic = ref(null)
 const quizzes = ref([])
 const loading = ref(true)
 
+// Filter and sort states
+const filters = ref({
+  status: 'all',
+  sortBy: 'newest'
+})
+
+function resetFilters() {
+  filters.value = {
+    status: 'all',
+    sortBy: 'newest'
+  }
+}
+
 const normalizedQuizzes = computed(() => {
   return (quizzes.value || [])
     .filter(q => q && q.id)
@@ -96,7 +154,46 @@ const normalizedQuizzes = computed(() => {
       likes: quiz.likes_count ?? quiz.likes ?? 0,
       startLink: `/quiz-master/quizzes/${quiz.id}`,
       editLink: `/quiz-master/quizzes/${quiz.id}/edit`,
+      created_at: quiz.created_at || quiz.createdAt || new Date().toISOString(),
     }))
+})
+
+const filteredQuizzes = computed(() => {
+  let result = [...normalizedQuizzes.value]
+
+  // Apply status filter
+  if (filters.value.status !== 'all') {
+    result = result.filter(quiz => {
+      switch (filters.value.status) {
+        case 'approved':
+          return quiz.is_approved
+        case 'pending':
+          return quiz.approval_requested_at && !quiz.is_approved
+        case 'draft':
+          return !quiz.approval_requested_at && !quiz.is_approved
+        default:
+          return true
+      }
+    })
+  }
+
+  // Apply sorting
+  result.sort((a, b) => {
+    switch (filters.value.sortBy) {
+      case 'newest':
+        return new Date(b.created_at) - new Date(a.created_at)
+      case 'oldest':
+        return new Date(a.created_at) - new Date(b.created_at)
+      case 'likes':
+        return b.likes - a.likes
+      case 'questions':
+        return b.questionsCount - a.questionsCount
+      default:
+        return 0
+    }
+  })
+
+  return result
 })
 
 async function fetchTopicDetails() {

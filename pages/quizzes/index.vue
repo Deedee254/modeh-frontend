@@ -76,7 +76,7 @@
         <div v-if="pending"><SkeletonGrid :count="3" /></div>
         <div v-else>
           <div v-if="(!displayQuizzes || displayQuizzes.length === 0)" class="p-6 border rounded-md text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">0 results returned</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-6">
             <QuizCard
               v-for="q in displayQuizzes"
               :key="q.id"
@@ -157,7 +157,8 @@ import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import PageHero from '~/components/ui/PageHero.vue'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import useQuizzes from '~/composables/useQuizzes'
 import { getHeroClass } from '~/utils/heroPalettes'
 const config = useRuntimeConfig()
 
@@ -166,58 +167,20 @@ useHead({
   meta: [{ name: 'description', content: 'Browse and take quizzes across subjects and grades. Search, filter, and jump into quizzes to practice and improve.' }]
 })
 
-// Helper to ensure API responses are coerced to arrays (handles HTML error pages and wrapped shapes)
-function safeArray(v) {
-  if (Array.isArray(v)) return v
-  if (v == null) return []
-  if (typeof v === 'object') {
-    if (Array.isArray(v.data)) return v.data
-    if (Array.isArray(v.items)) return v.items
-    if (Array.isArray(v.quizzes)) return v.quizzes
-    if (Array.isArray(v.topics)) return v.topics
-    if (typeof (v.length) === 'number') return Array.from(v)
-    return []
-  }
-  if (typeof v === 'string') {
-    const raw = v.trim()
-    const s = raw.toLowerCase()
-    if (s.startsWith('<!doctype') || s.startsWith('<html')) {
-      // Development-friendly warning with a short HTML snippet to help diagnose
-      try {
-        const isDev = typeof import.meta !== 'undefined' ? !!import.meta.env?.DEV : (process && process.env && process.env.NODE_ENV !== 'production')
-        if (isDev) {
-          const snippet = raw.replace(/\s+/g, ' ').slice(0, 800)
-          // eslint-disable-next-line no-console
-          console.warn('safeArray: received HTML string instead of JSON array — returning empty array', { snippet, endpoint: config?.public?.apiBase || 'unknown' })
-        }
-      } catch (e) {
-        // ignore logging failures
-      }
-      return []
-    }
-    try {
-      const parsed = JSON.parse(v)
-      if (Array.isArray(parsed)) return parsed
-    } catch (e) {
-      return []
-    }
-  }
-  return []
-}
+// use composable to fetch quizzes and topics
+const { paginator, topics: topicsList, loading, normalizedQuizzes, fetchItems, fetchTopics } = useQuizzes()
 
-// Include credentials so authenticated API routes return JSON instead of redirecting to a login page
-const { data, pending } = await useFetch(config.public.apiBase + '/api/quizzes', { credentials: 'include' })
-// Normalize quizzes/topics to arrays to avoid Vue iterating over unexpected objects (which can create blank cards)
-const quizzes = safeArray(data?.value?.quizzes || data?.value || [])
-const { data: topicsRes } = await useFetch(config.public.apiBase + '/api/topics', { credentials: 'include' })
-const topicsList = safeArray(topicsRes?.value?.topics || topicsRes?.value || [])
+// local UI state for filters/search
 const query = ref('')
 const filterTopic = ref('')
 const gradeFilter = ref('')
-// Tabs: all | latest | featured
 const activeTab = ref('all')
-// Subject quick-filter (slug or id)
 let subjectFilter = ref('')
+
+// on mount, fetch initial data (composable will normalize)
+onMounted(async () => {
+  await Promise.all([fetchItems(), fetchTopics()])
+})
 
 // Keep filters cascading: when grade changes, clear subject & topic; when subject changes, clear topic
 watch(gradeFilter, (nv, ov) => {
@@ -234,7 +197,7 @@ watch(subjectFilter, (nv, ov) => {
 
 // Fetch subjects for subject pills (some pages call SUBJECTS; attempt to use /api/subjects)
 const { data: subjectsData } = await useFetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
-const SUBJECTS = safeArray(subjectsData?.value?.subjects || subjectsData?.value || []).slice(0, 12).map(s => ({
+const SUBJECTS = (subjectsData?.value?.subjects || subjectsData?.value || []).slice(0, 12).map(s => ({
   slug: s.slug || s.id,
   id: s.id,
   name: s.name || (s.title || 'Subject'),
@@ -269,9 +232,9 @@ const topicsBySubject = computed(() => {
   return (topicsList || []).filter(t => String(t.subject_id || t.subject) === String(subjectFilter.value) || String(t.subject_id) === String(subjectFilter.value) || String(t.subject?.id || t.subject?.slug || '') === String(subjectFilter.value))
 })
 
-// base filtered list from search + topic
+// base filtered list from search + topic (use composable normalizedQuizzes)
 const baseFiltered = computed(() => {
-  let out = safeArray(quizzes) || []
+  let out = (normalizedQuizzes?.value || []) || []
   if (filterTopic.value) out = out.filter(q => String(q.topic_id) === String(filterTopic.value))
   const q = String(query.value || '').toLowerCase().trim()
   if (q) out = out.filter(i => (i.title||'').toLowerCase().includes(q) || (i.topic_name||'').toLowerCase().includes(q))
@@ -282,12 +245,7 @@ const baseFiltered = computed(() => {
 // Server-side search for quizzes (debounced by UiSearch)
 async function onServerSearch(q) {
   try {
-    const res = await $fetch(config.public.apiBase + '/api/quizzes', { params: { query: q }, credentials: 'include' })
-    const items = res?.quizzes?.data || res?.quizzes || res?.data || []
-    if (Array.isArray(items) && items.length) {
-      quizzes.length = 0
-      quizzes.push(...items)
-    }
+    await fetchItems({ q })
   } catch (e) {
     // ignore
   }
@@ -358,11 +316,9 @@ const displayCount = computed(() => displayQuizzes.value.length)
 
 // Compute a single featured quiz for the sidebar (defensive: may be undefined)
 const featuredQuiz = computed(() => {
-  // Prefer an explicitly featured quiz from the full quizzes list
-  const all = safeArray(quizzes) || []
+  const all = normalizedQuizzes?.value || []
   const f = all.find(q => q && (q.featured || q.is_featured || q.curated))
   if (f) return f
-  // Fallback: first of displayQuizzes or first of all
   return (displayQuizzes.value && displayQuizzes.value.length) ? displayQuizzes.value[0] : (all.length ? all[0] : null)
 })
 

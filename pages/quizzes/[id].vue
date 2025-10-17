@@ -186,9 +186,9 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'auth' })
+definePageMeta({ layout: 'quizee' })
 
-import { ref, computed, onMounted, onBeforeUnmount, h } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, h, markRaw } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 import { useBottomNavStore } from '~/stores/bottomNav'
@@ -291,7 +291,7 @@ function onReport(close) { if (typeof close === 'function') close(); useAppAlert
 
 onMounted(() => {
   // Provide a custom center slot component: Play button that starts the quiz
-  const PlayCenter = {
+  const PlayCenter = markRaw({
     name: 'BottomNavPlayCenter',
     setup() {
       const router = useRouter()
@@ -304,7 +304,7 @@ onMounted(() => {
         ])
       ])
     }
-  }
+  })
 
   bottomNav.setSlots({ center: PlayCenter })
 })

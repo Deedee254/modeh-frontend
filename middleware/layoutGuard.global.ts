@@ -23,7 +23,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
       } else {
         const headers = useRequestHeaders(['cookie']) || {}
         const config = useRuntimeConfig()
-        const res = await $fetch('/api/me', {
+  const cfg = useRuntimeConfig()
+  const res = await $fetch(cfg.public.apiBase + '/api/me', {
           baseURL: config.public.apiBase || '',
           method: 'GET',
           // forward client's cookie so backend can read the session

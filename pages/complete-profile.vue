@@ -168,6 +168,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useRuntimeConfig } from '#app'
+import useApi from '~/composables/useApi'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -272,22 +273,12 @@ async function completeProfile() {
   isLoading.value = true
 
   try {
-    const config = useRuntimeConfig()
-
-    // Obtain CSRF cookie first
-    await $fetch('/sanctum/csrf-cookie', { baseURL: config.public.apiBase || '', credentials: 'include', method: 'GET' })
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-    const xsrf = match ? decodeURIComponent(match[1]) : null
-
-    const response = await $fetch('/api/profile/complete', {
-      baseURL: config.public.apiBase || '',
-      method: 'POST',
-      credentials: 'include',
-      body: { ...formData.value },
-      headers: xsrf ? { 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' } : { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-
-    auth.setUser(response.user || response)
+    const api = useApi()
+    const response = await api.postJson('/api/profile/complete', { ...formData.value })
+    if (api.handleAuthStatus(response)) return
+    if (!response.ok) throw new Error('Failed to complete profile')
+    const data = await response.json()
+    auth.setUser(data.user || data)
 
     // Redirect based on role
     if (formData.value.role === 'quizee') {

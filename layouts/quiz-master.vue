@@ -12,13 +12,11 @@
       <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
 
       <!-- Main content area -->
-      <div class="flex-1 flex flex-col h-screen overflow-y-auto">
-        <div class="flex-1 flex flex-col h-screen overflow-y-auto transition-all duration-300" :class="[ui.sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64']">
-          <TopBar v-if="!route.meta.hideTopBar" />
-          <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
-            <slot />
-          </main>
-        </div>
+      <div class="flex-1 flex flex-col h-screen transition-all duration-300" :class="['lg:ml-0']">
+        <TopBar v-if="!route.meta.hideTopBar" />
+        <main class="flex-1 overflow-y-auto pb-20 md:pb-6">
+          <slot />
+        </main>
       </div>
     </div>
 
@@ -41,6 +39,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
 import QuizMasterSidebar from '~/components/QuizMasterSidebar.vue'
@@ -53,6 +52,7 @@ import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
 
 const auth = useAuthStore?.() || null
+const route = useRoute()
 const ui = useUiStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
 

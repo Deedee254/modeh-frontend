@@ -207,6 +207,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '../stores/auth'
+import useApi from '~/composables/useApi'
 
 
 const router = useRouter()
@@ -317,26 +318,16 @@ async function submit() {
   isLoading.value = true
 
   try {
-    const config = useRuntimeConfig()
-
-    // Obtain CSRF cookie from backend (must include credentials)
-    await $fetch('/sanctum/csrf-cookie', { baseURL: config.public.apiBase || '', credentials: 'include', method: 'GET' })
-
-    // Read XSRF token from cookie (client-only)
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-    const xsrf = match ? decodeURIComponent(match[1]) : null
-
-    // Perform register request
-    const res = await $fetch('/api/register', {
-      baseURL: config.public.apiBase || '',
-      method: 'POST',
-      credentials: 'include',
-      body: { ...form, role: role.value },
-      headers: xsrf ? { 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' } : { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-
+    const api = useApi()
+    const response = await api.postJson('/api/register', { ...form, role: role.value })
+    if (api.handleAuthStatus(response)) return
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw { data }
+    }
+    const body = await response.json()
     // Set user in auth store if returned
-    auth.setUser(res.user || res)
+    auth.setUser(body.user || body)
 
     // Redirect based on role
     if (role.value === 'quizee') {

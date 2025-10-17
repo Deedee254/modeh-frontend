@@ -1,15 +1,21 @@
 <script setup>
 definePageMeta({ layout: 'quizee' })
 import { ref, onMounted } from 'vue'
+import useApi from '~/composables/useApi'
 
 const badges = ref([])
 const loading = ref(true)
+const api = useApi()
 
 // Fetch badges on mount
 onMounted(async () => {
   try {
-    const res = await $fetch('/api/user/badges', { credentials: 'include' })
-    badges.value = res.badges || []
+    const res = await api.get('/api/user/badges')
+    if (api.handleAuthStatus(res)) return
+    if (res.ok) {
+      const j = await res.json()
+      badges.value = j.badges || []
+    }
   } catch (e) {
     console.error('Failed to fetch badges:', e)
   } finally {

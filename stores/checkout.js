@@ -23,7 +23,10 @@ export const useCheckoutStore = defineStore('checkout', () => {
   async function markResults({ type, id, attemptId }) {
     processing.value = true
     status.value = 'processing'
-    pendingMessage.value = 'Marking answers...'
+    pendingMessage.value = 'Preparing to mark answers...'
+
+    // Add a small delay to allow backend processing to complete
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
     const steps = ['Marking answers...', 'Calculating results...', 'Adding points & badges...', 'Finalizing results...']
     let stepIndex = 0
@@ -40,14 +43,24 @@ export const useCheckoutStore = defineStore('checkout', () => {
       const resultPath = type === 'battle' ? `/quizee/battles/${id}/result` : `/quizee/quizzes/result/${attemptId}`
 
       const api = useApi()
-      const res = await api.postJson(endpoint.replace(cfg.public.apiBase, ''), {}).catch(() => null)
+      
+      // Add retry logic
+      let retries = 3
+      let res = null
+      
+      while (retries > 0) {
+        res = await api.postJson(endpoint.replace(cfg.public.apiBase, ''), {}).catch(() => null)
+        if (res && (res.ok || res.status === 'success')) break
+        retries--
+        if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
+      }
 
       if (res && (res.ok || res.status === 'success')) {
         pendingMessage.value = 'Completed. Redirecting to results...'
         status.value = 'success'
         router.push(resultPath)
       } else {
-        throw new Error('Failed to mark results. If you just paid, try again in a few seconds.')
+        throw new Error('Failed to mark results. Please try again in a few seconds.')
       }
     } catch (e) {
       pendingMessage.value = e.message || 'An error occurred while marking results. Please try again.'

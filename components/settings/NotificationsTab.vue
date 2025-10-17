@@ -76,9 +76,10 @@ const prefsSaving = ref(false)
 async function loadPrefs() {
   prefsLoading.value = true
   try {
-  const res = await $fetch('/api/me/notification-preferences', { credentials: 'include' }).catch(() => null)
-  if (!res) throw new Error('Failed to load notification preferences')
-  const json = res
+    const res = await api.get('/api/me/notification-preferences')
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to load notification preferences')
+    const json = await res.json()
     const p = json.preferences ?? null
     if (p && typeof p === 'object') {
       // Ensure boolean values
@@ -120,10 +121,11 @@ function formatDate(s) {
 async function load() {
   loading.value = true
   try {
-  const res = await $fetch('/api/notifications', { credentials: 'include' }).catch(() => null)
-  if (!res) throw new Error('Failed to load notifications')
-  const json = res
-  notifications.value = Array.isArray(json) ? json : (json.data || [])
+    const res = await api.get('/api/notifications')
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to load notifications')
+    const json = await res.json()
+    notifications.value = Array.isArray(json) ? json : (json.data || [])
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to load notifications' })
   } finally {

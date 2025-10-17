@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50 p-6">
     <div class="max-w-5xl mx-auto space-y-6">
-      <div class="bg-white rounded-lg shadow-sm p-6">
+  <div class="bg-white rounded-xl shadow-lg p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
             <h1 class="text-2xl font-semibold text-gray-900">Preview Quiz</h1>
@@ -13,15 +13,15 @@
           </div>
         </div>
 
-        <div class="mt-4">
-          <div class="bg-gray-50 rounded-lg p-4">
+          <div class="mt-4">
+          <div class="bg-gray-50 rounded-xl p-4">
             <nav class="flex space-x-4" aria-label="Tabs">
               <button @click="activeTab = 'details'" :class="tabClass('details')">Details</button>
               <button @click="activeTab = 'questions'" :class="tabClass('questions')">Questions ({{ questions.length }})</button>
             </nav>
           </div>
 
-          <div class="mt-6 bg-white rounded-lg p-6 border">
+          <div class="mt-6 bg-white rounded-xl p-6 border shadow-sm">
             <div v-if="activeTab === 'details'">
               <h3 class="text-lg font-semibold mb-2">Quiz details</h3>
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -48,10 +48,10 @@
               </div>
             </div>
 
-            <div v-else>
+                <div v-else>
               <h3 class="text-lg font-semibold mb-4">Questions</h3>
               <div class="space-y-4">
-                <div v-for="(q, idx) in questions" :key="q.uid" class="rounded-lg border p-4 bg-gray-50">
+                <div v-for="(q, idx) in questions" :key="q.uid" class="rounded-xl border p-4 bg-gray-50">
                   <div class="flex items-start justify-between">
                     <div>
                       <div class="text-sm text-gray-500">Question {{ idx + 1 }}</div>

@@ -164,7 +164,7 @@ onMounted(async () => { await Promise.all([fetchItems(), fetchTopics()]) })
 
 async function fetchTopics() {
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/topics?approved=1', { credentials: 'include' })
+    const res = await api.get('/api/topics?approved=1')
     if (res.ok) {
       const json = await res.json()
       const rawTopics = json.topics || json.data || []
@@ -183,7 +183,7 @@ async function fetchItems() {
     if (topicId.value) params.set('topic_id', topicId.value)
     params.set('per_page', perPage.value)
     params.set('page', page.value)
-    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/quizzes?' + params.toString(), { credentials: 'include' })
+    const res = await api.get('/api/quizzes?' + params.toString())
     if (res.ok) {
       const json = await res.json()
       paginator.value = json.quizzes || json.data || json

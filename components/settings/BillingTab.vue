@@ -2,10 +2,12 @@
 import UiTextarea from '~/components/ui/UiTextarea.vue'
 import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 
 const alert = useAppAlert()
 const billing = ref({ email: '', address: '' })
 const submitting = ref(false)
+const api = useApi()
 
 async function save() {
   if (!billing.value.email || !billing.value.address) {
@@ -14,8 +16,7 @@ async function save() {
   }
   submitting.value = true
   try {
-    const cfg = useRuntimeConfig()
-    const res = await fetch(cfg.public.apiBase + '/api/me/billing', { method: 'PATCH', body: JSON.stringify(billing.value), headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+    const res = await api.patchJson('/api/me/billing', billing.value)
     if (!res.ok) throw new Error('Failed')
     alert.push({ type: 'success', message: 'Billing settings saved' })
   } catch (e) {
@@ -35,7 +36,7 @@ async function save() {
       </div>
       <div>
         <label class="block text-sm font-medium">Billing address</label>
-  <UTextarea v-model="billing.address" class="mt-1 block w-full" rows="3" />
+      <UTextarea v-model="billing.address" class="mt-1 block w-full" :rows="3" />
       </div>
       <div class="flex justify-end">
         <button :disabled="submitting" class="px-4 py-2 bg-indigo-600 text-white rounded" type="submit">

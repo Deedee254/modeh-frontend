@@ -3,7 +3,7 @@
   <textarea
     ref="ta"
     v-bind="filteredAttrs"
-    :rows="rows"
+    :rows="Number(rows) || undefined"
     v-model="model"
     v-autosize
     class="border rounded p-2"

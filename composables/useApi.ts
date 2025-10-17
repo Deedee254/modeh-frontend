@@ -25,6 +25,15 @@ export function useApi() {
     if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     return headers
   }
+  
+  async function get(path: string) {
+    // Does not require ensureCsrf() for GET requests
+    return fetch(config.public.apiBase + path, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+  }
 
   async function postJson(path: string, body: any) {
     await ensureCsrf()
@@ -79,7 +88,17 @@ export function useApi() {
     return false
   }
 
-  return { ensureCsrf, getXsrfFromCookie, postJson, postFormData, del, handleAuthStatus }
+  async function patchJson(path: string, body: any) {
+    await ensureCsrf()
+    return fetch(config.public.apiBase + path, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: defaultJsonHeaders(),
+      body: JSON.stringify(body),
+    })
+  }
+
+  return { ensureCsrf, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus }
 }
 
 export default useApi

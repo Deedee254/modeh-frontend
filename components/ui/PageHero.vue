@@ -53,13 +53,24 @@
 
             <div class="mt-8 flex flex-col gap-6">
               <slot name="actions">
-                <div class="flex flex-wrap items-center gap-3">
-                  <NuxtLink to="/quizzes" class="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90">
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                  <UButton
+                    size="lg"
+                    color="primary"
+                    variant="solid"
+                    class="min-w-[180px] shadow-lg hover:-translate-y-0.5 transition-transform"
+                    to="/quizzes"
+                  >
                     Start a quiz
-                  </NuxtLink>
-                  <NuxtLink to="/register?role=quiz-master" class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10">
-                    Become a quiz-master
-                  </NuxtLink>
+                  </UButton>
+                  <UButton
+                    size="lg"
+                    variant="outline"
+                    class="min-w-[180px] text-white border-white/40 hover:bg-white/10"
+                    to="/register?role=quiz-master"
+                  >
+                    Become a quiz master
+                  </UButton>
                 </div>
               </slot>
 
