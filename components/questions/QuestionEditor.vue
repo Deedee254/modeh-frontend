@@ -9,10 +9,9 @@
   <UBadge color="gray" variant="soft">{{ localModel.marks }} pt</UBadge>
       </div>
       <div class="flex items-center gap-2">
-        <UButton size="2xs" color="gray" variant="ghost" @click="$emit('duplicate')">Duplicate</UButton>
-        <UButton size="2xs" color="red" variant="ghost" @click="$emit('remove')">Delete</UButton>
-        <UButton size="2xs" color="gray" variant="ghost" @click="open = !open">{{ open ? 'Collapse' : 'Edit' }}
-        </UButton>
+        <UButton size="xs" color="gray" variant="ghost" @click="$emit('duplicate')">Duplicate</UButton>
+        <UButton size="xs" color="red" variant="ghost" @click="$emit('remove')">Delete</UButton>
+        <UButton size="xs" color="gray" variant="ghost" @click="open = !open">{{ open ? 'Collapse' : 'Edit' }}</UButton>
       </div>
     </div>
 
@@ -25,11 +24,13 @@
       </div>
 
         <div class="flex items-center gap-3">
-          <label class="text-sm text-gray-600">Media</label>
-          <input type="file" accept="image/*" @change="onImageSelected" />
-          <input type="file" accept="audio/*" @change="onAudioSelected" />
-          <UInput v-model="localModel.youtube_url" placeholder="YouTube link (optional)" />
-        </div>
+            <label class="text-sm text-gray-600">Media</label>
+            <input ref="imageInput" type="file" accept="image/*" @change="onImageSelected" class="hidden" />
+            <input ref="audioInput" type="file" accept="audio/*" @change="onAudioSelected" class="hidden" />
+            <UButton size="xs" variant="soft" @click="triggerImageInput">Choose Image</UButton>
+            <UButton size="xs" variant="soft" @click="triggerAudioInput">Choose Audio</UButton>
+            <UInput v-model="localModel.youtube_url" placeholder="YouTube link (optional)" class="max-w-md" />
+          </div>
 
       <div>
   <RichTextEditor v-model="localModel.text" @ready="onEditorReady" />
@@ -47,10 +48,10 @@
               <UCheckbox :model-value="(localModel.corrects || []).includes(i)"
                 @update:model-value="(v: boolean) => toggleCorrect(i, v)" label="Correct" />
             </template>
-            <UButton size="2xs" color="red" variant="ghost" @click="$emit('remove-option', i)">Remove</UButton>
+            <UButton size="xs" color="red" variant="ghost" @click="$emit('remove-option', i)">Remove</UButton>
           </div>
         </div>
-        <UButton size="2xs" color="gray" variant="ghost" @click="$emit('add-option')">+ Add option</UButton>
+  <UButton size="xs" color="gray" variant="ghost" @click="$emit('add-option')">+ Add option</UButton>
       </div>
 
       <div v-if="localModel.type === 'tf'" class="flex items-center gap-2">
@@ -97,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, getCurrentInstance } from 'vue'
 import UiTextarea from '~/components/ui/UiTextarea.vue'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 
@@ -187,6 +188,23 @@ function onAudioSelected(e: Event) {
     localModel.value.media = input.files[0]
     localModel.value.media_metadata = { type: 'audio', name: input.files[0].name }
   }
+}
+
+// Template trigger functions that access the underlying input via internal $refs
+function triggerImageInput() {
+  try {
+    const inst = getCurrentInstance()
+    const el = inst?.refs?.imageInput as HTMLInputElement | undefined
+    if (el) el.click()
+  } catch (e) {}
+}
+
+function triggerAudioInput() {
+  try {
+    const inst = getCurrentInstance()
+    const el = inst?.refs?.audioInput as HTMLInputElement | undefined
+    if (el) el.click()
+  } catch (e) {}
 }
 
 </script>

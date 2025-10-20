@@ -1,7 +1,7 @@
 <template>
-  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+  <div>
     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-      <h2 class="text-lg font-medium mb-4 sm:mb-6">Quiz Settings</h2>
+      <h2 class="text-lg font-medium mb-4">Quiz Settings</h2>
       
       <div class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -15,6 +15,7 @@
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               placeholder="Optional"
             />
+            <p v-if="errors && (errors.timer_seconds || errors.timer_minutes)" class="mt-1 text-sm text-red-600">{{ (errors.timer_seconds || errors.timer_minutes)[0] }}</p>
           </div>
 
           <div>
@@ -29,6 +30,7 @@
               <option value="3">3 attempts</option>
               <option value="unlimited">Unlimited</option>
             </select>
+            <p v-if="errors && errors.attempts_allowed" class="mt-1 text-sm text-red-600">{{ errors.attempts_allowed[0] }}</p>
           </div>
         </div>
 
@@ -43,6 +45,7 @@
               <option value="free">Free</option>
               <option value="premium">Premium</option>
             </select>
+            <p v-if="errors && errors.access" class="mt-1 text-sm text-red-600">{{ errors.access[0] }}</p>
           </div>
 
           <div>
@@ -56,6 +59,7 @@
               <option value="published">Published</option>
               <option value="scheduled">Scheduled</option>
             </select>
+            <p v-if="errors && errors.visibility" class="mt-1 text-sm text-red-600">{{ errors.visibility[0] }}</p>
           </div>
         </div>
 
@@ -82,18 +86,11 @@
     </div>
 
     <!-- Bottom Actions -->
-    <div class="mt-6 flex flex-col sm:flex-row justify-between gap-3 sm:gap-4">
-      <div class="w-full sm:w-auto">
-          <button type="button" @click="$emit('prev')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Back to Details</button>
-      </div>
-
-      <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
-        <div class="flex-1 sm:flex-none">
-            <button type="button" @click="saveAndContinue" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Save and Continue</button>
-        </div>
-        <div class="flex-1 sm:flex-none">
-            <button type="button" @click="validate" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">Continue to Questions</button>
-        </div>
+    <div class="mt-6 flex justify-between gap-3">
+      <UButton size="sm" variant="soft" @click="$emit('prev')">Back to Details</UButton>
+      <div class="flex gap-2">
+        <UButton size="sm" variant="soft" @click="saveAndContinue">Save and Continue</UButton>
+        <UButton size="sm" color="primary" @click="validate">Continue to Questions</UButton>
       </div>
     </div>
   </div>
@@ -108,6 +105,10 @@ const props = defineProps({
   saving: {
     type: Boolean,
     default: false
+  },
+  errors: {
+    type: Object,
+    default: () => ({})
   }
 })
 
@@ -125,4 +126,7 @@ async function saveAndContinue() {
     emit('next')
   }
 }
+
+// expose errors locally for template convenience
+const errors = props.errors || {}
 </script>

@@ -77,7 +77,3 @@ async function saveAndReturn() {
   } finally { saving.value = false }
 }
 </script>
-
-<style scoped>
-/* minimal page styles */
-</style>

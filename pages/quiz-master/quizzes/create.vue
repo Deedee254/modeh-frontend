@@ -1,22 +1,21 @@
 <template>
-  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-    <div class="mb-4 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold">Create a new quiz</h1>
-        <p class="text-sm text-gray-500">Quick multi-step wizard for quiz-masters</p>
+  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+    <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      <div class="mb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+        <div>
+          <h1 class="text-2xl font-semibold">Create a new quiz</h1>
+          <p class="text-sm text-gray-500">Quick multi-step wizard for quiz-masters</p>
+        </div>
+        <!-- Global Publish removed: publish is now triggered from the Questions tab/modal -->
       </div>
-      <div class="hidden md:flex gap-2">
-        <UButton size="sm" variant="ghost" @click="$router.back()">Cancel</UButton>
-        <UButton size="sm" color="primary" @click="onPublish" :loading="store.isSubmitting">Publish</UButton>
-      </div>
-    </div>
 
-    <div class="space-y-4">
-      <nav class="mb-6 flex gap-2 overflow-x-auto rounded-lg bg-muted p-1">
+    </div>
+  <div class="space-y-4">
+  <nav class="mb-6 flex gap-2 overflow-x-auto rounded-lg bg-muted p-1">
         <button
-          @click="store.setTab('details')"
+          @click="trySetTab('details')"
           :class="[
-            'min-w-[120px] flex-1 text-center flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-md',
+            'min-w-[92px] sm:min-w-[110px] flex-1 text-center flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md',
             store.activeTab === 'details'
               ? 'bg-indigo-600 text-white shadow'
               : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
@@ -29,9 +28,9 @@
         </button>
 
         <button
-          @click="store.setTab('settings')"
+          @click="trySetTab('settings')"
           :class="[
-            'min-w-[120px] flex-1 text-center flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-md',
+            'min-w-[92px] sm:min-w-[110px] flex-1 text-center flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md',
             store.activeTab === 'settings'
               ? 'bg-indigo-600 text-white shadow'
               : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
@@ -44,9 +43,9 @@
         </button>
 
         <button
-          @click="store.setTab('questions')"
+          @click="trySetTab('questions')"
           :class="[
-            'min-w-[120px] flex-1 text-center flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-md',
+            'min-w-[92px] sm:min-w-[110px] flex-1 text-center flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md',
             store.activeTab === 'questions'
               ? 'bg-indigo-600 text-white shadow'
               : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
@@ -68,7 +67,7 @@
           :topics="topics"
           :loading-subjects="loadingSubjects"
           :loading-topics="loadingTopics"
-          :errors="{}"
+          :errors="store.detailsErrors"
           :saving="store.isSubmitting"
           @update:modelValue="(v) => (store.quiz = v)"
           @subject-picked="onSelectSubject"
@@ -83,6 +82,7 @@
           v-else-if="store.activeTab === 'settings'"
           :model-value="store.quiz"
           :saving="store.isSubmitting"
+          :errors="store.settingsErrors"
           @update:modelValue="(v) => (store.quiz = v)"
           @save="saveSettings"
           @next="() => store.setTab('questions')"
@@ -103,7 +103,7 @@
         />
       </div>
 
-      <div v-if="showBuilder" class="mt-4 rounded-md border p-3">
+      <div v-if="showBuilder" class="mt-4 rounded-xl border p-3 bg-white shadow-sm">
         <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" @saved="onSaved" @cancel="onCancel" />
       </div>
 
@@ -117,11 +117,6 @@
         @created="onTopicCreated"
       />
 
-      <!-- mobile action bar -->
-      <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t p-3 flex gap-2 justify-between md:hidden">
-        <UButton size="sm" variant="ghost" class="w-1/2" @click="$router.back()">Cancel</UButton>
-        <UButton size="sm" color="primary" class="w-1/2" @click="onPublish" :loading="store.isSubmitting">Publish</UButton>
-      </div>
     </div>
   </div>
 </template>
@@ -160,21 +155,34 @@ function tabClass(t) {
   return 'text-sm rounded-md bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
 }
 
-function gotoSettings() {
-  if (!store.isDetailsValid) {
-    // ensure user saves details first
-    store.saveDetails()
-    return
-  }
-  store.setTab('settings')
-}
+function trySetTab(tab) {
+  // details tab is always allowed
+  if (tab === 'details') { store.setTab('details'); return }
 
-function gotoQuestions() {
-  if (!store.quizId) {
-    store.saveDetails()
+  // moving to settings requires details to be complete (but not auto-saved)
+  if (tab === 'settings') {
+    if (!store.isDetailsValid) {
+      alert.push({ type: 'warning', message: 'Please complete quiz details before moving to settings.' })
+      return
+    }
+    // allow if details are valid; prefer user to explicitly Save
+    store.setTab('settings')
     return
   }
-  store.setTab('questions')
+
+  // moving to questions requires detailsSaved and settingsSaved
+  if (tab === 'questions') {
+    if (!store.detailsSaved) {
+      alert.push({ type: 'warning', message: 'Please save quiz details first.' })
+      return
+    }
+    if (!store.settingsSaved) {
+      alert.push({ type: 'warning', message: 'Please save settings before adding questions.' })
+      return
+    }
+    store.setTab('questions')
+    return
+  }
 }
 
 async function onPublish() {
@@ -222,6 +230,19 @@ onMounted(async () => {
   } catch (e) {
     // ignore grade fetch errors; downstream fetches will also handle failures
   }
+
+  // If the store restored an in-progress draft (no server id) then preload subjects/topics
+  // so the TaxonomyPicker components can resolve the persisted subject/topic selections.
+  try {
+    const g = store.quiz.grade_id
+    if (g) {
+      try { await fetchSubjectsPage({ gradeId: g, page: 1, perPage: 50, q: '' }) } catch (e) {}
+    }
+    const s = store.quiz.subject_id
+    if (s) {
+      try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: '' }) } catch (e) {}
+    }
+  } catch (e) {}
 
   if (route.query.id && !store.quizId) {
     try {
@@ -316,4 +337,3 @@ function saveSettings() { store.saveSettings() }
 <style scoped>
 .tab-active { background: #4f46e5; color: white }
 </style>
-

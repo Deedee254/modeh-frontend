@@ -1,15 +1,15 @@
 <template>
-  <div class="min-h-screen bg-gray-50 px-4 py-12">
-    <div class="max-w-5xl mx-auto">
+  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+    <div class="max-w-7xl mx-auto px-4 py-6">
       <div v-if="pending" class="grid place-items-center py-24">
         <div class="animate-pulse bg-white rounded-lg p-6 w-full max-w-2xl"></div>
       </div>
 
       <div v-else>
         <div v-if="hasPreview" class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-          <div class="p-8 sm:p-12">
+          <div class="p-6 sm:p-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div class="lg:col-span-2">
+              <div class="lg:col-span-2 space-y-4">
                 <div class="flex items-start gap-6">
                   <div class="w-28 h-28 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
                     <img v-if="quiz.cover" :src="quiz.cover" class="object-cover w-full h-full" onerror="this.style.display='none'" />
@@ -40,7 +40,7 @@
                 </div>
               </div>
 
-              <aside class="bg-white p-4 border rounded-lg">
+              <aside class="bg-white p-4 border rounded-xl shadow-sm sticky top-6">
                 <div class="text-sm text-gray-500">Details</div>
                 <div class="mt-2 text-sm"><strong>Author:</strong> {{ quiz.author || '—' }}</div>
                 <div class="text-sm mt-1"><strong>Questions:</strong> {{ questionCount }}</div>
@@ -52,7 +52,7 @@
 
         <div v-else class="max-w-2xl mx-auto">
           <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-            <div class="p-8 sm:p-12">
+            <div class="p-6 sm:p-8">
               <div class="flex items-start gap-6">
                 <div class="w-20 h-20 rounded-lg bg-indigo-50 flex items-center justify-center">
                   <svg class="w-10 h-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

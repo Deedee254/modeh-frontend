@@ -93,7 +93,7 @@
                     <div class="font-semibold text-lg text-gray-900 mb-4">Question {{ currentQuestion + 1 }}</div>
                     <div class="text-gray-800 mb-4" v-html="currentQuestionData.body || currentQuestionData.text || currentQuestionData.question"></div>
                     <div class="space-y-3">
-                      <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" />
+                      <!-- QuestionCard already rendered above; duplicate removed -->
                       <!-- Media Section (legacy media_path fallback) -->
                       <div v-if="currentQuestionData.media_path" class="mb-6">
                         <!-- Image -->

@@ -21,38 +21,10 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <UButton
-                size="sm"
-                variant="ghost"
-                icon="i-heroicons-arrow-up"
-                :disabled="disabled || index === 0"
-                class="rounded-lg"
-                @click="moveQuestion(index, index - 1)"
-              />
-              <UButton
-                size="sm"
-                variant="ghost"
-                icon="i-heroicons-arrow-down"
-                :disabled="disabled || index === questions.length - 1"
-                class="rounded-lg"
-                @click="moveQuestion(index, index + 1)"
-              />
-              <UButton
-                size="sm"
-                variant="ghost"
-                icon="i-heroicons-pencil"
-                :disabled="disabled"
-                class="rounded-lg"
-                @click="editQuestion(index)"
-              />
-              <UButton
-                size="sm"
-                variant="ghost"
-                icon="i-heroicons-trash"
-                :disabled="disabled"
-                class="rounded-lg"
-                @click="removeQuestion(index)"
-              />
+              <UButton size="xs" variant="ghost" icon="i-heroicons-arrow-up" :disabled="disabled || index === 0" @click="moveQuestion(index, index - 1)" />
+              <UButton size="xs" variant="ghost" icon="i-heroicons-arrow-down" :disabled="disabled || index === questions.length - 1" @click="moveQuestion(index, index + 1)" />
+              <UButton size="xs" variant="ghost" icon="i-heroicons-pencil" :disabled="disabled" @click="editQuestion(index)" />
+              <UButton size="xs" variant="ghost" icon="i-heroicons-trash" :disabled="disabled" @click="removeQuestion(index)" />
             </div>
           </div>
 

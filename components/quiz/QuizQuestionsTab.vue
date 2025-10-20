@@ -3,26 +3,9 @@
     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
         <h2 class="text-lg font-medium">Questions</h2>
-        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 w-full sm:w-auto">
-          <div class="w-full sm:w-auto">
-            <button
-              type="button"
-              @click="$emit('openBank')"
-              class="inline-flex w-full sm:w-auto items-center justify-center gap-x-1.5 px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50"
-            >
-              Question Bank
-            </button>
-          </div>
-
-          <div class="w-full sm:w-auto mt-2 sm:mt-0">
-            <button
-              type="button"
-              @click="addQuestion"
-              class="inline-flex w-full sm:w-auto items-center justify-center gap-x-1.5 px-3 py-2 rounded-md text-sm font-medium shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              Add Question
-            </button>
-          </div>
+        <div class="flex gap-2 items-center w-full sm:w-auto">
+          <UButton size="sm" variant="soft" @click="$emit('openBank')">Question Bank</UButton>
+          <UButton size="sm" color="primary" @click="addQuestion">Add Question</UButton>
         </div>
       </div>
 
@@ -58,71 +41,9 @@
               </div>
 
               <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <UButton
-                  size="xs"
-                  color="white"
-                  @click="duplicateQuestion(idx)"
-                  title="Duplicate"
-                >
-                  <span class="sr-only">Duplicate</span>
-                  <i class="fas fa-copy"></i>
-                </UButton>
-
-                <UButton
-                  size="xs"
-                  color="white"
-                  @click="removeQuestion(idx)"
-                  title="Delete"
-                >
-                  <span class="sr-only">Delete</span>
-                  <i class="fas fa-trash"></i>
-                </UButton>
-                  <button
-                    type="button"
-                    @click="duplicateQuestion(idx)"
-                    title="Duplicate"
-                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    <span class="sr-only">Duplicate</span>
-                    <i class="fas fa-copy"></i>
-                  </button>
-
-                  <button
-                    type="button"
-                    @click="removeQuestion(idx)"
-                    title="Delete"
-                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    <span class="sr-only">Delete</span>
-                    <i class="fas fa-trash"></i>
-                  </button>
-                  <button
-                    type="button"
-                    @click="duplicateQuestion(idx)"
-                    title="Duplicate"
-                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    <span class="sr-only">Duplicate</span>
-                    <i class="fas fa-copy"></i>
-                  </button>
-
-                  <button
-                    type="button"
-                    @click="removeQuestion(idx)"
-                    title="Delete"
-                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    <span class="sr-only">Delete</span>
-                    <i class="fas fa-trash"></i>
-                  </button>
-
-                <button
-                  class="p-1 text-gray-400 hover:text-gray-600"
-                  @click="q.open = !q.open"
-                  :aria-label="q.open ? 'Collapse question' : 'Expand question'"
-                >
-                  <i :class="['fas', q.open ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
-                </button>
+                <UButton size="xs" variant="ghost" @click="duplicateQuestion(idx)" title="Duplicate"><span class="sr-only">Duplicate</span><i class="fas fa-copy"></i></UButton>
+                <UButton size="xs" variant="ghost" color="red" @click="removeQuestion(idx)" title="Delete"><span class="sr-only">Delete</span><i class="fas fa-trash"></i></UButton>
+                <button class="p-1 text-gray-400 hover:text-gray-600" @click="q.open = !q.open" :aria-label="q.open ? 'Collapse question' : 'Expand question'"><i :class="['fas', q.open ? 'fa-chevron-up' : 'fa-chevron-down']"></i></button>
               </div>
             </div>
 
@@ -186,57 +107,12 @@
     </div>
 
     <!-- Bottom Actions -->
-    <div class="mt-6 flex flex-col sm:flex-row justify-between gap-3 sm:gap-4">
-      <div class="w-full sm:w-auto">
-        <UButton
-          color="white"
-          @click="$emit('prev')"
-        >Back to Settings</UButton>
+    <div class="mt-6 flex justify-between gap-3">
+      <UButton size="sm" variant="soft" @click="$emit('prev')">Back to Settings</UButton>
+      <div class="flex gap-2">
+        <UButton size="sm" variant="soft" @click="$emit('save')" :loading="saving">Save Draft</UButton>
+        <UButton size="sm" color="primary" @click="$emit('publish')" :loading="publishing" :disabled="!canPublish">Publish Quiz</UButton>
       </div>
-
-      <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
-        <div class="flex-1 sm:flex-none">
-          <UButton 
-            color="white"
-            @click="$emit('save')"
-            :loading="saving"
-          >Save Draft</UButton>
-        </div>
-        
-        <div class="flex-1 sm:flex-none">
-          <UButton
-            color="primary"
-            @click="$emit('publish')"
-            :loading="publishing"
-            :disabled="!canPublish"
-          >Publish Quiz</UButton>
-        </div>
-          <div class="w-full sm:w-auto">
-            <button type="button" @click="$emit('prev')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Back to Settings</button>
-          </div>
-
-          <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
-            <div class="flex-1 sm:flex-none">
-              <button type="button" @click="$emit('save')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Save Draft</button>
-            </div>
-      </div>
-            <div class="flex-1 sm:flex-none">
-              <button type="button" @click="$emit('publish')" :disabled="!canPublish" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">Publish Quiz</button>
-            </div>
-          </div>
-        <div class="w-full sm:w-auto">
-          <button type="button" @click="$emit('prev')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Back to Settings</button>
-        </div>
-
-        <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
-          <div class="flex-1 sm:flex-none">
-            <button type="button" @click="$emit('save')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Save Draft</button>
-          </div>
-
-          <div class="flex-1 sm:flex-none">
-            <button type="button" @click="$emit('publish')" :disabled="!canPublish" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">Publish Quiz</button>
-          </div>
-        </div>
     </div>
   </div>
 </template>

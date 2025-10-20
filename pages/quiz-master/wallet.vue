@@ -73,7 +73,7 @@
       </template>
     </PageHero>
 
-    <div class="container mx-auto py-10">
+    <div class="max-w-7xl mx-auto px-4 py-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="p-4 bg-white shadow rounded">
           <div class="text-sm text-gray-500">Available</div>
@@ -90,7 +90,7 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section id="withdraw-section" class="bg-white shadow rounded p-4">
+        <section id="withdraw-section" class="bg-white shadow rounded-xl p-4">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-medium">Transactions</h2>
           </div>
@@ -121,7 +121,7 @@
           </div>
         </section>
 
-        <section class="bg-white shadow rounded p-4">
+        <section class="bg-white shadow rounded-xl p-4">
           <h2 class="text-lg font-medium">Request Withdrawal</h2>
 
           <div class="mt-3 space-y-3">

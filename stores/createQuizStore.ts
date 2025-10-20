@@ -11,6 +11,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   const initialForm = {
     title: '',
     description: '',
+    youtube_url: null,
     grade_id: null,
     subject_id: null,
     topic_id: null,
@@ -27,6 +28,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   const quiz = ref({ ...initialForm })
   const questions = ref<any[]>([])
   const questionsErrors = ref<Record<string, string[]>>({})
+  const detailsErrors = ref<Record<string, string[]>>({})
+  const settingsErrors = ref<Record<string, string[]>>({})
   const quizId = ref(null)
   const detailsSaved = ref(false)
   const settingsSaved = ref(false)
@@ -69,15 +72,29 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       // convert timer_minutes to timer_seconds to match backend expectations
       const payload: any = {
-        ...quiz.value,
-        timer_seconds: quiz.value.timer_minutes ? (Number(quiz.value.timer_minutes) * 60) : null,
+        topic_id: quiz.value.topic_id,
+        title: quiz.value.title,
+        description: quiz.value.description || null,
+        youtube_url: quiz.value.youtube_url || null,
+        timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
+        per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
+        subject_id: quiz.value.subject_id,
+        grade_id: quiz.value.grade_id,
+        use_per_question_timer: quiz.value.use_per_question_timer,
+        attempts_allowed: quiz.value.attempts_allowed ? Number(quiz.value.attempts_allowed) : null,
+        shuffle_questions: Boolean(quiz.value.shuffle_questions),
+        shuffle_answers: Boolean(quiz.value.shuffle_answers),
+        access: quiz.value.access,
+        visibility: quiz.value.visibility,
       }
-      // remove timer_minutes from payload to avoid confusion
-      delete payload.timer_minutes
+
+      const sanitizedQuestions: any[] = []
 
       // Determine if any questions contain local File objects; if so, send as multipart/form-data
       let hasFiles = false
       for (const q of questions.value) {
+        const sanitized = sanitizeQuestionForPayload(q)
+        sanitizedQuestions.push(sanitized)
         for (const k in q) {
           try {
             // detect File objects that should be uploaded
@@ -106,24 +123,19 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
 
         // append questions as a single JSON string; backend will decode it server-side
         const questionsPayload: any[] = []
-        questions.value.forEach((q: any, idx: number) => {
-          const qp: any = {}
-          Object.keys(q).forEach((k) => {
-            const v = q[k]
-            // skip File objects from JSON representation
-            if (typeof File !== 'undefined' && v instanceof File) return
-            qp[k] = v
-          })
-          questionsPayload.push(qp)
+        sanitizedQuestions.forEach((sanitized: any, idx: number) => {
+          questionsPayload.push(sanitized)
 
-          // append file(s) for this question using question_media[index]
-          Object.keys(q).forEach((k) => {
-            const v: any = q[k]
+          const original = questions.value[idx]
+          if (!original) return
+
+          Object.keys(original).forEach((k) => {
+            const v: any = original[k]
             if (typeof File !== 'undefined' && v instanceof File) {
               // server accepts question_media indexed by question index
               form.append(`question_media[${idx}]`, v)
               // also append under question uid if available (backend supports uid keys)
-              if (q.uid) form.append(`question_media[${q.uid}]`, v)
+              if (original.uid) form.append(`question_media[${original.uid}]`, v)
             }
           })
         })
@@ -146,23 +158,41 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         res = await api.postFormData('/api/quizzes', form)
       } else {
         // debug: log JSON payload
-        try { console.debug('Submitting JSON to /api/quizzes', { ...payload, questions: questions.value }) } catch (e) {}
-        res = await api.postJson('/api/quizzes', { ...payload, questions: questions.value })
+        try { console.debug('Submitting JSON to /api/quizzes', { ...payload, questions: sanitizedQuestions }) } catch (e) {}
+        res = await api.postJson('/api/quizzes', { ...payload, questions: sanitizedQuestions })
       }
       if (api.handleAuthStatus(res)) {
         alert.push({ type: 'warning', message: 'Session expired — please sign in again' })
         return
       }
       const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.message || 'Failed to create quiz.')
+      if (!res.ok) {
+        // handle validation errors (422) specially so UI can show them
+        if (res.status === 422 && data?.errors) {
+          // map server keys to UI-friendly keys (support both raw and prefixed keys used by some components)
+          const mapped: Record<string, string[]> = {}
+          Object.keys(data.errors).forEach((k) => {
+            mapped[k] = data.errors[k]
+            // component expects some underscored keys like _title and _topic in places
+            if (k === 'title') mapped['_title'] = data.errors[k]
+            if (k === 'topic_id' || k === 'topic') mapped['_topic'] = data.errors[k]
+          })
+          detailsErrors.value = mapped
+          alert.push({ type: 'error', message: 'Please fix the highlighted errors.' })
+          return
+        }
+
+        throw new Error(data?.message || 'Failed to create quiz.')
+      }
+
+      // clear any previously stored validation errors
+      detailsErrors.value = {}
 
       quizId.value = data.quiz.id
       detailsSaved.value = true
       // persist progress to localStorage
       persistProgress()
       alert.push({ type: 'success', message: 'Quiz details saved!' })
-      router.replace({ path: `/quiz-master/quizzes/create`, query: { id: quizId.value } })
-      setTab('settings')
     } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: e.message })
@@ -178,24 +208,31 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     isSubmitting.value = true
     try {
-      // convert minutes to seconds for backend
       const payload: any = {
-        timer_seconds: quiz.value.use_per_question_timer ? 0 : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
-        per_question_seconds: quiz.value.use_per_question_timer ? quiz.value.per_question_seconds : 0,
-        use_per_question_timer: quiz.value.use_per_question_timer,
-        attempts_allowed: quiz.value.attempts_allowed,
-        shuffle_questions: quiz.value.shuffle_questions,
-        shuffle_answers: quiz.value.shuffle_answers,
+        timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
+        per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
+        use_per_question_timer: Boolean(quiz.value.use_per_question_timer),
+        attempts_allowed: quiz.value.attempts_allowed ? Number(quiz.value.attempts_allowed) : null,
+        shuffle_questions: Boolean(quiz.value.shuffle_questions),
+        shuffle_answers: Boolean(quiz.value.shuffle_answers),
         access: quiz.value.access,
-        visibility: quiz.value.visibility
+        visibility: quiz.value.visibility,
       }
+
       const res = await api.patchJson(`/api/quizzes/${quizId.value}`, payload)
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        if (res.status === 422 && data?.errors) {
+          settingsErrors.value = data.errors
+          alert.push({ type: 'error', message: 'Please fix the highlighted settings errors.' })
+          return
+        }
+        throw new Error('Failed to save quiz settings')
+      }
 
-      if (!res.ok) throw new Error('Failed to save quiz settings')
-
+      settingsErrors.value = {}
       alert.push({ type: 'success', message: 'Settings saved successfully!' })
-  settingsSaved.value = true
-      setTab('questions')
+      settingsSaved.value = true
     } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: e.message })
@@ -404,6 +441,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     quiz,
     questions,
     questionsErrors,
+    detailsErrors,
+  settingsErrors,
     quizId,
     detailsSaved,
     settingsSaved,

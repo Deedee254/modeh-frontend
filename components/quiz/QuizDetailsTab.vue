@@ -1,7 +1,7 @@
 <template>
-  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+  <div>
     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-      <h2 class="text-lg font-medium mb-6">Quiz Details</h2>
+      <h2 class="text-lg font-medium mb-4">Quiz Details</h2>
 
       <!-- Basic Info Section -->
       <div class="space-y-6 mb-8">
@@ -12,38 +12,62 @@
             type="text"
             id="quiz-title"
             aria-describedby="title-error"
-            :class="[ 'w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', errors._title ? 'border-red-300' : '' ]"
+            :class="[ 'w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', displayTitleError ? 'border-red-300' : '' ]"
           />
-          <p v-if="errors._title" id="title-error" class="mt-1 text-sm text-red-600">{{ errors._title }}</p>
+          <p v-if="displayTitleError" id="title-error" class="mt-1 text-sm text-red-600">{{ displayTitleError }}</p>
         </div>
 
         <!-- Grade & Subject Selection (stacked: subject below grade) -->
         <div class="space-y-4">
           <div>
             <label for="quiz-grade" class="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
-            <select 
-              v-model="selectedGrade"
-              id="quiz-grade"
-              class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="">Select Grade</option>
-              <option v-for="grade in grades" :key="grade.id" :value="grade.id">
-                {{ grade.name }}
-              </option>
-            </select>
+            <ClientOnly>
+              <template #placeholder>
+                <select id="quiz-grade" class="w-full rounded-md border-gray-300 shadow-sm">
+                  <option>Loading…</option>
+                </select>
+              </template>
+              <select 
+                v-model="selectedGrade"
+                id="quiz-grade"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              >
+                <option value="">Select Grade</option>
+                <option v-for="grade in grades" :key="grade.id" :value="grade.id">
+                  {{ grade.name }}
+                </option>
+              </select>
+            </ClientOnly>
           </div>
 
           <div>
             <label id="subject-label" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-            <TaxonomyPicker
-              resource="subjects"
-              :gradeId="selectedGrade || null"
-              :perPage="50"
-              title="Subjects"
-              subtitle="Pick a subject"
-              @selected="onSubjectPicked"
-              aria-labelledby="subject-label"
-            />
+            <ClientOnly>
+              <template #placeholder>
+                <div class="rounded-xl border bg-white p-3">
+                  <div class="p-3">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <h4 class="font-semibold text-sm">Subjects</h4>
+                        <div class="text-xs text-slate-500">Pick a subject</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="p-3">
+                    <div class="h-10 bg-slate-100 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </template>
+              <TaxonomyPicker
+                resource="subjects"
+                :gradeId="selectedGrade || null"
+                :perPage="50"
+                title="Subjects"
+                subtitle="Pick a subject"
+                @selected="onSubjectPicked"
+                aria-labelledby="subject-label"
+              />
+            </ClientOnly>
           </div>
         </div>
 
@@ -51,27 +75,44 @@
         <div class="flex items-end gap-4">
           <div class="flex-1">
             <label id="topic-label" class="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-            <TaxonomyPicker
-              ref="topicsPicker"
-              resource="topics"
-              :subjectId="selectedSubject || null"
-              :perPage="50"
-              title="Topics"
-              subtitle="Pick or create a topic"
-              aria-labelledby="topic-label"
-              aria-describedby="topic-error"
-              @selected="onTopicPicked"
-            >
-              <template #actions>
-                <button
-                  type="button"
-                  @click="openCreateTopic"
-                  :disabled="!selectedSubject"
-                  class="inline-flex items-center justify-center gap-x-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50 disabled:opacity-60"
-                ><span>New Topic</span></button>
+            <ClientOnly>
+              <template #placeholder>
+                <div class="rounded-xl border bg-white p-3">
+                  <div class="p-3">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <h4 class="font-semibold text-sm">Topics</h4>
+                        <div class="text-xs text-slate-500">Pick or create a topic</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="p-3">
+                    <div class="h-10 bg-slate-100 rounded animate-pulse"></div>
+                  </div>
+                </div>
               </template>
-            </TaxonomyPicker>
-            <p v-if="errors._topic" id="topic-error" class="mt-1 text-sm text-red-600">{{ errors._topic }}</p>
+              <TaxonomyPicker
+                ref="topicsPicker"
+                resource="topics"
+                :subjectId="selectedSubject || null"
+                :perPage="50"
+                title="Topics"
+                subtitle="Pick or create a topic"
+                aria-labelledby="topic-label"
+                aria-describedby="topic-error"
+                @selected="onTopicPicked"
+              >
+                <template #actions>
+                  <button
+                    type="button"
+                    @click="openCreateTopic"
+                    :disabled="!selectedSubject"
+                    class="inline-flex items-center justify-center gap-x-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50 disabled:opacity-60"
+                  ><span>New Topic</span></button>
+                </template>
+              </TaxonomyPicker>
+            </ClientOnly>
+            <p v-if="displayTopicError" id="topic-error" class="mt-1 text-sm text-red-600">{{ displayTopicError }}</p>
           </div>
         </div>
 
@@ -85,53 +126,47 @@
             placeholder="Optional: Add a brief description of this quiz"
           ></textarea>
         </div>
-      </div>
-    </div>
-
-    <!-- Selection confirmation -->
-  <div class="mx-auto max-w-4xl mt-4 px-4 sm:px-6">
-      <div class="bg-white rounded-lg p-4 border text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700">
-        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-500">Grade:</span>
-            <span class="font-medium">{{ selectedGradeName || '—' }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-500">Subject:</span>
-            <span class="font-medium">{{ selectedSubjectName || '—' }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-500">Topic:</span>
-            <span class="font-medium">{{ selectedTopicName || '—' }}</span>
-          </div>
+        
+        <div>
+          <label for="quiz-youtube" class="block text-sm font-medium text-gray-700 mb-1">YouTube URL</label>
+          <input
+            v-model="modelValue.youtube_url"
+            id="quiz-youtube"
+            type="url"
+            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder="Optional: link to a YouTube video"
+          />
         </div>
       </div>
     </div>
+
+    <!-- Selection confirmation (render on client to avoid SSR mismatch) -->
+    <ClientOnly>
+      <div class="mt-4">
+        <div class="bg-white rounded-lg p-3 border text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700">
+          <div class="flex flex-wrap gap-4 items-center">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">Grade:</span>
+              <span class="font-medium">{{ selectedGradeName || '—' }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">Subject:</span>
+              <span class="font-medium">{{ selectedSubjectName || '—' }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">Topic:</span>
+              <span class="font-medium">{{ selectedTopicName || '—' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ClientOnly>
 
     <!-- Bottom Actions -->
-        <div class="mt-6 flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
-        <div class="w-full sm:w-auto">
-          <button
-            type="button"
-            @click="saveAndContinue"
-            :disabled="saving"
-            class="inline-flex w-full sm:w-auto items-center justify-center gap-x-1.5 px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50 disabled:opacity-60"
-          >
-            <span v-if="saving" class="animate-pulse mr-2">Saving…</span>
-            Save and Continue
-          </button>
-        </div>
-
-        <div class="w-full sm:w-auto">
-          <button
-            type="button"
-            @click="validate"
-            class="inline-flex w-full sm:w-auto items-center justify-center gap-x-1.5 px-3 py-2 rounded-md text-sm font-medium shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
-          >
-            Continue to Settings
-          </button>
-        </div>
-      </div>
+    <div class="mt-6 flex justify-end gap-3">
+      <UButton size="sm" variant="soft" @click="saveAndContinue" :loading="saving">Save and Continue</UButton>
+      <UButton size="sm" color="primary" @click="validate">Continue to Settings</UButton>
+    </div>
   </div>
 </template>
 
@@ -151,6 +186,26 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'createTopic', 'save', 'next', 'subject-picked', 'topic-picked'])
+
+// local client-side validation state
+const localErrors = ref({ _title: null, _topic: null })
+const displayTitleError = computed(() => props.errors?._title || localErrors.value._title)
+const displayTopicError = computed(() => props.errors?._topic || localErrors.value._topic)
+
+function validateBeforeSave() {
+  let ok = true
+  localErrors.value._title = null
+  localErrors.value._topic = null
+  if (!props.modelValue.title || !props.modelValue.title.trim()) {
+    localErrors.value._title = 'Title is required.'
+    ok = false
+  }
+  if (!props.modelValue.topic_id) {
+    localErrors.value._topic = 'Please pick a topic.'
+    ok = false
+  }
+  return ok
+}
 
 // Internal selection refs initialized from parent modelValue
 const selectedGrade = ref(props.modelValue?.grade_id || '')
@@ -191,7 +246,8 @@ const selectedTopicName = computed(() => {
 // When grade changes, clear subject/topic and notify parent
 watch(selectedGrade, (nv) => {
   selectedSubject.value = ''
-  emit('update:modelValue', { ...props.modelValue, grade_id: nv || null, subject_id: null, topic_id: '' })
+  // clear subject/topic selection and emit null for topic_id (avoid empty string)
+  emit('update:modelValue', { ...props.modelValue, grade_id: nv || null, subject_id: null, topic_id: null })
 })
 
 // Keep internal selected values in sync with parent changes
@@ -238,9 +294,9 @@ function validate() {
   return true
 }
 
-async function saveAndContinue() {
-  await emit('save')
-  // The parent component should validate before moving to the next step.
-  emit('next')
+function saveAndContinue() {
+  // client-side validate before emitting save to avoid server 422
+  if (!validateBeforeSave()) return
+  emit('save')
 }
 </script>
