@@ -42,12 +42,12 @@
         <legend class="block text-sm font-medium mb-2">Subjects</legend>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-lg p-4">
           <UCheckbox
-            v-for="subject in subjects"
-            :key="subject?.id"
-            v-if="subject && subject.id"
-            :value="subject.id"
+            v-for="s in subjects"
+            :key="s?.id"
+            v-if="s && s.id"
+            :value="s.id"
             v-model="form.subjects"
-            :label="subject.name || 'Unknown Subject'"
+            :label="s.name || 'Unknown Subject'"
             class="p-2 hover:bg-gray-50 rounded"
           />
         </div>
@@ -80,9 +80,9 @@
         </div>
       </template>
 
-      <div class="flex items-center justify-end gap-2">
-        <UButton type="button" color="white" variant="soft" @click="reset">Reset</UButton>
-        <UButton type="submit">Save profile</UButton>
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-2">
+        <UButton type="button" color="white" variant="soft" @click="reset" class="w-full sm:w-auto">Reset</UButton>
+        <UButton type="submit" class="w-full sm:w-auto">Save profile</UButton>
       </div>
     </form>
   </div>
@@ -96,6 +96,7 @@ import { useUserRole } from '~/composables/useUserRole'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import { useAccountApi } from '~/composables/useAccountApi'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 const { patchMe } = useAccountApi()
 const auth = useAuthStore()
@@ -109,6 +110,7 @@ const avatarInput = ref(null)
 // Data lists
 const grades = ref([])
 const subjects = ref([])
+const { fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects } = useTaxonomy()
 
 /**
  * Creates a clean form state object from the user data.
@@ -138,25 +140,14 @@ let avatarFile = null
  */
 async function fetchGradesAndSubjects() {
   try {
-    const [gradesRes, subjectsRes] = await Promise.all([
-      api.get('/api/grades'),
-      api.get('/api/subjects')
-    ]);
-
-    const processResponse = (res, key) => {
-      if (!res?.ok) return [];
-      const list = res.json?.()[key] || res.json?.().data || [];
-      return Array.isArray(list) ? list.filter(item => item && typeof item === 'object' && item.id) : [];
-    };
-
-    grades.value = processResponse(await gradesRes, 'grades');
-    subjects.value = processResponse(await subjectsRes, 'subjects');
-
+    await Promise.all([fetchGrades(), fetchAllSubjects()])
+    grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
+    subjects.value = Array.isArray(taxSubjects.value) ? taxSubjects.value : []
   } catch (err) {
-    console.error('Failed to fetch form data:', err);
-    alert.push({ type: 'error', message: 'Failed to load form options.' });
-    grades.value = [];
-    subjects.value = [];
+    console.error('Failed to fetch form data:', err)
+    alert.push({ type: 'error', message: 'Failed to load form options.' })
+    grades.value = []
+    subjects.value = []
   }
 }
 
@@ -192,7 +183,8 @@ async function save() {
 
     const data = new FormData()
     data.append('name', form.value.display_name)
-    institution: user.institution || '',
+  // include institution if present on user
+  if (user?.institution) data.append('institution', user.institution)
     data.append('grade_id', form.value.grade_id)
     data.append('subjects', JSON.stringify(form.value.subjects))
 
@@ -210,7 +202,12 @@ async function save() {
     }
 
     const json = await patchMe(data)
-    auth.setUser(json)
+    // patchMe may return the updated user object or a success payload; normalize if needed
+    if (json && json.id) {
+      auth.setUser(json)
+    } else if (json && json.user) {
+      auth.setUser(json.user)
+    }
     alert.push({ type: 'success', message: 'Profile updated', icon: 'heroicons:check' })
   } catch (e) {
     alert.push({ type: 'error', message: 'Failed to save profile', icon: 'heroicons:x-mark' })

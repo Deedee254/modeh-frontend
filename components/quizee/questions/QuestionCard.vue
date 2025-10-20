@@ -1,0 +1,66 @@
+<template>
+  <div class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+    <div :class="layoutClass">
+      <div v-if="hasMedia" class="media-col mb-4 sm:mb-0 sm:mr-6">
+        <slot name="media">
+          <img v-if="isImage" :src="mediaSrc" class="w-full h-auto rounded-lg object-cover" />
+          <audio v-else-if="isAudio" controls class="w-full rounded-lg"><source :src="mediaSrc" /></audio>
+          <div v-else-if="isEmbed" class="aspect-video rounded-lg overflow-hidden"><iframe :src="embedUrl" class="w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>
+          <a v-else-if="mediaSrc" :href="mediaSrc" target="_blank" rel="noopener" class="text-indigo-600 underline">Open media</a>
+        </slot>
+      </div>
+
+      <div class="content-col">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4" v-html="question?.body"></h3>
+        <component :is="componentName" :question="question" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import McqCard from './McqCard.vue'
+import MultiCard from './MultiCard.vue'
+import ShortAnswerCard from './ShortAnswerCard.vue'
+import NumericCard from './NumericCard.vue'
+import FillBlankCard from './FillBlankCard.vue'
+import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
+
+const props = defineProps({ question: { type: Object, required: true }, modelValue: null })
+const emit = defineEmits(['update:modelValue','select'])
+
+const quizMedia = useQuizMedia()
+
+const hasMedia = computed(() => !!(props.question && (props.question.media_path || props.question.media || props.question.youtube_url || props.question.youtube)))
+const mediaSrc = computed(() => props.question?.media_path || props.question?.media || props.question?.youtube_url || props.question?.youtube || null)
+const isImageLocal = computed(() => quizMedia.isImage(mediaSrc.value))
+const isAudioLocal = computed(() => quizMedia.isAudio(mediaSrc.value))
+const isEmbed = computed(() => !!(props.question?.youtube_url || props.question?.youtube))
+const embedUrl = computed(() => props.question?.youtube_url || props.question?.youtube)
+
+const layoutClass = computed(() => hasMedia.value ? 'sm:flex sm:items-start sm:space-x-6' : '')
+const componentName = computed(() => {
+  const t = (props.question?.type || 'mcq').toString()
+  if (['mcq','image_mcq','audio_mcq','video_mcq'].includes(t)) return McqCard
+  if (t === 'multi') return MultiCard
+  if (t === 'short') return ShortAnswerCard
+  if (t === 'numeric') return NumericCard
+  if (t === 'fill_blank') return FillBlankCard
+  // fallback to McqCard for other simple types for now
+  return McqCard
+})
+
+// expose local computed to template
+const isImage = isImageLocal
+const isAudio = isAudioLocal
+
+</script>
+
+<style scoped>
+.media-col { width: 240px; flex: 0 0 240px }
+.content-col { flex: 1 }
+@media (max-width: 640px) {
+  .media-col { width: 100%; flex: none }
+}
+</style>

@@ -227,11 +227,22 @@ async function initiatePayment(type, details) {
       res = await api.postJson('/api/one-off-purchases', payload)
     }
 
-    if (api.handleAuthStatus(res)) { checkout.setError('Session expired — please sign in again'); return }
+    // `api.postJson` now returns parsed JSON (or a structured error), not a Response
+    if (!res) {
+      throw new Error('Failed to initiate payment.')
+    }
 
-    const body = await res.json().catch(() => null)
-    if (res?.ok && (body?.tx || body?.purchase?.gateway_meta?.tx)) {
-      checkout.setTx(body.tx || body.purchase.gateway_meta.tx)
+    // If backend returned a structured limit error, navigate user to subscription flow
+    if (res.code === 'limit_reached') {
+      const qs = new URLSearchParams({ reason: 'limit', type: res.limit?.type || 'unknown', value: String(res.limit?.value || '') })
+      router.push('/quizee/subscription?' + qs.toString())
+      return
+    }
+
+    const body = res
+    const tx = body?.tx || body?.purchase?.gateway_meta?.tx
+    if (tx) {
+      checkout.setTx(tx)
       showAwaitingModal.value = true
     } else {
       throw new Error(body?.message || 'Failed to initiate payment.')
@@ -263,7 +274,6 @@ async function openAnswerReview() {
   let retries = 3;
   while (retries > 0) {
     try {
-      // Use the review-specific endpoint with api composable
       const res = await api.get(`/api/quiz-attempts/${attemptId}/review`, {
         headers: {
           'Cache-Control': 'no-cache',
@@ -280,6 +290,14 @@ async function openAnswerReview() {
             break;
           }
         }
+      } else if (res?.status === 404) {
+        // Review endpoint doesn't exist for this attempt — don't retry
+        reviewError.value = 'Review not available for this attempt.';
+        break;
+      } else if (res && res.status >= 400 && res.status < 500) {
+        // Other client errors are likely non-retryable (e.g., unauthorized, forbidden)
+        reviewError.value = 'Unable to fetch review: ' + (res.statusText || 'Client error');
+        break;
       }
       
       // If we got a response but no details, show specific error

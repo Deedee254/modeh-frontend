@@ -97,7 +97,7 @@
 
           <div class="mt-6 border-t pt-6">
             <ul class="space-y-3 text-sm text-slate-700">
-              <li v-for="(feat, idx) in (pkg.features || [])" :key="idx" class="flex items-start gap-3">
+              <li v-for="(feat, idx) in (pkg.features?.display || pkg.features || [])" :key="idx" class="flex items-start gap-3">
                 <svg class="w-5 h-5 text-green-500 mt-1 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l7.879-7.879a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                 <span>{{ feat }}</span>
               </li>
@@ -117,6 +117,11 @@
 
           <div v-if="pkg.popular" class="absolute top-4 right-4 z-20">
             <span class="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Popular</span>
+          </div>
+          <div v-if="pkg.features?.limits" class="mt-4 text-sm text-slate-600">
+            <strong>Limits:</strong>
+            <div>Quiz results: {{ pkg.features.limits.quiz_results === null ? 'Unlimited' : pkg.features.limits.quiz_results }} / day</div>
+            <div>Battle results: {{ pkg.features.limits.battle_results === null ? 'Unlimited' : pkg.features.limits.battle_results }} / day</div>
           </div>
         </div>
         </div>

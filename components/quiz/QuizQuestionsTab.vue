@@ -1,20 +1,28 @@
 <template>
-  <div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between mb-6">
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
         <h2 class="text-lg font-medium">Questions</h2>
-        <div class="flex items-center space-x-3">
-          <UButton 
-            size="sm"
-            color="white"
-            @click="$emit('openBank')"
-          >Question Bank</UButton>
-          
-          <UButton
-            size="sm"
-            color="primary"
-            @click="addQuestion"
-          >Add Question</UButton>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 w-full sm:w-auto">
+          <div class="w-full sm:w-auto">
+            <button
+              type="button"
+              @click="$emit('openBank')"
+              class="inline-flex w-full sm:w-auto items-center justify-center gap-x-1.5 px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50"
+            >
+              Question Bank
+            </button>
+          </div>
+
+          <div class="w-full sm:w-auto mt-2 sm:mt-0">
+            <button
+              type="button"
+              @click="addQuestion"
+              class="inline-flex w-full sm:w-auto items-center justify-center gap-x-1.5 px-3 py-2 rounded-md text-sm font-medium shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              Add Question
+            </button>
+          </div>
         </div>
       </div>
 
@@ -27,11 +35,11 @@
         >
           <div
             v-for="(q, idx) in modelValue"
-            :key="q.uid"
-            class="group bg-gray-50 rounded-lg p-4 sm:p-6 border border-transparent hover:border-gray-300 transition-colors duration-200"
+            :key="q.uid || q.id || idx"
+            class="group bg-gray-50 rounded-lg p-3 sm:p-6 border border-transparent hover:border-gray-300 transition-colors duration-200"
           >
             <!-- Question Header -->
-            <div class="flex items-start justify-between mb-4">
+            <div class="flex items-start justify-between mb-3">
               <div class="flex items-center space-x-3">
                 <span class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 font-medium">
                   {{ idx + 1 }}
@@ -69,10 +77,49 @@
                   <span class="sr-only">Delete</span>
                   <i class="fas fa-trash"></i>
                 </UButton>
+                  <button
+                    type="button"
+                    @click="duplicateQuestion(idx)"
+                    title="Duplicate"
+                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <span class="sr-only">Duplicate</span>
+                    <i class="fas fa-copy"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="removeQuestion(idx)"
+                    title="Delete"
+                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <span class="sr-only">Delete</span>
+                    <i class="fas fa-trash"></i>
+                  </button>
+                  <button
+                    type="button"
+                    @click="duplicateQuestion(idx)"
+                    title="Duplicate"
+                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <span class="sr-only">Duplicate</span>
+                    <i class="fas fa-copy"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="removeQuestion(idx)"
+                    title="Delete"
+                    class="inline-flex items-center justify-center px-2 py-1 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <span class="sr-only">Delete</span>
+                    <i class="fas fa-trash"></i>
+                  </button>
 
                 <button
                   class="p-1 text-gray-400 hover:text-gray-600"
                   @click="q.open = !q.open"
+                  :aria-label="q.open ? 'Collapse question' : 'Expand question'"
                 >
                   <i :class="['fas', q.open ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                 </button>
@@ -116,9 +163,9 @@
     </div>
 
     <!-- Question Summary -->
-    <div class="mt-6 bg-white rounded-lg shadow-sm p-6">
-      <h3 class="text-base font-medium mb-4">Quiz Summary</h3>
-      <div class="grid sm:grid-cols-3 gap-4">
+    <div class="mt-6 bg-white rounded-lg shadow-sm p-4 sm:p-6">
+      <h3 class="text-base font-medium mb-3">Quiz Summary</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div>
           <div class="text-sm text-gray-500">Total Questions</div>
           <div class="text-2xl font-medium">{{ modelValue.length }}</div>
@@ -139,26 +186,57 @@
     </div>
 
     <!-- Bottom Actions -->
-    <div class="mt-6 flex justify-between">
-      <UButton
-        color="white"
-        @click="$emit('prev')"
-      >Back to Settings</UButton>
-
-      <div class="space-x-4">
-        <UButton 
-          color="white"
-          @click="$emit('save')"
-          :loading="saving"
-        >Save Draft</UButton>
-        
+    <div class="mt-6 flex flex-col sm:flex-row justify-between gap-3 sm:gap-4">
+      <div class="w-full sm:w-auto">
         <UButton
-          color="primary"
-          @click="$emit('publish')"
-          :loading="publishing"
-          :disabled="!canPublish"
-        >Publish Quiz</UButton>
+          color="white"
+          @click="$emit('prev')"
+        >Back to Settings</UButton>
       </div>
+
+      <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
+        <div class="flex-1 sm:flex-none">
+          <UButton 
+            color="white"
+            @click="$emit('save')"
+            :loading="saving"
+          >Save Draft</UButton>
+        </div>
+        
+        <div class="flex-1 sm:flex-none">
+          <UButton
+            color="primary"
+            @click="$emit('publish')"
+            :loading="publishing"
+            :disabled="!canPublish"
+          >Publish Quiz</UButton>
+        </div>
+          <div class="w-full sm:w-auto">
+            <button type="button" @click="$emit('prev')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Back to Settings</button>
+          </div>
+
+          <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
+            <div class="flex-1 sm:flex-none">
+              <button type="button" @click="$emit('save')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Save Draft</button>
+            </div>
+      </div>
+            <div class="flex-1 sm:flex-none">
+              <button type="button" @click="$emit('publish')" :disabled="!canPublish" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">Publish Quiz</button>
+            </div>
+          </div>
+        <div class="w-full sm:w-auto">
+          <button type="button" @click="$emit('prev')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Back to Settings</button>
+        </div>
+
+        <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
+          <div class="flex-1 sm:flex-none">
+            <button type="button" @click="$emit('save')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Save Draft</button>
+          </div>
+
+          <div class="flex-1 sm:flex-none">
+            <button type="button" @click="$emit('publish')" :disabled="!canPublish" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">Publish Quiz</button>
+          </div>
+        </div>
     </div>
   </div>
 </template>

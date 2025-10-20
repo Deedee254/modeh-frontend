@@ -26,13 +26,21 @@
         </div>
 
         <ul class="mt-6 space-y-4 flex-1">
-          <li v-for="feature in plan.features" :key="feature" class="flex items-start">
+          <li v-for="feature in (plan.features?.display || plan.features || [])" :key="feature" class="flex items-start">
             <svg class="flex-shrink-0 h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
             <span class="ml-3 text-sm text-gray-500">{{ feature }}</span>
           </li>
         </ul>
+
+        <div v-if="plan.features?.limits" class="mt-4 text-sm text-gray-600">
+          <h4 class="font-medium text-gray-900">Plan limits</h4>
+          <ul class="mt-2 space-y-1">
+            <li v-if="plan.features.limits.quiz_results">Quiz results: {{ plan.features.limits.quiz_results === null ? 'Unlimited' : plan.features.limits.quiz_results }} per day</li>
+            <li v-if="plan.features.limits.battle_results">Battle results: {{ plan.features.limits.battle_results === null ? 'Unlimited' : plan.features.limits.battle_results }} per day</li>
+          </ul>
+        </div>
 
         <div class="mt-8">
           <button v-if="plan.id === currentPlan?.id"

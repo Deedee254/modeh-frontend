@@ -127,7 +127,8 @@ async function fetchGradeMeta() {
 async function fetchSubjects() {
   try {
     const res = await $fetch(`${config.public.apiBase}/api/subjects`, { params: { grade: gradeId } })
-    subjects.value = (res && res.subjects && Array.isArray(res.subjects.data)) ? res.subjects.data : (Array.isArray(res?.subjects) ? res.subjects : (Array.isArray(res) ? res : []))
+  const raw = (res && res.subjects && Array.isArray(res.subjects.data)) ? res.subjects.data : (Array.isArray(res?.subjects) ? res.subjects : (Array.isArray(res) ? res : []))
+  subjects.value = Array.isArray(raw) ? raw.filter(Boolean) : []
   } catch (e) {
     throw e
   }

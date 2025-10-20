@@ -19,18 +19,34 @@
 
             <!-- Accessible announcements -->
             <div class="sr-only" aria-live="polite">{{ lastAnnouncement }}</div>
-            <div class="flex items-center gap-3" v-if="quiz.questions.length > 0">
-              <div class="text-sm px-3 py-1 rounded-full" :class="[
-                quiz.timer_seconds && timeLeft.value < 60 
-                  ? 'bg-red-100 text-red-700' 
-                  : quiz.timer_seconds 
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'bg-gray-100 text-gray-700'
-              ]">
-                <span class="font-mono font-semibold">{{ displayTime }}</span>
+            <div class="flex items-center gap-4" v-if="quiz.questions.length > 0">
+              <!-- Quiz Timer -->
+              <div class="flex flex-col items-end">
+                <div v-if="quiz.timer_seconds" class="text-sm text-gray-500">Total Time</div>
+                <div class="text-lg font-mono font-bold" :class="{
+                  'text-red-500': timeLeft.value < 60,
+                  'text-orange-500': timeLeft.value < 180,
+                  'text-indigo-600': timeLeft.value >= 180 || !quiz.timer_seconds
+                }">
+                  {{ displayTime }}
+                </div>
               </div>
 
+              <!-- Question Timer -->
+              <div v-if="quiz.use_per_question_timer || quiz.per_question_seconds" class="flex flex-col items-end border-l pl-4">
+                <div class="text-sm text-gray-500">Question Time</div>
+                <div class="text-lg font-mono font-bold" :class="qTimerColorClass">
+                  {{ qDisplayTime }}
+                </div>
+              </div>
 
+              <!-- Time per Remaining -->
+              <div v-else-if="quiz.timer_seconds" class="flex flex-col items-end border-l pl-4">
+                <div class="text-sm text-gray-500">Per Question</div>
+                <div class="text-sm font-mono font-medium text-gray-600">
+                  ~{{ formatTime(Math.floor(timeLeft.value / (quiz.questions.length - currentQuestion))) }}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -62,8 +78,9 @@
         <div v-else-if="quiz.questions.length > 0" class="p-4 md:p-6">
           <div class="max-w-4xl mx-auto">
             <!-- Question Card -->
-            <div class="bg-white rounded-lg shadow-sm border mb-6">
-              <div class="p-6">
+            <transition name="fade-slide" mode="out-in">
+              <div :key="currentQuestion" class="bg-white rounded-lg shadow-sm border mb-6">
+                <div class="p-6">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <!-- Media Section -->
                   <div v-if="currentQuestionData.media" class="lg:col-span-1">
@@ -76,7 +93,8 @@
                     <div class="font-semibold text-lg text-gray-900 mb-4">Question {{ currentQuestion + 1 }}</div>
                     <div class="text-gray-800 mb-4" v-html="currentQuestionData.body || currentQuestionData.text || currentQuestionData.question"></div>
                     <div class="space-y-3">
-                      <!-- Media Section -->
+                      <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" />
+                      <!-- Media Section (legacy media_path fallback) -->
                       <div v-if="currentQuestionData.media_path" class="mb-6">
                         <!-- Image -->
                         <div v-if="isImage(currentQuestionData.media_path)" class="rounded-lg overflow-hidden bg-gray-100">
@@ -103,38 +121,7 @@
                         </div>
                       </div>
 
-                      <!-- Multiple Choice Questions (MCQ, Image MCQ, Audio MCQ, Video MCQ) -->
-                      <template v-if="['mcq', 'image_mcq', 'audio_mcq', 'video_mcq'].includes(currentQuestionData.type)">
-                        <div v-for="(opt, i) in currentQuestionData.options" :key="i" class="flex items-center gap-3 p-3 bg-gray-50 border rounded-lg hover:bg-white cursor-pointer transition-colors" @click="selectMcq(currentQuestionData.id, opt)">
-                          <input type="radio" :name="'q-'+currentQuestionData.id" :value="opt" v-model="answers[currentQuestionData.id]" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" />
-                          <span class="text-gray-700" v-html="opt?.body || opt?.text || opt"></span>
-                        </div>
-                      </template>
-
-                      <!-- Multiple Select -->
-                      <template v-if="currentQuestionData.type === 'multi'">
-                        <div v-for="(opt, i) in currentQuestionData.options" :key="i" class="flex items-center gap-3 p-3 bg-gray-50 border rounded-lg hover:bg-white cursor-pointer transition-colors" @click="toggleMulti(currentQuestionData.id, opt)">
-                          <input type="checkbox" :value="opt" @change="() => toggleMulti(currentQuestionData.id, opt)" :checked="(answers[currentQuestionData.id] || []).includes(opt)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" />
-                          <span class="text-gray-700" v-html="opt?.body || opt?.text || opt"></span>
-                        </div>
-                      </template>
-
-                      <!-- Fill in the Blanks -->
-                      <template v-if="currentQuestionData.type === 'fill_blank'">
-                        <div class="space-y-4">
-                          <div class="prose max-w-none" v-html="formatFillBlanks(currentQuestionData.body, currentQuestionData.id)"></div>
-                        </div>
-                      </template>
-
-                      <!-- Short Answer -->
-                      <template v-if="currentQuestionData.type === 'short'">
-                        <UTextarea v-model="currentShortAnswer" placeholder="Type your answer here..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none" :rows="3" />
-                      </template>
-
-                      <!-- Numeric -->
-                      <template v-if="currentQuestionData.type === 'numeric'">
-                        <input type="number" v-model.number="answers[currentQuestionData.id]" placeholder="Enter a number..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
-                      </template>
+                      <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" />
                     </div>
                     <div class="text-xs text-gray-500 mt-3 flex items-center gap-1">
                       <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
@@ -143,7 +130,8 @@
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            </transition>
 
             <!-- Navigation -->
             <div class="fixed bottom-0 left-0 right-0 md:relative bg-white/80 backdrop-blur-sm md:bg-transparent border-t md:border-0 p-4 md:p-0">
@@ -216,6 +204,8 @@ import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
 import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
 import { useQuizNavigation } from '~/composables/quiz/useQuizNavigation'
 import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
+import useQuestionTimer from '~/composables/useQuestionTimer'
+import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -258,12 +248,82 @@ const progressPercent = computed(() => {
 
 // --- Composables ---
 const { isImage, isAudio, isYouTube, getAudioType, formatYouTubeUrl } = useQuizMedia()
+// Timer composable tracks overall quiz timer. We'll also track per-question times locally here.
 const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, startTimer, stopTimer } = useQuizTimer(quiz, () => submitAnswers())
-const { answers, initializeAnswers, selectMcq, toggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
-const { currentQuestion, nextQuestion, previousQuestion } = useQuizNavigation(computed(() => quiz.value.questions))
+// per-question timer composable
+const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
+const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
+
+// Wrapped answer handlers to capture timing
+function selectMcq(qid, opt) {
+  rawSelectMcq(qid, opt)
+  // record time for this question when answered
+  recordQuestionTime(qid)
+  // automatically advance after a short delay for single-choice
+  setTimeout(() => { if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion() }, 250)
+}
+
+function toggleMulti(qid, opt) {
+  rawToggleMulti(qid, opt)
+  // record time for this question; don't auto-advance
+  recordQuestionTime(qid)
+}
+const { currentQuestion, nextQuestion: navNextQuestion, previousQuestion: navPreviousQuestion } = useQuizNavigation(computed(() => quiz.value.questions))
+
+// Wrap navigation to record question time and manage per-question timers
+function nextQuestion() {
+  // record time for current
+  const qid = currentQuestionData.value.id
+  if (qid) recordQuestionTime(qid)
+  navNextQuestion()
+  // restart per-question timer for new question
+  startQuestionTimer(timePerQuestion.value)
+  schedulePerQuestionLimit(currentQuestionLimit(), () => {
+    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+    else submitAnswers()
+  })
+}
+
+function previousQuestion() {
+  const qid = currentQuestionData.value.id
+  if (qid) recordQuestionTime(qid)
+  navPreviousQuestion()
+  startQuestionTimer(timePerQuestion.value)
+  schedulePerQuestionLimit(currentQuestionLimit(), () => {
+    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+    else submitAnswers()
+  })
+}
 const { currentStreak, achievements, encouragementMessage, encouragementStyle, calculateAchievements, resetAchievements } = useQuizEnhancements(quiz, progressPercent, currentQuestion, answers)
 
 const currentQuestionData = computed(() => quiz.value.questions[currentQuestion.value] || {})
+
+// Per-question timing (uses composable)
+const questionTimes = ref({})
+
+function recordQuestionTime(qid) {
+  // record elapsed time from composable and reset the per-question timer
+  const elapsed = recordAndReset()
+  questionTimes.value[qid] = elapsed
+}
+
+// Respect per-question time limits if present (question.time_limit_seconds or quiz.per_question_seconds)
+function currentQuestionLimit() {
+  const q = currentQuestionData.value
+  // Prefer an explicit per-question limit on the question, then the quiz's per-question setting.
+  // If the quiz uses a quiz-level timer instead (timer_seconds), compute an approximate per-question
+  // limit by dividing total quiz timer by number of questions so each question gets an equal share.
+  if (q?.time_limit_seconds) return q.time_limit_seconds
+  if (quiz.value?.per_question_seconds) return quiz.value.per_question_seconds
+  // If quiz is not using per-question timer but has a timer_seconds, spread it across questions
+  if (!quiz.value?.use_per_question_timer && quiz.value?.timer_seconds && quizQuestionsLength.value) {
+    const per = Math.floor(quiz.value.timer_seconds / quizQuestionsLength.value)
+    return per > 0 ? per : null
+  }
+  return null
+}
+
+// schedulePerQuestionLimit and clearPerQuestionLimit are provided by the composable
 // For short-answer questions, expose a computed value with getter/setter so v-model doesn't bind to a read-only expression
 const currentShortAnswer = computed({
   get() {
@@ -281,24 +341,22 @@ const currentShortAnswer = computed({
 
 // --- Methods ---
 
-function formatFillBlanks(text, qid) {
-  if (!text) return ''
-  const blankRegex = /\[blank\]|_{2,}/g
-  let index = 0
-  
-  return text.replace(blankRegex, () => {
-    const inputId = `blank-${qid}-${index}`
-    const value = (answers.value[qid] || [])[index] || ''
-    index++
-    
-    // The input now calls the method from the composable
-    return `<input type="text" 
-      id="${inputId}" 
-      value="${value}"
-      oninput="this.dispatchEvent(new CustomEvent('updateblank', { bubbles: true, detail: { qid: '${qid}', index: ${index-1}, value: this.value } }))"
-      class="mx-1 px-2 py-1 border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 min-w-[100px] bg-transparent" 
-    />`
-  })
+// Timer formatting helper
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function onQuestionSelect(val) {
+  const q = currentQuestionData.value
+  if (!q || !q.id) return
+  answers.value[q.id] = val
+  // record per-question time
+  recordQuestionTime(q.id)
+  if (['mcq', 'image_mcq', 'audio_mcq', 'video_mcq'].includes(q.type)) {
+    setTimeout(() => { if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion() }, 250)
+  }
 }
 
 onMounted(async () => {
@@ -309,15 +367,15 @@ onMounted(async () => {
       const body = await res.json()
       quiz.value = body.quiz || body
       initializeAnswers()
-      startTimer()
+  // Record client-side started_at timestamp. If you prefer server-trusted starts,
+  // re-enable the POST /api/quizzes/{id}/start call and store returned attempt id.
+  quiz.value._started_at_ms = Date.now()
+  startTimer()
+  // start per-question timer and question timer
+  startQuestionTimer()
+  schedulePerQuestionLimit()
 
-      // Add event listener for fill-in-the-blanks custom event
-      if (process.client) {
-        document.addEventListener('updateblank', (e) => {
-          const { qid, index, value } = e.detail
-          updateBlank(qid, index, value)
-        })
-      }
+      // fill-blank handling is handled by the FillBlankCard component via v-model/select
 
     } else {
       // Handle quiz not found or other errors
@@ -339,7 +397,36 @@ async function submitAnswers() {
   submissionMessage.value = 'Saving answers...'
   try {
     const cfg = useRuntimeConfig()
-  const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid] })), defer_marking: true }
+  // finalize timing
+  recordQuestionTime(currentQuestionData.value.id)
+  // clear per-question limit timer from composable
+  clearPerQuestionLimit()
+  stopTimer()
+  const totalTime = Math.floor((Date.now() - (quiz.value._started_at_ms || Date.now())) / 1000)
+
+  // Normalize answer values before sending to backend
+  function normalizeAnswer(answer) {
+    if (!answer) return answer;
+    if (Array.isArray(answer)) {
+      return answer.map(a => normalizeAnswer(a));
+    }
+    if (typeof answer === 'object') {
+      return answer.body || answer.text || answer.toString();
+    }
+    return answer;
+  }
+
+  const payload = {
+    answers: Object.keys(answers.value).map(qid => ({ 
+      question_id: parseInt(qid, 10) || 0, 
+      selected: normalizeAnswer(answers.value[qid])
+    })),
+    defer_marking: true,
+    question_times: questionTimes.value,
+    total_time_seconds: totalTime,
+    started_at: quiz.value._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : (quiz.value.started_at || null),
+    attempt_id: quiz.value._attempt_id || null,
+  }
 
     const res = await api.postJson(`/api/quizzes/${id}/submit`, payload)
     if (api.handleAuthStatus(res)) { pushAlert({ message: 'Session expired — please sign in again', type: 'warning' }); lastSubmitFailed.value = true; submissionMessage.value = ''; submitting.value = false; showConfirm.value = false; return }
@@ -352,6 +439,12 @@ async function submitAnswers() {
 
       // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
       const attemptId = body?.attempt_id ?? body?.attempt?.id
+      // If backend included awarded achievements or updated user, update auth store to reflect new badges/points
+      try {
+        const auth = useAuthStore()
+        if (body?.user) auth.setUser(body.user)
+        else if (body?.awarded_achievements && body.awarded_achievements.length) await auth.fetchUser()
+      } catch (e) {}
       if (attemptId) {
         router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptId}`)
         return
@@ -400,4 +493,18 @@ function retakeQuiz() {
 
 
 <style scoped>
+</style>
+
+<style scoped>
+.fade-slide-enter-active, .fade-slide-leave-active {
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+.fade-slide-enter-from, .fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.995);
+}
+.fade-slide-enter-to, .fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
 </style>

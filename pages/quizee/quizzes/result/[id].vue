@@ -27,6 +27,15 @@
           <p class="text-sm text-slate-500 dark:text-slate-400">Here's how you performed. Great job!</p>
         </div>
 
+        <!-- Time summary -->
+        <div class="flex items-center justify-center gap-4">
+          <div class="text-sm text-slate-600">Total time:</div>
+          <div class="font-medium">{{ attempt.total_time_seconds ? formatTime(attempt.total_time_seconds) : '-' }}</div>
+          <div class="text-sm text-slate-400">•</div>
+          <div class="text-sm text-slate-600">Avg per question:</div>
+          <div class="font-medium">{{ attempt.per_question_time ? formatTime(Math.round((Array.isArray(attempt.per_question_time) ? attempt.per_question_time.reduce((a,b)=>a+b,0) : Object.values(attempt.per_question_time || {}).reduce((a,b)=>a+b,0)) / (Array.isArray(attempt.per_question_time) ? attempt.per_question_time.length : Object.keys(attempt.per_question_time || {}).length || 1))) : '-' }}</div>
+        </div>
+
         <!-- Score & Rank Summary -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-center flex flex-col justify-center">
@@ -54,8 +63,8 @@
             <span>New Badges Earned ✨</span>
             <NuxtLink to="/quizee/badges" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">View all</NuxtLink>
           </h3>
-          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div v-for="b in badges" :key="b.id" class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg flex items-center gap-4 transform transition-transform hover:-translate-y-1">
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div v-for="b in badges" :key="b.id" class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg flex items-center gap-3 transform transition-transform hover:-translate-y-1">
               <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-300 text-2xl font-bold">
                 {{ (b.title || '').charAt(0) }}
               </div>
@@ -79,6 +88,7 @@
                 <div class="flex-1">
                   <div class="font-medium text-slate-800 dark:text-slate-200" v-html="d.body"></div>
                   <div class="text-sm text-slate-600 dark:text-slate-400 mt-2">Your answer: <span class="font-semibold text-slate-700 dark:text-slate-300" v-html="formatProvided(d.provided)"></span></div>
+            <div v-if="attempt.per_question_time" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Time taken: <span class="font-medium">{{ formatTime(getPerQuestionTime(d.question_id)) }}</span></div>
                   <div v-if="!d.correct" class="text-sm text-emerald-700 dark:text-emerald-400">Correct answer: <span class="font-semibold" v-html="formatProvided(d.correct_answers)"></span></div>
                   <div v-if="d.explanation" class="text-sm text-slate-500 dark:text-slate-400 mt-2 p-2 bg-slate-100 dark:bg-slate-700/50 rounded"><strong>Explanation:</strong> {{ d.explanation }}</div>
                 </div>
@@ -113,6 +123,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
+import { useAnswerStore } from '~/stores/answerStore'
 
 // ensure this page uses the quizee layout
 definePageMeta({ layout: 'quizee' })
@@ -128,27 +139,71 @@ const loading = ref(true)
 const error = ref('')
 const quizId = ref(null)
 
+const answerStore = useAnswerStore()
+
 async function fetchResults() {
   loading.value = true
   error.value = ''
+
+  // Check if we have cached results first
+  if (answerStore.hasAttemptForReview(attemptId)) {
+    const cached = answerStore.getAttemptForReview(attemptId)
+    if (cached?.attempt) {
+      attempt.value = cached.attempt
+      badges.value = cached.badges ?? []
+      points.value = cached.points ?? 0
+      rank.value = cached.rank ?? null
+      totalParticipants.value = cached.total_participants ?? null
+      quizId.value = cached.quiz_id ?? null
+    }
+
+    // polished confetti animation
+    if (process.client) {
+      triggerConfetti()
+    }
+    loading.value = false
+    return
+  }
+
   try {
     const cfg = useRuntimeConfig()
-    const res = await $fetch(cfg.public.apiBase + `/api/quiz-attempts/${attemptId}`, { credentials: 'include' })
-
-    if (res.ok) {
-      attempt.value = res.attempt
+    // Use $fetch and handle potential 404/missing attempt gracefully
+    try {
+      const res = await $fetch(cfg.public.apiBase + `/api/quiz-attempts/${attemptId}`, { credentials: 'include' })
+      // $fetch may return the parsed JSON directly
+      attempt.value = res.attempt || res
       badges.value = res.badges || []
       points.value = res.points || 0
       rank.value = res.rank || null
       totalParticipants.value = res.total_participants || null
-      quizId.value = res.attempt.quiz_id || null
+      quizId.value = (res.attempt && res.attempt.quiz_id) || res.quiz_id || null
+
+      // Cache the results for future use
+      answerStore.storeAttemptForReview(attemptId, {
+        attempt: res.attempt || res,
+        badges: res.badges,
+        points: res.points,
+        points_earned: res.points ?? res.points_earned,
+        rank: res.rank,
+        total_participants: res.total_participants,
+        quiz_id: (res.attempt && res.attempt.quiz_id) || res.quiz_id
+      })
 
       // polished confetti animation
       if (process.client) {
         triggerConfetti()
       }
-    } else {
-      throw new Error(res.message || 'Could not load results.')
+    } catch (err) {
+      // Distinguish not-found vs other errors
+      const status = err?.status || err?.response?.status || null
+      if (status === 404) {
+        error.value = 'Results not found. The attempt may no longer exist.'
+      } else if (status >= 400 && status < 500) {
+        error.value = err?.data?.message || err?.message || 'Could not load results. You may need an active subscription.'
+      } else {
+        error.value = 'An unexpected error occurred. Please try again later.'
+      }
+      console.error("Failed to fetch results:", err)
     }
   } catch (e) {
     error.value = e.data?.message || e.message || 'An unexpected error occurred. You may need an active subscription to view results.'
@@ -220,6 +275,26 @@ function copyLink() {
     .catch(err => {
       console.error('Could not copy text: ', err);
     });
+}
+
+function formatTime(seconds) {
+  if (!seconds && seconds !== 0) return null
+  const s = Number(seconds) || 0
+  const mins = Math.floor(s / 60)
+  const secs = s % 60
+  if (mins > 0) return `${mins}m ${secs}s`
+  return `${secs}s`
+}
+
+function getPerQuestionTime(qid) {
+  if (!attempt.value.per_question_time) return null
+  const pqt = attempt.value.per_question_time
+  if (Array.isArray(pqt)) {
+    // assume array index may not map to id; try object fallback
+    return null
+  }
+  // object mapping
+  return pqt[qid] ?? null
 }
 </script>
 

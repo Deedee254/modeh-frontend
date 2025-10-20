@@ -50,9 +50,17 @@ export const useCheckoutStore = defineStore('checkout', () => {
       
       while (retries > 0) {
         res = await api.postJson(endpoint.replace(cfg.public.apiBase, ''), {}).catch(() => null)
-        if (res && (res.ok || res.status === 'success')) break
+        // If backend returned a structured limit error object, stop and handle below
+        if (res && (res.code === 'limit_reached' || res.ok || res.status === 'success')) break
         retries--
         if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
+      if (res && res.code === 'limit_reached') {
+        // Route the user to the subscription/checkout page with the limit context so they can upgrade
+        const qs = new URLSearchParams({ reason: 'limit', type: res.limit?.type || 'unknown', value: String(res.limit?.value || '') })
+        router.push('/quizee/subscription?' + qs.toString())
+        return
       }
 
       if (res && (res.ok || res.status === 'success')) {

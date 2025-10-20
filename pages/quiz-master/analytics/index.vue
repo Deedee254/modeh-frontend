@@ -5,10 +5,10 @@
       <h2 class="text-xl font-semibold mb-4">Topics</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <TopicCard
-          v-for="topic in topics"
-          :key="topic.id"
+          v-for="(topic, idx) in (Array.isArray(topics) ? topics.filter(Boolean) : [])"
+          :key="topic?.id || idx"
           v-bind="topic"
-          @click="handleTopicClick(topic)"
+          @click="topic && handleTopicClick(topic)"
         />
       </div>
     </section>
@@ -18,10 +18,10 @@
       <h2 class="text-xl font-semibold mb-4">Grades</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <GradeCard
-          v-for="grade in grades"
-          :key="grade.id"
+          v-for="(grade, idx) in (Array.isArray(grades) ? grades.filter(Boolean) : [])"
+          :key="grade?.id || idx"
           v-bind="grade"
-          @click="handleGradeClick(grade)"
+          @click="grade && handleGradeClick(grade)"
         />
       </div>
     </section>
@@ -31,10 +31,10 @@
       <h2 class="text-xl font-semibold mb-4">Subjects</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <SubjectCard
-          v-for="subject in subjects"
-          :key="subject.id"
+          v-for="(subject, idx) in (Array.isArray(subjects) ? subjects.filter(Boolean) : [])"
+          :key="subject?.id || idx"
           v-bind="subject"
-          @click="handleSubjectClick(subject)"
+          @click="subject && handleSubjectClick(subject)"
         />
       </div>
     </section>
@@ -44,10 +44,10 @@
       <h2 class="text-xl font-semibold mb-4">Recent Quizzes</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <QuizCard
-          v-for="quiz in recentQuizzes"
-          :key="quiz.id"
+          v-for="(quiz, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean) : [])"
+          :key="quiz?.id || idx"
           v-bind="quiz"
-          @click="handleQuizClick(quiz)"
+          @click="quiz && handleQuizClick(quiz)"
         />
       </div>
     </section>
@@ -57,49 +57,45 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import GradeCard from '~/components/ui/GradeCard.vue'
+import SubjectCard from '~/components/ui/SubjectCard.vue'
+import QuizCard from '~/components/ui/QuizCard.vue'
+import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 
-definePageMeta({
-  layout: 'quiz-master',
-})
+definePageMeta({ layout: 'quiz-master' })
 
+const api = useApi()
 const router = useRouter()
-const topics = ref([])
-const grades = ref([])
-const subjects = ref([])
+const { grades, subjects, topics, fetchGrades, fetchAllSubjects, fetchAllTopics, fetchSubjectsByGrade } = useTaxonomy()
 const recentQuizzes = ref([])
+const loading = ref(false)
+const error = ref(null)
 
 // Handler functions
-const handleTopicClick = (topic) => {
-  router.push(`/quiz-master/topics/${topic.id}`)
-}
-
-const handleGradeClick = (grade) => {
-  router.push(`/quiz-master/grades/${grade.id}`)
-}
-
-const handleSubjectClick = (subject) => {
-  router.push(`/quiz-master/subjects/${subject.id}`)
-}
-
-const handleQuizClick = (quiz) => {
-  router.push(`/quiz-master/quizzes/${quiz.id}`)
-}
+const handleTopicClick = (topic) => { router.push(`/quiz-master/topics/${topic.id}`) }
+const handleGradeClick = (grade) => { router.push(`/quiz-master/grades/${grade.id}`) }
+const handleSubjectClick = (subject) => { router.push(`/quiz-master/subjects/${subject.id}`) }
+const handleQuizClick = (quiz) => { router.push(`/quiz-master/quizzes/${quiz.id}`) }
 
 // Fetch data
 onMounted(async () => {
+  loading.value = true
   try {
-    // Fetch topics, grades, subjects and recent quizzes
-    // Replace these with your actual API calls
-    const [topicsData, gradesData, subjectsData, quizzesData] = await Promise.all([
-      // Add your API calls here
-    ])
+    // Use taxonomy composable to populate grades/subjects/topics (it handles caching and shapes)
+    await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
 
-    topics.value = topicsData || []
-    grades.value = gradesData || []
-    subjects.value = subjectsData || []
-    recentQuizzes.value = quizzesData || []
-  } catch (error) {
-    console.error('Error fetching data:', error)
+    // Fetch recent quizzes separately via API composable
+    const qRes = await api.get('/api/quizzes?recent=1')
+    if (qRes && qRes.ok) {
+      const qJson = await qRes.json().catch(()=>[])
+      recentQuizzes.value = Array.isArray(qJson) ? qJson : (qJson?.quizzes || [])
+    }
+  } catch (err) {
+    console.error('Error fetching analytics data', err)
+    error.value = err.message || String(err)
+  } finally {
+    loading.value = false
   }
 })
 </script>

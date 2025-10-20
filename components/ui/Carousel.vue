@@ -7,7 +7,7 @@
         ref="trackEl"
       >
         <div v-for="(item, i) in items" :key="i" class="shrink-0 px-2" :style="{ width: slideWidth + 'px' }">
-          <slot name="item" :item="item" :index="i" />
+          <slot name="item" :item="item" :index="i"></slot>
         </div>
       </div>
     </div>

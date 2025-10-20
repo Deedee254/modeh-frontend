@@ -37,12 +37,14 @@ export function useApi() {
 
   async function postJson(path: string, body: any) {
     await ensureCsrf()
-    return fetch(config.public.apiBase + path, {
+    const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
       headers: defaultJsonHeaders(),
       body: JSON.stringify(body),
     })
+    // Return the raw Response so callers can inspect status and call .json() as needed.
+    return resp
   }
 
   async function postFormData(path: string, formData: FormData) {
@@ -50,12 +52,13 @@ export function useApi() {
     const xsrf = getXsrfFromCookie()
     const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
     if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
-    return fetch(config.public.apiBase + path, {
+    const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
       headers,
       body: formData
     })
+    return resp
   }
 
   async function del(path: string) {
@@ -63,11 +66,12 @@ export function useApi() {
     const xsrf = getXsrfFromCookie()
     const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
     if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
-    return fetch(config.public.apiBase + path, {
+    const resp = await fetch(config.public.apiBase + path, {
       method: 'DELETE',
       credentials: 'include',
       headers
     })
+    return resp
   }
 
   // Handle authentication-related response codes. Returns true if handled (redirect initiated).
@@ -88,14 +92,35 @@ export function useApi() {
     return false
   }
 
+  // Parse JSON responses and detect structured limit errors (do NOT auto-redirect)
+  async function parseResponse(resp: Response) {
+    if (!resp) return null
+    const ct = resp.headers.get('content-type') || ''
+    if (ct.includes('application/json')) {
+      try {
+        const json = await resp.json()
+        // If backend returned a structured limit error, return it directly for callers to handle
+        if (resp.status === 403 && json && json.code === 'limit_reached') {
+          return json
+        }
+        return json
+      } catch (e) {
+        return null
+      }
+    }
+    // Non-JSON responses return the raw Response
+    return resp
+  }
+
   async function patchJson(path: string, body: any) {
     await ensureCsrf()
-    return fetch(config.public.apiBase + path, {
+    const resp = await fetch(config.public.apiBase + path, {
       method: 'PATCH',
       credentials: 'include',
       headers: defaultJsonHeaders(),
       body: JSON.stringify(body),
     })
+    return resp
   }
 
   return { ensureCsrf, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus }

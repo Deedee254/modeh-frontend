@@ -104,7 +104,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
-import { useRuntimeConfig } from '#imports'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 
 const props = defineProps<{ modelValue: boolean, gradeOptions?: any[], subjectOptions?: any[], topicOptions?: any[], inline?: boolean }>()
 const emit = defineEmits(['update:modelValue', 'add'])
@@ -128,7 +128,14 @@ const selectedTopic = ref('')
 const selectedIds = ref<any[]>([])
 const perPageOpts = [5,10,20].map(v => ({ label: String(v), value: v }))
 const maxPage = computed(() => paginator.value ? Math.ceil((paginator.value.total || 0) / (paginator.value.per_page || 10)) : 1)
-const config = useRuntimeConfig()
+const taxonomyStore = useTaxonomyStore()
+const { fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject } = taxonomyStore
+const taxGrades = computed(() => taxonomyStore.grades)
+const taxSubjects = computed(() => taxonomyStore.subjects)
+const taxTopics = computed(() => taxonomyStore.topics)
+const loadingGrades = computed(() => taxonomyStore.loadingGrades)
+const loadingSubjects = computed(() => taxonomyStore.loadingSubjects)
+const loadingTopics = computed(() => taxonomyStore.loadingTopics)
 // Debounce timers to avoid rapid repeated fetches
 const _debounceTimers = {
   grade: null as any,
@@ -147,14 +154,10 @@ const topicOptions = ref<any[]>(props.topicOptions && props.topicOptions.length 
 async function loadTaxonomy() {
   try {
     if (!props.gradeOptions || !props.gradeOptions.length) {
-      const gRes = await fetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
-      if (gRes.ok) {
-        const j = await gRes.json()
-        const data = j.grades || j.data || []
-        gradeOptions.value = Array.isArray(data) ? data.map(g => ({ label: g.name || `Grade ${g.id}`, value: g.id })) : []
-      }
+  await fetchGrades()
+  gradeOptions.value = Array.isArray(taxGrades.value) ? (taxGrades.value as any[]).map(g => ({ label: (g as any).name || `Grade ${(g as any).id}`, value: (g as any).id })) : []
     }
-    // if parent provided subjects/topics, we keep them; otherwise we'll fetch subjects/topics when the user selects a grade/subject
+    // keep subject/topic props if provided; otherwise subject/topic lists will be fetched on demand
   } catch (e) {
     // ignore
   }
@@ -170,7 +173,8 @@ async function fetchItems() {
     if (selectedGrade.value) params.set('grade', String(selectedGrade.value))
     if (selectedSubject.value) params.set('subject', String(selectedSubject.value))
     if (selectedTopic.value) params.set('topic', String(selectedTopic.value))
-  const res = await fetch(config.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
+  const runtime = useRuntimeConfig()
+  const res = await fetch(runtime.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
     if (res.ok) {
       const json = await res.json()
       paginator.value = json.questions || json
@@ -231,76 +235,41 @@ function addSelected() {
   }
 }
 
-onMounted(fetchItems)
-onMounted(loadTaxonomy)
+onMounted(async () => {
+  await Promise.all([fetchItems(), loadTaxonomy()])
+})
 
 // Reset dependent selects when parent changes
 // When a grade is selected, if subjects were not provided by parent, fetch from server for that grade.
 watch(selectedGrade, (val) => {
   selectedSubject.value = ''
   selectedTopic.value = ''
+  subjectOptions.value = []
   if (!val) return
-
-  // debounce grade -> subjects fetch
   if (_debounceTimers.grade) clearTimeout(_debounceTimers.grade)
   _debounceTimers.grade = setTimeout(async () => {
     if (props.subjectOptions && props.subjectOptions.length) {
       subjectOptions.value = props.subjectOptions.filter(s => String(s.grade_id) === String(val))
       return
     }
-
-    const url = config.public.apiBase + '/api/subjects?grade=' + encodeURIComponent(val)
-    if (_inFlight.has(url)) {
-      // another identical request is in flight; skip
-      return
-    }
-    const p = (async () => {
-      try {
-        const res = await fetch(url, { credentials: 'include' })
-        if (res.ok) {
-          const j = await res.json()
-          const data = j.subjects || j.data || []
-          subjectOptions.value = Array.isArray(data) ? data.map(s => ({ label: s.name || s.title || s.id, value: s.id, grade_id: s.grade_id })) : []
-        }
-      } catch (e) {
-        // ignore errors
-      } finally {
-        _inFlight.delete(url)
-      }
-    })()
-    _inFlight.set(url, p)
+  await fetchSubjectsByGrade(val)
+  subjectOptions.value = Array.isArray(taxSubjects.value) ? (taxSubjects.value as any[]).map(s => ({ label: (s as any).name || (s as any).title || (s as any).id, value: (s as any).id, grade_id: (s as any).grade_id })) : []
   }, 250)
 })
 
 // When a subject is selected, fetch topics for that subject if parent didn't supply topics
 watch(selectedSubject, (val) => {
   selectedTopic.value = ''
+  topicOptions.value = []
   if (!val) return
-
   if (_debounceTimers.subject) clearTimeout(_debounceTimers.subject)
   _debounceTimers.subject = setTimeout(async () => {
     if (props.topicOptions && props.topicOptions.length) {
       topicOptions.value = props.topicOptions.filter(t => String(t.subject_id) === String(val))
       return
     }
-
-    const url = config.public.apiBase + '/api/topics?subject=' + encodeURIComponent(val)
-    if (_inFlight.has(url)) return
-    const p = (async () => {
-      try {
-        const res = await fetch(url, { credentials: 'include' })
-        if (res.ok) {
-          const j = await res.json()
-          const data = j.topics || j.data || []
-          topicOptions.value = Array.isArray(data) ? data.map(t => ({ label: t.name || t.title || t.id, value: t.id, subject_id: t.subject_id })) : []
-        }
-      } catch (e) {
-        // ignore
-      } finally {
-        _inFlight.delete(url)
-      }
-    })()
-    _inFlight.set(url, p)
+  await fetchTopicsBySubject(val)
+  topicOptions.value = Array.isArray(taxTopics.value) ? (taxTopics.value as any[]).map(t => ({ label: (t as any).name || (t as any).title || (t as any).id, value: (t as any).id, subject_id: (t as any).subject_id })) : []
   }, 250)
 })
 // TODO: load filter options (grades/subjects/topics) from API if available

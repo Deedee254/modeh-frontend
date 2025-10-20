@@ -110,7 +110,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="t in transactions" :key="t.id" class="border-t">
+                <tr v-for="(t, idx) in (Array.isArray(transactions) ? transactions.filter(Boolean) : [])" :key="t?.id || idx" class="border-t">
                   <td class="px-2 py-3 text-sm text-gray-700">{{ formatDate(t.created_at) }}</td>
                   <td class="px-2 py-3 text-sm">{{ t.quiz_title || t.quiz_id || '—' }}</td>
                   <td class="px-2 py-3 font-semibold">KES {{ formatMoney(t['quiz-master_share']) }}</td>
@@ -191,7 +191,7 @@
               <div class="mt-6">
                 <h3 class="font-medium">My Withdrawals</h3>
                 <ul class="mt-3 space-y-2">
-                  <li v-for="w in withdrawals" :key="w.id" class="p-3 border rounded flex justify-between items-center">
+                  <li v-for="(w, idx) in (Array.isArray(withdrawals) ? withdrawals.filter(Boolean) : [])" :key="w?.id || idx" class="p-3 border rounded flex justify-between items-center">
                     <div>
                       <div class="font-semibold">KES {{ formatMoney(w.amount) }}</div>
                       <div class="text-xs text-gray-500">{{ w.method }} · {{ formatDate(w.created_at) }}</div>

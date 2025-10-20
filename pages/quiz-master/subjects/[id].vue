@@ -28,9 +28,9 @@
     <div v-else class="container mx-auto px-4 py-8">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <NuxtLink
-          v-for="topic in topics"
-          :key="topic.id"
-          :to="`/quiz-master/topics/${topic.id}`"
+          v-for="(topic, idx) in (Array.isArray(topics) ? topics.filter(Boolean) : [])"
+          :key="topic?.id || idx"
+          :to="`/quiz-master/topics/${topic?.id}`"
           class="group relative block p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-200"
         >
           <!-- Topic Icon -->
@@ -69,6 +69,7 @@
 definePageMeta({ layout: 'quiz-master' })
 
 import { ref, onMounted } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { useRoute } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -98,6 +99,14 @@ async function fetchSubjectDetails() {
 
 async function fetchTopicsForSubject() {
   try {
+    // Prefer composable cache if available
+    const { fetchTopicsBySubject, topics: taxTopics } = useTaxonomy()
+    await fetchTopicsBySubject(subjectId)
+    if (Array.isArray(taxTopics.value) && taxTopics.value.length) {
+      topics.value = taxTopics.value
+      return
+    }
+    // fallback to direct fetch
     const params = new URLSearchParams({ approved: 1, per_page: 100 }) // Fetch all topics for the subject
     const res = await fetch(`${useRuntimeConfig().public.apiBase}/api/subjects/${subjectId}/topics?${params.toString()}`, { credentials: 'include' })
     if (!res.ok) {
@@ -105,6 +114,17 @@ async function fetchTopicsForSubject() {
     }
     const data = await res.json()
     topics.value = (data.topics || data.data || []).filter(t => t)
+    // warm grade and subject caches for UI consistency
+    try {
+      if (subject.value) {
+        await Promise.all([
+          fetchGrades(),
+          fetchTopicsBySubject(subjectId),
+        ])
+      }
+    } catch (e) {
+      // ignore warming errors
+    }
   } catch (e) {
     error.value = e.message
     alert.push({ type: 'error', message: e.message })

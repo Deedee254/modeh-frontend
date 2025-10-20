@@ -9,7 +9,7 @@
       <div class="flex-1 flex flex-col">
         <TopBar />
         <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
-          <slot />
+      <slot></slot>
         </main>
       </div>
     </div>

@@ -22,47 +22,81 @@
                 <img :src="imgUrl || challengeIllustration" alt="Daily challenge" class="w-full h-auto" loading="lazy" />
               </div>
             </div>
-          </div>
-
+            </div>
+          
           <!-- Metrics grid -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <UiCard class="p-4 text-center">
-              <div class="text-sm text-gray-500">Subjects</div>
-              <div class="mt-2 text-2xl font-bold">{{ subjects.length }}</div>
-              <div class="text-xs text-gray-400 mt-1">Tracked</div>
+              <div class="text-sm text-gray-500">Average Score</div>
+              <div class="mt-2 text-2xl font-bold">{{ avgScore }}%</div>
+              <div class="text-xs text-gray-400 mt-1">{{ totalAttempts }} Quizzes</div>
             </UiCard>
 
             <UiCard class="p-4 text-center">
-              <div class="text-sm text-gray-500">Completed</div>
-              <div class="mt-2 text-2xl font-bold">{{ completedSubjects }}</div>
-              <div class="text-xs text-gray-400 mt-1">Subjects • {{ avgAccuracy }}% avg</div>
-            </UiCard>
-
-            <UiCard class="p-4 text-center">
-              <div class="text-sm text-gray-500">Streak</div>
-              <div class="mt-2 text-2xl font-bold">{{ topStreak }}</div>
-              <div class="text-xs text-gray-400 mt-1">days</div>
+              <div class="text-sm text-gray-500">Total Time</div>
+              <div class="mt-2 text-2xl font-bold">{{ formatTime(totalQuizTime) }}</div>
+              <div class="text-xs text-gray-400 mt-1">All Quizzes</div>
             </UiCard>
 
             <UiCard class="p-4 text-center">
               <div class="text-sm text-gray-500">Points</div>
               <div class="mt-2 text-2xl font-bold">{{ rewards.points || 0 }}</div>
-              <div class="text-xs text-gray-400 mt-1">Rewards</div>
+              <div class="text-xs text-gray-400 mt-1">{{ pointsToday }} today</div>
+            </UiCard>
+
+            <UiCard class="p-4 text-center">
+              <div class="text-sm text-gray-500">Streak</div>
+              <div class="mt-2 text-2xl font-bold">{{ topStreak }}</div>
+              <div class="text-xs text-gray-400 mt-1">{{ streakDays }} days</div>
             </UiCard>
           </div>
+          
+          <!-- Performance Stats -->
+          <UiCard>
+            <template #header>
+              <div class="flex items-center justify-between">
+                <div class="font-medium">Performance Overview</div>
+              </div>
+            </template>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
+              <div>
+                <div class="text-sm text-gray-500">Average Time per Quiz</div>
+                <div class="mt-1 text-xl font-semibold">{{ formatTime(avgQuizTime) }}</div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-500">Fastest Quiz</div>
+                <div class="mt-1 text-xl font-semibold">{{ formatTime(fastestQuizTime) }}</div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-500">Question Response Time</div>
+                <div class="mt-1 text-xl font-semibold">{{ formatTime(avgQuestionTime) }}</div>
+              </div>
+            </div>
+          </UiCard>
 
           <!-- Recommended quizzes -->
           <UiCard>
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="text-lg font-semibold">Recommended for you</div>
-                <NuxtLink to="/quizee/quizzes" class="text-sm text-indigo-600">Browse all</NuxtLink>
+                <!-- Removed Browse all link -->
               </div>
             </template>
 
             <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <UiHorizontalCard v-for="q in recQuizzes" :key="q.id" :title="q.title || q.name || 'Untitled Quiz'" :subtitle="q.description || ''" :to="`/quizee/quizzes/${q.id}`" v-if="recQuizzes.length" />
               <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
+              <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
+              <div v-for="q in recQuizzes" :key="q.id" v-else class="p-4 border rounded-md bg-white/50 dark:bg-slate-800">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <div class="font-medium">{{ q.title || q.name || 'Untitled Quiz' }}</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ q.description || '' }}</div>
+                  </div>
+                  <div class="flex flex-col items-end gap-2">
+                    <NuxtLink :to="`/quizee/quizzes/${q.id}`" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-sm rounded">Take</NuxtLink>
+                  </div>
+                </div>
+              </div>
             </div>
           </UiCard>
 
@@ -149,23 +183,21 @@ import ChatBubble from '~/components/ChatBubble.vue'
 import RuntimeImg from '~/components/RuntimeImg.vue'
 import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 // placeholder data fetch - adapt API endpoints as needed
 const config = useRuntimeConfig()
   const auth = useAuthStore()
   const grade = auth.user?.grade ?? 8
-  const { data: subjectsData, pending: subjectsPending, error: subjectsError } = await useFetch(config.public.apiBase + `/api/subjects?for_grade=${grade}`)
   const { data: quizMastersData, pending: quizMastersPending, error: quizMastersError } = await useFetch(config.public.apiBase + `/api/quiz-masters?grade=${grade}`)
+  const { fetchSubjectsByGrade, subjects: taxSubjects } = useTaxonomy()
 const { data: rewardsData, pending: rewardsPending, error: rewardsError } = await useFetch(config.public.apiBase + '/api/rewards/my', { credentials: 'include' })
 
 // normalize paginated or direct shapes for subjects and quiz-masters
-const subjects = (() => {
-  if (subjectsData?.value?.subjects?.data && Array.isArray(subjectsData.value.subjects.data)) return subjectsData.value.subjects.data
-  if (Array.isArray(subjectsData?.value?.subjects)) return subjectsData.value.subjects
-  if (Array.isArray(subjectsData?.value)) return subjectsData.value
-  return []
-})()
+// taxSubjects is a ref provided by useTaxonomy(); create a computed wrapper
+// that always returns a plain array so calling array methods in script is safe.
+const subjectsArr = computed(() => Array.isArray(taxSubjects?.value) ? taxSubjects.value : [])
 
 const quizMasters = (() => {
   if (quizMastersData?.value?.['quiz-masters']?.data && Array.isArray(quizMastersData.value['quiz-masters'].data)) return quizMastersData.value['quiz-masters'].data
@@ -184,9 +216,9 @@ const difficultyOptions = [
   { label: 'Medium', value: 'medium' },
   { label: 'Hard', value: 'hard' }
 ]
-const subjectOptions = computed(() => [{ label: 'All Subjects', value: null }, ...subjects.map(s => ({ label: s.name, value: s.id }))])
+const subjectOptions = computed(() => [{ label: 'All Subjects', value: null }, ...subjectsArr.value.map(s => ({ label: s.name, value: s.id }))])
 const filteredSubjects = computed(() => {
-  let list = [...subjects]
+  let list = [...subjectsArr.value]
   if (selectedSubject.value) list = list.filter(s => s.id === selectedSubject.value)
   if (query.value) list = list.filter(s => s.name.toLowerCase().includes(query.value.toLowerCase()))
   return list
@@ -246,7 +278,51 @@ let recQuizzes = []
   }
 
 // Small progress calculations (client-side fallbacks)
-const completedSubjects = subjects.filter(s => (s.progress || 0) >= 80).length
-const avgAccuracy = Math.round((subjects.reduce((s, x) => s + (x.accuracy || 0), 0) / Math.max(subjects.length, 1)) || 0)
-const topStreak = Math.max(...subjects.map(s => s.streak || 0), 0)
+const completedSubjects = computed(() => subjectsArr.value.filter(s => (s.progress || 0) >= 80).length)
+const avgAccuracy = computed(() => Math.round((subjectsArr.value.reduce((acc, x) => acc + (x.accuracy || 0), 0) / Math.max(subjectsArr.value.length, 1)) || 0))
+// Stats calculations
+const topStreak = computed(() => subjectsArr.value.length ? Math.max(...subjectsArr.value.map(s => s.streak || 0), 0) : 0)
+const streakDays = ref(0)
+
+// Time formatting helper
+function formatTime(seconds) {
+  if (!seconds) return '0m'
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
+// Stats from attempts
+const totalAttempts = ref(0)
+const avgScore = ref(0)
+const totalQuizTime = ref(0)
+const avgQuizTime = ref(0)
+const fastestQuizTime = ref(0)
+const avgQuestionTime = ref(0)
+const pointsToday = ref(0)
+
+async function fetchStats() {
+  try {
+    const data = await $fetch(config.public.apiBase + '/api/user/quiz-stats', { credentials: 'include' })
+    if (data) {
+      totalAttempts.value = data.total_attempts || 0
+      avgScore.value = Math.round(data.average_score || 0)
+      totalQuizTime.value = data.total_time_seconds || 0
+      avgQuizTime.value = data.avg_quiz_time || 0
+      fastestQuizTime.value = data.fastest_quiz_time || 0
+      avgQuestionTime.value = data.avg_question_time || 0
+      pointsToday.value = data.points_today || 0
+      streakDays.value = data.current_streak || 0
+    }
+  } catch (e) {
+    console.error('Failed to fetch quiz stats:', e)
+  }
+}
+
+onMounted(async () => {
+  // ensure subjects for this user's grade are loaded
+  await fetchSubjectsByGrade(grade)
+  await fetchStats()
+})
 </script>

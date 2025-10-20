@@ -84,7 +84,7 @@
                 <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               </div>
               <p class="text-gray-600 dark:text-gray-300 text-sm mb-6">Join this intense battle and showcase your knowledge!</p>
-              <button @click="() => joinBattle(b.id)" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 text-center block">Join Battle</button>
+              <button @click="() => joinBattle(b.uuid || b.id)" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 text-center block">Join Battle</button>
             </div>
           </div>
         </div>
@@ -116,7 +116,7 @@
                     <div class="font-bold text-lg" :class="getScoreClass(b, auth.user.id)">{{ getMyScore(b, auth.user.id) }} - {{ getOpponentScore(b, auth.user.id) }}</div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">{{ getResultLabel(b, auth.user.id) }}</div>
                   </div>
-                  <NuxtLink :to="`/quizee/battles/${b.id}/result`" class="flex-shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
+                    <NuxtLink :to="`/quizee/battles/${b.uuid || b.id}/result`" class="flex-shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
                     View Result
                   </NuxtLink>
                 </div>
@@ -211,13 +211,14 @@ async function handleBattleCreated(battle) {
     return
   }
 
-  // Refresh active battles and switch to join tab
-  await fetchActiveBattles()
-  activeTab.value = 'join'
-  // If API returned an id, navigate to waiting room
-  if (battle && battle.id) {
-    router.push(`/quizee/battles/${battle.id}`)
+  // If battle was created successfully, navigate to waiting room immediately
+  if (battle?.id) {
+    // prefer uuid when available
+    const ident = battle.uuid || battle.id
+    router.push(`/quizee/battles/${ident}/waiting`)
   }
+  // Still refresh battles list in background for other users
+  fetchActiveBattles()
 }
 
 function ensureAuthRedirect(redirectTo) {
@@ -236,9 +237,10 @@ watch(activeTab, (newTab) => {
 
 watch(() => auth.user, (newUser) => { if (newUser && battleHistory.value.length === 0) fetchMyBattles() })
 
-function joinBattle(id) {
-  if (!ensureAuthRedirect(`/quizee/battles/${id}`)) return
-  router.push(`/quizee/battles/${id}`)
+function joinBattle(identifier) {
+  if (!ensureAuthRedirect(`/quizee/battles/${identifier}`)) return
+  // navigate to waiting room so the user joins and waits for opponent
+  router.push(`/quizee/battles/${identifier}/waiting`)
 }
 
 function getMyScore(battle, userId) {

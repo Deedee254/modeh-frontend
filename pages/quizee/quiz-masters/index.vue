@@ -1,6 +1,21 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto p-6 max-w-7xl">
+    <div class="container mx-auto p-6 max-w-7xl grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <aside class="lg:col-span-1">
+        <div class="sticky top-6">
+          <FiltersSidebar
+            :grade-options="grades"
+            :subject-options="subjects"
+            :grade="gradeFilter"
+            :subject="subjectFilter"
+            storageKey="filters:quizee-quiz-masters"
+            @update:grade="val => gradeFilter = val"
+            @update:subject="val => subjectFilter = val"
+          />
+        </div>
+      </aside>
+
+      <main class="lg:col-span-3">
       <PageHero
         :breadcrumbs="[{ text: 'Home', href: '/quizee' }, { text: 'Quiz Masters', current: true }]"
         title="Find Your Quiz Masters"
@@ -53,7 +68,7 @@
       <div v-else>
         <div v-if="(!quizMasters || quizMasters.length === 0)" class="p-6 bg-white rounded shadow text-gray-600">No quiz masters found</div>
         <div v-else>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <QuizMasterCard
               v-for="quizMaster in quizMasters"
               :key="quizMaster.id"
@@ -77,20 +92,23 @@
           </div>
         </div>
       </div>
+      </main>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
+import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import UPagination from '~/components/ui/UPagination.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 definePageMeta({ layout: 'quizee' })
 
@@ -104,24 +122,36 @@ useHead({
 const config = useRuntimeConfig()
 const currentPage = ref(1)
 
-// Fetch quiz masters with pagination
-const { data: response, pending, refresh } = await useFetch(() => ({
-  url: config.public.apiBase + '/api/quiz-masters',
-  params: {
-    page: currentPage.value
-  }
-}), {
-  watch: [currentPage]
+// --- Filtering ---
+const gradeFilter = ref('')
+const subjectFilter = ref('')
+const { grades, subjects, fetchGrades, fetchAllSubjects } = useTaxonomy()
+
+onMounted(async () => {
+  await Promise.all([fetchGrades(), fetchAllSubjects()])
 })
+
+const filterParams = computed(() => {
+  const params = { page: currentPage.value }
+  if (gradeFilter.value) params.grade_id = gradeFilter.value
+  if (subjectFilter.value) params.subject_id = subjectFilter.value
+  return params
+})
+
+// Fetch quiz masters with pagination
+const { data: response, pending, refresh } = await useAsyncData(
+  'quizee-quiz-masters',
+  () => $fetch(config.public.apiBase + '/api/quiz-masters', { params: filterParams.value }),
+  { watch: [filterParams] }
+)
 
 async function onPageChange(page) {
   currentPage.value = page
-  await refresh()
 }
 
 const quizMasters = computed(() => {
   if (response.value?.data && Array.isArray(response.value.data)) {
-    return response.value.data.filter(Boolean)
+    return response.value.data.filter(Boolean).map(qm => ({ ...qm, institution: qm.institution || 'Independent Educator' }))
   }
   return []
 })
@@ -132,6 +162,7 @@ const paginator = computed(() => {
   return { current_page, last_page, total, per_page, links }
 })
 
+// --- Follow Logic ---
 const auth = useAuthStore()
 const router = useRouter()
 const following = ref({})
@@ -162,7 +193,7 @@ async function toggleFollow(qm) {
   }
 }
 
-watchEffect(() => {
+watch(quizMasters, () => {
   const list = quizMasters.value || []
   const map = {}
   list.forEach(q => { map[q.id] = !!(q.is_following || q.isFollowing || q.is_following_by_current_user) })

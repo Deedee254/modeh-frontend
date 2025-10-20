@@ -1,13 +1,13 @@
 <template>
   <div class="border rounded p-3 bg-slate-800/30">
-    <div class="flex items-start justify-between">
+    <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
       <div>
         <div class="font-semibold text-white">{{ question?.text ? stripHtml(question.text) : 'Untitled question' }}</div>
         <div class="text-xs text-slate-400">Type: {{ question?.type || '—' }}</div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
         <button @click="$emit('toggle')" class="text-xs text-indigo-200">Toggle</button>
-        <button @click="$emit('duplicate')" class="text-xs text-slate-200">Duplicate</button>
+        <button @click="$emit('duplicate')" class="text-xs text-slate-200">Clone</button>
         <button @click="$emit('remove')" class="text-xs text-rose-400">Remove</button>
         <button @click="$emit('manage-media', { uid: question.uid })" class="text-xs text-slate-200">Media</button>
       </div>

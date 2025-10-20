@@ -76,17 +76,17 @@
                 <!-- Your Answer -->
                 <div class="p-4 rounded-lg" :class="myAnswerClass(q)">
                   <p class="font-semibold mb-1">Your Answer</p>
-                  <p class="font-mono">{{ myAnswer(q)?.selected || 'Not answered' }}</p>
+                  <p class="font-mono">{{ Array.isArray(myAnswer(q)?.selected) ? myAnswer(q)?.selected.map(a => a.toString()).join(', ') : myAnswer(q)?.selected?.toString() || 'Not answered' }}</p>
                 </div>
                 <!-- Opponent's Answer -->
                 <div class="p-4 rounded-lg" :class="opponentAnswerClass(q)">
                   <p class="font-semibold mb-1">Opponent's Answer</p>
-                  <p class="font-mono">{{ opponentAnswer(q)?.selected || 'Not answered' }}</p>
+                  <p class="font-mono">{{ Array.isArray(opponentAnswer(q)?.selected) ? opponentAnswer(q)?.selected.map(a => a.toString()).join(', ') : opponentAnswer(q)?.selected?.toString() || 'Not answered' }}</p>
                 </div>
                 <!-- Correct Answer -->
                 <div class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800">
                   <p class="font-semibold mb-1">Correct Answer</p>
-                  <p class="font-mono">{{ Array.isArray(q.correct) ? q.correct.join(', ') : q.correct }}</p>
+                  <p class="font-mono">{{ Array.isArray(q.correct) ? q.correct.map(a => a.toString()).join(', ') : q.correct?.toString() || 'Not provided' }}</p>
                 </div>
               </div>
             </div>
@@ -101,6 +101,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+import { useAnswerStore } from '~/stores/answerStore'
 import PageHero from '~/components/ui/PageHero.vue'
 
 definePageMeta({ layout: 'quizee' })
@@ -108,6 +109,7 @@ definePageMeta({ layout: 'quizee' })
 const route = useRoute()
 const auth = useAuthStore()
 const cfg = useRuntimeConfig()
+const answerStore = useAnswerStore()
 
 const loading = ref(true)
 const result = ref(null)
@@ -115,16 +117,29 @@ const result = ref(null)
 const battleId = route.params.id
 
 onMounted(async () => {
+  // Check if we have cached results first
+  if (answerStore.hasAttemptForReview(battleId)) {
+    const cached = answerStore.getAttemptForReview(battleId)
+    if (cached?.result) {
+      result.value = cached.result
+    }
+  }
+
   try {
     const res = await $fetch(`/api/battles/${battleId}/result`, {
       baseURL: cfg.public.apiBase,
       credentials: 'include'
     })
-    if (res.ok && res.result) {
-      result.value = res.result
+    // $fetch automatically unwraps the response
+    if (res?.battle) {
+      result.value = res
+      // Cache the results for future use
+      answerStore.storeAttemptForReview(battleId, res)
     }
   } catch (error) {
     console.error("Failed to fetch battle results:", error)
+    // Show the error state
+    result.value = null
   } finally {
     loading.value = false
   }

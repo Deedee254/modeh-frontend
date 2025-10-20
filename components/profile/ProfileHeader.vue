@@ -20,16 +20,16 @@
       <div class="flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <h2 class="text-xl sm:text-2xl font-bold">{{ title }}</h2>
-          <slot name="badge" />
+          <slot name="badge"></slot>
         </div>
         <p v-if="subtitle" class="text-slate-600 mt-1">{{ subtitle }}</p>
         <div v-if="$slots.meta" class="mt-2 text-sm text-slate-500">
-          <slot name="meta" />
+          <slot name="meta"></slot>
         </div>
       </div>
 
       <div class="flex-shrink-0 flex flex-col sm:flex-row gap-2">
-        <slot name="actions" />
+  <slot name="actions"></slot>
       </div>
     </div>
   </div>

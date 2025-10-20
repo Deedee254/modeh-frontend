@@ -23,6 +23,14 @@
             {{ new Date(item.start_date).toLocaleDateString() }} - 
             {{ item.end_date ? new Date(item.end_date).toLocaleDateString() : 'Current' }}
           </p>
+          <div v-if="item.package?.features?.limits" class="text-sm text-gray-600 mt-2">
+            <strong>Limits:</strong>
+            <div>Quiz results: {{ item.package.features.limits.quiz_results === null ? 'Unlimited' : item.package.features.limits.quiz_results }} / day</div>
+            <div>Battle results: {{ item.package.features.limits.battle_results === null ? 'Unlimited' : item.package.features.limits.battle_results }} / day</div>
+          </div>
+          <div v-if="item.previous_subscription" class="text-sm text-gray-500 mt-2">
+            <em>Switched from: {{ item.previous_subscription.package?.title || item.previous_subscription.plan_name || '—' }}</em>
+          </div>
           <span :class="[getStatusClass(item.status), 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2']">
             {{ item.status }}
           </span>
@@ -65,7 +73,7 @@ function formatAmount(amount) {
 async function fetchHistory() {
   loading.value = true
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/subscription/history', {
+    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/subscriptions/history', {
       credentials: 'include'
     })
     if (res.ok) {

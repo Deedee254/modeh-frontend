@@ -1,5 +1,5 @@
 <template>
-  <component :is="compName" :class="gridClass"><slot /></component>
+  <component :is="compName" :class="gridClass"><slot></slot></component>
 </template>
 
 <script setup>

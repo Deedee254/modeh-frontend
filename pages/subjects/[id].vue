@@ -50,22 +50,47 @@
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load topic for this subject.</div>
 
       <div v-else>
-      <div v-if="topics.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No topics found for this subject.</div>
-  <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
-        <TopicCard
-          v-for="t in displayTopics"
-          :key="t.id"
-          :title="t.name"
-          :image="resolveIcon(t)"
-          :grade="t.grade?.name || t.grade_name || ''"
-          :subject="t.subject?.name || t.subject_name || ''"
-          :description="t.description || t.summary || ''"
-          :quizzesCount="t.quizzes_count || 0"
-          :startLink="`/topics/${t.slug || t.id}`"
-          startLabel="View Quizzes"
-        >
-        </TopicCard>
-      </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <aside class="lg:col-span-1">
+            <FiltersSidebar
+              :grade-options="[]"
+              :subject-options="[subject.value]"
+              :topic-options="[]"
+              :showTopic="false"
+              :subject="subjectFilter"
+              :topic="filterTopic"
+              :grade="gradeFilter"
+              storageKey="filters:subjects"
+              @update:subject="val => subjectFilter = val"
+              @update:topic="val => filterTopic = val"
+              @update:grade="val => gradeFilter = val"
+              @apply="() => { fetchTopics() }"
+              @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = '' }"
+            />
+          </aside>
+
+          <main class="lg:col-span-2">
+            <div v-if="paginator?.data?.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No topics found for this subject.</div>
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
+              <TopicCard
+                v-for="t in displayTopics"
+                :key="t.id"
+                :title="t.name"
+                :image="resolveIcon(t)"
+                :grade="t.grade?.name || t.grade_name || ''"
+                :subject="t.subject?.name || t.subject_name || ''"
+                :description="t.description || t.summary || ''"
+                :quizzesCount="t.quizzes_count || 0"
+                :startLink="`/topics/${t.slug || t.id}`"
+                startLabel="View Quizzes"
+              />
+            </div>
+
+            <div class="mt-8">
+              <Pagination :paginator="paginator" @change-page="onPageChange" />
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   </div>
@@ -76,20 +101,30 @@ import PageHero from '~/components/ui/PageHero.vue'
 // HeroFilterBar removed — using PageHero search instead
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
-import { ref, onMounted, computed } from 'vue'
+import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import Pagination from '~/components/Pagination.vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { getHeroClass } from '~/utils/heroPalettes'
 
 const route = useRoute()
 const subjectId = route.params.id
 const config = useRuntimeConfig()
 const topics = ref([])
+const paginator = ref(null)
 const query = ref('')
+const perPage = ref(12)
+const page = ref(1)
+const gradeFilter = ref('')
+const subjectFilter = ref(subjectId)
+const filterTopic = ref('')
 // Local search handler used by PageHero
 function onSearch(q) { query.value = String(q || '').toLowerCase().trim() }
 const displayTopics = computed(() => {
+  // When using server-side pagination we display paginator.data
+  const arr = Array.isArray(paginator?.value?.data) ? paginator.value.data : (Array.isArray(topics.value) ? topics.value : [])
   const q = String(query.value || '').toLowerCase().trim()
-  if (!q) return topics.value
-  return (topics.value || []).filter(t => (t.name || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q))
+  if (!q) return arr
+  return (arr || []).filter(t => (t.name || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q))
 })
 const subject = ref({})
 const loading = ref(true)
@@ -97,20 +132,47 @@ const error = ref(null)
 
 function resolveIcon(t) { return t.icon || t.image || t.cover_image || '/images/topic-icon.svg' }
 
-onMounted(async () => {
+async function fetchTopics(params = {}) {
+  loading.value = true
   try {
-    // fetch subject metadata (API returns { subject: { ... } })
-    const s = await $fetch(`${config.public.apiBase}/api/subjects/${subjectId}`)
-    subject.value = (s && s.subject) ? s.subject : (s || {})
-
-    // fetch topics for this subject. Normalize paginated shapes.
-    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: { subject: subjectId } })
-    // res.topics may be a paginator object; prefer the data array when present
-    topics.value = (res && res.topics && Array.isArray(res.topics.data)) ? res.topics.data : (Array.isArray(res?.topics) ? res.topics : (Array.isArray(res) ? res : []))
+    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: Object.assign({ subject: subjectId, page: page.value, per_page: perPage.value, q: query.value, grade: gradeFilter.value, topic: filterTopic.value }, params) })
+    // normalize paginator/data shapes
+    if (res && res.topics && Array.isArray(res.topics.data)) {
+      paginator.value = res.topics
+      topics.value = res.topics.data
+    } else if (Array.isArray(res?.topics)) {
+      paginator.value = { data: res.topics }
+      topics.value = res.topics
+    } else if (Array.isArray(res)) {
+      paginator.value = { data: res }
+      topics.value = res
+    } else {
+      paginator.value = { data: [] }
+      topics.value = []
+    }
   } catch (e) {
     error.value = e
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  try {
+    // fetch subject metadata
+    const s = await $fetch(`${config.public.apiBase}/api/subjects/${subjectId}`)
+    subject.value = (s && s.subject) ? s.subject : (s || {})
+  } catch (e) {
+    // ignore subject fetch error here
+  }
+  await Promise.all([fetchTopics(), fetchTopics({}), fetchTopics()])
 })
+
+// react to filter/search/pagination changes
+watch([query, perPage, page, gradeFilter, filterTopic], () => {
+  // ensure page param sent
+  fetchTopics()
+})
+
+function onPageChange(p) { page.value = p }
 </script>

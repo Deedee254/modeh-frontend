@@ -37,7 +37,7 @@ onMounted(async () => {
     
     <div v-else class="space-y-4">
       <div v-for="attempt in attempts" :key="attempt.id" class="bg-white shadow rounded-lg p-4">
-        <div class="flex justify-between items-start">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
           <div>
             <h3 class="font-semibold text-lg">{{ attempt.quiz?.title || 'Untitled Quiz' }}</h3>
             <div class="text-sm text-gray-600 mt-1">

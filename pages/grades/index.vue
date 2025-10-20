@@ -89,11 +89,14 @@ import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 import { ref, computed, onMounted } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 const config = useRuntimeConfig()
 const grades = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 const query = ref('')
 
 const filteredGrades = computed(() => {
@@ -108,8 +111,12 @@ function onSearch(q) {
 
 onMounted(async () => {
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/grades`)
-    grades.value = res?.grades || res || []
+    await fetchGrades()
+    // populate local grades ref for template convenience
+    grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
+    // also load totals (subjects/topics)
+    await fetchAllSubjects()
+    await fetchAllTopics()
   } catch (e) {
     error.value = e
   } finally {
@@ -117,33 +124,19 @@ onMounted(async () => {
   }
 })
 
-const subjectsCount = ref(0)
-const topicsCount = ref(0)
+const subjectsCount = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value.length : 0)
+const topicsCount = computed(() => Array.isArray(taxTopics.value) ? taxTopics.value.length : 0)
 const totalQuizzes = ref(0)
 
-async function fetchTotals() {
-  try {
-    const [subjectsRes, topicsRes, quizzesRes] = await Promise.all([
-      $fetch(`${config.public.apiBase}/api/subjects`, { credentials: 'include' }),
-      $fetch(`${config.public.apiBase}/api/topics`, { credentials: 'include' }),
-      $fetch(`${config.public.apiBase}/api/quizzes?per_page=1`, { credentials: 'include' })
-    ])
-
-    const subjectsList = subjectsRes?.subjects?.data || subjectsRes?.subjects || subjectsRes || []
-    subjectsCount.value = Array.isArray(subjectsList) ? subjectsList.length : 0
-
-    const topicsList = topicsRes?.topics?.data || topicsRes?.topics || topicsRes || []
-    topicsCount.value = Array.isArray(topicsList) ? topicsList.length : 0
-
-    totalQuizzes.value = quizzesRes?.quizzes?.total || quizzesRes?.total || 0
-  } catch (e) {
-    subjectsCount.value = 0
-    topicsCount.value = 0
-    totalQuizzes.value = 0
-  }
-}
-
+// Fetch quizzes count separately
 if (process.client) {
-  fetchTotals()
+  (async () => {
+    try {
+      const quizzesRes = await $fetch(`${config.public.apiBase}/api/quizzes?per_page=1`, { credentials: 'include' })
+      totalQuizzes.value = quizzesRes?.quizzes?.total || quizzesRes?.total || 0
+    } catch (e) {
+      totalQuizzes.value = 0
+    }
+  })()
 }
 </script>

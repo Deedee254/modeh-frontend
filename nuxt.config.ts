@@ -7,19 +7,24 @@ export default defineNuxtConfig({
   // Modules
   modules: [
     '@pinia/nuxt',
-    '@nuxtjs/tailwindcss',
+    ['nuxt-tiptap-editor', { prefix: 'Tiptap' }],
     '@nuxt/ui',
     '@vite-pwa/nuxt'
   ],
 
-  // Tailwind
-  tailwindcss: { exposeConfig: true },
+  // UI configuration
+  ui: {
+    global: true,
+    safelistColors: ['primary']
+  },
+
+  colorMode: {
+    preference: 'light'
+  },
 
   // PWA configuration for @vite-pwa/nuxt
   pwa: {
     registerType: 'autoUpdate',
-  // ensure index.html is precached so Workbox's navigation fallback can bind to it
-  includeAssets: ['index.html', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
     manifest: {
       name: 'Modeh',
       short_name: 'Modeh',
@@ -32,10 +37,9 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
-      // createHandlerBoundToURL requires the fallback URL to be precached.
-      // point to the explicit 'index.html' file which we also include in precache.
-      navigateFallback: '/index.html',
+      globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
+      navigateFallback: '/',
+      navigateFallbackAllowlist: [/^\/(?!api\/)/],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -85,16 +89,28 @@ export default defineNuxtConfig({
   // Global CSS
   css: ['katex/dist/katex.min.css'],
 
+  // tiptap module is registered in `modules` with options above
+
+  // PostCSS Configuration
+  postcss: {
+    plugins: {
+      'tailwindcss/nesting': {},
+      tailwindcss: {},
+      autoprefixer: {},
+    }
+  },
+
   // Runtime config (public)
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
-      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? '',
-      pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? '',
-      pusherForceTLS: process.env.NUXT_PUBLIC_PUSHER_FORCE_TLS === 'true',
-      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? '127.0.0.1',
-  wsPort: Number(process.env.NUXT_PUBLIC_WS_PORT ?? 6001),
-      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? 'ws'
+      // Pusher/Echo configuration
+      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? 'c631b05ce9d7217de73e',
+      pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? 'ap2',
+      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'api-ap2.pusher.com',
+      wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT, 10) : 443,
+      // Use secure WebSocket for Pusher cloud
+      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? 'wss'
     }
   }
 })

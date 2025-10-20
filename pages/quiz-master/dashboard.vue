@@ -72,7 +72,7 @@
               </div>
               <div v-else-if="quizzesError" class="text-sm text-red-600 p-3">Failed to load quizzes.</div>
               <div v-else>
-                <UiHorizontalCard v-for="q in recentQuizzes" :key="q.id" :title="q.title" :subtitle="q.description || 'No description'" eyebrow="Quiz">
+                <UiHorizontalCard v-for="(q, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean) : [])" :key="q?.id || idx" :title="q.title" :subtitle="q.description || 'No description'" eyebrow="Quiz">
                   <template #actions>
                     <div class="flex gap-2">
                       <NuxtLink :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Open</NuxtLink>
@@ -119,7 +119,7 @@
             <div v-if="pendingApprovalsPending" class="text-sm text-gray-500">Loading…</div>
             <div v-else-if="pendingApprovals.length === 0" class="text-sm text-gray-600">No pending approvals right now.</div>
             <ul v-else class="space-y-2">
-              <li v-for="q in pendingApprovals.slice(0,3)" :key="q.id" class="flex items-center justify-between">
+              <li v-for="(q, idx) in (Array.isArray(pendingApprovals) ? pendingApprovals.slice(0,3).filter(Boolean) : [])" :key="q?.id || idx" class="flex items-center justify-between">
                 <div class="text-sm truncate">{{ q.title || q.name }}</div>
                 <NuxtLink :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600">Review</NuxtLink>
               </li>

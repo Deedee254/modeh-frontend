@@ -7,7 +7,7 @@
     <div class="flex flex-col sm:flex-row sm:items-stretch">
       <!-- Leading slot/icon/cover -->
       <div v-if="$slots.lead" class="shrink-0 p-4 flex items-center justify-center">
-        <slot name="lead" />
+  <slot name="lead"></slot>
       </div>
       <div class="flex-1 p-4">
         <div class="flex items-start justify-between gap-3">
@@ -16,17 +16,17 @@
             <h3 class="font-semibold leading-snug">{{ title }}</h3>
             <!-- prefer meta slot (chips) when provided, otherwise show subtitle -->
             <div v-if="$slots.meta" class="mt-1">
-              <slot name="meta" />
+              <slot name="meta"></slot>
             </div>
             <p v-else-if="subtitle" class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ subtitle }}</p>
           </div>
           <div v-if="badge" class="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ badge }}</div>
         </div>
         <div class="mt-3">
-          <slot />
+          <slot></slot>
         </div>
         <div v-if="$slots.actions" class="mt-3">
-          <slot name="actions" />
+          <slot name="actions"></slot>
         </div>
         <!-- Optional unified CTA if detailsLink prop provided -->
         <div v-if="detailsLink" class="mt-3">

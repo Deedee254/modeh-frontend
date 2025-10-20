@@ -5,7 +5,7 @@
       <slot name="header" />
     </template>
 
-    <slot />
+    <slot></slot>
 
     <template #footer>
       <slot name="footer" />

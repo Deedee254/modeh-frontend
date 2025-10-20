@@ -1,80 +1,90 @@
 <template>
-  <div @click="focusInput">
-    <!-- Simple textarea fallback to isolate TipTap during debugging -->
-    <UTextarea
-      ref="inputRef"
-      v-model="localValue"
-      :rows="6"
-      :disabled="props.editable === false"
-      class="w-full"
-    />
+  <div class="rich-editor">
+    <div class="toolbar mb-2 flex gap-2">
+      <UButton size="sm" variant="soft" class="px-2" @click="toggleBold">B</UButton>
+      <UButton size="sm" variant="soft" class="px-2" @click="toggleItalic">I</UButton>
+      <UButton size="sm" variant="soft" class="px-2" @click="toggleStrike">S</UButton>
+      <UButton size="sm" variant="soft" class="px-2" @click="toggleCodeBlock">Code</UButton>
+      <UButton size="sm" variant="soft" class="px-2" @click="insertInlineMath">
+        <UIcon name="i-heroicons-calculator" class="h-4 w-4 mr-1" />
+        <span class="text-xs">Math</span>
+      </UButton>
+      <div class="ml-auto">
+        <UButton size="sm" variant="ghost" @click="focus">Focus</UButton>
+      </div>
+    </div>
+
+        <div v-if="editor && editor.value">
+          <TiptapEditorContent :editor="editor" />
+        </div>
+        <div v-else>
+          <!-- textarea fallback so the field remains editable before tiptap initializes -->
+          <textarea :value="modelValue || ''" @input="onTextInput" class="w-full min-h-[120px] border rounded p-2"></textarea>
+        </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, defineExpose } from 'vue'
-import UTextarea from '~/components/ui/UiTextarea.vue'
+    import { watch, onBeforeUnmount, defineExpose, onMounted } from 'vue'
+import { useEditor, EditorContent as TiptapEditorContent } from '@tiptap/vue-3'
+import StarterKit from '@tiptap/starter-kit'
+import MathExtension from '@aarkue/tiptap-math-extension'
 
 const props = defineProps<{ modelValue?: string; editable?: boolean; features?: { math?: boolean; code?: boolean } }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void; (e: 'ready'): void; (e: 'error', err: Error): void }>()
 
-const localValue = ref(props.modelValue ?? '')
-const inputRef = ref<any>(null)
-
-watch(
-  () => props.modelValue,
-  (v) => {
-    if (v !== localValue.value) localValue.value = v ?? ''
-  }
-)
-
-watch(localValue, (v) => emit('update:modelValue', v))
+let editor: any = null
 
 onMounted(() => {
-  emit('ready')
+  // initialize editor on client only
+  editor = useEditor({
+    content: props.modelValue || '<p></p>',
+    editable: props.editable !== false,
+    extensions: [StarterKit, ...(props.features?.math ? [MathExtension] : [])],
+    onUpdate({ editor: e }) {
+      emit('update:modelValue', e.getHTML())
+    }
+  })
 })
 
-function focusInput() {
-  try {
-    // prefer exposed focus method from UiTextarea (component ref)
-    if (inputRef.value && typeof inputRef.value.focus === 'function') {
-      inputRef.value.focus()
-      return
-    }
-    // fallback: try underlying DOM element
-    const el = inputRef.value && inputRef.value.$el ? inputRef.value.$el : inputRef.value
-    if (el && typeof el.focus === 'function') el.focus()
-  } catch (e) {}
+// rely on Nuxt/Vue components auto-import for UButton/UIcon
+
+watch(() => props.modelValue, (v) => {
+  if (!editor || !editor.value) return
+  const current = editor.value.getHTML()
+  if (v !== current) editor.value.commands.setContent(v || '<p></p>')
+})
+onBeforeUnmount(() => { if (editor && editor.value && editor.value.destroy) editor.value.destroy() })
+
+function focus() { try { editor?.value?.commands.focus() } catch (e) {} }
+function toggleBold() { try { editor?.value?.commands.toggleBold() } catch (e) {} }
+function toggleItalic() { try { editor?.value?.commands.toggleItalic() } catch (e) {} }
+function toggleStrike() { try { editor?.value?.commands.toggleStrike() } catch (e) {} }
+function toggleCodeBlock() { try { editor?.value?.commands.toggleCodeBlock() } catch (e) {} }
+function insertInlineMath() { try { if (props.features?.math && editor && editor.value) editor.value.commands.insertContent('\\(' + 'a = b + c' + '\\)') } catch (e) {} }
+function insertBlockMath() { try { if (props.features?.math && editor && editor.value) editor.value.commands.insertContent('\n$$E = mc^2$$\n') } catch (e) {} }
+
+function onTextInput(e: Event) {
+  const t = e.target as HTMLTextAreaElement | null
+  if (!t) return
+  emit('update:modelValue', t.value || '')
 }
 
-// Expose a compact imperative API similar to the full editor (safe no-op / simple implementations)
 defineExpose({
-  focus: () => inputRef.value?.focus(),
-  insertInlineMath: (content = 'a = b + c') => {
-    localValue.value = (localValue.value || '') + ` \\(${content}\\)`
-  },
-  insertBlockMath: (content = 'E = mc^2') => {
-    localValue.value = (localValue.value || '') + `\n$$${content}$$\n`
-  },
-  toggleCodeBlock: () => { localValue.value = (localValue.value || '') + "\n```\ncode\n```\n" },
-  toggleInlineCode: () => { localValue.value = (localValue.value || '') + '`code`' },
-  getHTML: () => localValue.value || '',
-  setHTML: (html: string) => { localValue.value = html }
+  focus,
+  insertInlineMath,
+  insertBlockMath,
+  toggleCodeBlock,
+  toggleInlineCode: insertInlineMath,
+  getHTML: () => editor && editor.value ? editor.value.getHTML() : '',
+  setHTML: (html: string) => { if (editor && editor.value) editor.value.commands.setContent(html) }
 })
 </script>
 
 <style scoped>
-.katex-fallback {
-  font-family: monospace;
-  background: #f5f5f5;
-  padding: 2px 4px;
-  border-radius: 4px;
-  max-width: 100%;
-  overflow-x: auto;
+.editor-root :global(.ProseMirror) {
+  outline: none;
+  min-height: 120px;
 }
-
-/* Basic styling for the textarea fallback */
-.w-full {
-  width: 100%;
-}
+.toolbar button { border: 1px solid rgba(0,0,0,0.06); }
 </style>

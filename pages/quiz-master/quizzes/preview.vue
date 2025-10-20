@@ -16,8 +16,18 @@
           <div class="mt-4">
           <div class="bg-gray-50 rounded-xl p-4">
             <nav class="flex space-x-4" aria-label="Tabs">
-              <button @click="activeTab = 'details'" :class="tabClass('details')">Details</button>
-              <button @click="activeTab = 'questions'" :class="tabClass('questions')">Questions ({{ questions.length }})</button>
+              <button
+                @click="activeTab = 'details'"
+                :class="['px-3 py-2 rounded-md text-sm font-medium', activeTab === 'details' ? 'bg-white border border-gray-200 text-indigo-700' : 'text-gray-600 hover:text-gray-800']"
+              >
+                Details
+              </button>
+              <button
+                @click="activeTab = 'questions'"
+                :class="['px-3 py-2 rounded-md text-sm font-medium', activeTab === 'questions' ? 'bg-white border border-gray-200 text-indigo-700' : 'text-gray-600 hover:text-gray-800']"
+              >
+                Questions ({{ questions.length }})
+              </button>
             </nav>
           </div>
 

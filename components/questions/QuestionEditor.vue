@@ -6,7 +6,7 @@
         <UBadge color="gray" variant="soft">{{ label }}</UBadge>
         <UBadge color="gray" variant="soft">{{ typeLabel }}</UBadge>
         <UBadge color="gray" variant="soft">{{ difficultyLabel }}</UBadge>
-        <UBadge color="gray" variant="soft">{{ model.marks }} pt</UBadge>
+  <UBadge color="gray" variant="soft">{{ localModel.marks }} pt</UBadge>
       </div>
       <div class="flex items-center gap-2">
         <UButton size="2xs" color="gray" variant="ghost" @click="$emit('duplicate')">Duplicate</UButton>
@@ -18,26 +18,33 @@
 
     <div v-show="open" class="p-4 border-t space-y-3">
       <div class="flex items-center gap-2">
-        <USelect v-model="model.type" :options="typeOptions" class="w-44" />
-        <USelect v-model="model.difficulty" :options="difficultyOptions" class="w-28" />
-        <UInput v-model.number="model.marks" type="number" class="w-24" placeholder="Marks" />
-        <UCheckbox v-model="model.is_banked" label="Bank" />
+  <USelect v-model="localModel.type" :options="typeOptions" class="w-44" />
+  <USelect v-model="localModel.difficulty" :options="difficultyOptions" class="w-28" />
+  <UInput v-model.number="localModel.marks" type="number" class="w-24" placeholder="Marks" />
+  <UCheckbox v-model="localModel.is_banked" label="Bank" />
       </div>
+
+        <div class="flex items-center gap-3">
+          <label class="text-sm text-gray-600">Media</label>
+          <input type="file" accept="image/*" @change="onImageSelected" />
+          <input type="file" accept="audio/*" @change="onAudioSelected" />
+          <UInput v-model="localModel.youtube_url" placeholder="YouTube link (optional)" />
+        </div>
 
       <div>
-        <RichTextEditor v-model="model.text" @ready="onEditorReady" />
+  <RichTextEditor v-model="localModel.text" @ready="onEditorReady" />
       </div>
 
-      <div v-if="model.type.startsWith('mcq')" class="space-y-2">
-        <div v-for="(opt, i) in model.options" :key="i" class="flex items-start gap-2">
-          <UTextarea v-model="model.options[i]" class="flex-1" v-autosize />
+      <div v-if="localModel.type && (localModel.type.startsWith('mcq') || localModel.type === 'image' || localModel.type === 'audio')" class="space-y-2">
+        <div v-for="(opt, i) in localModel.options" :key="i" class="flex items-start gap-2">
+          <UTextarea v-model="localModel.options[i]" class="flex-1" v-autosize />
           <div class="flex flex-col items-start gap-2 mt-1">
-            <template v-if="model.type === 'mcq-single'">
-              <UCheckbox :model-value="model.correct === i"
-                @update:model-value="(v: boolean) => model.correct = v ? i : model.correct" label="Correct" />
+            <template v-if="localModel.type === 'mcq-single' || localModel.type === 'image' || localModel.type === 'audio'">
+              <UCheckbox :model-value="localModel.correct === i"
+                @update:model-value="(v: boolean) => localModel.correct = v ? i : localModel.correct" label="Correct" />
             </template>
             <template v-else>
-              <UCheckbox :model-value="(model.corrects || []).includes(i)"
+              <UCheckbox :model-value="(localModel.corrects || []).includes(i)"
                 @update:model-value="(v: boolean) => toggleCorrect(i, v)" label="Correct" />
             </template>
             <UButton size="2xs" color="red" variant="ghost" @click="$emit('remove-option', i)">Remove</UButton>
@@ -46,16 +53,16 @@
         <UButton size="2xs" color="gray" variant="ghost" @click="$emit('add-option')">+ Add option</UButton>
       </div>
 
-      <div v-if="model.type === 'tf'" class="flex items-center gap-2">
-        <USelect v-model="model.correct" :options="tfOptions" class="w-36" />
-        <UInput v-model="model.options[0]" placeholder="True text" class="w-48" />
-        <UInput v-model="model.options[1]" placeholder="False text" class="w-48" />
+      <div v-if="localModel.type === 'tf'" class="flex items-center gap-2">
+        <USelect v-model="localModel.correct" :options="tfOptions" class="w-36" />
+        <UInput v-model="localModel.options[0]" placeholder="True text" class="w-48" />
+        <UInput v-model="localModel.options[1]" placeholder="False text" class="w-48" />
       </div>
 
-      <div v-if="model.type === 'fill'" class="flex items-center gap-2">
-        <UInput v-model="model.fill_parts[0]" placeholder="Text before blank" class="w-48" />
+      <div v-if="localModel.type === 'fill'" class="flex items-center gap-2">
+        <UInput v-model="localModel.fill_parts[0]" placeholder="Text before blank" class="w-48" />
         <span class="text-sm">__</span>
-        <UInput v-model="model.fill_parts[1]" placeholder="Text after blank" class="w-48" />
+        <UInput v-model="localModel.fill_parts[1]" placeholder="Text after blank" class="w-48" />
       </div>
 
       <div>
@@ -94,19 +101,45 @@ import { computed, ref, watch } from 'vue'
 import UiTextarea from '~/components/ui/UiTextarea.vue'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 
-const props = defineProps<{ index: number, model: any, errors?: string[] }>()
-const emit = defineEmits(['update:model', 'remove', 'duplicate', 'add-option', 'remove-option'])
+// Accept v-model as `modelValue`. Make index optional.
+const props = defineProps<{ index?: number, modelValue?: any, errors?: string[] }>()
+const emit = defineEmits(['update:modelValue', 'remove', 'duplicate', 'add-option', 'remove-option'])
 
-const localModel = ref(JSON.parse(JSON.stringify(props.model)))
+// localModel starts as a deep clone of modelValue or an empty object to avoid JSON.parse(undefined) errors
+const localModel = ref(JSON.parse(JSON.stringify(props.modelValue || {})))
 
+// Sync parent -> local
+watch(() => props.modelValue, (nv) => {
+  try {
+    const nvClone = JSON.parse(JSON.stringify(nv || {}))
+    // only update localModel if it actually differs to avoid triggering a cycle
+    if (JSON.stringify(nvClone) !== JSON.stringify(localModel.value)) {
+      localModel.value = nvClone
+    }
+  } catch (e) {
+    if (JSON.stringify(nv || {}) !== JSON.stringify(localModel.value)) {
+      localModel.value = nv || {}
+    }
+  }
+}, { deep: true })
+
+// Emit local -> parent
 watch(localModel, (newValue) => {
-  emit('update:model', newValue)
+  try {
+    const newClone = JSON.parse(JSON.stringify(newValue))
+    // avoid emitting if parent already has same value
+    if (JSON.stringify(newClone) !== JSON.stringify(props.modelValue || {})) {
+      emit('update:modelValue', newClone)
+    }
+  } catch (e) {
+    emit('update:modelValue', newValue)
+  }
 }, { deep: true })
 
 const open = ref(true)
-const label = computed(() => `Q${props.index + 1}`)
-const typeLabel = computed(() => typeOptions.find(o => o.value === props.model.type)?.label || props.model.type)
-const difficultyLabel = computed(() => props.model.difficulty === 1 ? 'Easy' : props.model.difficulty === 2 ? 'Medium' : 'Hard')
+const label = computed(() => `Q${(props.index ?? 0) + 1}`)
+const typeLabel = computed(() => typeOptions.find(o => o.value === (localModel.value?.type))?.label || (localModel.value?.type || ''))
+const difficultyLabel = computed(() => (localModel.value?.difficulty) === 1 ? 'Easy' : (localModel.value?.difficulty) === 2 ? 'Medium' : 'Hard')
 
 const typeOptions = [
   { label: 'MCQ (single)', value: 'mcq-single' },
@@ -130,14 +163,32 @@ const tfOptions = [
 ]
 
 function toggleCorrect(i: number, v: boolean) {
-  const arr = props.model.corrects || []
+  const arr = Array.isArray(localModel.value.corrects) ? [...localModel.value.corrects] : []
   const pos = arr.indexOf(i)
   if (v && pos === -1) arr.push(i)
   if (!v && pos !== -1) arr.splice(pos, 1)
-  props.model.corrects = arr
+  localModel.value.corrects = arr
 }
 
 function onEditorReady() { /* hook for parent if needed */ }
+
+function onImageSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    localModel.value.media = input.files[0]
+    // store metadata
+    localModel.value.media_metadata = { type: 'image', name: input.files[0].name }
+  }
+}
+
+function onAudioSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    localModel.value.media = input.files[0]
+    localModel.value.media_metadata = { type: 'audio', name: input.files[0].name }
+  }
+}
+
 </script>
 
 <style scoped>

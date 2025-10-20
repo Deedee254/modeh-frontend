@@ -125,7 +125,7 @@ const props = defineProps({
 
 const paletteClass = computed(() => {
   if (props.palette && props.palette.trim()) return props.palette
-  return 'bg-gradient-to-br from-indigo-400 to-indigo-600'
+  return 'bg-indigo-500' 
 })
 
 const displaySubject = computed(() => {
@@ -172,6 +172,8 @@ const difficultyClass = computed(() => {
 const emit = defineEmits(['like', 'edit'])
 const localLikes = ref(Number(props.likes) || 0)
 const localLiked = ref(Boolean(props.liked))
+let likeInFlight = false
+let likeTimeout = null
 const config = useRuntimeConfig()
 
 const primaryHref = computed(() => {
@@ -182,43 +184,65 @@ const primaryHref = computed(() => {
 
 async function toggleLike(e) {
   e.stopPropagation()
-  if (!localLiked.value) {
-    localLikes.value = (localLikes.value || 0) + 1
-    localLiked.value = true
-    emit('like', { liked: true })
+  if (likeInFlight) return
+  likeInFlight = true
+
+  // debounce multiple rapid clicks into a single intent
+  clearTimeout(likeTimeout)
+  likeTimeout = setTimeout(async () => {
+    const api = useApi()
+    const alert = useAppAlert()
+    const id = props.quizId || (props.to && String(props.to).split('/').pop())
+
+    // optimistic UI update
+    const wasLiked = localLiked.value
+    localLiked.value = !wasLiked
+    localLikes.value = Math.max(0, (localLikes.value || 0) + (localLiked.value ? 1 : -1))
+    emit('like', { liked: localLiked.value })
+
     try {
-      const api = useApi()
-      const alert = useAppAlert()
-      const id = props.quizId || (props.to && String(props.to).split('/').pop())
-      const res = await api.postJson(`/api/quizzes/${id}/like`, {})
+      const endpoint = localLiked.value ? `/api/quizzes/${id}/like` : `/api/quizzes/${id}/unlike`
+      const res = await api.postJson(endpoint, {})
       if (api.handleAuthStatus(res)) {
-        alert.push({ message: 'Session expired — please sign in again', type: 'warning' })
+        alert.push({ message: 'Session expired \u2014 please sign in again', type: 'warning' })
+        // revert optimistic state until user logs back in
+        localLiked.value = wasLiked
+        localLikes.value = Math.max(0, (localLikes.value || 0) + (wasLiked ? 1 : -1))
         return
       }
-      if (!res.ok) throw new Error('Like failed')
+      if (!res.ok) throw new Error('Like/Unlike failed')
+      // if server returns authoritative likes_count, prefer it (not required)
+      if (res.likes_count !== undefined) localLikes.value = res.likes_count
     } catch (err) {
-      localLikes.value = Math.max(0, (localLikes.value || 1) - 1)
-      localLiked.value = false
-      console.error('Like failed', err)
+      // revert optimistic on failure
+      localLiked.value = wasLiked
+      localLikes.value = Math.max(0, (localLikes.value || 0) + (wasLiked ? 1 : -1))
+      console.error('Like/Unlike failed', err)
+    } finally {
+      likeInFlight = false
     }
-  } else {
-    localLikes.value = Math.max(0, (localLikes.value || 1) - 1)
-    localLiked.value = false
-    emit('like', { liked: false })
+  }, 180)
+}
+
+// Attach Echo listener to adjust likes when broadcasted
+if (process.client && typeof window !== 'undefined' && window.Echo) {
+  const quizId = props.quizId || null
+  if (quizId) {
     try {
-      const api = useApi()
-      const alert = useAppAlert()
-      const id = props.quizId || (props.to && String(props.to).split('/').pop())
-      const res = await api.postJson(`/api/quizzes/${id}/unlike`, {})
-      if (api.handleAuthStatus(res)) {
-        alert.push({ message: 'Session expired — please sign in again', type: 'warning' })
-        return
-      }
-      if (!res.ok) throw new Error('Unlike failed')
-    } catch (err) {
-      localLikes.value = (localLikes.value || 0) + 1
-      localLiked.value = true
-      console.error('Unlike failed', err)
+      const ch = window.Echo.private(`quiz.${quizId}`)
+      ch.listen('.App\\Events\\QuizLiked', (payload) => {
+        // payload.quiz.id, payload.user
+        // Increment likes if someone else liked it
+        if (payload && payload.quiz && payload.quiz.id == quizId) {
+          // avoid changing local likes if the event came from this user
+          if (!props.liked || (props.liked && payload.user && payload.user.id !== props.liked)) {
+            localLikes.value = (localLikes.value || 0) + 1
+          }
+        }
+      })
+    } catch (e) {
+      // ignore Echo attach failures
+      console.error('Echo attach failed for quiz liked', e)
     }
   }
 }

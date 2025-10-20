@@ -1,22 +1,24 @@
 <template>
-  <form @submit.prevent="save" class="p-4 space-y-4">
+  <form @submit.prevent="save" class="p-4 space-y-4 max-w-lg">
     <div>
       <label class="block text-sm font-medium">Current password</label>
       <input v-model="form.current" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
     </div>
 
-    <div>
-      <label class="block text-sm font-medium">New password</label>
-      <input v-model="form.password" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium">New password</label>
+          <input v-model="form.password" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+        </div>
 
-    <div>
-      <label class="block text-sm font-medium">Confirm new password</label>
-      <input v-model="form.password_confirm" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+        <div>
+          <label class="block text-sm font-medium">Confirm new password</label>
+          <input v-model="form.password_confirm" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+        </div>
     </div>
 
     <div class="flex justify-end gap-2">
-      <button :disabled="submitting" type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
+      <button :disabled="submitting" type="submit" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded">
         <span v-if="!submitting">Change password</span>
         <span v-else>Updating…</span>
       </button>

@@ -16,7 +16,7 @@
         Failed to load quizees. Please try again later.
       </div>
       <div v-else-if="quizees.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <UCard v-for="quizee in quizees" :key="quizee.id" class="hover:shadow-lg transition">
+  <UCard v-for="(quizee, idx) in (Array.isArray(quizees) ? quizees.filter(Boolean) : [])" :key="quizee?.id || idx" class="hover:shadow-lg transition">
           <div class="flex flex-col items-center text-center">
             <div class="w-24 h-24 rounded-full overflow-hidden mb-4">
               <img v-if="quizee.avatar" :src="quizee.avatar" :alt="quizee.name" class="w-full h-full object-cover">

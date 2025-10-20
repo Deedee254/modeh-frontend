@@ -50,26 +50,26 @@
     <!-- Grades Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <GradeCard
-        v-for="grade in filteredGrades"
-        :key="grade.id"
-        :title="grade.name"
-        :subtitle="grade.level || ''"
-        :quizzes_count="grade.quizzes_count || grade.quizzes || 0"
-        :subjects_count="grade.subjects_count || grade.subjects || 0"
-        :description="grade.description || ''"
-        :cover="grade.image || grade.cover_image || ''"
-        :actionLink="`/quiz-master/subjects?grade=${grade.id}`"
+        v-for="(grade, idx) in (Array.isArray(gradesPaginator.data) ? gradesPaginator.data.filter(Boolean) : [])"
+        :key="grade?.id || idx"
+        :title="grade?.name"
+        :subtitle="grade?.level || ''"
+        :quizzes_count="grade?.quizzes_count || grade?.quizzes || 0"
+        :subjects_count="grade?.subjects_count || grade?.subjects || 0"
+        :description="grade?.description || ''"
+        :cover="grade?.image || grade?.cover_image || ''"
+        :actionLink="`/quiz-master/subjects?grade=${grade?.id}`"
         actionLabel="Explore subjects"
-        @click="handleGradeClick(grade)"
+        @click="grade && handleGradeClick(grade)"
       />
       <div v-if="filteredGrades.length === 0" class="col-span-full text-center py-12 text-gray-500">
         No grades found. Try adjusting your filters or add a new grade.
       </div>
     </div>
 
-    <div v-if="gradesResponse?.grades?.meta" class="mt-6">
+    <div v-if="gradesPaginator.meta" class="mt-6">
       <Pagination 
-        :paginator="gradesResponse.grades" 
+        :paginator="gradesPaginator" 
         @change-page="handlePageChange"
       />
     </div>
@@ -82,7 +82,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watchEffect } from 'vue'
+import { ref, computed, watchEffect, onMounted } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
@@ -96,26 +97,29 @@ const router = useRouter()
 const config = useRuntimeConfig()
 const searchQuery = ref('')
 const selectedLevel = ref('')
-const isLoading = ref(true)
+const isLoadingLocal = ref(true)
 
 const page = ref(1)
 const perPage = ref(12)
 
-const { data: gradesResponse, pending, error, refresh } = await useFetch(config.public.apiBase + '/api/grades', {
-  credentials: 'include',
-  params: {
-    page: page.value,
-    per_page: perPage.value
+// Use the taxonomy composable for grades and loading state
+const { grades: taxGrades, fetchGrades, loadingGrades } = useTaxonomy()
+const isLoading = computed(() => Boolean(loadingGrades?.value) || isLoadingLocal.value)
+
+// derive a local grades list from the composable
+const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
+
+// client-side pagination helpers to keep the existing Pagination component working
+const totalGrades = computed(() => grades.value.length)
+const gradesPaginator = computed(() => ({
+  data: grades.value.slice((page.value - 1) * perPage.value, page.value * perPage.value),
+  meta: {
+    total: totalGrades.value,
+    per_page: perPage.value,
+    current_page: page.value,
+    last_page: Math.max(1, Math.ceil(totalGrades.value / perPage.value))
   }
-})
-
-// keep isLoading in sync with the fetch pending state and reference error to avoid unused vars
-watchEffect(() => {
-  isLoading.value = !!pending?.value
-  if (error?.value) console.error(error.value)
-})
-
-const grades = computed(() => gradesResponse.value?.grades?.data || [])
+}))
 
 // Computed filtered grades based on search and level filter
 const filteredGrades = computed(() => {
@@ -130,9 +134,8 @@ const handleGradeClick = (grade) => {
   router.push(`/quiz-master/grades/${grade.id}`)
 }
 
-async function handlePageChange(newPage) {
+function handlePageChange(newPage) {
   page.value = newPage
-  await refresh()
 }
 
 async function onServerSearch(q) {
@@ -146,4 +149,16 @@ async function onServerSearch(q) {
     // ignore network errors
   }
 }
+
+// initialize global taxonomy caches for counts / selects used elsewhere
+const { fetchAllSubjects, fetchAllTopics, fetchGrades: fetchTaxGrades } = useTaxonomy()
+onMounted(async () => {
+  try {
+    await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+  } catch (e) {
+    // ignore
+  }
+  // mark local loading complete once caches warmed
+  isLoadingLocal.value = false
+})
 </script>

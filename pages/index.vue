@@ -382,7 +382,7 @@
 </template>
 
 <script setup>
-import { computed, ref, unref, watch } from 'vue'
+import { computed, ref, unref, watch, onMounted } from 'vue'
 import Carousel from '~/components/ui/Carousel.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
@@ -391,6 +391,7 @@ import SubjectCard from '~/components/ui/SubjectCard.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 const config = useRuntimeConfig()
 // helpers
@@ -418,8 +419,8 @@ const { data: quizzesData } = await useFetch(config.public.apiBase + '/api/quizz
 const latestQuizzes = safeArray(quizzesData?.value?.quizzes?.data || quizzesData?.value?.quizzes || quizzesData?.value).slice(0, 12)
 const featuredQuiz = latestQuizzes.length ? latestQuizzes[0] : null
 
-const { data: topicsData } = await useFetch(config.public.apiBase + '/api/topics', { credentials: 'include' })
-const topicsList = safeArray(topicsData?.value?.topics?.data || topicsData?.value?.topics || topicsData?.value).slice(0,12)
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+const topicsList = taxTopics
 
 const { data: quizMastersData } = await useFetch(config.public.apiBase + '/api/quiz-masters', { credentials: 'include' })
 const featuredQuizMasters = safeArray(
@@ -435,15 +436,11 @@ const testimonials = testimonialsData?.value?.testimonials?.data || testimonials
 const { data: sponsorsData } = await useFetch(config.public.apiBase + '/api/sponsors', { credentials: 'include' })
 const sponsors = sponsorsData?.value?.sponsors?.data || sponsorsData?.value?.sponsors || sponsorsData?.value || []
 
-const { data: subjectsData } = await useFetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
-
-const SUBJECTS = safeArray(subjectsData?.value?.subjects?.data || subjectsData?.value?.subjects || subjectsData?.value)
-
-const { data: gradesData } = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
-const GRADES = safeArray(gradesData?.value?.grades?.data || gradesData?.value?.grades || gradesData?.value)
+const SUBJECTS = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
+const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
 const GRADES_BY_ID = computed(() => {
   const map = new Map()
-  for (const grade of safeArray(GRADES)) {
+  for (const grade of Array.isArray(GRADES.value) ? GRADES.value : []) {
     if (!grade) continue
     const id = grade.id ?? grade.grade_id ?? grade.value ?? grade
     if (id != null) {
@@ -509,6 +506,10 @@ function pickPaletteClass(id){
   const palettes = ['bg-gradient-to-br from-indigo-200 via-indigo-100 to-sky-100 text-indigo-800','bg-gradient-to-br from-rose-200 via-rose-100 to-pink-100 text-rose-800','bg-gradient-to-br from-emerald-200 via-emerald-100 to-lime-100 text-emerald-800','bg-gradient-to-br from-yellow-200 via-amber-100 to-amber-50 text-amber-800','bg-gradient-to-br from-fuchsia-200 via-fuchsia-100 to-pink-50 text-fuchsia-800','bg-gradient-to-br from-sky-200 via-sky-100 to-indigo-50 text-sky-800']
   return palettes[(id||0)%palettes.length]
 }
+
+onMounted(async () => {
+  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+})
 
 // Return a human-friendly grade label for a topic (from topic.grade, topic.grades, or its subject)
 function getTopicGradeLabel(topic) {

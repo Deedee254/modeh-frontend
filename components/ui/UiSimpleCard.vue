@@ -1,6 +1,6 @@
 <template>
   <div :class="['bg-white rounded-lg shadow-sm p-4', customClass]">
-    <slot />
+  <slot></slot>
   </div>
 </template>
 

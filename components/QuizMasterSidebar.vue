@@ -50,6 +50,13 @@
         </li>
         
         <li>
+          <NuxtLink to="/quiz-master/chat" :class="linkClass('/quiz-master/chat')" title="Chat">
+            <ChatBubbleLeftRightIcon class="w-5 h-5" />
+            <span v-if="!ui.sidebarCollapsed" class="ml-2">Chat</span>
+          </NuxtLink>
+        </li>
+
+        <li>
           <NuxtLink to="/quiz-master/wallet" :class="linkClass('/quiz-master/wallet')" title="Wallet">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
@@ -92,6 +99,7 @@
           <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/quizzes" :class="linkClass('/quiz-master/quizzes')">My Quizzes</NuxtLink></li>
           <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/quizzes/create" :class="linkClass('/quiz-master/quizzes/create')">Create Quiz</NuxtLink></li>
           <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/questions" :class="linkClass('/quiz-master/questions')">Question Bank</NuxtLink></li>
+          <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/chat" :class="linkClass('/quiz-master/chat')">Chat</NuxtLink></li>
           <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/wallet" :class="linkClass('/quiz-master/wallet')">Wallet</NuxtLink></li>
           <li><NuxtLink @click="onMobileNavClick" to="/quiz-master/settings" :class="linkClass('/quiz-master/settings')">Settings</NuxtLink></li>
         </ul>
@@ -120,7 +128,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
 // Heroicons outline
-import { HomeIcon, BookOpenIcon, RectangleStackIcon, ClipboardDocumentListIcon, PlusIcon, QuestionMarkCircleIcon, Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { HomeIcon, BookOpenIcon, RectangleStackIcon, ClipboardDocumentListIcon, PlusIcon, QuestionMarkCircleIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline'
 
 const auth = useAuthStore()
 const ui = useUiStore()

@@ -81,6 +81,7 @@ const userPhones = computed(() => authStore.user?.phones || [])
 
 const selectedPackage = ref(null)
 const showPaymentModal = ref(false)
+const upgradeMessage = ref(null)
 
 async function checkSubscription() {
   loading.value = true
@@ -107,6 +108,14 @@ async function loadData() {
 }
 
 onMounted(loadData)
+
+// If redirected after hitting limits, show upgrade prompt
+if (process.client) {
+  const qs = new URLSearchParams(window.location.search)
+  if (qs.get('reason') === 'limit') {
+    upgradeMessage.value = qs.get('message') || 'You have reached your current plan limits. Consider upgrading.'
+  }
+}
 
 function selectPackage(pkg) {
   selectedPackage.value = pkg

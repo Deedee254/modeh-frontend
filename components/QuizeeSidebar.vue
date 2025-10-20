@@ -75,6 +75,7 @@ const navItems = [
   { to: '/quizee/tournaments', label: 'Tournaments', icon: FlagIcon },
   { to: '/quizee/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { to: '/quizee/points', label: 'Points', icon: StarIcon },
+  { to: '/quizee/badges', label: 'Badges', icon: StarIcon },
   { to: '/quizee/subscription', label: 'Subscription', icon: CreditCardIcon },
   { to: '/quizee/chat', label: 'Messages', icon: ChatBubbleLeftRightIcon },
   { to: '/quizee/quiz-masters', label: 'Quiz Masters', icon: UserGroupIcon },

@@ -46,7 +46,7 @@
     <div v-else>
       <div v-if="!paginator?.data || paginator.data.length === 0" class="text-gray-500">No questions yet.</div>
       <ul class="space-y-3">
-        <li v-for="qitem in (paginator?.data || [])" :key="qitem.id" class="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-lg">
+  <li v-for="(qitem, idx) in (Array.isArray(paginator?.data) ? (paginator.data.filter(Boolean)) : [])" :key="qitem?.id || idx" class="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-lg">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div class="flex-1">
               <div class="flex items-center gap-3">

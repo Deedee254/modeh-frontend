@@ -1,93 +1,36 @@
 <template>
   <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
-    <!-- Hero Section - Enhanced Mobile Responsive -->
-    <div class="bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
-      <div class="max-w-7xl mx-auto px-4 py-6 md:py-12">
-        <!-- Back button + Title - Better Mobile Layout -->
-        <div class="space-y-4 md:space-y-0 md:flex md:items-start md:justify-between">
-          <div class="flex items-start gap-4 md:items-center">
-            <button 
-              @click="router.back()" 
-              class="inline-flex items-center justify-center shrink-0 w-10 h-10 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 hover:text-white transition-colors"
-              aria-label="Go back"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-              </svg>
-            </button>
-            <div class="space-y-2">
-              <h1 class="text-2xl md:text-3xl font-bold leading-tight">{{ quiz.title }}</h1>
-              <p class="text-white/80 text-sm md:text-base line-clamp-2">{{ quiz.description }}</p>
-            </div>
-          </div>
-          
-          <!-- Quick Actions - Visible on Desktop -->
-          <div class="hidden md:flex gap-3">
-            <button 
-              v-if="lastAttempt"
-              class="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium"
-            >
-              Last Score: {{ lastAttempt.score }}%
-            </button>
-          </div>
+    <!-- Skeleton Loading State -->
+    <div v-if="pending" class="max-w-7xl mx-auto px-4 py-6 animate-pulse">
+      <!-- New Integrated Hero Section -->
+      <div class="mb-6">
+        <div class="h-6 w-24 bg-gray-200 rounded-md mb-4"></div>
+        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gray-200"></div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-gray-200 rounded-xl h-48"></div>
+          <div class="bg-gray-200 rounded-xl h-64"></div>
         </div>
-
-        <!-- Enhanced Stats Grid - Better Mobile Layout -->
-  <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-6">
-          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4">
-            <div class="flex items-center gap-2 mb-1">
-              <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-              <span class="text-white/70 text-sm font-medium">Questions</span>
-            </div>
-            <div class="text-2xl font-bold">{{ quiz.questions_count || questionCount }}</div>
-          </div>
-          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4">
-            <div class="flex items-center gap-2 mb-1">
-              <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              <span class="text-white/70 text-sm font-medium">Time Limit</span>
-            </div>
-            <div class="text-2xl font-bold">{{ formatTimeLimit(quiz.time_limit) }}</div>
-          </div>
-          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4">
-            <div class="flex items-center gap-2 mb-1">
-              <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-              </svg>
-              <span class="text-white/70 text-sm font-medium">Points</span>
-            </div>
-            <div class="text-2xl font-bold">{{ quiz.points || quiz.marks || 10 }}</div>
-          </div>
-          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4">
-            <div class="flex items-center gap-2 mb-1">
-              <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-              </svg>
-              <span class="text-white/70 text-sm font-medium">Difficulty</span>
-            </div>
-            <div class="text-2xl font-bold capitalize flex items-center gap-2">
-              {{ quiz.difficulty || 'Medium' }}
-              <span class="text-lg">{{ getDifficultyEmoji(quiz.difficulty) }}</span>
-            </div>
-          </div>
+        <div class="space-y-6">
+          <div class="bg-gray-200 rounded-xl h-72 sticky top-6"></div>
         </div>
       </div>
     </div>
 
     <!-- Main Content - Responsive Grid -->
-    <div class="max-w-7xl mx-auto px-4 py-6">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <!-- Left Column -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Enhanced Quiz Media Section -->
-          <div v-if="quizMedia" class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="aspect-video relative bg-gray-100">
+    <div v-else class="max-w-7xl mx-auto px-4 py-6">
+      <!-- New Integrated Hero Section -->
+      <div class="mb-6">
+        <button @click="router.back()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+          Back
+        </button>
+        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gray-200">
+          <!-- Media Content -->
+          <div class="w-full h-full">
               <!-- YouTube Video -->
               <template v-if="isYouTube(quizMedia)">
-                <div class="absolute inset-0 bg-black/5 flex items-center justify-center">
                   <iframe 
                     :src="formatYouTubeUrl(quizMedia)" 
                     class="absolute inset-0 w-full h-full"
@@ -96,12 +39,11 @@
                     referrerpolicy="no-referrer"
                     title="Quiz video"
                   ></iframe>
-                </div>
               </template>
 
               <!-- Vimeo Video -->
-              <template v-if="isVimeo(quizMedia)">
-                <div class="absolute inset-0 bg-black/5 flex items-center justify-center">
+              <template v-else-if="isVimeo(quizMedia)">
+                
                   <iframe 
                     :src="formatVimeoUrl(quizMedia)"
                     class="absolute inset-0 w-full h-full"
@@ -110,7 +52,7 @@
                     referrerpolicy="no-referrer"
                     title="Quiz video"
                   ></iframe>
-                </div>
+                
               </template>
 
               <!-- Direct MP4/WebM Video -->
@@ -125,17 +67,14 @@
                   Your browser does not support the video tag.
                 </video>
               </template>
-
               <!-- Image Fallback -->
               <template v-else>
-                <div class="absolute inset-0 bg-black/5 flex items-center justify-center">
                   <img 
                     :src="quizMedia" 
-                    alt="Quiz media" 
-                    class="w-full h-full object-contain"
+                    alt="Quiz media"
+                    class="w-full h-full object-cover"
                     loading="lazy"
                   />
-                </div>
               </template>
 
               <!-- Loading State -->
@@ -150,68 +89,66 @@
                   <span class="mt-2 text-sm text-gray-500">Loading media...</span>
                 </div>
               </div>
-            </div>
-
-            <!-- Media Caption/Description -->
-            <div v-if="quiz.media_caption || quiz.video_description" class="p-4 border-t">
-              <p class="text-sm text-gray-600">
-                {{ quiz.media_caption || quiz.video_description }}
-              </p>
-            </div>
           </div>
 
-          <!-- Enhanced Tabs Section - Better Mobile Experience -->
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <!-- Mobile Segmented Control -->
-            <div class="block sm:hidden p-4">
-              <div class="grid grid-cols-3 gap-1 p-1 bg-gray-100 rounded-lg">
-                <button
-                  v-for="tab in tabs"
-                  :key="tab.id"
-                  @click="activeTab = tab.id"
-                  class="relative py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded-md"
-                  :class="[
-                    activeTab === tab.id
-                      ? 'text-white'
-                      : 'text-gray-500 hover:text-gray-700'
-                  ]"
-                >
-                  {{ tab.name }}
-                  <div
-                    v-if="activeTab === tab.id"
-                    class="absolute inset-0 bg-indigo-600 rounded-md"
-                    style="z-index: -1;"
-                  ></div>
-                </button>
+          <!-- Overlay Content -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
+            <div class="flex flex-wrap gap-2 mb-3">
+              <div class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-500/90 text-white border-0 capitalize">
+                {{ difficulty_level }} {{ getDifficultyEmoji(quiz.difficulty) }}
+              </div>
+              <span v-if="topic_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/80 text-white">
+                {{ topic_name }}
+              </span>
+              <span v-if="subject_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/80 text-white">
+                {{ subject_name }}
+              </span>
+            </div>
+            <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 line-clamp-2">{{ quiz.title }}</h1>
+            <div class="flex flex-wrap gap-x-4 gap-y-2 text-white/90 text-sm">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>{{ quiz.questions_count || questionCount }} questions</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ formatTimeLimit(quiz.time_limit) }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>{{ quiz.points || quiz.marks || 10 }} points</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <!-- Desktop Tabs -->
-            <div class="hidden sm:block">
-              <nav class="flex px-6 border-b border-gray-200" aria-label="Tabs">
-                <button 
-                  v-for="tab in tabs" 
-                  :key="tab.id"
-                  @click="activeTab = tab.id"
-                  class="group relative min-w-0 flex-1 overflow-hidden py-4 px-4 text-center text-sm font-medium hover:bg-gray-50 focus:z-10 focus:outline-none transition-colors"
-                  :class="[
-                    activeTab === tab.id 
-                      ? 'text-indigo-600'
-                      : 'text-gray-500 hover:text-gray-700',
-                    'whitespace-nowrap'
-                  ]"
-                  :aria-current="activeTab === tab.id ? 'page' : undefined"
-                >
-                  <span>{{ tab.name }}</span>
-                  <span
-                    aria-hidden="true"
-                    :class="[
-                      activeTab === tab.id ? 'bg-indigo-500' : 'bg-transparent',
-                      'absolute inset-x-0 bottom-0 h-0.5 transition-colors'
-                    ]"
-                  ></span>
-                </button>
-              </nav>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <!-- Left Column -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Media Caption/Description -->
+          <div v-if="quiz.media_caption || quiz.video_description" class="bg-white rounded-xl shadow-sm p-4">
+            <p class="text-sm text-gray-600">
+              {{ quiz.media_caption || quiz.video_description }}
+            </p>
+          </div>
+          <!-- Enhanced Tabs Section - Better Mobile Experience -->
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <!-- New Unified Tab Style -->
+            <div class="p-2 sm:p-4">
+              <div role="tablist" class="grid w-full grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1 text-gray-500">
+                  <button
+                    v-for="tab in tabs"
+                    :key="tab.id"
+                    @click="activeTab = tab.id"
+                    role="tab"
+                    :aria-selected="activeTab === tab.id"
+                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                    :class="activeTab === tab.id ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-white/50'"
+                  >
+                    {{ tab.name }}
+                  </button>
+              </div>
             </div>
 
             <!-- Tab content -->
@@ -219,16 +156,6 @@
               <!-- Overview -->
               <div v-if="activeTab === 'overview'" class="prose max-w-none">
                 <div v-html="quiz.description || 'No description available.'"></div>
-                
-                <!-- Topic tags -->
-                <div class="mt-6 flex flex-wrap gap-2">
-                  <span v-if="quiz.topic_name" class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-indigo-50 text-indigo-700">
-                    {{ quiz.topic_name }}
-                  </span>
-                  <span v-if="quiz.subject_name" class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-50 text-purple-700">
-                    {{ quiz.subject_name }}
-                  </span>
-                </div>
               </div>
 
               <!-- Requirements -->
@@ -291,13 +218,19 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
-                  <span>{{ quiz.time_limit || 'No time limit' }}</span>
+                  <span>{{ quiz.timer_seconds ? formatTimeLimit(Math.floor(quiz.timer_seconds / 60)) : 'No time limit' }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                   </svg>
                   <span>{{ quiz.points || quiz.marks || 10 }} points possible</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span>{{ quiz.attempts_allowed ? `${quiz.attempts_allowed} attempts allowed` : 'Unlimited attempts' }}</span>
                 </div>
               </div>
             </div>
@@ -323,17 +256,7 @@
       </div>
     </div>
 
-    <!-- Mobile bottom action bar -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden">
-      <div class="flex gap-3">
-        <button @click="showPreview" class="flex-1 px-4 py-3 border rounded-lg">
-          Preview
-        </button>
-        <button @click="startQuiz" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg">
-          Start Quiz
-        </button>
-      </div>
-    </div>
+  
   </div>
 </template>
 
@@ -341,13 +264,13 @@
 definePageMeta({ layout: 'quizee' })
 
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
 
-// Fetch quiz data
+// Fetch data without blocking, use `pending` for loading state
 const { data: quizData, pending } = await useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`)
 const quiz = quizData?.value?.quiz || quizData?.value || { 
   id: route.params.id, 
@@ -355,6 +278,12 @@ const quiz = quizData?.value?.quiz || quizData?.value || {
   description: '', 
   questions: [] 
 }
+
+// Computed properties for nested data
+const topic_name = computed(() => quiz.topic?.name)
+const subject_name = computed(() => quiz.topic?.subject?.name)
+const grade_id = computed(() => quiz.topic?.subject?.grade_id)
+const difficulty_level = computed(() => getDifficultyLevel(quiz.difficulty))
 
 // Tab configuration
 const tabs = [
@@ -417,11 +346,6 @@ function formatVimeoUrl(url) {
   return `https://player.vimeo.com/video/${vimeoId}?dnt=1&title=0&byline=0&portrait=0`
 }
 
-// Media loading handler
-function handleMediaLoad() {
-  mediaLoaded.value = true
-}
-
 // Format time limit for display
 function formatTimeLimit(limit) {
   if (!limit) return '∞'
@@ -431,15 +355,26 @@ function formatTimeLimit(limit) {
   return mins ? `${hours}h ${mins}m` : `${hours}h`
 }
 
+// Get difficulty level text
+function getDifficultyLevel(level) {
+  if (!level) return 'Medium'
+  switch (level) {
+    case 1: return 'Easy'
+    case 2: return 'Medium'
+    case 3: return 'Hard'
+    case 4: return 'Expert'
+    default: return 'Medium'
+  }
+}
+
 // Get emoji for difficulty level
-function getDifficultyEmoji(difficulty) {
-  const level = difficulty?.toLowerCase()
+function getDifficultyEmoji(level) {
   if (!level) return '📚'
   switch (level) {
-    case 'easy': return '🌟'
-    case 'medium': return '⭐⭐'
-    case 'hard': return '🔥'
-    case 'expert': return '💪'
+    case 1: return '🌟'
+    case 2: return '⭐⭐'
+    case 3: return '🔥'
+    case 4: return '💪'
     default: return '📚'
   }
 }

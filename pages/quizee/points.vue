@@ -7,37 +7,121 @@
     />
 
     <div class="p-6 max-w-7xl mx-auto">
+      <!-- Level Progress -->
+      <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div class="flex items-center gap-4">
+            <div 
+              class="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
+              :style="{ backgroundColor: userStats.level?.color_scheme + '20', color: userStats.level?.color_scheme }"
+            >
+              {{ userStats.level?.icon || '🎯' }}
+            </div>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Level {{ userStats.level?.name || 'Novice' }}</h2>
+              <p class="text-gray-600">{{ userStats.level?.description }}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-500">Next Level</p>
+            <p class="font-medium">{{ userStats.next_level?.points_needed || 0 }} points needed</p>
+          </div>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+          <div 
+            class="h-full rounded-full transition-all duration-500"
+            :style="{ 
+              width: `${userStats.level?.progress || 0}%`,
+              backgroundColor: userStats.level?.color_scheme 
+            }"
+          ></div>
+        </div>
+        <p class="text-sm text-gray-500 text-center">{{ userStats.level?.progress || 0 }}% to {{ userStats.next_level?.name || 'next level' }}</p>
+      </div>
+
       <!-- Points Summary -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
           <p class="text-sm text-gray-500">Total Points</p>
           <p class="text-4xl font-bold text-indigo-600 mt-2">{{ userStats.total_points || 0 }}</p>
+          <p class="text-xs text-gray-500 mt-2">Lifetime earnings</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
           <p class="text-sm text-gray-500">Current Rank</p>
           <p class="text-4xl font-bold text-gray-800 mt-2">#{{ userStats.rank || 'N/A' }}</p>
+          <p class="text-xs text-gray-500 mt-2">Among all quizees</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
-          <p class="text-sm text-gray-500">Quizzes Completed</p>
-          <p class="text-4xl font-bold text-gray-800 mt-2">{{ userStats.quizzes_completed || 0 }}</p>
+          <p class="text-sm text-gray-500">Achievements</p>
+          <p class="text-4xl font-bold text-emerald-600 mt-2">
+            {{ userStats.unlocked_achievements || 0 }}/{{ userStats.total_achievements || 0 }}
+          </p>
+          <p class="text-xs text-gray-500 mt-2">Badges unlocked</p>
         </div>
       </div>
 
-      <!-- Badges Section -->
+      <!-- Achievements Section -->
       <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">My Badges</h2>
-        <div v-if="loading" class="flex gap-4 overflow-x-auto pb-4">
-          <UiSkeleton v-for="i in 4" :key="i" class="h-24 w-24 rounded-full flex-shrink-0" />
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-900">My Achievements</h2>
+          <NuxtLink to="/quizee/badges" class="text-sm text-indigo-600 hover:text-indigo-800">View All Achievements →</NuxtLink>
         </div>
-        <div v-else-if="!badges.length" class="text-center py-8 text-gray-500">
-          <p>No badges earned yet.</p>
-          <p class="text-sm mt-1">Keep completing quizzes and challenges to earn them!</p>
+
+        <div v-if="loading" class="space-y-4">
+          <UiSkeleton v-for="i in 3" :key="i" class="h-32" />
         </div>
-        <div v-else class="flex gap-4 overflow-x-auto pb-4">
-          <div v-for="badge in badges" :key="badge.id" class="flex flex-col items-center text-center w-28 flex-shrink-0">
-            <img :src="badge.icon_url || '/logo/badge-placeholder.svg'" :alt="badge.name" class="w-20 h-20 mb-2" />
-            <p class="text-sm font-medium text-gray-800">{{ badge.name }}</p>
-            <p class="text-xs text-gray-500">{{ new Date(badge.earned_at).toLocaleDateString() }}</p>
+
+        <div v-else-if="!achievements.length" class="text-center py-8 text-gray-500">
+          <p>No achievements unlocked yet.</p>
+          <p class="text-sm mt-1">Complete quizzes and take on challenges to earn achievements!</p>
+        </div>
+
+        <div v-else class="space-y-6">
+          <!-- Recently Unlocked -->
+          <div v-if="recentAchievements.length" class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recently Unlocked 🎉</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div v-for="achievement in recentAchievements" :key="achievement.id" 
+                   class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl text-white">
+                  {{ achievement.icon }}
+                </div>
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900">{{ achievement.name }}</h4>
+                  <p class="text-sm text-gray-600">{{ achievement.description }}</p>
+                  <p class="text-xs text-indigo-600 mt-1">Earned {{ formatDate(achievement.completed_at) }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Next Achievements -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Next Achievements to Unlock 🎯</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div v-for="achievement in nextAchievements" :key="achievement.id" 
+                   class="border rounded-lg p-4">
+                <div class="flex items-center gap-4 mb-3">
+                  <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl">
+                    {{ achievement.icon }}
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">{{ achievement.name }}</h4>
+                    <p class="text-sm text-gray-600">{{ achievement.description }}</p>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">Progress</span>
+                    <span class="font-medium">{{ achievement.progress }}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-indigo-600 h-2 rounded-full transition-all" 
+                         :style="{ width: `${achievement.progress}%` }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -73,7 +157,7 @@
           <p class="text-sm mt-1">Complete quizzes and challenges to earn points!</p>
         </div>
         <ul v-else class="divide-y divide-gray-200">
-          <li v-for="item in activity" :key="item.id" class="py-4 flex justify-between items-center">
+          <li v-for="item in activity" :key="item.id" class="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center">
             <div>
               <p class="font-medium text-gray-800">{{ item.description }}</p>
               <p class="text-sm text-gray-500">{{ new Date(item.created_at).toLocaleString() }}</p>
@@ -102,8 +186,10 @@ const alert = useAppAlert()
 
 const userStats = ref({})
 const activity = ref([])
-const badges = ref([])
+const achievements = ref([])
 const loading = ref(true)
+const recentAchievements = ref([])
+const nextAchievements = ref([])
 
 const availableRewards = ref([
   { id: 1, name: 'Ksh 50 Airtime', description: 'Get a KES 50 airtime voucher for any network.', points: 500, icon: '📱' },
@@ -114,29 +200,70 @@ const availableRewards = ref([
 onMounted(async () => {
   loading.value = true
   try {
-    const [rewardsRes, badgesRes] = await Promise.all([
-      api.get('/api/rewards/my'),
-      api.get('/api/user/badges')
+    const [achievementsRes, rewardsRes] = await Promise.all([
+      api.get('/api/achievements/progress').then(res => res.ok ? res.json() : null),
+      api.get('/api/rewards/my').then(res => res.ok ? res.json() : null)
     ])
     
-    userStats.value = rewardsRes.data?.stats || {}
-    activity.value = rewardsRes.data?.activity || []
-    badges.value = badgesRes.data?.badges || []
+    if (!achievementsRes || !rewardsRes) {
+      throw new Error('Failed to load data')
+    }
+    
+    // Update achievements data
+    achievements.value = achievementsRes.achievements || []
+    
+    // Process recent and next achievements
+    recentAchievements.value = achievements.value
+      .filter(a => a.unlocked && a.completed_at)
+      .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))
+      .slice(0, 3)
+
+    nextAchievements.value = achievements.value
+      .filter(a => !a.unlocked)
+      .sort((a, b) => b.progress - a.progress)
+      .slice(0, 3)
+
+    // Update user stats
+    userStats.value = {
+      total_points: achievementsRes.stats.total_points || 0,
+      unlocked_achievements: achievementsRes.stats.unlocked_achievements || 0,
+      total_achievements: achievementsRes.stats.total_achievements || 0,
+      rank: rewardsRes.stats?.rank || 'N/A'
+    }
+
+    // Update activity
+    activity.value = rewardsRes.activity || []
 
   } catch (error) {
     console.error("Failed to fetch points data:", error)
-    alert.push({ type: 'error', message: 'Could not load your points and rewards.' })
+    alert.push({ type: 'error', message: 'Could not load your points and achievements.' })
   } finally {
     loading.value = false
   }
 })
 
-function redeem(reward) {
-  // Optimistic UI: Show a success message.
-  // In a real app, you would call an API endpoint here.
-  alert.push({
-    type: 'success',
-    message: `You have successfully redeemed "${reward.name}"!`,
-  })
+function formatDate(dateString) {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+async function redeem(reward) {
+  try {
+    const res = await api.post('/api/rewards/redeem', { id: reward.id })
+    if (!res.ok) {
+      throw new Error('Failed to redeem reward')
+    }
+    alert.push({
+      type: 'success',
+      message: `You have successfully redeemed "${reward.name}"!`,
+    })
+  } catch (error) {
+    console.error("Failed to redeem reward:", error)
+    alert.push({
+      type: 'error',
+      message: 'Failed to redeem reward. Please try again.',
+    })
+  }
 }
 </script>

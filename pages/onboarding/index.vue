@@ -124,11 +124,27 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 
+// Page meta: use the authenticated layout and require auth middleware
+definePageMeta({
+  layout: 'auth',
+  middleware: ['auth']
+})
+
 const message = ref(null)
 const error = ref(null)
 const router = useRouter()
 const auth = useAuthStore()
 const config = useRuntimeConfig()
+
+// Dynamic head/meta based on current user
+useHead(() => ({
+  title: `Complete Your Profile | Modeh`,
+  meta: [
+    { name: 'description', content: `Complete your ${auth.user?.name || 'user'} profile on Modeh to get started` },
+    { property: 'og:title', content: `Complete Your Profile | Modeh` },
+    { property: 'og:description', content: `Complete your ${auth.user?.name || 'user'} profile on Modeh to get started` }
+  ]
+}))
 
 // Data for forms
 const institutionForm = ref({ name: '' })
@@ -147,8 +163,8 @@ async function fetchData() {
       $fetch(config.public.apiBase + '/api/grades', { credentials: 'include' }),
       $fetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
     ])
-    grades.value = gradesRes.data || gradesRes
-    subjects.value = subjectsRes.data || subjectsRes
+  grades.value = (gradesRes?.data || gradesRes || []).filter ? (gradesRes?.data || gradesRes || []).filter(Boolean) : []
+  subjects.value = (subjectsRes?.data || subjectsRes || []).filter ? (subjectsRes?.data || subjectsRes || []).filter(Boolean) : []
   } catch (err) {
     console.error('Failed to fetch data:', err)
     error.value = 'Failed to load form data. Please refresh the page.'

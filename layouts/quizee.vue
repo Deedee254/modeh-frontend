@@ -8,17 +8,17 @@
         </ClientOnly>
       </div>
       <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
-      <div class="flex-1 flex flex-col h-screen transition-all duration-300" :class="[ui.sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64']">
+  <div class="flex-1 flex flex-col h-screen transition-all duration-300 lg:ml-0">
         <TopBar v-if="!route.meta.hideTopBar" />
         <main class="flex-1 overflow-y-auto pb-20 md:pb-6">
-          <slot />
+          <slot></slot>
         </main>
       </div>
     </div>
 
     <div v-else class="min-h-screen flex flex-col bg-white">
       <Header />
-      <main class="flex-1 py-8"><slot /></main>
+  <main class="flex-1 py-8"><slot></slot></main>
       <Footer />
     </div>
 

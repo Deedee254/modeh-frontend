@@ -54,7 +54,7 @@
         class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
       >
         <option :value="0">All topics</option>
-        <option v-for="t in topics" :key="t.id" :value="t.id">{{ t.name }}</option>
+  <option v-for="(t, idx) in (Array.isArray(topics) ? topics.filter(Boolean) : [])" :key="t?.id || idx" :value="t?.id">{{ t?.name }}</option>
       </select>
       <select 
         v-model.number="perPage" 
@@ -80,8 +80,8 @@
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <QuizCard
-          v-for="quiz in normalizedQuizzes"
-          :key="quiz.id"
+          v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
+          :key="quiz?.id || idx"
           :to="''"
           :startLink="quiz.startLink"
           :title="quiz.title"
@@ -110,6 +110,7 @@
 <script setup>
 definePageMeta({ layout: 'quiz-master' })
 import { ref, onMounted, computed } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useRouter } from 'vue-router'
@@ -117,6 +118,7 @@ import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import Pagination from '~/components/Pagination.vue'
+import FilterLayout from '~/components/layout/FilterLayout.vue'
 
 const router = useRouter()
 const alert = useAppAlert()
@@ -127,6 +129,7 @@ const isAdmin = computed(() => !!auth.user?.is_admin)
 
 const paginator = ref(null)
 const topics = ref([])
+const { fetchAllTopics, topics: taxTopics } = useTaxonomy()
 const loading = ref(false)
 const q = ref('')
 const perPage = ref(10)
@@ -160,7 +163,7 @@ function onServerSearch(search) {
   fetchItems()
 }
 
-onMounted(async () => { await Promise.all([fetchItems(), fetchTopics()]) })
+onMounted(async () => { await Promise.all([fetchItems(), fetchTopics(), fetchAllTopics()]); topics.value = Array.isArray(taxTopics.value) ? taxTopics.value : topics.value })
 
 async function fetchTopics() {
   try {

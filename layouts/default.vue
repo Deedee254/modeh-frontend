@@ -12,7 +12,7 @@
       </main>
     </template>
     <template v-else>
-      <slot />
+  <slot></slot>
     </template>
 
     <Footer />

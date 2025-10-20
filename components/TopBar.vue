@@ -15,66 +15,80 @@
   <!-- Navigation (hidden on mobile) -->
   <nav class="hidden md:flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6">
           <template v-if="isquizee && auth.user">
-            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900">Grades</NuxtLink>
-            <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900">Subjects</NuxtLink>
-            <NuxtLink to="/topics" class="text-sm text-gray-600 hover:text-gray-900">Topics</NuxtLink>
-            <NuxtLink to="/quizee/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900">Quiz Masters</NuxtLink>
+            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
+            <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Subjects</NuxtLink>
+            <NuxtLink to="/topics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Topics</NuxtLink>
+            <NuxtLink to="/quizee/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quiz Masters</NuxtLink>
           </template>
           <template v-else>
-            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900">Grades</NuxtLink>
-            <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900">Quizzes</NuxtLink>
-            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900">Quizees</NuxtLink>
-            <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900">Analytics</NuxtLink>
+            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
+            <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quizzes</NuxtLink>
+            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quizees</NuxtLink>
+            <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Analytics</NuxtLink>
           </template>
         </nav>
       </div>
 
-  <div class="flex items-center gap-2 sm:gap-4">
-        <!-- Notifications (icon-only) -->
-        <NotificationsDropdown @update:unread="(v) => { unreadCount.value = v }" />
+      <div class="flex items-center gap-4">
+        <!-- Chat Button -->
+        <button @click="openChatDrawer" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input text-primary bg-background hover:bg-accent hover:text-accent-foreground size-10 relative" aria-label="Chat">
+          <ChatBubbleOvalLeftEllipsisIcon class="h-5 w-5" />
+          <span v-if="unreadChatCount > 0" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+            {{ unreadChatCount }}
+          </span>
+        </button>
 
-        <!-- Points (quizee only) -->
-        <template v-if="isquizee">
-          <button class="relative p-2 rounded-full text-gray-500 hover:bg-gray-100" title="Points" aria-label="Points">
-            <svg class="w-5 h-5 text-yellow-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 5.88L21 9.24l-4.5 4.38L17.8 21 12 17.77 6.2 21l1.3-7.38L3 9.24l6.1-1.36L12 2z"/></svg>
-          </button>
-        </template>
-        <!-- Wallet (quiz-master only) -->
-        <template v-else>
-          <NuxtLink to="/quiz-master/wallet" class="relative p-2 rounded-full text-gray-500 hover:bg-gray-100" title="Wallet" aria-label="Wallet">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16 3v4M8 3v4" /></svg>
+        <!-- Notifications Dropdown -->
+        <button @click="onOpenNotifications" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input text-primary bg-background hover:bg-accent hover:text-accent-foreground size-10 relative" aria-label="Notifications">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell h-5 w-5" aria-hidden="true">
+            <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+            <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path>
+          </svg>
+          <span v-if="notificationsCount > 0" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+            {{ notificationsCount }}
+          </span>
+        </button>
+        <!-- Theme Toggle -->
+        <ThemeToggle />
+
+        <!-- Points & Level (quizee) or Wallet (quiz-master) -->
+        <template v-if="auth.user">
+          <template v-if="isquizee">
+            <NuxtLink to="/quizee/points" class="flex items-center gap-4 max-sm:hidden">
+              <div class="flex items-center gap-2 rounded-full border px-3 py-1.5">
+                <span class="text-sm font-medium">{{ auth.user.points || 0 }}</span>
+                <span class="text-yellow-500">⭐</span>
+              </div>
+              <UiLevelProgress />
+            </NuxtLink>
+          </template>
+          <NuxtLink v-else to="/quiz-master/wallet" class="flex items-center gap-2 rounded-full border px-3 py-1.5 max-sm:hidden">
+            <span class="text-sm font-medium">{{ walletAmount }}</span>
+            <span class="text-green-500">💰</span>
           </NuxtLink>
         </template>
-
-        <!-- Chat button (smaller on mobile) -->
-        <button @click="goToChat" class="p-1.5 sm:p-2 rounded-full text-gray-500 hover:bg-gray-100" aria-label="Chat">
-          <ChatBubbleOvalLeftEllipsisIcon class="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
 
         <client-only>
           <div id="topbar-user-menu" class="relative">
             <template v-if="auth.user && auth.user.id">
               <ActionMenu>
                 <template #trigger>
-                  <!-- Avatar: use consistent size and minimal extra padding so it looks good on mobile and desktop -->
-                  <button class="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" aria-label="User menu">
-                    <img :src="userAvatar" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover object-center" alt="User avatar" />
+                  <button class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full" aria-label="User menu">
+                    <span class="relative flex shrink-0 overflow-hidden rounded-full h-8 w-8">
+                      <img class="aspect-square h-full w-full object-cover" :alt="userName" :src="userAvatar" />
+                    </span>
                   </button>
                 </template>
 
                 <template #items="{ close }">
                   <div class="px-4 py-3">
-                    <p class="text-sm text-gray-900 dark:text-white">Signed in as</p>
+                    <p class="text-sm text-gray-900 dark:text-white">Signed in as {{ userName }}</p>
                     <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ auth.user.email }}</p>
                   </div>
                   <div class="border-t border-gray-200 dark:border-slate-700"></div>
                   <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Dashboard</NuxtLink>
                   <NuxtLink :to="isquizee ? '/quizee/profile' : '/quiz-master/profile'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Profile</NuxtLink>
                   <NuxtLink :to="isquizee ? '/quizee/settings' : '/quiz-master/settings'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Settings</NuxtLink>
-                  <div class="border-t border-gray-200 dark:border-slate-700"></div>
-                  <div class="px-4 py-2">
-                    <ThemeToggle />
-                  </div>
                   <div class="border-t border-gray-200 dark:border-slate-700"></div>
                   <button @click="() => { onLogout(); close && close() }" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Sign out</button>
                 </template>
@@ -85,7 +99,6 @@
               <div class="flex items-center gap-2">
                 <NuxtLink to="/login" class="text-sm text-gray-700 hover:text-gray-900">Sign in</NuxtLink>
                 <NuxtLink to="/register" class="hidden sm:block text-sm text-indigo-600 hover:text-indigo-700">Register</NuxtLink>
-                <ThemeToggle />
               </div>
             </template>
           </div>
@@ -93,8 +106,14 @@
       </div>
     </div>
 
+    <!-- Chat Drawer -->
+    <ChatDrawer :is-open="isChatDrawerOpen" @close="closeChatDrawer" @view-all="goToChat" :loading="loadingRecentChats" :chats="recentChats" @open-conversation="openConversation" @update:is-open="isChatDrawerOpen = $event" />
+
+    <!-- Notifications Drawer -->
+    <NotificationDrawer />
+
     <!-- Mobile topbar menu (opened by hamburger on small screens) -->
-    <div v-if="ui.mobileNavOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 sm:hidden" role="dialog" aria-modal="true">
+    <div v-if="ui.mobileNavOpen" class="fixed inset-0 z-40 bg-gray-500 bg-opacity-75 sm:hidden" @click="ui.mobileNavOpen = false" role="dialog" aria-modal="true">
       <div class="absolute top-0 left-0 right-0 bg-white p-4">
         <div class="flex items-center justify-between">
           <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="flex items-center">
@@ -162,17 +181,20 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, watchEffect } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
-import { BellIcon, MagnifyingGlassIcon, ChatBubbleOvalLeftEllipsisIcon, Bars3Icon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, ChatBubbleOvalLeftEllipsisIcon, Bars3Icon } from '@heroicons/vue/24/outline'
 import { useNotificationsStore } from '~/stores/notifications'
-import { useAppTheme } from '~/composables/useAppTheme'
 import { useUserRole } from '~/composables/useUserRole'
 import { useUiStore } from '~/stores/ui'
-import { useMobileNav } from '~/composables/useMobileNav'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
-import ThemeToggle from '~/components/ThemeToggle.vue'
+import UiLevelProgress from '~/components/ui/LevelProgress.vue'
+import NotificationDrawer from '~/components/NotificationDrawer.vue'
+import ChatDrawer from '~/components/ChatDrawer.vue'
 
 const q = ref('')
 const showSearch = ref(false)
+const isChatDrawerOpen = ref(false)
+const recentChats = ref([])
+const loadingRecentChats = ref(false)
 const unreadCount = ref(0)
 const onlineCount = ref(0)
 let privateChannel = null
@@ -186,7 +208,6 @@ const { isquizee } = useUserRole()
 
 const searchInput = ref(null)
 const mobileSearchInput = ref(null)
-const { isDark, toggleTheme } = useAppTheme()
 const ui = useUiStore()
 const route = useRoute()
 
@@ -221,6 +242,7 @@ function onLogout() {
 }
 
 function performSearch() {
+  closeAllDrawers()
   const term = (q.value || '').trim()
   if (!term) return
   const base = isquizee.value ? '/quizee/search' : '/quiz-master/search'
@@ -228,13 +250,87 @@ function performSearch() {
 }
 
 function goToChat() {
+  closeAllDrawers()
   router.push(isquizee.value ? '/quizee/chat' : '/quiz-master/chat')
 }
 
-function onOpenNotifications() {
-  notifications.openDrawer()
-  notifications.fetchNotifications().catch(() => {})
+function openChatDrawer() {
+  isChatDrawerOpen.value = true
+  fetchRecentChats()
 }
+  async function fetchRecentChats() {
+    loadingRecentChats.value = true
+    try {
+      const res = await fetch(useRuntimeConfig().public.apiBase + '/api/chat/threads?limit=5', { credentials: 'include' })
+      if (res.ok) {
+        const json = await res.json()
+        recentChats.value = json.conversations || []
+      }
+    } catch (e) {
+      console.error('Error fetching recent chats:', e)
+    } finally {
+      loadingRecentChats.value = false
+    }
+  }
+
+function openConversation(chat) {
+  closeAllDrawers()
+  const basePath = isquizee.value ? '/quizee/chat' : '/quiz-master/chat'
+  router.push({
+    path: basePath,
+    query: {
+      user_id: chat.other_user_id || chat.otherId || chat.id,
+      type: 'direct'
+    }
+  })
+}
+
+// Placeholder for real-time chat unread count
+const unreadChatCount = ref(0)
+
+async function updateUnreadCount() {
+  try {
+    // The backend exposes threads with unread_count per conversation/group.
+    // Aggregate unread_count from conversations and groups instead of calling a non-existent endpoint.
+    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/chat/threads', { credentials: 'include' })
+    if (res.ok) {
+      const json = await res.json()
+      let count = 0
+      const convs = json.conversations || []
+      for (const c of convs) {
+        count += Number(c.unread_count || 0)
+      }
+      const groups = json.groups || []
+      for (const g of groups) {
+        count += Number(g.unread_count || 0)
+      }
+      unreadChatCount.value = count
+    }
+  } catch (e) {
+    console.error('Error fetching unread count:', e)
+  }
+}
+
+// Update unread count when messages are received
+if (privateChannel) {
+  privateChannel.listen('.MessageSent', () => {
+    updateUnreadCount()
+  })
+}
+
+// Initial load of unread count
+onMounted(() => {
+  updateUnreadCount()
+})
+
+
+function closeChatDrawer() {
+  isChatDrawerOpen.value = false
+}
+
+function   onOpenNotifications() {
+    notifications.openDrawer()
+  }
 function bindEcho(userId) {
   let echo = null
   // Only call inject inside setup or lifecycle
@@ -296,6 +392,12 @@ function onKeyDown(e) {
   }
 }
 
+function closeAllDrawers() {
+  isChatDrawerOpen.value = false
+  notifications.closeDrawer()
+  ui.mobileNavOpen = false
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
   if (import.meta.client) {
@@ -320,16 +422,7 @@ onMounted(() => {
     }
   })
 
-  watch(
-    () => auth.user,
-    (u) => {
-      if (import.meta.client && u) {
-        notifications.attachEchoListeners()
-      } else {
-        notifications.detachEchoListeners()
-      }
-    }
-  )
+  // Removed notifications watch as it's now handled in NotificationDrawer.vue
 })
 
 onBeforeUnmount(() => {
@@ -343,19 +436,4 @@ const userName = computed(() => auth.user?.name || 'User')
 const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
 
-const showUserMenu = ref(false)
-function toggleUserMenu() { showUserMenu.value = !showUserMenu.value }
-function closeUserMenu() { showUserMenu.value = false }
-
-onMounted(() => {
-  if (import.meta.client) {
-    const onDocClick = (e) => {
-      const el = document.querySelector('#topbar-user-menu')
-      if (!el) return
-      if (!el.contains(e.target)) closeUserMenu()
-    }
-    document.addEventListener('click', onDocClick)
-    onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
-  }
-})
 </script>

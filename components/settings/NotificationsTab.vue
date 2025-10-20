@@ -7,7 +7,7 @@
 
       <!-- Preferences editor -->
       <div class="mb-6 p-4 border rounded">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <h4 class="font-medium">Notification Preferences</h4>
           <div class="text-sm text-gray-500">Control how you receive notifications</div>
         </div>
@@ -42,7 +42,7 @@
       <div v-if="notifications.length === 0" class="text-sm text-gray-600">No notifications.</div>
 
       <ul class="space-y-3">
-        <li v-for="n in notifications" :key="n.id" class="p-3 border rounded flex justify-between items-start">
+        <li v-for="n in notifications" :key="n.id" class="p-3 border rounded flex flex-col sm:flex-row sm:justify-between sm:items-start">
           <div>
             <div class="font-semibold">{{ n.title || n.type }}</div>
             <div class="text-sm text-gray-700 mt-1">{{ n.body || (n.data && n.data.message) }}</div>

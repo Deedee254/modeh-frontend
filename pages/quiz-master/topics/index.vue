@@ -40,8 +40,8 @@
           class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
         >
           <option value="">All Subjects</option>
-          <option v-for="subject in subjects" :key="subject.id" :value="subject.id">
-            {{ subject.name }}
+          <option v-for="(subject, idx) in (Array.isArray(subjects) ? subjects.filter(Boolean) : [])" :key="subject?.id || idx" :value="subject?.id">
+            {{ subject?.name }}
           </option>
         </select>
         <select 
@@ -49,8 +49,8 @@
           class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
         >
           <option value="">All Grades</option>
-          <option v-for="grade in grades" :key="grade.id" :value="grade.id">
-            {{ grade.name }}
+          <option v-for="(grade, idx) in (Array.isArray(grades) ? grades.filter(Boolean) : [])" :key="grade?.id || idx" :value="grade?.id">
+            {{ grade?.name }}
           </option>
         </select>
       </div>
@@ -59,17 +59,17 @@
     <!-- Topics Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <TopicCard
-        v-for="topic in filteredTopics"
-        :key="topic.id"
-        :title="topic.name"
-        :image="topic.image || topic.cover_image || ''"
-        :grade="topic.grade?.name || topic.grade_name || topic.grade || ''"
-        :subject="topic.subject?.name || topic.subject_name || ''"
-        :description="topic.description || topic.summary || ''"
-        :quizzesCount="topic.quizzes_count || topic.quizzesCount || 0"
-        :startLink="`/quiz-master/quizzes/create?topic_id=${topic.id}&subject_id=${topic.subject_id || topic.subject?.id || ''}`"
+        v-for="(topic, idx) in (Array.isArray(filteredTopics) ? filteredTopics.filter(Boolean) : [])"
+        :key="topic?.id || idx"
+        :title="topic?.name"
+        :image="topic?.image || topic?.cover_image || ''"
+        :grade="topic?.grade?.name || topic?.grade_name || topic?.grade || ''"
+        :subject="topic?.subject?.name || topic?.subject_name || ''"
+        :description="topic?.description || topic?.summary || ''"
+        :quizzesCount="topic?.quizzes_count || topic?.quizzesCount || 0"
+        :startLink="`/quiz-master/quizzes/create?topic_id=${topic?.id}&subject_id=${topic?.subject_id || topic?.subject?.id || ''}`"
         :startLabel="'Create Quiz'"
-        @click="handleTopicClick(topic)"
+        @click="topic && handleTopicClick(topic)"
       />
       <div v-if="filteredTopics.length === 0" class="col-span-full text-center py-12 text-gray-500">
         No topics found. Try adjusting your filters or create a new topic.
@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
@@ -119,13 +119,19 @@ const { data: topicsResponse, refresh } = await useFetch(config.public.apiBase +
     per_page: perPage.value
   }
 })
+const { data: subjectsData } = {} // kept for compatibility if needed
 
-const { data: subjectsData } = await useFetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
-const { data: gradesData } = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
+import useTaxonomy from '~/composables/useTaxonomy'
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 
 const topics = computed(() => topicsResponse.value?.topics?.data || [])
-const subjects = computed(() => subjectsData.value?.subjects?.data || [])
-const grades = computed(() => gradesData.value?.grades || [])
+const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
+const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
+
+onMounted(async () => {
+  // ensure taxonomy lists are available for filters
+  await Promise.all([fetchGrades(), fetchAllSubjects()])
+})
 
 // Computed filtered topics based on search and filters
 const filteredTopics = computed(() => {

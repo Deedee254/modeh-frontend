@@ -11,31 +11,27 @@
       <div class="space-y-3">
   <label class="text-xs text-gray-700 dark:text-gray-300">Question text (use __ for blanks)</label>
 
-        <!-- Inline editor toolbar buttons for math/code using exposed editor API -->
         <div class="flex flex-wrap items-center gap-2 mt-2 mb-2">
-          <button type="button" @click="insertInlineMath" class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-200">Inline Math</button>
-          <button type="button" @click="insertBlockMath" class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-200">Block Math</button>
-          <button type="button" @click="toggleInlineCode" class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-200">Inline code</button>
-          <button type="button" @click="toggleCodeBlock" class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-200">Code block</button>
           <button type="button" @click="focusEditor" class="ml-auto text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-200 mt-2 sm:mt-0">Focus editor</button>
         </div>
 
-        <RichTextEditor ref="editorRef" :features="{ math: true, code: true }" v-model="form.body" @error="onEditorError" />
+        <RichTextEditor ref="editorRef" v-model="form.body" @error="onEditorError" />
       </div>
 
       <div class="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
           <label class="text-xs text-gray-400 dark:text-gray-500">Type</label>
           <div class="flex items-center gap-4">
-            <select v-model="form.type" class="w-full rounded px-2 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200">
-              <option value="mcq">Multiple Choice</option>
-              <option value="multi">Multiple select</option>
-              <option value="short">Short answer</option>
-              <option value="fill_blank">Fill in the blank</option>
-              <option value="image_mcq">Image MCQ</option>
-              <option value="audio_mcq">Audio MCQ</option>
-              <option value="video_mcq">Video MCQ</option>
-            </select>
+              <select v-model="form.type" class="w-full rounded px-2 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200">
+                <option value="mcq">Multiple Choice (single correct)</option>
+                <option value="multi">Multiple Select (multiple correct)</option>
+                <option value="short">Short Answer</option>
+                <option value="numeric">Numeric Answer</option>
+                <option value="fill_blank">Fill in the Blanks</option>
+                <option value="image_mcq">Image Multiple Choice</option>
+                <option value="audio_mcq">Audio Multiple Choice</option>
+                <option value="video_mcq">Video Multiple Choice</option>
+              </select>
             <div class="flex items-center">
               <span class="text-xs text-gray-500 dark:text-gray-400 mr-2">Multi-select</span>
               <UToggle v-model="isMultiSelect" />
@@ -191,12 +187,11 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useRuntimeConfig } from '#imports'
 import { useAppAlert } from '~/composables/useAppAlert'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
-import 'katex/dist/katex.min.css'
-import renderMathInElement from 'katex/contrib/auto-render'
+// RichTextEditor will handle math/code rendering; no katex auto-render here
 
 const props = defineProps({
-  subjectId: { type: [String, Number], default: '' },
-  topicId: { type: [String, Number], default: '' },
+  subjectId: { type: Number, default: null },
+  topicId: { type: Number, default: null },
   prefill: { type: Object, default: null },
   // Optional: when provided, the builder will PATCH to /api/questions/:editId instead of creating
   editId: { type: [String, Number], default: null }
@@ -283,14 +278,8 @@ function onAudioChange(e) { audioFile.value = e.target.files?.[0] || null }
 
 function onEditorError(err) { alert.push({ message: 'Editor error: ' + (err?.message || err), type: 'error' }) }
 
-// Editor helper wrappers - call exposed methods safely
-function focusEditor() {
-  try { editorRef.value?.focus?.() } catch (e) {}
-}
-function insertInlineMath() { try { editorRef.value?.insertInlineMath?.('a = b + c') } catch (e) {} }
-function insertBlockMath() { try { editorRef.value?.insertBlockMath?.('E = mc^2') } catch (e) {} }
-function toggleCodeBlock() { try { editorRef.value?.toggleCodeBlock?.() } catch (e) {} }
-function toggleInlineCode() { try { editorRef.value?.toggleInlineCode?.() } catch (e) {} }
+// Editor helper wrapper - focus editor
+function focusEditor() { try { editorRef.value?.focus?.() } catch (e) {} }
 
 async function onSave() {
   // basic validation
@@ -422,26 +411,13 @@ function collapsedPreview(html) {
   return preview.replace(/\n/g, ' ')
 }
 
-// Re-run KaTeX auto-render for preview elements whenever steps change or expansion toggles
+// keep solution steps watcher for preview updates (no katex processing here)
 watch([
   () => form.value.solution_steps,
   () => expandedStep.value
 ], async () => {
   await nextTick()
-  try {
-    document.querySelectorAll('.katex-preview').forEach(el => {
-      try {
-        renderMathInElement(el, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false },
-            { left: '\\(', right: '\\)', display: false },
-            { left: '\\[', right: '\\]', display: true }
-          ]
-        })
-      } catch (e) {}
-    })
-  } catch (e) {}
+  // Preview updates are handled by the RichTextEditor; nothing extra required here
 })
 
 function createAnother() {

@@ -105,6 +105,7 @@ const quizMaster = computed(() => {
 const auth = useAuthStore()
 const following = ref(false)
 const loadingFollow = ref(false)
+let followInFlight = false
 
 // initialize following based on returned payload (if API includes) - defensive
 if (quizMasterData.value && (quizMasterData.value.data?.is_following || quizMasterData.value.is_following)) {
@@ -113,6 +114,8 @@ if (quizMasterData.value && (quizMasterData.value.data?.is_following || quizMast
 
 async function followHandler() {
   if (!auth.user) return router.push('/login')
+  if (followInFlight) return
+  followInFlight = true
   const id = quizMasterId
   const current = following.value
   following.value = !current
@@ -127,12 +130,40 @@ async function followHandler() {
     if (!res.ok) {
       following.value = current
       alert.push({ message: 'Failed to follow/unfollow. Try again.', type: 'error' })
+    } else {
+      // If server returned an updated followers_count, use it
+      if (res.followers_count !== undefined && quizMaster.value) {
+        quizMaster.value.followers_count = res.followers_count
+      }
     }
   } catch (err) {
     following.value = current
     console.error('Follow failed', err)
   } finally {
     loadingFollow.value = false
+    followInFlight = false
+  }
+}
+
+// Attach Echo listener for follow events
+if (process.client && typeof window !== 'undefined' && window.Echo) {
+  try {
+    const ch = window.Echo.private(`quiz-master.${quizMasterId}`)
+    ch.listen('.App\\Events\\QuizMasterFollowed', (payload) => {
+      if (!payload || !payload.quizMaster) return
+      const id = payload.quizMaster.id
+      if (String(id) !== String(quizMasterId)) return
+
+      // Update followers_count if present
+      if (payload.quizMaster.followers_count !== undefined && quizMaster.value) {
+        quizMaster.value.followers_count = payload.quizMaster.followers_count
+      } else if (quizMaster.value) {
+        // fallback increment
+        quizMaster.value.followers_count = (quizMaster.value.followers_count || 0) + 1
+      }
+    })
+  } catch (e) {
+    console.error('Echo attach failed for quiz-master follow', e)
   }
 }
 

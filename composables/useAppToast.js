@@ -10,10 +10,7 @@ export function useAppToast() {
       console.warn('[deprecation] useAppToast is deprecated. Use useAppAlert instead.')
     }
     // Map toast shape to alert shape
-    const { message = '', type = 'info', timeout } = opts
-    const payload = { message, type }
-    if (timeout) payload.timeout = timeout
-    alert.push(payload)
+    alert.push({ ...opts })
     return null
   }
 

@@ -16,12 +16,12 @@
           </svg>
           <input v-model="q" @keyup.enter="fetchItems" placeholder="Search quizzes..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
         </div>
-        <select v-model.number="perPage" @change="fetchItems" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        <select v-model.number="perPage" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
           <option :value="5">5 per page</option>
-          <option :value="10">10 per page</option>
+          <option :value="12">12 per page</option>
           <option :value="20">20 per page</option>
         </select>
-        <select v-model.number="topicId" @change="fetchItems" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        <select v-model.number="topicId" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
           <option :value="0">All topics</option>
           <option v-for="t in (topics || [])" :key="t?.id ?? t" :value="t?.id">{{ t?.name }}</option>
         </select>
@@ -45,7 +45,7 @@
 
   <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
         <QuizCard
-          v-for="qitem in normalizedQuizzes"
+          v-for="qitem in (paginator?.data || [])"
           :key="qitem.id"
           :to="`/quizee/quizzes/${qitem.id}`"
           :startLink="`/quizee/quizzes/${qitem.id}`"
@@ -98,7 +98,7 @@ function pickPaletteClass(id) {
 }
 
 const q = ref('')
-const perPage = ref(10)
+const perPage = ref(12)
 const page = ref(1)
 const topicId = ref(0)
 
@@ -111,7 +111,7 @@ watch([q, perPage, page, topicId], () => {
   fetchItems({ q: q.value, per_page: perPage.value, page: page.value, topic_id: topicId.value })
 })
 
-onMounted(async () => { await Promise.all([fetchItems(), fetchTopics()]) })
+onMounted(async () => { await Promise.all([fetchItems({ q: q.value, per_page: perPage.value, page: page.value, topic_id: topicId.value }), fetchTopics()]) })
 
 // fetchItems & fetchTopics provided by composable
 

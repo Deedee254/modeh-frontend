@@ -164,17 +164,41 @@
 </template>
 
 <script setup>
+
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useRuntimeConfig } from '#app'
 import useApi from '~/composables/useApi'
 
-const router = useRouter()
+// Meta setup
+definePageMeta({
+  layout: 'auth',
+  middleware: ['auth']
+})
+
+// Dynamic meta information based on user state
 const auth = useAuthStore()
 
+useHead(() => ({
+  title: `Complete Your Profile | Modeh`,
+  meta: [
+    {
+      name: 'description',
+      content: `Complete your ${auth.user?.name || 'user'} profile on Modeh to get started`
+    },
+    {
+      property: 'og:title',
+      content: `Complete Your Profile | Modeh`
+    },
+    {
+      property: 'og:description',
+      content: `Complete your ${auth.user?.name || 'user'} profile on Modeh to get started`
+    }
+  ]
+}))
+
+const router = useRouter()
 const isLoading = ref(false)
-const error = ref(null)
 
 // Step configuration
 const steps = [

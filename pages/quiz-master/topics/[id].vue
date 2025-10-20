@@ -74,7 +74,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <QuizCard
           v-for="quiz in filteredQuizzes"
-          :key="quiz.id"
+          :key="quiz?.id || idx"
           :startLink="quiz.startLink"
           :title="quiz.title"
           :description="quiz.description"
@@ -109,6 +109,7 @@
 definePageMeta({ layout: 'quiz-master' })
 
 import { ref, onMounted, computed } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { useRoute, useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
@@ -202,6 +203,18 @@ async function fetchTopicDetails() {
     if (!res.ok) throw new Error('Failed to fetch topic details.')
     const data = await res.json()
     topic.value = data.topic || data.data
+    // warm related taxonomy caches so subject/grade lists are available elsewhere in the UI
+    try {
+      if (topic.value) {
+        // fetch subjects for the grade and topics for the subject (if available)
+        await Promise.all([
+          topic.value.grade_id ? fetchSubjectsByGrade(topic.value.grade_id) : Promise.resolve(),
+          topic.value.subject_id ? fetchTopicsBySubject(topic.value.subject_id) : Promise.resolve(),
+        ])
+      }
+    } catch (e) {
+      // ignore warming errors
+    }
   } catch (e) {
     alert.push({ type: 'error', message: e.message })
   }
@@ -218,6 +231,14 @@ async function fetchQuizzesForTopic() {
     alert.push({ type: 'error', message: e.message })
   }
 }
+
+// optionally warm taxonomy caches for related subjects/grades used in the UI
+const { fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
+onMounted(async () => {
+  try {
+    await fetchGrades()
+  } catch (e) {}
+})
 
 function createQuiz() {
   if (!topic.value) {

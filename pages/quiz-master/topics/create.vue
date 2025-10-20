@@ -49,8 +49,8 @@
           :class="{ 'border-red-300': errors.gradeId }"
         >
           <option value="">Select a grade</option>
-          <option v-for="grade in grades" :key="grade.id" :value="grade.id">
-            {{ grade.name }}
+          <option v-for="(grade, idx) in (Array.isArray(grades) ? grades.filter(Boolean) : [])" :key="grade?.id || idx" :value="grade?.id">
+            {{ grade?.name }}
           </option>
         </select>
         <p v-if="errors.gradeId" class="text-sm text-red-600">{{ errors.gradeId }}</p>
@@ -66,8 +66,8 @@
           :class="{ 'border-red-300': errors.subjectId }"
         >
           <option value="">Select a subject</option>
-          <option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
-            {{ subject.name }}
+          <option v-for="(subject, idx) in (Array.isArray(filteredSubjects) ? filteredSubjects.filter(Boolean) : [])" :key="subject?.id || idx" :value="subject?.id">
+            {{ subject?.name }}
           </option>
         </select>
         <p v-if="errors.subjectId" class="text-sm text-red-600">{{ errors.subjectId }}</p>
@@ -148,10 +148,11 @@ const imagePreview = ref('')
 const grades = ref([])
 const subjects = ref([])
 
-// Filter subjects based on selected grade
+// Filter subjects based on selected grade (robust to different key names and types)
 const filteredSubjects = computed(() => {
-  if (!form.value.gradeId) return subjects.value
-  return subjects.value.filter(subject => subject.gradeId === form.value.gradeId)
+  const all = Array.isArray(subjects.value) ? subjects.value : []
+  if (!form.value.gradeId) return all
+  return all.filter(subject => String(subject.grade_id || subject.gradeId || subject.grade || '') === String(form.value.gradeId))
 })
 
 // File handling functions
@@ -245,7 +246,7 @@ onMounted(async () => {
       const subjectsData = await subjectsRes.json()
 
       grades.value = gradesData?.grades || gradesData?.data || gradesData || []
-      subjects.value = subjectsData?.subjects || subjectsData?.data || subjectsData || []
+  subjects.value = (subjectsData?.subjects || subjectsData?.data || subjectsData || []).filter ? (subjectsData?.subjects || subjectsData?.data || subjectsData || []).filter(Boolean) : []
     }
   } catch (error) {
     console.error('Error fetching data:', error)

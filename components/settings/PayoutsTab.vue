@@ -14,20 +14,22 @@
       </select>
     </div>
 
-    <div>
-      <label class="block text-sm font-medium">Bank account number</label>
-      <input v-model="account.number" class="mt-1 block w-full border rounded px-2 py-1" />
-      <p v-if="errors.number" class="text-sm text-red-600 mt-1">{{ errors.number }}</p>
-    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium">Bank account number</label>
+          <input v-model="account.number" class="mt-1 block w-full border rounded px-2 py-1" />
+          <p v-if="errors.number" class="text-sm text-red-600 mt-1">{{ errors.number }}</p>
+        </div>
 
-    <div>
-      <label class="block text-sm font-medium">Routing number</label>
-      <input v-model="account.routing" class="mt-1 block w-full border rounded px-2 py-1" />
-      <p v-if="errors.routing" class="text-sm text-red-600 mt-1">{{ errors.routing }}</p>
+        <div>
+          <label class="block text-sm font-medium">Routing number</label>
+          <input v-model="account.routing" class="mt-1 block w-full border rounded px-2 py-1" />
+          <p v-if="errors.routing" class="text-sm text-red-600 mt-1">{{ errors.routing }}</p>
+        </div>
     </div>
 
     <div class="flex justify-end">
-      <button :disabled="submitting" class="px-4 py-2 bg-indigo-600 text-white rounded" type="submit">
+      <button :disabled="submitting" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded" type="submit">
         <span v-if="!submitting">Request withdrawal</span>
         <span v-else>Requesting...</span>
       </button>

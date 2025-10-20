@@ -12,7 +12,9 @@
         <div class="relative">
           <select v-model="localGrade" @change="() => {}" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
             <option value="">All grades</option>
-            <option v-for="g in gradeOptions" :key="g.id" :value="g.id">{{ g.name || ('Grade ' + g.id) }}</option>
+            <template v-for="(g, idx) in (gradeOptions || [])" :key="idx">
+              <option v-if="g" :key="g.id ?? idx" :value="g.id">{{ g.name || ('Grade ' + (g.id ?? idx)) }}</option>
+            </template>
           </select>
         </div>
       </div>
@@ -21,7 +23,9 @@
         <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
         <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
           <option value="">All subjects</option>
-          <option v-for="s in subjectOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
+          <template v-for="(s, idx) in (subjectOptions || [])" :key="idx">
+            <option v-if="s" :key="s.id ?? idx" :value="s.id">{{ s.name || '' }}</option>
+          </template>
         </select>
       </div>
 
@@ -29,7 +33,9 @@
         <label class="block text-xs font-medium text-gray-600 mb-1">Topic</label>
         <select v-model="localTopic" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
           <option value="">All topics</option>
-          <option v-for="t in filteredTopics" :key="t.id" :value="t.id">{{ t.name }}</option>
+          <template v-for="(t, idx) in (filteredTopics || [])" :key="idx">
+            <option v-if="t" :key="t.id ?? idx" :value="t.id">{{ t.name || '' }}</option>
+          </template>
         </select>
       </div>
 
@@ -49,9 +55,9 @@ const props = defineProps({
   topicOptions: { type: Array, default: () => [] },
   gradeOptions: { type: Array, default: () => [] },
   showTopic: { type: Boolean, default: true },
-  subject: { type: String, default: '' },
-  topic: { type: String, default: '' },
-  grade: { type: [String, Number], default: '' },
+  subject: { type: [Number, String], default: null },
+  topic: { type: [Number, String], default: null },
+  grade: { type: [Number, String], default: null },
   storageKey: { type: String, default: '' }
 })
 const emit = defineEmits(['update:subject', 'update:topic', 'update:grade', 'apply', 'clear'])

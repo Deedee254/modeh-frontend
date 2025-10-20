@@ -48,7 +48,7 @@ function openItem(type, id) {
     <section v-if="results.quizzes?.length">
       <h2 class="text-xl font-medium mt-4">Quizzes</h2>
       <ul class="mt-2 space-y-2">
-        <li v-for="quiz in results.quizzes" :key="quiz.id" class="p-3 border rounded hover:bg-gray-50 cursor-pointer" @click="openItem('quizzes', quiz.id)">
+  <li v-for="(quiz, idx) in (Array.isArray(results.quizzes) ? results.quizzes.filter(Boolean) : [])" :key="quiz?.id || idx" class="p-3 border rounded hover:bg-gray-50 cursor-pointer" @click="openItem('quizzes', quiz?.id)">
           <div class="font-medium">{{ quiz.title }}</div>
           <div class="text-sm text-gray-500">{{ quiz.description }}</div>
         </li>
@@ -58,7 +58,7 @@ function openItem(type, id) {
     <section v-if="results.questions?.length">
       <h2 class="text-xl font-medium mt-4">Questions</h2>
       <ul class="mt-2 space-y-2">
-        <li v-for="qItem in results.questions" :key="qItem.id" class="p-3 border rounded hover:bg-gray-50 cursor-pointer" @click="openItem('questions', qItem.id)">
+  <li v-for="(qItem, idx) in (Array.isArray(results.questions) ? results.questions.filter(Boolean) : [])" :key="qItem?.id || idx" class="p-3 border rounded hover:bg-gray-50 cursor-pointer" @click="openItem('questions', qItem?.id)">
           <div class="font-medium">{{ qItem.text }}</div>
         </li>
       </ul>

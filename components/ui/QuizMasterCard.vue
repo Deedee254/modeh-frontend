@@ -53,7 +53,7 @@
           View Profile
         </NuxtLink>
         <button 
-          @click="$emit('follow', quizMaster)"
+          @click="$emit('follow', quizMaster.id)"
           :disabled="loading"
           class="px-3 py-1 text-sm rounded-md border transition-colors"
           :class="isFollowing ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'text-gray-700 border-gray-200 hover:border-indigo-200'"

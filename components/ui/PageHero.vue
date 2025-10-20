@@ -84,7 +84,7 @@
                     icon="heroicons:magnifying-glass"
                   />
                   <div v-if="$slots['search-aux']" class="sm:ml-3">
-                    <slot name="search-aux" />
+                    <slot name="search-aux"></slot>
                   </div>
                 </div>
               </div>
@@ -109,7 +109,7 @@
               </div>
 
               <div class="mt-6 grid gap-3 sm:grid-cols-2">
-                <slot name="stats" />
+                <slot name="stats"></slot>
               </div>
             </div>
           </div>

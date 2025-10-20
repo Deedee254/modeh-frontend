@@ -1,14 +1,15 @@
 <template>
-  <div class="max-w-3xl mx-auto">
-    <div class="bg-white rounded-lg shadow-sm p-6">
-      <h2 class="text-lg font-medium mb-6">Quiz Settings</h2>
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+      <h2 class="text-lg font-medium mb-4 sm:mb-6">Quiz Settings</h2>
       
       <div class="space-y-6">
-        <div class="grid sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Time Limit (minutes)</label>
+            <label for="quiz-time-limit" class="block text-sm font-medium text-gray-700 mb-1">Time Limit (minutes)</label>
             <input 
               v-model="modelValue.timer_minutes"
+              id="quiz-time-limit"
               type="number"
               min="0"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -17,9 +18,10 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Attempts Allowed</label>
+            <label for="quiz-attempts" class="block text-sm font-medium text-gray-700 mb-1">Attempts Allowed</label>
             <select 
               v-model="modelValue.attempts_allowed"
+              id="quiz-attempts"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="1">1 attempt</option>
@@ -30,11 +32,12 @@
           </div>
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Access</label>
+            <label for="quiz-access" class="block text-sm font-medium text-gray-700 mb-1">Access</label>
             <select 
               v-model="modelValue.access"
+              id="quiz-access"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="free">Free</option>
@@ -43,9 +46,10 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+            <label for="quiz-visibility" class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
             <select 
               v-model="modelValue.visibility"
+              id="quiz-visibility"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="draft">Draft</option>
@@ -78,23 +82,18 @@
     </div>
 
     <!-- Bottom Actions -->
-    <div class="mt-6 flex justify-between">
-      <UButton
-        color="white"
-        @click="$emit('prev')"
-      >Back to Details</UButton>
+    <div class="mt-6 flex flex-col sm:flex-row justify-between gap-3 sm:gap-4">
+      <div class="w-full sm:w-auto">
+          <button type="button" @click="$emit('prev')" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Back to Details</button>
+      </div>
 
-      <div class="space-x-4">
-        <UButton
-          color="white"
-          @click="saveAndContinue"
-          :loading="saving"
-        >Save and Continue</UButton>
-        
-        <UButton
-          color="primary"
-          @click="validate"
-        >Continue to Questions</UButton>
+      <div class="flex w-full sm:w-auto gap-3 sm:gap-4">
+        <div class="flex-1 sm:flex-none">
+            <button type="button" @click="saveAndContinue" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50">Save and Continue</button>
+        </div>
+        <div class="flex-1 sm:flex-none">
+            <button type="button" @click="validate" class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">Continue to Questions</button>
+        </div>
       </div>
     </div>
   </div>

@@ -1,7 +1,15 @@
 <template>
   <div>
-    <!-- Sticky tab header on desktop -->
-    <div role="tablist" aria-label="Settings Tabs" class="flex flex-nowrap gap-2 mb-6 sticky top-0 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 py-2 z-10 overflow-x-auto">
+    <!-- Mobile dropdown -->
+    <div class="sm:hidden mb-4">
+      <label for="settings-tabs" class="sr-only">Select a tab</label>
+      <select id="settings-tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" @change="selectTab($event.target.value)">
+        <option v-for="tab in tabs" :key="tab.key" :value="tab.key" :selected="tab.key === active">{{ tab.label }}</option>
+      </select>
+    </div>
+
+    <!-- Desktop tabs -->
+    <div role="tablist" aria-label="Settings Tabs" class="hidden sm:flex flex-nowrap gap-2 mb-6 sticky top-0 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 py-2 z-10 overflow-x-auto">
       <button v-for="tab in tabs" :key="tab.key" :id="`tab-${tab.key}`" role="tab"
         :aria-selected="tab.key === active" :aria-controls="`panel-${tab.key}`"
         :class="[
@@ -18,10 +26,9 @@
 
     <div>
       <section v-for="tab in tabs" :key="tab.key" role="tabpanel"
-        v-show="tab.key === active" :id="`panel-${tab.key}`" :aria-labelledby="`tab-${tab.key}`">
-        <div class="p-4">
-          <component :is="tab.component" v-if="tab.component" @saved="onSaved" @error="onError" />
-        </div>
+        v-show="tab.key === active" :id="`panel-${tab.key}`" :aria-labelledby="`tab-${tab.key}`"
+        class="p-4">
+        <component :is="tab.component" v-if="tab.component" @saved="onSaved" @error="onError" />
       </section>
     </div>
   </div>

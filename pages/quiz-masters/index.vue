@@ -1,6 +1,21 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto p-6 max-w-7xl">
+    <div class="container mx-auto p-6 max-w-7xl grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <aside class="lg:col-span-1">
+        <div class="sticky top-6">
+          <FiltersSidebar
+            :grade-options="grades"
+            :subject-options="subjects"
+            :grade="gradeFilter"
+            :subject="subjectFilter"
+            storageKey="filters:quiz-masters"
+            @update:grade="val => gradeFilter = val"
+            @update:subject="val => subjectFilter = val"
+          />
+        </div>
+      </aside>
+
+      <main class="lg:col-span-3">
       <PageHero
         :breadcrumbs="[{ text: 'Home', href: '/' }, { text: 'Quiz masters', current: true }]"
         title="Our quiz-masters"
@@ -15,7 +30,7 @@
       <div v-else-if="error" class="text-center text-red-500">
         Failed to load quiz-masters. Please try again later.
       </div>
-      <div v-else-if="quizMasters.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div v-else-if="quizMasters.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <UCard v-for="quizMaster in quizMasters" :key="quizMaster.id" class="hover:shadow-lg transition">
           <div class="flex flex-col items-center text-center">
             <div class="w-24 h-24 rounded-full overflow-hidden mb-4">
@@ -26,6 +41,17 @@
             </div>
             <h3 class="font-semibold text-lg text-gray-800">{{ quizMaster.name }}</h3>
             <p class="text-sm text-gray-500">{{ quizMaster.headline || 'Experienced quiz-master' }}</p>
+            <p v-if="quizMaster.institution" class="text-xs text-gray-400 mt-1">
+              {{ quizMaster.institution }}
+            </p>
+            <p v-if="quizMaster.subjects && quizMaster.subjects.length" class="mt-2 flex flex-wrap justify-center gap-1">
+              <span v-for="subject in quizMaster.subjects.slice(0, 2)" :key="subject.id" class="bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                {{ subject.name }}
+              </span>
+              <span v-if="quizMaster.subjects.length > 2" class="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                +{{ quizMaster.subjects.length - 2 }}
+              </span>
+            </p>
             <div class="mt-4">
               <div class="flex items-center gap-3 justify-center">
                 <NuxtLink :to="`/quiz-masters/${quizMaster.id}`" class="text-indigo-600 font-medium text-sm hover:underline">
@@ -43,32 +69,53 @@
       <div v-else class="text-center text-gray-500">
         No quiz-masters found.
       </div>
+      </main>
     </div>
   </div>
 </template>
 
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
-import { ref } from 'vue'
+import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import { ref, computed, watch } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 const config = useRuntimeConfig()
 
+// --- Filtering ---
+const gradeFilter = ref('')
+const subjectFilter = ref('')
+const { grades, subjects, fetchGrades, fetchAllSubjects } = useTaxonomy()
+
+onMounted(async () => {
+  await Promise.all([fetchGrades(), fetchAllSubjects()])
+})
+
+const filterParams = computed(() => {
+  const params = {}
+  if (gradeFilter.value) params.grade_id = gradeFilter.value
+  if (subjectFilter.value) params.subject_id = subjectFilter.value
+  return params
+})
+
+// --- Data Fetching ---
 const { data: quizMastersData, pending, error } = await useAsyncData(
   'quiz-masters',
-  () => $fetch(config.public.apiBase + '/api/quiz-masters')
+  () => $fetch(config.public.apiBase + '/api/quiz-masters', { params: filterParams.value }),
+  { watch: [filterParams] }
 )
 
 const quizMasters = computed(() => {
   if (!quizMastersData.value) return []
-  // Handle paginated or direct array response
-  return Array.isArray(quizMastersData.value) ? quizMastersData.value : (quizMastersData.value.data || [])
+  // Handle paginated response
+  return quizMastersData.value.data || []
 })
 
-// follow state (optimistic UI): map of id -> boolean
+// --- Follow Logic ---
 const following = ref({})
 const followLoading = ref({})
 const auth = useAuthStore()

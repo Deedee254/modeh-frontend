@@ -16,10 +16,10 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <TopicCard
-          v-for="topic in popularTopics"
-          :key="topic.id"
+          v-for="(topic, idx) in (Array.isArray(popularTopics) ? popularTopics.filter(Boolean) : [])"
+          :key="topic?.id || idx"
           v-bind="topic"
-          @click="handleTopicClick(topic)"
+          @click="topic && handleTopicClick(topic)"
         />
       </div>
     </section>
@@ -32,10 +32,10 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <GradeCard
-          v-for="grade in activeGrades"
-          :key="grade.id"
+          v-for="(grade, idx) in (Array.isArray(activeGrades) ? activeGrades.filter(Boolean) : [])"
+          :key="grade?.id || idx"
           v-bind="grade"
-          @click="handleGradeClick(grade)"
+          @click="grade && handleGradeClick(grade)"
         />
       </div>
     </section>
@@ -48,10 +48,10 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <SubjectCard
-          v-for="subject in topSubjects"
-          :key="subject.id"
+          v-for="(subject, idx) in (Array.isArray(topSubjects) ? topSubjects.filter(Boolean) : [])"
+          :key="subject?.id || idx"
           v-bind="subject"
-          @click="handleSubjectClick(subject)"
+          @click="subject && handleSubjectClick(subject)"
         />
       </div>
     </section>
@@ -64,10 +64,10 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <QuizCard
-          v-for="quiz in recentQuizzes"
-          :key="quiz.id"
+          v-for="(quiz, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean) : [])"
+          :key="quiz?.id || idx"
           v-bind="quiz"
-          @click="handleQuizClick(quiz)"
+          @click="quiz && handleQuizClick(quiz)"
         />
       </div>
     </section>
@@ -125,7 +125,7 @@ onMounted(async () => {
     stats.value = statsData || stats.value
     popularTopics.value = topicsData || []
     activeGrades.value = gradesData || []
-    topSubjects.value = subjectsData || []
+  topSubjects.value = Array.isArray(subjectsData) ? subjectsData.filter(Boolean) : []
     recentQuizzes.value = quizzesData || []
   } catch (error) {
     console.error('Error fetching dashboard data:', error)

@@ -17,23 +17,23 @@
           <!-- Search is handled by PageHero's built-in search input -->
         </div>
         <div class="flex flex-wrap gap-3 text-sm text-white/70">
-          <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
+            <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5l3.75-3 3.75 3M8.25 16.5l3.75 3 3.75-3" />
             </svg>
-            {{ quizzes.length || 0 }} quizzes
+            {{ displayCount || 0 }} quizzes
           </span>
           <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 9.75l7.5-4.5 7.5 4.5M4.5 14.25l7.5 4.5 7.5-4.5" />
             </svg>
-            {{ topicsList.length || 0 }} topics
+            {{ topicsList?.length || 0 }} topics
           </span>
           <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6l-2 4h4l-2 4" />
             </svg>
-            {{ SUBJECTS.length || 0 }} subjects
+            {{ (Array.isArray(SUBJECTS) ? SUBJECTS.length : 0) || 0 }} subjects
           </span>
         </div>
       </template>
@@ -70,15 +70,38 @@
               <div class="mt-3"><NuxtLink :to="`/quizee/quizzes/${featuredQuiz.id || ''}`" class="text-indigo-700 text-sm">Open →</NuxtLink></div>
             </div>
           </UCard>
+          <UCard>
+            <div class="text-sm text-gray-500">Quick filters</div>
+            <div class="mt-3 flex flex-col gap-2">
+              <button
+                @click="activeTab = 'all'"
+                :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'all' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
+              >
+                All
+              </button>
+              <button
+                @click="activeTab = 'latest'"
+                :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'latest' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
+              >
+                Latest
+              </button>
+              <button
+                @click="activeTab = 'featured'"
+                :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'featured' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
+              >
+                Featured
+              </button>
+            </div>
+          </UCard>
         </div>
       </aside>
       <main class="lg:col-span-2">
-        <div v-if="pending"><SkeletonGrid :count="3" /></div>
+        <div v-if="loading"><SkeletonGrid :count="3" /></div>
         <div v-else>
           <div v-if="(!displayQuizzes || displayQuizzes.length === 0)" class="p-6 border rounded-md text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">0 results returned</div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-6">
             <QuizCard
-              v-for="q in displayQuizzes"
+              v-for="q in paginatedQuizzes"
               :key="q.id"
               :to="`/quizee/quizzes/${q.id}`"
               :startLink="`/quizee/quizzes/${q.id}`"
@@ -105,34 +128,23 @@
               @like="onQuizLike(q, $event)"
             />
           </div>
+          <!-- Pagination controls -->
+          <div class="mt-6 flex items-center justify-between">
+            <div class="text-sm text-gray-600">Showing {{ shownFrom }} - {{ shownTo }} of {{ displayCount }} quizzes</div>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-1 border rounded" :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)">Prev</button>
+              <template v-for="p in totalPages" :key="p">
+                <button @click="currentPage = p" :class="['px-3 py-1 rounded', currentPage === p ? 'bg-indigo-600 text-white' : 'border']">{{ p }}</button>
+              </template>
+              <button class="px-3 py-1 border rounded" :disabled="currentPage === totalPages" @click="currentPage = Math.min(totalPages, currentPage + 1)">Next</button>
+            </div>
+          </div>
         </div>
       </main>
 
   <!-- Right Sidebar -->
-  <aside class="lg:col-span-1 space-y-4">
-            <UCard v-if="featuredQuiz">
-              <template #header>
-                <div class="text-sm text-gray-500">Featured</div>
-              </template>
-              <div class="mt-1">
-                <div class="font-semibold text-indigo-800">{{ featuredQuiz.title }}</div>
-                <div class="text-xs text-gray-500">{{ featuredQuiz.topic_name || 'General' }}</div>
-                <div class="mt-3"><NuxtLink :to="`/quizee/quizzes/${featuredQuiz.id || ''}`" class="text-indigo-700 text-sm">Open →</NuxtLink></div>
-              </div>
-            </UCard>
-            <UCard v-else>
-              <div class="text-sm text-gray-500">No featured quiz available</div>
-            </UCard>
-
-        <UCard>
-          <div class="text-sm text-gray-500">Quick filters</div>
-          <div class="mt-3 flex flex-col gap-2">
-            <button @click="activeTab = 'all'" :class="tabClass('all')">All</button>
-            <button @click="activeTab = 'latest'" :class="tabClass('latest')">Latest</button>
-            <button @click="activeTab = 'featured'" :class="tabClass('featured')">Featured</button>
-          </div>
-        </UCard>
-      </aside>
+  <!-- Right Sidebar placeholder (kept empty for now) -->
+  <aside class="lg:col-span-1" />
     </div>
 
     <!-- Bottom CTA banner -->
@@ -159,6 +171,7 @@ import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import useQuizzes from '~/composables/useQuizzes'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { getHeroClass } from '~/utils/heroPalettes'
 const config = useRuntimeConfig()
 
@@ -177,9 +190,15 @@ const gradeFilter = ref('')
 const activeTab = ref('all')
 let subjectFilter = ref('')
 
+// pagination
+const currentPage = ref(1)
+const PAGE_SIZE = 12
+
+
 // on mount, fetch initial data (composable will normalize)
 onMounted(async () => {
-  await Promise.all([fetchItems(), fetchTopics()])
+  // fetch quizzes/topics and taxonomy (grades & subjects) for cards/filters
+  await Promise.all([fetchItems(), fetchTopics(), fetchGrades(), fetchAllSubjects()])
 })
 
 // Keep filters cascading: when grade changes, clear subject & topic; when subject changes, clear topic
@@ -195,19 +214,26 @@ watch(subjectFilter, (nv, ov) => {
   }
 })
 
-// Fetch subjects for subject pills (some pages call SUBJECTS; attempt to use /api/subjects)
-const { data: subjectsData } = await useFetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
-const SUBJECTS = (subjectsData?.value?.subjects || subjectsData?.value || []).slice(0, 12).map(s => ({
-  slug: s.slug || s.id,
-  id: s.id,
-  name: s.name || (s.title || 'Subject'),
-  quizzes_count: s.quizzes_count || s.quizzes_count || 0,
-  image: s.icon || s.image || s.cover_image || null
-}))
+// taxonomy composable provides grades/subjects/topics with simple caching
+const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchGrades, fetchSubjectsByGrade, fetchAllSubjects, fetchTopicsBySubject, fetchAllTopics } = useTaxonomy()
 
-// Fetch grades for filter sidebar
-const { data: gradesData } = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
-const GRADES = (gradesData?.value?.grades || []).slice(0, 12)
+// Defensive computed wrappers used by the UI/cards
+const SUBJECTS = computed(() => {
+  const list = taxSubjects?.value || []
+  return (Array.isArray(list) ? list : []).slice(0, 12).map(s => ({
+    slug: s.slug || s.id,
+    id: s.id,
+    name: s.name || (s.title || 'Subject'),
+    quizzes_count: s.quizzes_count || s.quizzes_count || 0,
+    image: s.icon || s.image || s.cover_image || null,
+    grade_id: s.grade_id || s.grade_id
+  }))
+})
+
+const GRADES = computed(() => {
+  const list = taxGrades?.value || []
+  return Array.isArray(list) ? list.slice(0, 12) : []
+})
 
 // Top subjects to show as pills (popular by quizzes_count)
 const topSubjects = computed(() => {
@@ -227,9 +253,11 @@ const subjectsByGrade = computed(() => {
 
 // Topics filtered by the selected subject (subjectFilter holds slug or id)
 const topicsBySubject = computed(() => {
-  if (!subjectFilter.value) return topicsList
+  // safely unwrap topicsList (it may be a ref whose value is an array)
+  const list = Array.isArray(topicsList?.value) ? topicsList.value : (Array.isArray(topicsList) ? topicsList : [])
+  if (!subjectFilter.value) return list
   // try match by slug or id
-  return (topicsList || []).filter(t => String(t.subject_id || t.subject) === String(subjectFilter.value) || String(t.subject_id) === String(subjectFilter.value) || String(t.subject?.id || t.subject?.slug || '') === String(subjectFilter.value))
+  return (list || []).filter(t => String(t.subject_id || t.subject) === String(subjectFilter.value) || String(t.subject_id) === String(subjectFilter.value) || String(t.subject?.id || t.subject?.slug || '') === String(subjectFilter.value))
 })
 
 // base filtered list from search + topic (use composable normalizedQuizzes)
@@ -285,6 +313,23 @@ const displayQuizzes = computed(() => {
   return out
 })
 
+// pagination helpers
+const displayCount = computed(() => Array.isArray(displayQuizzes.value) ? displayQuizzes.value.length : 0)
+const totalPages = computed(() => Math.max(1, Math.ceil(displayCount.value / PAGE_SIZE)))
+const paginatedQuizzes = computed(() => {
+  const arr = Array.isArray(displayQuizzes.value) ? displayQuizzes.value : []
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return arr.slice(start, start + PAGE_SIZE)
+})
+
+const shownFrom = computed(() => displayCount.value === 0 ? 0 : (currentPage.value - 1) * PAGE_SIZE + 1)
+const shownTo = computed(() => Math.min(currentPage.value * PAGE_SIZE, displayCount.value))
+
+// reset page when filtered/quizzes change
+watch([displayQuizzes, activeTab, subjectFilter, gradeFilter, query], () => {
+  if (currentPage.value > totalPages.value) currentPage.value = 1
+})
+
 function pickPaletteClass(id) {
   const palettes = [
     'bg-gradient-to-br from-indigo-200 via-indigo-100 to-sky-100 text-indigo-800',
@@ -312,14 +357,12 @@ function onQuizLike(q, payload) {
   }
 }
 
-const displayCount = computed(() => displayQuizzes.value.length)
-
 // Compute a single featured quiz for the sidebar (defensive: may be undefined)
 const featuredQuiz = computed(() => {
-  const all = normalizedQuizzes?.value || []
+  const all = Array.isArray(normalizedQuizzes?.value) ? normalizedQuizzes.value : []
   const f = all.find(q => q && (q.featured || q.is_featured || q.curated))
   if (f) return f
-  return (displayQuizzes.value && displayQuizzes.value.length) ? displayQuizzes.value[0] : (all.length ? all[0] : null)
+  return (Array.isArray(displayQuizzes.value) && displayQuizzes.value.length) ? displayQuizzes.value[0] : (all.length ? all[0] : null)
 })
 
 function selectSubject(v) { subjectFilter.value = v }

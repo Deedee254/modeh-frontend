@@ -119,11 +119,14 @@ import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 
-const config = useRuntimeConfig()
-const { data, pending, error } = await useFetch(config.public.apiBase + '/api/subjects')
-const subjects = data?.value?.subjects?.data || []
+// Use taxonomy composable for subjects and grades
+const { fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, loadingSubjects, loadingGrades } = useTaxonomy()
+const pending = loadingSubjects
+const error = null
+const subjects = taxSubjects
 
 const subjectsCount = computed(() => (subjects || []).length)
 const subjectsForFilters = computed(() => (subjects || []).map(s => ({ id: s.id, name: s.name })))
@@ -132,19 +135,16 @@ const query = ref('')
 const gradeFilter = ref('')
 const subjectFilter = ref('')
 
-const gradesResponse = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
-const allGrades = computed(() => {
-  const list = gradesResponse?.data?.value?.grades || []
-  return Array.isArray(list) ? list.slice(0, 12) : []
+const allGrades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice(0, 12) : [])
+
+onMounted(async () => {
+  await Promise.all([fetchGrades(), fetchAllSubjects()])
 })
 
 const gradesCount = computed(() => allGrades.value.length)
 
-const topicsResponse = await useFetch(config.public.apiBase + '/api/topics')
-const topicsCount = computed(() => {
-  const list = topicsResponse?.data?.value?.topics?.data || topicsResponse?.data?.value?.topics || []
-  return Array.isArray(list) ? list.length : 0
-})
+// topics count provided by taxonomy composable (fetchAllTopics called in onMounted)
+const topicsCount = computed(() => Array.isArray(taxSubjects.value) ? (taxSubjects.value.reduce((acc, s) => acc + (s.topics_count || 0), 0)) : 0)
 
 const quizzesResponse = await useFetch(config.public.apiBase + '/api/quizzes?per_page=1')
 const totalQuizzes = computed(() => {

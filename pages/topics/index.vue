@@ -108,12 +108,14 @@ import PageHero from '~/components/ui/PageHero.vue'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { getHeroClass } from '~/utils/heroPalettes'
 
-const config = useRuntimeConfig()
-const { data, pending } = await useFetch(config.public.apiBase + '/api/topics')
-const topics = safeArray(data?.value?.topics || data?.value || [])
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingTopics } = useTaxonomy()
+
+const pending = loadingTopics
+const topics = taxTopics
 
 // SEO: page title + description (use topics count if available)
 useHead({
@@ -198,12 +200,11 @@ function pickPaletteClass(id) {
 // Server-side search handler (debounced by UiSearch)
 async function onServerSearch(q) {
   try {
-    const res = await $fetch(config.public.apiBase + '/api/topics', { params: { query: q }, credentials: 'include' })
+    const res = await $fetch(useRuntimeConfig().public.apiBase + '/api/topics', { params: { query: q }, credentials: 'include' })
     const items = res?.topics?.data || res?.topics || res?.data || []
-    if (Array.isArray(items) && items.length) {
-      // replace topics array in-place
-      topics.length = 0
-      topics.push(...items)
+    if (Array.isArray(items)) {
+      taxTopics.value.length = 0
+      taxTopics.value.push(...items)
     }
   } catch (e) {
     // ignore errors
@@ -225,11 +226,14 @@ function selectTopic(v) { query.value = '' /* keep search cleared */; /* optiona
 
 function clear() { query.value = '' }
 
-// Fetch subjects and grades for sidebar options
-const { data: subjectsData } = await useFetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
-const SUBJECTS = safeArray(subjectsData?.value?.subjects || subjectsData?.value || []).slice(0, 12).map(s => ({ id: s.id, name: s.name }))
-const { data: gradesData } = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
-const GRADES = (gradesData?.value?.grades || []).slice(0, 12)
+// Use taxonomy composable to provide subjects/grades for the sidebar
+const SUBJECTS = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value.slice(0, 12).map(s => ({ id: s.id, name: s.name })) : [])
+const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice(0, 12) : [])
+
+onMounted(async () => {
+  // initialize taxonomy lists
+  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+})
 
 // fetch quizzes meta for totals
 const { data: quizzesData } = await useFetch(config.public.apiBase + '/api/quizzes?per_page=1', { credentials: 'include' })

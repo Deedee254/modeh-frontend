@@ -11,9 +11,27 @@
       <!-- Tabs -->
       <div class="border-b mb-6">
         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-          <a href="#" @click.prevent="activeTab = 'details'" :class="tabClass('details')" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Quiz Details</a>
-          <a href="#" @click.prevent="activeTab = 'questions'" :class="tabClass('questions')" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Questions</a>
-          <a href="#" @click.prevent="activeTab = 'settings'" :class="tabClass('settings')" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Settings</a>
+          <a
+            href="#"
+            @click.prevent="activeTab = 'details'"
+            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'details' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
+          >
+            Quiz Details
+          </a>
+          <a
+            href="#"
+            @click.prevent="activeTab = 'questions'"
+            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'questions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
+          >
+            Questions
+          </a>
+          <a
+            href="#"
+            @click.prevent="activeTab = 'settings'"
+            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
+          >
+            Settings
+          </a>
         </nav>
       </div>
 

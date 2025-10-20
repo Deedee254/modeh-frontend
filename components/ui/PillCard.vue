@@ -25,7 +25,7 @@
         <div v-if="subtitle && !hasMeta" class="text-[11px] sm:text-xs text-gray-500 mt-1">{{ subtitle }}</div>
       </div>
       <div class="mt-3">
-        <slot />
+  <slot></slot>
       </div>
   <div v-if="hasMeta" class="mt-3 flex flex-wrap gap-2 text-[11px] text-gray-500">
         <template v-for="chip in metaChips" :key="chip.key">

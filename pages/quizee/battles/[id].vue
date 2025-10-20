@@ -134,8 +134,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
 // page meta and quizee layout
 definePageMeta({ layout: 'quizee' })
 useHead({
@@ -157,8 +158,6 @@ const cfg = useRuntimeConfig()
 import useApi from '~/composables/useApi'
 const api = useApi()
 
-// UI tabs (kept minimal for now)
-const activeTab = ref('questions')
 
 // local score tracking and timers
 const score = ref(0)
@@ -278,17 +277,21 @@ async function enterBattle() {
     const res = await api.postJson(`/api/battles/${id}/join`, {})
     if (api.handleAuthStatus(res)) return
   } catch (e) {}
-  router.push(`/quizee/battles/${id}/play`)
+  // after joining, redirect to waiting room where the server/Echo will notify when battle starts
+  router.push(`/quizee/battles/${id}/waiting`)
 }
-
 async function submitAnswers() {
   if (!ensureAuthRedirect(`/quizee/battles/${id}`)) return
   try {
-    const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: qid, selected: answers.value[qid], time_taken: perQuestionTimings.value[qid] || null })), meta: { score: score.value } }
+    const payload = { 
+      answers: formatAnswersForSubmission(answers.value, perQuestionTimings.value),
+      meta: { score: score.value } 
+    }
     const res = await api.postJson(`/api/battles/${id}/submit`, payload)
     if (api.handleAuthStatus(res)) return
     if (res.ok) { router.push(`/quizee/battles/${id}/result`) }
-  } catch (e) { console.error(e) }
+  } catch (e) { 
+    console.error(e) 
+  }
 }
-
 </script>

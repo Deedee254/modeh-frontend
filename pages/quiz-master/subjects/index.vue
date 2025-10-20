@@ -42,16 +42,16 @@
           <div v-if="isLoading"><UiSkeleton :count="6" /></div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <SubjectCard
-              v-for="subject in filtered"
-              :key="subject.id"
-              :title="subject.name"
-              :subtitle="`${subject.quizzes_count || 0} quizzes`"
+              v-for="(subject, idx) in (Array.isArray(filtered) ? filtered.filter(Boolean) : [])"
+              :key="subject?.id || idx"
+              :title="subject?.name"
+              :subtitle="`${subject?.quizzes_count || 0} quizzes`"
               :image="resolveIcon(subject)"
-              :badgeText="(subject.name || '').charAt(0).toUpperCase()"
-              :topicsCount="subject.topics_count || subject.topics?.length || 0"
-              :startLink="`/quiz-master/subjects/${subject.id}`"
-              :description="subject.description || subject.summary || ''"
-              :grade="subject.grade?.name || subject.grade_id || ''"
+              :badgeText="(subject?.name || '').charAt(0).toUpperCase()"
+              :topicsCount="subject?.topics_count || subject?.topics?.length || 0"
+              :startLink="`/quiz-master/subjects/${subject?.id}`"
+              :description="subject?.description || subject?.summary || ''"
+              :grade="subject?.grade?.name || subject?.grade_id || ''"
               startLabel="View Details"
             >
               <div class="flex flex-col gap-2">
@@ -59,7 +59,7 @@
                   <span>{{ subject.is_approved ? 'Approved' : 'Pending Approval' }}</span>
                 </div>
                 <div>
-                  <NuxtLink :to="`/quiz-master/quizzes/create?subject_id=${subject.id}`" class="inline-flex items-center px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-sm font-semibold">Add quiz</NuxtLink>
+                  <NuxtLink :to="`/quiz-master/quizzes/create?subject_id=${subject?.id}`" class="inline-flex items-center px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-sm font-semibold">Add quiz</NuxtLink>
                 </div>
               </div>
             </SubjectCard>
@@ -82,7 +82,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
@@ -111,13 +112,19 @@ const { data: subjectsResponse, pending, error, refresh } = await useFetch(confi
 
 const subjects = computed(() => subjectsResponse.value?.subjects?.data || [])
 
+const { fetchGrades, fetchAllSubjects, grades: taxGrades } = useTaxonomy()
+const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
+
+onMounted(async () => {
+  await Promise.all([fetchGrades(), fetchAllSubjects()])
+})
+
 async function handlePageChange(newPage) {
   page.value = newPage
   await refresh()
 }
 
-const { data: gradesData } = await useFetch(config.public.apiBase + '/api/grades', { credentials: 'include' })
-const grades = computed(() => gradesData.value?.grades || [])
+// grades are provided from the taxonomy composable (taxGrades). No separate grades fetch required here.
 
 // Filter functionality
 const activeFilter = ref('')

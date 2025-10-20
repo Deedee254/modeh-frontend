@@ -6,7 +6,7 @@
   imageLayout === 'top' ? 'w-full h-24 sm:h-40' : 'absolute inset-0',
         imageLayout === 'side' ? 'lg:relative lg:w-48 lg:h-full' : ''
       ]">
-        <slot name="image" />
+  <slot name="image"></slot>
       </div>
     </div>
 
@@ -20,15 +20,15 @@
       
       <div class="flex-1">
         <div v-if="$slots.header" class="px-4 sm:px-5 pt-4 flex items-start gap-3">
-          <slot name="header" />
+          <slot name="header"></slot>
         </div>
 
         <div :class="[noPadding ? '' : contentPadding]">
-          <slot />
+          <slot></slot>
         </div>
 
         <div v-if="$slots.footer" class="px-4 sm:px-5 pb-4 pt-3">
-          <slot name="footer" />
+          <slot name="footer"></slot>
         </div>
       </div>
     </div>
