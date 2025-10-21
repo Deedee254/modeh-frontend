@@ -9,7 +9,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 011.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
         </button>
       </div>
-      <div class="space-y-3">
+      <div v-if="!createdTopic" class="space-y-3">
         <div>
           <label class="block text-sm font-medium text-gray-700">Name</label>
           <input v-model="name" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3" />
@@ -33,9 +33,43 @@
             <option v-for="s in subjectList" :key="s.id" :value="s.id" v-if="!gradeId || String(s.grade_id || s.grade || '') === String(gradeId)">{{ s.name }}</option>
           </select>
         </div>
+        <div class="mt-2">
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" v-model="localRequestApproval" class="rounded" />
+            <span>Request approval immediately after creating</span>
+          </label>
+        </div>
       </div>
 
-        <div class="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-3">
+      <div v-else class="space-y-4">
+        <div class="rounded-md bg-gray-50 p-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Topic created</div>
+              <div class="text-sm text-gray-600">{{ createdTopic.name }}</div>
+            </div>
+            <div>
+              <span v-if="createdTopic.is_approved" class="inline-flex items-center px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs">Approved</span>
+              <span v-else-if="createdTopic.approval_requested_at" class="inline-flex items-center px-2 py-1 rounded bg-yellow-100 text-yellow-800 text-xs">Approval requested</span>
+              <span v-else class="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">Pending approval</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!createdTopic.is_approved" class="space-y-2">
+          <p class="text-sm text-gray-600">This topic is not approved yet. You can request approval now so an admin can review it.</p>
+          <div class="flex gap-2">
+            <UButton :loading="approvalRequestLoading" color="primary" @click="requestApproval" class="justify-center">Request approval</UButton>
+            <UButton variant="outline" @click="closeAfterCreated" class="justify-center">Done</UButton>
+          </div>
+        </div>
+
+        <div v-else class="flex justify-end">
+          <UButton color="primary" @click="closeAfterCreated">Done</UButton>
+        </div>
+      </div>
+
+      <div v-if="!createdTopic" class="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-3">
         <UButton variant="outline" color="gray" @click="close" class="w-full sm:w-auto justify-center" :disabled="waitingConfirmation">Cancel</UButton>
         <UButton :loading="submitting || waitingConfirmation" :disabled="!name || !subjectId || waitingConfirmation" @click="create" class="w-full sm:w-auto justify-center">Create Topic</UButton>
       </div>
@@ -58,7 +92,9 @@ const props = defineProps({
     type: [Number, String],
     default: null,
     validator: value => value === null || value === '' || !Number.isNaN(Number(value))
-  }
+  },
+  // if true the checkbox will be checked by default and the modal will send request_approval
+  requestApprovalImmediately: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:modelValue', 'created'])
 const name = ref('')
@@ -77,6 +113,9 @@ function normalizeSubjectId(v) {
 const subjectId = ref(normalizeSubjectId(props.defaultSubjectId) || '')
 const submitting = ref(false)
 const waitingConfirmation = ref(false)
+const createdTopic = ref(null)
+const approvalRequestLoading = ref(false)
+const localRequestApproval = ref(props.requestApprovalImmediately || false)
 const config = useRuntimeConfig()
 
 watch(() => props.defaultSubjectId, v => { subjectId.value = normalizeSubjectId(v) || '' })
@@ -123,14 +162,15 @@ async function create() {
 
     // Use composable to ensure CSRF cookie and send headers
     const api = useApi()
-    const res = await api.postJson('/api/topics', payload)
+    // If the user opted-in via checkbox, include flag to request approval immediately
+  if (localRequestApproval) payload.request_approval = true
+  const res = await api.postJson('/api/topics', payload)
     if (res.ok) {
       const json = await res.json().catch(() => null)
       const created = json?.topic || json || null
-      // Tell parent we've created the topic, but keep the modal open while parent synchronizes
+      // store locally and notify parent
+      createdTopic.value = created
       emit('created', created)
-      // Indicate we're waiting for parent to confirm (parent will close the modal when done)
-      waitingConfirmation.value = true
     } else {
       const t = await res.text().catch(()=>null)
       console.error('Failed to create topic', t)
@@ -139,6 +179,44 @@ async function create() {
   } catch (e) {
     console.error('Create topic error', e)
   } finally { submitting.value = false }
+}
+
+async function requestApproval() {
+  approvalRequestLoading.value = true
+  try {
+    const api = useApi()
+    if (!createdTopic.value || !createdTopic.value.id) {
+      // Topic not yet created: create it and request approval in one call
+      const payload = { name: name.value, description: description.value, subject_id: subjectId.value, grade_id: gradeId.value, request_approval: true }
+      const res = await api.postJson('/api/topics', payload)
+      if (res.ok) {
+        const json = await res.json().catch(() => null)
+        createdTopic.value = json?.topic || json || null
+        emit('created', createdTopic.value)
+      } else {
+        console.error('Failed to create & request approval')
+      }
+    } else {
+      const res = await api.postJson(`/topics/${createdTopic.value.id}/request-approval`, {})
+      if (res.ok) {
+        createdTopic.value.approval_requested_at = new Date().toISOString()
+        emit('created', createdTopic.value)
+      } else {
+        console.error('Request approval failed')
+      }
+    }
+  } catch (e) {
+    console.error('Request approval error', e)
+  } finally {
+    approvalRequestLoading.value = false
+  }
+}
+
+function closeAfterCreated() {
+  // If created and approved (auto), close and leave selection to parent
+  emit('update:modelValue', false)
+  // reset local state after closing
+  setTimeout(() => { createdTopic.value = null; waitingConfirmation.value = false }, 200)
 }
 </script>
 

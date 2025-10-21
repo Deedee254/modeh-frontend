@@ -1,7 +1,8 @@
 <template>
   <div :class="['absolute inset-y-0 left-0 z-20 w-full md:static md:w-96 border-r border-border transition-transform duration-300 ease-in-out', showChatWindowOnMobile ? '-translate-x-full' : 'translate-x-0 md:translate-x-0']">
-    <div class="flex flex-col w-full h-full bg-sidebar-bg">
-      <div class="p-4 border-b border-border bg-primary">
+    <!-- Use gradient on mobile/compact list to match hero -->
+    <div class="flex flex-col w-full h-full bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white">
+      <div class="p-4 border-b border-border bg-transparent sticky top-0 z-40">
         <div class="flex items-center justify-between mb-3">
           <h1 class="text-lg font-semibold tracking-tight text-primary-foreground md:text-xl">Chats</h1>
           <button @click="$emit('open-create')" class="inline-flex items-center justify-center gap-2 h-8 w-8 rounded-full hover:bg-primary-foreground/20 text-primary-foreground md:h-9 md:w-9 [&_svg]:h-4 [&_svg]:w-4">
@@ -14,7 +15,7 @@
         </div>
       </div>
 
-      <div class="px-4 py-3 border-b border-border">
+  <div class="px-4 py-3 border-b border-border bg-transparent sticky top-[68px] z-30">
         <div dir="ltr" data-orientation="horizontal">
           <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-full p-1 text-muted-foreground grid w-full grid-cols-3 bg-muted/60">
             <button @click="$emit('change-tab','all')" :data-state="activeTab === 'all' ? 'active' : 'inactive'" :class="['inline-flex items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium md:text-xs transition', activeTab === 'all' ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow' : 'hover:bg-muted/30']">All</button>
@@ -24,7 +25,7 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto">
+  <div class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
   <button v-for="t in allConversations" :key="t.id" @click="$emit('select-conversation', t)" :class="['w-full px-4 py-3 flex items-start gap-3 hover:bg-sidebar-hover transition-colors duration-150 border-b border-border text-left', (t.id === activeConversationId) ? 'bg-sidebar-active' : '']">
           <div class="relative flex-shrink-0">
             <span class="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12 sm:h-14 sm:w-14">
@@ -52,7 +53,7 @@ import { ref, watch } from 'vue'
 const props = defineProps({
   allConversations: { type: Array, default: () => [] },
   activeConversationId: { type: [String, Number, null], default: null },
-  activeTab: { type: String, default: 'unread' },
+  activeTab: { type: String, default: 'all' },
   searchQuery: { type: String, default: '' },
   showChatWindowOnMobile: { type: Boolean, default: false }
 })

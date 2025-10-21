@@ -1,28 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto p-6 max-w-7xl grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <aside class="lg:col-span-1">
-        <div class="sticky top-6">
-          <FiltersSidebar
-            :grade-options="grades"
-            :subject-options="subjects"
-            :grade="gradeFilter"
-            :subject="subjectFilter"
-            storageKey="filters:quizee-quiz-masters"
-            @update:grade="val => gradeFilter = val"
-            @update:subject="val => subjectFilter = val"
-          />
-        </div>
-      </aside>
-
-      <main class="lg:col-span-3">
-      <PageHero
-        :breadcrumbs="[{ text: 'Home', href: '/quizee' }, { text: 'Quiz Masters', current: true }]"
-        title="Find Your Quiz Masters"
-        description="Connect with expert quiz masters in your grade and institution who create engaging quizzes and guide your learning journey."
-        align="center"
-        padding="py-16 sm:py-20"
-      >
+    <div class="container mx-auto p-6 max-w-7xl">
+        <PageHero
+          :breadcrumbs="[{ text: 'Home', href: '/quizee' }, { text: 'Quiz Masters', current: true }]"
+          title="Find Your Quiz Masters"
+          description="Connect with expert quiz masters in your grade and institution who create engaging quizzes and guide your learning journey."
+          align="center"
+          padding="py-16 sm:py-20"
+        >
         <template #actions>
           <div class="flex flex-wrap items-center justify-center gap-4">
             <UButton
@@ -62,37 +47,56 @@
         </template>
       </PageHero>
 
-      <div v-if="pending">
-        <SkeletonGrid :count="8" />
-      </div>
-      <div v-else>
-        <div v-if="(!quizMasters || quizMasters.length === 0)" class="p-6 bg-white rounded shadow text-gray-600">No quiz masters found</div>
-        <div v-else>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <QuizMasterCard
-              v-for="quizMaster in quizMasters"
-              :key="quizMaster.id"
-              :quiz-master="quizMaster"
-              :is-following="following[quizMaster.id]"
-              :loading="loadingFollow[quizMaster.id]"
-              @follow="toggleFollow(quizMaster)"
-            />
-          </div>
-          
-          <!-- Pagination -->
-          <div v-if="paginator && paginator.last_page > 1" class="mt-8">
-            <UPagination
-              v-model="currentPage"
-              :total="paginator.total"
-              :per-page="paginator.per_page"
-              :max-links="5"
-              class="justify-center"
-              @change="onPageChange"
-            />
-          </div>
+      <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+          <aside class="lg:col-span-1 order-2 lg:order-1">
+            <div class="sticky top-6">
+              <FiltersSidebar
+                :grade-options="grades"
+                :subject-options="subjects"
+                :grade="gradeFilter"
+                :subject="subjectFilter"
+                storageKey="filters:quizee-quiz-masters"
+                @update:grade="val => gradeFilter = val"
+                @update:subject="val => subjectFilter = val"
+              />
+            </div>
+          </aside>
+
+          <main class="lg:col-span-3 order-1 lg:order-2">
+            <div v-if="pending">
+              <SkeletonGrid :count="8" />
+            </div>
+            <div v-else>
+              <div v-if="(!quizMasters || quizMasters.length === 0)" class="p-6 bg-white rounded shadow text-gray-600">No quiz masters found</div>
+              <div v-else>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <QuizMasterCard
+                    v-for="quizMaster in quizMasters"
+                    :key="quizMaster.id"
+                    :quiz-master="quizMaster"
+                    :is-following="following[quizMaster.id]"
+                    :loading="loadingFollow[quizMaster.id]"
+                    @follow="toggleFollow(quizMaster)"
+                  />
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="paginator && paginator.last_page > 1" class="mt-8">
+                  <UPagination
+                    v-model="currentPage"
+                    :total="paginator.total"
+                    :per-page="paginator.per_page"
+                    :max-links="5"
+                    class="justify-center"
+                    @change="onPageChange"
+                  />
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
-      </main>
     </div>
   </div>
 </template>

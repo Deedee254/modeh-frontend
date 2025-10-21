@@ -7,12 +7,12 @@
   ]" :style="backgroundStyle">
     <!-- Decorative background image and overlay -->
     <div v-if="hasBackgroundImage" class="absolute inset-0 -z-10 bg-cover bg-center" :style="backgroundImageStyle" aria-hidden="true"></div>
-    <div v-else class="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 opacity-95"></div>
+    <div v-else class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.28),_transparent_55%),_radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.25),_transparent_60%)] bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-900 opacity-95"></div>
 
     <!-- Glow accents -->
     <div class="absolute inset-0 -z-10 pointer-events-none">
-      <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-indigo-500/30 blur-3xl"></div>
-      <div class="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl"></div>
+      <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-400/25 blur-3xl"></div>
+      <div class="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl"></div>
     </div>
 
     <!-- Content wrapper with full-bleed inner max width -->

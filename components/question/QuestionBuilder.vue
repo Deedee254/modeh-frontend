@@ -51,32 +51,7 @@
         <textarea v-model="form.explanation" rows="3" class="w-full mt-2 rounded px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200" placeholder="Add an explanation or further reading for the answer"></textarea>
       </div>
 
-      <div class="mt-3">
-        <label class="text-xs text-gray-500 dark:text-gray-300">Solution steps (optional)</label>
-        <div class="space-y-3 mt-2">
-          <div v-for="(step, idx) in form.solution_steps" :key="idx" class="rounded-md p-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-3">
-                <button type="button" @click="toggleStep(idx)" class="text-sm font-medium text-gray-700 dark:text-gray-200">Step {{ idx + 1 }}</button>
-                <div class="text-xs text-gray-500 dark:text-gray-400 max-w-xl katex-preview" v-html="collapsedPreview(form.solution_steps[idx])"></div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" @click="moveStepUp(idx)" class="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">▲</button>
-                <button type="button" @click="moveStepDown(idx)" class="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">▼</button>
-                <button type="button" @click="removeSolutionStep(idx)" class="text-xs text-rose-500 hover:underline">Remove</button>
-                <button type="button" @click="toggleStep(idx)" class="text-xs text-gray-500 dark:text-gray-400 hover:underline">{{ expandedStep === idx ? 'Collapse' : 'Edit' }}</button>
-              </div>
-            </div>
-            <div v-if="expandedStep === idx" class="mt-3">
-              <RichTextEditor v-model="form.solution_steps[idx]" :features="{ math: true, code: true }" />
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button @click="addAndOpen" type="button" class="text-xs text-indigo-600 font-semibold">Add step</button>
-            <div class="text-xs text-gray-500 dark:text-gray-400 self-center">(Optional: rich text steps with math/code)</div>
-          </div>
-        </div>
-      </div>
+
 
       <div v-if="form.type === 'fill_blank'" class="mt-3">
         <label class="text-xs text-gray-500 dark:text-gray-300">Answers for blanks</label>
@@ -357,7 +332,7 @@ async function onSave() {
 }
 
 function onReset() {
-  form.value = { body: '<p></p>', type: 'mcq', options: ['', ''], answers: [], difficulty: 2, youtube_url: '', explanation: '', solution_steps: [] }
+  form.value = { body: '<p></p>', type: 'mcq', options: ['', ''], answers: [], difficulty: 2, youtube_url: '', explanation: '' }
   imageFile.value = null
   audioFile.value = null
 }

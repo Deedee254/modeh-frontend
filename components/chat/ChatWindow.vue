@@ -10,7 +10,7 @@
     </template>
     <template v-else>
       <div class="flex flex-col h-full">
-        <div class="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div class="sticky top-0 z-30 flex items-center justify-between p-4 border-b bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/10">
           <div class="flex items-center">
             <button @click="$emit('back')" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full h-9 w-9 md:hidden">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left h-5 w-5">
@@ -32,8 +32,8 @@
         </div>
 
         <div dir="ltr" class="relative overflow-hidden flex-1 p-4 bg-gradient-to-b from-muted/30 to-background" ref="messagesPane" style="--radix-scroll-area-corner-width: 0px; --radix-scroll-area-corner-height: 0px;">
-          <div class="h-full w-full rounded-[inherit]" style="overflow: hidden auto;">
-            <div style="min-width: 100%; display: table;">
+          <div class="h-full w-full rounded-[inherit]" style="overflow: auto; -webkit-overflow-scrolling: touch;">
+            <div style="min-width: 100%; display: table; padding-bottom: 140px;">
               <div class="space-y-6">
                 <slot name="messages"></slot>
                 <div ref="messagesEnd" aria-hidden="true"></div>
@@ -42,8 +42,8 @@
           </div>
         </div>
 
-        <div class="p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <slot name="input"></slot>
+        <div class="p-3 border-t bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/5 sticky bottom-0 z-40">
+          <div style="margin-bottom:6px"><slot name="input"></slot></div>
         </div>
       </div>
     </template>
@@ -94,7 +94,7 @@ defineExpose({ messagesPane, messagesEnd })
 
 function statusColor(status) {
   switch (status) {
-    case 'online': return 'bg-green-500';
+    case 'online': return 'bg-indigo-500';
     case 'away': return 'bg-yellow-500';
     default: return 'bg-gray-400';
   }

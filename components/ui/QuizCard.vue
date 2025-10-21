@@ -94,12 +94,14 @@ import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 
 const props = defineProps({
-  to: { type: String, required: true },
+  to: { type: [String, Object], default: null },
   title: { type: String, required: true },
   description: { type: String, default: '' },
   subject: { type: [String, Object], default: '' },
   grade: { type: [String, Number, Object], default: null },
   topic: { type: [String, Object], default: '' },
+  // optional: whole quiz object can be passed instead of individual fields
+  quiz: { type: Object, default: null },
   difficulty: { type: [String, Number], default: null },
   cover: { type: String, default: '' },
   palette: { type: String, default: '' },
@@ -129,25 +131,32 @@ const paletteClass = computed(() => {
 })
 
 const displaySubject = computed(() => {
-  const s = props.subject
+  const s = props.subject || (props.quiz && (props.quiz.subject || props.quiz.subject_id ? props.quiz.subject : null))
   if (!s && s !== 0) return ''
   if (typeof s === 'string') return s
   // handle object shapes
-  return s.name || s.title || s.label || s.slug || String(s.id || '')
+  return s.name || s.title || s.label || s.slug || String(s.id || s || '')
 })
 
 const displayTopic = computed(() => {
-  const t = props.topic
+  const t = props.topic || (props.quiz && (props.quiz.topic || props.quiz.topic_id ? props.quiz.topic : null))
   if (!t && t !== 0) return ''
   if (typeof t === 'string') return t
-  return t.name || t.title || t.label || t.slug || String(t.id || '')
+  return t.name || t.title || t.label || t.slug || String(t.id || t || '')
 })
 
 const displayGrade = computed(() => {
-  const g = props.grade
+  const g = props.grade || (props.quiz && (props.quiz.grade || props.quiz.grade_id ? props.quiz.grade : null))
   if (g === null || g === undefined || g === '') return ''
   if (typeof g === 'string' || typeof g === 'number') return g
-  return g.name || g.title || g.label || String(g.id || '')
+  return g.name || g.title || g.label || String(g.id || g || '')
+})
+
+const computedCreatedBy = computed(() => {
+  if (props.createdBy) return props.createdBy
+  if (!props.quiz) return null
+  // common shapes: quiz.created_by or quiz.user
+  return props.quiz.created_by || props.quiz.user || null
 })
 
 const difficultyLabel = computed(() => {

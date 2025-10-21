@@ -12,7 +12,7 @@
       </div>
       <div class="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent"></div>
       <div class="absolute left-4 bottom-4 right-4 z-10 text-white">
-        <h4 class="text-lg sm:text-xl font-semibold line-clamp-2">{{ title }}</h4>
+        <h4 class="text-lg sm:text-xl font-semibold line-clamp-2">{{ displayTitle }}</h4>
       </div>
     </div>
     <div class="p-4 sm:p-5 flex flex-col gap-3 relative z-10">
@@ -34,7 +34,9 @@ import { computed } from 'vue'
 
 const props = defineProps({
   to: { type: [String, Object], default: null },
-  title: { type: String, required: true },
+  title: { type: String, required: false },
+  // accept `name` from API objects as fallback
+  name: { type: String, default: '' },
   description: { type: String, default: '' },
   image: { type: String, default: '' },
   badgeText: { type: String, default: '' },
@@ -57,4 +59,5 @@ const metaText = computed(() => {
   return props.subject || ''
 })
 const paletteClass = computed(() => props.palette || 'bg-gradient-to-br from-emerald-400 to-emerald-600')
+const displayTitle = computed(() => props.title || props.name || '')
 </script>

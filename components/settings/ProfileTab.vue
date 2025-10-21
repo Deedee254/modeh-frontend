@@ -41,15 +41,15 @@
       <fieldset>
         <legend class="block text-sm font-medium mb-2">Subjects</legend>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-lg p-4">
-          <UCheckbox
-            v-for="s in subjects"
-            :key="s?.id"
-            v-if="s && s.id"
-            :value="s.id"
-            v-model="form.subjects"
-            :label="s.name || 'Unknown Subject'"
-            class="p-2 hover:bg-gray-50 rounded"
-          />
+          <template v-for="s in subjects" :key="s?.id">
+            <UCheckbox
+              v-if="s && s.id"
+              :value="s.id"
+              v-model="form.subjects"
+              :label="s.name || 'Unknown Subject'"
+              class="p-2 hover:bg-gray-50 rounded"
+            />
+          </template>
         </div>
       </fieldset>
 

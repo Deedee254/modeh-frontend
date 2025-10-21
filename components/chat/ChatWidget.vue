@@ -1,10 +1,11 @@
 <template>
-  <div class="flex h-screen bg-background overflow-hidden max-w-screen-xl mx-auto px-4 w-full">
+  <div class="flex min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] bg-background/70 md:bg-transparent px-4 py-6 md:px-6">
     <!-- Sidebar -->
-  <div class="hidden md:flex w-full md:w-80 border-r border-border flex-shrink-0">
-      <div class="flex flex-col w-full h-full bg-sidebar-bg">
+    <div class="hidden md:flex w-80 flex-shrink-0">
+      <!-- Sidebar keeps the hero gradient treatment just within the header, leaving the list area clean and white -->
+      <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl backdrop-blur">
         <!-- Header -->
-        <div class="p-4 border-b border-border bg-primary">
+        <div class="p-4 border-b border-border bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white rounded-t-3xl sticky top-0 z-30">
           <div class="flex items-center justify-between mb-3">
             <h1 class="text-xl font-semibold text-primary-foreground">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground h-9 w-9 rounded-full hover:bg-primary-foreground/20 text-primary-foreground">
@@ -16,19 +17,19 @@
           </div>
           <!-- Search -->
           <div class="relative">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-foreground/70">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
             <input 
-              class="flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60" 
+              class="flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-white/10 border-white/25 text-white placeholder:text-white/60" 
               placeholder="Search conversations..."
               v-model="searchQuery"
             >
           </div>
         </div>
         <!-- Tabs -->
-        <div class="px-4 py-3 border-b border-border">
+        <div class="px-4 py-3 border-b border-border bg-transparent sticky top-[128px] z-20">
           <div dir="ltr" data-orientation="horizontal">
             <div role="tablist" aria-orientation="horizontal" class="h-10 items-center justify-center rounded-md p-1 text-muted-foreground grid w-full grid-cols-3 bg-muted/50">
               <button 
@@ -48,7 +49,7 @@
         </div>
         
         <!-- Chat List -->
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
           <button 
             v-for="chat in allConversations" 
             :key="chat.id" 
@@ -77,13 +78,13 @@
     </div>
 
     <!-- Mobile: show list when not viewing a chat -->
-  <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0">
-      <div class="flex flex-col h-full bg-sidebar-bg">
+    <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl">
+      <div class="flex flex-col h-full bg-white text-foreground">
         <!-- Header (mobile list) -->
-        <div class="p-4 border-b border-border bg-primary">
+        <div class="p-4 border-b border-border bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white sticky top-0 z-40">
           <div class="flex items-center justify-between mb-3">
-            <h1 class="text-xl font-semibold text-primary-foreground">Chats</h1>
-            <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground h-9 w-9 rounded-full hover:bg-primary-foreground/20 text-primary-foreground">
+            <h1 class="text-xl font-semibold text-white">Chats</h1>
+            <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground h-9 w-9 rounded-full hover:bg-white/20 text-white">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-5 w-5">
                 <path d="M5 12h14"></path>
                 <path d="M12 5v14"></path>
@@ -91,19 +92,19 @@
             </button>
           </div>
           <div class="relative">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
             <input 
-              class="flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60" 
+              class="flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-white/10 border-white/30 text-white placeholder:text-white/70" 
               placeholder="Search conversations..."
               v-model="searchQuery"
             >
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
           <button 
             v-for="chat in allConversations" 
             :key="chat.id" 
@@ -132,10 +133,10 @@
     </div>
 
     <!-- Main Chat Area -->
-  <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0">
-      <div class="flex flex-col h-full bg-chat-bg">
+  <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6">
+    <div class="flex flex-col h-full bg-chat-bg">
         <!-- Chat Header -->
-  <div class="flex items-center gap-3 p-4 bg-sidebar-bg border-b border-border">
+  <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white/5 border-b border-border md:static md:z-auto">
           <button 
             v-if="isMobile && showChatWindowOnMobile" 
             class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"
@@ -167,8 +168,8 @@
           </button>
         </div>
 
-        <!-- Messages -->
-        <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4">
+  <!-- Messages -->
+  <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4" style="padding-bottom: 90px;">
           <div v-for="message in chatMessages" :key="message.id" class="flex w-full" :class="String(message.sender_id) === String(userId) ? 'justify-end' : 'justify-start'">
             <div :class="String(message.sender_id) === String(userId) ? 'chat-bubble sent' : 'chat-bubble received'" class="rounded-lg px-4 py-2">
               <!-- attachments (if any) -->
@@ -213,8 +214,8 @@
         </div>
 
         <!-- Input Area -->
-        <div class="p-4 bg-sidebar-bg border-t border-border">
-          <div class="flex items-end gap-2">
+        <div class="p-3 bg-white/5 border-t border-border sticky bottom-0 z-30">
+          <div class="flex items-end gap-2" style="margin-bottom:8px">
             <input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.txt" class="hidden" ref="fileInput" @change="onFileChange">
             <button 
               class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground"
@@ -224,14 +225,14 @@
                 <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
               </svg>
             </button>
-            <div class="flex-1 relative bg-background border border-input rounded-lg flex items-center pr-2">
+              <div class="flex-1 relative bg-background border border-input rounded-lg flex items-center pr-2">
               <input 
                 v-model="body"
                 class="flex h-10 w-full rounded-md px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent" 
                 placeholder="Type a message..."
                 @keyup.enter="sendLocalMessage"
               >
-              <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground">
+                <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground" style="margin-bottom:6px">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-smile h-5 w-5">
                   <circle cx="12" cy="12" r="10"></circle>
                   <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
@@ -428,7 +429,7 @@ onUnmounted(() => {
 
 .chat-bubble.sent {
   /* WhatsApp-like sent bubble */
-  background: linear-gradient(180deg, rgba(37,211,102,1) 0%, rgba(25,199,113,1) 100%);
+  background: linear-gradient(180deg, #6366F1 0%, #4F46E5 100%);
   color: white;
   border-radius: 18px 18px 4px 18px;
 }

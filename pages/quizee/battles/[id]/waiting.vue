@@ -17,30 +17,30 @@
         </div>
 
         <!-- Players Section -->
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 my-8">
+        <div class="grid grid-cols-2 items-center justify-center gap-4 my-8">
           <!-- Initiator Card -->
           <PlayerCard v-if="battle.initiator" :player="battle.initiator" role="Creator" />
 
-          <div class="text-3xl font-black text-gray-300 dark:text-gray-600 my-2 sm:my-0">VS</div>
+          <div class="text-3xl font-black text-gray-300 dark:text-gray-600 text-center">VS</div>
 
           <!-- Opponent Card -->
           <PlayerCard v-if="battle.opponent && battle.opponent_id !== battle.initiator_id" :player="battle.opponent" role="Challenger" />
           
           <!-- Waiting for Opponent Placeholder -->
-          <div v-else class="w-full sm:w-64 h-32 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 text-center">
-            <div class="relative flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-2">
+          <div v-else class="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 text-center">
+            <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 mb-2">
               <svg class="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               <div class="absolute inset-0 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded-full animate-spin-slow"></div>
             </div>
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Waiting for opponent...</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Waiting for opponent...</p>
           </div>
         </div>
 
         <!-- Battle Info & Actions -->
-        <div class="grid md:grid-cols-2 gap-6 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div class="grid sm:grid-cols-2 gap-6 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
           <!-- Battle Info Section -->
           <div class="space-y-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Battle Details</h3>
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Battle Details</h3>
             <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 space-y-3">
               <InfoItem icon="heroicon-o-question-mark-circle" label="Questions" :value="battle.settings?.question_count || 10" />
               <InfoItem icon="heroicon-o-chart-bar" label="Difficulty" :value="battle.settings?.difficulty || 'Any'" class="capitalize" />
@@ -125,6 +125,7 @@ useHead({
 })
 
 const battle = ref({})
+const initialized = ref(false)
 
 const isInitiator = computed(() => auth.user && battle.value.initiator_id === auth.user.id)
 
@@ -244,6 +245,8 @@ function copyLink() {
 }
 
 watch(() => battle.value?.status, (newStatus) => {
+  // don't auto-redirect on initial load if the battle was already in-progress
+  if (!initialized.value) return
   if (newStatus === 'in-progress') {
     showAlert({ type: 'info', message: 'Battle is starting! Redirecting...' })
     setTimeout(() => {
@@ -254,6 +257,8 @@ watch(() => battle.value?.status, (newStatus) => {
 
 onMounted(async () => {
   await fetchBattle()
+  // mark page as initialized after initial fetch to avoid immediate redirects
+  initialized.value = true
   attachEchoListeners()
 })
 onUnmounted(() => detachEchoListeners())

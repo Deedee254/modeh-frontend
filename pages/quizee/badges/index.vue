@@ -1,137 +1,118 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Page Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Your Achievements</h1>
-        <p class="mt-2 text-lg text-gray-600">Track your progress and unlock special badges as you master quizzes!</p>
-      </div>
+  <div>
+    <PageHero
+      :flush="true"
+      title="Your Achievements"
+      description="Track your progress and unlock special badges as you master quizzes!"
+      :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Badges', current: true }]"
+    >
+      <template #eyebrow>Achievements & Badges</template>
+    </PageHero>
 
-      <!-- Stats Overview -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-gray-600">Badges Earned</p>
-              <p class="text-2xl font-bold text-gray-900">{{ unlockedCount }} / {{ totalBadges }}</p>
-            </div>
-          </div>
-        </div>
+    <div class="max-w-7xl mx-auto px-4 py-6">
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-gray-600">Total Points</p>
-              <p class="text-2xl font-bold text-gray-900">{{ totalPoints }}</p>
-            </div>
-          </div>
-        </div>
+     <!-- Stats Overview -->
+     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+       <StatCard
+         label="Badges Earned"
+         :value="`${unlockedCount} / ${totalBadges}`"
+         description="Achievements unlocked"
+         icon="heroicons:check-circle"
+       />
+       <StatCard
+         label="Total Points"
+         :value="totalPoints.toString()"
+         description="Points from badges"
+         icon="heroicons:bolt"
+       />
+       <StatCard
+         label="Current Level"
+         :value="currentLevel.toString()"
+         description="Based on total points"
+         icon="heroicons:chart-bar"
+       />
+     </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-gray-600">Current Level</p>
-              <p class="text-2xl font-bold text-gray-900">{{ currentLevel }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+     <!-- Badges Grid -->
+     <div v-if="loading" class="flex justify-center items-center py-12">
+       <div class="flex items-center gap-3">
+         <svg class="w-8 h-8 text-emerald-600 animate-spin" fill="none" viewBox="0 0 24 24">
+           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+         </svg>
+         <span class="text-lg text-slate-600">Loading badges...</span>
+       </div>
+     </div>
 
-      <!-- Badges Grid -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <div class="flex items-center gap-3">
-          <svg class="w-8 h-8 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-lg text-gray-600">Loading badges...</span>
-        </div>
-      </div>
-
-      <div v-else-if="error" class="bg-red-50 rounded-xl p-6 text-center">
-        <p class="text-red-600">{{ error }}</p>
-      </div>
+     <div v-else-if="error" class="bg-red-50/70 backdrop-blur-sm rounded-2xl p-6 text-center border border-red-200">
+       <p class="text-red-600">{{ error }}</p>
+     </div>
 
       <div v-else class="space-y-6">
         <!-- Category Tabs -->
         <div class="mb-8">
-          <div class="sm:hidden">
-            <label for="tabs" class="sr-only">Select a category</label>
-            <select id="tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" @change="activeTab = $event.target.value">
-              <option v-for="category in categories" :key="category" :value="category" :selected="category === activeTab">{{ formatCategory(category) }}</option>
-            </select>
-          </div>
-          <div class="hidden sm:block">
-            <div class="border-b border-gray-200">
-              <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <button v-for="category in categories" :key="category" @click="activeTab = category" :class="[
-                  'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
-                  activeTab === category ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                ]">
-                  {{ formatCategory(category) }}
-                </button>
-              </nav>
-            </div>
-          </div>
+         <div class="sm:hidden">
+           <label for="tabs" class="sr-only">Select a category</label>
+           <select id="tabs" name="tabs" class="block w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" @change="activeTab = $event.target.value">
+             <option v-for="category in categories" :key="category" :value="category" :selected="category === activeTab">{{ formatCategory(category) }}</option>
+           </select>
+         </div>
+         <div class="hidden sm:block">
+           <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-1 border border-white/20 shadow-sm">
+             <nav class="flex space-x-1" aria-label="Tabs">
+               <button v-for="category in categories" :key="category" @click="activeTab = category" :class="[
+                 'whitespace-nowrap py-2 px-4 rounded-xl font-medium text-sm transition-all',
+                 activeTab === category ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-600 hover:text-emerald-700 hover:bg-white/50'
+               ]">
+                 {{ formatCategory(category) }}
+               </button>
+             </nav>
+           </div>
+         </div>
         </div>
 
         <!-- Badges Grid -->
         <div v-for="category in categories" :key="category" v-show="activeTab === category">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="badge in groupedBadges[category]" :key="badge.id"
-                     class="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-200">
-                    <div class="flex items-start gap-4">
-                      <!-- Badge Icon -->
-                      <div :class="[
-                        'w-16 h-16 rounded-xl flex items-center justify-center text-2xl',
-                        badge.unlocked ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gray-100 text-gray-400'
-                      ]">
-                        {{ badge.icon }}
-                      </div>
+           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               <div v-for="badge in groupedBadges[category]" :key="badge.id"
+                    class="group bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-200">
+                   <div class="flex items-start gap-4">
+                     <!-- Badge Icon -->
+                     <div :class="[
+                       'w-16 h-16 rounded-xl flex items-center justify-center text-2xl',
+                       badge.unlocked ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'
+                     ]">
+                       {{ badge.icon }}
+                     </div>
 
                       <!-- Badge Details -->
                       <div class="flex-1">
-                        <div class="flex items-center justify-between">
-                          <h3 class="font-bold text-gray-900">{{ badge.name }}</h3>
-                          <span :class="[
-                            'text-sm px-2 py-1 rounded-full',
-                            badge.unlocked ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                          ]">
-                            {{ badge.points }} pts
-                          </span>
-                        </div>
+                       <div class="flex items-center justify-between">
+                         <h3 class="font-bold text-slate-900">{{ badge.name }}</h3>
+                         <span :class="[
+                           'text-sm px-2 py-1 rounded-full',
+                           badge.unlocked ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                         ]">
+                           {{ badge.points }} pts
+                         </span>
+                       </div>
 
-                        <p class="mt-1 text-sm text-gray-600">{{ badge.description }}</p>
+                       <p class="mt-1 text-sm text-slate-600">{{ badge.description }}</p>
 
-                        <!-- Progress Bar -->
-                        <div v-if="badge.progress !== undefined" class="mt-4">
-                          <div class="flex items-center justify-between text-sm mb-1">
-                            <span class="text-gray-600">Progress</span>
-                            <span class="font-medium text-gray-900">{{ badge.progress }}%</span>
-                          </div>
-                          <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                                 :style="{ width: `${badge.progress}%` }"></div>
-                          </div>
-                        </div>
+                       <!-- Progress Bar -->
+                       <div v-if="badge.progress !== undefined" class="mt-4">
+                         <div class="flex items-center justify-between text-sm mb-1">
+                           <span class="text-slate-600">Progress</span>
+                           <span class="font-medium text-slate-900">{{ badge.progress }}%</span>
+                         </div>
+                         <div class="w-full bg-slate-200 rounded-full h-2">
+                           <div class="bg-gradient-to-r from-emerald-500 to-teal-600 h-2 rounded-full transition-all duration-300"
+                                :style="{ width: `${badge.progress}%` }"></div>
+                         </div>
+                       </div>
 
-                        <!-- Completion Date -->
-                        <div v-if="badge.unlocked && badge.completed_at" class="mt-3 flex items-center gap-2 text-sm text-gray-600">
+                       <!-- Completion Date -->
+                       <div v-if="badge.unlocked && badge.completed_at" class="mt-3 flex items-center gap-2 text-sm text-slate-600">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                           </svg>
@@ -149,6 +130,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import PageHero from '~/components/ui/PageHero.vue'
+import StatCard from '~/components/ui/StatCard.vue'
 import { useAuthStore } from '~/stores/auth'
 
 // Page meta

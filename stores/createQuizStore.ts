@@ -21,8 +21,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     attempts_allowed: 1,
     shuffle_questions: true,
     shuffle_answers: true,
-    access: 'free',
-    visibility: 'public',
+      access: 'free',
+      // backend expects one of: 'draft', 'published', 'scheduled'
+      // previous value 'public' is invalid and caused 422 responses. Use 'draft' as a safe default.
+      visibility: 'draft',
   }
 
   const quiz = ref({ ...initialForm })
@@ -72,16 +74,22 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       // convert timer_minutes to timer_seconds to match backend expectations
       const payload: any = {
-        topic_id: quiz.value.topic_id,
+        topic_id: quiz.value.topic_id ? (Number(quiz.value.topic_id) || null) : null,
         title: quiz.value.title,
         description: quiz.value.description || null,
         youtube_url: quiz.value.youtube_url || null,
         timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
         per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
-        subject_id: quiz.value.subject_id,
-        grade_id: quiz.value.grade_id,
+        subject_id: quiz.value.subject_id ? (Number(quiz.value.subject_id) || null) : null,
+        grade_id: quiz.value.grade_id ? (Number(quiz.value.grade_id) || null) : null,
         use_per_question_timer: quiz.value.use_per_question_timer,
-        attempts_allowed: quiz.value.attempts_allowed ? Number(quiz.value.attempts_allowed) : null,
+        // Normalize attempts_allowed: '' (select for unlimited) -> null, numeric strings -> Number
+        attempts_allowed: (() => {
+          const raw: any = quiz.value.attempts_allowed
+          if (raw === '' || raw === null || typeof raw === 'undefined') return null
+          const n = Number(raw)
+          return Number.isFinite(n) ? n : null
+        })(),
         shuffle_questions: Boolean(quiz.value.shuffle_questions),
         shuffle_answers: Boolean(quiz.value.shuffle_answers),
         access: quiz.value.access,
@@ -89,6 +97,27 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       }
 
       const sanitizedQuestions: any[] = []
+
+      // Helper: produce a JSON-safe copy of a question for sending to the server
+        function sanitizeQuestionForPayload(q: any) {
+        if (!q || typeof q !== 'object') return q
+        const copy: any = {}
+        const allowedKeys = ['uid','id','type','text','body','options','answers','correct','corrects','difficulty','marks','fill_parts','media','media_metadata','youtube_url','explanation','tags','solution_steps','is_banked']
+        for (const k of Object.keys(q)) {
+          if (!allowedKeys.includes(k)) continue
+          const v = (q as any)[k]
+          try {
+            if (typeof File !== 'undefined' && v instanceof File) {
+              copy[k] = null
+              continue
+            }
+          } catch (e) {}
+          if (Array.isArray(v)) copy[k] = JSON.parse(JSON.stringify(v))
+          else if (v && typeof v === 'object') copy[k] = JSON.parse(JSON.stringify(v))
+          else copy[k] = v
+        }
+        return copy
+      }
 
       // Determine if any questions contain local File objects; if so, send as multipart/form-data
       let hasFiles = false
@@ -121,26 +150,35 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           else form.append(k, String(val))
         })
 
-        // append questions as a single JSON string; backend will decode it server-side
-        const questionsPayload: any[] = []
-        sanitizedQuestions.forEach((sanitized: any, idx: number) => {
-          questionsPayload.push(sanitized)
+        // append questions as a JSON string
+        form.append('questions', JSON.stringify(sanitizedQuestions))
 
-          const original = questions.value[idx]
-          if (!original) return
-
-          Object.keys(original).forEach((k) => {
-            const v: any = original[k]
-            if (typeof File !== 'undefined' && v instanceof File) {
-              // server accepts question_media indexed by question index
-              form.append(`question_media[${idx}]`, v)
-              // also append under question uid if available (backend supports uid keys)
-              if (original.uid) form.append(`question_media[${original.uid}]`, v)
-            }
-          })
-        })
-
-        form.append('questions', JSON.stringify(questionsPayload))
+        // Append any File objects found in questions under question_media[index] or question_media[uid]
+        // The UI may attach files inside question.media or question.file; scan sanitizedQuestions for file refs
+        for (let i = 0; i < questions.value.length; i++) {
+          const q = questions.value[i]
+          // possible file fields
+          const potentialFileFields = ['media', 'file', 'media_file', 'media_blob']
+          for (const f of potentialFileFields) {
+            try {
+              const v: any = q[f]
+              if (v && typeof File !== 'undefined' && v instanceof File) {
+                // prefer numeric index key
+                form.append(`question_media[${i}]`, v)
+                continue
+              }
+            } catch (e) {}
+          }
+          // if the question has a uid and the caller stored a File under that uid key (edge case)
+          if (q && q.uid) {
+            try {
+              const v: any = (q as any).media
+              if (v && typeof File !== 'undefined' && v instanceof File) {
+                form.append(`question_media[${q.uid}]`, v)
+              }
+            } catch (e) {}
+          }
+        }
 
         // debug: log a summary of FormData keys being sent (avoid logging binary contents)
         try {
@@ -158,8 +196,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         res = await api.postFormData('/api/quizzes', form)
       } else {
         // debug: log JSON payload
-        try { console.debug('Submitting JSON to /api/quizzes', { ...payload, questions: sanitizedQuestions }) } catch (e) {}
-        res = await api.postJson('/api/quizzes', { ...payload, questions: sanitizedQuestions })
+        try { console.debug('Submitting JSON to /api/quizzes', { ...payload }) } catch (e) {}
+        res = await api.postJson('/api/quizzes', { ...payload })
       }
       if (api.handleAuthStatus(res)) {
         alert.push({ type: 'warning', message: 'Session expired — please sign in again' })
@@ -171,14 +209,35 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         if (res.status === 422 && data?.errors) {
           // map server keys to UI-friendly keys (support both raw and prefixed keys used by some components)
           const mapped: Record<string, string[]> = {}
+          const raw: string[] = []
           Object.keys(data.errors).forEach((k) => {
             mapped[k] = data.errors[k]
+            // collect messages into a raw array for top-level display
+            if (Array.isArray(data.errors[k])) raw.push(...data.errors[k])
             // component expects some underscored keys like _title and _topic in places
             if (k === 'title') mapped['_title'] = data.errors[k]
             if (k === 'topic_id' || k === 'topic') mapped['_topic'] = data.errors[k]
           })
+          // also include any top-level message if present
+          if (data?.message) raw.unshift(String(data.message))
+          if (raw.length) mapped['_raw'] = raw
           detailsErrors.value = mapped
           alert.push({ type: 'error', message: 'Please fix the highlighted errors.' })
+          return
+        }
+
+        // If server returned a 403 with a descriptive message (e.g. topic not approved),
+        // surface it inline and provide an actionable hint so the UI can offer a request-approval button.
+        if (res.status === 403 && data?.message) {
+          const mapped: Record<string, string[]> = {}
+          const raw: string[] = [String(data.message)]
+          mapped['_raw'] = raw
+          // If the message mentions topic approval, expose an action the UI can render
+          if (String(data.message).toLowerCase().includes('topic') && String(data.message).toLowerCase().includes('approve')) {
+            ;(mapped as any)['_actions'] = { requestTopicApproval: true }
+          }
+          detailsErrors.value = mapped
+          alert.push({ type: 'warning', message: data.message })
           return
         }
 
@@ -212,7 +271,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
         per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
         use_per_question_timer: Boolean(quiz.value.use_per_question_timer),
-        attempts_allowed: quiz.value.attempts_allowed ? Number(quiz.value.attempts_allowed) : null,
+        attempts_allowed: (() => {
+          const raw: any = quiz.value.attempts_allowed
+          if (raw === '' || raw === null || typeof raw === 'undefined') return null
+          const n = Number(raw)
+          return Number.isFinite(n) ? n : null
+        })(),
         shuffle_questions: Boolean(quiz.value.shuffle_questions),
         shuffle_answers: Boolean(quiz.value.shuffle_answers),
         access: quiz.value.access,
@@ -249,7 +313,33 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       // debug: log payload
       try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, question) } catch (e) {}
-      const res = await api.postJson(`/api/quizzes/${quizId.value}/questions`, question)
+      let res: Response
+      // If question contains a File (media), send as FormData with 'media' key
+      let containsFile = false
+      for (const k in question) {
+        try {
+          const v: any = question[k]
+          if (typeof File !== 'undefined' && v instanceof File) { containsFile = true; break }
+        } catch (e) {}
+      }
+      if (containsFile) {
+        const form = new FormData()
+        // append scalar fields; arrays/objects stringified
+        Object.keys(question).forEach((k) => {
+          const v: any = (question as any)[k]
+          if (v === null || typeof v === 'undefined') return
+          if (typeof File !== 'undefined' && v instanceof File) {
+            form.append('media', v)
+            return
+          }
+          if (typeof v === 'object') form.append(k, JSON.stringify(v))
+          else form.append(k, String(v))
+        })
+        res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
+      } else {
+        const res2 = await api.postJson(`/api/quizzes/${quizId.value}/questions`, question)
+        res = res2
+      }
       if (api.handleAuthStatus(res)) return
       if (!res.ok) throw new Error('Failed to save question')
       const data = await res.json().catch(()=>null)

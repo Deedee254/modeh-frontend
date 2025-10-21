@@ -5,13 +5,13 @@
     <div class="w-full h-36 sm:h-44 bg-gray-100 overflow-hidden">
       <img v-if="image" :src="image" alt="" class="w-full h-full object-cover" />
       <div v-else :class="['w-full h-full', paletteClass]" class="grid place-items-center">
-        <div class="text-white font-bold text-2xl">{{ badgeText || (title || '').charAt(0) }}</div>
+        <div class="text-white font-bold text-2xl">{{ badgeText || (displayTitle || '').charAt(0) }}</div>
       </div>
     </div>
 
     <div class="p-3 sm:p-4 flex flex-col gap-2">
       <div>
-        <h4 class="text-lg sm:text-xl font-semibold line-clamp-2 text-gray-900 dark:text-white">{{ title }}</h4>
+  <h4 class="text-lg sm:text-xl font-semibold line-clamp-2 text-gray-900 dark:text-white">{{ displayTitle }}</h4>
         <div v-if="subtitle" class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ subtitle }}</div>
       </div>
 
@@ -34,7 +34,9 @@ import { computed } from 'vue'
 
 const props = defineProps({
   to: { type: [String, Object], default: null },
-  title: { type: String, required: true },
+  title: { type: String, required: false },
+  // Accept `name` since many APIs return `name` instead of `title` and callers often spread objects
+  name: { type: String, default: '' },
   description: { type: String, default: '' },
   subtitle: { type: String, default: '' },
   image: { type: String, default: '' },
@@ -46,6 +48,8 @@ const props = defineProps({
   startLink: { type: [String, Object], default: null },
   startLabel: { type: String, default: 'Explore Topics' }
 })
+
+const displayTitle = computed(() => props.title || props.name || '')
 
 const paletteClass = computed(() => props.palette || 'bg-gradient-to-br from-indigo-400 to-indigo-600')
 const backgroundStyle = computed(() => {

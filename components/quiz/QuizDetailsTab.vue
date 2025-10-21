@@ -3,6 +3,13 @@
     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
       <h2 class="text-lg font-medium mb-4">Quiz Details</h2>
 
+      <div v-if="props.errors && props.errors._raw" class="mb-4">
+        <div v-for="(m, idx) in props.errors._raw" :key="idx" class="text-sm text-red-600">{{ m }}</div>
+        <div v-if="props.errors._actions && props.errors._actions.requestTopicApproval" class="mt-2">
+          <UButton size="sm" variant="soft" @click="requestApproval" :loading="approvalRequestLoading">Request topic approval</UButton>
+        </div>
+      </div>
+
       <!-- Basic Info Section -->
       <div class="space-y-6 mb-8">
         <div>
@@ -162,6 +169,8 @@
       </div>
     </ClientOnly>
 
+    <!-- Approval request moved into CreateTopicModal; details tab only shows selection summary -->
+
     <!-- Bottom Actions -->
     <div class="mt-6 flex justify-end gap-3">
       <UButton size="sm" variant="soft" @click="saveAndContinue" :loading="saving">Save and Continue</UButton>
@@ -173,6 +182,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 const props = defineProps({
   modelValue: { type: Object, required: true },
@@ -211,6 +222,9 @@ function validateBeforeSave() {
 const selectedGrade = ref(props.modelValue?.grade_id || '')
 const selectedSubject = ref(props.modelValue?.subject_id || '')
 const topicsPicker = ref(null)
+const api = useApi()
+const alert = useAppAlert()
+const approvalRequestLoading = ref(false)
 
 // Computed lists filtered by selections (client-side fallback)
 const subjectsByGrade = computed(() => {
@@ -243,6 +257,33 @@ const selectedTopicName = computed(() => {
   return t ? t.name : ''
 })
 
+const selectedTopicObj = computed(() => {
+  const tid = props.modelValue?.topic_id || ''
+  if (!tid || !Array.isArray(props.topics)) return null
+  return props.topics.find(x => String(x.id) === String(tid)) || null
+})
+
+async function requestApproval() {
+  const t = selectedTopicObj.value
+  if (!t || !t.id) return
+  approvalRequestLoading.value = true
+  try {
+    const res = await api.postJson(`/topics/${t.id}/request-approval`, {})
+    const data = await res.json().catch(() => null)
+    if (res.ok) {
+      // emit event so parent can refresh topics list
+      emit('approval-requested', t.id)
+      alert.push({ type: 'success', message: 'Approval requested. An admin will review the topic shortly.' })
+    } else {
+      alert.push({ type: 'error', message: data?.message || 'Failed to request approval' })
+    }
+  } catch (e) {
+    alert.push({ type: 'error', message: 'Failed to request approval' })
+  } finally {
+    approvalRequestLoading.value = false
+  }
+}
+
 // When grade changes, clear subject/topic and notify parent
 watch(selectedGrade, (nv) => {
   selectedSubject.value = ''
@@ -259,7 +300,8 @@ watch(() => props.modelValue, (nv) => {
 
 function onSubjectPicked(item) {
   selectedSubject.value = item?.id || ''
-  emit('update:modelValue', { ...props.modelValue, subject_id: item?.id || null, topic_id: null })
+  const sid = item?.id ? (Number(item.id) || null) : null
+  emit('update:modelValue', { ...props.modelValue, subject_id: sid, topic_id: null })
   // also notify parent directly so callers can preload topics or update other state
   emit('subject-picked', item)
     // auto-focus the topics picker so users can quickly pick a topic after selecting a subject
@@ -279,7 +321,8 @@ function onSubjectPicked(item) {
 }
 
 function onTopicPicked(item) {
-  emit('update:modelValue', { ...props.modelValue, topic_id: item?.id || null })
+  const tid = item?.id ? (Number(item.id) || null) : null
+  emit('update:modelValue', { ...props.modelValue, topic_id: tid })
   emit('topic-picked', item)
 }
 

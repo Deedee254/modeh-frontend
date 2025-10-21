@@ -72,23 +72,11 @@
         </UFormGroup>
       </div>
 
-      <div>
-        <UFormGroup label="Tags (comma-separated)">
-          <UInput v-model="localModel.tags" placeholder="e.g. algebra, geometry" />
-        </UFormGroup>
-      </div>
 
-      <div>
-        <UFormGroup label="Hint (optional)">
-          <UTextarea v-model="localModel.hint" :rows="2" v-autosize />
-        </UFormGroup>
-      </div>
 
-      <div>
-        <UFormGroup label="Solution Steps (optional)">
-          <RichTextEditor v-model="localModel.solution_steps" />
-        </UFormGroup>
-      </div>
+      <!-- Hint removed: backend does not expect a hint field, avoid sending it in payloads -->
+
+
 
       <div v-if="errors?.length" class="text-xs text-red-600">
         <div v-for="e in errors" :key="e">• {{ e }}</div>

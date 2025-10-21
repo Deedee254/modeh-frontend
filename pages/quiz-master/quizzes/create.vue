@@ -74,8 +74,9 @@
           @topic-picked="onSelectTopic"
           @subject-search="onSubjectSearch"
           @topic-search="onTopicSearch"
-          @save="saveDetails"
-          @next="() => store.setTab('settings')"
+          @save="async () => { await saveDetails(); if (store.detailsSaved) { store.setTab('settings') } }"
+          @next="() => trySetTab('settings')"
+          @approval-requested="async (id) => { try { await fetchTopicsPage({ subjectId: store.quiz.subject_id, page: 1, perPage: 50, q: '' }) } catch (e) {} }"
         />
 
         <QuizSettingsTab
@@ -84,9 +85,9 @@
           :saving="store.isSubmitting"
           :errors="store.settingsErrors"
           @update:modelValue="(v) => (store.quiz = v)"
-          @save="saveSettings"
-          @next="() => store.setTab('questions')"
-          @prev="() => store.setTab('details')"
+          @save="async () => { await saveSettings(); if (store.settingsSaved) { store.setTab('questions') } }"
+          @next="() => trySetTab('questions')"
+          @prev="() => trySetTab('details')"
         />
 
         <QuizQuestionsTab
@@ -244,9 +245,13 @@ onMounted(async () => {
     }
   } catch (e) {}
 
-  if (route.query.id && !store.quizId) {
+  const incomingId = route.query.id
+  // guard against query id being the string 'null' or empty
+  if (incomingId && incomingId !== 'null' && !store.quizId) {
     try {
-      await store.loadQuiz(route.query.id)
+      // coerce to number when possible
+      const coerced = isNaN(Number(incomingId)) ? incomingId : Number(incomingId)
+      await store.loadQuiz(coerced)
       // after loading quiz data, ensure subjects/topics are loaded for the preselected grade/subject
       const g = store.quiz.grade_id
       if (g) {
@@ -297,9 +302,11 @@ async function onTopicCreated(created) {
     try { await fetchTopicsPage({ subjectId: created.subject_id || created.subjectId || created.subject || store.quiz.subject_id, page: 1, perPage: 50, q: '' }) } catch (e) {}
     // show a toast confirmation
     try { alert.push({ type: 'success', message: `Topic "${created.name || 'Topic'}" created` }) } catch (e) {}
-    // persist progress by setting detailsSaved (will trigger persist watcher)
-    // mark detailsSaved only if details complete
-    // leave detailsSaved alone otherwise
+    // If the topic was auto-approved (subject auto_approve) then mark it approved locally
+    if (created.is_approved) {
+      // mark details as saved so the user can move to settings immediately
+      store.detailsSaved = true
+    }
   } catch (e) {
     // ignore
   }
@@ -319,7 +326,7 @@ watch(grade_id, (nv, ov) => {
 // handlers invoked by TaxonomyPicker emits
 function onSelectSubject(item) {
   // TaxonomyPicker emits an object (subject). store expects subject_id
-  store.quiz.subject_id = item?.id || null
+  store.quiz.subject_id = item?.id ? (Number(item.id) || null) : null
   // clear topic when subject changes
   store.quiz.topic_id = null
   // proactively preload topics for the selected subject so the Topics picker shows results immediately
@@ -327,7 +334,7 @@ function onSelectSubject(item) {
 }
 
 function onSelectTopic(item) {
-  store.quiz.topic_id = item?.id || null
+  store.quiz.topic_id = item?.id ? (Number(item.id) || null) : null
 }
 
 function saveDetails() { store.saveDetails() }

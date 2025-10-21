@@ -7,6 +7,31 @@
 
     <div v-if="!collapsed" class="mt-3">
 
+      <!-- Active filter chips -->
+      <div v-if="hasAnyActive" class="mb-3 flex flex-wrap gap-2">
+        <template v-if="activeGradeLabel">
+          <button @click="removeGrade" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+            <span class="font-semibold">Grade:</span>
+            <span>{{ activeGradeLabel }}</span>
+            <span class="ml-1 text-slate-400">×</span>
+          </button>
+        </template>
+        <template v-if="activeSubjectLabel">
+          <button @click="removeSubject" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+            <span class="font-semibold">Subject:</span>
+            <span>{{ activeSubjectLabel }}</span>
+            <span class="ml-1 text-slate-400">×</span>
+          </button>
+        </template>
+        <template v-if="activeTopicLabel">
+          <button @click="removeTopic" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+            <span class="font-semibold">Topic:</span>
+            <span>{{ activeTopicLabel }}</span>
+            <span class="ml-1 text-slate-400">×</span>
+          </button>
+        </template>
+      </div>
+
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Grade</label>
         <div class="relative">
@@ -48,8 +73,9 @@
 </template>
 
 <script setup>
-import { ref, watch, toRefs, onMounted } from 'vue'
+import { ref, watch, toRefs, onMounted, computed } from 'vue'
 import { useCookie } from '#app'
+import useTaxonomy from '~/composables/useTaxonomy'
 const props = defineProps({
   subjectOptions: { type: Array, default: () => [] },
   topicOptions: { type: Array, default: () => [] },
@@ -68,8 +94,44 @@ const localGrade = ref(props.grade)
 const collapsed = ref(false)
 const cookieCollapsed = props.storageKey ? useCookie(props.storageKey + ':collapsed') : null
 
+// fallback taxonomy when caller doesn't pass options
+const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchGrades, fetchAllSubjects, fetchAllTopics } = useTaxonomy()
+
+// compute label lookups from either props.options or taxonomy composable
+const gradeLookup = computed(() => {
+  const list = props.gradeOptions && props.gradeOptions.length ? props.gradeOptions : (taxGrades.value || [])
+  return (list || []).reduce((acc, g) => { if (g && g.id != null) acc[String(g.id)] = g; return acc }, {})
+})
+const subjectLookup = computed(() => {
+  const list = props.subjectOptions && props.subjectOptions.length ? props.subjectOptions : (taxSubjects.value || [])
+  return (list || []).reduce((acc, s) => { if (s && s.id != null) acc[String(s.id)] = s; return acc }, {})
+})
+const topicLookup = computed(() => {
+  const list = props.topicOptions && props.topicOptions.length ? props.topicOptions : (taxTopics.value || [])
+  return (list || []).reduce((acc, t) => { if (t && t.id != null) acc[String(t.id)] = t; return acc }, {})
+})
+
+const activeGradeLabel = computed(() => {
+  if (!localGrade.value) return ''
+  const g = gradeLookup.value[String(localGrade.value)]
+  return g ? (g.name || g.title || g.label || String(g.id)) : String(localGrade.value)
+})
+const activeSubjectLabel = computed(() => {
+  if (!localSubject.value) return ''
+  const s = subjectLookup.value[String(localSubject.value)]
+  return s ? (s.name || s.title || s.label || String(s.id)) : String(localSubject.value)
+})
+const activeTopicLabel = computed(() => {
+  if (!localTopic.value) return ''
+  const t = topicLookup.value[String(localTopic.value)]
+  return t ? (t.name || t.title || t.label || String(t.id)) : String(localTopic.value)
+})
+
+const hasAnyActive = computed(() => {
+  return !!(localGrade.value || localSubject.value || localTopic.value)
+})
+
 // compute topics filtered by selected subject (if topicOptions contain subject_id)
-import { computed } from 'vue'
 const filteredTopics = computed(() => {
   if (!localSubject.value) return props.topicOptions || []
   return (props.topicOptions || []).filter(t => String(t.subject_id || t.subject || '') === String(localSubject.value))
@@ -86,6 +148,20 @@ onMounted(() => {
       const raw = localStorage.getItem(props.storageKey + ':collapsed')
       if (raw !== null) collapsed.value = raw === 'true'
     }
+  } catch (e) {}
+})
+
+// ensure taxonomy is loaded so chips can show labels when no options are passed
+onMounted(() => {
+  // if caller didn't pass gradeOptions/subjectOptions/topicOptions, fetch the global lists
+  try {
+    if ((!props.gradeOptions || !props.gradeOptions.length) && (!taxGrades.value || !taxGrades.value.length)) fetchGrades()
+  } catch (e) {}
+  try {
+    if ((!props.subjectOptions || !props.subjectOptions.length) && (!taxSubjects.value || !taxSubjects.value.length)) fetchAllSubjects()
+  } catch (e) {}
+  try {
+    if ((!props.topicOptions || !props.topicOptions.length) && (!taxTopics.value || !taxTopics.value.length)) fetchAllTopics()
   } catch (e) {}
 })
 
@@ -129,6 +205,26 @@ function onClear() {
   emit('update:topic', '')
   emit('update:grade', '')
   emit('clear')
+}
+
+function removeGrade() {
+  // only update local state; watchers will persist and emit update:grade
+  localGrade.value = ''
+  // clear dependent subject/topic locally
+  localSubject.value = ''
+  localTopic.value = ''
+}
+
+function removeSubject() {
+  // only update local state; watchers will persist and emit update:subject
+  localSubject.value = ''
+  // clear dependent topic locally
+  localTopic.value = ''
+}
+
+function removeTopic() {
+  // only update local state; watchers will persist and emit update:topic
+  localTopic.value = ''
 }
 </script>
 

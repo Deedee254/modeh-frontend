@@ -5,7 +5,7 @@
     </div>
     <div class="flex-1">
       <div class="text-xs text-gray-500 dark:text-gray-400">{{ label }}</div>
-      <div class="font-semibold text-gray-800 dark:text-gray-200">{{ value }}</div>
+      <div class="text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-200">{{ value }}</div>
     </div>
   </div>
 </template>

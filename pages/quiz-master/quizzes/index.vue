@@ -38,71 +38,86 @@
       </template>
     </PageHero>
 
-    <!-- Search and Filters -->
-    <div class="flex flex-wrap gap-4">
-      <div class="flex-1 min-w-[200px]">
-        <input 
-          v-model="q" 
-          @keyup.enter="fetchItems" 
-          placeholder="Search quizzes..." 
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
-        />
-      </div>
-      <select 
-        v-model.number="topicId" 
-        @change="fetchItems" 
-        class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
-      >
-        <option :value="0">All topics</option>
-  <option v-for="(t, idx) in (Array.isArray(topics) ? topics.filter(Boolean) : [])" :key="t?.id || idx" :value="t?.id">{{ t?.name }}</option>
-      </select>
-      <select 
-        v-model.number="perPage" 
-        @change="fetchItems" 
-        class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
-      >
-        <option :value="5">5 per page</option>
-        <option :value="10">10 per page</option>
-        <option :value="20">20 per page</option>
-      </select>
-    </div>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+        <aside class="lg:col-span-1 order-2 lg:order-1">
+          <div class="sticky top-6">
+            <FiltersSidebar
+              :grade-options="grades"
+              :subject-options="subjects"
+              :topic-options="topics"
+              :grade="gradeFilter"
+              :subject="subjectFilter"
+              storageKey="filters:quiz-master-quizzes"
+              @update:grade="val => { gradeFilter.value = val }"
+              @update:subject="val => { subjectFilter.value = val }"
+              @update:topic="val => { topicId.value = val }"
+              @apply="() => { page.value = 1; fetchItems() }"
+              @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
+            />
+          </div>
+        </aside>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <UiSkeleton :count="perPage" />
-    </div>
+        <main class="lg:col-span-3 order-1 lg:order-2">
+          <div class="mt-4 flex flex-wrap gap-4 items-center">
+            <div class="flex-1 min-w-[200px]">
+              <input 
+                v-model="q" 
+                @keyup.enter="fetchItems" 
+                placeholder="Search quizzes..." 
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+            <select 
+              v-model.number="perPage" 
+              @change="fetchItems" 
+              class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+            >
+              <option :value="5">5 per page</option>
+              <option :value="10">10 per page</option>
+              <option :value="20">20 per page</option>
+            </select>
+          </div>
 
-    <!-- Quiz Grid -->
-    <div v-else>
-      <div v-if="!paginator?.data || paginator.data.length === 0" 
-        class="text-center py-12 text-gray-500">
-        No quizzes found. Create your first quiz to get started.
-      </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <QuizCard
-          v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
-          :key="quiz?.id || idx"
-          :to="''"
-          :startLink="quiz.startLink"
-          :title="quiz.title"
-          :description="quiz.description"
-          :subject="quiz.subject"
-          :topic="quiz.topic"
-          :subjectId="quiz.subject_id"
-          :topicId="quiz.topic_id"
-          :grade="quiz.grade"
-          :questionsCount="quiz.questionsCount"
-          :likes="quiz.likes"
-          :quizId="quiz.id"
-          :show-approval="true"
-          :showEdit="true"
-          :editLink="quiz.editLink"
-          @approve="toggleApprove(quiz)"
-          @edit="() => router.push(`/quiz-master/quizzes/${quiz?.id || ''}/edit`)"
-        />
-      </div>
+          <div class="mt-6">
+            <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <UiSkeleton :count="perPage" />
+            </div>
 
-      <div class="mt-4"><Pagination :paginator="paginator" @change-page="onPageChange" /></div>
+            <div v-else>
+              <div v-if="!paginator?.data || paginator.data.length === 0" 
+                class="text-center py-12 text-gray-500">
+                No quizzes found. Create your first quiz to get started.
+              </div>
+              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <QuizCard
+                  v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
+                  :key="quiz?.id || idx"
+                  :to="''"
+                  :startLink="quiz.startLink"
+                  :title="quiz.title"
+                  :description="quiz.description"
+                  :subject="quiz.subject"
+                  :topic="quiz.topic"
+                  :subjectId="quiz.subject_id"
+                  :topicId="quiz.topic_id"
+                  :grade="quiz.grade"
+                  :questionsCount="quiz.questionsCount"
+                  :likes="quiz.likes"
+                  :quizId="quiz.id"
+                  :show-approval="true"
+                  :showEdit="true"
+                  :editLink="quiz.editLink"
+                  @approve="toggleApprove(quiz)"
+                  @edit="() => router.push(`/quiz-master/quizzes/${quiz?.id || ''}/edit`)"
+                />
+              </div>
+
+              <div class="mt-4"><Pagination :paginator="paginator" @change-page="onPageChange" /></div>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   </div>
 </template>
@@ -119,6 +134,7 @@ import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import Pagination from '~/components/Pagination.vue'
 import FilterLayout from '~/components/layout/FilterLayout.vue'
+import FiltersSidebar from '~/components/FiltersSidebar.vue'
 
 const router = useRouter()
 const alert = useAppAlert()
@@ -129,12 +145,16 @@ const isAdmin = computed(() => !!auth.user?.is_admin)
 
 const paginator = ref(null)
 const topics = ref([])
-const { fetchAllTopics, topics: taxTopics } = useTaxonomy()
+const { fetchAllTopics, fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
+const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
 const loading = ref(false)
 const q = ref('')
 const perPage = ref(10)
 const page = ref(1)
 const topicId = ref(0)
+const gradeFilter = ref(0)
+const subjectFilter = ref(0)
 
 const normalizedQuizzes = computed(() => {
   const quizzes = paginator.value?.data || []
@@ -163,7 +183,13 @@ function onServerSearch(search) {
   fetchItems()
 }
 
-onMounted(async () => { await Promise.all([fetchItems(), fetchTopics(), fetchAllTopics()]); topics.value = Array.isArray(taxTopics.value) ? taxTopics.value : topics.value })
+onMounted(async () => {
+  // load taxonomy first, then items
+  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+  await fetchTopics()
+  topics.value = Array.isArray(taxTopics.value) ? taxTopics.value : topics.value
+  await fetchItems()
+})
 
 async function fetchTopics() {
   try {
@@ -184,6 +210,8 @@ async function fetchItems() {
     const params = new URLSearchParams()
     if (q.value) params.set('q', q.value)
     if (topicId.value) params.set('topic_id', topicId.value)
+    if (subjectFilter.value) params.set('subject_id', subjectFilter.value)
+    if (gradeFilter.value) params.set('grade_id', gradeFilter.value)
     params.set('per_page', perPage.value)
     params.set('page', page.value)
     const res = await api.get('/api/quizzes?' + params.toString())

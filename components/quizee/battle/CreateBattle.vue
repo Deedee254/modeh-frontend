@@ -1,16 +1,6 @@
 <template>
-  <ClientOnly>
-    <template #placeholder>
-      <!-- SSR-safe placeholder matching the client-side wrapper to avoid hydration mismatches -->
-      <div class="p-2">
-        <div class="space-y-3">
-          <div class="h-4 bg-slate-200 rounded w-2/3"></div>
-          <div class="h-4 bg-slate-200 rounded w-1/2"></div>
-        </div>
-      </div>
-    </template>
     <div class="p-2">
-    <div class="grid grid-cols-1 gap-4">
+    <div class="space-y-4">
         <div>
           <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Grade</label>
           <USelect v-model="grade" :options="grades" placeholder="Select grade" />
@@ -45,11 +35,11 @@
         <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Difficulty</label>
         <USelect v-model="difficulty" :options="difficulties" />
       </div>
-      <div class="md:col-span-2">
+      <div>
         <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Number of Questions</label>
         <USelect v-model="totalQuestions" :options="questionCountOptions" />
       </div>
-        <div class="md:col-span-2">
+        <div>
           <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Total Battle Time (minutes)</label>
           <UInput v-model.number="totalTimeMinutes" type="number" min="1" placeholder="e.g., 10" />
           <p class="text-xs text-gray-500 mt-1">Optional — if set, each question will be given an equal share of this time.</p>
@@ -69,10 +59,8 @@
     <div v-if="starting" class="mt-3 text-sm text-center text-gray-500 dark:text-gray-400">Creating battle...</div>
     </div>
 
-  </ClientOnly>
-
-  <Teleport to="#modal-root">
-    <ClientOnly>
+  <ClientOnly>
+    <Teleport to="#modal-root" v-if="showTopicModal">
       <CreateTopicModal
         :model-value="showTopicModal"
         :grades="taxGrades"
@@ -82,8 +70,8 @@
         @update:modelValue="(v) => (showTopicModal = v)"
         @created="onTopicCreated"
       />
-    </ClientOnly>
-  </Teleport>
+    </Teleport>
+  </ClientOnly>
 </template>
 
 <script setup>

@@ -151,25 +151,7 @@
               </div>
             </div>
 
-            <!-- Solution Steps -->
-            <div v-if="question.solution_steps && question.solution_steps.length > 0" class="mt-4">
-              <h5 class="font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
-                <UIcon name="i-heroicons-calculator" class="h-4 w-4" />
-                Solution Steps:
-              </h5>
-              <div class="space-y-3">
-                <div
-                  v-for="(step, stepIndex) in question.solution_steps"
-                  :key="stepIndex"
-                  class="flex gap-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg dark:bg-indigo-900/20 dark:border-indigo-700"
-                >
-                  <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-500 text-white font-bold text-sm flex-shrink-0">
-                    {{ stepIndex + 1 }}
-                  </div>
-                  <div class="flex-1 prose prose-sm max-w-none text-indigo-800 dark:text-indigo-200" v-html="step"></div>
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
       </UCard>
@@ -1202,7 +1184,7 @@ function addFromBank(questionOrQuestions) {
       type: bankQuestion.type || 'multiple_choice',
       text: bankQuestion.text || '',
       explanation: bankQuestion.explanation || '',
-      solution_steps: bankQuestion.solution_steps || [],
+      solution_steps: [],
       media: bankQuestion.media || null,
       is_multiple_choice: !!bankQuestion.is_multiple_choice,
       options: bankQuestion.options || [],
@@ -1351,4 +1333,4 @@ watch(() => questionForm.value.type, onQuestionTypeChange)
 
 // Expose modal controls so parent components can open them via ref
 defineExpose({ openQuestionModal, openQuestionBankModal })
-</script>
+</script>script>

@@ -1,10 +1,10 @@
 <template>
-  <div :class="['w-full sm:w-64 flex flex-col items-center text-center p-4 rounded-lg', isActive ? 'ring-2 ring-indigo-500 bg-indigo-50/30' : '']">
+  <div :class="['w-full flex flex-col items-center text-center p-2 sm:p-4 rounded-lg', isActive ? 'ring-2 ring-indigo-500 bg-indigo-50/30' : '']">
     <div class="relative">
       <img 
         :src="player.profile?.avatar || '/avatars/default.png'"
         :alt="player.first_name"
-        class="w-20 h-20 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
+        class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
       />
       <div v-if="isActive" class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse" aria-hidden="true"></div>
       <div v-else class="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-200 rounded-full border-2 border-white dark:border-gray-800" aria-hidden="true"></div>
@@ -13,8 +13,8 @@
         {{ score }}
       </div>
     </div>
-    <h4 class="mt-3 font-semibold text-gray-800 dark:text-gray-200 truncate w-full">{{ player.first_name }} {{ player.last_name }}</h4>
-    <p class="text-sm text-gray-500 dark:text-gray-400">{{ role }}</p>
+    <h4 class="mt-3 text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-200 truncate w-full">{{ player.first_name }} {{ player.last_name }}</h4>
+    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{{ role }}</p>
     <div v-if="typeof answered === 'number'" class="text-xs text-gray-500 mt-2">Answered: <span class="font-medium text-gray-700">{{ answered }}</span></div>
   </div>
 </template>

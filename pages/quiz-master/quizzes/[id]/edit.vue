@@ -6,7 +6,11 @@ const router = useRouter()
 const route = useRoute()
 // Redirect to the create page but include ?id= so it loads in edit mode
 const id = route.params.id
-router.replace({ path: '/quiz-master/quizzes/create', query: { id } })
+if (id) {
+  router.replace({ path: '/quiz-master/quizzes/create', query: { id } })
+} else {
+  router.replace({ path: '/quiz-master/quizzes/create' })
+}
 </script>
 
 <template>

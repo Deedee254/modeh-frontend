@@ -24,63 +24,62 @@
       </template>
     </PageHero>
 
-    <!-- Search and Filters -->
-    <div class="flex flex-col sm:flex-row gap-4">
-      <div class="flex-1 min-w-[200px]">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Search topics..." 
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
-        />
-      </div>
-      <div class="flex flex-wrap gap-4">
-        <select 
-          v-model="selectedSubject" 
-          class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
-        >
-          <option value="">All Subjects</option>
-          <option v-for="(subject, idx) in (Array.isArray(subjects) ? subjects.filter(Boolean) : [])" :key="subject?.id || idx" :value="subject?.id">
-            {{ subject?.name }}
-          </option>
-        </select>
-        <select 
-          v-model="selectedGrade" 
-          class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
-        >
-          <option value="">All Grades</option>
-          <option v-for="(grade, idx) in (Array.isArray(grades) ? grades.filter(Boolean) : [])" :key="grade?.id || idx" :value="grade?.id">
-            {{ grade?.name }}
-          </option>
-        </select>
-      </div>
-    </div>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+        <aside class="lg:col-span-1 order-2 lg:order-1">
+          <div class="sticky top-6">
+            <FiltersSidebar
+              :grade-options="grades"
+              :subject-options="subjects"
+              :grade="selectedGrade"
+              :subject="selectedSubject"
+              storageKey="filters:quiz-master-topics"
+              @update:grade="val => { selectedGrade.value = val }"
+              @update:subject="val => { selectedSubject.value = val }"
+              @apply="() => { page.value = 1; loadTopics() }"
+              @clear="() => { selectedGrade.value = ''; selectedSubject.value = ''; page.value = 1; loadTopics() }"
+            />
+            <div class="mt-4">
+              <input 
+                v-model="searchQuery" 
+                type="text" 
+                placeholder="Search topics..." 
+                @keyup.enter="onSearch"
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+          </div>
+        </aside>
 
-    <!-- Topics Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <TopicCard
-        v-for="(topic, idx) in (Array.isArray(filteredTopics) ? filteredTopics.filter(Boolean) : [])"
-        :key="topic?.id || idx"
-        :title="topic?.name"
-        :image="topic?.image || topic?.cover_image || ''"
-        :grade="topic?.grade?.name || topic?.grade_name || topic?.grade || ''"
-        :subject="topic?.subject?.name || topic?.subject_name || ''"
-        :description="topic?.description || topic?.summary || ''"
-        :quizzesCount="topic?.quizzes_count || topic?.quizzesCount || 0"
-        :startLink="`/quiz-master/quizzes/create?topic_id=${topic?.id}&subject_id=${topic?.subject_id || topic?.subject?.id || ''}`"
-        :startLabel="'Create Quiz'"
-        @click="topic && handleTopicClick(topic)"
-      />
-      <div v-if="filteredTopics.length === 0" class="col-span-full text-center py-12 text-gray-500">
-        No topics found. Try adjusting your filters or create a new topic.
-      </div>
-    </div>
+        <main class="lg:col-span-3 order-1 lg:order-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <TopicCard
+              v-for="(topic, idx) in (Array.isArray(filteredTopics) ? filteredTopics.filter(Boolean) : [])"
+              :key="topic?.id || idx"
+              :title="topic?.name"
+              :image="topic?.image || topic?.cover_image || ''"
+              :grade="topic?.grade?.name || topic?.grade_name || topic?.grade || ''"
+              :subject="topic?.subject?.name || topic?.subject_name || ''"
+              :description="topic?.description || topic?.summary || ''"
+              :quizzesCount="topic?.quizzes_count || topic?.quizzesCount || 0"
+              :startLink="`/quiz-master/quizzes/create?topic_id=${topic?.id}&subject_id=${topic?.subject_id || topic?.subject?.id || ''}`"
+              :startLabel="'Create Quiz'"
+              @click="topic && handleTopicClick(topic)"
+            />
 
-    <div v-if="topicsResponse?.topics?.meta" class="mt-6">
-      <Pagination 
-        :paginator="topicsResponse.topics" 
-        @change-page="handlePageChange"
-      />
+            <div v-if="filteredTopics.length === 0" class="col-span-full text-center py-12 text-gray-500">
+              No topics found. Try adjusting your filters or create a new topic.
+            </div>
+          </div>
+
+          <div v-if="topicsResponse?.topics?.meta" class="mt-6">
+            <Pagination 
+              :paginator="topicsResponse.topics" 
+              @change-page="handlePageChange"
+            />
+          </div>
+        </main>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -112,36 +111,54 @@ const isLoading = ref(true)
 const page = ref(1)
 const perPage = ref(12)
 
-const { data: topicsResponse, refresh } = await useFetch(config.public.apiBase + '/api/topics', {
-  credentials: 'include',
-  params: {
-    page: page.value,
-    per_page: perPage.value
-  }
-})
-const { data: subjectsData } = {} // kept for compatibility if needed
-
 import useTaxonomy from '~/composables/useTaxonomy'
 const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 
-const topics = computed(() => topicsResponse.value?.topics?.data || [])
 const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
 const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
 
+const topicsResponse = ref(null)
+const topics = computed(() => topicsResponse.value?.data || [])
+
 onMounted(async () => {
-  // ensure taxonomy lists are available for filters
-  await Promise.all([fetchGrades(), fetchAllSubjects()])
+  // ensure taxonomy lists are available for filters and load topics
+  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+  await loadTopics()
 })
 
 // Computed filtered topics based on search and filters
 const filteredTopics = computed(() => {
+  // client-side fallback filtering if server doesn't support filters
   return topics.value.filter(topic => {
-    const matchesSearch = topic.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesSubject = !selectedSubject.value || topic.subjectId === selectedSubject.value
-    const matchesGrade = !selectedGrade.value || topic.gradeId === selectedGrade.value
+    const matchesSearch = !searchQuery.value || (topic.name || '').toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesSubject = !selectedSubject.value || String(topic.subject_id || topic.subjectId || '') === String(selectedSubject.value)
+    const matchesGrade = !selectedGrade.value || String(topic.grade_id || topic.gradeId || '') === String(selectedGrade.value)
     return matchesSearch && matchesSubject && matchesGrade
   })
 })
+
+async function loadTopics() {
+  isLoading.value = true
+  try {
+    const params = new URLSearchParams()
+    params.set('page', page.value)
+    params.set('per_page', perPage.value)
+    if (selectedSubject.value) params.set('subject_id', selectedSubject.value)
+    if (selectedGrade.value) params.set('grade_id', selectedGrade.value)
+    if (searchQuery.value) params.set('q', searchQuery.value)
+
+    const res = await $fetch(config.public.apiBase + '/api/topics', {
+      credentials: 'include',
+      params
+    })
+    // normalize expected shape
+    topicsResponse.value = res.topics || res.data || res
+  } catch (e) {
+    // ignore for now
+  }
+  isLoading.value = false
+}
+
 
 const handleTopicClick = (topic) => {
   router.push(`/quiz-master/topics/${topic.id}`)
@@ -149,19 +166,25 @@ const handleTopicClick = (topic) => {
 
 async function handlePageChange(newPage) {
   page.value = newPage
-  await refresh()
+  await loadTopics()
 }
 
 async function onServerSearch(q) {
-  try {
-    await $fetch(config.public.apiBase + '/api/topics', { 
-      params: { query: q },
-      credentials: 'include' 
-    })
-    searchQuery.value = q
-  } catch (e) {
-    // ignore network errors
-  }
+  searchQuery.value = q
+  page.value = 1
+  await loadTopics()
+}
+
+async function onSearch() {
+  page.value = 1
+  await loadTopics()
+}
+
+function onFilterChange(type, val) {
+  if (type === 'grade') selectedGrade.value = val
+  if (type === 'subject') selectedSubject.value = val
+  page.value = 1
+  loadTopics()
 }
 
 // Mark loading as finished because top-level awaited fetches have completed

@@ -52,7 +52,7 @@ import { ref, watch } from 'vue'
 const props = defineProps({
   allConversations: { type: Array, default: () => [] },
   activeConversationId: { type: [String, Number, null], default: null },
-  activeTab: { type: String, default: 'unread' },
+  activeTab: { type: String, default: 'all' },
   searchQuery: { type: String, default: '' },
   showChatWindowOnMobile: { type: Boolean, default: false }
 })

@@ -2,6 +2,9 @@
   <div>
     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
       <h2 class="text-lg font-medium mb-4">Quiz Settings</h2>
+      <div v-if="errors && errors._raw" class="mb-4">
+        <div v-for="(m, idx) in errors._raw" :key="idx" class="text-sm text-red-600">{{ m }}</div>
+      </div>
       
       <div class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -28,7 +31,8 @@
               <option value="1">1 attempt</option>
               <option value="2">2 attempts</option>
               <option value="3">3 attempts</option>
-              <option value="unlimited">Unlimited</option>
+              <!-- Use empty string for unlimited so store can convert to null explicitly -->
+              <option value="">Unlimited</option>
             </select>
             <p v-if="errors && errors.attempts_allowed" class="mt-1 text-sm text-red-600">{{ errors.attempts_allowed[0] }}</p>
           </div>
@@ -43,7 +47,8 @@
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="free">Free</option>
-              <option value="premium">Premium</option>
+              <!-- backend accepts 'paywall' to indicate paid quizzes -->
+              <option value="paywall">Premium</option>
             </select>
             <p v-if="errors && errors.access" class="mt-1 text-sm text-red-600">{{ errors.access[0] }}</p>
           </div>
@@ -120,10 +125,10 @@ function validate() {
   return true
 }
 
-async function saveAndContinue() {
+function saveAndContinue() {
   if (validate()) {
-    await emit('save')
-    emit('next')
+    // Emit save and let the parent await the save and navigate when appropriate.
+    emit('save')
   }
 }
 

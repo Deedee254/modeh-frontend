@@ -22,7 +22,7 @@ export default function useChat() {
   const creating = ref(false)
   const createType = ref('dm')
   const dmEmail = ref('')
-  const activeTab = ref('unread')
+  const activeTab = ref('all')
   const searchQuery = ref('')
   const showEmojiPicker = ref(false)
   const alert = useAppAlert()
