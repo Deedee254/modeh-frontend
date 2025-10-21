@@ -106,7 +106,6 @@ import StatCard from '~/components/analytics/StatCard.vue'
 import AttemptsChart from '~/components/analytics/AttemptsChart.vue'
 import DonutChart from '~/components/analytics/DonutChart.vue'
 import TopQuizzesList from '~/components/analytics/TopQuizzesList.vue'
-import UAlert from '~/components/ui/UAlert.vue'
 import useApi from '~/composables/useApi'
 
 definePageMeta({ layout: 'quiz-master', title: 'Analytics Overview' })

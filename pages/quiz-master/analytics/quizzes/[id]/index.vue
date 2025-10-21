@@ -118,7 +118,6 @@ import CompletionSummary from '~/components/analytics/CompletionSummary.vue'
 import QuestionPerformanceList from '~/components/analytics/QuestionPerformanceList.vue'
 import SegmentBreakdown from '~/components/analytics/SegmentBreakdown.vue'
 import RecentAttemptsList from '~/components/analytics/RecentAttemptsList.vue'
-import UAlert from '~/components/ui/UAlert.vue'
 import useApi from '~/composables/useApi'
 
 const route = useRoute()
