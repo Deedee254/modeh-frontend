@@ -17,6 +17,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
 
   // --- Reactive State ---
   const grade = ref('')
+  const level = ref('')
   const subject = ref('')
   const topic = ref('')
   const difficulty = ref('')
@@ -33,6 +34,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
     if (raw) {
       const parsed = JSON.parse(raw)
       if (parsed) {
+        if (parsed.level) level.value = parsed.level
         if (parsed.grade) grade.value = parsed.grade
         if (parsed.subject) subject.value = parsed.subject
         if (parsed.topic) topic.value = parsed.topic
@@ -51,6 +53,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   function persistDraft() {
     try {
       const payload = {
+        level: level.value,
         grade: grade.value,
         subject: subject.value,
         topic: topic.value,
@@ -66,7 +69,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   }
 
   // watch fields and persist
-  watch([grade, subject, topic, difficulty, totalQuestions], () => { persistDraft() })
+  watch([level, grade, subject, topic, difficulty, totalQuestions], () => { persistDraft() })
   if (battleName) watch(battleName, () => { persistDraft() })
   if (maxPlayers) watch(maxPlayers, () => { persistDraft() })
 
@@ -104,10 +107,13 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
     grades: taxGrades,
     subjects: taxSubjects,
     topics: taxTopics,
+    levels: taxLevels,
     loadingGrades,
     loadingSubjects,
     loadingTopics,
+    loadingLevels,
     fetchGrades: fetchTaxGrades,
+    fetchLevels,
     fetchSubjectsByGrade,
     fetchTopicsBySubject
   } = useTaxonomy()
@@ -129,7 +135,23 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   }
 
   // Watch taxonomy sources and update local option refs
-  watch(taxGrades, (g) => { grades.value = mapToOptions(g) }, { immediate: true })
+  // If a level is selected, show only its grades; otherwise show global grades
+  watch([taxGrades, taxLevels, level], () => {
+    try {
+      if (level.value) {
+        // find the level in taxLevels
+        const lv = (taxLevels.value || []).find(it => String(it.id) === String(level.value))
+        if (lv && Array.isArray(lv.grades)) {
+          grades.value = mapToOptions(lv.grades)
+          return
+        }
+      }
+      // fallback to global grades
+      grades.value = mapToOptions(taxGrades.value)
+    } catch (e) {
+      grades.value = mapToOptions(taxGrades.value)
+    }
+  }, { immediate: true })
   watch(taxSubjects, (s) => { subjects.value = mapToOptions(s) }, { immediate: true })
   watch(taxTopics, (t) => { topics.value = mapToOptions(t) }, { immediate: true })
 
@@ -143,6 +165,18 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
     await fetchSubjectsByGrade(g)
     // After fetching, if no subjects are found, ensure the list is empty.
     if (!taxSubjects.value || taxSubjects.value.length === 0) subjects.value = []
+  })
+
+  // When level changes, reset dependent fields and refresh grade list
+  watch(level, async (lv) => {
+    // reset downstream selections
+    grade.value = ''
+    subject.value = ''
+    topic.value = ''
+    subjects.value = []
+    topics.value = []
+    // ensure we have levels loaded so the watch above can populate grades
+    if (!taxLevels.value || taxLevels.value.length === 0) await fetchLevels()
   })
 
   // When subject changes, reset topic and fetch topics
@@ -165,6 +199,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
     try {
       const settings = {
         // send canonical keys expected by API: grade_id, subject_id, topic_id, difficulty, question_count
+        level_id: level.value || undefined,
         grade_id: grade.value,
         subject_id: subject.value,
         topic_id: topic.value,
@@ -206,5 +241,5 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   // initialize grades from taxonomy composable
   fetchTaxGrades()
 
-  return { grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, difficulties, questionCountOptions, starting, canStart, createBattle }
+  return { level, grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, levels: taxLevels, loadingLevels, difficulties, questionCountOptions, starting, canStart, createBattle }
 }

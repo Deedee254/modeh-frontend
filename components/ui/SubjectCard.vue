@@ -12,7 +12,10 @@
     <div class="p-3 sm:p-4 flex flex-col gap-2">
       <div>
   <h4 class="text-lg sm:text-xl font-semibold line-clamp-2 text-gray-900 dark:text-white">{{ displayTitle }}</h4>
-        <div v-if="subtitle" class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ subtitle }}</div>
+        <div v-if="subtitle || displayLevel" class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+          <div v-if="subtitle">{{ subtitle }}</div>
+          <div v-if="displayLevel" class="text-xs text-slate-500">{{ displayLevel }}</div>
+        </div>
       </div>
 
       <div v-if="description" class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">{{ description }}</div>
@@ -56,5 +59,13 @@ const backgroundStyle = computed(() => {
   if (props.image) return { backgroundImage: `url(${props.image})` }
   // fallback to palette gradient
   return {}
+})
+
+const displayLevel = computed(() => {
+  if (props.grade && typeof props.grade === 'object') {
+    const lvl = props.grade.level || props.grade.level_id || props.grade.levelId
+    if (lvl) return (typeof lvl === 'string' || typeof lvl === 'number') ? String(lvl) : (lvl.name || String(lvl.id || ''))
+  }
+  return ''
 })
 </script>

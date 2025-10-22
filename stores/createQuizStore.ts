@@ -12,7 +12,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     title: '',
     description: '',
     youtube_url: null,
-    grade_id: null,
+  level_id: null,
+  grade_id: null,
     subject_id: null,
     topic_id: null,
     timer_minutes: 10,
@@ -51,6 +52,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   }
 
   // persist grade/subject/topic immediately when changed so other UIs (pickers) can rely on store state
+  watch(() => quiz.value.level_id, (nv) => { try { persistProgress() } catch (e) {} })
   watch(() => quiz.value.grade_id, (nv) => { try { persistProgress() } catch (e) {} })
   watch(() => quiz.value.subject_id, (nv) => { try { persistProgress() } catch (e) {} })
   watch(() => quiz.value.topic_id, (nv) => { try { persistProgress() } catch (e) {} })
@@ -86,7 +88,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
         per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
         subject_id: quiz.value.subject_id ? (Number(quiz.value.subject_id) || null) : null,
-        grade_id: quiz.value.grade_id ? (Number(quiz.value.grade_id) || null) : null,
+  grade_id: quiz.value.grade_id ? (Number(quiz.value.grade_id) || null) : null,
+  level_id: quiz.value.level_id ? (Number(quiz.value.level_id) || null) : null,
         use_per_question_timer: quiz.value.use_per_question_timer,
         // Normalize attempts_allowed: '' (select for unlimited) -> null, numeric strings -> Number
         attempts_allowed: (() => {

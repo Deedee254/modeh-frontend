@@ -12,7 +12,14 @@
       <!-- Grade badge (top-left) -->
       <div v-if="showGrade && displayGrade" class="absolute left-3 top-3 z-10">
         <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
-          Grade {{ displayGrade }}
+          <span v-if="isCourse">Course {{ displayGrade }}</span>
+          <span v-else>Grade {{ displayGrade }}</span>
+        </div>
+      </div>
+      <!-- Level badge (below grade badge) -->
+      <div v-if="displayLevel" class="absolute left-3 top-12 z-10">
+        <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-600 backdrop-blur-sm dark:bg-slate-800/60 dark:text-slate-200">
+          {{ displayLevel }}
         </div>
       </div>
 
@@ -150,6 +157,23 @@ const displayGrade = computed(() => {
   if (g === null || g === undefined || g === '') return ''
   if (typeof g === 'string' || typeof g === 'number') return g
   return g.name || g.title || g.label || String(g.id || g || '')
+})
+
+const displayLevel = computed(() => {
+  const g = props.grade || (props.quiz && (props.quiz.grade || props.quiz.grade_id ? props.quiz.grade : null))
+  if (g && typeof g === 'object') {
+    const lvl = g.level || g.level_id || g.levelId
+    if (lvl) return (typeof lvl === 'string' || typeof lvl === 'number') ? String(lvl) : (lvl.name || String(lvl.id || ''))
+  }
+  const ql = props.quiz && props.quiz.level ? props.quiz.level : null
+  if (ql) return ql.name || String(ql.id || '')
+  return ''
+})
+
+const isCourse = computed(() => {
+  const g = props.grade || (props.quiz && (props.quiz.grade || props.quiz.grade_id ? props.quiz.grade : null))
+  if (!g || typeof g !== 'object') return false
+  return String(g.type || '').toLowerCase() === 'course'
 })
 
 const computedCreatedBy = computed(() => {

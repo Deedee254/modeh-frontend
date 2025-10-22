@@ -63,6 +63,7 @@
           v-if="store.activeTab === 'details'"
           :model-value="store.quiz"
           :grades="grades"
+          :levels="levels"
           :subjects="subjects"
           :topics="topics"
           :loading-subjects="loadingSubjects"
@@ -225,7 +226,7 @@ async function onPublish() {
 // --- Inline subcomponents ---
 // fetch grades and expose helpers for use in template (avoid runtime templates)
 // also expose loading flags so child components can render spinners/placeholders
-const { fetchGrades, grades, subjects, topics, fetchSubjectsPage, fetchTopicsPage, addTopic, loadingSubjects, loadingTopics } = useTaxonomy()
+const { fetchGrades, grades, subjects, topics, fetchSubjectsPage, fetchTopicsPage, addTopic, loadingSubjects, loadingTopics, levels, fetchLevels, loadingLevels } = useTaxonomy()
 const alert = useAppAlert()
 
 // local debounce helper for search handlers
@@ -255,6 +256,8 @@ onMounted(async () => {
   // ensure grades are loaded before attempting to load a quiz and its dependent subjects/topics
   try {
     await fetchGrades()
+    // ensure levels are also loaded so level->grade relationships are available
+    try { await fetchLevels() } catch (e) {}
   } catch (e) {
     // ignore grade fetch errors; downstream fetches will also handle failures
   }

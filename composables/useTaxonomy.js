@@ -82,6 +82,9 @@ export default function useTaxonomy() {
   const grades = ref([])
   const subjects = ref([])
   const topics = ref([])
+  const levels = ref([])
+
+  const loadingLevels = ref(false)
 
   const loadingGrades = ref(false)
   const loadingSubjects = ref(false)
@@ -108,6 +111,30 @@ export default function useTaxonomy() {
       // ignore
     } finally {
       loadingGrades.value = false
+    }
+  }
+
+  async function fetchLevels() {
+    if (levels.value.length) return
+    loadingLevels.value = true
+    try {
+      const res = await fetch(`${config.public.apiBase}/api/levels`, { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json().catch(() => null)
+      if (!data) return
+      // data.levels expected
+      const list = normalizeList(data.levels ? { grades: data.levels } : data)
+      // normalizeList expects arrays of grade-like objects; preserve structure on levels
+      // But for consumers we want levels as objects with id,name,grades
+      if (data.levels && Array.isArray(data.levels)) {
+        levels.value = data.levels.map(l => ({ ...l, grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null })) }))
+      } else {
+        levels.value = list
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      loadingLevels.value = false
     }
   }
 
@@ -316,10 +343,13 @@ export default function useTaxonomy() {
     grades,
     subjects,
     topics,
+    levels,
     loadingGrades,
     loadingSubjects,
     loadingTopics,
+    loadingLevels,
     fetchGrades,
+    fetchLevels,
     fetchSubjectsByGrade,
     fetchAllSubjects,
     fetchSubjectsPage,

@@ -17,6 +17,7 @@
           <template v-if="isquizee && auth.user">
             <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
             <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Subjects</NuxtLink>
+            <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
             <NuxtLink to="/topics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Topics</NuxtLink>
             <NuxtLink to="/quizee/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quiz Masters</NuxtLink>
           </template>
@@ -24,6 +25,7 @@
             <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
             <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quizzes</NuxtLink>
             <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quizees</NuxtLink>
+            <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
             <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Analytics</NuxtLink>
           </template>
         </nav>
@@ -128,6 +130,7 @@
           <template v-if="isquizee && auth.user">
             <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/subjects" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Subjects</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/levels" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Levels</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/topics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Topics</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/quiz-masters" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quiz Masters</NuxtLink>
           </template>
@@ -135,6 +138,7 @@
             <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizees" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizees</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/levels" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Levels</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/analytics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Analytics</NuxtLink>
           </template>
 

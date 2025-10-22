@@ -2,7 +2,6 @@
   <div class="w-full group block rounded-2xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-transform transform hover:-translate-y-0.5 overflow-hidden relative">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
-    <!-- Header: cover image or palette -->
     <div class="relative h-24 sm:h-32 overflow-hidden">
       <div class="absolute inset-0" :class="cover ? '' : paletteClass">
         <img v-if="cover" :src="cover" alt="" class="w-full h-full object-cover" />
@@ -12,25 +11,17 @@
 
       <div class="absolute left-4 right-4 bottom-4 z-10 text-white">
         <h4 class="text-lg sm:text-xl font-semibold line-clamp-2">{{ title }}</h4>
-        <div v-if="displayLevel" class="mt-1 text-xs inline-flex items-center gap-2">
-          <span class="inline-flex items-center px-2 py-0.5 rounded bg-white/80 text-slate-800 text-xs font-medium">{{ isCourse ? 'Course' : 'Level' }}</span>
-          <span class="text-xs text-white/90">{{ displayLevel }}</span>
-        </div>
+        <div v-if="subtitle" class="mt-1 text-xs">{{ subtitle }}</div>
       </div>
     </div>
 
-    <!-- Body: compact metadata and CTA -->
     <div class="p-3 sm:p-4 relative z-10 flex flex-col gap-3">
-      <div class="text-sm text-gray-600">{{ subtitle }}</div>
+      <div class="text-sm text-gray-600">{{ description }}</div>
 
       <div class="flex items-center justify-between text-sm text-gray-700">
         <div class="flex items-center gap-3">
-          <div class="font-semibold text-indigo-700">{{ quizzes_count }}</div>
-          <div class="text-gray-500">quizzes</div>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="font-semibold text-indigo-700">{{ subjects_count }}</div>
-          <div class="text-gray-500">subjects</div>
+          <div class="font-semibold text-indigo-700">{{ grades_count }}</div>
+          <div class="text-gray-500">grades/courses</div>
         </div>
       </div>
 
@@ -50,31 +41,13 @@ const props = defineProps({
   to: { type: [String, Object], default: null },
   title: { type: String, required: true },
   subtitle: { type: String, default: '' },
-  // optional: accept full grade object for richer display
-  grade: { type: Object, default: null },
-  badgeText: { type: String, default: '' },
-  palette: { type: String, default: '' },
-  quizzes_count: { type: [Number, String], default: 0 },
-  subjects_count: { type: [Number, String], default: 0 },
-  actionLink: { type: [String, Object], default: null },
-  actionLabel: { type: String, default: 'Explore Grade' },
+  description: { type: String, default: '' },
   cover: { type: String, default: '' },
-  description: { type: String, default: '' }
+  palette: { type: String, default: '' },
+  grades_count: { type: [Number, String], default: 0 },
+  actionLink: { type: [String, Object], default: null },
+  actionLabel: { type: String, default: 'Explore' }
 })
 
 const paletteClass = computed(() => props.palette || 'bg-gradient-to-br from-indigo-400 to-indigo-600')
-
-const displayLevel = computed(() => {
-  // prefer grade.level if grade object provided, otherwise fall back to subtitle
-  if (props.grade && typeof props.grade === 'object') {
-    const lvl = props.grade.level || props.grade.level_id || props.grade.levelId
-    if (lvl) return (typeof lvl === 'string' || typeof lvl === 'number') ? String(lvl) : (lvl.name || String(lvl.id || ''))
-  }
-  return props.subtitle || ''
-})
-
-const isCourse = computed(() => {
-  if (props.grade && typeof props.grade === 'object') return String(props.grade.type || '').toLowerCase() === 'course'
-  return false
-})
 </script>

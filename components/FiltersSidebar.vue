@@ -9,6 +9,13 @@
 
       <!-- Active filter chips -->
       <div v-if="hasAnyActive" class="mb-3 flex flex-wrap gap-2">
+            <template v-if="activeLevelLabel">
+              <button @click="removeLevel" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                <span class="font-semibold">Level:</span>
+                <span>{{ activeLevelLabel }}</span>
+                <span class="ml-1 text-slate-400">×</span>
+              </button>
+            </template>
         <template v-if="activeGradeLabel">
           <button @click="removeGrade" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
             <span class="font-semibold">Grade:</span>
@@ -33,14 +40,26 @@
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Grade</label>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Level</label>
         <div class="relative">
-          <select v-model="localGrade" @change="() => {}" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-            <option value="">All grades</option>
-            <template v-for="(g, idx) in (gradeOptions || [])" :key="idx">
-              <option v-if="g" :key="g.id ?? idx" :value="g.id">{{ g.name || ('Grade ' + (g.id ?? idx)) }}</option>
+          <select v-model="localLevel" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+            <option value="">All levels</option>
+            <template v-for="(l, idx) in (taxLevels.value || [])" :key="idx">
+              <option v-if="l" :key="l.id ?? idx" :value="l.id">{{ l.name || ('Level ' + (l.id ?? idx)) }}</option>
             </template>
           </select>
+        </div>
+
+        <div class="mt-3">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Grade</label>
+          <div class="relative">
+            <select v-model="localGrade" @change="() => {}" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option value="">All grades</option>
+              <template v-for="(g, idx) in (gradeOptionsByLevel || [])" :key="idx">
+                <option v-if="g" :key="g.id ?? idx" :value="g.id">{{ g.name || ('Grade ' + (g.id ?? idx)) }}</option>
+              </template>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -84,6 +103,7 @@ const props = defineProps({
   subject: { type: [Number, String], default: null },
   topic: { type: [Number, String], default: null },
   grade: { type: [Number, String], default: null },
+  level: { type: [Number, String], default: null },
   storageKey: { type: String, default: '' }
 })
 const emit = defineEmits(['update:subject', 'update:topic', 'update:grade', 'apply', 'clear'])
@@ -91,11 +111,12 @@ const emit = defineEmits(['update:subject', 'update:topic', 'update:grade', 'app
 const localSubject = ref(props.subject)
 const localTopic = ref(props.topic)
 const localGrade = ref(props.grade)
+const localLevel = ref(props.level)
 const collapsed = ref(false)
 const cookieCollapsed = props.storageKey ? useCookie(props.storageKey + ':collapsed') : null
 
-// fallback taxonomy when caller doesn't pass options
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchGrades, fetchAllSubjects, fetchAllTopics } = useTaxonomy()
+// taxonomy composable (single instance)
+const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels: taxLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels } = useTaxonomy()
 
 // compute label lookups from either props.options or taxonomy composable
 const gradeLookup = computed(() => {
@@ -116,6 +137,12 @@ const activeGradeLabel = computed(() => {
   const g = gradeLookup.value[String(localGrade.value)]
   return g ? (g.name || g.title || g.label || String(g.id)) : String(localGrade.value)
 })
+const activeLevelLabel = computed(() => {
+  if (!localLevel.value) return ''
+  const list = (taxLevels.value || [])
+  const l = list.find(x => String(x.id) === String(localLevel.value))
+  return l ? l.name : String(localLevel.value)
+})
 const activeSubjectLabel = computed(() => {
   if (!localSubject.value) return ''
   const s = subjectLookup.value[String(localSubject.value)]
@@ -128,7 +155,7 @@ const activeTopicLabel = computed(() => {
 })
 
 const hasAnyActive = computed(() => {
-  return !!(localGrade.value || localSubject.value || localTopic.value)
+  return !!(localLevel.value || localGrade.value || localSubject.value || localTopic.value)
 })
 
 // compute subjects filtered by selected grade
@@ -137,6 +164,15 @@ const filteredSubjects = computed(() => {
   const allSubjects = taxSubjects.value || props.subjectOptions || []
   if (!localGrade.value) return allSubjects
   return allSubjects.filter(s => String(s.grade_id || s.grade || '') === String(localGrade.value))
+})
+
+// compute filtered grades by selected level if levels are available
+const gradeOptionsByLevel = computed(() => {
+  if (localLevel.value && Array.isArray(taxLevels.value) && taxLevels.value.length) {
+    const l = taxLevels.value.find(x => String(x.id) === String(localLevel.value))
+    if (l && Array.isArray(l.grades)) return l.grades
+  }
+  return props.gradeOptions && props.gradeOptions.length ? props.gradeOptions : (taxGrades.value || [])
 })
 
 // compute topics filtered by selected subject (if topicOptions contain subject_id)
@@ -164,6 +200,7 @@ onMounted(() => {
   // if caller didn't pass gradeOptions/subjectOptions/topicOptions, fetch the global lists
   try {
     if ((!props.gradeOptions || !props.gradeOptions.length) && (!taxGrades.value || !taxGrades.value.length)) fetchGrades()
+    if ((!taxLevels.value || !taxLevels.value.length)) fetchLevels()
   } catch (e) {}
   try {
     if ((!props.subjectOptions || !props.subjectOptions.length) && (!taxSubjects.value || !taxSubjects.value.length)) fetchAllSubjects()
@@ -176,6 +213,7 @@ onMounted(() => {
 watch(() => props.subject, (v) => { localSubject.value = v })
 watch(() => props.topic, (v) => { localTopic.value = v })
 watch(() => props.grade, (v) => { localGrade.value = v })
+watch(() => props.level, (v) => { localLevel.value = v })
 watch(collapsed, (v) => {
   if (props.storageKey) {
     try { if (cookieCollapsed) cookieCollapsed.value = String(v) } catch (e) {}
@@ -199,6 +237,15 @@ watch(localGrade, (v) => {
   localTopic.value = ''
   emit('update:grade', v)
 })
+watch(localLevel, (v) => {
+  if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':level', String(v)) } catch (e) {} }
+  // when level changes, clear grade/subject/topic
+  localGrade.value = ''
+  localSubject.value = ''
+  localTopic.value = ''
+  emit('update:grade', '')
+  emit('update:level', v)
+})
 
 function onApply() {
   emit('update:subject', localSubject.value)
@@ -211,9 +258,11 @@ function onClear() {
   localSubject.value = ''
   localTopic.value = ''
   localGrade.value = ''
+  localLevel.value = ''
   emit('update:subject', '')
   emit('update:topic', '')
   emit('update:grade', '')
+  emit('update:level', '')
   emit('clear')
 }
 
@@ -234,6 +283,14 @@ function removeSubject() {
 
 function removeTopic() {
   // only update local state; watchers will persist and emit update:topic
+  localTopic.value = ''
+}
+
+function removeLevel() {
+  localLevel.value = ''
+  // clear dependent selections
+  localGrade.value = ''
+  localSubject.value = ''
   localTopic.value = ''
 }
 </script>

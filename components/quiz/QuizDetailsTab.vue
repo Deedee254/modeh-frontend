@@ -26,26 +26,38 @@
 
         <!-- Grade & Subject Selection (stacked: subject below grade) -->
         <div class="space-y-4">
-          <div>
-            <label for="quiz-grade" class="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
-            <ClientOnly>
-              <template #placeholder>
-                <select id="quiz-grade" class="w-full rounded-md border-gray-300 shadow-sm">
-                  <option>Loading…</option>
-                </select>
-              </template>
-              <select 
-                v-model="selectedGrade"
-                id="quiz-grade"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              >
-                <option value="">Select Grade</option>
-                <option v-for="grade in grades" :key="grade.id" :value="grade.id">
-                  {{ grade.name }}
-                </option>
-              </select>
-            </ClientOnly>
-          </div>
+                <div>
+                  <label for="quiz-level" class="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                  <ClientOnly>
+                    <template #placeholder>
+                      <select id="quiz-level" class="w-full rounded-md border-gray-300 shadow-sm">
+                        <option>Loading…</option>
+                      </select>
+                    </template>
+                    <select 
+                      v-model="selectedLevel"
+                      id="quiz-level"
+                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-2"
+                    >
+                      <option value="">Select Level</option>
+                      <option v-for="lvl in levels" :key="lvl.id" :value="lvl.id">{{ lvl.name }}</option>
+                    </select>
+
+                    <label for="quiz-grade" class="block text-sm font-medium text-gray-700 mb-1">Grade / Course</label>
+                    <TaxonomyPicker
+                      resource="grades"
+                      :level-id="selectedLevel || null"
+                      :model-value="selectedGrade || null"
+                      compact
+                      title="Grades"
+                      subtitle="Pick a grade or course"
+                      @update:modelValue="(v) => { selectedGrade = v }
+                      "
+                      @selected="(item) => { selectedGrade = item?.id || item }
+                      "
+                    />
+                  </ClientOnly>
+                </div>
 
           <div>
             <label id="subject-label" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
@@ -248,6 +260,7 @@ function validateBeforeSave() {
 
 // Internal selection refs initialized from parent modelValue
 const selectedGrade = ref(props.modelValue?.grade_id || '')
+const selectedLevel = ref(props.modelValue?.level_id || '')
 const selectedSubject = ref(props.modelValue?.subject_id || '')
 const topicsPicker = ref(null)
 const api = useApi()
@@ -283,6 +296,18 @@ const hasCover = computed(() => !!(props.modelValue?.cover || props.modelValue?.
 const subjectsByGrade = computed(() => {
   if (!selectedGrade.value || !Array.isArray(props.subjects)) return []
   return props.subjects.filter(s => s && typeof s === 'object' && String(s.grade_id) === String(selectedGrade.value))
+})
+
+// Filter grades by selected level when levels data available (levels expected as array of {id,name,grades:[]})
+const filteredGrades = computed(() => {
+  try {
+    if (selectedLevel.value && Array.isArray(props.grades) && Array.isArray(props.levels)) {
+      const lv = props.levels.find(l => String(l.id) === String(selectedLevel.value))
+      if (lv && Array.isArray(lv.grades)) return lv.grades
+    }
+  } catch (e) {}
+  // fallback: return props.grades
+  return props.grades || []
 })
 
 const filteredTopics = computed(() => {
@@ -344,11 +369,19 @@ watch(selectedGrade, (nv) => {
   emit('update:modelValue', { ...props.modelValue, grade_id: nv || null, subject_id: null, topic_id: null })
 })
 
+// When level changes, clear grade/subject/topic and notify parent
+watch(selectedLevel, (nv) => {
+  selectedGrade.value = ''
+  selectedSubject.value = ''
+  emit('update:modelValue', { ...props.modelValue, level_id: nv || null, grade_id: null, subject_id: null, topic_id: null })
+})
+
 // Keep internal selected values in sync with parent changes
 watch(() => props.modelValue, (nv) => {
   if (!nv) return
   selectedGrade.value = nv.grade_id || ''
   selectedSubject.value = nv.subject_id || ''
+  selectedLevel.value = nv.level_id || ''
 }, { deep: true })
 
 function onSubjectPicked(item) {

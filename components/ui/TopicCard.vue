@@ -8,7 +8,13 @@
       </div>
       <!-- Grade pill (top-left) -->
       <div v-if="grade" class="absolute top-3 left-3 z-30">
-        <span class="inline-flex items-center px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-slate-800">Grade {{ grade }}</span>
+        <span class="inline-flex items-center px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-slate-800">
+          <span v-if="isCourse">Course {{ (grade && grade.name) ? grade.name : grade }}</span>
+          <span v-else>Grade {{ (grade && grade.name) ? grade.name : grade }}</span>
+        </span>
+      </div>
+      <div v-if="displayLevel" class="absolute top-12 left-3 z-30">
+        <span class="inline-flex items-center px-2 py-1 rounded-full bg-white/80 text-xs font-medium text-slate-700">{{ displayLevel }}</span>
       </div>
       <div class="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent"></div>
       <div class="absolute left-4 bottom-4 right-4 z-10 text-white">
@@ -60,4 +66,20 @@ const metaText = computed(() => {
 })
 const paletteClass = computed(() => props.palette || 'bg-gradient-to-br from-emerald-400 to-emerald-600')
 const displayTitle = computed(() => props.title || props.name || '')
+
+const displayLevel = computed(() => {
+  // props.grade may be a primitive or object; try to read .level
+  const g = props.grade
+  if (g && typeof g === 'object') {
+    const lvl = g.level || g.level_id || g.levelId
+    if (lvl) return (typeof lvl === 'string' || typeof lvl === 'number') ? String(lvl) : (lvl.name || String(lvl.id || ''))
+  }
+  return ''
+})
+
+const isCourse = computed(() => {
+  const g = props.grade
+  if (!g || typeof g !== 'object') return false
+  return String(g.type || '').toLowerCase() === 'course'
+})
 </script>

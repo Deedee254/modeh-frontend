@@ -59,6 +59,14 @@
               </div>
 
               <div>
+                <label class="block text-sm font-medium text-gray-700">Education Level</label>
+                <select v-model="form.level_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select level (Optional)</option>
+                  <option v-for="lvl in levels" :key="lvl.id" :value="lvl.id">{{ lvl.name }}</option>
+                </select>
+              </div>
+
+              <div>
                 <label class="block text-sm font-medium text-gray-700">Class / Grade</label>
                 <select v-model="form.grade" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                   <option value="">Select Grade (Optional)</option>
@@ -203,11 +211,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '../stores/auth'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 
 const router = useRouter()
@@ -224,6 +233,7 @@ const form = reactive({
   name: '',
   institution: '',
   grade: '',
+  level_id: '',
   email: '',
   parentEmail: '',
   phone: '',
@@ -308,6 +318,13 @@ const validateForm = () => {
   return true
 }
 
+// taxonomy: load levels for education level select
+const { levels, fetchLevels, loadingLevels } = useTaxonomy()
+
+onMounted(async () => {
+  try { await fetchLevels() } catch (e) {}
+})
+
 async function submit() {
   if (isLoading.value) return
 
@@ -321,7 +338,10 @@ async function submit() {
   const api = useApi()
   // Backend exposes role-specific registration endpoints. Choose the correct one based on selected role.
   const endpoint = role.value === 'quizee' ? '/api/register/quizee' : '/api/register/quiz-master'
-  const response = await api.postJson(endpoint, { ...form, role: role.value })
+  // include level_id for quizees if present
+  const payload = { ...form, role: role.value }
+  if (form.level_id) payload.level_id = form.level_id
+  const response = await api.postJson(endpoint, payload)
     if (api.handleAuthStatus(response)) return
     if (!response.ok) {
       const data = await response.json().catch(() => null)

@@ -218,6 +218,33 @@
       </div>
     </section>
 
+    <!-- Levels section -->
+    <section class="px-6 py-10">
+      <div class="mx-auto max-w-6xl">
+        <header class="text-center max-w-2xl mx-auto">
+          <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Levels</div>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Browse by learning level</h3>
+          <p class="mt-3 text-slate-600">Explore learning levels such as Early Years, Primary, Secondary and Tertiary (courses).</p>
+        </header>
+
+        <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-6">
+          <LevelCard
+            v-for="lvl in safeArray(levels).slice(0,6)"
+            :key="lvl.id"
+            :to="`/levels/${lvl.id}`"
+            :title="lvl.name"
+            :subtitle="lvl.description || ''"
+            :grades_count="(Array.isArray(lvl.grades) ? lvl.grades.length : 0)"
+            :actionLink="`/levels/${lvl.id}`"
+            actionLabel="Explore level"
+          />
+        </div>
+        <div class="mt-6 text-center">
+          <NuxtLink to="/levels" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg">View all levels</NuxtLink>
+        </div>
+      </div>
+    </section>
+
     <section class="px-6 py-12 bg-gradient-to-br from-white to-indigo-50">
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
@@ -390,6 +417,7 @@ import UiQuizCard from '~/components/ui/QuizCard.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
+import LevelCard from '~/components/ui/LevelCard.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useTaxonomy from '~/composables/useTaxonomy'
 
@@ -419,7 +447,7 @@ const { data: quizzesData } = await useFetch(config.public.apiBase + '/api/quizz
 const latestQuizzes = safeArray(quizzesData?.value?.quizzes?.data || quizzesData?.value?.quizzes || quizzesData?.value).slice(0, 12)
 const featuredQuiz = latestQuizzes.length ? latestQuizzes[0] : null
 
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels } = useTaxonomy()
 const topicsList = taxTopics
 
 const { data: quizMastersData } = await useFetch(config.public.apiBase + '/api/quiz-masters', { credentials: 'include' })
@@ -508,7 +536,7 @@ function pickPaletteClass(id){
 }
 
 onMounted(async () => {
-  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics(), fetchLevels()])
 })
 
 // Return a human-friendly grade label for a topic (from topic.grade, topic.grades, or its subject)

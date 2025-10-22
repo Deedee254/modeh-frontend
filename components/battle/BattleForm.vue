@@ -7,6 +7,15 @@
     
     <div class="p-4 xl:p-6 xl:pt-0 space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium leading-none">Level</label>
+            <TaxonomyPicker resource="levels" :model-value="level" compact title="Levels" subtitle="Pick a level" @update:modelValue="(v) => level = v" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium leading-none">Grade / Course</label>
+            <TaxonomyPicker resource="grades" :level-id="level || null" :model-value="grade" compact title="Grades" subtitle="Pick a grade or course" @update:modelValue="(v) => grade = v" />
+          </div>
         <div class="space-y-2">
           <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="battle-type">Battle Type</label>
           <div class="grid grid-cols-2 gap-2">
@@ -78,6 +87,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
 
 const props = defineProps({
   title: {
@@ -97,6 +107,8 @@ const category = ref('random')
 const difficulty = ref('medium')
 const timePerQuestion = ref(10)
 const totalQuestions = ref(10)
+const level = ref(null)
+const grade = ref(null)
 
 const categories = [
   { label: 'Random', value: 'random' },
@@ -133,7 +145,9 @@ const startBattle = () => {
     category: category.value,
     difficulty: difficulty.value,
     timePerQuestion: timePerQuestion.value,
-    totalQuestions: totalQuestions.value
+    totalQuestions: totalQuestions.value,
+    level_id: level || null,
+    grade_id: grade || null
   })
 }
 </script>

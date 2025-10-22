@@ -22,9 +22,13 @@
       <p v-if="quizMaster.headline" class="text-sm text-gray-500 mt-1">{{ quizMaster.headline }}</p>
 
       <!-- Institution and Grade -->
-      <div v-if="quizMaster.institution || quizMaster.grade" class="mt-2 text-sm text-gray-600">
+      <div v-if="quizMaster.institution || quizMaster.grade || displayLevel" class="mt-2 text-sm text-gray-600">
         <p v-if="quizMaster.institution">{{ quizMaster.institution }}</p>
-        <p v-if="quizMaster.grade?.name">Grade {{ quizMaster.grade.name }}</p>
+        <p v-if="quizMaster.grade?.name">
+          <span v-if="isCourse">Course {{ quizMaster.grade.name }}</span>
+          <span v-else>Grade {{ quizMaster.grade.name }}</span>
+        </p>
+        <p v-if="displayLevel" class="text-xs text-slate-500">{{ displayLevel }}</p>
       </div>
 
       <!-- Subjects -->
@@ -67,6 +71,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   quizMaster: {
     type: Object,
@@ -86,9 +92,22 @@ const props = defineProps({
   }
 })
 
-const displaySubjects = computed(() => {
-  return props.quizMaster.subjects?.slice(0, props.maxDisplaySubjects) || []
+const emit = defineEmits(['follow'])
+
+const displaySubjects = computed(() => props.quizMaster.subjects?.slice(0, props.maxDisplaySubjects) || [])
+
+const displayLevel = computed(() => {
+  const g = props.quizMaster.grade || null
+  if (g && typeof g === 'object') {
+    const lvl = g.level || g.level_id || g.levelId
+    if (lvl) return (typeof lvl === 'string' || typeof lvl === 'number') ? String(lvl) : (lvl.name || String(lvl.id || ''))
+  }
+  return ''
 })
 
-defineEmits(['follow'])
+const isCourse = computed(() => {
+  const g = props.quizMaster.grade || null
+  if (!g || typeof g !== 'object') return false
+  return String(g.type || '').toLowerCase() === 'course'
+})
 </script>

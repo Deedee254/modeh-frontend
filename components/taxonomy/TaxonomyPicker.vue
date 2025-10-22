@@ -59,6 +59,7 @@ const props = defineProps({
   modelValue: { type: [String, Number, Object, null], default: null },
   resource: { type: String, required: true }, // 'subjects' or 'topics'
   gradeId: { type: [String, Number], default: null },
+  levelId: { type: [String, Number], default: null },
   subjectId: { type: [String, Number], default: null },
   perPage: { type: Number, default: 50 },
   title: { type: String, default: '' },
@@ -79,7 +80,7 @@ const effectivePerPage = computed(() => {
   return (meta.value.per_page ?? meta.value.perPage ?? props.perPage)
 })
 
-const { fetchSubjectsPage, fetchTopicsPage } = useTaxonomy()
+const { fetchSubjectsPage, fetchTopicsPage, fetchGrades, grades, fetchLevels, levels } = useTaxonomy()
 
 watch([() => props.gradeId, () => props.subjectId], () => { 
   page.value = 1; 
@@ -126,8 +127,8 @@ async function fetchPage() {
     subjects: fetchSubjectsPage,
     topics: fetchTopicsPage,
   };
-  const fetcher = fetcherMap[props.resource];
-  if (!fetcher) {
+  const fetcher = fetcherMap[props.resource] || null;
+  if (!fetcher && props.resource !== 'grades') {
     console.error(`TaxonomyPicker: Unknown resource type "${props.resource}"`);
     items.value = [];
     loading.value = false;
@@ -136,8 +137,28 @@ async function fetchPage() {
 
   try {
     // debug: log the fetch parameters for troubleshooting grade->subject behavior
-    try { console.debug('TaxonomyPicker.fetchPage', { resource: props.resource, gradeId: props.gradeId, subjectId: props.subjectId, page: page.value, q: query.value }) } catch (e) {}
-    const out = await fetcher({ gradeId: props.gradeId, subjectId: props.subjectId, page: page.value, perPage: props.perPage, q: query.value });
+    try { console.debug('TaxonomyPicker.fetchPage', { resource: props.resource, gradeId: props.gradeId, levelId: props.levelId, subjectId: props.subjectId, page: page.value, q: query.value }) } catch (e) {}
+    let out = null
+    if (props.resource === 'grades') {
+      // fetch all grades and filter by levelId on client
+      await fetchGrades()
+      let list = grades.value || []
+      if (props.levelId) {
+        list = list.filter(g => String(g.level_id || g.levelId || g.level || '') === String(props.levelId))
+      }
+      out = { items: list, meta: null }
+    } else if (props.resource === 'levels') {
+      await fetchLevels()
+      let list = levels.value || []
+      // if query is provided, apply a local filter by name
+      if (query.value && String(query.value).trim()) {
+        const qlow = String(query.value).toLowerCase()
+        list = list.filter(l => String(l.name || '').toLowerCase().includes(qlow))
+      }
+      out = { items: list, meta: null }
+    } else {
+      out = await fetcher({ gradeId: props.gradeId, levelId: props.levelId, subjectId: props.subjectId, page: page.value, perPage: props.perPage, q: query.value })
+    }
     // defensive filter: if requesting subjects for a grade, enforce client-side filtering
     let fetched = out.items || []
     if (props.resource === 'subjects' && (props.gradeId !== null && props.gradeId !== undefined && props.gradeId !== '')) {
