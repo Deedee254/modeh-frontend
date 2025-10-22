@@ -20,7 +20,7 @@
 
       <div class="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label class="text-xs text-gray-400 dark:text-gray-500">Type</label>
+      
           <div class="flex items-center gap-4">
               <select v-model="form.type" class="w-full rounded px-2 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200">
                 <option value="mcq">Multiple Choice (single correct)</option>
@@ -151,7 +151,7 @@
         <div class="flex gap-2">
           <button @click="shareSaved" class="text-xs bg-indigo-600 px-2 py-1 rounded text-white">Share</button>
           <button @click="createAnother" class="text-xs bg-slate-700 px-2 py-1 rounded text-white">Create another</button>
-        </div>_
+        </div>
       </div>
     </aside>
   </div>

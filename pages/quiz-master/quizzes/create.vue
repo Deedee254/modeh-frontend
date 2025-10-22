@@ -72,6 +72,7 @@
           @update:modelValue="(v) => (store.quiz = v)"
           @subject-picked="onSelectSubject"
           @topic-picked="onSelectTopic"
+          @createTopic="() => { showTopicModal = true }"
           @subject-search="onSubjectSearch"
           @topic-search="onTopicSearch"
           @save="async () => { await saveDetails(); if (store.detailsSaved) { store.setTab('settings') } }"

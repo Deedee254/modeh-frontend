@@ -1333,4 +1333,4 @@ watch(() => questionForm.value.type, onQuestionTypeChange)
 
 // Expose modal controls so parent components can open them via ref
 defineExpose({ openQuestionModal, openQuestionBankModal })
-</script>script>
+</script>

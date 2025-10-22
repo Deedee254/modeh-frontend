@@ -73,6 +73,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     isSubmitting.value = true
     try {
+      // normalize empty strings into nulls for numeric ids coming from selects
+  if ((quiz.value as any).grade_id === '') (quiz.value as any).grade_id = null
+  if ((quiz.value as any).subject_id === '') (quiz.value as any).subject_id = null
+  if ((quiz.value as any).topic_id === '') (quiz.value as any).topic_id = null
       // convert timer_minutes to timer_seconds to match backend expectations
       const payload: any = {
         topic_id: quiz.value.topic_id ? (Number(quiz.value.topic_id) || null) : null,
@@ -287,6 +291,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     isSubmitting.value = true
     try {
+      // normalize numeric empty strings
+  if ((quiz.value as any).attempts_allowed === '') (quiz.value as any).attempts_allowed = null
+  if ((quiz.value as any).per_question_seconds === '') (quiz.value as any).per_question_seconds = null
       const payload: any = {
         timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
         per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
@@ -448,6 +455,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   async function submitQuiz() {
     isSubmitting.value = true
     try {
+      // normalize numeric empty strings
+  if ((quiz.value as any).grade_id === '') (quiz.value as any).grade_id = null
+  if ((quiz.value as any).subject_id === '') (quiz.value as any).subject_id = null
+  if ((quiz.value as any).topic_id === '') (quiz.value as any).topic_id = null
+  if ((quiz.value as any).attempts_allowed === '') (quiz.value as any).attempts_allowed = null
+  if ((quiz.value as any).per_question_seconds === '') (quiz.value as any).per_question_seconds = null
       // convert minutes to seconds and send questions in canonical shape
       const payload: any = {
         ...quiz.value,
