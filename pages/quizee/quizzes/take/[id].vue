@@ -93,34 +93,6 @@
                     <div class="font-semibold text-lg text-gray-900 mb-4">Question {{ currentQuestion + 1 }}</div>
                     <div class="text-gray-800 mb-4" v-html="currentQuestionData.body || currentQuestionData.text || currentQuestionData.question"></div>
                     <div class="space-y-3">
-                      <!-- QuestionCard already rendered above; duplicate removed -->
-                      <!-- Media Section (legacy media_path fallback) -->
-                      <div v-if="currentQuestionData.media_path" class="mb-6">
-                        <!-- Image -->
-                        <div v-if="isImage(currentQuestionData.media_path)" class="rounded-lg overflow-hidden bg-gray-100">
-                          <img :src="currentQuestionData.media_path" class="w-full h-auto max-h-96 object-contain" alt="Question media" loading="lazy" />
-                        </div>
-                        
-                        <!-- Audio -->
-                        <div v-else-if="isAudio(currentQuestionData.media_path)" class="p-4 bg-gray-100 rounded-lg">
-                          <audio controls class="w-full">
-                            <source :src="currentQuestionData.media_path" :type="getAudioType(currentQuestionData.media_path)">
-                            Your browser does not support the audio element.
-                          </audio>
-                        </div>
-                        
-                        <!-- YouTube Video -->
-                        <div v-else-if="isYouTube(currentQuestionData.media_path)" class="aspect-video rounded-lg overflow-hidden">
-                          <iframe 
-                            :src="formatYouTubeUrl(currentQuestionData.media_path)"
-                            class="w-full h-full"
-                            frameborder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen
-                          ></iframe>
-                        </div>
-                      </div>
-
                       <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" />
                     </div>
                     <div class="text-xs text-gray-500 mt-3 flex items-center gap-1">

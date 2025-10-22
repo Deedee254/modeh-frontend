@@ -99,6 +99,7 @@
           @save="store.saveAllQuestions"
           @open-builder="openBuilder"
           @edit="(q) => edit(q)"
+          @preview="() => { showPreview.value = true }"
           @prev="() => store.setTab('settings')"
           @publish="onPublish"
         />
@@ -118,6 +119,29 @@
         @created="onTopicCreated"
       />
 
+      <QuizPreviewModal :model-value="showPreview" :quiz="{ ...store.quiz, questions: store.questions }" />
+
+      <UModal v-model="showCreatedModal" :ui="{ width: 'sm:max-w-xl' }">
+        <div class="p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Quiz created</h3>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <div class="text-xl font-bold">{{ createdPayload?.title || store.quiz.title }}</div>
+              <div class="text-sm text-gray-600">{{ createdPayload?.description || store.quiz.description }}</div>
+              <div class="text-sm text-gray-500">Topic: {{ createdPayload?.topic_name || store.quiz.topic_id || '—' }}</div>
+              <div class="text-sm text-gray-500">Questions: {{ store.questions.length }}</div>
+            </div>
+            <div class="flex gap-2 justify-end">
+              <UButton variant="soft" @click="showCreatedModal = false">Continue editing</UButton>
+              <UButton color="primary" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}`) }">View</UButton>
+              <UButton color="gray" variant="ghost" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}/edit`) }">Edit</UButton>
+            </div>
+          </div>
+        </div>
+      </UModal>
+
     </div>
   </div>
 </template>
@@ -135,6 +159,7 @@ import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 import QuizDetailsTab from '~/components/quiz/QuizDetailsTab.vue'
 import QuizSettingsTab from '~/components/quiz/QuizSettingsTab.vue'
 import QuizQuestionsTab from '~/components/quiz/QuizQuestionsTab.vue'
+import QuizPreviewModal from '~/components/preview/QuizPreviewModal.vue'
 import { onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
@@ -144,6 +169,7 @@ definePageMeta({ layout: 'quiz-master', title: 'Create quiz',
 
 const store = useCreateQuizStore()
 const route = useRoute()
+const router = useRouter()
 const cfg = useRuntimeConfig()
 
 // don't load quiz here yet; wait until taxonomy helpers & watchers are set up below
@@ -280,6 +306,9 @@ const use_per_question_timer = computed({ get: () => store.quiz.use_per_question
 
 const showBuilder = ref(false)
 const showTopicModal = ref(false)
+const showCreatedModal = ref(false)
+const createdPayload = ref(null)
+const showPreview = ref(false)
 function openBuilder() { showBuilder.value = true }
 function onCancel() { showBuilder.value = false }
 function onSaved(saved) { showBuilder.value = false; store.questions.push(saved) }
@@ -288,6 +317,14 @@ function edit(q) { /* navigate to dedicated question editor if desired */ }
 function openTopicModal() {
   showTopicModal.value = true
 }
+
+// watch for newly created quiz payload from the store and show a modal
+watch(() => store.lastCreated, (v) => {
+  if (v) {
+    createdPayload.value = v
+    showCreatedModal.value = true
+  }
+})
 
 async function onTopicCreated(created) {
   if (!created) { showTopicModal.value = false; return }

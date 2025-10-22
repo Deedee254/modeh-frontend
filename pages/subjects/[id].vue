@@ -61,11 +61,11 @@
               :topic="filterTopic"
               :grade="gradeFilter"
               storageKey="filters:subjects"
-              @update:subject="val => subjectFilter = val"
-              @update:topic="val => filterTopic = val"
-              @update:grade="val => gradeFilter = val"
+              @update:subject="val => subjectFilter.value = val"
+              @update:topic="val => filterTopic.value = val"
+              @update:grade="val => gradeFilter.value = val"
               @apply="() => { fetchTopics() }"
-              @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = '' }"
+              @clear="() => { subjectFilter.value = ''; filterTopic.value = ''; gradeFilter.value = '' }"
             />
           </aside>
 

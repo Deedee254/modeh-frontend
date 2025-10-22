@@ -137,10 +137,12 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   watch(grade, async (g) => {
     subject.value = ''
     topic.value = ''
-    subjects.value = []
-    topics.value = []
+    subjects.value = [] // Clear options immediately
+    topics.value = [] // Clear options immediately
     if (!g) return
     await fetchSubjectsByGrade(g)
+    // After fetching, if no subjects are found, ensure the list is empty.
+    if (!taxSubjects.value || taxSubjects.value.length === 0) subjects.value = []
   })
 
   // When subject changes, reset topic and fetch topics

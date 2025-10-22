@@ -1,7 +1,17 @@
 <template>
   <div class="min-h-screen py-8 bg-gray-50 dark:bg-gray-900">
     <div class="max-w-3xl mx-auto px-4">
-      <div class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+      <!-- Loading Skeleton -->
+      <div v-if="loading" class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 animate-pulse">
+        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
+        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+        <div class="mt-8 grid grid-cols-2 gap-4 items-center">
+          <div class="h-48 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
+          <div class="h-48 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
+        </div>
+      </div>
+      <!-- Main Content -->
+      <div v-else class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
         <!-- Header with Status -->
         <div class="flex flex-col sm:flex-row items-start justify-between mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
           <div>
@@ -42,7 +52,7 @@
           <div class="space-y-4">
             <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Battle Details</h3>
             <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 space-y-3">
-              <InfoItem icon="heroicon-o-question-mark-circle" label="Questions" :value="battle.settings?.question_count || 10" />
+              <InfoItem icon="heroicon-o-question-mark-circle" label="Question Count" :value="battle.settings?.question_count || 10" />
               <InfoItem icon="heroicon-o-chart-bar" label="Difficulty" :value="battle.settings?.difficulty || 'Any'" class="capitalize" />
               <InfoItem icon="heroicon-o-academic-cap" label="Grade" :value="getGradeName(battle.settings?.grade_id)" />
               <InfoItem icon="heroicon-o-book-open" label="Subject" :value="getSubjectName(battle.settings?.subject_id)" />
@@ -126,6 +136,7 @@ useHead({
 
 const battle = ref({})
 const initialized = ref(false)
+const loading = ref(true)
 
 const isInitiator = computed(() => auth.user && battle.value.initiator_id === auth.user.id)
 
@@ -165,12 +176,25 @@ function getTopicName(id) {
 }
 
 async function fetchBattle() {
+  loading.value = true
   try {
     const res = await api.get(`/api/battles/${uuid}`)
     if (api.handleAuthStatus(res)) return
     if (res.ok) {
+      // API may return full battle with questions. Only copy minimal metadata here.
       const data = await res.json().catch(() => ({}))
-      battle.value = data || {}
+      const d = data?.battle || data || {}
+      battle.value = {
+        id: d.id,
+        uuid: d.uuid,
+        initiator_id: d.initiator_id,
+        opponent_id: d.opponent_id,
+        status: d.status,
+        settings: d.settings,
+        initiator: d.initiator,
+        opponent: d.opponent,
+        players: d.players || undefined,
+      }
     }
     
     // Fetch taxonomy data if we have settings
@@ -189,6 +213,8 @@ async function fetchBattle() {
     console.error('Failed to fetch battle', e)
     showAlert({ type: 'error', message: 'Could not load battle details.' })
     router.push('/quizee/battles')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -200,6 +226,7 @@ function attachEchoListeners() {
         console.log('Participant joined:', payload)
         if (payload.participant) {
           battle.value.opponent = payload.participant
+          stopWaitingMessageCycle() // Stop dynamic messages once opponent joins
         }
       })
       .listen('.BattleStatusUpdated', (payload) => {

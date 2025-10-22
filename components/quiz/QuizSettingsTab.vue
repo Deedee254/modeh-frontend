@@ -8,17 +8,44 @@
       
       <div class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div>
-            <label for="quiz-time-limit" class="block text-sm font-medium text-gray-700 mb-1">Time Limit (minutes)</label>
-            <input 
-              v-model="modelValue.timer_minutes"
-              id="quiz-time-limit"
-              type="number"
-              min="0"
-              class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              placeholder="Optional"
-            />
-            <p v-if="errors && (errors.timer_seconds || errors.timer_minutes)" class="mt-1 text-sm text-red-600">{{ (errors.timer_seconds || errors.timer_minutes)[0] }}</p>
+          <div class="flex flex-col">
+            <label class="flex items-center justify-between">
+              <span class="block text-sm font-medium text-gray-700 mb-1">Timer Mode</span>
+              <label class="inline-flex items-center">
+                <input type="checkbox" v-model="modelValue.use_per_question_timer" class="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                <span class="text-sm text-gray-600">Use per-question timer</span>
+              </label>
+            </label>
+
+            <!-- When per-question timer is enabled show seconds input -->
+            <div v-if="modelValue.use_per_question_timer" class="mt-2">
+              <label for="per-question-seconds" class="block text-sm font-medium text-gray-700 mb-1">Per-question time limit (seconds)</label>
+              <input
+                id="per-question-seconds"
+                type="number"
+                min="0"
+                v-model="modelValue.per_question_seconds"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="e.g. 30"
+              />
+              <p v-if="errors && errors.per_question_seconds" class="mt-1 text-sm text-red-600">{{ errors.per_question_seconds[0] }}</p>
+              <p class="mt-1 text-xs text-gray-500">When enabled, each question will use this time limit. The overall quiz time will be ignored.</p>
+            </div>
+
+            <!-- When per-question timer is disabled show overall minutes input -->
+            <div v-else class="mt-2">
+              <label for="quiz-time-limit" class="block text-sm font-medium text-gray-700 mb-1">Time Limit (minutes)</label>
+              <input 
+                v-model="modelValue.timer_minutes"
+                id="quiz-time-limit"
+                type="number"
+                min="0"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="Optional"
+              />
+              <p v-if="errors && (errors.timer_seconds || errors.timer_minutes)" class="mt-1 text-sm text-red-600">{{ (errors.timer_seconds || errors.timer_minutes)[0] }}</p>
+              <p class="mt-1 text-xs text-gray-500">When disabled, the quiz will use this total time for the entire quiz.</p>
+            </div>
           </div>
 
           <div>

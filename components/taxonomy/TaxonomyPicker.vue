@@ -43,15 +43,15 @@
         </div>
       </div>
 
-      <div v-if="meta && meta.total > (meta.per_page || 0)" class="flex justify-center pt-2">
-        <UPagination v-model="page" :page-count="meta.per_page" :total="meta.total" />
+      <div v-if="meta && meta.total > (effectivePerPage || 0)" class="flex justify-center pt-2">
+        <UPagination :model-value="page" @change="(p) => (page = p)" :per-page="effectivePerPage" :total="meta.total" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import UiSelectSkeleton from '~/components/ui/UiSelectSkeleton.vue'
 
@@ -74,6 +74,11 @@ const loading = ref(false)
 const page = ref(1)
 const searchInput = ref(null)
 
+const effectivePerPage = computed(() => {
+  if (!meta.value) return props.perPage
+  return (meta.value.per_page ?? meta.value.perPage ?? props.perPage)
+})
+
 const { fetchSubjectsPage, fetchTopicsPage } = useTaxonomy()
 
 watch([() => props.gradeId, () => props.subjectId], () => { 
@@ -85,11 +90,38 @@ watch([() => props.gradeId, () => props.subjectId], () => {
 let debounce = null
 function onSearch() {
   clearTimeout(debounce)
+  // don't start subject searches until a grade is selected
+  if (props.resource === 'subjects' && (props.gradeId === null || props.gradeId === undefined || props.gradeId === '')) {
+    // clear results while waiting for grade selection
+    items.value = []
+    meta.value = null
+    return
+  }
+  // don't start topic searches until a subject is selected
+  if (props.resource === 'topics' && (props.subjectId === null || props.subjectId === undefined || props.subjectId === '')) {
+    items.value = []
+    meta.value = null
+    return
+  }
   debounce = setTimeout(() => { page.value = 1; fetchPage() }, 300)
 }
 
 async function fetchPage() {
   loading.value = true
+  // For subjects we require a gradeId before searching to ensure server receives grade filter
+  if (props.resource === 'subjects' && (props.gradeId === null || props.gradeId === undefined || props.gradeId === '')) {
+    items.value = []
+    meta.value = null
+    loading.value = false
+    return
+  }
+  // For topics we require a subjectId before searching to ensure server receives subject filter
+  if (props.resource === 'topics' && (props.subjectId === null || props.subjectId === undefined || props.subjectId === '')) {
+    items.value = []
+    meta.value = null
+    loading.value = false
+    return
+  }
   const fetcherMap = {
     subjects: fetchSubjectsPage,
     topics: fetchTopicsPage,
@@ -103,8 +135,27 @@ async function fetchPage() {
   }
 
   try {
+    // debug: log the fetch parameters for troubleshooting grade->subject behavior
+    try { console.debug('TaxonomyPicker.fetchPage', { resource: props.resource, gradeId: props.gradeId, subjectId: props.subjectId, page: page.value, q: query.value }) } catch (e) {}
     const out = await fetcher({ gradeId: props.gradeId, subjectId: props.subjectId, page: page.value, perPage: props.perPage, q: query.value });
-    items.value = out.items || [];
+    // defensive filter: if requesting subjects for a grade, enforce client-side filtering
+    let fetched = out.items || []
+    if (props.resource === 'subjects' && (props.gradeId !== null && props.gradeId !== undefined && props.gradeId !== '')) {
+      const gKey = String(props.gradeId)
+      fetched = fetched.filter(s => {
+        const g = s?.grade_id ?? s?.grade ?? (s?.grade && typeof s.grade === 'object' ? s.grade.id : null) ?? ''
+        return String(g) === gKey
+      })
+    }
+    // defensive filter for topics: ensure items belong to the requested subject
+    if (props.resource === 'topics' && (props.subjectId !== null && props.subjectId !== undefined && props.subjectId !== '')) {
+      const sKey = String(props.subjectId)
+      fetched = fetched.filter(t => {
+        const s = t?.subject_id ?? t?.subject ?? (t?.subject && typeof t.subject === 'object' ? t.subject.id : null) ?? ''
+        return String(s) === sKey
+      })
+    }
+    items.value = fetched;
     meta.value = out.meta;
   } catch (e) {
     items.value = []

@@ -6,7 +6,7 @@
       description="Overview of your available balance, transactions and withdrawal requests."
       :breadcrumbs="[{ text: 'Dashboard', href: '/quiz-master/dashboard' }, { text: 'Wallet', current: true }]"
     >
-      <template #eyebrow>Earnings & Transactions</template>
+      <template #eyebrow>Quiz‑master tools</template>
 
       <template #actions>
         <div class="flex flex-wrap gap-3">
@@ -15,7 +15,7 @@
           <button
             @click.prevent="scrollToWithdraw"
             :disabled="!canWithdraw"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-emerald-700 shadow-lg shadow-emerald-950/30 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Withdraw
           </button>
@@ -24,17 +24,17 @@
 
       <template #highlight>
         <div class="p-6">
-          <header class="mb-6 rounded-3xl p-4 sm:p-6 bg-gradient-to-br from-emerald-800 via-emerald-700 to-emerald-900 text-white shadow-2xl shadow-emerald-900/50">
+          <header class="mb-6 rounded-3xl p-4 sm:p-6" style="background: linear-gradient(160deg, #0c4a6e 0%, #07274d 100%); color: white;">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <p class="text-xs uppercase tracking-wide text-emerald-100">Balance</p>
+                <p class="text-xs uppercase tracking-wide text-white/80">Balance</p>
                 <p class="mt-1 text-2xl font-semibold text-white">KES {{ formatMoney(wallet.available) }}</p>
-                <p class="inline-flex items-center gap-2 rounded-full border border-emerald-600 bg-emerald-800/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+                <p class="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-300">
                   <Icon name="heroicons:wallet" class="h-4 w-4" />
                   My Wallet
                 </p>
-                <h1 class="text-2xl sm:text-3xl font-semibold mt-2">Manage Your Earnings</h1>
-                <p class="text-sm text-emerald-100 max-w-2xl">Track your revenue, manage withdrawals, and view your transaction history.</p>
+                <h1 class="text-2xl sm:text-3xl font-semibold mt-2">Earnings & Transactions</h1>
+                <p class="text-sm text-white/80 max-w-2xl">Track your revenue, manage withdrawals, and view your transaction history.</p>
               </div>
             </div>
           </header>
@@ -42,32 +42,55 @@
       </template>
 
       <template #stats>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            label="Available Balance"
-            :value="'KES ' + formatMoney(wallet.available)"
-            description="Ready for withdrawal"
-            icon="heroicons:wallet"
-          />
-          <StatCard
-            label="Pending Earnings"
-            :value="'KES ' + formatMoney(wallet.pending)"
-            description="Awaiting approval"
-            icon="heroicons:clock"
-          />
-          <StatCard
-            label="Lifetime Earned"
-            :value="'KES ' + formatMoney(wallet.lifetime_earned)"
-            description="Total earnings to date"
-            icon="heroicons:chart-bar"
-          />
+        <div class="flex items-center gap-6">
+          <div>
+            <div class="text-sm text-white/80">Available</div>
+            <div class="mt-1 text-lg font-semibold text-white">KES {{ formatMoney(wallet.available) }}</div>
+          </div>
+
+          <div>
+            <div class="text-sm text-white/80">Pending</div>
+            <div class="mt-1 text-lg font-semibold text-white">KES {{ formatMoney(wallet.pending) }}</div>
+          </div>
+
+          <div>
+            <div class="text-sm text-white/80">Lifetime</div>
+            <div class="mt-1 text-lg font-semibold text-white">KES {{ formatMoney(wallet.lifetime_earned) }}</div>
+          </div>
+
+          <div>
+            <UButton
+              size="sm"
+              color="primary"
+              @click="showWithdrawModal = true"
+              icon="i-heroicons-arrow-down-tray"
+              class="shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105"
+            >
+              Request Withdrawal
+            </UButton>
+          </div>
         </div>
       </template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="container mx-auto py-10">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="p-4 bg-white shadow rounded">
+          <div class="text-sm text-gray-500">Available</div>
+          <div class="text-2xl font-semibold">KES {{ formatMoney(wallet.available) }}</div>
+        </div>
+        <div class="p-4 bg-white shadow rounded">
+          <div class="text-sm text-gray-500">Pending</div>
+          <div class="text-2xl font-semibold">KES {{ formatMoney(wallet.pending) }}</div>
+        </div>
+        <div class="p-4 bg-white shadow rounded">
+          <div class="text-sm text-gray-500">Lifetime</div>
+          <div class="text-2xl font-semibold">KES {{ formatMoney(wallet.lifetime_earned) }}</div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section id="withdraw-section" class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+        <section id="withdraw-section" class="bg-white shadow rounded p-4">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-medium">Transactions</h2>
           </div>
@@ -98,7 +121,7 @@
           </div>
         </section>
 
-        <section class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+        <section class="bg-white shadow rounded p-4">
           <h2 class="text-lg font-medium">Request Withdrawal</h2>
 
           <div class="mt-3 space-y-3">
@@ -109,9 +132,9 @@
 
             <div class="space-y-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <UCard class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+                <UCard>
                   <template #header>
-                    <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Available Balance</div>
+                    <div class="text-sm font-medium text-gray-500">Available Balance</div>
                   </template>
 
                   <div v-if="loading" class="h-8">
@@ -140,9 +163,9 @@
                   </div>
                 </UCard>
 
-                <UCard class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+                <UCard>
                   <template #header>
-                    <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Pending Clearance</div>
+                    <div class="text-sm font-medium text-gray-500">Pending Clearance</div>
                   </template>
                   <div v-if="loading" class="h-8">
                     <USkeleton class="h-full w-1/2" />
@@ -152,9 +175,9 @@
                   </div>
                 </UCard>
 
-                <UCard class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+                <UCard>
                   <template #header>
-                    <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Lifetime Earned</div>
+                    <div class="text-sm font-medium text-gray-500">Lifetime Earned</div>
                   </template>
                   <div v-if="loading" class="h-8">
                     <USkeleton class="h-full w-1/2" />
@@ -197,7 +220,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import PageHero from '~/components/ui/PageHero.vue'
-import StatCard from '~/components/ui/StatCard.vue'
 import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '~/stores/auth'
 

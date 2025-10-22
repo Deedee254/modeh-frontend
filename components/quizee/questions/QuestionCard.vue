@@ -13,6 +13,10 @@
       <div class="content-col">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4" v-html="question?.body"></h3>
         <component :is="componentName" :question="question" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" />
+                  <div>
+                    <span v-if="question.is_approved === 1 || question.is_approved === true" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Approved</span>
+                    <span v-else-if="question.is_approved === 0 || question.is_approved === false" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">Pending</span>
+                  </div>
       </div>
     </div>
   </div>

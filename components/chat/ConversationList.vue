@@ -41,7 +41,7 @@
             </div>
             <p class="text-[13px] text-muted-foreground truncate md:text-sm">{{ t.last_preview || 'No messages yet' }}</p>
           </div>
-          <div v-if="t.unread > 0" class="flex-shrink-0 bg-primary text-primary-foreground text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center">{{ t.unread }}</div>
+          <div v-if="((t.unread_count ?? t.unread) || 0) > 0" class="flex-shrink-0 bg-primary text-primary-foreground text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center">{{ t.unread_count ?? t.unread }}</div>
         </button>
       </div>
     </div>

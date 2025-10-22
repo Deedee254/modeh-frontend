@@ -50,16 +50,19 @@
         
         <!-- Chat List -->
         <div class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
+          <transition-group name="list" tag="div">
           <button 
-            v-for="chat in allConversations" 
+            v-for="chat in filteredConversations" 
             :key="chat.id" 
             class="w-full p-4 flex items-start gap-3 hover:bg-sidebar-hover transition-colors border-b border-border"
             :class="{ 'bg-sidebar-active': String(chat.id) === String(activeConversation?.id) }"
-            @click="() => selectConversation(chat)"
+            @click="selectConversation(chat)"
           >
             <div class="relative flex-shrink-0">
               <span class="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12">
-                <span class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <!-- show real avatar when available, otherwise fallback to initial -->
+                <img v-if="chat.avatar" :src="chat.avatar" :alt="chat.name" class="h-full w-full object-cover rounded-full" loading="lazy" decoding="async" />
+                <span v-else class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
                   {{ chat.name[0] }}
                 </span>
               </span>
@@ -68,20 +71,25 @@
             <div class="flex-1 min-w-0 text-left">
               <div class="flex items-baseline justify-between mb-1">
                 <h3 class="font-semibold text-foreground truncate">{{ chat.name }}</h3>
-                <span class="text-xs text-muted-foreground ml-2 flex-shrink-0">{{ formatTimeLocal(chat.last_at) }}</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-muted-foreground flex-shrink-0">{{ formatTimeLocal(chat.last_at) }}</span>
+                  <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="inline-flex items-center justify-center bg-rose-500 text-white text-xs rounded-full px-2 py-0.5">{{ chat.unread_count ?? chat.unread }}</span>
+                </div>
               </div>
-              <p class="text-sm text-muted-foreground truncate">{{ chat.last_preview || '' }}</p>
+              <!-- allow long words to break and wrap instead of growing the row -->
+              <p class="text-sm text-muted-foreground whitespace-normal break-words overflow-hidden">{{ chat.last_preview || '' }}</p>
             </div>
           </button>
+          </transition-group>
         </div>
       </div>
     </div>
 
     <!-- Mobile: show list when not viewing a chat -->
-    <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl">
-      <div class="flex flex-col h-full bg-white text-foreground">
+    <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl h-full min-h-0">
+      <div class="flex flex-col h-full min-h-0 bg-white text-foreground">
         <!-- Header (mobile list) -->
-        <div class="p-4 border-b border-border bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white sticky top-0 z-40">
+  <div class="p-4 border-b border-border bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white sticky top-0 z-50 w-full">
           <div class="flex items-center justify-between mb-3">
             <h1 class="text-xl font-semibold text-white">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground h-9 w-9 rounded-full hover:bg-white/20 text-white">
@@ -105,16 +113,18 @@
         </div>
 
         <div class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
-          <button 
-            v-for="chat in allConversations" 
-            :key="chat.id" 
-            class="w-full p-4 flex items-start gap-3 hover:bg-sidebar-hover transition-colors border-b border-border"
-            :class="{ 'bg-sidebar-active': String(chat.id) === String(activeConversation?.id) }"
-            @click="() => selectConversation(chat)"
-          >
+          <transition-group name="list" tag="div">
+            <button
+              v-for="chat in filteredConversations"
+              :key="chat.id"
+              class="w-full p-4 flex items-start gap-3 hover:bg-sidebar-hover transition-colors border-b border-border"
+              :class="{ 'bg-sidebar-active': String(chat.id) === String(activeConversation?.id) }"
+              @click="selectConversation(chat)"
+            >
             <div class="relative flex-shrink-0">
               <span class="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12">
-                <span class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <img v-if="chat.avatar" :src="chat.avatar" :alt="chat.name" class="h-full w-full object-cover rounded-full" loading="lazy" decoding="async" />
+                <span v-else class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
                   {{ chat.name[0] }}
                 </span>
               </span>
@@ -125,9 +135,10 @@
                 <h3 class="font-semibold text-foreground truncate">{{ chat.name }}</h3>
                 <span class="text-xs text-muted-foreground ml-2 flex-shrink-0">{{ formatTimeLocal(chat.last_at) }}</span>
               </div>
-              <p class="text-sm text-muted-foreground truncate">{{ chat.last_preview || '' }}</p>
+              <p class="text-sm text-muted-foreground whitespace-normal break-words overflow-hidden">{{ chat.last_preview || '' }}</p>
             </div>
-          </button>
+            </button>
+          </transition-group>
         </div>
       </div>
     </div>
@@ -186,7 +197,7 @@
               <div class="flex items-center justify-end gap-2 mt-1">
                 <p class="text-xs" :class="String(message.sender_id) === String(userId) ? 'text-muted-foreground/80' : 'text-muted-foreground'">{{ formatTimeLocal(message.created_at) }}</p>
                 <!-- outgoing message ticks -->
-                <template v-if="String(message.sender_id) === String(userId?.value)">
+                <template v-if="String(message.sender_id) === String(userId)">
                   <span class="ml-1">
                     <template v-if="message.sending">
                       <!-- clock icon -->
@@ -203,7 +214,7 @@
                     </template>
                   </span>
                 </template>
-                <div v-if="message.failed && String(message.sender_id) === String(userId?.value)" class="flex items-center gap-2">
+                <div v-if="message.failed && String(message.sender_id) === String(userId)" class="flex items-center gap-2">
                   <button @click="resendMessage(message)" class="text-xs text-rose-500 underline">Retry</button>
                 </div>
               </div>
@@ -227,12 +238,13 @@
             </button>
               <div class="flex-1 relative bg-background border border-input rounded-lg flex items-center pr-2">
               <input 
+                ref="messageInputRef"
                 v-model="body"
                 class="flex h-10 w-full rounded-md px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent" 
                 placeholder="Type a message..."
                 @keyup.enter="sendLocalMessage"
-              >
-                <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground" style="margin-bottom:6px">
+              />
+                <button @click="toggleEmojiPicker" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground" style="margin-bottom:6px">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-smile h-5 w-5">
                   <circle cx="12" cy="12" r="10"></circle>
                   <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
@@ -240,6 +252,9 @@
                   <line x1="15" x2="15.01" y1="9" y2="9"></line>
                 </svg>
               </button>
+              <div v-if="showEmojiPicker" class="absolute bottom-12 left-2 z-40 bg-white border rounded shadow p-2 grid grid-cols-6 gap-2 w-56">
+                <button v-for="emoji in emojis" :key="emoji" @click.prevent="insertEmoji(emoji)" class="text-lg">{{ emoji }}</button>
+              </div>
               <button 
                 class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-8 w-8 flex-shrink-0 bg-primary hover:bg-primary/90 ml-1"
                 @click="sendLocalMessage"
@@ -331,8 +346,49 @@ const tabs = [
 ]
 
 // chat list is provided by useChat() as allConversations
-
 // selecting a conversation is handled by useChat.selectConversation (wired in template)
+
+const messageInputRef = ref<HTMLInputElement | null>(null)
+
+const emojis = ['😀','😂','😍','👍','🙏','🎉','😅','🙌','😉','🔥','😢','🤔']
+
+const filteredConversations = computed(() => {
+  const q = (searchQuery.value || '').toString().toLowerCase().trim()
+  const list = (allConversations.value || []).slice()
+  // filter by active tab
+  let filtered = list.filter((c: any) => {
+    if (activeTab.value === 'online') return c.status === 'online'
+    if (activeTab.value === 'unread') return (c.unread_count || c.unread || 0) > 0
+    return true
+  })
+  // filter by search query
+  if (q) {
+    filtered = filtered.filter((c: any) => {
+      const name = (c.name || '').toString().toLowerCase()
+      const preview = (c.last_preview || '').toString().toLowerCase()
+      return name.includes(q) || preview.includes(q)
+    })
+  }
+  // sort by last_at descending
+  filtered.sort((a: any, b: any) => {
+    const A = new Date(a.last_at || a.updated_at || 0).getTime()
+    const B = new Date(b.last_at || b.updated_at || 0).getTime()
+    return B - A
+  })
+  return filtered
+})
+
+function toggleEmojiPicker() {
+  showEmojiPicker.value = !showEmojiPicker.value
+}
+
+function insertEmoji(emoji: string) {
+  if (!emoji) return
+  body.value = (body.value || '') + emoji
+  // close picker and focus input
+  showEmojiPicker.value = false
+  setTimeout(() => { messageInputRef.value?.focus() }, 20)
+}
 
 async function sendLocalMessage(): Promise<void> {
   if (!body.value || !body.value.trim()) return
@@ -357,9 +413,19 @@ function formatTimeLocal(date: any): string {
  */
 function getTickState(message: any): 'single' | 'double' | 'read' | 'none' {
   if (!message) return 'none'
-  // optimistic/sending/failed handled in template; fall back to single
-  if (message.read === true || message.read_at || message.readAt) return 'read'
-  if (message.delivered === true || message.delivered_at || message.deliveredAt || message.status === 'delivered') return 'double'
+  // Only rely on backend's `is_read` boolean for read state.
+  // Consider a message that has been saved to the DB (has a numeric id, not an optimistic temp id)
+  // as delivered (double ticks). Messages created optimistically on the client have ids like
+  // 'msg-<timestamp>' and should show sending/single until persisted.
+  if (message.is_read === true) return 'read'
+
+  // If message has a persisted numeric id (or any truthy non-optimistic id), count as delivered
+  // (double tick). This treats successful DB save as delivery for the UI's purposes.
+  const id = message.id
+  const isOptimistic = typeof id === 'string' && id.startsWith('msg-')
+  if (id && !isOptimistic) return 'double'
+
+  // default to single (sent)
   return 'single'
 }
 

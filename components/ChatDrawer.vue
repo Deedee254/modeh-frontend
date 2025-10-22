@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="isOpen" class="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm" @click="close"></div>
+  <div v-if="isOpen" class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" @click="close"></div>
     <div role="dialog" aria-modal="true" aria-labelledby="chat-drawer-title"
       class="fixed top-0 right-0 z-50 h-full w-full sm:w-96 bg-background shadow-xl transition-transform duration-300 ease-in-out"
       :class="isOpen ? 'translate-x-0' : 'translate-x-full'"
@@ -51,14 +51,14 @@
               <span class="size-10">
                 <img class="size-10 rounded-full object-cover object-center" :alt="chat.name" :src="chat.avatar" />
               </span>
-              <span v-if="chat.unread" class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary border-2 border-background"></span>
+              <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary border-2 border-background"></span>
             </div>
             <div class="flex-1 space-y-1 overflow-hidden">
               <div class="flex items-center justify-between">
-                <p class="font-medium" :class="chat.unread ? 'text-foreground' : 'text-muted-foreground'">{{ chat.name }}</p>
+                <p class="font-medium" :class="((chat.unread_count ?? chat.unread) || 0) > 0 ? 'text-foreground' : 'text-muted-foreground'">{{ chat.name }}</p>
                 <span class="text-xs text-muted-foreground">{{ chat.time }}</span>
               </div>
-              <p class="text-sm truncate" :class="chat.unread ? 'text-foreground' : 'text-muted-foreground'">{{ chat.message }}</p>
+              <p class="text-sm truncate" :class="((chat.unread_count ?? chat.unread) || 0) > 0 ? 'text-foreground' : 'text-muted-foreground'">{{ chat.message }}</p>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@ async function fetchRecentChats() {
         name: conv.other_name || conv.otherName || conv.name || 'User',
         message: conv.last_message || conv.last_preview || 'No messages',
         time: formatTimeAgo(conv.last_at || conv.updated_at),
-        unread: conv.unread_count > 0,
+    unread: (conv.unread_count ?? conv.unread) > 0,
         avatar: conv.avatar_url || `/logo/avatar-placeholder.png`
       })).slice(0, 5)
     }

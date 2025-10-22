@@ -204,18 +204,6 @@ async function saveQuiz() {
   }
 }
 
-async function uploadFile(file, type = 'file') {
-  try {
-    const fdata = new FormData()
-    fdata.append('file', file)
-    fdata.append('type', type)
-    const res = await api.postFormData('/api/uploads', fdata)
-    if (api.handleAuthStatus(res)) return null
-    if (res.ok) return await res.json()
-  } catch (e) {}
-  return null
-}
-
 onMounted(() => {
   try {
     const raw = sessionStorage.getItem('quiz:draft')
@@ -224,10 +212,8 @@ onMounted(() => {
       draft.value = parsed.form || {}
       questions.value = parsed.questions || []
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("Failed to load quiz draft from session storage", e)
+  }
 })
 </script>
-
-<style scoped>
-/* Minimal styling to match quiz-master look */
-</style>

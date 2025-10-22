@@ -5,6 +5,7 @@
         <h2 class="text-lg font-medium">Questions</h2>
         <div class="flex gap-2 items-center w-full sm:w-auto">
           <UButton size="sm" variant="soft" @click="$emit('openBank')">Question Bank</UButton>
+          <UButton size="sm" variant="soft" @click="$emit('preview')">Preview Questions</UButton>
           <UButton size="sm" color="primary" @click="addQuestion">Add Question</UButton>
         </div>
       </div>
@@ -110,7 +111,6 @@
     <div class="mt-6 flex justify-between gap-3">
       <UButton size="sm" variant="soft" @click="$emit('prev')">Back to Settings</UButton>
       <div class="flex gap-2">
-        <UButton size="sm" variant="soft" @click="$emit('save')" :loading="saving">Save Draft</UButton>
         <UButton size="sm" color="primary" @click="$emit('publish')" :loading="publishing" :disabled="!canPublish">Publish Quiz</UButton>
       </div>
     </div>

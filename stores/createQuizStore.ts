@@ -33,6 +33,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   const detailsErrors = ref<Record<string, string[]>>({})
   const settingsErrors = ref<Record<string, string[]>>({})
   const quizId = ref(null)
+  const lastCreated = ref<any>(null)
   const detailsSaved = ref(false)
   const settingsSaved = ref(false)
   const questionsSaved = ref(false)
@@ -150,6 +151,25 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           else form.append(k, String(val))
         })
 
+        // If a top-level cover file is present on the quiz object, append it.
+        try {
+          const cov = (quiz.value as any).cover
+          if (cov) {
+            // If it's a File instance, append directly
+            if (typeof File !== 'undefined' && cov instanceof File) {
+              form.append('cover', cov)
+            } else if (typeof window !== 'undefined') {
+              const tmp: any = (window as any)['_tmpFiles'] || {}
+              if (typeof cov === 'string' && tmp[cov]) {
+                // If it's a temporary key referencing an uploaded File stored on window._tmpFiles
+                form.append('cover', tmp[cov])
+              }
+            }
+          }
+        } catch (e) {
+          // ignore cover attachment errors
+        }
+
         // append questions as a JSON string
         form.append('questions', JSON.stringify(sanitizedQuestions))
 
@@ -247,7 +267,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       // clear any previously stored validation errors
       detailsErrors.value = {}
 
-      quizId.value = data.quiz.id
+  quizId.value = data.quiz.id
       detailsSaved.value = true
       // persist progress to localStorage
       persistProgress()
@@ -448,9 +468,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const data = await res.json().catch(() => null)
       if (!res.ok) throw new Error(data?.message || 'Failed to publish quiz.')
 
-      alert.push({ type: 'success', message: 'Quiz created successfully!' })
-      reset()
-      router.push(`/quiz-master/quizzes/${data.quiz.id}/edit`)
+  // expose the created quiz payload so UI can show a created modal
+  lastCreated.value = data.quiz
+  alert.push({ type: 'success', message: 'Quiz published successfully!' })
+  // Note: do not reset or navigate here. Let the page show the created modal and navigate when the user clicks View/Edit.
     } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: e.message })
@@ -478,6 +499,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.shuffle_answers = typeof serverQuiz.shuffle_answers !== 'undefined' ? !!serverQuiz.shuffle_answers : loaded.shuffle_answers
         loaded.access = serverQuiz.is_paid ? 'paywall' : (serverQuiz.access ?? loaded.access)
         loaded.visibility = serverQuiz.visibility ?? loaded.visibility
+
+        // map cover image to both cover_image (server URL) and cover (url for UI)
+        if (serverQuiz.cover_image) {
+          loaded.cover_image = serverQuiz.cover_image
+          loaded.cover = serverQuiz.cover_image
+        }
 
         quiz.value = loaded
         questions.value = serverQuiz.questions || []
@@ -534,6 +561,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     detailsErrors,
   settingsErrors,
     quizId,
+    lastCreated,
     detailsSaved,
     settingsSaved,
     questionsSaved,

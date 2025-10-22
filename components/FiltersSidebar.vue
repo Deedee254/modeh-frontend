@@ -48,7 +48,7 @@
         <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
         <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
           <option value="">All subjects</option>
-          <template v-for="(s, idx) in (subjectOptions || [])" :key="idx">
+          <template v-for="(s, idx) in (filteredSubjects || [])" :key="idx">
             <option v-if="s" :key="s.id ?? idx" :value="s.id">{{ s.name || '' }}</option>
           </template>
         </select>
@@ -131,6 +131,14 @@ const hasAnyActive = computed(() => {
   return !!(localGrade.value || localSubject.value || localTopic.value)
 })
 
+// compute subjects filtered by selected grade
+const filteredSubjects = computed(() => {
+  // Use the full list of subjects from taxonomy for filtering, not the prop.
+  const allSubjects = taxSubjects.value || props.subjectOptions || []
+  if (!localGrade.value) return allSubjects
+  return allSubjects.filter(s => String(s.grade_id || s.grade || '') === String(localGrade.value))
+})
+
 // compute topics filtered by selected subject (if topicOptions contain subject_id)
 const filteredTopics = computed(() => {
   if (!localSubject.value) return props.topicOptions || []
@@ -187,6 +195,8 @@ watch(localGrade, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':grade', String(v)) } catch (e) {} }
   // when grade changes, clear dependent subject/topic selections
   // but do not override the user's explicit subject if it belongs to the grade
+  localSubject.value = ''
+  localTopic.value = ''
   emit('update:grade', v)
 })
 

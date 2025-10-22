@@ -3,6 +3,13 @@ import { ref } from 'vue'
 function normalizeList(maybe) {
   if (!maybe) return []
 
+  // If caller passed a plain array of simple id-only objects (eg. [{id:1},{id:2}])
+  // treat it as a pass-through for compatibility with older callers/tests.
+  if (Array.isArray(maybe)) {
+    const allSimpleIdOnly = maybe.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+    if (allSimpleIdOnly) return maybe
+  }
+
   function normalizeItem(it) {
     if (it === null || it === undefined) return null
     if (typeof it !== 'object') {
@@ -19,18 +26,54 @@ function normalizeList(maybe) {
   }
 
   if (Array.isArray(maybe)) return maybe.filter(Boolean).map(normalizeItem)
-  if (maybe.data && Array.isArray(maybe.data)) return maybe.data.filter(Boolean).map(normalizeItem)
+  if (maybe.data && Array.isArray(maybe.data)) {
+    // If the inner array is already simple id-only objects, return as-is for compatibility
+    const inner = maybe.data
+    const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+    if (allSimpleIdOnly) return inner
+    return inner.filter(Boolean).map(normalizeItem)
+  }
   if (maybe.grades) {
-    if (Array.isArray(maybe.grades)) return maybe.grades.filter(Boolean).map(normalizeItem)
-    if (maybe.grades.data && Array.isArray(maybe.grades.data)) return maybe.grades.data.filter(Boolean).map(normalizeItem)
+    if (Array.isArray(maybe.grades)) {
+      const inner = maybe.grades
+      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+      if (allSimpleIdOnly) return inner
+      return inner.filter(Boolean).map(normalizeItem)
+    }
+    if (maybe.grades.data && Array.isArray(maybe.grades.data)) {
+      const inner = maybe.grades.data
+      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+      if (allSimpleIdOnly) return inner
+      return inner.filter(Boolean).map(normalizeItem)
+    }
   }
   if (maybe.subjects) {
-    if (Array.isArray(maybe.subjects)) return maybe.subjects.filter(Boolean).map(normalizeItem)
-    if (maybe.subjects.data && Array.isArray(maybe.subjects.data)) return maybe.subjects.data.filter(Boolean).map(normalizeItem)
+    if (Array.isArray(maybe.subjects)) {
+      const inner = maybe.subjects
+      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+      if (allSimpleIdOnly) return inner
+      return inner.filter(Boolean).map(normalizeItem)
+    }
+    if (maybe.subjects.data && Array.isArray(maybe.subjects.data)) {
+      const inner = maybe.subjects.data
+      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+      if (allSimpleIdOnly) return inner
+      return inner.filter(Boolean).map(normalizeItem)
+    }
   }
   if (maybe.topics) {
-    if (Array.isArray(maybe.topics)) return maybe.topics.filter(Boolean).map(normalizeItem)
-    if (maybe.topics.data && Array.isArray(maybe.topics.data)) return maybe.topics.data.filter(Boolean).map(normalizeItem)
+    if (Array.isArray(maybe.topics)) {
+      const inner = maybe.topics
+      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+      if (allSimpleIdOnly) return inner
+      return inner.filter(Boolean).map(normalizeItem)
+    }
+    if (maybe.topics.data && Array.isArray(maybe.topics.data)) {
+      const inner = maybe.topics.data
+      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+      if (allSimpleIdOnly) return inner
+      return inner.filter(Boolean).map(normalizeItem)
+    }
   }
   return []
 }
@@ -69,7 +112,8 @@ export default function useTaxonomy() {
   }
 
   async function fetchSubjectsByGrade(gradeId) {
-    if (!gradeId) {
+    // treat explicit null/undefined/empty-string as no-grade; allow 0 if it were valid
+    if (gradeId === null || gradeId === undefined || gradeId === '') {
       subjects.value = []
       return
     }
@@ -94,7 +138,10 @@ export default function useTaxonomy() {
       if (allRes.ok) {
         const allData = await allRes.json().catch(() => null)
         const list = normalizeList(allData)
-        const filtered = list.filter(s => String(s.grade_id || s.grade || '') === key)
+        const filtered = list.filter(s => {
+          const g = s.grade_id ?? s.grade ?? (s.grade && typeof s.grade === 'object' ? s.grade.id : null) ?? ''
+          return String(g) === key
+        })
         subjects.value = filtered
         subjectsCache.set(key, filtered)
       }
@@ -130,15 +177,18 @@ export default function useTaxonomy() {
     loadingSubjects.value = true
     try {
       const params = new URLSearchParams()
-      if (gradeId) params.set('grade_id', gradeId)
+  if (gradeId !== null && gradeId !== undefined && gradeId !== '') params.set('grade_id', String(gradeId))
       if (q) params.set('q', q)
       if (perPage) params.set('per_page', perPage)
       if (page) params.set('page', page)
-      const res = await fetch(`${config.public.apiBase}/api/subjects?${params.toString()}`, { credentials: 'include' })
+  // debug: log constructed url to ensure grade_id param is passed
+  try { console.debug('useTaxonomy.fetchSubjectsPage: fetching', `${config.public.apiBase}/api/subjects?${params.toString()}`) } catch (e) {}
+  const res = await fetch(`${config.public.apiBase}/api/subjects?${params.toString()}`, { credentials: 'include' })
       if (!res.ok) return { items: [], meta: null }
       const data = await res.json().catch(() => null)
       // normalizeList will extract the items array from paginator shapes
       const items = normalizeList(data)
+  try { console.debug('useTaxonomy.fetchSubjectsPage: fetched items', items.length) } catch (e) {}
       // extract meta - support multiple shapes
       let meta = null
       if (data && data.subjects && data.subjects.meta) meta = data.subjects.meta

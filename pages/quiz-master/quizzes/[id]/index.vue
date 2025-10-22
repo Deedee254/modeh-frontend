@@ -39,6 +39,11 @@
       <div v-show="activeTab === 'details'">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
+            <label class="block text-sm font-medium text-gray-700">Grade</label>
+            <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.grade?.name || '—' }}</div>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700">Subject</label>
             <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.topic?.subject?.name || quiz.subject?.name || '—' }}</div>
           </div>
@@ -65,10 +70,17 @@
             <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.youtube_url || '—' }}</div>
           </div>
 
+              <div v-if="youtubeEmbedUrl" class="mt-2">
+                <label class="block text-sm font-medium text-gray-700">YouTube Preview</label>
+                <div class="mt-1">
+                  <iframe :src="youtubeEmbedUrl" width="560" height="315" class="w-full h-64 rounded" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+              </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700">Cover Image</label>
             <div class="mt-1">
-              <img v-if="quiz.cover" :src="quiz.cover" alt="Cover" class="w-32 h-32 object-cover rounded" />
+              <img v-if="quiz.cover_image" :src="quiz.cover_image" alt="Cover" class="w-32 h-32 object-cover rounded" />
               <div v-else class="w-32 h-32 bg-gray-200 rounded flex items-center justify-center text-gray-500">No image</div>
             </div>
           </div>
@@ -104,19 +116,26 @@
       <!-- Settings -->
       <div v-show="activeTab === 'settings'">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ClientOnly>
+            <div v-if="quiz.use_per_question_timer">
+              <label class="block text-sm font-medium text-gray-700">Per-question time limit (seconds)</label>
+              <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.per_question_seconds || 'Not set' }}</div>
+            </div>
+          </ClientOnly>
           <div>
             <label class="block text-sm font-medium text-gray-700">Timer (minutes)</label>
-            <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.timer_minutes || 'No timer' }}</div>
+            <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.use_per_question_timer ? 'Disabled (per-question timer is active)' : (quiz.timer_minutes || 'No timer') }}</div>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700">Attempts Allowed</label>
-            <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.attempts_allowed === 'unlimited' ? 'Unlimited' : quiz.attempts_allowed }}</div>
+            <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.attempts_allowed === null || quiz.attempts_allowed === '' ? 'Unlimited' : quiz.attempts_allowed }}</div>
           </div>
 
           <div class="col-span-1 md:col-span-2">
             <label class="block text-sm font-medium text-gray-700">Options</label>
             <div class="mt-1 space-y-1">
+              <div><input type="checkbox" :checked="quiz.use_per_question_timer" disabled /> Use per-question timer</div>
               <div><input type="checkbox" :checked="quiz.shuffle_questions" disabled /> Shuffle Questions</div>
               <div><input type="checkbox" :checked="quiz.shuffle_answers" disabled /> Shuffle Answer Choices</div>
             </div>
@@ -124,7 +143,7 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700">Access</label>
-            <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.access === 'free' ? 'Free' : 'Paywall' }}</div>
+            <div class="mt-1 p-2 bg-gray-50 rounded capitalize">{{ quiz.access === 'paywall' ? 'Premium' : quiz.access }}</div>
           </div>
 
           <div>
@@ -144,6 +163,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRuntimeConfig, useRoute } from '#imports'
+import { computed } from 'vue'
 
 definePageMeta({ layout: 'quiz-master' })
 
@@ -154,6 +174,21 @@ const id = route.params.id
 const quiz = ref({})
 const activeTab = ref('details')
 const loading = ref(true)
+
+const youtubeEmbedUrl = computed(() => {
+  const url = quiz.value?.youtube_url
+  if (!url || typeof url !== 'string') return null
+  try {
+    // extract v= or youtu.be/ or embed/ forms
+    const m1 = url.match(/[?&]v=([^&]+)/)
+    if (m1 && m1[1]) return `https://www.youtube.com/embed/${m1[1]}`
+    const m2 = url.match(/youtu\.be\/([^?&]+)/)
+    if (m2 && m2[1]) return `https://www.youtube.com/embed/${m2[1]}`
+    const m3 = url.match(/youtube\.com\/embed\/([^?&]+)/)
+    if (m3 && m3[1]) return `https://www.youtube.com/embed/${m3[1]}`
+    return null
+  } catch (e) { return null }
+})
 
 function tabClass(tab) {
   return activeTab.value === tab
@@ -168,10 +203,51 @@ function difficultyLabel(diff) {
 
 onMounted(async () => {
   try {
-    const res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id), { credentials: 'include' })
+    // Prefer the authenticated quiz-master details endpoint which includes relations
+    let res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id) + '/detail', { credentials: 'include' })
+    // fallback to public attempt-oriented endpoint if detail is not available
+    if (!res.ok) {
+      res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id), { credentials: 'include' })
+    }
     if (res.ok) {
       const json = await res.json()
-      quiz.value = json.quiz || json
+      const serverQuiz = json.quiz || json || {}
+
+      // Normalize into UI-friendly shape
+      const loaded = { ...serverQuiz }
+
+      // timer_seconds -> timer_minutes for display
+      const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
+      loaded.timer_minutes = ts ? Math.floor(Number(ts) / 60) : serverQuiz.timer_minutes ?? null
+
+      loaded.per_question_seconds = serverQuiz.per_question_seconds ?? null
+      loaded.use_per_question_timer = !!serverQuiz.use_per_question_timer
+
+      // attempts/shuffle/access/visibility
+      loaded.attempts_allowed = serverQuiz.attempts_allowed ?? serverQuiz.attempts_allowed
+      loaded.shuffle_questions = typeof serverQuiz.shuffle_questions !== 'undefined' ? !!serverQuiz.shuffle_questions : !!serverQuiz.shuffle
+      loaded.shuffle_answers = typeof serverQuiz.shuffle_answers !== 'undefined' ? !!serverQuiz.shuffle_answers : !!serverQuiz.shuffle_answers
+      loaded.access = serverQuiz.access ?? (serverQuiz.is_paid ? 'paywall' : 'free')
+      loaded.visibility = serverQuiz.visibility ?? serverQuiz.status ?? null
+
+  // normalize taxonomy display fields (support nested objects, name-only fields, or id-only fields)
+  loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? serverQuiz.topicId ?? null
+  loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? serverQuiz.subjectId ?? null
+  loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? serverQuiz.gradeId ?? null
+
+  // prefer nested object if present, else use name fields if available
+  loaded.topic = serverQuiz.topic || (serverQuiz.topic_name ? { id: loaded.topic_id, name: serverQuiz.topic_name } : (serverQuiz.topicName ? { id: loaded.topic_id, name: serverQuiz.topicName } : null))
+  loaded.subject = serverQuiz.subject || (serverQuiz.subject_name ? { id: loaded.subject_id, name: serverQuiz.subject_name } : (serverQuiz.subjectName ? { id: loaded.subject_id, name: serverQuiz.subjectName } : null))
+  loaded.grade = serverQuiz.grade || (serverQuiz.grade_name ? { id: loaded.grade_id, name: serverQuiz.grade_name } : (serverQuiz.gradeName ? { id: loaded.grade_id, name: serverQuiz.gradeName } : null))
+
+      // normalize questions shape so templates can display consistently
+      loaded.questions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions.map((q) => ({
+        ...q,
+        question: q.question || q.text || q.body || '',
+        options: q.options || q.answers || q.options_list || []
+      })) : []
+
+      quiz.value = loaded
     }
   } catch (e) {
     console.error('Failed to load quiz', e)

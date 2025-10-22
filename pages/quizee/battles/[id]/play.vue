@@ -14,9 +14,14 @@
         </template>
         <div class="text-center py-4">
           <p class="text-sm text-gray-600 dark:text-gray-400">The battle will begin once another player joins.</p>
+          <div class="mt-3">
+            <div v-if="countdownActive" class="text-sm text-gray-500">Auto-start in <span class="font-mono font-bold text-indigo-600">{{ waitingCountdown }}</span>s</div>
+            <div v-else-if="forceStartEnabled" class="text-sm text-gray-500">You can start the battle now.</div>
+          </div>
           <div class="mt-6 space-y-3">
             <UButton @click="startWithBot" block color="primary" variant="solid" label="Start with a Bot" />
             <UButton v-if="isInitiator" @click="enableSoloMode" block color="green" variant="outline" label="Take Solo (Subscription Required)" />
+            <UButton v-if="isInitiator" @click="startBattle" :disabled="!canStart" block color="indigo" variant="solid" label="Start Battle" />
           </div>
         </div>
       </UCard>
@@ -41,10 +46,11 @@
             <div class="flex flex-col items-center gap-1">
               <div class="text-2xl sm:text-3xl font-mono font-bold" :class="timerColorClass">{{ displayTime }}</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">Question Timer</div>
-              <div class="text-sm font-mono font-bold mt-1" :class="{'text-red-500': totalTimeRemaining < 60, 'text-orange-500': totalTimeRemaining < 180, 'text-indigo-500': totalTimeRemaining >= 180}">
-                {{ formatTime(totalTimeRemaining) }}
+              <!-- big display above already shows per-question time (displayTime) -->
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">Total Time</div>
+              <div class="text-sm font-mono font-bold mt-1" :class="{'text-red-500': totalTimeLeft < 60, 'text-orange-500': totalTimeLeft < 180, 'text-indigo-500': totalTimeLeft >= 180}">
+                {{ totalDisplayTime }}
               </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Total Time</div>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Q {{ currentIndex + 1 }}/{{ questions.length }}</p>
             </div>
           </div>
@@ -60,14 +66,25 @@
         </div>
 
         <!-- Progress Bar -->
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-3">
-          <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300" :style="{ width: progressPercentage }"></div>
+        <div class="w-full space-y-2 mt-3">
+          <!-- per-quiz question progress -->
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300" :style="{ width: progressPercentage }"></div>
+          </div>
+          <!-- total timer progress (composable) -->
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div :class="['h-2 rounded-full transition-all duration-300', totalTimerColorClass]" :style="{ width: `${totalTimerPercent}%` }"></div>
+          </div>
+          <div class="flex items-center justify-between text-xs text-gray-500 mt-1">
+            <div>Remaining: <span class="font-mono">{{ totalDisplayTime }}</span></div>
+            <div v-if="encouragementMessage" :class="['px-2 py-1 rounded-full text-sm font-semibold', encouragementStyle]">{{ encouragementMessage }} <span v-if="currentStreak > 1" class="ml-1">🔥 {{ currentStreak }}</span></div>
+          </div>
         </div>
       </header>
 
       <!-- Question Area -->
       <main class="flex-1 flex flex-col justify-center">
-        <template v-if="questions.length > 0">
+        <template v-if="!loading && questions.length > 0">
           <transition name="fade-slide" mode="out-in">
             <div :key="currentIndex" class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
               <h2 class="text-lg sm:text-xl font-semibold mb-6 text-center text-gray-900 dark:text-gray-100" v-html="currentQuestion.body"></h2>
@@ -78,6 +95,7 @@
             </div>
           </transition>
         </template>
+        <div v-else-if="loading" class="p-6"><UiSkeleton :count="5" /></div>
         <div v-else class="text-center py-12 text-gray-500 dark:text-gray-400">
           <p>No questions available for this battle.</p>
         </div>
@@ -96,15 +114,46 @@
           label="Next" 
         />
         <UButton 
-          v-else 
-          @click="finishBattle" 
-          :disabled="!allAnswered" 
+          v-else-if="!showConfirm" 
+          @click="confirmFinish" 
+          :disabled="!allAnswered || submitting" 
           color="green" 
           variant="solid" 
           trailing-icon="i-heroicons-check-circle" 
-          label="Finish Battle" 
-        />
+          >
+          <template #default>
+            <svg v-if="submitting" class="w-4 h-4 inline-block mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <span>{{ submitting ? 'Submitting…' : 'Finish Battle' }}</span>
+          </template>
+        </UButton>
+        <UButton v-else type="button" v-if="lastSubmitFailed" @click="submitBattle" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">Retry</UButton>
       </footer>
+
+      <!-- confirmation modal -->
+      <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">Submit Battle</h3>
+                <p class="text-sm text-gray-600">Are you sure you want to submit? You won't be able to change your answers.</p>
+              </div>
+            </div>
+            <div class="flex gap-3 justify-end">
+              <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" @click="showConfirm = false" :disabled="submitting">Cancel</button>
+              <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="submitBattle" :disabled="submitting">
+                <svg v-if="submitting" class="w-4 h-4 inline-block mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+                Submit Battle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -116,6 +165,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
+import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
+import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
+import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
+// navigation composable not required here (we manage currentIndex locally)
+import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -126,37 +180,99 @@ const battle = ref({})
 const isInitiator = computed(() => auth.user && battle.value.initiator_id === auth.user.id)
 const questions = ref([])
 const currentIndex = ref(0)
-const answers = ref({})
+// reuse quiz answers composable so battle answers have same shape and helpers
+const { answers, initializeAnswers, clearSavedAnswers } = useQuizAnswers({ value: { questions: [] } }, id)
 const score = ref(0)
 const opponentScore = ref(0)
 import useQuestionTimer from '~/composables/useQuestionTimer'
-const { timePerQuestion, questionRemaining, questionStartTs, displayTime, timerColorClass, startTimer, stopTimer, resetTimer, recordAndReset, onTimeout } = useQuestionTimer(20)
+const { timePerQuestion, displayTime, timerColorClass, startTimer, stopTimer, resetTimer, recordAndReset, onTimeout } = useQuestionTimer(20)
 
-const totalTimeRemaining = ref(600) // 10 minutes total by default
-let totalTimer = null
+// Submission state (parity with quiz page)
+const submitting = ref(false)
+const lastSubmitFailed = ref(false)
+const submissionMessage = ref('')
+const showConfirm = ref(false)
 
-const formatTime = (seconds) => {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
+// We'll use the shared quiz total-timer composable so battles behave like quizzes
+// Create an adapter that looks like a 'quiz' object to the composable
+const battleAdapter = computed(() => ({
+  questions: questions.value,
+  // prefer explicit battle.time_per_question or settings.time_total_seconds
+  timer_seconds: battle.value?.settings?.time_total_seconds || battle.value?.time_total_seconds || null,
+}))
 
-const startTotalTimer = () => {
-  totalTimer = setInterval(() => {
-    if (totalTimeRemaining.value > 0) {
-      totalTimeRemaining.value--
-    } else {
-      clearInterval(totalTimer)
-      finishBattle() // Auto-submit when total time runs out
-    }
-  }, 1000)
-}
+// useQuizTimer provides unified total timer, displayTime, percent and auto-submit callback
+const { timeLeft: totalTimeLeft, displayTime: totalDisplayTime, timerPercent: totalTimerPercent, timerColorClass: totalTimerColorClass, startTimer: startTotalTimer, stopTimer: stopTotalTimer } = useQuizTimer(battleAdapter, () => finishBattle())
 
 const waitingForOpponent = ref(false)
 const useBot = ref(false)
 const useSolo = ref(false)
 let pollTimer = null
 let _echoChannel = null
+
+// Waiting room countdown (10s) and start control
+const waitingCountdown = ref(10)
+const countdownActive = ref(false)
+const forceStartEnabled = ref(false)
+let waitingInterval = null
+
+const canStart = computed(() => {
+  // Initiator can start when countdown ended or an opponent is present
+  const hasOpponent = !!(battle.value?.opponent || useBot.value || useSolo.value)
+  return isInitiator.value && (hasOpponent || forceStartEnabled.value)
+})
+
+function startWaitingCountdown(seconds = 10) {
+  clearWaitingCountdown()
+  waitingCountdown.value = seconds
+  countdownActive.value = true
+  forceStartEnabled.value = false
+  waitingInterval = setInterval(() => {
+    if (waitingCountdown.value > 0) waitingCountdown.value--
+    if (waitingCountdown.value <= 0) {
+      // countdown finished — allow initiator to force-start
+      forceStartEnabled.value = true
+      countdownActive.value = false
+      clearWaitingCountdown()
+    }
+  }, 1000)
+}
+
+function clearWaitingCountdown() {
+  if (waitingInterval) { clearInterval(waitingInterval); waitingInterval = null }
+}
+
+async function startBattle() {
+  if (!isInitiator.value) return
+  try {
+    loading.value = true
+    // Call backend start endpoint — some backends expose /api/battles/{id}/start
+    const res = await api.postJson(`/api/battles/${id}/start`, {})
+    if (api.handleAuthStatus(res)) { loading.value = false; return }
+    if (!res.ok) {
+      // fallback: try to transition locally (opponent must be present)
+      console.error('start battle failed', await res.json().catch(() => ({})))
+      loading.value = false
+      return
+    }
+    // refresh battle state and close waiting modal
+    const body = await res.json()
+    battle.value = body.battle || body
+    waitingForOpponent.value = false
+    stopTotalTimerIfNeeded()
+    // start the battle timers
+    startTimer()
+    startTotalTimer()
+  } catch (e) {
+    console.error('startBattle error', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function stopTotalTimerIfNeeded() {
+  try { stopTotalTimer() } catch (e) {}
+}
 
 const auth = useAuthStore()
 const cfg = useRuntimeConfig()
@@ -172,7 +288,25 @@ const progressPercentage = computed(() => {
   return `${((currentIndex.value + 1) / questions.value.length) * 100}%`
 })
 
-const allAnswered = computed(() => Object.keys(answers.value).length === questions.value.length)
+// answered percent (0-100) used by enhancements
+const answeredPercent = computed(() => {
+  const total = questions.value.length || 0
+  if (!total) return 0
+  let answered = 0
+  for (const q of questions.value) {
+    const val = answers.value[q.id]
+    if (val === null || val === undefined) continue
+    if (typeof val === 'string' && val === '') continue
+    if (Array.isArray(val) && val.length === 0) continue
+    answered++
+  }
+  return Math.round((answered / total) * 100)
+})
+
+// enhancements (streaks/encouragement) to match quiz UI
+const { currentStreak, encouragementMessage, encouragementStyle, calculateAchievements } = useQuizEnhancements(battleAdapter, answeredPercent, computed(() => currentQuestion.value), answers)
+
+const allAnswered = computed(() => questions.value.length > 0 && Object.keys(answers.value).length === questions.value.length && Object.values(answers.value).every(v => v !== null && v !== undefined))
 
 const opponentName = computed(() => {
   if (useBot.value) return 'Bot Player'
@@ -279,6 +413,14 @@ watch(() => battle.value?.opponent, (newOpponent) => {
     waitingForOpponent.value = false;
   }
 })
+// start countdown when waiting modal opens
+watch(waitingForOpponent, (val) => {
+  if (val) {
+    startWaitingCountdown(10)
+  } else {
+    clearWaitingCountdown()
+  }
+})
 function startWithBot() { useBot.value = true; waitingForOpponent.value = false }
 
 function enableSoloMode() { useSolo.value = true; waitingForOpponent.value = false }
@@ -302,8 +444,9 @@ async function soloComplete() {
     }
     const json = await res.json().catch(() => ({}))
     
-    // Redirect to checkout page which handles subscription checks and results
-    router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
+      // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
+      // Redirect to checkout with battle id — checkout expects `id` for battles
+      router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
   } catch (e) {
     console.error(e)
   } finally {
@@ -313,6 +456,11 @@ async function soloComplete() {
 async function submitBattle() {
   try {
     loading.value = true
+    submitting.value = true
+    lastSubmitFailed.value = false
+    submissionMessage.value = 'Saving answers...'
+    // Calculate achievements before submitting (parity with quiz submit flow)
+    try { calculateAchievements() } catch (e) { console.warn('calculateAchievements failed', e) }
     stopTimer()
     const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: parseInt(qid, 10) || 0, selected: answers.value[qid] })), defer_marking: true }
     const res = await api.postJson(`/api/battles/${id}/submit`, payload)
@@ -320,31 +468,46 @@ async function submitBattle() {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       console.error('submit failed', err)
-      // show a console error and keep the user on the page so they can retry
+      submissionMessage.value = ''
+      lastSubmitFailed.value = true
+      submitting.value = false
       loading.value = false
       return
     }
-    const json = await res.json().catch(() => ({}))
-    
     // Update auth store if server returned updated user or awarded achievements
     try {
-      if (json?.user) {
-        auth.setUser(json.user)
-      } else if (json?.awarded_achievements && json.awarded_achievements.length) {
+      const body = await res.json().catch(() => ({}))
+      if (body?.user) {
+        auth.setUser(body.user)
+      } else if (body?.awarded_achievements && body.awarded_achievements.length) {
         // refresh user to pick up awarded badges/points
         await auth.fetchUser()
       }
+      // clear saved answers after successful submit
+      clearSavedAnswers()
     } catch (e) {
       // ignore
     }
 
-    // Redirect to checkout page which handles results
-    router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
+    // reset submission state
+    submissionMessage.value = ''
+    submitting.value = false
+    lastSubmitFailed.value = false
+
+      // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
+      // Redirect to checkout with battle id — checkout expects `id` for battles
+      router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
   } catch (e) {
     console.error(e)
   } finally {
     loading.value = false
+    submitting.value = false
+    showConfirm.value = false
   }
+}
+
+function confirmFinish() {
+  showConfirm.value = true
 }
 
 onMounted(async () => {
@@ -355,6 +518,8 @@ onMounted(async () => {
       const data = j.battle || j
       battle.value = data
       questions.value = battle.value.questions || []
+      // initialize answers structure for questions
+      initializeAnswers()
       // Prefer top-level convenience field, then settings.time_per_question.
       // If neither is present but a total battle time exists, compute per-question by dividing.
       // Set up timers based on battle settings
@@ -386,8 +551,9 @@ onMounted(async () => {
   } finally {
     loading.value = false
     if (questions.value.length > 0 && !waitingForOpponent.value) {
+      // restart/initialize per-question timer and total timer
       startTimer()
-      startTotalTimer()
+      try { startTotalTimer() } catch (e) {}
     }
   }
 })
@@ -397,7 +563,7 @@ onBeforeUnmount(() => {
   stopPollingForOpponent()
   detachEchoForJoin()
   if (pollTimer) clearInterval(pollTimer)
-  if (totalTimer) clearInterval(totalTimer)
+  try { stopTotalTimer() } catch (e) {}
 })
 </script>
 

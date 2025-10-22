@@ -38,8 +38,6 @@ export default defineNuxtConfig({
     },
     workbox: {
       globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
-      navigateFallback: '/',
-      navigateFallbackAllowlist: [/^\/(?!api\/)/],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -65,6 +63,16 @@ export default defineNuxtConfig({
           options: {
             cacheName: 'api-cache',
             cacheableResponse: { statuses: [0, 200] }
+          }
+        },
+        {
+          // This is the new rule to handle navigation requests.
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'pages',
+            networkTimeoutSeconds: 10, // Optional: fallback to cache after 10s
+            cacheableResponse: { statuses: [200] }
           }
         }
       ]

@@ -67,8 +67,8 @@
               </template>
               <TaxonomyPicker
                 resource="subjects"
-                :gradeId="selectedGrade || null"
-                :perPage="50"
+                :grade-id="selectedGrade || null"
+                :per-page="50"
                 title="Subjects"
                 subtitle="Pick a subject"
                 @selected="onSubjectPicked"
@@ -101,8 +101,8 @@
               <TaxonomyPicker
                 ref="topicsPicker"
                 resource="topics"
-                :subjectId="selectedSubject || null"
-                :perPage="50"
+                :subject-id="selectedSubject || null"
+                :per-page="50"
                 title="Topics"
                 subtitle="Pick or create a topic"
                 aria-labelledby="topic-label"
@@ -144,6 +144,29 @@
             placeholder="Optional: link to a YouTube video"
           />
         </div>
+
+        <!-- Cover image picker -->
+        <ClientOnly>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cover image</label>
+            <div class="flex items-start gap-4">
+              <div class="w-48 h-28 bg-gray-100 rounded overflow-hidden flex items-center justify-center border">
+                <img v-if="previewUrl" :src="previewUrl" class="object-cover w-full h-full" />
+                <div v-else class="text-xs text-gray-500">No cover</div>
+              </div>
+
+              <div class="flex-1">
+                <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onCoverChange" />
+                <div class="flex gap-2 mb-2">
+                  <UButton size="sm" variant="soft" @click="triggerFileInput">Choose file</UButton>
+                  <UButton size="sm" variant="ghost" color="gray" @click="removeCover" :disabled="!hasCover">Remove</UButton>
+                </div>
+                <p class="text-xs text-gray-500">Recommended: JPEG/PNG up to 5MB.</p>
+                <p v-if="modelValue.cover_image" class="text-xs text-slate-500 mt-2">Current uploaded cover will be used until you choose a new file.</p>
+              </div>
+            </div>
+          </div>
+        </ClientOnly>
       </div>
     </div>
 
@@ -185,6 +208,11 @@ import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 
+// small helper to generate a temporary key for window._tmpFiles
+function makeTmpKey() {
+  return `tmpfile_${Date.now()}_${Math.floor(Math.random() * 10000)}`
+}
+
 const props = defineProps({
   modelValue: { type: Object, required: true },
   grades: { type: Array, default: () => [] },
@@ -225,6 +253,31 @@ const topicsPicker = ref(null)
 const api = useApi()
 const alert = useAppAlert()
 const approvalRequestLoading = ref(false)
+
+// Cover picker related refs
+const fileInput = ref(null)
+
+// compute preview URL from either modelValue.cover (tmp key or File) or modelValue.cover_image (server URL)
+const previewUrl = computed(() => {
+  try {
+    const cov = props.modelValue?.cover
+    // if cov is a string and matches a tmp key stored on window, try to read its object URL
+    if (cov && typeof cov === 'string') {
+      const m = window['_tmpFiles'] || {}
+      const f = m[cov]
+      if (f instanceof File) return URL.createObjectURL(f)
+      // if it's a remote URL string, return as-is
+      if (/^https?:\/\//.test(cov)) return cov
+    }
+    // if cov is a File object
+    if (cov instanceof File) return URL.createObjectURL(cov)
+    // fallback to server-provided cover_image
+    if (props.modelValue?.cover_image) return props.modelValue.cover_image
+  } catch (e) {}
+  return null
+})
+
+const hasCover = computed(() => !!(props.modelValue?.cover || props.modelValue?.cover_image))
 
 // Computed lists filtered by selections (client-side fallback)
 const subjectsByGrade = computed(() => {
@@ -341,5 +394,35 @@ function saveAndContinue() {
   // client-side validate before emitting save to avoid server 422
   if (!validateBeforeSave()) return
   emit('save')
+}
+
+function triggerFileInput() {
+  try { fileInput.value && fileInput.value.click() } catch (e) {}
+}
+
+function removeCover() {
+  // remove both cover and cover_image
+  const newModel = { ...props.modelValue }
+  newModel.cover = null
+  newModel.cover_image = null
+  emit('update:modelValue', newModel)
+}
+
+async function onCoverChange(e) {
+  const f = (e.target && e.target.files && e.target.files[0]) || null
+  if (!f) return
+  // store in a global tmp map so preview and other components can access it
+  try {
+  if (!window['_tmpFiles']) window['_tmpFiles'] = {}
+  const key = makeTmpKey()
+  window['_tmpFiles'][key] = f
+    // emit update with cover set to tmp key
+    const newModel = { ...props.modelValue, cover: key }
+    emit('update:modelValue', newModel)
+  } catch (err) {
+    // fallback: emit the File directly
+    const newModel = { ...props.modelValue, cover: f }
+    emit('update:modelValue', newModel)
+  }
 }
 </script>

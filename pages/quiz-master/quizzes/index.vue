@@ -93,7 +93,7 @@
                 <QuizCard
                   v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
                   :key="quiz?.id || idx"
-                  :to="''"
+                  :to="quiz.startLink"
                   :startLink="quiz.startLink"
                   :title="quiz.title"
                   :description="quiz.description"

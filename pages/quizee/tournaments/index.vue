@@ -14,8 +14,8 @@
     </PageHero>
 
     <!-- Tournament filters -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex gap-4">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
+      <div class="flex flex-wrap gap-2 md:gap-4">
         <button 
           v-for="status in ['All', 'Upcoming', 'Ongoing', 'Completed']" 
           :key="status"
@@ -34,7 +34,7 @@
       <button 
         v-if="isAdmin"
         @click="router.push('/admin/tournaments/create')"
-        class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-dark"
+        class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-dark w-full md:w-auto"
       >
         Create Tournament
       </button>

@@ -57,8 +57,8 @@
                 :grade="gradeFilter"
                 :subject="subjectFilter"
                 storageKey="filters:quizee-quiz-masters"
-                @update:grade="val => gradeFilter = val"
-                @update:subject="val => subjectFilter = val"
+                @update:grade="val => gradeFilter.value = val"
+                @update:subject="val => subjectFilter.value = val"
               />
             </div>
           </aside>

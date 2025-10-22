@@ -70,7 +70,7 @@
 
         <!-- CTAs -->
         <div class="relative z-10 flex items-center gap-2">
-          <NuxtLink v-if="to" :to="to" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+          <NuxtLink v-if="to || quizId" :to="to || `/quiz-master/quizzes/${quizId}`" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
             View Details
           </NuxtLink>
           <NuxtLink v-if="primaryHref" :to="primaryHref" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">

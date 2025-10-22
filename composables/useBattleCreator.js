@@ -65,8 +65,8 @@ export function useBattleCreator(options = {}) {
   watch(grade, async (newGrade) => {
     subject.value = ''
     topic.value = ''
-    subjects.value = []
-    topics.value = []
+    subjects.value = [] // clear immediately
+    topics.value = [] // clear immediately
     if (!newGrade) return
 
     try {

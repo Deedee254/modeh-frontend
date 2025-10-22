@@ -196,34 +196,55 @@ function getTopicName(id) {
   return topics.value.find(t => t.id === id)?.name || 'Any'
 }
 
-async function fetchBattle() {
+async function fetchBattleStatus() {
   try {
     const res = await api.get(`/api/battles/${uuid}`)
     if (api.handleAuthStatus(res)) return
     if (res.ok) {
       const data = await res.json()
-      battle.value = data || {}
-    }
-    
-    // Fetch taxonomy data if we have settings
-    if (battle.value?.settings) {
-      if (!grades.value.length) {
-        await fetchGrades()
-      }
-      if (battle.value.settings.grade_id && !subjects.value.length) {
-        await fetchSubjectsByGrade(battle.value.settings.grade_id)
-      }
-      if (battle.value.settings.subject_id && !topics.value.length) {
-        await fetchTopicsBySubject(battle.value.settings.subject_id)
-      }
-    }
+      // Only update opponent and status during polling to avoid UI flickering
+      battle.value.opponent = data.opponent
+      battle.value.opponent_id = data.opponent_id
+      battle.value.status = data.status
 
-    // If started, navigate to the battle play page
-    if (battle.value.status === 'in-progress') {
-      router.push(`/quizee/battles/${battle.value.uuid}/play`)
+      // If started, navigate to the battle play page
+      if (battle.value.status === 'in-progress') {
+        router.push(`/quizee/battles/${battle.value.uuid}/play`)
+      }
     }
   } catch (e) {
     console.error('Failed to fetch battle', e)
+  }
+}
+
+async function fetchBattle() {
+  try {
+    const res = await api.get(`/api/battles/${uuid}`)
+    if (api.handleAuthStatus(res)) return
+    if (res.ok) {
+      // The API `GET /api/battles/{id}` may return the full battle including questions.
+      // For the index/waiting pages we only want metadata (status, players, settings).
+      const data = await res.json()
+      const d = data?.battle || data || {}
+      // Copy only the minimal fields we need and intentionally ignore `questions`.
+      battle.value = {
+        id: d.id,
+        uuid: d.uuid,
+        initiator_id: d.initiator_id,
+        opponent_id: d.opponent_id,
+        status: d.status,
+        settings: d.settings,
+        initiator: d.initiator,
+        opponent: d.opponent,
+        players: d.players || undefined,
+      }
+      // Fetch all necessary taxonomy data once
+      await fetchGrades()
+      if (battle.value.settings?.grade_id) await fetchSubjectsByGrade(battle.value.settings.grade_id)
+      if (battle.value.settings?.subject_id) await fetchTopicsBySubject(battle.value.settings.subject_id)
+    }
+  } catch (e) {
+    console.error('Failed to fetch battle details', e)
   }
 }
 
@@ -231,7 +252,7 @@ async function startPolling() {
   if (polling.value) return
   polling.value = true
   await fetchBattle()
-  intervalId = setInterval(fetchBattle, 3000)
+  intervalId = setInterval(fetchBattleStatus, 3000)
 }
 
 function stopPolling() {

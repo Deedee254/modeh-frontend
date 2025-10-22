@@ -126,6 +126,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAnswerNormalization } from '~/composables/useAnswerNormalization'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
+import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
 const config = useRuntimeConfig()
 const router = useRouter()
 const auth = useAuthStore()
@@ -133,10 +134,23 @@ const auth = useAuthStore()
 // Data
 const challenge = ref(null)
 const questions = ref([])
-const answers = ref({})
+// reuse shared answers composable so daily-challenge answers are same shape as quizzes/battles
+const { answers, initializeAnswers, clearSavedAnswers } = useQuizAnswers({ value: { questions: [] } }, 'daily-challenge')
 const startedAt = ref(null)
 const currentQuestionIndex = ref(0)
-const selectedAnswer = ref(null)
+// selectedAnswer is bound to the shared answers map via computed getter/setter
+const selectedAnswer = computed({
+  get() {
+    const q = currentQuestion.value
+    if (!q || !q.id) return null
+    return answers.value[q.id]
+  },
+  set(v) {
+    const q = currentQuestion.value
+    if (!q || !q.id) return
+    answers.value[q.id] = v
+  }
+})
 const timeRemaining = ref(600) // 10 minutes
 const submitting = ref(false)
 const showResultsModal = ref(false)
@@ -174,21 +188,17 @@ const selectAnswer = (answer) => {
   const { normalizeAnswer } = useAnswerNormalization()
   const normalizedAnswer = normalizeAnswer(answer)
   selectedAnswer.value = normalizedAnswer
-  if (currentQuestion?.id) {
-    answers.value[currentQuestion.id] = normalizedAnswer
-  }
 }
 
 const nextQuestion = () => {
   if (selectedAnswer.value) {
     currentQuestionIndex.value++
-    selectedAnswer.value = answers.value[questions.value[currentQuestionIndex.value]?.id] || null
+    // when moving, selectedAnswer computed will reflect the new question via getter
   }
 }
 
 const previousQuestion = () => {
   currentQuestionIndex.value--
-  selectedAnswer.value = answers.value[questions.value[currentQuestionIndex.value]?.id] || null
 }
 
 const submitChallenge = async () => {
@@ -294,10 +304,13 @@ const fetchChallengeData = async () => {
       params
     })
 
-    // normalize various API shapes
-    questions.value = questionsData?.questions?.data || questionsData?.data || questionsData?.questions || questionsData || []
+  // normalize various API shapes
+  questions.value = questionsData?.questions?.data || questionsData?.data || questionsData?.questions || questionsData || []
 
-    startTimer()
+  // initialize answers structure to match questions
+  initializeAnswers()
+
+  startTimer()
   } catch (error) {
     console.error('Failed to fetch challenge data:', error)
     await router.push('/quizee/daily-challenges')

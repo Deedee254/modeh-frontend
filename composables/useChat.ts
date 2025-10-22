@@ -117,10 +117,10 @@ export default function useChat() {
   })
 
   const allConversations = computed(() => {
-    const convs = threads.value.map(c => ({ id: String(c.other_user_id || c.otherId || c.id), type: 'direct', name: c.other_name || c.otherName || c.name, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, status: c.status || 'offline', avatar: c.avatar_url }))
-    const grps = groups.value.map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, status: null, avatar: g.avatar_url }))
+    const convs = threads.value.map(c => ({ id: String(c.other_user_id || c.otherId || c.id), type: 'direct', name: c.other_name || c.otherName || c.name, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: c.status || 'offline', avatar: c.avatar_url }))
+    const grps = groups.value.map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: g.avatar_url }))
     let all = [...convs, ...grps].sort((a,b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime())
-    if (activeTab.value === 'unread') all = all.filter(x => (x.unread || 0) > 0)
+  if (activeTab.value === 'unread') all = all.filter(x => ((x.unread_count ?? x.unread) || 0) > 0)
     if (searchQuery.value) all = all.filter(c => c.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
     return all
   })
@@ -256,7 +256,10 @@ export default function useChat() {
   async function sendMessage() {
     if (!body.value.trim()) return
     const tempId = 'temp-' + Date.now()
-    const optimistic = { id: tempId, sender_id: userId.value, recipient_id: selectedThreadId.value || null, group_id: selectedGroupId.value || null, content: body.value, created_at: new Date().toISOString(), sending: true }
+    // create an optimistic message. We intentionally do NOT set `sending: true` so the UI
+    // will show the message as delivered (double tick) immediately. We mark it as `_optimistic`
+    // so it can be reconciled when the server response or Echo event arrives.
+    const optimistic = { id: tempId, sender_id: userId.value, recipient_id: selectedThreadId.value || null, group_id: selectedGroupId.value || null, content: body.value, created_at: new Date().toISOString(), _optimistic: true }
     messages.value.push(optimistic)
     const payload: any = { content: optimistic.content }
     if (selectedGroupId.value) payload.group_id = selectedGroupId.value
@@ -266,9 +269,27 @@ export default function useChat() {
     try {
       const res = await api.postJson('/api/chat/send', payload)
       if (api.handleAuthStatus(res)) return
-      if (res.ok) { const json = await res.json(); const idx = messages.value.findIndex(m => m.id === tempId); if (idx !== -1) messages.value.splice(idx, 1, json.message); nextTick(() => scrollToBottom()) }
-      else { const idx = messages.value.findIndex(m => m.id === tempId); if (idx !== -1) messages.value[idx].sending = false, messages.value[idx].failed = true; alert.push({ message: 'Failed to send message', type: 'error' }) }
-    } catch (e) { const idx = messages.value.findIndex(m => m.id === tempId); if (idx !== -1) messages.value[idx].sending = false, messages.value[idx].failed = true; alert.push({ message: 'Network error', type: 'error' }) }
+      if (res.ok) {
+        const json = await res.json()
+        const idx = messages.value.findIndex(m => m.id === tempId)
+        if (idx !== -1) {
+          // replace optimistic with server message
+          messages.value.splice(idx, 1, json.message)
+        } else {
+          // fallback: push it if not present
+          messages.value.push(json.message)
+        }
+        nextTick(() => scrollToBottom())
+      } else {
+        const idx = messages.value.findIndex(m => m.id === tempId)
+        if (idx !== -1) messages.value[idx].sending = false, messages.value[idx].failed = true
+        alert.push({ message: 'Failed to send message', type: 'error' })
+      }
+    } catch (e) {
+      const idx = messages.value.findIndex(m => m.id === tempId)
+      if (idx !== -1) messages.value[idx].sending = false, messages.value[idx].failed = true
+      alert.push({ message: 'Network error', type: 'error' })
+    }
   }
 
   async function createGroup() {
@@ -302,7 +323,29 @@ export default function useChat() {
         const msg = payload.message ?? payload
         upsertThreadFromMessage(msg)
         const otherId = msg.sender_id === userId.value ? msg.recipient_id : msg.sender_id
-        if (selectedThreadId.value && String(selectedThreadId.value) === String(otherId)) { messages.value.push(msg); markThreadRead(otherId) }
+        if (selectedThreadId.value && String(selectedThreadId.value) === String(otherId)) {
+          // Avoid duplicates: if the exact server id already exists, replace it.
+          const existingById = messages.value.findIndex(m => String(m.id) === String(msg.id))
+          if (existingById !== -1) {
+            messages.value.splice(existingById, 1, msg)
+            markThreadRead(otherId)
+            nextTick(() => scrollToBottom())
+            return
+          }
+
+          // Try to find a matching optimistic message (by temp id + content + sender + timestamp proximity)
+          const optIdx = messages.value.findIndex(m => m._optimistic && m.sender_id === msg.sender_id && (m.content === msg.content || m.body === msg.content) && Math.abs(new Date(m.created_at).getTime() - new Date(msg.created_at).getTime()) < 5000)
+          if (optIdx !== -1) {
+            messages.value.splice(optIdx, 1, msg)
+            markThreadRead(otherId)
+            nextTick(() => scrollToBottom())
+            return
+          }
+
+          // No match: push as a new incoming message
+          messages.value.push(msg)
+          markThreadRead(otherId)
+        }
         nextTick(() => scrollToBottom())
       })
     } catch (e) { console.error('attachEcho error', e) }
@@ -318,7 +361,21 @@ export default function useChat() {
         if (msg.group_id == groupId) {
           const gi = groups.value.find(g => g.id == groupId)
           if (gi) { gi.last_message = msg.content; gi.last_at = msg.created_at; gi.unread_count = (gi.unread_count||0) + (msg.sender_id === userId.value ? 0 : 1) }
-          if (selectedGroupId.value && String(selectedGroupId.value) === String(groupId)) messages.value.push(msg)
+          if (selectedGroupId.value && String(selectedGroupId.value) === String(groupId)) {
+            const existingById = messages.value.findIndex(m => String(m.id) === String(msg.id))
+            if (existingById !== -1) {
+              messages.value.splice(existingById, 1, msg)
+              nextTick(() => scrollToBottom())
+              return
+            }
+            const optIdx = messages.value.findIndex(m => m._optimistic && m.sender_id === msg.sender_id && (m.content === msg.content || m.body === msg.content) && Math.abs(new Date(m.created_at).getTime() - new Date(msg.created_at).getTime()) < 5000)
+            if (optIdx !== -1) {
+              messages.value.splice(optIdx, 1, msg)
+              nextTick(() => scrollToBottom())
+              return
+            }
+            messages.value.push(msg)
+          }
         }
         nextTick(() => scrollToBottom())
       })

@@ -318,8 +318,10 @@ async function submit() {
   isLoading.value = true
 
   try {
-    const api = useApi()
-    const response = await api.postJson('/api/register', { ...form, role: role.value })
+  const api = useApi()
+  // Backend exposes role-specific registration endpoints. Choose the correct one based on selected role.
+  const endpoint = role.value === 'quizee' ? '/api/register/quizee' : '/api/register/quiz-master'
+  const response = await api.postJson(endpoint, { ...form, role: role.value })
     if (api.handleAuthStatus(response)) return
     if (!response.ok) {
       const data = await response.json().catch(() => null)

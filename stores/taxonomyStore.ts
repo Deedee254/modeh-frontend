@@ -120,9 +120,12 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
       if (allRes.ok) {
         const allData = await allRes.json().catch(() => null)
         const list = normalizeList(allData)
-  const filtered = list.filter((s: any) => String(s.grade_id || s.grade || '') === String(gradeId))
-        subjects.value = filtered
-        subjectsCache.set(gradeId, filtered)
+        const filtered = list.filter((s: any) => {
+          const g = s.grade_id ?? s.grade ?? (s.grade && typeof s.grade === 'object' ? s.grade.id : null) ?? ''
+          return String(g) === String(gradeId)
+        })
+          subjects.value = filtered
+          subjectsCache.set(gradeId, filtered)
       }
     } catch (e) {
       // ignore

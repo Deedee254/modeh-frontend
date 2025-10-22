@@ -1,9 +1,9 @@
 <template>
   <div>
-    <div v-if="store.isDrawerOpen" class="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm" @click="store.closeDrawer"></div>
+    <div v-if="store.drawerOpen" class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" @click="store.closeDrawer"></div>
     <div
       class="fixed top-0 right-0 z-50 h-full w-full sm:w-96 bg-background shadow-xl transition-transform duration-300 ease-in-out"
-      :class="store.isDrawerOpen ? 'translate-x-0' : 'translate-x-full'"
+  :class="store.drawerOpen ? 'translate-x-0' : 'translate-x-full'"
     >
       <div class="flex items-center justify-between p-4 border-b">
         <h2 class="text-lg font-semibold">Notifications</h2>
@@ -33,8 +33,8 @@
           </div>
         </div>
 
-        <!-- Empty State -->
-        <div v-else-if="!store.items.length" class="p-4 text-center text-muted-foreground">
+  <!-- Empty State -->
+  <div v-else-if="(store.items || []).length === 0" class="p-4 text-center text-muted-foreground">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell h-8 w-8 text-muted-foreground/50"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
           </div>
@@ -44,12 +44,12 @@
         <!-- Notification List -->
         <div v-else class="p-2">
           <!-- New Notifications -->
-          <template v-if="store.newItems.length">
+          <template v-if="newItems.length">
             <div class="px-3 py-2">
               <h3 class="text-sm font-medium text-muted-foreground">New</h3>
             </div>
             <div class="space-y-3">
-              <div v-for="item in store.newItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors border-l-2 border-primary">
+              <div v-for="item in newItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors border-l-2 border-primary">
                 <div class="flex h-10 w-10 items-center justify-center rounded-full bg-muted" v-html="item.icon"></div>
                 <div class="flex-1 space-y-1 overflow-hidden">
                   <div class="flex items-center justify-between">
@@ -63,12 +63,12 @@
           </template>
 
           <!-- Earlier Notifications -->
-          <template v-if="store.earlierItems.length">
+          <template v-if="earlierItems.length">
             <div class="px-3 py-2 mt-2">
               <h3 class="text-sm font-medium text-muted-foreground">Earlier</h3>
             </div>
             <div class="space-y-3">
-              <div v-for="item in store.earlierItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors opacity-70">
+              <div v-for="item in earlierItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors opacity-70">
                 <div class="flex h-10 w-10 items-center justify-center rounded-full bg-muted" v-html="item.icon"></div>
                 <div class="flex-1 space-y-1 overflow-hidden">
                   <div class="flex items-center justify-between">
@@ -87,14 +87,17 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useNotificationsStore } from '~/stores/notifications'
 
 const store = useNotificationsStore()
 const loading = ref(false)
 
+const newItems = computed(() => (store.items || []).filter(i => !i.read))
+const earlierItems = computed(() => (store.items || []).filter(i => i.read))
+
 // Watch for drawer open/close
-watch(() => store.isDrawerOpen, async (open) => {
+watch(() => store.drawerOpen, async (open) => {
   if (open) {
     loading.value = true
     await store.fetchNotifications()
