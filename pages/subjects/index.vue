@@ -57,7 +57,7 @@
     <div class="max-w-7xl mx-auto px-4 py-12">
       <div class="mt-6">
       <div class="flex items-center gap-3">
-        <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="subject-filters">
+  <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="subject-filters">
           <button @click="setFilter('')" :class="filterBtnClass('')" :aria-pressed="activeFilter === ''">All</button>
           <button @click="setFilter('top')" :class="filterBtnClass('top')" :aria-pressed="activeFilter === 'top'">Top</button>
           <button @click="setFilter('featured')" :class="filterBtnClass('featured')" :aria-pressed="activeFilter === 'featured'">Featured</button>
@@ -69,7 +69,7 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 mt-6">
         <aside class="lg:col-span-1">
-          <FiltersSidebar storageKey="filters:subjects" :subject-options="[]" :topic-options="[]" :grade-options="allGrades" :grade="gradeFilter" @update:grade="val => gradeFilter.value = val" />
+          <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="taxTopics.value" :grade-options="allGrades" :grade="gradeFilter" @update:grade="val => gradeFilter.value = val" />
         </aside>
         <main class="lg:col-span-3">
           <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
@@ -122,8 +122,10 @@ import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import { ref, computed, onMounted } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
+const config = useRuntimeConfig()
+
 // Use taxonomy composable for subjects and grades
-const { fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, loadingSubjects, loadingGrades } = useTaxonomy()
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingSubjects, loadingGrades } = useTaxonomy()
 const pending = loadingSubjects
 const error = null
 const subjects = taxSubjects
@@ -138,7 +140,7 @@ const subjectFilter = ref('')
 const allGrades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice(0, 12) : [])
 
 onMounted(async () => {
-  await Promise.all([fetchGrades(), fetchAllSubjects()])
+  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
 })
 
 const gradesCount = computed(() => allGrades.value.length)

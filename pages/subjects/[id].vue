@@ -53,9 +53,9 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <aside class="lg:col-span-1">
             <FiltersSidebar
-              :grade-options="[]"
+              :grade-options="taxGrades.value"
               :subject-options="[subject.value]"
-              :topic-options="[]"
+              :topic-options="paginator?.data || topics"
               :showTopic="false"
               :subject="subjectFilter"
               :topic="filterTopic"
@@ -81,7 +81,7 @@
                 :subject="t.subject?.name || t.subject_name || ''"
                 :description="t.description || t.summary || ''"
                 :quizzesCount="t.quizzes_count || 0"
-                :startLink="`/topics/${t.slug || t.id}`"
+                :startLink="`/topics/${t.id}`"
                 startLabel="View Quizzes"
               />
             </div>
@@ -104,6 +104,7 @@ import TopicCard from '~/components/ui/TopicCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import Pagination from '~/components/Pagination.vue'
 import { ref, onMounted, computed, watch } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { getHeroClass } from '~/utils/heroPalettes'
 
 const route = useRoute()
@@ -127,6 +128,8 @@ const displayTopics = computed(() => {
   return (arr || []).filter(t => (t.name || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q))
 })
 const subject = ref({})
+// taxonomy for sidebar
+const { fetchGrades, fetchLevels, grades: taxGrades } = useTaxonomy()
 const loading = ref(true)
 const error = ref(null)
 
@@ -165,6 +168,8 @@ onMounted(async () => {
   } catch (e) {
     // ignore subject fetch error here
   }
+  // preload taxonomy lists for the sidebar
+  try { fetchGrades(); fetchLevels() } catch (e) {}
   await Promise.all([fetchTopics(), fetchTopics({}), fetchTopics()])
 })
 

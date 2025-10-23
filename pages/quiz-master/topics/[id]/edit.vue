@@ -47,9 +47,10 @@ let selectedFile = null
 onMounted(fetchTopic)
 
 async function fetchTopic() {
+  const config = useRuntimeConfig()
   loading.value = true
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + `/api/topics?per_page=1&q=${encodeURIComponent(id)}`, { credentials: 'include' })
+    const res = await fetch(config.public.apiBase + `/api/topics?per_page=1&q=${encodeURIComponent(id)}`, { credentials: 'include' })
     if (res.ok) {
       const json = await res.json()
       // Try to find by id in returned list

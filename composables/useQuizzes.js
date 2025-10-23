@@ -36,7 +36,8 @@ export default function useQuizzes(initial = {}) {
 
   async function fetchTopics() {
     try {
-      const res = await fetch(useRuntimeConfig().public.apiBase + '/api/topics?approved=1', { credentials: 'include' })
+  const config = useRuntimeConfig()
+  const res = await fetch(config.public.apiBase + '/api/topics?approved=1', { credentials: 'include' })
       if (res.ok) {
         const json = await res.json()
         let payload = json.topics || json.data || json || []
@@ -53,7 +54,8 @@ export default function useQuizzes(initial = {}) {
     try {
       const urlParams = new URLSearchParams()
       Object.entries(params || {}).forEach(([k, v]) => { if (v !== undefined && v !== null) urlParams.set(k, v) })
-      const url = useRuntimeConfig().public.apiBase + '/api/quizzes?approved=1' + (urlParams.toString() ? '&' + urlParams.toString() : '')
+  const config = useRuntimeConfig()
+  const url = config.public.apiBase + '/api/quizzes?approved=1' + (urlParams.toString() ? '&' + urlParams.toString() : '')
       const res = await fetch(url, { credentials: 'include' })
       if (res.ok) {
         const json = await res.json()

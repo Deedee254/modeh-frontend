@@ -1,26 +1,58 @@
 <template>
-  <div class="max-w-4xl mx-auto py-8">
-    <h1 class="text-2xl font-bold mb-4">Education Levels</h1>
-    <div v-if="loading">Loading levels…</div>
-    <div v-else>
-      <div v-for="lvl in levels" :key="lvl.id" class="mb-6 border rounded-lg p-4">
-        <h2 class="text-lg font-semibold">{{ lvl.name }}</h2>
-        <p class="text-sm text-gray-500" v-if="lvl.description">{{ lvl.description }}</p>
-        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div v-for="g in lvl.grades" :key="g.id" class="p-3 border rounded">
-            <NuxtLink :to="`/grades/${g.id}`" class="font-medium">{{ g.name }}</NuxtLink>
-            <div class="text-xs text-gray-500">{{ g.type === 'course' ? 'Course' : 'Grade' }}</div>
+  <div>
+    <PageHero
+      title="Education levels"
+      description="Browse learning levels and the grades or courses available within each level."
+      :breadcrumbs="[{ text: 'Home', href: '/' }, { text: 'Levels', current: true }]"
+    />
+
+    <div class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div v-if="loading" class="text-center py-12">Loading levels…</div>
+
+      <div v-else>
+        <section v-for="lvl in levels" :key="lvl.id" class="mb-12">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold">{{ lvl.name }}</h2>
+              <p v-if="lvl.description" class="text-sm text-slate-500">{{ lvl.description }}</p>
+            </div>
           </div>
-        </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <GradeCard
+              v-for="g in lvl.grades"
+              :key="g.id"
+              :grade="g"
+              :actionLink="getGradeLink(g)"
+              :actionLabel="g.type === 'course' ? 'Open course' : 'Explore grade'"
+            />
+          </div>
+        </section>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+import PageHero from '~/components/ui/PageHero.vue'
+import GradeCard from '~/components/ui/GradeCard.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
+
 const { levels, fetchLevels, loadingLevels } = useTaxonomy()
 const loading = loadingLevels
+
+function getGradeLink(g) {
+  // If the grade is a tertiary/course, link to the courses route; otherwise use grades
+  try {
+    const t = String(g.type || '').toLowerCase()
+    if (t === 'course' || t === 'tertiary') return `/courses/${g.id}`
+  } catch (e) {
+    // ignore and fallback
+  }
+  return `/grades/${g.id}`
+}
+
 onMounted(async () => {
   await fetchLevels()
 })

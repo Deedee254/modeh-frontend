@@ -65,7 +65,7 @@
       <aside class="lg:col-span-1">
         <FiltersSidebar
           :subject-options="SUBJECTS"
-          :topic-options="[]"
+          :topic-options="topics"
           :showTopic="false"
           :grade-options="GRADES"
           :subject="subjectFilter"
@@ -112,14 +112,18 @@ import { ref, computed, onMounted } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { getHeroClass } from '~/utils/heroPalettes'
 
+// Ensure runtime config is available in this setup script
+const config = useRuntimeConfig()
+
 const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingTopics } = useTaxonomy()
 
 const pending = loadingTopics
-const topics = taxTopics
+// derive a safe, reactive array from the taxonomy topics ref
+const topics = computed(() => safeArray(taxTopics.value))
 
 // SEO: page title + description (use topics count if available)
 useHead({
-  title: `${topics.length || 0} Topics • Find topic-aligned quizzes | Modeh`,
+  title: `${topics.value.length || 0} Topics • Find topic-aligned quizzes | Modeh`,
   meta: [{ name: 'description', content: 'Explore topics and micro-skills. Find short, focused quizzes aligned to each topic to practice and improve.' }]
 })
 
@@ -174,7 +178,7 @@ const gradeFilter = ref('')
 
 const filtered = computed(() => {
   const q = String(query.value || '').toLowerCase().trim()
-  let list = topics || []
+  let list = topics.value || []
   if (q) list = list.filter(s => String(s.name || '').toLowerCase().includes(q))
   if (subjectFilter.value) list = list.filter(t => String(t.subject_id || t.subject || '') === String(subjectFilter.value))
   if (gradeFilter.value) list = list.filter(t => String(t.grade || t.grade_id || '') === String(gradeFilter.value))
@@ -198,9 +202,9 @@ function pickPaletteClass(id) {
 }
 
 // Server-side search handler (debounced by UiSearch)
-async function onServerSearch(q) {
-  try {
-    const res = await $fetch(useRuntimeConfig().public.apiBase + '/api/topics', { params: { query: q }, credentials: 'include' })
+  async function onServerSearch(q) {
+    try {
+    const res = await $fetch(config.public.apiBase + '/api/topics', { params: { query: q }, credentials: 'include' })
     const items = res?.topics?.data || res?.topics || res?.data || []
     if (Array.isArray(items)) {
       taxTopics.value.length = 0
@@ -218,7 +222,7 @@ function onSearch(q) { query.value = q; onServerSearch(q) }
 
 // Top topics to show as pills (popular by quizzes_count)
 const topTopics = computed(() => {
-  const all = topics || []
+  const all = topics.value || []
   return all.slice().sort((a,b) => (b.quizzes_count||0) - (a.quizzes_count||0)).slice(0, 12)
 })
 

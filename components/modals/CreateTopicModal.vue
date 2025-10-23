@@ -15,6 +15,14 @@
           <input v-model="name" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3" />
         </div>
         <div>
+          <label class="block text-sm font-medium text-gray-700">Level</label>
+          <select v-model="levelId" class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md">
+            <option value="">-- Select Level --</option>
+            <option v-for="l in levelList" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium text-gray-700">Grade</label>
           <select v-model="gradeId" class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md">
             <option value="">-- Select Grade --</option>
@@ -129,10 +137,11 @@ watch(() => props.modelValue, (nv) => {
   }
 })
 
-const { fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects } = useTaxonomy()
+const { fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, fetchLevels, levels: taxLevels, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
 
 onMounted(async () => {
-  // if parent did not provide grades/subjects, load them from composable
+  // ensure levels are available for the level select, then load grades/subjects if parent didn't provide them
+  await fetchLevels()
   if ((!props.grades || (Array.isArray(props.grades) && props.grades.length === 0)) ) {
     await fetchGrades()
   }
@@ -142,9 +151,32 @@ onMounted(async () => {
 })
 
 // prefer parent-provided lists, otherwise use normalized lists from composable
-import { computed } from 'vue'
-const gradeList = computed(() => (Array.isArray(props.grades) && props.grades.length) ? props.grades : taxGrades.value)
+import { computed, ref } from 'vue'
+// local level selection to filter grades
+const levelId = ref('')
+
+// level list: prefer parent-provided levels, otherwise taxonomy levels
+const levelList = computed(() => (Array.isArray(props.levels) && props.levels.length) ? props.levels : (taxLevels.value || []))
+
+// grade list: prefer parent-provided, otherwise use taxonomy grades; if a level is selected, filter grades by that level
+const gradeList = computed(() => {
+  const raw = (Array.isArray(props.grades) && props.grades.length) ? props.grades : (taxGrades.value || [])
+  if (levelId.value) {
+    return (raw || []).filter(g => String(g.level_id || g.levelId || g.level || '') === String(levelId.value))
+  }
+  return raw
+})
 const subjectList = computed(() => (Array.isArray(props.subjects) && props.subjects.length) ? props.subjects : taxSubjects.value)
+
+// when gradeId changes, request subjects filtered by that grade from server
+watch(gradeId, (nv) => {
+  try { fetchSubjectsByGrade(nv) } catch (e) {}
+})
+
+// when subjectId changes, request topics for that subject so other components can pick them
+watch(subjectId, (nv) => {
+  try { fetchTopicsBySubject(nv) } catch (e) {}
+})
 
 function close() { emit('update:modelValue', false); clear() }
 function clear() { name.value=''; description.value=''; subjectId.value = normalizeSubjectId(props.defaultSubjectId) || '' }

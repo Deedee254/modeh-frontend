@@ -197,9 +197,11 @@ const filteredQuizzes = computed(() => {
   return result
 })
 
+const config = useRuntimeConfig()
+
 async function fetchTopicDetails() {
   try {
-    const res = await fetch(`${useRuntimeConfig().public.apiBase}/api/topics/${topicId}`, { credentials: 'include' })
+  const res = await fetch(`${config.public.apiBase}/api/topics/${topicId}`, { credentials: 'include' })
     if (!res.ok) throw new Error('Failed to fetch topic details.')
     const data = await res.json()
     topic.value = data.topic || data.data
@@ -223,7 +225,7 @@ async function fetchTopicDetails() {
 async function fetchQuizzesForTopic() {
   try {
     const params = new URLSearchParams({ per_page: 100 }) // Fetch all quizzes
-    const res = await fetch(`${useRuntimeConfig().public.apiBase}/api/topics/${topicId}/quizzes?${params.toString()}`, { credentials: 'include' })
+  const res = await fetch(`${config.public.apiBase}/api/topics/${topicId}/quizzes?${params.toString()}`, { credentials: 'include' })
     if (!res.ok) throw new Error('Failed to fetch quizzes for this topic.')
     const data = await res.json()
     quizzes.value = data.quizzes || data.data || []

@@ -22,7 +22,8 @@
 import { ref, onMounted } from 'vue'
 const thread = ref(null)
 const loading = ref(true)
-const apiBase = useRuntimeConfig().public.apiBase
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase
 
 async function load() {
   loading.value = true

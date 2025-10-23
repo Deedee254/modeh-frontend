@@ -110,7 +110,8 @@ function openConversation(chat) {
 async function fetchRecentChats() {
   loading.value = true
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/chat/threads?limit=5', { credentials: 'include' })
+    const config = useRuntimeConfig()
+    const res = await fetch(config.public.apiBase + '/api/chat/threads?limit=5', { credentials: 'include' })
     if (res.ok) {
       const json = await res.json()
       chats.value = (json.conversations || []).map(conv => ({
@@ -119,7 +120,7 @@ async function fetchRecentChats() {
         name: conv.other_name || conv.otherName || conv.name || 'User',
         message: conv.last_message || conv.last_preview || 'No messages',
         time: formatTimeAgo(conv.last_at || conv.updated_at),
-    unread: (conv.unread_count ?? conv.unread) > 0,
+        unread: (conv.unread_count ?? conv.unread) > 0,
         avatar: conv.avatar_url || `/logo/avatar-placeholder.png`
       })).slice(0, 5)
     }

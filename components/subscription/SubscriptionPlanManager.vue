@@ -95,6 +95,8 @@ import { ref, onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 
+const config = useRuntimeConfig()
+
 const alert = useAppAlert()
 const loading = ref(true)
 const plans = ref([])
@@ -118,23 +120,16 @@ function selectPlan(plan) {
 async function fetchPlans() {
   loading.value = true
   try {
-    const [plansRes, currentPlanRes] = await Promise.all([
-      fetch(useRuntimeConfig().public.apiBase + '/api/packages', {
-        credentials: 'include'
-      }),
-      fetch(useRuntimeConfig().public.apiBase + '/api/subscriptions/mine', {
-        credentials: 'include'
-      })
-    ])
+    const packagesRes = await fetch(config.public.apiBase + '/api/packages', { credentials: 'include' })
+    const subsRes = await fetch(config.public.apiBase + '/api/subscriptions/mine', { credentials: 'include' })
 
-    if (plansRes.ok) {
-      const data = await plansRes.json()
+    if (packagesRes.ok) {
+      const data = await packagesRes.json()
       plans.value = data.packages || data.plans || []
     }
 
-    if (currentPlanRes.ok) {
-      const data = await currentPlanRes.json()
-      // backend returns { ok: true, subscriptions: [...], subscription: {...} }
+    if (subsRes.ok) {
+      const data = await subsRes.json()
       currentPlan.value = data.subscription || null
     }
   } catch (e) {
@@ -147,27 +142,22 @@ async function confirmSubscription() {
   if (!selectedPlan.value) return
 
   processing.value = true
-    try {
-      // Backend expects POST /api/packages/{package}/subscribe
-      const res = await fetch(useRuntimeConfig().public.apiBase + `/api/packages/${selectedPlan.value.id}/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          gateway: 'mpesa',
-          phone: selectedPlan.value.phone || null
-        })
-      })
+  try {
+    // Backend expects POST /api/packages/{package}/subscribe
+    const res = await fetch(config.public.apiBase + `/api/packages/${selectedPlan.value.id}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ gateway: 'mpesa', phone: selectedPlan.value.phone || null })
+    })
 
-    if (res.ok) {
-      alert.push({ type: 'success', message: 'Subscription updated successfully', icon: 'heroicons:check-circle' })
-      await fetchPlans() // Refresh data
-    } else {
-      const error = await res.json()
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
       throw new Error(error.message || 'Failed to update subscription')
     }
+
+    alert.push({ type: 'success', message: 'Subscription updated successfully', icon: 'heroicons:check-circle' })
+    await fetchPlans() // Refresh data
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to update subscription', icon: 'heroicons:x-circle' })
   }

@@ -182,7 +182,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, watchEffect } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watchEffect } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { MagnifyingGlassIcon, ChatBubbleOvalLeftEllipsisIcon, Bars3Icon } from '@heroicons/vue/24/outline'
@@ -194,18 +194,21 @@ import UiLevelProgress from '~/components/ui/LevelProgress.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ChatDrawer from '~/components/ChatDrawer.vue'
 
+// Standard runtime config reference
+const config = useRuntimeConfig()
+
 const q = ref('')
 const showSearch = ref(false)
 const isChatDrawerOpen = ref(false)
 const recentChats = ref([])
 const loadingRecentChats = ref(false)
-const unreadCount = ref(0)
+const unreadChatCount = ref(0)
 const onlineCount = ref(0)
 let privateChannel = null
 let presenceChannel = null
 
 const notifications = useNotificationsStore()
-const notificationsCount = computed(() => unreadCount.value || notifications.unreadCount || 0)
+const notificationsCount = computed(() => unreadChatCount.value || notifications.unreadCount || 0)
 const auth = useAuthStore()
 const router = useRouter()
 const { isquizee } = useUserRole()
@@ -217,30 +220,19 @@ const route = useRoute()
 
 const searchPlaceholder = computed(() => isquizee.value ? 'Search quizzes, topics, subjects... (press / to focus)' : 'Search questions, topics, subjects... (press / to focus)')
 
-// This composable seems to be unused or defined elsewhere, so I'm commenting it out.
-// const { sidebarMobileOpen, toggleSidebar } = useSidebar()
-
+// Toggle sidebar / mobile bars
 function onBarsClick() {
   if (import.meta.client) {
-    // On small screens, open the mobile navigation drawer.
-    if (window.innerWidth < 768) { // 768px is md breakpoint in Tailwind
+    if (window.innerWidth < 768) {
       ui.mobileNavOpen = true
     } else {
-      // On larger screens, dispatch a global event to toggle the sidebar.
-      try {
-      window.dispatchEvent(new Event('toggle-sidebar'))
-    } catch (e) {
-      // Fallback: call composable if event dispatch fails
-      try { toggleSidebar() } catch (err) {}
+      try { window.dispatchEvent(new Event('toggle-sidebar')) } catch (e) {}
     }
   }
 }
-}
 
 function onLogout() {
-  if (auth.logout) {
-    auth.logout()
-  }
+  if (auth.logout) auth.logout()
   ui.mobileNavOpen = false
   router.push('/login')
 }
@@ -258,142 +250,44 @@ function goToChat() {
   router.push(isquizee.value ? '/quizee/chat' : '/quiz-master/chat')
 }
 
-function openChatDrawer() {
-  isChatDrawerOpen.value = true
-  fetchRecentChats()
-}
-  async function fetchRecentChats() {
-    loadingRecentChats.value = true
-    try {
-      const res = await fetch(useRuntimeConfig().public.apiBase + '/api/chat/threads?limit=5', { credentials: 'include' })
-      if (res.ok) {
-        const json = await res.json()
-        recentChats.value = json.conversations || []
-      }
-    } catch (e) {
-      console.error('Error fetching recent chats:', e)
-    } finally {
-      loadingRecentChats.value = false
-    }
-  }
-
-function openConversation(chat) {
-  closeAllDrawers()
-  const basePath = isquizee.value ? '/quizee/chat' : '/quiz-master/chat'
-  router.push({
-    path: basePath,
-    query: {
-      user_id: chat.other_user_id || chat.otherId || chat.id,
-      type: 'direct'
-    }
-  })
-}
-
-// Placeholder for real-time chat unread count
-const unreadChatCount = ref(0)
-
 async function updateUnreadCount() {
   try {
-    // The backend exposes threads with unread_count per conversation/group.
-    // Aggregate unread_count from conversations and groups instead of calling a non-existent endpoint.
-    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/chat/threads', { credentials: 'include' })
+    const res = await fetch(config.public.apiBase + '/api/chat/threads', { credentials: 'include' })
     if (res.ok) {
       const json = await res.json()
       let count = 0
       const convs = json.conversations || []
-      for (const c of convs) {
-        count += Number(c.unread_count || 0)
-      }
+      for (const c of convs) count += Number(c.unread_count || 0)
       const groups = json.groups || []
-      for (const g of groups) {
-        count += Number(g.unread_count || 0)
-      }
+      for (const g of groups) count += Number(g.unread_count || 0)
       unreadChatCount.value = count
     }
   } catch (e) {
+    // non-fatal
     console.error('Error fetching unread count:', e)
   }
 }
 
-// Update unread count when messages are received
-if (privateChannel) {
-  privateChannel.listen('.MessageSent', () => {
-    updateUnreadCount()
-  })
+async function openChatDrawer() {
+  await updateUnreadCount()
+  isChatDrawerOpen.value = true
+  await nextTick()
+  try {
+    const width = import.meta.client ? window.innerWidth : 0
+    if (width >= 640 && searchInput.value) {
+      searchInput.value.focus()
+      return
+    }
+    if (mobileSearchInput.value) mobileSearchInput.value.focus()
+  } catch (e) {}
 }
-
-// Initial load of unread count
-onMounted(() => {
-  updateUnreadCount()
-})
-
 
 function closeChatDrawer() {
   isChatDrawerOpen.value = false
 }
 
-function   onOpenNotifications() {
-    notifications.openDrawer()
-  }
-function bindEcho(userId) {
-  let echo = null
-  // Only call inject inside setup or lifecycle
-  if (process.client) {
-    try {
-      echo = window.Echo || null
-    } catch (e) { echo = null }
-  }
-  if (!echo) return
-  try {
-    // align with backend naming: users.{id}
-    privateChannel = echo.private(`users.${userId}`)
-    privateChannel.listen('NotificationSent', (payload) => {
-      unreadCount.value += 1
-      notifications.fetchNotifications() // refetch on new notification
-    })
-
-    presenceChannel = echo.join('presence-battle-arena')
-    presenceChannel.here((users) => { onlineCount.value = users.length })
-    presenceChannel.joining((user) => { onlineCount.value += 1 })
-    presenceChannel.leaving((user) => { onlineCount.value = Math.max(0, onlineCount.value - 1) })
-  } catch (e) {
-    // echo not available or subscribe failed
-  }
-}
-
-function onFocusSearch() {
-  nextTick(() => {
-    try {
-      const width = import.meta.client ? window.innerWidth : 0
-      if (width >= 640 && searchInput.value) {
-        searchInput.value.focus()
-        return
-      }
-      if (mobileSearchInput.value) mobileSearchInput.value.focus()
-    } catch (e) {}
-  })
-}
-
-function onKeyDown(e) {
-  try {
-    const activeTag = (document.activeElement && document.activeElement.tagName) || ''
-    if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(activeTag)) {
-      e.preventDefault()
-      showSearch.value = true
-      onFocusSearch()
-      return
-    }
-  } catch (err) {}
-
-  if (e.key === 'Escape') {
-    showSearch.value = false
-    try {
-      if (searchInput.value) searchInput.value.blur()
-    } catch (e) {}
-    try {
-      if (mobileSearchInput.value) mobileSearchInput.value.blur()
-    } catch (e) {}
-  }
+function onOpenNotifications() {
+  notifications.openDrawer()
 }
 
 function closeAllDrawers() {
@@ -402,17 +296,55 @@ function closeAllDrawers() {
   ui.mobileNavOpen = false
 }
 
+function onKeyDown(e) {
+  // slash to focus search
+  if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+    e.preventDefault()
+    showSearch.value = true
+    nextTick(() => { if (mobileSearchInput.value) mobileSearchInput.value.focus(); else if (searchInput.value) searchInput.value.focus() })
+    return
+  }
+  if (e.key === 'Escape') {
+    showSearch.value = false
+    try { if (searchInput.value) searchInput.value.blur() } catch (err) {}
+    try { if (mobileSearchInput.value) mobileSearchInput.value.blur() } catch (err) {}
+  }
+}
+
+function bindEcho(userId) {
+  let echo = null
+  if (process.client) {
+    try { echo = window.Echo || null } catch (e) { echo = null }
+  }
+  if (!echo) return
+  try {
+    privateChannel = echo.private(`users.${userId}`)
+    privateChannel.listen('NotificationSent', (payload) => {
+      // increment notification count and refetch notifications
+      notifications.fetchNotifications()
+    })
+
+    presenceChannel = echo.join('presence-battle-arena')
+    presenceChannel.here((users) => { onlineCount.value = users.length })
+    presenceChannel.joining((user) => { onlineCount.value += 1 })
+    presenceChannel.leaving((user) => { onlineCount.value = Math.max(0, onlineCount.value - 1) })
+  } catch (e) {
+    // ignore
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
+  // initial unread count
+  updateUnreadCount()
+
   if (import.meta.client) {
     try {
       let userId = auth.user?.id
       if (userId) {
         bindEcho(userId)
       } else {
-        auth.fetchUser().then(() => {
-          if(auth.user?.id) bindEcho(auth.user.id)
-        })
+        auth.fetchUser().then(() => { if (auth.user?.id) bindEcho(auth.user.id) })
       }
       if (auth.user) notifications.attachEchoListeners()
     } catch (e) {}
@@ -425,8 +357,6 @@ onMounted(() => {
       })
     }
   })
-
-  // Removed notifications watch as it's now handled in NotificationDrawer.vue
 })
 
 onBeforeUnmount(() => {

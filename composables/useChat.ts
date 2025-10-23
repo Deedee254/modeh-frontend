@@ -28,7 +28,8 @@ export default function useChat() {
   const alert = useAppAlert()
   const auth = useAuthStore()
   const userId = computed(() => (auth.user as any)?.id)
-  const apiBase = useRuntimeConfig().public.apiBase
+  const config = useRuntimeConfig()
+  const apiBase = config.public.apiBase
   const api = useApi()
   const messageInput = ref<any>(null)
   const dmInput = ref<any>(null)

@@ -56,7 +56,7 @@
             <select v-model="localGrade" @change="() => {}" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
               <option value="">All grades</option>
               <template v-for="(g, idx) in (gradeOptionsByLevel || [])" :key="idx">
-                <option v-if="g" :key="g.id ?? idx" :value="g.id">{{ g.name || ('Grade ' + (g.id ?? idx)) }}</option>
+                <option v-if="g" :key="g.id ?? idx" :value="g.id">{{ g.display_name || g.name || ('Grade ' + (g.id ?? idx)) }}</option>
               </template>
             </select>
           </div>
@@ -116,7 +116,7 @@ const collapsed = ref(false)
 const cookieCollapsed = props.storageKey ? useCookie(props.storageKey + ':collapsed') : null
 
 // taxonomy composable (single instance)
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels: taxLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels } = useTaxonomy()
+const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels: taxLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
 
 // compute label lookups from either props.options or taxonomy composable
 const gradeLookup = computed(() => {
@@ -135,7 +135,7 @@ const topicLookup = computed(() => {
 const activeGradeLabel = computed(() => {
   if (!localGrade.value) return ''
   const g = gradeLookup.value[String(localGrade.value)]
-  return g ? (g.name || g.title || g.label || String(g.id)) : String(localGrade.value)
+  return g ? (g.display_name || g.name || g.title || g.label || String(g.id)) : String(localGrade.value)
 })
 const activeLevelLabel = computed(() => {
   if (!localLevel.value) return ''
@@ -221,14 +221,6 @@ watch(collapsed, (v) => {
   }
 })
 // persist local fields too so users don't lose in-flight filters
-watch(localSubject, (v) => {
-  if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':subject', String(v)) } catch (e) {} }
-  emit('update:subject', v)
-})
-watch(localTopic, (v) => {
-  if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':topic', String(v)) } catch (e) {} }
-  emit('update:topic', v)
-})
 watch(localGrade, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':grade', String(v)) } catch (e) {} }
   // when grade changes, clear dependent subject/topic selections
@@ -236,7 +228,22 @@ watch(localGrade, (v) => {
   localSubject.value = ''
   localTopic.value = ''
   emit('update:grade', v)
+  // ask the taxonomy composable to fetch subjects for this grade so subject lists are server-filtered
+  try { fetchSubjectsByGrade(v) } catch (e) {}
 })
+
+watch(localSubject, (v) => {
+  if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':subject', String(v)) } catch (e) {} }
+  emit('update:subject', v)
+  // preload topics for the selected subject via taxonomy composable
+  try { fetchTopicsBySubject(v) } catch (e) {}
+})
+  watch(localSubject, (v) => {
+    if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':subject', String(v)) } catch (e) {} }
+    emit('update:subject', v)
+    // preload topics for the selected subject via taxonomy composable
+    try { fetchTopicsBySubject(v) } catch (e) {}
+  })
 watch(localLevel, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':level', String(v)) } catch (e) {} }
   // when level changes, clear grade/subject/topic

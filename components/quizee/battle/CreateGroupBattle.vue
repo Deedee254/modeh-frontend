@@ -19,6 +19,13 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
+            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Level</label>
+            <select v-model="level" class="w-full rounded-md border px-3 py-2">
+              <option value="">All levels</option>
+              <option v-for="l in (levels || [])" :key="l.id" :value="l.id">{{ l.name }}</option>
+            </select>
+          </div>
+          <div>
             <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Grade</label>
             <USelect v-model="grade" :options="grades" placeholder="Select grade" />
           </div>
@@ -119,7 +126,7 @@ const maxPlayerOptions = [
   { label: '16 Players', value: 16 },
 ]
 
-const { grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: 'group', battleName, maxPlayers })
+const { level, grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, levels, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: 'group', battleName, maxPlayers })
 
 const subjectPicker = ref(null)
 const topicPicker = ref(null)

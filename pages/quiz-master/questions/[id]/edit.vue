@@ -32,9 +32,10 @@ const error = ref('')
 const question = ref(null)
 
 onMounted(async () => {
+  const config = useRuntimeConfig()
   loading.value = true
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + `/api/questions/${encodeURIComponent(id)}`, { credentials: 'include' })
+    const res = await fetch(config.public.apiBase + `/api/questions/${encodeURIComponent(id)}`, { credentials: 'include' })
     if (!res.ok) throw new Error('Failed to load question')
     const json = await res.json()
     question.value = json.question || json

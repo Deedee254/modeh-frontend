@@ -1,0 +1,94 @@
+<template>
+  <div>
+    <PageHero
+      title="Courses"
+      description="Browse all tertiary courses available on the platform"
+      :showSearch="true"
+    />
+
+    <div class="max-w-6xl mx-auto px-4 py-12">
+      <div v-if="loading" class="text-center py-12">Loading courses…</div>
+
+      <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <aside class="lg:col-span-1">
+          <FiltersSidebar
+            :subject-options="taxSubjects.value"
+            :grade-options="taxGrades.value"
+            :showTopic="false"
+            :subject="subjectFilter"
+            :grade="gradeFilter"
+            :level="levelFilter"
+            storageKey="filters:courses"
+            @update:subject="val => subjectFilter.value = val"
+            @update:grade="val => gradeFilter.value = val"
+            @update:level="val => levelFilter.value = val"
+            @apply="() => {}"
+          />
+        </aside>
+
+        <main class="lg:col-span-3">
+          <div v-if="coursesFiltered.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No courses found.</div>
+
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <GradeCard
+              v-for="c in coursesFiltered"
+              :key="c.id"
+              :grade="c"
+              :actionLink="`/courses/${c.id}`"
+              :actionLabel="'Open course'"
+            />
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import useTaxonomy from '~/composables/useTaxonomy'
+import PageHero from '~/components/ui/PageHero.vue'
+import GradeCard from '~/components/ui/GradeCard.vue'
+
+const config = useRuntimeConfig()
+const courses = ref([])
+const loading = ref(true)
+
+// taxonomy for sidebar options
+const { subjects: taxSubjects, grades: taxGrades, levels: taxLevels, fetchAllSubjects, fetchGrades, fetchLevels } = useTaxonomy()
+
+const subjectFilter = ref('')
+const gradeFilter = ref('')
+const levelFilter = ref('')
+
+const coursesFiltered = computed(() => {
+  let list = Array.isArray(courses.value) ? courses.value.slice() : []
+  if (subjectFilter.value) list = list.filter(c => Array.isArray(c.subjects) ? c.subjects.some(s => String(s.id) === String(subjectFilter.value)) : false)
+  if (gradeFilter.value) list = list.filter(c => String(c.grade_id || c.grade || '') === String(gradeFilter.value))
+  if (levelFilter.value) list = list.filter(c => String(c.level_id || (c.grade && c.grade.level_id) || '') === String(levelFilter.value))
+  return list
+})
+
+async function fetchCourses() {
+  loading.value = true
+  try {
+    const res = await $fetch(`${config.public.apiBase}/api/grades`)
+    const list = (res && res.grades && Array.isArray(res.grades.data)) ? res.grades.data : (Array.isArray(res?.grades) ? res.grades : (Array.isArray(res) ? res : []))
+    // Filter to items stored as courses (type === 'course' or 'tertiary')
+    courses.value = (Array.isArray(list) ? list : []).filter(g => String(g.type || '').toLowerCase() === 'course' || String(g.type || '').toLowerCase() === 'tertiary')
+  } catch (e) {
+    courses.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchCourses()
+  // ensure sidebar lists are available
+  fetchAllSubjects()
+  fetchGrades()
+  fetchLevels()
+})
+</script>

@@ -48,6 +48,8 @@
 import { ref, onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
+const config = useRuntimeConfig()
+
 const alert = useAppAlert()
 const loading = ref(true)
 const history = ref([])
@@ -73,7 +75,7 @@ function formatAmount(amount) {
 async function fetchHistory() {
   loading.value = true
   try {
-    const res = await fetch(useRuntimeConfig().public.apiBase + '/api/subscriptions/history', {
+    const res = await fetch(config.public.apiBase + '/api/subscriptions/history', {
       credentials: 'include'
     })
     if (res.ok) {

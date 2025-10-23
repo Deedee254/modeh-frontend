@@ -55,6 +55,13 @@
               <div v-if="showQuizzesDropdown" class="absolute top-full left-1/2 mt-4 -translate-x-1/2 w-[95vw] max-w-5xl bg-white dark:bg-slate-800 rounded-xl shadow-2xl z-50 border dark:border-slate-700 py-6 px-6">
                 <!-- responsive: 1 col (xs), 2 cols (sm), 4 cols (md+) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                  <NuxtLink v-if="!isAuthed" to="/levels" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
+                    <div class="w-12 h-12 bg-pink-50 text-pink-700 rounded flex items-center justify-center font-semibold text-lg">L</div>
+                    <div>
+                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Levels</div>
+                      <div class="text-sm text-slate-500 dark:text-slate-400">Browse by level</div>
+                    </div>
+                  </NuxtLink>
                   <NuxtLink to="/quizzes" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
                     <div class="w-12 h-12 bg-indigo-100 text-indigo-700 rounded flex items-center justify-center font-semibold text-lg">Q</div>
                     <div>
@@ -68,6 +75,14 @@
                     <div>
                       <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Grades</div>
                       <div class="text-sm text-slate-500 dark:text-slate-400">Find quizzes by grade level</div>
+                    </div>
+                  </NuxtLink>
+
+                  <NuxtLink to="/courses" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-700 rounded flex items-center justify-center font-semibold text-lg">C</div>
+                    <div>
+                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Courses</div>
+                      <div class="text-sm text-slate-500 dark:text-slate-400">Tertiary courses</div>
                     </div>
                   </NuxtLink>
 
@@ -163,6 +178,10 @@
                 <div class="font-semibold">Quizzes</div>
                 <div class="text-xs text-slate-500">All quizzes</div>
               </NuxtLink>
+              <NuxtLink v-if="!isAuthed" to="/levels" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
+                <div class="font-semibold">Levels</div>
+                <div class="text-xs text-slate-500">Browse by level</div>
+              </NuxtLink>
               <NuxtLink to="/grades" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
                 <div class="font-semibold">Grades</div>
                 <div class="text-xs text-slate-500">By grade</div>
@@ -196,8 +215,9 @@
 
 <script setup>
 import ThemeToggle from '~/components/ThemeToggle.vue'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from '#imports'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 const auth = useAuthStore?.() || null
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
@@ -206,6 +226,17 @@ const showMobileMenu = ref(false)
 const showQuizzesDropdown = ref(false)
 const showSearch = ref(false)
 const route = useRoute()
+
+// preload taxonomy levels so unauthenticated users can navigate to levels/filters
+const { fetchLevels } = useTaxonomy()
+onMounted(async () => {
+  try {
+    await fetchLevels()
+  } catch (e) {
+    // non-fatal: navigation can still work without levels
+    console.debug('Failed to preload levels in header', e)
+  }
+})
 
 const userInitials = computed(() => {
   if (!auth?.user) return 'U'

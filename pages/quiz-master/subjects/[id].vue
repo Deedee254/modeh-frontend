@@ -83,12 +83,12 @@ const topics = ref([])
 const loading = ref(true)
 const error = ref(null)
 
+const config = useRuntimeConfig()
+
 async function fetchSubjectDetails() {
   try {
-    const res = await fetch(`${useRuntimeConfig().public.apiBase}/api/subjects/${subjectId}`, { credentials: 'include' })
-    if (!res.ok) {
-      throw new Error('Failed to fetch subject details.')
-    }
+    const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}`, { credentials: 'include' })
+    if (!res.ok) throw new Error('Failed to fetch subject details.')
     const data = await res.json()
     subject.value = data.subject || data.data
   } catch (e) {
@@ -100,26 +100,27 @@ async function fetchSubjectDetails() {
 async function fetchTopicsForSubject() {
   try {
     // Prefer composable cache if available
-    const { fetchTopicsBySubject, topics: taxTopics } = useTaxonomy()
-    await fetchTopicsBySubject(subjectId)
+    const { fetchTopicsBySubject, topics: taxTopics, fetchGrades } = useTaxonomy()
+    // attempt to prime from composable cache
+    if (fetchTopicsBySubject) await fetchTopicsBySubject(subjectId)
     if (Array.isArray(taxTopics.value) && taxTopics.value.length) {
       topics.value = taxTopics.value
       return
     }
+
     // fallback to direct fetch
-    const params = new URLSearchParams({ approved: 1, per_page: 100 }) // Fetch all topics for the subject
-    const res = await fetch(`${useRuntimeConfig().public.apiBase}/api/subjects/${subjectId}/topics?${params.toString()}`, { credentials: 'include' })
-    if (!res.ok) {
-      throw new Error('Failed to fetch topics for this subject.')
-    }
+    const params = new URLSearchParams({ approved: 1, per_page: 100 })
+    const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}/topics?${params.toString()}`, { credentials: 'include' })
+    if (!res.ok) throw new Error('Failed to fetch topics for this subject.')
     const data = await res.json()
-    topics.value = (data.topics || data.data || []).filter(t => t)
+    topics.value = (data.topics || data.data || []).filter(Boolean)
+
     // warm grade and subject caches for UI consistency
     try {
       if (subject.value) {
         await Promise.all([
-          fetchGrades(),
-          fetchTopicsBySubject(subjectId),
+          fetchGrades ? fetchGrades() : Promise.resolve(),
+          fetchTopicsBySubject ? fetchTopicsBySubject(subjectId) : Promise.resolve(),
         ])
       }
     } catch (e) {

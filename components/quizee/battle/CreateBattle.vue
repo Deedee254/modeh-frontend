@@ -2,6 +2,13 @@
     <div class="p-2">
     <div class="space-y-4">
         <div>
+          <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Level</label>
+          <select v-model="level" class="w-full rounded-md border px-3 py-2">
+            <option value="">All levels</option>
+            <option v-for="l in (levels || [])" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+        </div>
+        <div>
           <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Grade</label>
           <USelect v-model="grade" :options="grades" placeholder="Select grade" />
         </div>
@@ -83,7 +90,7 @@ import useTaxonomy from '~/composables/useTaxonomy'
 
 const emit = defineEmits(['battleCreated'])
 
-const { grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: '1v1' })
+const { level, grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, levels, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: '1v1' })
 const totalTimeMinutes = ref(null)
 
 const subjectPicker = ref(null)

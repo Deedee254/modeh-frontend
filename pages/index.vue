@@ -195,10 +195,11 @@
           <p class="mt-3 text-slate-600">Browse the same rich subject cards you’ll find on the subjects page, with quiz and topic counts to help you choose where to start.</p>
         </header>
 
-<div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
           <SubjectCard
             v-for="subject in safeArray(filteredSubjects).slice(0,4)"
             :key="subject.id"
+            :subject="subject"
             :title="subject.name"
             :subtitle="`Grades ${ Array.isArray(subject.grades) ? subject.grades.map(g => g.name || g.id).join(', ') : subject.grade?.name || subject.grade_id || 'All' }`"
             :image="subject.image"
@@ -227,12 +228,13 @@
           <p class="mt-3 text-slate-600">Explore learning levels such as Early Years, Primary, Secondary and Tertiary (courses).</p>
         </header>
 
-        <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-6">
+        <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           <LevelCard
             v-for="lvl in safeArray(levels).slice(0,6)"
             :key="lvl.id"
             :to="`/levels/${lvl.id}`"
             :title="lvl.name"
+            :level="lvl"
             :subtitle="lvl.description || ''"
             :grades_count="(Array.isArray(lvl.grades) ? lvl.grades.length : 0)"
             :actionLink="`/levels/${lvl.id}`"
@@ -253,12 +255,13 @@
           <p class="mt-3 text-slate-600">Discover grade cards with the same metadata used on the grades directory so everything feels familiar across the experience.</p>
         </header>
 
-<div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-6">
+<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           <GradeCard
             v-for="grade in safeArray(GRADES).slice(0,6)"
             :key="grade.id"
             :to="`/grades/${grade.id}`"
             :title="grade.name || grade.id"
+            :grade="grade"
             :quizzes_count="grade.quizzes_count || 0"
             :subjects_count="grade.subjects_count || 0"
             actionLabel="Explore Grade"
@@ -292,11 +295,12 @@
 
 
 
-<div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
+<div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
 
           <TopicCard
             v-for="topic in selectedHomepageTopics"
             :key="topic.id"
+            :topic="topic"
             :title="topic.name"
             :image="topic.image || topic.cover_image || ''"
             :grade="getTopicGradeLabel(topic)"

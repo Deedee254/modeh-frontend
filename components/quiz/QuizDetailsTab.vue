@@ -227,6 +227,7 @@ function makeTmpKey() {
 
 const props = defineProps({
   modelValue: { type: Object, required: true },
+  levels: { type: Array, default: () => [] },
   grades: { type: Array, default: () => [] },
   subjects: { type: Array, default: () => [] },
   topics: { type: Array, default: () => [] },
@@ -362,11 +363,13 @@ async function requestApproval() {
   }
 }
 
-// When grade changes, clear subject/topic and notify parent
-watch(selectedGrade, (nv) => {
+// When grade changes, clear subject/topic and notify parent; also fetch subjects for the selected grade
+const { fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
+watch(selectedGrade, async (nv) => {
   selectedSubject.value = ''
   // clear subject/topic selection and emit null for topic_id (avoid empty string)
   emit('update:modelValue', { ...props.modelValue, grade_id: nv || null, subject_id: null, topic_id: null })
+  try { await fetchSubjectsByGrade(nv) } catch (e) {}
 })
 
 // When level changes, clear grade/subject/topic and notify parent
@@ -390,20 +393,20 @@ function onSubjectPicked(item) {
   emit('update:modelValue', { ...props.modelValue, subject_id: sid, topic_id: null })
   // also notify parent directly so callers can preload topics or update other state
   emit('subject-picked', item)
-    // auto-focus the topics picker so users can quickly pick a topic after selecting a subject
-    try {
-        // topicsPicker is a template ref; access the component instance via .value
-        const tp = topicsPicker?.value || null
-        if (tp && typeof tp.focusSearch === 'function') {
-          // small timeout to allow topics picker to refresh its list
-          setTimeout(() => {
-            try {
-              tp.focusSearch()
-              if (tp.$el && typeof tp.$el.scrollIntoView === 'function') tp.$el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-            } catch (e) {}
-          }, 120)
-        }
-      } catch (e) {}
+  // preload topics for the selected subject via composable
+  try { fetchTopicsBySubject(sid) } catch (e) {}
+  // auto-focus the topics picker so users can quickly pick a topic after selecting a subject
+  try {
+    const tp = topicsPicker?.value || null
+    if (tp && typeof tp.focusSearch === 'function') {
+      setTimeout(() => {
+        try {
+          tp.focusSearch()
+          if (tp.$el && typeof tp.$el.scrollIntoView === 'function') tp.$el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        } catch (e) {}
+      }, 120)
+    }
+  } catch (e) {}
 }
 
 function onTopicPicked(item) {

@@ -122,8 +122,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { useAppAlert } from '~/composables/useAppAlert'
 
+const config = useRuntimeConfig()
 definePageMeta({
   layout: 'quiz-master',
 })
@@ -144,9 +146,17 @@ const errors = ref({})
 const isSubmitting = ref(false)
 const imagePreview = ref('')
 
-// Data from API
-const grades = ref([])
-const subjects = ref([])
+// Data from API (use taxonomy composable)
+const { levels, fetchLevels, fetchGrades, grades: taxGrades, subjects: taxSubjects, fetchSubjectsByGrade } = useTaxonomy()
+
+// local copies for the form
+const grades = taxGrades
+const subjects = taxSubjects
+
+// ensure levels & grades are loaded
+onMounted(async () => {
+  try { await fetchLevels(); await fetchGrades() } catch (e) {}
+})
 
 // Filter subjects based on selected grade (robust to different key names and types)
 const filteredSubjects = computed(() => {
@@ -154,6 +164,9 @@ const filteredSubjects = computed(() => {
   if (!form.value.gradeId) return all
   return all.filter(subject => String(subject.grade_id || subject.gradeId || subject.grade || '') === String(form.value.gradeId))
 })
+
+// When grade changes, ask composable to fetch matching subjects
+watch(() => form.value.gradeId, (nv) => { try { fetchSubjectsByGrade(nv) } catch (e) {} })
 
 // File handling functions
 const handleFileSelect = (event) => {
@@ -237,8 +250,8 @@ onMounted(async () => {
   try {
     // Fetch grades and subjects in parallel
     const [gradesRes, subjectsRes] = await Promise.all([
-      fetch(useRuntimeConfig().public.apiBase + '/api/grades', { credentials: 'include' }),
-      fetch(useRuntimeConfig().public.apiBase + '/api/subjects', { credentials: 'include' })
+      fetch(config.public.apiBase + '/api/grades', { credentials: 'include' }),
+      fetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
     ])
 
     if (gradesRes.ok && subjectsRes.ok) {

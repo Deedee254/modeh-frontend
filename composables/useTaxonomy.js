@@ -1,5 +1,8 @@
 import { ref } from 'vue'
 
+// singleton instance so multiple components share the same taxonomy state
+let _singleton = null
+
 function normalizeList(maybe) {
   if (!maybe) return []
 
@@ -79,6 +82,8 @@ function normalizeList(maybe) {
 }
 
 export default function useTaxonomy() {
+  if (_singleton) return _singleton
+
   const grades = ref([])
   const subjects = ref([])
   const topics = ref([])
@@ -94,8 +99,6 @@ export default function useTaxonomy() {
   const topicsCache = new Map()
   const subjectsPageCache = new Map()
   const topicsPageCache = new Map()
-
-  
 
   const config = useRuntimeConfig()
 
@@ -115,8 +118,10 @@ export default function useTaxonomy() {
   }
 
   async function fetchLevels() {
-    if (levels.value.length) return
+    // avoid refetching if we already have levels
+    if (levels.value && levels.value.length) return
     loadingLevels.value = true
+    try { console.debug('useTaxonomy.fetchLevels: starting fetch') } catch (e) {}
     try {
       const res = await fetch(`${config.public.apiBase}/api/levels`, { credentials: 'include' })
       if (!res.ok) return
@@ -131,6 +136,7 @@ export default function useTaxonomy() {
       } else {
         levels.value = list
       }
+      try { console.debug('useTaxonomy.fetchLevels: loaded', (levels.value || []).length, 'levels') } catch (e) {}
     } catch (e) {
       // ignore
     } finally {
@@ -339,7 +345,7 @@ export default function useTaxonomy() {
     }
   }
 
-  return {
+  _singleton = {
     grades,
     subjects,
     topics,
@@ -362,6 +368,8 @@ export default function useTaxonomy() {
     // helper exported for unit tests and other consumers
     normalizeList
   }
+
+  return _singleton
 }
 
 // named export for utility/helper usage in tests

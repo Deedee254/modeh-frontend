@@ -47,6 +47,31 @@ export function useApi() {
     return resp
   }
 
+  // POST JSON and include the current Echo socket id (if available) as X-Socket-Id
+  async function postJsonWithSocket(path: string, body: any) {
+    await ensureCsrf()
+    const xsrf = getXsrfFromCookie()
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    try {
+      if (typeof window !== 'undefined' && (window as any).Echo) {
+        const echo = (window as any).Echo
+        let socketId = null
+        if (typeof echo.socketId === 'function') socketId = echo.socketId()
+        else if (echo.connector && typeof echo.connector.socketId === 'function') socketId = echo.connector.socketId()
+        if (socketId) headers['X-Socket-Id'] = socketId
+      }
+    } catch (e) {}
+
+    const resp = await fetch(config.public.apiBase + path, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body),
+    })
+    return resp
+  }
+
   async function postFormData(path: string, formData: FormData) {
     await ensureCsrf()
     const xsrf = getXsrfFromCookie()
