@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import UiTextarea from '~/components/ui/UiTextarea.vue'
 import { useRuntimeConfig } from '#imports'
 import useApi from '~/composables/useApi'
@@ -151,7 +151,6 @@ onMounted(async () => {
 })
 
 // prefer parent-provided lists, otherwise use normalized lists from composable
-import { computed, ref } from 'vue'
 // local level selection to filter grades
 const levelId = ref('')
 
