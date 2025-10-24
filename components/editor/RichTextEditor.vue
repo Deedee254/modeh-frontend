@@ -1,25 +1,18 @@
 <template>
   <div class="rich-editor">
-    <div class="toolbar mb-2 flex gap-2">
-      <UButton size="sm" variant="soft" class="px-2" @click="toggleBold">B</UButton>
-      <UButton size="sm" variant="soft" class="px-2" @click="toggleItalic">I</UButton>
-      <UButton size="sm" variant="soft" class="px-2" @click="toggleStrike">S</UButton>
-      <UButton size="sm" variant="soft" class="px-2" @click="toggleCodeBlock">Code</UButton>
-      <UButton size="sm" variant="soft" class="px-2" @click="insertInlineMath">
-        <UIcon name="i-heroicons-calculator" class="h-4 w-4 mr-1" />
-        <span class="text-xs">Math</span>
-      </UButton>
-      <div class="ml-auto">
-        <UButton size="sm" variant="ghost" @click="focus">Focus</UButton>
-      </div>
+    <div class="toolbar mb-2 flex flex-wrap gap-1 border-b pb-2">
+      <button @click="toggleBold" title="Bold" class="px-2 py-1 text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700 rounded">B</button>
+      <button @click="toggleItalic" title="Italic" class="px-2 py-1 text-sm italic hover:bg-gray-100 dark:hover:bg-gray-700 rounded">I</button>
+      <button @click="toggleStrike" title="Strikethrough" class="px-2 py-1 text-sm line-through hover:bg-gray-100 dark:hover:bg-gray-700 rounded">S</button>
+      <button @click="toggleCodeBlock" title="Code block" class="px-2 py-1 text-xs font-mono hover:bg-gray-100 dark:hover:bg-gray-700 rounded">Code</button>
+      <button v-if="features?.math" @click="insertInlineMath" title="Insert math formula" class="px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded">ƒ(x)</button>
     </div>
 
-        <div v-if="editor && editor.value">
+        <div v-if="editor && editor.value" class="editor-content">
           <TiptapEditorContent :editor="editor" />
         </div>
         <div v-else>
-          <!-- textarea fallback so the field remains editable before tiptap initializes -->
-          <textarea :value="modelValue || ''" @input="onTextInput" class="w-full min-h-[120px] border rounded p-2"></textarea>
+          <textarea :value="modelValue || ''" @input="onTextInput" placeholder="Enter question text..." class="w-full min-h-[120px] border border-gray-200 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
         </div>
   </div>
 </template>
@@ -77,9 +70,73 @@ defineExpose({
 </script>
 
 <style scoped>
-.editor-root :global(.ProseMirror) {
+.rich-editor {
+  width: 100%;
+}
+
+.editor-content :global(.ProseMirror) {
   outline: none;
   min-height: 120px;
+  padding: 0.75rem;
+  border: 1px solid rgb(229, 231, 235);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  caret-color: rgb(99, 102, 241);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
-.toolbar button { border: 1px solid rgba(0,0,0,0.06); }
+
+.dark .editor-content :global(.ProseMirror) {
+  border-color: rgb(75, 85, 99);
+  background-color: rgb(55, 65, 81);
+  color: rgb(229, 231, 235);
+}
+
+.editor-content :global(.ProseMirror:focus) {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(79, 70, 229), inset 0 0 0 1px rgb(79, 70, 229);
+}
+
+.editor-content :global(.ProseMirror p) {
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.editor-content :global(.ProseMirror p:first-child) {
+  margin-top: 0;
+}
+
+.editor-content :global(.ProseMirror p:last-child) {
+  margin-bottom: 0;
+}
+
+.toolbar {
+  border-color: rgb(229, 231, 235);
+}
+
+.dark .toolbar {
+  border-color: rgb(75, 85, 99);
+}
+
+.toolbar button {
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  color: rgb(107, 114, 128);
+  border: none;
+  cursor: pointer;
+}
+
+.dark .toolbar button {
+  color: rgb(156, 163, 175);
+}
+
+.toolbar button:hover {
+  background-color: rgb(243, 244, 246);
+}
+
+.dark .toolbar button:hover {
+  background-color: rgb(75, 85, 99);
+}
 </style>

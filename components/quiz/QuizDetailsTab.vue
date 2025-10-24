@@ -279,6 +279,7 @@ const selectedGrade = ref(props.modelValue?.grade_id || '')
 const selectedLevel = ref(props.modelValue?.level_id || '')
 const selectedSubject = ref(props.modelValue?.subject_id || '')
 const topicsPicker = ref(null)
+const selectedTopic = ref(props.modelValue?.topic_id || '')
 const api = useApi()
 const alert = useAppAlert()
 const approvalRequestLoading = ref(false)
@@ -406,6 +407,7 @@ watch(() => props.modelValue, (nv) => {
   selectedGrade.value = nv.grade_id || ''
   selectedSubject.value = nv.subject_id || ''
   selectedLevel.value = nv.level_id || ''
+  selectedTopic.value = nv.topic_id || ''
 }, { deep: true })
 
 function onSubjectPicked(item) {
@@ -427,6 +429,24 @@ function onSubjectPicked(item) {
         } catch (e) {}
       }, 120)
     }
+  } catch (e) {}
+}
+
+// Model update handlers used by TaxonomyPicker's v-model (@update:modelValue)
+function onSubjectModelUpdate(v) {
+  try {
+    // v may be an id or an object; normalize for local ref
+    selectedSubject.value = (v && typeof v === 'object') ? (v.id || '') : (v || '')
+    const item = (v && typeof v === 'object') ? v : (props.subjects || []).find(s => String(s.id) === String(v)) || null
+    onSubjectPicked(item)
+  } catch (e) {}
+}
+
+function onTopicModelUpdate(v) {
+  try {
+    selectedTopic.value = (v && typeof v === 'object') ? (v.id || '') : (v || '')
+    const item = (v && typeof v === 'object') ? v : (props.topics || []).find(t => String(t.id) === String(v)) || null
+    onTopicPicked(item)
   } catch (e) {}
 }
 

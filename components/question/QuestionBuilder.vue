@@ -1,10 +1,11 @@
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
   <div class="lg:col-span-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 sm:p-6">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-base font-semibold text-gray-800 dark:text-white">Create question</h3>
         <div class="flex items-center gap-2">
-          <button @click="$emit('cancel')" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">Cancel</button>
+          <button @click="$emit('cancel')" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white px-2 py-1">Cancel</button>
+          <button @click.prevent="showHtmlSource = !showHtmlSource" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white px-2 py-1">{{ showHtmlSource ? 'Hide HTML' : 'Show HTML' }}</button>
         </div>
       </div>
 
@@ -16,6 +17,17 @@
         </div>
 
         <RichTextEditor ref="editorRef" v-model="form.body" :features="{ math: true, code: true }" @error="onEditorError" />
+
+        <!-- Optional: show raw HTML source so users can see tags like <p></p> -->
+        <div v-if="showHtmlSource" class="mt-3">
+          <label class="text-xs text-gray-500 dark:text-gray-300">HTML source</label>
+          <div class="mt-2 relative">
+            <pre class="whitespace-pre-wrap rounded border bg-gray-50 dark:bg-black/60 p-3 text-xs text-gray-800 dark:text-gray-200 overflow-auto max-h-48">
+{{ escapedBody }}
+            </pre>
+            <button @click.prevent="copyHtml" class="absolute top-2 right-2 text-xs bg-white/90 dark:bg-slate-800/80 px-2 py-1 rounded border">Copy</button>
+          </div>
+        </div>
       </div>
 
       <div class="mt-3 grid gap-3 sm:grid-cols-2">
@@ -85,7 +97,7 @@
         </div>
       </div>
 
-      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-700 pt-4">
         <div v-if="['image_mcq','image'].includes(form.type)" class="space-y-2">
           <label class="text-xs text-gray-500 dark:text-gray-300">Image file (optional)</label>
           <div class="flex items-center gap-2 text-sm">
@@ -108,9 +120,9 @@
         </div>
       </div>
 
-      <div class="mt-4 flex items-center justify-end gap-3">
-        <button @click="onReset" class="text-xs text-gray-500 dark:text-gray-300">Reset</button>
-        <button @click="onSave" :disabled="submitting" class="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg font-semibold">
+      <div class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
+        <button @click="onReset" class="text-xs text-gray-500 dark:text-gray-300 w-full sm:w-auto px-4 py-2">Reset</button>
+        <button @click="onSave" :disabled="submitting" class="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg font-semibold w-full sm:w-auto">
           <span v-if="submitting">Saving…</span>
           <span v-else>Save question</span>
         </button>
@@ -206,6 +218,8 @@ const imageFile = ref(null)
 const audioFile = ref(null)
 // ref to the RichTextEditor component to call exposed commands
 const editorRef = ref(null)
+// show raw HTML source toggle for users
+const showHtmlSource = ref(false)
 // which solution step is expanded (-1 = none)
 const expandedStep = ref(-1)
 const submitting = ref(false)
@@ -419,6 +433,25 @@ watch([
   await nextTick()
   // Preview updates are handled by the RichTextEditor; nothing extra required here
 })
+
+// Expose escaped HTML for users who want to see raw tags and a helper to copy it
+const escapedBody = computed(() => {
+  try {
+    return String(form.value.body || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  } catch (e) {
+    return ''
+  }
+})
+
+function copyHtml() {
+  try {
+    const txt = String(form.value.body || '')
+    navigator.clipboard.writeText(txt)
+    alert.push({ message: 'Raw HTML copied to clipboard', type: 'success' })
+  } catch (e) {
+    alert.push({ message: 'Unable to copy HTML', type: 'error' })
+  }
+}
 
 function createAnother() {
   savedQuestion.value = null
