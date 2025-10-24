@@ -1,73 +1,47 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
-    <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-      <div class="mb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+  <div class="min-h-screen bg-gray-50 pb-16">
+    <div class="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div class="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
         <div>
-          <h1 class="text-2xl font-semibold">Create a new quiz</h1>
-          <p class="text-sm text-gray-500">Quick multi-step wizard for quiz-masters</p>
+          <h1 class="text-2xl font-semibold text-slate-900">Create a new quiz</h1>
+          <p class="text-sm text-slate-500">Quick multi-step wizard for quiz-masters</p>
         </div>
-        <!-- Global Publish removed: publish is now triggered from the Questions tab/modal -->
       </div>
 
-    </div>
-  <div class="space-y-4">
-  <nav class="mb-6 flex gap-2 overflow-x-auto rounded-lg bg-muted p-1">
-        <button
-          @click="trySetTab('details')"
-          :class="[
-            'min-w-[92px] sm:min-w-[110px] flex-1 text-center flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md',
-            store.activeTab === 'details'
-              ? 'bg-indigo-600 text-white shadow'
-              : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
-          ]"
-        >
-          <div class="flex items-center justify-center gap-2">
-            <span class="font-semibold">Details</span>
-            <span v-if="store.detailsSaved" class="text-xs text-emerald-600">✓</span>
-          </div>
-        </button>
-
-        <button
-          @click="trySetTab('settings')"
-          :class="[
-            'min-w-[92px] sm:min-w-[110px] flex-1 text-center flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md',
-            store.activeTab === 'settings'
-              ? 'bg-indigo-600 text-white shadow'
-              : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
-          ]"
-        >
-          <div class="flex items-center justify-center gap-2">
-            <span class="font-semibold">Settings</span>
-            <span v-if="store.settingsSaved" class="text-xs text-emerald-600">✓</span>
-          </div>
-        </button>
-
-        <button
-          @click="trySetTab('questions')"
-          :class="[
-            'min-w-[92px] sm:min-w-[110px] flex-1 text-center flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md',
-            store.activeTab === 'questions'
-              ? 'bg-indigo-600 text-white shadow'
-              : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
-          ]"
-        >
-          <div class="flex items-center justify-center gap-2">
-            <span class="font-semibold">Questions</span>
-            <span v-if="store.questionsSaved" class="text-xs text-emerald-600">✓</span>
-          </div>
-        </button>
+      <nav class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <button
+            v-for="tab in tabConfig"
+            :key="tab.key"
+            @click="trySetTab(tab.key)"
+            :class="[
+              'flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition',
+              store.activeTab === tab.key ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+            ]"
+          >
+            <span>{{ tab.label }}</span>
+            <Icon v-if="store[tab.savedFlag]" name="heroicons:check-circle-20-solid" class="h-4 w-4" />
+          </button>
+        </div>
       </nav>
 
-      <div class="rounded-lg border bg-white dark:bg-gray-800 p-4">
-        <div v-if="store.activeTab === 'questions'" class="mb-3 flex items-center gap-2">
-          <div class="text-xs text-gray-500">Bank filters:</div>
-          <div class="flex items-center gap-2">
-            <span v-if="store.quiz?.level_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Level: {{ (levels || []).find(l => String(l.id) === String(store.quiz?.level_id))?.name || store.quiz?.level_id }}</span>
-            <span v-if="store.quiz?.grade_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Grade: {{ (grades || []).find(g => String(g.id) === String(store.quiz?.grade_id))?.name || store.quiz?.grade_id }}</span>
-            <span v-if="store.quiz?.subject_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Subject: {{ (subjects || []).find(s => String(s.id) === String(store.quiz?.subject_id))?.name || store.quiz?.subject_id }}</span>
-            <span v-if="store.quiz?.topic_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Topic: {{ (topics || []).find(t => String(t.id) === String(store.quiz?.topic_id))?.name || store.quiz?.topic_id }}</span>
-          </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <div v-if="store.activeTab === 'questions'" class="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+          <span class="font-semibold uppercase tracking-wide text-slate-500">Bank filters</span>
+          <span v-if="store.quiz?.level_id" class="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-1 text-indigo-700">
+            Level: {{ (levels || []).find(l => String(l.id) === String(store.quiz?.level_id))?.name || store.quiz?.level_id }}
+          </span>
+          <span v-if="store.quiz?.grade_id" class="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-1 text-indigo-700">
+            Grade: {{ (grades || []).find(g => String(g.id) === String(store.quiz?.grade_id))?.name || store.quiz?.grade_id }}
+          </span>
+          <span v-if="store.quiz?.subject_id" class="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-1 text-indigo-700">
+            Subject: {{ (subjects || []).find(s => String(s.id) === String(store.quiz?.subject_id))?.name || store.quiz?.subject_id }}
+          </span>
+          <span v-if="store.quiz?.topic_id" class="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-1 text-indigo-700">
+            Topic: {{ (topics || []).find(t => String(t.id) === String(store.quiz?.topic_id))?.name || store.quiz?.topic_id }}
+          </span>
         </div>
+
         <QuizDetailsTab
           v-if="store.activeTab === 'details'"
           :model-value="store.quiz"
@@ -117,7 +91,7 @@
         />
       </div>
 
-      <div v-if="showBuilder" class="mt-4 rounded-xl border p-3 bg-white shadow-sm">
+      <div v-if="showBuilder" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" @saved="onSaved" @cancel="onCancel" />
       </div>
 
@@ -147,7 +121,7 @@
 
       <UModal v-model="showCreatedModal" :ui="{ width: 'sm:max-w-xl' }">
         <div class="p-4 sm:p-6">
-          <div class="flex items-center justify-between mb-4">
+          <div class="mb-4 flex items-center justify-between">
             <h3 class="text-lg font-semibold">Quiz created</h3>
           </div>
           <div class="space-y-4">
@@ -157,7 +131,7 @@
               <div class="text-sm text-gray-500">Topic: {{ createdPayload?.topic_name || store.quiz?.topic_id || '—' }}</div>
               <div class="text-sm text-gray-500">Questions: {{ store.questions.length }}</div>
             </div>
-            <div class="flex gap-2 justify-end">
+            <div class="flex justify-end gap-2">
               <UButton variant="soft" @click="showCreatedModal = false">Continue editing</UButton>
               <UButton color="primary" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}`) }">View</UButton>
               <UButton color="gray" variant="ghost" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}/edit`) }">Edit</UButton>
@@ -165,7 +139,6 @@
           </div>
         </div>
       </UModal>
-
     </div>
   </div>
 </template>
@@ -188,9 +161,13 @@ import QuestionBankModal from '~/components/bank/QuestionBankModal.vue'
 import { onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
-definePageMeta({ layout: 'quiz-master', title: 'Create quiz',
-  // dynamic description hooked to store state below via functions in template consumers
-})
+definePageMeta({ layout: 'quiz-master', title: 'Create quiz' })
+
+const tabConfig = [
+  { key: 'details', label: 'Details', savedFlag: 'detailsSaved' },
+  { key: 'settings', label: 'Settings', savedFlag: 'settingsSaved' },
+  { key: 'questions', label: 'Questions', savedFlag: 'questionsSaved' },
+]
 
 const store = useCreateQuizStore()
 if (!store.quiz || typeof store.quiz !== 'object') store.quiz = {}
@@ -198,32 +175,16 @@ const route = useRoute()
 const router = useRouter()
 const cfg = useRuntimeConfig()
 
-// don't load quiz here yet; wait until taxonomy helpers & watchers are set up below
-
-function tabClass(t) {
-  // Return a string of classes since template concatenates with other classes
-  if (store.activeTab === t) {
-    return 'text-sm rounded-md bg-indigo-600 text-white shadow'
-  }
-  return 'text-sm rounded-md bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
-}
-
 function trySetTab(tab) {
-  // details tab is always allowed
   if (tab === 'details') { store.setTab('details'); return }
-
-  // moving to settings requires details to be complete (but not auto-saved)
   if (tab === 'settings') {
     if (!store.isDetailsValid) {
       alert.push({ type: 'warning', message: 'Please complete quiz details before moving to settings.' })
       return
     }
-    // allow if details are valid; prefer user to explicitly Save
     store.setTab('settings')
     return
   }
-
-  // moving to questions requires detailsSaved and settingsSaved
   if (tab === 'questions') {
     if (!store.detailsSaved) {
       alert.push({ type: 'warning', message: 'Please save quiz details first.' })
@@ -239,21 +200,14 @@ function trySetTab(tab) {
 }
 
 async function onPublish() {
-  // ensure details saved
   if (!store.quizId) await store.saveDetails()
-  // ensure settings saved
   await store.saveSettings()
-  // submit full quiz (sends questions)
   await store.submitQuiz()
 }
 
-// --- Inline subcomponents ---
-// fetch grades and expose helpers for use in template (avoid runtime templates)
-// also expose loading flags so child components can render spinners/placeholders
 const { fetchGrades, grades, subjects, topics, fetchSubjectsPage, fetchTopicsPage, addTopic, loadingSubjects, loadingTopics, levels, fetchLevels, loadingLevels } = useTaxonomy()
 const alert = useAppAlert()
 
-// local debounce helper for search handlers
 function debounce(fn, wait = 300) {
   let t = null
   return (...args) => {
@@ -275,19 +229,11 @@ const _doTopicSearch = async (q) => {
 const onSubjectSearch = debounce((q) => _doSubjectSearch(q), 350)
 const onTopicSearch = debounce((q) => _doTopicSearch(q), 350)
 
-// If route contains an id, load the quiz after initial taxonomy fetch is ready
 onMounted(async () => {
-  // ensure grades are loaded before attempting to load a quiz and its dependent subjects/topics
   try {
     await fetchGrades()
-    // ensure levels are also loaded so level->grade relationships are available
     try { await fetchLevels() } catch (e) {}
-  } catch (e) {
-    // ignore grade fetch errors; downstream fetches will also handle failures
-  }
-
-  // If the store restored an in-progress draft (no server id) then preload subjects/topics
-  // so the TaxonomyPicker components can resolve the persisted subject/topic selections.
+  } catch (e) {}
   try {
     const g = store.quiz.grade_id
     if (g) {
@@ -298,15 +244,11 @@ onMounted(async () => {
       try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: '' }) } catch (e) {}
     }
   } catch (e) {}
-
   const incomingId = route.query.id
-  // guard against query id being the string 'null' or empty
   if (incomingId && incomingId !== 'null' && !store.quizId) {
     try {
-      // coerce to number when possible
       const coerced = isNaN(Number(incomingId)) ? incomingId : Number(incomingId)
       await store.loadQuiz(coerced)
-      // after loading quiz data, ensure subjects/topics are loaded for the preselected grade/subject
       const g = store.quiz.grade_id
       if (g) {
         try { await fetchSubjectsPage({ gradeId: g, page: 1, perPage: 50, q: '' }) } catch (e) {}
@@ -315,13 +257,10 @@ onMounted(async () => {
       if (s) {
         try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: '' }) } catch (e) {}
       }
-    } catch (e) {
-      // ignore load errors here; store.loadQuiz reports alerts
-    }
+    } catch (e) {}
   }
 })
 
-// create computed bindings for form fields so v-model works reliably with the store
 const title = computed({ get: () => store.quiz.title, set: (v) => (store.quiz.title = v) })
 const description = computed({ get: () => store.quiz.description, set: (v) => (store.quiz.description = v) })
 const grade_id = computed({ get: () => store.quiz.grade_id, set: (v) => (store.quiz.grade_id = v) })
@@ -341,7 +280,7 @@ const showQuestionBank = ref(false)
 function openBuilder() { showBuilder.value = true }
 function onCancel() { showBuilder.value = false }
 function onSaved(saved) { showBuilder.value = false; store.questions.push(saved) }
-function edit(q) { /* navigate to dedicated question editor if desired */ }
+function edit(q) {}
 
 function onAddFromBank(itemOrArray) {
   try {
@@ -351,7 +290,6 @@ function onAddFromBank(itemOrArray) {
     } else {
       store.questions.push(itemOrArray)
     }
-    // close modal after adding
     showQuestionBank.value = false
   } catch (e) {}
 }
@@ -360,7 +298,6 @@ function openTopicModal() {
   showTopicModal.value = true
 }
 
-// watch for newly created quiz payload from the store and show a modal
 watch(() => store.lastCreated, (v) => {
   if (v) {
     createdPayload.value = v
@@ -370,46 +307,30 @@ watch(() => store.lastCreated, (v) => {
 
 async function onTopicCreated(created) {
   if (!created) { showTopicModal.value = false; return }
-  // ensure topics list includes the new topic and select it
   try {
-    // topics is a ref from useTaxonomy
     if (Array.isArray(topics.value)) topics.value.unshift(created)
-    // also insert into taxonomy cache so it's available elsewhere in the app
     try { addTopic(created) } catch (e) {}
     store.quiz.topic_id = created.id
-    // force a server-side refetch for this subject to fully sync caches (optional but recommended)
     try { await fetchTopicsPage({ subjectId: created.subject_id || created.subjectId || created.subject || store.quiz.subject_id, page: 1, perPage: 50, q: '' }) } catch (e) {}
-    // show a toast confirmation
     try { alert.push({ type: 'success', message: `Topic "${created.name || 'Topic'}" created` }) } catch (e) {}
-    // If the topic was auto-approved (subject auto_approve) then mark it approved locally
     if (created.is_approved) {
-      // mark details as saved so the user can move to settings immediately
       store.detailsSaved = true
     }
-  } catch (e) {
-    // ignore
-  }
+  } catch (e) {}
   showTopicModal.value = false
 }
 
-// When the selected grade changes, fetch subjects for that grade
 watch(grade_id, (nv, ov) => {
-  // clear existing subject/topic selection in the quiz
   store.quiz.subject_id = null
   store.quiz.topic_id = null
-  // don't fetch if value didn't actually change (avoid unnecessary calls)
   if (!nv || String(nv) === String(ov)) return
-  try { fetchSubjectsPage({ gradeId: nv, page: 1, perPage: 50, q: '' }) } catch (e) { /* ignore preload errors */ }
+  try { fetchSubjectsPage({ gradeId: nv, page: 1, perPage: 50, q: '' }) } catch (e) {}
 })
 
-// handlers invoked by TaxonomyPicker emits
 function onSelectSubject(item) {
-  // TaxonomyPicker emits an object (subject). store expects subject_id
   store.quiz.subject_id = item?.id ? (Number(item.id) || null) : null
-  // clear topic when subject changes
   store.quiz.topic_id = null
-  // proactively preload topics for the selected subject so the Topics picker shows results immediately
-  try { fetchTopicsPage({ subjectId: item?.id, page: 1, perPage: 50, q: '' }) } catch (e) { /* ignore preload errors */ }
+  try { fetchTopicsPage({ subjectId: item?.id, page: 1, perPage: 50, q: '' }) } catch (e) {}
 }
 
 function onSelectTopic(item) {
@@ -419,7 +340,3 @@ function onSelectTopic(item) {
 function saveDetails() { return store.saveDetails() }
 function saveSettings() { return store.saveSettings() }
 </script>
-
-<style scoped>
-.tab-active { background: #4f46e5; color: white }
-</style>

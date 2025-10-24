@@ -44,71 +44,28 @@
   <div class="flex items-center gap-3">
         <!-- Desktop Navigation -->
           <nav class="hidden md:flex gap-3 text-sm font-medium text-slate-700 dark:text-slate-300 items-center">
-          <div class="relative" @mouseenter="showQuizzesDropdown = true" @mouseleave="showQuizzesDropdown = false">
-            <NuxtLink to="/quizzes" class="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 py-2 px-2 rounded-md transition">
-              <span>Quizzes</span>
-              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </NuxtLink>
+                  <div class="relative" @mouseenter="showQuizzesDropdown = true" @mouseleave="showQuizzesDropdown = false">
+                    <NuxtLink to="/levels" class="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 py-2 px-2 rounded-md transition">
+                      <span>Levels</span>
+                      <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </NuxtLink>
 
-            <!-- Modern dropdown card (larger, 4-column layout) -->
-            <transition name="fade">
-              <div v-if="showQuizzesDropdown" class="absolute top-full left-1/2 mt-4 -translate-x-1/2 w-[95vw] max-w-5xl bg-white dark:bg-slate-800 rounded-xl shadow-2xl z-50 border dark:border-slate-700 py-6 px-6">
-                <!-- responsive: 1 col (xs), 2 cols (sm), 4 cols (md+) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                  <NuxtLink v-if="!isAuthed" to="/levels" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
-                    <div class="w-12 h-12 bg-pink-50 text-pink-700 rounded flex items-center justify-center font-semibold text-lg">L</div>
-                    <div>
-                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Levels</div>
-                      <div class="text-sm text-slate-500 dark:text-slate-400">Browse by level</div>
-                    </div>
-                  </NuxtLink>
-                  <NuxtLink to="/quizzes" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
-                    <div class="w-12 h-12 bg-indigo-100 text-indigo-700 rounded flex items-center justify-center font-semibold text-lg">Q</div>
-                    <div>
-                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">All Quizzes</div>
-                      <div class="text-sm text-slate-500 dark:text-slate-400">Browse and discover quizzes</div>
-                    </div>
-                  </NuxtLink>
-
-                  <NuxtLink to="/grades" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
-                    <div class="w-12 h-12 bg-indigo-50 text-indigo-700 rounded flex items-center justify-center font-semibold text-lg">G</div>
-                    <div>
-                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Grades</div>
-                      <div class="text-sm text-slate-500 dark:text-slate-400">Find quizzes by grade level</div>
-                    </div>
-                  </NuxtLink>
-
-                  <NuxtLink to="/courses" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
-                    <div class="w-12 h-12 bg-emerald-50 text-emerald-700 rounded flex items-center justify-center font-semibold text-lg">C</div>
-                    <div>
-                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Courses</div>
-                      <div class="text-sm text-slate-500 dark:text-slate-400">Tertiary courses</div>
-                    </div>
-                  </NuxtLink>
-
-                  <NuxtLink to="/subjects" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
-                    <div class="w-12 h-12 bg-emerald-50 text-emerald-700 rounded flex items-center justify-center font-semibold text-lg">S</div>
-                    <div>
-                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Subjects</div>
-                      <div class="text-sm text-slate-500 dark:text-slate-400">Browse by subject</div>
-                    </div>
-                  </NuxtLink>
-
-                  <NuxtLink to="/topics" class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 min-h-[72px]" @click="showQuizzesDropdown = false">
-                    <div class="w-12 h-12 bg-amber-50 text-amber-700 rounded flex items-center justify-center font-semibold text-lg">T</div>
-                    <div>
-                      <div class="text-base font-semibold text-slate-800 dark:text-slate-100">Topics</div>
-                      <div class="text-sm text-slate-500 dark:text-slate-400">Narrow down to topics</div>
-                    </div>
-                  </NuxtLink>
-                </div>
-                <div class="mt-6 pt-4 border-t dark:border-t-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <NuxtLink to="/quizee/quizzes" class="inline-block w-full sm:w-auto text-sm px-4 py-2 bg-indigo-600 text-white rounded-md text-center" @click="showQuizzesDropdown = false">Take a quiz</NuxtLink>
-                  <NuxtLink to="/quizzes" class="inline-block w-full sm:w-auto text-sm px-4 py-2 border rounded-md text-center" @click="showQuizzesDropdown = false">Browse quizzes</NuxtLink>
-                </div>
-              </div>
-            </transition>
-          </div>
+                    <transition name="fade">
+                      <div v-if="showQuizzesDropdown" class="absolute top-full left-0 mt-2 w-60 bg-white dark:bg-slate-800 rounded-md shadow-lg z-50 border dark:border-slate-700 p-3">
+                        <div class="max-h-64 overflow-auto">
+                          <ul class="space-y-1">
+                            <li v-for="lvl in headerLevels" :key="lvl.id">
+                              <NuxtLink :to="`/levels/${lvl.slug ?? lvl.id}`" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="showQuizzesDropdown=false">{{ lvl.name }}</NuxtLink>
+                            </li>
+                            <li v-if="!headerLevels || headerLevels.length === 0" class="text-sm text-slate-500 px-2 py-1">No levels found</li>
+                          </ul>
+                        </div>
+                        <div class="border-t mt-2 pt-2">
+                          <NuxtLink to="/courses" class="block text-sm px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="showQuizzesDropdown=false">Courses</NuxtLink>
+                        </div>
+                      </div>
+                    </transition>
+                  </div>
 
           <NuxtLink to="/quiz-masters" class="hover:text-blue-600 dark:hover:text-blue-400 py-2">Quiz Masters</NuxtLink>
           <NuxtLink to="/pricing" class="hover:text-blue-600 dark:hover:text-blue-400 py-2">Pricing</NuxtLink>
@@ -163,6 +120,10 @@
                 <div class="font-semibold">Levels</div>
                 <div class="text-xs text-slate-500">Browse by level</div>
               </NuxtLink>
+              <NuxtLink to="/courses" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
+                <div class="font-semibold">Courses</div>
+                <div class="text-xs text-slate-500">Tertiary courses</div>
+              </NuxtLink>
               <NuxtLink to="/grades" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
                 <div class="font-semibold">Grades</div>
                 <div class="text-xs text-slate-500">By grade</div>
@@ -213,7 +174,7 @@ const route = useRoute()
 // account menu functionality moved into AccountMenu component
 
 // preload taxonomy levels so unauthenticated users can navigate to levels/filters
-const { fetchLevels } = useTaxonomy()
+const { fetchLevels, levels, headerLevels } = useTaxonomy()
 onMounted(async () => {
   try {
     await fetchLevels()

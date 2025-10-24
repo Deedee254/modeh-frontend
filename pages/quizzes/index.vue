@@ -221,19 +221,19 @@ const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchGrades
 // Defensive computed wrappers used by the UI/cards
 const SUBJECTS = computed(() => {
   const list = taxSubjects?.value || []
-  return (Array.isArray(list) ? list : []).slice(0, 12).map(s => ({
+  return (Array.isArray(list) ? list : []).map(s => ({
     slug: s.slug || s.id,
     id: s.id,
     name: s.name || (s.title || 'Subject'),
     quizzes_count: s.quizzes_count || s.quizzes_count || 0,
     image: s.icon || s.image || s.cover_image || null,
-    grade_id: s.grade_id || s.grade_id
+    grade_id: s.grade_id || s.grade || s.grade_id || null
   }))
 })
 
 const GRADES = computed(() => {
   const list = taxGrades?.value || []
-  return Array.isArray(list) ? list.slice(0, 12) : []
+  return Array.isArray(list) ? list.slice() : []
 })
 
 // Top subjects to show as pills (popular by quizzes_count)
@@ -248,7 +248,8 @@ const subjectsByGrade = computed(() => {
   return (SUBJECTS || []).filter(s => {
     if (s.grade_id) return String(s.grade_id) === String(gradeFilter.value)
     if (s.grades && Array.isArray(s.grades)) return s.grades.some(g => String(g.id || g) === String(gradeFilter.value))
-    return true
+    // if subject doesn't have grade info, exclude it when a grade filter is active
+    return false
   })
 })
 

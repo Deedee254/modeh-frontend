@@ -231,8 +231,8 @@ function selectTopic(v) { query.value = '' /* keep search cleared */; /* optiona
 function clear() { query.value = '' }
 
 // Use taxonomy composable to provide subjects/grades for the sidebar
-const SUBJECTS = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value.slice(0, 12).map(s => ({ id: s.id, name: s.name })) : [])
-const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice(0, 12) : [])
+const SUBJECTS = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value.map(s => ({ id: s.id, name: s.name, slug: s.slug || s.id, grade_id: s.grade_id || s.grade })) : [])
+const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice() : [])
 
 onMounted(async () => {
   // initialize taxonomy lists

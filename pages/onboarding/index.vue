@@ -24,7 +24,46 @@
     </div>
 
     <!-- Grade and Subject Selection -->
-    <div v-else-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
+      <!-- Role Selection -->
+      <div v-else-if="!roleSelected" class="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <h2 class="text-xl font-semibold mb-4">Select your role</h2>
+        <form @submit.prevent="submitRole" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">I am a</label>
+            <div class="flex items-center space-x-4">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" v-model="roleForm.role" value="quizee" class="form-radio" />
+                <span>Quizee (student)</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" v-model="roleForm.role" value="quiz-master" class="form-radio" />
+                <span>Quiz Master (teacher)</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Set a password</label>
+            <input
+              v-model="roleForm.password"
+              type="password"
+              required
+              minlength="8"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md"
+              placeholder="Choose a password (min 8 characters)"
+            />
+          </div>
+
+          <div>
+            <button type="submit" class="w-full px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+              Save Role and Password
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Grade and Subject Selection -->
+      <div v-else-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
       <h2 class="text-xl font-semibold mb-4">Education Information</h2>
       <form @submit.prevent="submitGradeAndSubjects" class="space-y-6">
         <!-- Select Grade -->
@@ -148,6 +187,8 @@ useHead(() => ({
 
 // Data for forms
 const institutionForm = ref({ name: '' })
+const roleForm = ref({ role: 'quizee', password: '' })
+const roleSelected = ref(false)
 const gradeForm = ref({ grade_id: '', subjects: [] })
 const grades = ref([])
 const subjects = ref([])
@@ -233,6 +274,27 @@ async function submitGradeAndSubjects() {
   } catch (err) {
     console.error(err)
     error.value = err?.message || 'Failed to save education information'
+  }
+}
+
+async function submitRole() {
+  message.value = null
+  error.value = null
+  try {
+    const stepName = roleForm.value.role === 'quiz-master' ? 'role_quiz-master' : 'role_quizee'
+    await $fetch(config.public.apiBase + '/api/onboarding/step', {
+      method: 'POST',
+      credentials: 'include',
+      body: {
+        step: stepName,
+        data: { role: roleForm.value.role, password: roleForm.value.password }
+      }
+    })
+    roleSelected.value = true
+    message.value = 'Role and password saved.'
+  } catch (err) {
+    console.error(err)
+    error.value = err?.message || 'Failed to save role and password'
   }
 }
 

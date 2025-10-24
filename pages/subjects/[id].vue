@@ -54,7 +54,7 @@
           <aside class="lg:col-span-1">
             <FiltersSidebar
               :grade-options="taxGrades.value"
-              :subject-options="[subject.value]"
+              :subject-options="subjectOptionsForSidebar"
               :topic-options="paginator?.data || topics"
               :showTopic="false"
               :subject="subjectFilter"
@@ -129,8 +129,23 @@ const displayTopics = computed(() => {
 })
 const subject = ref({})
 // taxonomy for sidebar
-const { fetchGrades, fetchLevels, grades: taxGrades } = useTaxonomy()
+const { fetchGrades, fetchLevels, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects } = useTaxonomy()
 const loading = ref(true)
+
+// Provide subject options to the FiltersSidebar: prefer all subjects for the grade when available
+const subjectOptionsForSidebar = computed(() => {
+  try {
+    const all = Array.isArray(taxSubjects.value) && taxSubjects.value.length ? taxSubjects.value : []
+    const gid = subject.value?.grade?.id || subject.value?.grade_id || null
+    if (all.length && gid) {
+      return all.filter(s => String(s.grade_id || s.grade || '') === String(gid))
+    }
+    // fallback: expose current subject only
+    return subject.value ? [subject.value] : []
+  } catch (e) {
+    return subject.value ? [subject.value] : []
+  }
+})
 const error = ref(null)
 
 function resolveIcon(t) { return t.icon || t.image || t.cover_image || '/images/topic-icon.svg' }
@@ -203,7 +218,7 @@ onMounted(async () => {
     // ignore subject fetch error here
   }
   // preload taxonomy lists for the sidebar
-  try { fetchGrades(); fetchLevels() } catch (e) {}
+  try { fetchGrades(); fetchLevels(); fetchAllSubjects() } catch (e) {}
   await Promise.all([fetchTopics(), fetchTopics({}), fetchTopics()])
 })
 

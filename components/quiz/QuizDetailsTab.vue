@@ -81,8 +81,10 @@
                 resource="subjects"
                 :grade-id="selectedGrade || null"
                 :per-page="50"
+                :model-value="selectedSubject || null"
                 title="Subjects"
                 subtitle="Pick a subject"
+                @update:modelValue="onSubjectModelUpdate"
                 @selected="onSubjectPicked"
                 aria-labelledby="subject-label"
               />
@@ -91,7 +93,7 @@
         </div>
 
         <!-- Topic Selection -->
-        <div class="flex items-end gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
           <div class="flex-1">
             <label id="topic-label" class="block text-sm font-medium text-gray-700 mb-1">Topic</label>
             <ClientOnly>
@@ -115,10 +117,12 @@
                 resource="topics"
                 :subject-id="selectedSubject || null"
                 :per-page="50"
+                :model-value="selectedTopic || null"
                 title="Topics"
                 subtitle="Pick or create a topic"
                 aria-labelledby="topic-label"
                 aria-describedby="topic-error"
+                @update:modelValue="onTopicModelUpdate"
                 @selected="onTopicPicked"
               >
                 <template #actions>
@@ -145,7 +149,7 @@
             placeholder="Optional: Add a brief description of this quiz"
           ></textarea>
         </div>
-        
+
         <div>
           <label for="quiz-youtube" class="block text-sm font-medium text-gray-700 mb-1">YouTube URL</label>
           <input
@@ -185,8 +189,8 @@
     <!-- Selection confirmation (render on client to avoid SSR mismatch) -->
     <ClientOnly>
       <div class="mt-4">
-        <div class="bg-white rounded-lg p-3 border text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700">
-          <div class="flex flex-wrap gap-4 items-center">
+        <div class="bg-white rounded-lg border p-3 text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700">
+          <div class="flex flex-wrap items-center gap-4">
             <div class="flex items-center gap-2">
               <span class="text-xs text-slate-500">Level:</span>
               <span class="font-medium">{{ selectedLevelName || '—' }}</span>
@@ -197,11 +201,17 @@
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs text-slate-500">Subject:</span>
-              <span class="font-medium">{{ selectedSubjectName || '—' }}</span>
+              <span class="font-medium flex items-center gap-1">
+                {{ selectedSubjectName || '—' }}
+                <Icon v-if="selectedSubject" name="heroicons:check-circle-20-solid" class="h-4 w-4 text-emerald-500" />
+              </span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs text-slate-500">Topic:</span>
-              <span class="font-medium">{{ selectedTopicName || '—' }}</span>
+              <span class="font-medium flex items-center gap-1">
+                {{ selectedTopicName || '—' }}
+                <Icon v-if="selectedTopic" name="heroicons:check-circle-20-solid" class="h-4 w-4 text-emerald-500" />
+              </span>
             </div>
           </div>
         </div>

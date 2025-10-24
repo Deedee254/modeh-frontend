@@ -220,8 +220,16 @@ onMounted(() => {
   // if caller didn't pass gradeOptions/subjectOptions/topicOptions, fetch the global lists
   try {
     const rawGrades = unref(props.gradeOptions)
-    if ((!Array.isArray(rawGrades) || !rawGrades.length) && (!taxGrades.value || !taxGrades.value.length)) fetchGrades()
-    if ((!taxLevels.value || !taxLevels.value.length)) fetchLevels()
+    // Always attempt to fetch taxonomy lists to ensure filters show up-to-date data.
+    // We await them so the UI can render labels without a later hydration mismatch.
+    (async () => {
+      try {
+        if ((!Array.isArray(rawGrades) || !rawGrades.length) && (!taxGrades.value || !taxGrades.value.length)) await fetchGrades()
+      } catch (e) { console.error('FiltersSidebar.fetchGrades failed', e) }
+      try {
+        await fetchLevels()
+      } catch (e) { console.error('FiltersSidebar.fetchLevels failed', e) }
+    })()
   } catch (e) {}
   try {
     const rawSubjects = unref(props.subjectOptions)

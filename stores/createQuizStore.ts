@@ -110,7 +110,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         function sanitizeQuestionForPayload(q: any) {
         if (!q || typeof q !== 'object') return q
         const copy: any = {}
-        const allowedKeys = ['uid','id','type','text','body','options','answers','correct','corrects','difficulty','marks','fill_parts','media','media_metadata','youtube_url','explanation','tags','solution_steps','is_banked']
+  const allowedKeys = ['uid','id','type','text','body','options','answers','correct','corrects','difficulty','marks','fill_parts','parts','media','media_metadata','youtube_url','explanation','tags','solution_steps','is_banked']
         for (const k of Object.keys(q)) {
           if (!allowedKeys.includes(k)) continue
           const v = (q as any)[k]
@@ -415,7 +415,61 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       // debug: log payload
       try { console.debug(`PATCH /api/quizzes/${quizId.value}/questions`, { questions: questions.value }) } catch (e) {}
-      const res = await api.patchJson(`/api/quizzes/${quizId.value}/questions`, { questions: questions.value })
+      // detect File objects inside questions; if present send as multipart/form-data
+      let hasFiles = false
+      for (const q of questions.value) {
+        try {
+          const potentialFileFields = ['media', 'file', 'media_file', 'media_blob']
+          for (const f of potentialFileFields) {
+            const v = (q as any)[f]
+            if (!v) continue
+            if (typeof File !== 'undefined' && v instanceof File) { hasFiles = true; break }
+            // support temporary keys stored in window._tmpFiles
+            try { if (typeof v === 'string' && typeof window !== 'undefined' && (window as any)['_tmpFiles'] && (window as any)['_tmpFiles'][v]) { hasFiles = true; break } } catch (e) {}
+          }
+        } catch (e) {}
+        if (hasFiles) break
+      }
+
+      let res: Response
+      if (hasFiles) {
+        const form = new FormData()
+        // append questions as JSON
+        form.append('questions', JSON.stringify(questions.value))
+        // append files found in questions
+        for (let i = 0; i < questions.value.length; i++) {
+          const q = questions.value[i]
+          const potentialFileFields = ['media', 'file', 'media_file', 'media_blob']
+          for (const f of potentialFileFields) {
+            try {
+              const v = (q as any)[f]
+              if (!v) continue
+              if (typeof File !== 'undefined' && v instanceof File) {
+                form.append(`question_media[${i}]`, v)
+                continue
+              }
+              // tmp key reference
+              if (typeof v === 'string' && typeof window !== 'undefined' && (window as any)['_tmpFiles'] && (window as any)['_tmpFiles'][v]) {
+                form.append(`question_media[${i}]`, (window as any)['_tmpFiles'][v])
+                continue
+              }
+            } catch (e) {}
+          }
+          // also support question having a uid and a tmp key stored under uid reference
+          try {
+            if (q && q.uid) {
+              const maybe = (q as any).media
+              if (maybe && typeof maybe === 'string' && typeof window !== 'undefined' && (window as any)['_tmpFiles'] && (window as any)['_tmpFiles'][maybe]) {
+                form.append(`question_media[${q.uid}]`, (window as any)['_tmpFiles'][maybe])
+              }
+            }
+          } catch (e) {}
+        }
+        res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
+      } else {
+        res = await api.patchJson(`/api/quizzes/${quizId.value}/questions`, { questions: questions.value })
+      }
+
       if (api.handleAuthStatus && api.handleAuthStatus(res)) return
       if (!res.ok) throw new Error('Failed to save questions')
       questionsSaved.value = true

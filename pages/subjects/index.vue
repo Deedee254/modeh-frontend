@@ -131,13 +131,18 @@ const error = null
 const subjects = taxSubjects
 
 const subjectsCount = computed(() => (subjects || []).length)
-const subjectsForFilters = computed(() => (subjects || []).map(s => ({ id: s.id, name: s.name })))
+const subjectsForFilters = computed(() => (subjects || []).map(s => ({
+  id: s.id,
+  name: s.name,
+  slug: s.slug || s.id,
+  grade_id: s.grade_id || s.grade || (Array.isArray(s.grades) && s.grades.length ? s.grades[0].id : null)
+})))
 
 const query = ref('')
 const gradeFilter = ref('')
 const subjectFilter = ref('')
 
-const allGrades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice(0, 12) : [])
+const allGrades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice() : [])
 
 onMounted(async () => {
   // Load levels first so grades/subjects can be derived and avoid duplicate
@@ -162,7 +167,11 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   let list = subjects || []
   if (q) list = list.filter(s => (s.name || '').toLowerCase().includes(q))
-  if (gradeFilter.value) list = list.filter(s => String(s.grade || s.grade_id || '') === String(gradeFilter.value))
+  if (gradeFilter.value) list = list.filter(s => {
+    if (s.grade || s.grade_id) return String(s.grade || s.grade_id) === String(gradeFilter.value)
+    if (Array.isArray(s.grades) && s.grades.length) return s.grades.some(g => String(g.id || g) === String(gradeFilter.value))
+    return false
+  })
   if (subjectFilter.value) list = list.filter(s => String(s.id) === String(subjectFilter.value) || String(s.slug || s.id) === String(subjectFilter.value))
   return list
 })

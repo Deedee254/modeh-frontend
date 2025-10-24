@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import useApi from '~/composables/useApi'
 
 // singleton instance so multiple components share the same taxonomy state
@@ -174,6 +174,12 @@ export default function useTaxonomy() {
       loadingLevels.value = false
     }
   }
+
+  // Friendly header list: small objects with id,name,slug (slug optional)
+  const headerLevels = computed(() => {
+    if (!levels.value) return []
+    return (levels.value || []).map(l => ({ id: l.id, name: l.name || l.display_name || '', slug: l.slug || null }))
+  })
 
   async function fetchSubjectsByGrade(gradeId) {
     // treat explicit null/undefined/empty-string as no-grade; allow 0 if it were valid
@@ -410,6 +416,7 @@ export default function useTaxonomy() {
     subjects,
     topics,
     levels,
+    headerLevels,
     loadingGrades,
     loadingSubjects,
     loadingTopics,
