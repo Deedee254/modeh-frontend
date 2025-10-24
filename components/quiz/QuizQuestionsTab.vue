@@ -4,7 +4,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
         <h2 class="text-lg font-medium">Questions</h2>
         <div class="flex gap-2 items-center w-full sm:w-auto">
-          <UButton size="sm" variant="soft" @click="$emit('openBank')">Question Bank</UButton>
+          <UButton size="sm" variant="soft" @click="$emit('open-bank')">Question Bank</UButton>
           <UButton size="sm" variant="soft" @click="$emit('preview')">Preview Questions</UButton>
           <UButton size="sm" color="primary" @click="addQuestion">Add Question</UButton>
         </div>
@@ -140,7 +140,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'save', 'publish', 'prev', 'openBank'])
+const emit = defineEmits(['update:modelValue', 'save', 'publish', 'prev', 'open-bank'])
 
 // Question template
 const questionTemplate = {

@@ -109,7 +109,9 @@
     </div>
 
     <!-- Chat Drawer -->
-    <ChatDrawer :is-open="isChatDrawerOpen" @close="closeChatDrawer" @view-all="goToChat" :loading="loadingRecentChats" :chats="recentChats" @open-conversation="openConversation" @update:is-open="isChatDrawerOpen = $event" />
+    <client-only>
+      <ChatDrawer :is-open="isChatDrawerOpen" @close="closeChatDrawer" @view-all="goToChat" :loading="loadingRecentChats" :chats="recentChats" @open-conversation="openConversation" @update:is-open="isChatDrawerOpen = $event" />
+    </client-only>
 
     <!-- Notifications Drawer -->
     <NotificationDrawer />
@@ -284,6 +286,17 @@ async function openChatDrawer() {
 
 function closeChatDrawer() {
   isChatDrawerOpen.value = false
+}
+
+function openConversation(chat) {
+  try {
+    closeChatDrawer()
+  } catch (e) {}
+  const base = isquizee.value ? '/quizee/chat' : '/quiz-master/chat'
+  try {
+    const id = chat?.id || chat?.user_id || chat?.other_user_id || (chat && typeof chat === 'object' ? (chat.id || '') : chat)
+    router.push({ path: base, query: { user_id: id, type: chat?.type || 'direct' } })
+  } catch (e) {}
 }
 
 function onOpenNotifications() {

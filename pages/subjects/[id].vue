@@ -23,7 +23,7 @@
             :to="`/quizzes?subject=${encodeURIComponent(subject.slug || subject.id)}`"
             class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
-            Explore quizzes
+            Explore assessments
           </NuxtLink>
         </div>
       </template>
@@ -82,7 +82,7 @@
                 :description="t.description || t.summary || ''"
                 :quizzesCount="t.quizzes_count || 0"
                 :startLink="`/topics/${t.id}`"
-                startLabel="View Quizzes"
+                startLabel="View Assessments"
               />
             </div>
 
@@ -138,7 +138,41 @@ function resolveIcon(t) { return t.icon || t.image || t.cover_image || '/images/
 async function fetchTopics(params = {}) {
   loading.value = true
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: Object.assign({ subject: subjectId, page: page.value, per_page: perPage.value, q: query.value, grade: gradeFilter.value, topic: filterTopic.value }, params) })
+    // Build params using numeric _id when available (from fetched subject) otherwise use slug/string
+    const baseParams = {
+      page: page.value,
+      per_page: perPage.value,
+      q: query.value,
+      ...params
+    }
+
+    // subject param: prefer subject.value.id if we've fetched subject metadata
+    if (subject.value && (subject.value.id || subject.value.slug || subject.value.name)) {
+      if (subject.value.id) baseParams.subject_id = subject.value.id
+      else if (subject.value.slug) baseParams.subject = subject.value.slug
+      else baseParams.subject = subject.value.name || subjectId
+    } else {
+      // fallback to the route param: treat numeric as id
+      const sid = Number(subjectId)
+      if (!Number.isNaN(sid) && sid > 0) baseParams.subject_id = subjectId
+      else baseParams.subject = subjectId
+    }
+
+    // grade filter: send grade_id when numeric
+    if (gradeFilter.value) {
+      const g = Number(gradeFilter.value)
+      if (!Number.isNaN(g) && g > 0) baseParams.grade_id = gradeFilter.value
+      else baseParams.grade = gradeFilter.value
+    }
+
+    // topic filter: send topic_id when numeric
+    if (filterTopic.value) {
+      const t = Number(filterTopic.value)
+      if (!Number.isNaN(t) && t > 0) baseParams.topic_id = filterTopic.value
+      else baseParams.topic = filterTopic.value
+    }
+
+    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: baseParams })
     // normalize paginator/data shapes
     if (res && res.topics && Array.isArray(res.topics.data)) {
       paginator.value = res.topics

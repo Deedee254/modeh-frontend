@@ -188,6 +188,10 @@
         <div class="bg-white rounded-lg p-3 border text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700">
           <div class="flex flex-wrap gap-4 items-center">
             <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">Level:</span>
+              <span class="font-medium">{{ selectedLevelName || '—' }}</span>
+            </div>
+            <div class="flex items-center gap-2">
               <span class="text-xs text-slate-500">Grade:</span>
               <span class="font-medium">{{ selectedGradeName || '—' }}</span>
             </div>
@@ -218,6 +222,7 @@
 import { ref, computed, watch } from 'vue'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { useAppAlert } from '~/composables/useAppAlert'
 
 // small helper to generate a temporary key for window._tmpFiles
@@ -296,14 +301,14 @@ const hasCover = computed(() => !!(props.modelValue?.cover || props.modelValue?.
 // Computed lists filtered by selections (client-side fallback)
 const subjectsByGrade = computed(() => {
   if (!selectedGrade.value || !Array.isArray(props.subjects)) return []
-  return props.subjects.filter(s => s && typeof s === 'object' && String(s.grade_id) === String(selectedGrade.value))
+  return props.subjects.filter(s => s && typeof s === 'object' && s.grade_id && String(s.grade_id) === String(selectedGrade.value))
 })
 
 // Filter grades by selected level when levels data available (levels expected as array of {id,name,grades:[]})
 const filteredGrades = computed(() => {
   try {
     if (selectedLevel.value && Array.isArray(props.grades) && Array.isArray(props.levels)) {
-      const lv = props.levels.find(l => String(l.id) === String(selectedLevel.value))
+      const lv = props.levels.find(l => l && String(l.id) === String(selectedLevel.value))
       if (lv && Array.isArray(lv.grades)) return lv.grades
     }
   } catch (e) {}
@@ -313,33 +318,39 @@ const filteredGrades = computed(() => {
 
 const filteredTopics = computed(() => {
   if (!selectedSubject.value || !Array.isArray(props.topics)) return []
-  return props.topics.filter(t => t && typeof t === 'object' && String(t.subject_id) === String(selectedSubject.value))
+  return props.topics.filter(t => t && typeof t === 'object' && t.subject_id && String(t.subject_id) === String(selectedSubject.value))
 })
 
 // Selected names for confirmation display
+const selectedLevelName = computed(() => {
+  if (!selectedLevel.value || !Array.isArray(props.levels)) return ''
+  const l = props.levels.find(x => x && String(x.id) === String(selectedLevel.value))
+  return l && l.name ? l.name : ''
+})
+
 const selectedGradeName = computed(() => {
   if (!selectedGrade.value || !Array.isArray(props.grades)) return ''
-  const g = props.grades.find(x => String(x.id) === String(selectedGrade.value))
-  return g ? g.name : ''
+  const g = props.grades.find(x => x && String(x.id) === String(selectedGrade.value))
+  return g && g.name ? g.name : ''
 })
 
 const selectedSubjectName = computed(() => {
   if (!selectedSubject.value || !Array.isArray(props.subjects)) return ''
-  const s = props.subjects.find(x => String(x.id) === String(selectedSubject.value))
-  return s ? s.name : ''
+  const s = props.subjects.find(x => x && String(x.id) === String(selectedSubject.value))
+  return s && s.name ? s.name : ''
 })
 
 const selectedTopicName = computed(() => {
   const tid = props.modelValue?.topic_id || ''
   if (!tid || !Array.isArray(props.topics)) return ''
-  const t = props.topics.find(x => String(x.id) === String(tid))
-  return t ? t.name : ''
+  const t = props.topics.find(x => x && String(x.id) === String(tid))
+  return t && t.name ? t.name : ''
 })
 
 const selectedTopicObj = computed(() => {
   const tid = props.modelValue?.topic_id || ''
   if (!tid || !Array.isArray(props.topics)) return null
-  return props.topics.find(x => String(x.id) === String(tid)) || null
+  return props.topics.find(x => x && String(x.id) === String(tid)) || null
 })
 
 async function requestApproval() {

@@ -1,8 +1,8 @@
 <template>
   <div>
   <PageHero
-      title="Explore quizzes"
-      description="Find and take quizzes across many topics and grades. Filter by difficulty, time, and popularity."
+    title="Explore assessments"
+    description="Browse curriculum-aligned assessments across topics and grades. Filter by difficulty, duration, and relevance to identify focused practice and evaluation opportunities."
       :showSearch="true"
       :flush="true"
       @search="onServerSearch"
@@ -116,12 +116,11 @@
               :cover="q.cover_image || q.cover || q.image || ''"
               :description="q.description || q.summary || ''"
               :difficulty="q.difficulty"
-              :quizMaster="q['quiz-master']?.name || q.user?.name"
+              :created-by="q['quiz-master'] || q.user || (q.user_id ? { id: q.user_id } : null)"
               :palette="pickPaletteClass(q.topic_id || q.topic?.id || q.id)"
               :showGrade="true"
               :showSubject="true"
               :showTopic="true"
-              :showQuizMaster="true"
               :quiz-id="q.id"
               :liked="q.liked"
               :likes="q.likes_count ?? q.likes ?? 0"
@@ -151,8 +150,8 @@
     <div class="mt-10">
       <div class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg p-6 flex items-center justify-between">
         <div>
-          <h3 class="text-xl font-semibold">Ready for a challenge?</h3>
-          <p class="opacity-90">Try a curated quiz or create one to test others.</p>
+          <h3 class="text-xl font-semibold">Ready to assess your skills?</h3>
+          <p class="opacity-90">Begin a curated assessment to evaluate your understanding or create assessments to measure others' progress.</p>
         </div>
         <div class="flex flex-col sm:flex-row gap-3">
           <NuxtLink to="/quizzes" class="px-4 py-2 bg-white text-indigo-700 rounded w-full sm:w-auto text-center">Browse all</NuxtLink>
@@ -177,7 +176,7 @@ const config = useRuntimeConfig()
 
 useHead({
   title: 'Quizzes • Practice & Learn | Modeh',
-  meta: [{ name: 'description', content: 'Browse and take quizzes across subjects and grades. Search, filter, and jump into quizzes to practice and improve.' }]
+  meta: [{ name: 'description', content: 'Browse curriculum-aligned assessments across subjects and grades. Search, filter, and select targeted assessments to evaluate and improve learning.' }]
 })
 
 // use composable to fetch quizzes and topics
@@ -197,8 +196,10 @@ const PAGE_SIZE = 12
 
 // on mount, fetch initial data (composable will normalize)
 onMounted(async () => {
-  // fetch quizzes/topics and taxonomy (grades & subjects) for cards/filters
-  await Promise.all([fetchItems(), fetchTopics(), fetchGrades(), fetchAllSubjects()])
+  // fetch quizzes/topics first, then load levels so the taxonomy composable
+  // can derive grades/subjects from levels (avoids redundant parallel calls).
+  await Promise.all([fetchItems(), fetchTopics()])
+  await fetchLevels()
 })
 
 // Keep filters cascading: when grade changes, clear subject & topic; when subject changes, clear topic

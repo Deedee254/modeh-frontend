@@ -1,8 +1,8 @@
 <template>
   <div>
     <PageHero
-      title="My Quiz Collection"
-      description="Create, manage and track your quizzes. Monitor approval status and engage with learners."
+      title="My Assessment Collection"
+      description="Create, manage, and monitor your assessments. Track approval status and review learner engagement and performance." 
       :showSearch="true"
       :flush="true"
       @search="onServerSearch"
@@ -170,6 +170,7 @@ const normalizedQuizzes = computed(() => {
       subject_id: quiz.subject?.id || quiz.subject_id,
       topic_id: quiz.topic?.id || quiz.topic_id,
       grade: quiz.grade?.name || quiz.grade_name || quiz.grade_id || 'N/A',
+      level: quiz.level?.name || quiz.level_name || quiz.level_id || '',
       questionsCount: quiz.questions_count ?? quiz.questions?.length ?? 0,
       likes: quiz.likes_count ?? quiz.likes ?? 0,
       startLink: `/quiz-master/quizzes/${quiz.id}`,

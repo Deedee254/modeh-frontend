@@ -2,7 +2,7 @@
   <div>
     <PageHero
       title="Subject Library"
-      description="View and manage approved subjects. You can create quizzes within any approved subject."
+      description="Manage approved subjects and create assessments aligned to each subject. Organize content to support clear learning objectives and assessment design."
       :showSearch="true"
       :flush="true"
       @search="onServerSearch"

@@ -19,7 +19,7 @@
       <PageHero
         :breadcrumbs="[{ text: 'Home', href: '/' }, { text: 'Quiz masters', current: true }]"
         title="Our quiz-masters"
-        description="Meet our team of dedicated and experienced quiz-masters."
+          description="Meet our experienced educators and content creators who design curriculum-aligned assessments and learning resources."
         align="center"
         padding="py-12"
       />
@@ -92,7 +92,9 @@ const subjectFilter = ref('')
 const { grades, subjects, fetchGrades, fetchAllSubjects } = useTaxonomy()
 
 onMounted(async () => {
-  await Promise.all([fetchGrades(), fetchAllSubjects()])
+  // Fetch levels first and let grades/subjects be derived from it to avoid
+  // duplicate API requests.
+  await fetchLevels()
 })
 
 const filterParams = computed(() => {

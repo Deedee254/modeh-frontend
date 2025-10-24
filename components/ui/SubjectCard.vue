@@ -1,46 +1,52 @@
 <template>
-  <div class="w-full group block rounded-2xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-transform transform hover:-translate-y-0.5 hover:scale-[1.01] overflow-hidden relative">
+  <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
-
-    <!-- Header: Cover Image/Palette -->
-    <div class="relative h-24 sm:h-32 overflow-hidden">
-      <div class="absolute inset-0" :class="image ? '' : paletteClass">
-        <img v-if="image" :src="image" :alt="displayTitle" class="w-full h-full object-cover" />
+    <div class="relative h-32 overflow-hidden rounded-t-2xl bg-slate-100 sm:h-40">
+      <img v-if="image" :src="image" :alt="displayTitle" class="h-full w-full object-cover" />
+      <div v-else :class="['grid h-full w-full place-items-center font-bold', paletteClass]">
+        <span class="text-2xl text-white">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
       </div>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
-      <div class="absolute left-4 right-4 bottom-4 z-10 text-white">
-        <h4 class="text-lg sm:text-xl font-semibold line-clamp-2">{{ displayTitle }}</h4>
-        <div v-if="displayGrade" class="mt-1 text-xs inline-flex items-center gap-2">
-          <span class="inline-flex items-center px-2 py-0.5 rounded bg-white/80 text-slate-800 text-xs font-medium">{{ isCourse ? 'Course' : 'Grade' }}</span>
-          <span class="text-xs text-white/90">{{ displayGrade }}</span>
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+
+      <!-- Grade badge (top-left) -->
+      <div v-if="displayGrade" class="absolute left-3 top-3 z-10">
+        <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
+          {{ isCourse ? 'Course' : 'Grade' }} {{ displayGrade }}
         </div>
       </div>
     </div>
 
-    <!-- Body: Metadata, Topics, and CTA -->
-    <div class="p-3 sm:p-4 relative z-10 flex flex-col gap-3 flex-grow">
-      <div class="flex items-center justify-start gap-6 text-sm text-gray-700 dark:text-gray-300">
-        <div class="flex items-center gap-3">
-          <div class="font-semibold text-indigo-700 dark:text-indigo-400">{{ topicsCount }}</div>
-          <div class="text-gray-500 dark:text-gray-400">topics</div>
+    <div class="flex flex-1 flex-col p-4">
+      <h4 class="text-base font-semibold text-slate-800 line-clamp-2 dark:text-slate-100">{{ displayTitle }}</h4>
+      <p v-if="displayDescription" class="mt-2 text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ displayDescription }}</p>
+
+      <!-- Metadata -->
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
+        <div class="inline-flex items-center gap-1.5">
+          <Icon name="heroicons:book-open" class="h-4 w-4" />
+          <span>{{ topicsCount }} {{ topicsCount === 1 ? 'topic' : 'topics' }}</span>
         </div>
-        <div class="flex items-center gap-3">
-          <div class="font-semibold text-indigo-700 dark:text-indigo-400">{{ quizzes_count }}</div>
-          <div class="text-gray-500 dark:text-gray-400">quizzes</div>
+        <div class="inline-flex items-center gap-1.5">
+          <Icon name="heroicons:document-text" class="h-4 w-4" />
+          <span>{{ quizzes_count }} {{ quizzes_count === 1 ? 'quiz' : 'quizzes' }}</span>
         </div>
       </div>
 
-      <p v-if="displayDescription" class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ displayDescription }}</p>
-
-      <!-- Display list of random topics -->
-      <div v-if="displayTopics.length" class="flex flex-wrap gap-1.5">
-        <span v-for="topic in displayTopics" :key="topic.id" class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300">
+      <!-- Topic tags (max 2) -->
+      <div v-if="displayTopics.length" class="mt-3 flex flex-wrap gap-2">
+        <span v-for="topic in displayTopics.slice(0, 2)" :key="topic.id" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
           {{ topic.name }}
+        </span>
+        <span v-if="hasMoreTopics" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          +{{ moreTopicsCount }} more
         </span>
       </div>
 
-      <div class="mt-auto pt-2">
-        <NuxtLink v-if="startLink" :to="startLink" class="w-full inline-flex justify-center items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-semibold dark:bg-indigo-500 dark:hover:bg-indigo-600">{{ startLabel }}</NuxtLink>
+      <!-- CTA -->
+      <div class="relative z-10 mt-auto flex items-center gap-2 pt-4">
+        <NuxtLink v-if="startLink" :to="startLink" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+          {{ startLabel }}
+        </NuxtLink>
       </div>
     </div>
   </div>
@@ -54,51 +60,50 @@ const props = defineProps({
   title: { type: String, default: '' },
   name: { type: String, default: '' },
   description: { type: String, default: '' },
-  subtitle: { type: String, default: '' },
   image: { type: String, default: '' },
   grade: { type: [String, Number, Object], default: null },
-  badgeText: { type: String, default: '' },
   palette: { type: String, default: '' },
   topicsCount: { type: [Number, String], default: 0 },
   quizzes_count: { type: [Number, String], default: 0 },
   startLink: { type: [String, Object], default: null },
   startLabel: { type: String, default: 'Explore Topics' },
-  // Accept the full subject object to dynamically access topics
   subject: { type: Object, default: null },
 })
 
-const displayTitle = computed(() => props.title || props.name || props.subject?.name || 'Subject');
-const displayDescription = computed(() => props.description || props.subject?.description || props.subtitle || '');
+const displayTitle = computed(() => props.title || props.name || props.subject?.name || 'Subject')
+const displayDescription = computed(() => props.description || props.subject?.description || '')
 
-const paletteClass = computed(() => props.palette || 'bg-gradient-to-br from-indigo-400 to-indigo-600');
+const paletteClass = computed(() => {
+  if (props.palette && props.palette.trim()) return props.palette
+  return 'bg-indigo-500'
+})
 
 const displayGrade = computed(() => {
-  const g = props.grade || props.subject?.grade;
-  if (!g) return '';
-  if (typeof g === 'string' || typeof g === 'number') return g;
-  return g.name || g.title || g.label || String(g.id || '');
-});
-
-const displayLevel = computed(() => {
-  if (props.grade && typeof props.grade === 'object') {
-    const lvl = props.grade.level || props.grade.level_id || props.grade.levelId
-    if (lvl) return (typeof lvl === 'string' || typeof lvl === 'number') ? String(lvl) : (lvl.name || String(lvl.id || ''))
-  }
-  return ''
-});
+  const g = props.grade || props.subject?.grade
+  if (!g) return ''
+  if (typeof g === 'string' || typeof g === 'number') return g
+  return g.name || g.title || g.label || String(g.id || '')
+})
 
 const isCourse = computed(() => {
-  const g = props.grade || props.subject?.grade;
-  if (!g || typeof g !== 'object') return false;
-  return String(g.type || '').toLowerCase() === 'course';
-});
+  const g = props.grade || props.subject?.grade
+  if (!g || typeof g !== 'object') return false
+  return String(g.type || '').toLowerCase() === 'course'
+})
 
 const displayTopics = computed(() => {
-  if (props.subject && Array.isArray(props.subject.topics) && props.subject.topics.length > 0) {
-    // Shuffle the array and take the first 3 for a random selection
-    const shuffled = [...props.subject.topics].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3);
+  if (props.subject && Array.isArray(props.subject.topics)) {
+    return props.subject.topics
   }
-  return [];
-});
+  return []
+})
+
+const hasMoreTopics = computed(() => {
+  return props.subject && Array.isArray(props.subject.topics) && props.subject.topics.length > 2
+})
+
+const moreTopicsCount = computed(() => {
+  if (!hasMoreTopics.value) return 0
+  return props.subject.topics.length - 2
+})
 </script>

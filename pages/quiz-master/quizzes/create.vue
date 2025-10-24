@@ -59,6 +59,15 @@
       </nav>
 
       <div class="rounded-lg border bg-white dark:bg-gray-800 p-4">
+        <div v-if="store.activeTab === 'questions'" class="mb-3 flex items-center gap-2">
+          <div class="text-xs text-gray-500">Bank filters:</div>
+          <div class="flex items-center gap-2">
+            <span v-if="store.quiz?.level_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Level: {{ (levels || []).find(l => String(l.id) === String(store.quiz?.level_id))?.name || store.quiz?.level_id }}</span>
+            <span v-if="store.quiz?.grade_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Grade: {{ (grades || []).find(g => String(g.id) === String(store.quiz?.grade_id))?.name || store.quiz?.grade_id }}</span>
+            <span v-if="store.quiz?.subject_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Subject: {{ (subjects || []).find(s => String(s.id) === String(store.quiz?.subject_id))?.name || store.quiz?.subject_id }}</span>
+            <span v-if="store.quiz?.topic_id" class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded">Topic: {{ (topics || []).find(t => String(t.id) === String(store.quiz?.topic_id))?.name || store.quiz?.topic_id }}</span>
+          </div>
+        </div>
         <QuizDetailsTab
           v-if="store.activeTab === 'details'"
           :model-value="store.quiz"
@@ -78,7 +87,7 @@
           @topic-search="onTopicSearch"
           @save="async () => { await saveDetails(); if (store.detailsSaved) { store.setTab('settings') } }"
           @next="() => trySetTab('settings')"
-          @approval-requested="async (id) => { try { await fetchTopicsPage({ subjectId: store.quiz.subject_id, page: 1, perPage: 50, q: '' }) } catch (e) {} }"
+          @approval-requested="async (id) => { try { await fetchTopicsPage({ subjectId: store.quiz?.subject_id ?? null, page: 1, perPage: 50, q: '' }) } catch (e) {} }"
         />
 
         <QuizSettingsTab
@@ -100,6 +109,7 @@
           @update:modelValue="(v) => (store.questions = v)"
           @save="store.saveAllQuestions"
           @open-builder="openBuilder"
+          @open-bank="() => { showQuestionBank = true }"
           @edit="(q) => edit(q)"
           @preview="() => { showPreview.value = true }"
           @prev="() => store.setTab('settings')"
@@ -115,13 +125,25 @@
         :model-value="showTopicModal"
         :grades="grades"
         :subjects="subjects"
-        :defaultGradeId="store.quiz.grade_id"
-        :defaultSubjectId="store.quiz.subject_id"
+        :defaultLevelId="store.quiz?.level_id ?? null"
+        :defaultGradeId="store.quiz?.grade_id ?? null"
+        :defaultSubjectId="store.quiz?.subject_id ?? null"
         @update:modelValue="(v) => (showTopicModal = v)"
         @created="onTopicCreated"
       />
 
-      <QuizPreviewModal :model-value="showPreview" :quiz="{ ...store.quiz, questions: store.questions }" />
+      <QuestionBankModal
+        :model-value="showQuestionBank"
+        :gradeOptions="grades"
+        :subjectOptions="subjects"
+        :topicOptions="topics"
+        :levelOptions="levels"
+        :initialFilters="{ level: store.quiz?.level_id ?? null, grade: store.quiz?.grade_id ?? null, subject: store.quiz?.subject_id ?? null, topic: store.quiz?.topic_id ?? null }"
+        @update:modelValue="(v) => (showQuestionBank = v)"
+        @add="onAddFromBank"
+      />
+
+      <QuizPreviewModal :model-value="showPreview" :quiz="{ ...(store.quiz || {}), questions: store.questions }" />
 
       <UModal v-model="showCreatedModal" :ui="{ width: 'sm:max-w-xl' }">
         <div class="p-4 sm:p-6">
@@ -130,9 +152,9 @@
           </div>
           <div class="space-y-4">
             <div>
-              <div class="text-xl font-bold">{{ createdPayload?.title || store.quiz.title }}</div>
-              <div class="text-sm text-gray-600">{{ createdPayload?.description || store.quiz.description }}</div>
-              <div class="text-sm text-gray-500">Topic: {{ createdPayload?.topic_name || store.quiz.topic_id || '—' }}</div>
+              <div class="text-xl font-bold">{{ createdPayload?.title || store.quiz?.title || '' }}</div>
+              <div class="text-sm text-gray-600">{{ createdPayload?.description || store.quiz?.description || '' }}</div>
+              <div class="text-sm text-gray-500">Topic: {{ createdPayload?.topic_name || store.quiz?.topic_id || '—' }}</div>
               <div class="text-sm text-gray-500">Questions: {{ store.questions.length }}</div>
             </div>
             <div class="flex gap-2 justify-end">
@@ -162,6 +184,7 @@ import QuizDetailsTab from '~/components/quiz/QuizDetailsTab.vue'
 import QuizSettingsTab from '~/components/quiz/QuizSettingsTab.vue'
 import QuizQuestionsTab from '~/components/quiz/QuizQuestionsTab.vue'
 import QuizPreviewModal from '~/components/preview/QuizPreviewModal.vue'
+import QuestionBankModal from '~/components/bank/QuestionBankModal.vue'
 import { onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
@@ -170,6 +193,7 @@ definePageMeta({ layout: 'quiz-master', title: 'Create quiz',
 })
 
 const store = useCreateQuizStore()
+if (!store.quiz || typeof store.quiz !== 'object') store.quiz = {}
 const route = useRoute()
 const router = useRouter()
 const cfg = useRuntimeConfig()
@@ -239,11 +263,11 @@ function debounce(fn, wait = 300) {
 }
 
 const _doSubjectSearch = async (q) => {
-  const g = store.quiz.grade_id || null
+  const g = store.quiz?.grade_id ?? null
   try { await fetchSubjectsPage({ gradeId: g, page: 1, perPage: 50, q: q || '' }) } catch (e) {}
 }
 const _doTopicSearch = async (q) => {
-  const s = store.quiz.subject_id || null
+  const s = store.quiz?.subject_id ?? null
   if (!s) return
   try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: q || '' }) } catch (e) {}
 }
@@ -313,10 +337,24 @@ const showTopicModal = ref(false)
 const showCreatedModal = ref(false)
 const createdPayload = ref(null)
 const showPreview = ref(false)
+const showQuestionBank = ref(false)
 function openBuilder() { showBuilder.value = true }
 function onCancel() { showBuilder.value = false }
 function onSaved(saved) { showBuilder.value = false; store.questions.push(saved) }
 function edit(q) { /* navigate to dedicated question editor if desired */ }
+
+function onAddFromBank(itemOrArray) {
+  try {
+    if (!itemOrArray) return
+    if (Array.isArray(itemOrArray)) {
+      for (const it of itemOrArray) store.questions.push(it)
+    } else {
+      store.questions.push(itemOrArray)
+    }
+    // close modal after adding
+    showQuestionBank.value = false
+  } catch (e) {}
+}
 
 function openTopicModal() {
   showTopicModal.value = true
@@ -378,8 +416,8 @@ function onSelectTopic(item) {
   store.quiz.topic_id = item?.id ? (Number(item.id) || null) : null
 }
 
-function saveDetails() { store.saveDetails() }
-function saveSettings() { store.saveSettings() }
+function saveDetails() { return store.saveDetails() }
+function saveSettings() { return store.saveSettings() }
 </script>
 
 <style scoped>

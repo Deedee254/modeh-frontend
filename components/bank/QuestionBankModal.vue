@@ -8,6 +8,7 @@
 
       <div class="flex flex-wrap items-center gap-2 mb-4">
         <UInput v-model="q" placeholder="Search..." size="sm" class="w-64" @keydown.enter="fetchItems"></UInput>
+        <USelect v-model="selectedLevel" :options="levelOptions" size="sm" class="w-36" placeholder="Level"></USelect>
         <USelect v-model="selectedGrade" :options="gradeOptions" size="sm" class="w-36" placeholder="Grade"></USelect>
         <USelect v-model="selectedSubject" :options="subjectOptions" size="sm" class="w-36" placeholder="Subject" :disabled="!selectedGrade"></USelect>
         <USelect v-model="selectedTopic" :options="topicOptions" size="sm" class="w-36" placeholder="Topic" :disabled="!selectedSubject"></USelect>
@@ -58,6 +59,7 @@
 
         <div class="flex flex-wrap items-center gap-2 mb-4">
           <UInput v-model="q" placeholder="Search..." size="sm" class="w-64" @keydown.enter="fetchItems"></UInput>
+          <USelect v-model="selectedLevel" :options="levelOptions" size="sm" class="w-36" placeholder="Level"></USelect>
           <USelect v-model="selectedGrade" :options="gradeOptions" size="sm" class="w-36" placeholder="Grade"></USelect>
           <USelect v-model="selectedSubject" :options="subjectOptions" size="sm" class="w-36" placeholder="Subject" :disabled="!selectedGrade"></USelect>
           <USelect v-model="selectedTopic" :options="topicOptions" size="sm" class="w-36" placeholder="Topic" :disabled="!selectedSubject"></USelect>
@@ -106,7 +108,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 
-const props = defineProps<{ modelValue: boolean, gradeOptions?: any[], subjectOptions?: any[], topicOptions?: any[], inline?: boolean }>()
+const props = defineProps<{ modelValue: boolean, gradeOptions?: any[], subjectOptions?: any[], topicOptions?: any[], levelOptions?: any[], inline?: boolean, initialFilters?: any }>()
 const emit = defineEmits(['update:modelValue', 'add'])
 
 const open = ref(props.modelValue)
@@ -125,6 +127,7 @@ const loading = ref(false)
 const selectedGrade = ref('')
 const selectedSubject = ref('')
 const selectedTopic = ref('')
+const selectedLevel = ref('')
 const selectedIds = ref<any[]>([])
 const perPageOpts = [5,10,20].map(v => ({ label: String(v), value: v }))
 const maxPage = computed(() => paginator.value ? Math.ceil((paginator.value.total || 0) / (paginator.value.per_page || 10)) : 1)
@@ -148,6 +151,11 @@ const _inFlight = new Map<string, Promise<any>>()
 const gradeOptions = ref<any[]>(props.gradeOptions && props.gradeOptions.length ? props.gradeOptions : [])
 const subjectOptions = ref<any[]>(props.subjectOptions && props.subjectOptions.length ? props.subjectOptions : [])
 const topicOptions = ref<any[]>(props.topicOptions && props.topicOptions.length ? props.topicOptions : [])
+// Support levels passed from parent; normalize into { label, value } when necessary
+const levelOptions = ref<any[]>(props.levelOptions && props.levelOptions.length ? props.levelOptions : [])
+if (props.levelOptions && Array.isArray(props.levelOptions) && props.levelOptions.length && !(props.levelOptions[0].label && props.levelOptions[0].value)) {
+  levelOptions.value = props.levelOptions.map((l: any) => ({ label: l.name || l.title || String(l.id), value: l.id }))
+}
 
 // load taxonomy options for filters
 // If props not supplied, load taxonomy root lists (grades). We'll load subjects/topics on demand via server driven APIs.
@@ -172,6 +180,7 @@ async function fetchItems() {
     params.set('page', String(page.value))
     if (selectedGrade.value) params.set('grade', String(selectedGrade.value))
     if (selectedSubject.value) params.set('subject', String(selectedSubject.value))
+      if (selectedLevel.value) params.set('level', String(selectedLevel.value))
     if (selectedTopic.value) params.set('topic', String(selectedTopic.value))
   const runtime = useRuntimeConfig()
   const res = await fetch(runtime.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
@@ -236,6 +245,15 @@ function addSelected() {
 }
 
 onMounted(async () => {
+  // Initialize filters from props.initialFilters if provided
+  try {
+    if (props.initialFilters) {
+      selectedLevel.value = props.initialFilters.level ?? ''
+      selectedGrade.value = props.initialFilters.grade ?? ''
+      selectedSubject.value = props.initialFilters.subject ?? ''
+      selectedTopic.value = props.initialFilters.topic ?? ''
+    }
+  } catch (e) {}
   await Promise.all([fetchItems(), loadTaxonomy()])
 })
 
@@ -255,6 +273,17 @@ watch(selectedGrade, (val) => {
   await fetchSubjectsByGrade(val)
   subjectOptions.value = Array.isArray(taxSubjects.value) ? (taxSubjects.value as any[]).map(s => ({ label: (s as any).name || (s as any).title || (s as any).id, value: (s as any).id, grade_id: (s as any).grade_id })) : []
   }, 250)
+})
+
+// Keep selected filters in sync if initialFilters prop changes
+watch(() => props.initialFilters, (v) => {
+  try {
+    if (!v) return
+    selectedLevel.value = v.level ?? selectedLevel.value
+    selectedGrade.value = v.grade ?? selectedGrade.value
+    selectedSubject.value = v.subject ?? selectedSubject.value
+    selectedTopic.value = v.topic ?? selectedTopic.value
+  } catch (e) {}
 })
 
 // When a subject is selected, fetch topics for that subject if parent didn't supply topics

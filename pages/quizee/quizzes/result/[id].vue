@@ -23,8 +23,8 @@
       <div v-else class="space-y-6">
         <!-- Header -->
         <div class="text-center">
-          <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Quiz Results</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400">Here's how you performed. Great job!</p>
+          <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Assessment Results</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">A detailed summary of your performance and opportunities for focused improvement.</p>
         </div>
 
         <!-- Time summary -->
@@ -110,7 +110,7 @@
             </div>
             <div class="flex gap-2">
               <NuxtLink to="/quizee/quizzes" class="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">Back to Quizzes</NuxtLink>
-              <NuxtLink v-if="quizId" :to="`/quizee/quizzes/take/${quizId}`" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Retake Quiz</NuxtLink>
+              <NuxtLink v-if="quizId" :to="`/quizee/quizzes/take/${quizId}`" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Retake Assessment</NuxtLink>
             </div>
           </div>
         </div>

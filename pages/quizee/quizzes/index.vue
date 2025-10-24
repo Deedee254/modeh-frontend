@@ -1,8 +1,8 @@
 <template>
   <div>
     <PageHero
-      title="Available Quizzes"
-      description="Test your knowledge and earn points! Browse through quizzes on various topics."
+      title="Available Assessments"
+      description="Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration to select an appropriate exercise."
       :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Quizzes', current: true }]"
     />
 
@@ -56,7 +56,7 @@
           :description="qitem.description"
           :marks="qitem.questions_count"
           :difficulty="qitem.difficulty"
-          :quizMaster="qitem.user_id?.toString()"
+          :created-by="qitem['quiz-master'] || qitem.user || (qitem.user_id ? { id: qitem.user_id } : null)"
           :palette="pickPaletteClass(qitem.topic_id)"
           :quiz-id="qitem.id"
           :liked="qitem.liked || false"

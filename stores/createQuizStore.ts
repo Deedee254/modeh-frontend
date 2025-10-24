@@ -504,6 +504,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         const serverQuiz = data.quiz || {}
         // Build a frontend-friendly quiz object, converting timer_seconds -> timer_minutes
         const loaded: any = { ...initialForm, ...serverQuiz }
+          // normalize level fields if present on server payload
+          loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.levelId ?? null
+          loaded.level = serverQuiz.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
         // convert timer_seconds (server) to timer_minutes (client UI)
         const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
         loaded.timer_minutes = ts ? Math.floor(Number(ts) / 60) : initialForm.timer_minutes

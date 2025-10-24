@@ -205,7 +205,7 @@
               <!-- Action buttons - Full width on mobile -->
               <div class="flex flex-col gap-3">
                 <button @click="startQuiz" class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-colors">
-                  Start Quiz
+                  Begin Assessment
                 </button>
                 <button @click="showPreview" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                   Preview Questions

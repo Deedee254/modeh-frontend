@@ -1,8 +1,8 @@
 <template>
   <div>
     <PageHero
-      :title="topic?.name || 'Topic Quizzes'"
-      :description="`Browse all quizzes in ${topic?.name || 'this topic'}`"
+      :title="topic?.name || 'Topic Assessments'"
+      :description="`Browse and manage assessments within ${topic?.name || 'this topic'}`"
     >
       <template #eyebrow>
         <NuxtLink to="/quiz-master/quizzes" class="hover:underline">Quiz Management</NuxtLink> /

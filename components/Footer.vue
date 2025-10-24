@@ -16,19 +16,19 @@
       <div>
         <div class="font-semibold">Quizzes</div>
         <nav class="mt-3 text-sm opacity-90 space-y-2">
-          <NuxtLink to="/quizzes" class="block">Browse quizzes</NuxtLink>
-          <NuxtLink to="/quizzes?popular=1" class="block">Popular</NuxtLink>
-          <NuxtLink to="/quizzes?recent=1" class="block">New</NuxtLink>
+          <NuxtLink to="/quizzes" class="block" active-class="" exact-active-class="">Browse quizzes</NuxtLink>
+          <NuxtLink to="/quizzes?popular=1" class="block" active-class="" exact-active-class="">Popular</NuxtLink>
+          <NuxtLink to="/quizzes?recent=1" class="block" active-class="" exact-active-class="">New</NuxtLink>
         </nav>
       </div>
 
       <div>
         <div class="font-semibold">Company</div>
         <nav class="mt-3 text-sm opacity-90 space-y-2">
-          <NuxtLink to="/about" class="block">About</NuxtLink>
-          <NuxtLink to="/contact" class="block">Contact</NuxtLink>
-          <NuxtLink to="/terms" class="block">Terms</NuxtLink>
-          <NuxtLink to="/privacy" class="block">Privacy</NuxtLink>
+          <NuxtLink to="/about" class="block" active-class="" exact-active-class="">About</NuxtLink>
+          <NuxtLink to="/contact" class="block" active-class="" exact-active-class="">Contact</NuxtLink>
+          <NuxtLink to="/terms" class="block" active-class="" exact-active-class="">Terms</NuxtLink>
+          <NuxtLink to="/privacy" class="block" active-class="" exact-active-class="">Privacy</NuxtLink>
         </nav>
       </div>
 

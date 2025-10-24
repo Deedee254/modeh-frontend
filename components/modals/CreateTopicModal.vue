@@ -95,6 +95,8 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   subjects: { type: [Array, Object], default: () => [] },
   defaultSubjectId: { type: [Number, String], default: null },
+  // allow parent to pass a default level id so modal opens pre-selected
+  defaultLevelId: { type: [Number, String], default: null },
   grades: { type: [Array, Object], default: () => [] },
   defaultGradeId: {
     type: [Number, String],
@@ -111,6 +113,13 @@ function normalizeGradeId(value) {
   return value === null || value === '' ? '' : Number(value)
 }
 const gradeId = ref(normalizeGradeId(props.defaultGradeId))
+// Normalize level id from parent when provided
+function normalizeLevelId(v) {
+  if (v === null || v === undefined || v === '') return ''
+  const n = Number(v)
+  return Number.isNaN(n) ? String(v) : n
+}
+const levelId = ref(normalizeLevelId(props.defaultLevelId) || '')
 // Normalize subjectId: keep as null/number when possible, but allow string input from parent
 function normalizeSubjectId(v) {
   if (v === null || v === undefined || v === '') return ''
@@ -128,6 +137,7 @@ const config = useRuntimeConfig()
 
 watch(() => props.defaultSubjectId, v => { subjectId.value = normalizeSubjectId(v) || '' })
 watch(() => props.defaultGradeId, v => { gradeId.value = normalizeGradeId(v) })
+watch(() => props.defaultLevelId, v => { levelId.value = normalizeLevelId(v) || '' })
 
 // when parent closes the modal (modelValue becomes false) clear internal state and stop waiting
 watch(() => props.modelValue, (nv) => {
@@ -152,7 +162,6 @@ onMounted(async () => {
 
 // prefer parent-provided lists, otherwise use normalized lists from composable
 // local level selection to filter grades
-const levelId = ref('')
 
 // level list: prefer parent-provided levels, otherwise taxonomy levels
 const levelList = computed(() => (Array.isArray(props.levels) && props.levels.length) ? props.levels : (taxLevels.value || []))
@@ -178,7 +187,7 @@ watch(subjectId, (nv) => {
 })
 
 function close() { emit('update:modelValue', false); clear() }
-function clear() { name.value=''; description.value=''; subjectId.value = normalizeSubjectId(props.defaultSubjectId) || '' }
+function clear() { name.value=''; description.value=''; subjectId.value = normalizeSubjectId(props.defaultSubjectId) || ''; levelId.value = normalizeLevelId(props.defaultLevelId) || ''; gradeId.value = normalizeGradeId(props.defaultGradeId) }
 
 async function create() {
   if (!name.value || !subjectId.value) return

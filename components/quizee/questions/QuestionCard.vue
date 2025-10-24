@@ -12,7 +12,8 @@
 
       <div class="content-col">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4" v-html="question?.body"></h3>
-        <component :is="componentName" :question="question" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" />
+  <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" />
+  <div v-else class="text-sm text-red-600 dark:text-red-400">Component missing for question type: {{ question?.type || 'unknown' }}</div>
                   <div>
                     <span v-if="question.is_approved === 1 || question.is_approved === true" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Approved</span>
                     <span v-else-if="question.is_approved === 0 || question.is_approved === false" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">Pending</span>
@@ -27,6 +28,8 @@ import { computed } from 'vue'
 import McqCard from './McqCard.vue'
 import MultiCard from './MultiCard.vue'
 import ShortAnswerCard from './ShortAnswerCard.vue'
+import MathCard from './MathCard.vue'
+import CodeCard from './CodeCard.vue'
 import NumericCard from './NumericCard.vue'
 import FillBlankCard from './FillBlankCard.vue'
 import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
@@ -51,6 +54,8 @@ const componentName = computed(() => {
   if (t === 'short') return ShortAnswerCard
   if (t === 'numeric') return NumericCard
   if (t === 'fill_blank') return FillBlankCard
+  if (t === 'math') return MathCard
+  if (t === 'code') return CodeCard
   // fallback to McqCard for other simple types for now
   return McqCard
 })

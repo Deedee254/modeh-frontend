@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-    import { watch, onBeforeUnmount, defineExpose, onMounted } from 'vue'
+    import { watch, onBeforeUnmount, defineExpose } from 'vue'
 import { useEditor, EditorContent as TiptapEditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import MathExtension from '@aarkue/tiptap-math-extension'
@@ -33,36 +33,31 @@ import MathExtension from '@aarkue/tiptap-math-extension'
 const props = defineProps<{ modelValue?: string; editable?: boolean; features?: { math?: boolean; code?: boolean } }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void; (e: 'ready'): void; (e: 'error', err: Error): void }>()
 
-let editor: any = null
-
-onMounted(() => {
-  // initialize editor on client only
-  editor = useEditor({
-    content: props.modelValue || '<p></p>',
-    editable: props.editable !== false,
-    extensions: [StarterKit, ...(props.features?.math ? [MathExtension] : [])],
-    onUpdate({ editor: e }) {
-      emit('update:modelValue', e.getHTML())
-    }
-  })
-})
+const editor = process.client ? useEditor({
+  content: props.modelValue || '<p></p>',
+  editable: props.editable !== false,
+  extensions: [StarterKit, ...(props.features?.math ? [MathExtension] : [])],
+  onUpdate({ editor: e }) {
+    emit('update:modelValue', e.getHTML())
+  }
+}) : null
 
 // rely on Nuxt/Vue components auto-import for UButton/UIcon
 
 watch(() => props.modelValue, (v) => {
-  if (!editor || !editor.value) return
+  if (!editor?.value) return
   const current = editor.value.getHTML()
   if (v !== current) editor.value.commands.setContent(v || '<p></p>')
 })
-onBeforeUnmount(() => { if (editor && editor.value && editor.value.destroy) editor.value.destroy() })
+onBeforeUnmount(() => { if (editor?.value?.destroy) editor.value.destroy() })
 
 function focus() { try { editor?.value?.commands.focus() } catch (e) {} }
 function toggleBold() { try { editor?.value?.commands.toggleBold() } catch (e) {} }
 function toggleItalic() { try { editor?.value?.commands.toggleItalic() } catch (e) {} }
 function toggleStrike() { try { editor?.value?.commands.toggleStrike() } catch (e) {} }
 function toggleCodeBlock() { try { editor?.value?.commands.toggleCodeBlock() } catch (e) {} }
-function insertInlineMath() { try { if (props.features?.math && editor && editor.value) editor.value.commands.insertContent('\\(' + 'a = b + c' + '\\)') } catch (e) {} }
-function insertBlockMath() { try { if (props.features?.math && editor && editor.value) editor.value.commands.insertContent('\n$$E = mc^2$$\n') } catch (e) {} }
+function insertInlineMath() { try { if (props.features?.math && editor?.value) editor.value.commands.insertContent('\\(' + 'a = b + c' + '\\)') } catch (e) {} }
+function insertBlockMath() { try { if (props.features?.math && editor?.value) editor.value.commands.insertContent('\n$$E = mc^2$$\n') } catch (e) {} }
 
 function onTextInput(e: Event) {
   const t = e.target as HTMLTextAreaElement | null
@@ -76,8 +71,8 @@ defineExpose({
   insertBlockMath,
   toggleCodeBlock,
   toggleInlineCode: insertInlineMath,
-  getHTML: () => editor && editor.value ? editor.value.getHTML() : '',
-  setHTML: (html: string) => { if (editor && editor.value) editor.value.commands.setContent(html) }
+  getHTML: () => editor?.value ? editor.value.getHTML() : '',
+  setHTML: (html: string) => { if (editor?.value) editor.value.commands.setContent(html) }
 })
 </script>
 

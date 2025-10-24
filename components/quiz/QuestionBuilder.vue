@@ -660,6 +660,62 @@
             </div>
           </div>
 
+          <!-- Parts (for math questions) -->
+          <div v-if="questionForm.type === 'math'" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <UIcon name="i-heroicons-collection" class="h-5 w-5" />
+                Parts / Sub-questions
+              </label>
+              <div class="flex items-center gap-2">
+                <div class="text-sm text-slate-600 dark:text-slate-400 mr-4">Total marks: <strong class="text-slate-800 dark:text-white">{{ totalPartMarks }}</strong></div>
+                <UButton
+                  size="sm"
+                  color="primary"
+                  variant="soft"
+                  icon="i-heroicons-plus"
+                  @click="addPart"
+                  type="button"
+                  class="rounded-lg"
+                >
+                  Add Part
+                </UButton>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div
+                v-for="(part, index) in questionForm.parts"
+                :key="index"
+                class="group flex flex-col sm:flex-row gap-4 p-3 rounded-lg border transition-all duration-300 bg-white dark:bg-slate-800"
+              >
+                <div class="flex-1">
+                  <label class="block text-sm text-slate-600 dark:text-slate-400 mb-1">Part {{ index + 1 }} Text</label>
+                  <RichTextEditor
+                    v-model="questionForm.parts[index].text"
+                    :placeholder="`Part ${index + 1} - question or prompt`"
+                    class="min-h-[80px]"
+                    :features="{ math: true, code: true }"
+                  />
+                </div>
+                <div class="w-44 flex flex-col gap-2">
+                  <label class="block text-sm text-slate-600 dark:text-slate-400">Marks</label>
+                  <UInput v-model.number="questionForm.parts[index].marks" type="number" min="0" />
+                  <div class="mt-auto">
+                    <UButton
+                      size="sm"
+                      color="red"
+                      variant="ghost"
+                      icon="i-heroicons-x-mark"
+                      @click="() => removePart(index)"
+                      class="flex-shrink-0 rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Solution Steps (for math and code questions) -->
           <div v-if="questionForm.type === 'math' || questionForm.type === 'code'" class="space-y-4">
             <div class="flex items-center justify-between">
@@ -907,6 +963,13 @@ const getDefaultQuestionForm = (type = 'multiple_choice') => {
     case 'essay':
       return baseForm
     case 'math':
+      return {
+        ...baseForm,
+        parts: [
+          { text: '', marks: 1 }
+        ],
+        solution_steps: ['']
+      }
     case 'code':
       return {
         ...baseForm,
@@ -978,6 +1041,25 @@ function normalizeQuestionFormShape(form) {
     form.solution_steps = ['']
   }
 
+  // Ensure parts array for math questions
+  if (!Array.isArray(form.parts)) {
+    form.parts = []
+  }
+  if (form.type === 'math' && form.parts.length === 0) {
+    form.parts = [{ text: '', marks: 1 }]
+  }
+
+  // Normalize marks on parts
+  if (Array.isArray(form.parts)) {
+    form.parts = form.parts.map(p => {
+      const part = p || {}
+      return {
+        text: (part.text || '') + '',
+        marks: Number.isFinite(Number(part.marks)) ? Number(part.marks) : 1
+      }
+    })
+  }
+
   if (form.type !== 'fill_blanks' && form.correct_answers.length > 0) {
     form.correct_answers = form.correct_answers.filter(answer => answer !== undefined)
   }
@@ -1016,11 +1098,23 @@ const isQuestionValid = computed(() => {
     case 'essay':
       return true
     case 'math':
-    case 'code':
-      return questionForm.value.solution_steps?.length > 0
+      case 'code':
+        return questionForm.value.solution_steps?.length > 0
+      case 'math':
+        return (
+          Array.isArray(questionForm.value.parts) &&
+          questionForm.value.parts.length > 0 &&
+          questionForm.value.parts.every(p => (p.text || '').toString().trim() && Number(p.marks) > 0) &&
+          questionForm.value.solution_steps?.length > 0
+        )
     default:
       return false
   }
+})
+
+const totalPartMarks = computed(() => {
+  if (!Array.isArray(questionForm.value.parts)) return 0
+  return questionForm.value.parts.reduce((sum, p) => sum + (Number.isFinite(Number(p.marks)) ? Number(p.marks) : 0), 0)
 })
 
 // Methods
@@ -1088,6 +1182,18 @@ function removeBlank(index) {
   if (questionForm.value.fill_parts.length <= 2) return
   questionForm.value.fill_parts.splice(index, 1)
   questionForm.value.correct_answers.splice(index, 1)
+}
+
+function addPart() {
+  if (!Array.isArray(questionForm.value.parts)) questionForm.value.parts = []
+  if (questionForm.value.parts.length >= 20) return
+  questionForm.value.parts.push({ text: '', marks: 1 })
+}
+
+function removePart(index) {
+  if (!Array.isArray(questionForm.value.parts)) return
+  if (questionForm.value.parts.length <= 1) return
+  questionForm.value.parts.splice(index, 1)
 }
 
 function toggleOptionCorrect(index) {
@@ -1184,7 +1290,8 @@ function addFromBank(questionOrQuestions) {
       type: bankQuestion.type || 'multiple_choice',
       text: bankQuestion.text || '',
       explanation: bankQuestion.explanation || '',
-      solution_steps: [],
+        solution_steps: bankQuestion.solution_steps || [],
+        parts: bankQuestion.parts || [],
       media: bankQuestion.media || null,
       is_multiple_choice: !!bankQuestion.is_multiple_choice,
       options: bankQuestion.options || [],
@@ -1267,6 +1374,18 @@ async function saveQuestion() {
         // Essay questions don't need special handling
         break
       case 'math':
+        // Normalize and filter parts
+        if (!Array.isArray(questionData.parts)) questionData.parts = []
+        questionData.parts = questionData.parts.map(p => ({
+          text: (p.text || '') + '',
+          marks: Number.isFinite(Number(p.marks)) ? Number(p.marks) : 1
+        }))
+        // remove empty parts
+        questionData.parts = questionData.parts.filter(p => p.text.trim() || Number(p.marks) > 0)
+
+        // Filter out empty solution steps
+        questionData.solution_steps = questionData.solution_steps.filter(step => step.trim())
+        break
       case 'code':
         // Filter out empty solution steps
         questionData.solution_steps = questionData.solution_steps.filter(step => step.trim())

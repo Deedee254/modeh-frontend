@@ -2,7 +2,7 @@
   <div>
     <PageHero
       title="Subjects & learning pathways"
-      description="Discover organized subjects and jump into curated quizzes. Filter, search, or explore popular learning pathways below."
+      description="Explore organized subject tracks and curated assessments. Use filters and search to locate learning pathways and resources aligned to your goals."
       :showSearch="true"
       :flush="true"
       @search="onServerSearch"
@@ -140,7 +140,10 @@ const subjectFilter = ref('')
 const allGrades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice(0, 12) : [])
 
 onMounted(async () => {
-  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+  // Load levels first so grades/subjects can be derived and avoid duplicate
+  // network calls. Then fetch topics if needed.
+  await fetchLevels()
+  await fetchAllTopics()
 })
 
 const gradesCount = computed(() => allGrades.value.length)

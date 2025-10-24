@@ -1,8 +1,8 @@
 <template>
   <div>
     <PageHero
-      title="Find topic-aligned quizzes"
-      description="Focus on a single topic and sharpen the exact skill with short, topic-aligned quizzes."
+      title="Find topic-aligned assessments"
+      description="Target specific skills with short, focused assessments aligned to individual topics. Practice deliberately and measure your progress against clear objectives."
       :showSearch="true"
       :flush="true"
       @search="onSearch"
@@ -91,7 +91,7 @@
                 :description="t.description || t.summary || ''"
                 :quizzesCount="t.quizzes_count || 0"
                 :startLink="`/topics/${t.id}`"
-                startLabel="View Quizzes"
+                startLabel="View Assessments"
               >
               </TopicCard>
           </div>
@@ -236,7 +236,10 @@ const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.s
 
 onMounted(async () => {
   // initialize taxonomy lists
-  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+  // Prefer fetching levels first to let useTaxonomy derive grades/subjects and
+  // avoid redundant API calls. Topics still fetched explicitly.
+  await fetchLevels()
+  await fetchAllTopics()
 })
 
 // fetch quizzes meta for totals

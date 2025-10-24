@@ -6,6 +6,7 @@
         <img class="mx-auto h-16 w-auto" src="/logo/modeh-logo.png" alt="Modeh" />
         <h2 class="mt-6 text-3xl font-bold tracking-tight text-gray-900">Create Your Account</h2>
         <p class="mt-2 text-lg text-gray-600">Join Modeh to practice, compete, and improve</p>
+        <p class="mt-2 text-sm text-gray-500">Already have an account? <NuxtLink to="/login" class="text-blue-600">Login</NuxtLink></p>
       </div>
 
       <!-- Role Selection -->

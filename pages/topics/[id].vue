@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHero :title="topic.name || 'Topic'" :description="`Quizzes for ${topic.name || ''}`" padding="py-12" :showSearch="true">
+  <PageHero :title="topic.name || 'Topic'" :description="`Assessments for ${topic.name || ''}`" padding="py-12" :showSearch="true">
     <template #actions>
   <!-- Search is handled by PageHero's built-in search input -->
     </template>
@@ -11,7 +11,7 @@
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load quizzes for this topic.</div>
 
       <div v-else>
-      <div v-if="quizzes.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No quizzes found for this topic.</div>
+  <div v-if="quizzes.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No assessments found for this topic.</div>
   <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
           <UiQuizCard
           v-for="qz in displayQuizzes"
@@ -62,12 +62,22 @@ const error = ref(null)
 
 onMounted(async () => {
   try {
-    // fetch topic metadata
-    const t = await $fetch(`${config.public.apiBase}/api/topics/${topicId}`)
-    topic.value = (t && t.topic) ? t.topic : (t || {})
+      // fetch topic metadata
+      const t = await $fetch(`${config.public.apiBase}/api/topics/${topicId}`)
+      topic.value = (t && t.topic) ? t.topic : (t || {})
 
     // fetch quizzes for this topic and normalize paginator vs array
-    const res = await $fetch(`${config.public.apiBase}/api/quizzes`, { params: { topic: topicId } })
+    // prefer numeric topic_id (from fetched topic) otherwise fall back to the route param
+    const quizParams = {}
+    if (topic.value && topic.value.id) {
+      quizParams.topic_id = topic.value.id
+    } else {
+      const tid = Number(topicId)
+      if (!Number.isNaN(tid) && tid > 0) quizParams.topic_id = topicId
+      else quizParams.topic = topicId
+    }
+
+    const res = await $fetch(`${config.public.apiBase}/api/quizzes`, { params: quizParams })
     const raw = (res && res.quizzes && Array.isArray(res.quizzes.data)) ? res.quizzes.data : (Array.isArray(res?.quizzes) ? res.quizzes : (Array.isArray(res) ? res : []))
     quizzes.value = raw.map(q => ({
       ...q,

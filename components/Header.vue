@@ -116,27 +116,8 @@
 
         <!-- Auth buttons and User menu -->
         <div class="flex items-center gap-3">
-          <ThemeToggle />
-          <template v-if="!isAuthed">
-            <NuxtLink to="/register?role=quizee" class="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700">Register</NuxtLink>
-          </template>
-          <template v-else>
-            <div class="relative">
-              <button @click="showDropdown = !showDropdown" class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-slate-300 dark:bg-slate-600 rounded-full flex items-center justify-center font-semibold text-slate-700 dark:text-slate-200">
-                  {{ userInitials }}
+                  <AccountMenu :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileLink" @logout="logout" />
                 </div>
-                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-              </button>
-              <div v-if="showDropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg z-50 border dark:border-slate-700">
-                <div class="py-1">
-                  <NuxtLink :to="profileLink" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Profile</NuxtLink>
-                  <button @click="logout" class="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Logout</button>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
 
         <!-- Mobile menu button -->
     <div class="flex items-center md:hidden">
@@ -205,7 +186,10 @@
             </div>
           </nav>
           <div class="mt-8 pt-8 border-t border-slate-200 dark:border-slate-700">
-            <NuxtLink to="/register?role=quizee" class="block w-full text-center px-4 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700">Register</NuxtLink>
+            <div class="flex gap-3">
+              <NuxtLink to="/login" class="flex-1 text-center px-4 py-3 border rounded text-sm">Login</NuxtLink>
+              <NuxtLink to="/register?role=quizee" class="flex-1 text-center px-4 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700">Register</NuxtLink>
+            </div>
           </div>
         </div>
       </div>
@@ -214,8 +198,8 @@
 </template>
 
 <script setup>
-import ThemeToggle from '~/components/ThemeToggle.vue'
 import { ref, computed, watch, onMounted } from 'vue'
+import AccountMenu from '~/components/AccountMenu.vue'
 import { useRoute } from '#imports'
 import useTaxonomy from '~/composables/useTaxonomy'
 
@@ -226,6 +210,7 @@ const showMobileMenu = ref(false)
 const showQuizzesDropdown = ref(false)
 const showSearch = ref(false)
 const route = useRoute()
+// account menu functionality moved into AccountMenu component
 
 // preload taxonomy levels so unauthenticated users can navigate to levels/filters
 const { fetchLevels } = useTaxonomy()

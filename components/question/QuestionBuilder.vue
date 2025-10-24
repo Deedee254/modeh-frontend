@@ -15,7 +15,7 @@
           <button type="button" @click="focusEditor" class="ml-auto text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-200 mt-2 sm:mt-0">Focus editor</button>
         </div>
 
-        <RichTextEditor ref="editorRef" v-model="form.body" @error="onEditorError" />
+        <RichTextEditor ref="editorRef" v-model="form.body" :features="{ math: true, code: true }" @error="onEditorError" />
       </div>
 
       <div class="mt-3 grid gap-3 sm:grid-cols-2">
@@ -70,10 +70,10 @@
               <input v-model="form.options[idx]" placeholder="Option text" class="w-full sm:flex-1 rounded px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200" />
             <div class="flex items-center gap-2">
               <template v-if="form.type === 'multi'">
-                <input type="checkbox" :checked="(form.answers || []).includes(idx)" @change="() => toggleAnswer(idx)" title="Mark correct" />
+                <input type="checkbox" :checked="(form.answers || []).includes(form.options[idx])" @change="() => toggleAnswer(idx)" title="Mark correct" />
               </template>
               <template v-else>
-                <input type="radio" name="single-correct" :checked="(form.answers || [])[0] === idx" @change="() => setSingleAnswer(idx)" title="Mark correct" />
+                <input type="radio" name="single-correct" :checked="(form.answers || [])[0] === form.options[idx]" @change="() => setSingleAnswer(idx)" title="Mark correct" />
               </template>
               <button @click="removeOption(idx)" class="text-xs text-rose-500 dark:text-rose-400 hover:underline">Remove</button>
             </div>
@@ -176,11 +176,24 @@ const emit = defineEmits(['saved','cancel'])
 const cfg = useRuntimeConfig()
 const alert = useAppAlert()
 
+// initialize options first so we can normalize any prefill answers that may be numeric indexes
+const initialOptions = props.prefill?.options ? [...props.prefill.options] : ['', '']
+const initialAnswers = (() => {
+  const a = props.prefill?.answers ? [...props.prefill.answers] : []
+  // If answers are numeric indexes (legacy), map them to option strings when possible
+  if (Array.isArray(a) && a.length && a.every(x => typeof x === 'number')) {
+    return a.map(i => initialOptions[i]).filter(v => v !== undefined && v !== null)
+  }
+  // otherwise assume answers are already strings (for fill-blanks or new format)
+  return a
+})()
+
 const form = ref({
   body: props.prefill?.body || '<p></p>',
   type: props.prefill?.type || 'mcq',
-  options: props.prefill?.options ? [...props.prefill.options] : ['', ''],
-  answers: props.prefill?.answers ? [...props.prefill.answers] : [],
+  options: initialOptions,
+  // store answers as exact option strings (or blanks text) rather than numeric indexes
+  answers: initialAnswers,
   difficulty: props.prefill?.difficulty || 2,
   subject_id: props.subjectId || props.prefill?.subject_id || undefined,
   topic_id: props.topicId || props.prefill?.topic_id || undefined,
@@ -234,19 +247,31 @@ watch(() => form.value.body, () => {
 
 // Helpers for correct answer selection
 function toggleAnswer(i) {
-  const arr = Array.isArray(form.value.answers) ? form.value.answers : []
-  const idx = arr.indexOf(i)
-  if (idx === -1) arr.push(i)
+  // use option text values as the canonical answer identifiers
+  const opt = form.value.options?.[i]
+  if (opt === undefined) return
+  const arr = Array.isArray(form.value.answers) ? [...form.value.answers] : []
+  const idx = arr.indexOf(opt)
+  if (idx === -1) arr.push(opt)
   else arr.splice(idx, 1)
   form.value.answers = arr
 }
 
 function setSingleAnswer(i) {
-  form.value.answers = [i]
+  const opt = form.value.options?.[i]
+  form.value.answers = opt === undefined ? [] : [opt]
 }
 
 function addOption() { form.value.options.push('') }
-function removeOption(i) { if (form.value.options.length > 1) form.value.options.splice(i,1) }
+function removeOption(i) {
+  if (form.value.options.length > 1) {
+    const removed = form.value.options.splice(i,1)[0]
+    // remove any answers that referenced that exact option string
+    if (Array.isArray(form.value.answers) && removed !== undefined) {
+      form.value.answers = form.value.answers.filter(a => a !== removed)
+    }
+  }
+}
 
 function onImageChange(e) { imageFile.value = e.target.files?.[0] || null }
 function onAudioChange(e) { audioFile.value = e.target.files?.[0] || null }

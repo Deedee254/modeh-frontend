@@ -46,7 +46,7 @@
               <h1 class="text-3xl font-extrabold mt-1">{{ quiz.title }}</h1>
               <p class="text-sm text-gray-600 mt-2">{{ quiz.short_description || 'Practice and improve.' }}</p>
               <div class="mt-4 flex items-center gap-3">
-                <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Start Quiz</NuxtLink>
+                <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Begin Assessment</NuxtLink>
                 <button @click="toggleLike" :class="['px-3 py-2 border rounded', liked ? 'bg-rose-50 text-rose-600' : 'text-gray-700']">
                   <span v-if="liked">♥</span>
                   <span v-else>♡</span>
@@ -166,7 +166,7 @@
               </div>
             </div>
             <div class="mt-4">
-              <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Play now</NuxtLink>
+              <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Begin Assessment</NuxtLink>
             </div>
           </div>
 

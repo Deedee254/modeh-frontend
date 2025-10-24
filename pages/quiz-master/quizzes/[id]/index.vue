@@ -39,6 +39,10 @@
       <div v-show="activeTab === 'details'">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
+            <label class="block text-sm font-medium text-gray-700">Level</label>
+            <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.level?.name || '—' }}</div>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700">Grade</label>
             <div class="mt-1 p-2 bg-gray-50 rounded">{{ quiz.grade?.name || '—' }}</div>
           </div>
@@ -164,6 +168,7 @@
 import { ref, onMounted } from 'vue'
 import { useRuntimeConfig, useRoute } from '#imports'
 import { computed } from 'vue'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 definePageMeta({ layout: 'quiz-master' })
 
@@ -174,6 +179,9 @@ const id = route.params.id
 const quiz = ref({})
 const activeTab = ref('details')
 const loading = ref(true)
+
+// taxonomy: load levels so we can display quiz.level properly and link into edit flow
+const { fetchLevels, levels } = useTaxonomy()
 
 const youtubeEmbedUrl = computed(() => {
   const url = quiz.value?.youtube_url
@@ -203,6 +211,8 @@ function difficultyLabel(diff) {
 
 onMounted(async () => {
   try {
+    // ensure levels are loaded first so we can map level ids to names
+    try { await fetchLevels() } catch (e) {}
     // Prefer the authenticated quiz-master details endpoint which includes relations
     let res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id) + '/detail', { credentials: 'include' })
     // fallback to public attempt-oriented endpoint if detail is not available
@@ -234,11 +244,13 @@ onMounted(async () => {
   loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? serverQuiz.topicId ?? null
   loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? serverQuiz.subjectId ?? null
   loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? serverQuiz.gradeId ?? null
+  loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.levelId ?? null
 
   // prefer nested object if present, else use name fields if available
   loaded.topic = serverQuiz.topic || (serverQuiz.topic_name ? { id: loaded.topic_id, name: serverQuiz.topic_name } : (serverQuiz.topicName ? { id: loaded.topic_id, name: serverQuiz.topicName } : null))
   loaded.subject = serverQuiz.subject || (serverQuiz.subject_name ? { id: loaded.subject_id, name: serverQuiz.subject_name } : (serverQuiz.subjectName ? { id: loaded.subject_id, name: serverQuiz.subjectName } : null))
   loaded.grade = serverQuiz.grade || (serverQuiz.grade_name ? { id: loaded.grade_id, name: serverQuiz.grade_name } : (serverQuiz.gradeName ? { id: loaded.grade_id, name: serverQuiz.gradeName } : null))
+    loaded.level = serverQuiz.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
 
       // normalize questions shape so templates can display consistently
       loaded.questions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions.map((q) => ({

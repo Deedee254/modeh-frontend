@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import useApi from '~/composables/useApi'
 
 // singleton instance so multiple components share the same taxonomy state
 let _singleton = null
@@ -101,11 +102,41 @@ export default function useTaxonomy() {
   const topicsPageCache = new Map()
 
   const config = useRuntimeConfig()
+  const api = useApi()
 
   async function fetchGrades() {
     loadingGrades.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/grades`, { credentials: 'include' })
+      // If a levels fetch is currently running, wait for it to finish so
+      // we can reuse nested grades (this avoids two concurrent requests
+      // for the same logical data and reduces SSR/CSR mismatch risk).
+      if (loadingLevels.value && (!levels.value || !levels.value.length)) {
+        // wait for levels to be populated or for loadingLevels to stop
+        const start = Date.now()
+        while (loadingLevels.value && Date.now() - start < 5000) {
+          // small sleep
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(r => setTimeout(r, 50))
+        }
+      }
+
+      // If levels were already loaded and include nested grades, prefer
+      // deriving the flat grades list from `levels` instead of calling
+      // the grades endpoint to avoid redundant requests.
+      if (levels.value && levels.value.length) {
+        const flat = []
+        for (const l of levels.value) {
+          const gList = (l.grades && Array.isArray(l.grades)) ? l.grades : []
+          for (const g of gList) {
+            // ensure id is string for consistency with normalizeList
+            flat.push({ ...g, id: g.id ? String(g.id) : null })
+          }
+        }
+        grades.value = flat
+        return
+      }
+
+      const res = await api.get('/api/grades')
       if (!res.ok) return
       const data = await res.json().catch(() => null)
       const list = normalizeList(data)
@@ -123,7 +154,7 @@ export default function useTaxonomy() {
     loadingLevels.value = true
     try { console.debug('useTaxonomy.fetchLevels: starting fetch') } catch (e) {}
     try {
-      const res = await fetch(`${config.public.apiBase}/api/levels`, { credentials: 'include' })
+      const res = await api.get('/api/levels')
       if (!res.ok) return
       const data = await res.json().catch(() => null)
       if (!data) return
@@ -158,7 +189,7 @@ export default function useTaxonomy() {
     }
     loadingSubjects.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/subjects?grade_id=${gradeId}`, { credentials: 'include' })
+      const res = await api.get(`/api/subjects?grade_id=${gradeId}`)
       if (res.ok) {
         const data = await res.json().catch(() => null)
   const list = normalizeList(data)
@@ -167,7 +198,7 @@ export default function useTaxonomy() {
         return
       }
       // fallback: fetch all subjects then filter
-      const allRes = await fetch(`${config.public.apiBase}/api/subjects`, { credentials: 'include' })
+      const allRes = await api.get('/api/subjects')
       if (allRes.ok) {
         const allData = await allRes.json().catch(() => null)
         const list = normalizeList(allData)
@@ -189,7 +220,36 @@ export default function useTaxonomy() {
   async function fetchAllSubjects() {
     loadingSubjects.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/subjects`, { credentials: 'include' })
+      // If a levels fetch is currently running, wait for it to finish so
+      // we can reuse nested subjects (avoids duplicate requests and keeps
+      // the client state consistent between SSR and CSR).
+      if (loadingLevels.value && (!levels.value || !levels.value.length)) {
+        const start = Date.now()
+        while (loadingLevels.value && Date.now() - start < 5000) {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(r => setTimeout(r, 50))
+        }
+      }
+
+      // If levels were loaded and contain nested subjects, build the flat
+      // subjects list from levels -> grades -> subjects to avoid an extra
+      // API call and keep data consistent.
+      if (levels.value && levels.value.length) {
+        const flat = []
+        for (const l of levels.value) {
+          const gList = (l.grades && Array.isArray(l.grades)) ? l.grades : []
+          for (const g of gList) {
+            const sList = (g.subjects && Array.isArray(g.subjects)) ? g.subjects : []
+            for (const s of sList) {
+              flat.push({ ...s, id: s.id ? String(s.id) : null, grade_id: g.id ? String(g.id) : (s.grade_id ? String(s.grade_id) : null) })
+            }
+          }
+        }
+        subjects.value = flat
+        return
+      }
+
+      const res = await api.get('/api/subjects')
       if (res.ok) {
         const data = await res.json().catch(() => null)
         subjects.value = normalizeList(data)
@@ -215,8 +275,8 @@ export default function useTaxonomy() {
       if (perPage) params.set('per_page', perPage)
       if (page) params.set('page', page)
   // debug: log constructed url to ensure grade_id param is passed
-  try { console.debug('useTaxonomy.fetchSubjectsPage: fetching', `${config.public.apiBase}/api/subjects?${params.toString()}`) } catch (e) {}
-  const res = await fetch(`${config.public.apiBase}/api/subjects?${params.toString()}`, { credentials: 'include' })
+  try { console.debug('useTaxonomy.fetchSubjectsPage: fetching', `/api/subjects?${params.toString()}`) } catch (e) {}
+  const res = await api.get(`/api/subjects?${params.toString()}`)
       if (!res.ok) return { items: [], meta: null }
       const data = await res.json().catch(() => null)
       // normalizeList will extract the items array from paginator shapes
@@ -257,7 +317,7 @@ export default function useTaxonomy() {
     }
     loadingTopics.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}/topics`, { credentials: 'include' })
+      const res = await api.get(`/api/subjects/${subjectId}/topics`)
       if (res.ok) {
         const data = await res.json().catch(() => null)
   const list = normalizeList(data)
@@ -275,7 +335,7 @@ export default function useTaxonomy() {
   async function fetchAllTopics() {
     loadingTopics.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/topics`, { credentials: 'include' })
+      const res = await api.get('/api/topics')
       if (res.ok) {
         const data = await res.json().catch(() => null)
         topics.value = normalizeList(data)
@@ -299,7 +359,7 @@ export default function useTaxonomy() {
       if (q) params.set('q', q)
       if (perPage) params.set('per_page', perPage)
       if (page) params.set('page', page)
-      const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}/topics?${params.toString()}`, { credentials: 'include' })
+      const res = await api.get(`/api/subjects/${subjectId}/topics?${params.toString()}`)
       if (!res.ok) return { items: [], meta: null }
       const data = await res.json().catch(() => null)
       const items = normalizeList(data)

@@ -6,8 +6,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           <!-- Left: Value prop -->
           <div class="text-center lg:text-left">
-            <h1 class="bg-gradient-to-r from-indigo-600 via-sky-600 to-violet-600 bg-clip-text text-3xl sm:text-5xl font-bold text-transparent">Practice smarter. Learn faster.</h1>
-            <p class="mt-4 text-lg text-slate-700 max-w-lg">Quizzes built for quizees: clear instructions, mobile-first UI, instant feedback and guided retry. Start by choosing your grade, subject and topic.</p>
+            <h1 class="bg-gradient-to-r from-indigo-600 via-sky-600 to-violet-600 bg-clip-text text-3xl sm:text-5xl font-bold text-transparent">Modeh — Practice, assess, and master curriculum skills</h1>
+            <p class="mt-4 text-lg text-slate-700 max-w-lg">Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking. Choose your grade, subject, and topic to begin focused practice.</p>
             <div class="mt-8 flex flex-col sm:flex-row items-center lg:items-start gap-4">
               <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-indigo-100 bg-white px-6 py-3 font-semibold text-indigo-600">Explore quizzes</NuxtLink>
               <NuxtLink to="/grades" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-6 py-3 font-semibold text-white">Begin</NuxtLink>
@@ -46,8 +46,13 @@
               <div class="mt-4">
                 <div class="text-center text-sm text-slate-600 mb-2">Or continue with</div>
                 <div class="flex gap-2">
-                  <a href="/auth/google" class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm">Google</a>
+                  <button type="button" @click="handleGoogleLogin" class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 48 48" role="img" aria-hidden="true"><path fill="#fbc02d" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#e53935" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4caf50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1565c0" d="M43.611 20.083 43.595 20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+                    <span>Google</span>
+                  </button>
+                  <!-- Facebook login temporarily disabled per request
                   <a href="/auth/facebook" class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm">Facebook</a>
+                  -->
                 </div>
                 <div class="mt-3 text-center text-sm">
                   <NuxtLink to="/register?role=quizee" class="text-indigo-600 underline mr-2">Register (Quizee)</NuxtLink>
@@ -66,7 +71,7 @@
         <div class="text-center">
           <p class="text-sm font-semibold tracking-wide text-indigo-500 uppercase">How it works</p>
           <h2 class="mt-3 text-3xl font-bold text-slate-900">Start learning in four simple steps</h2>
-          <p class="mt-3 text-base text-slate-600">Everything is built for clarity and momentum — pick a topic, practice with confidence, learn from feedback, and stay motivated.</p>
+          <p class="mt-3 text-base text-slate-600">A learning workflow designed for clarity and steady progress — pick a learning path, practice with targeted quizzes, review instant feedback, and track improvement over time.</p>
         </div>
 
         <div class="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -128,8 +133,8 @@
       <div class="mx-auto max-w-7xl">
         <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h2 class="text-3xl font-bold text-rose-900">Discover quizzes</h2>
-            <p class="text-sm text-rose-700/80">Featured, new and top quizzes across grades and subjects.</p>
+            <h2 class="text-3xl font-bold text-rose-900">Assessments & Practice</h2>
+            <p class="text-sm text-rose-700/80">Curated and adaptive quizzes across grades and subjects to measure and improve learning.</p>
           </div>
           <div class="flex items-center gap-3 py-1 -mx-3 px-3">
             <div class="flex flex-wrap gap-2">
@@ -183,7 +188,7 @@
       <div class="mx-auto max-w-6xl">
           <header class="text-center max-w-2xl mx-auto">
           <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Subjects</div>
+            <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Grades</div>
             <div class="w-full sm:w-auto">
               <select v-model="selectedGrade" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation">
                 <option :value="null">All grades</option>
@@ -191,11 +196,11 @@
               </select>
             </div>
           </div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Popular subjects & learning paths</h3>
-          <p class="mt-3 text-slate-600">Browse the same rich subject cards you’ll find on the subjects page, with quiz and topic counts to help you choose where to start.</p>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Subjects & learning paths</h3>
+          <p class="mt-3 text-slate-600">Explore subject tracks with aligned quizzes and topic roadmaps to guide learning and progression.</p>
         </header>
 
-<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SubjectCard
             v-for="subject in safeArray(filteredSubjects).slice(0,4)"
             :key="subject.id"
@@ -224,11 +229,11 @@
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Levels</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Browse by learning level</h3>
-          <p class="mt-3 text-slate-600">Explore learning levels such as Early Years, Primary, Secondary and Tertiary (courses).</p>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Learning levels</h3>
+          <p class="mt-3 text-slate-600">Navigate content organized by learning level — Early Years, Primary, Secondary, and Tertiary — to find age-appropriate material and pathways.</p>
         </header>
 
-        <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+  <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <LevelCard
             v-for="lvl in safeArray(levels).slice(0,6)"
             :key="lvl.id"
@@ -251,11 +256,11 @@
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Grades</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Browse quizzes by grade level</h3>
-          <p class="mt-3 text-slate-600">Discover grade cards with the same metadata used on the grades directory so everything feels familiar across the experience.</p>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Grades</h3>
+          <p class="mt-3 text-slate-600">Find quizzes and resources organized by grade so learners and educators can match content to curriculum standards.</p>
         </header>
 
-<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <GradeCard
             v-for="grade in safeArray(GRADES).slice(0,6)"
             :key="grade.id"
@@ -275,8 +280,8 @@
       <div class="mx-auto max-w-6xl">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-rose-500 font-semibold">Topics</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Explore topics with rich context</h3>
-          <p class="mt-3 text-slate-600">We're now reusing the enhanced topic cards so you can see quiz counts, linked subjects, and more immediately.</p>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Topics & contextual quizzes</h3>
+          <p class="mt-3 text-slate-600">Dive into topics with rich context — linked subjects, quiz counts, and summaries to help you pick focused practice areas.</p>
         </div>
   <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
     <div class="w-full sm:w-auto">
@@ -322,21 +327,11 @@
       <div class="mx-auto max-w-6xl">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Creators</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Meet our quiz-masters</h3>
-          <p class="mt-3 text-slate-600">Top contributors and educators who write and curate quizzes.</p>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Creators & contributors</h3>
+          <p class="mt-3 text-slate-600">Educators and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
         </div>
   <div class="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
-          <UCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" class="text-center">
-            <div class="flex flex-col items-center p-4">
-              <div class="w-20 h-20 rounded-full overflow-hidden mb-3 bg-indigo-100 grid place-items-center">
-                <img v-if="qm.avatar" :src="qm.avatar" :alt="qm.name || 'Quiz master'" class="w-full h-full object-cover" />
-                <div v-else class="w-full h-full text-indigo-700 font-bold text-2xl grid place-items-center">{{ (qm.name||'').charAt(0) }}</div>
-              </div>
-              <div class="font-semibold text-gray-800">{{ qm.name }}</div>
-              <div class="text-sm text-gray-500">{{ qm.headline || 'Quiz-master' }}</div>
-              <div class="mt-3"><NuxtLink :to="`/quiz-masters/${qm.id}`" class="text-indigo-600 text-sm hover:underline">View profile →</NuxtLink></div>
-            </div>
-          </UCard>
+          <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
         </div>
         <div class="mt-6 text-center">
           <NuxtLink to="/quiz-masters" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg">View all quiz-masters</NuxtLink>
@@ -350,7 +345,7 @@
     <!-- Testimonials -->
     <section class="px-6 py-8 bg-gradient-to-br from-indigo-50 to-white">
       <div class="mx-auto max-w-7xl">
-        <h3 class="text-2xl font-bold text-indigo-900 mb-4 text-center">Success Stories</h3>
+  <h3 class="text-2xl font-bold text-indigo-900 mb-4 text-center">Success Stories</h3>
         <client-only>
         <Carousel :items="safeArray(testimonials)" :perViewLg="3" :perViewMd="2" :perViewSm="1" auto>
           <template #item="{ item }">
@@ -397,8 +392,8 @@
     <!-- Newsletter CTA -->
     <section class="px-6 py-12 bg-gradient-to-br from-white via-indigo-50 to-white">
       <div class="mx-auto max-w-4xl text-center">
-        <h3 class="text-2xl font-bold text-indigo-900">Get weekly practice tips</h3>
-        <p class="mt-2 text-slate-600">Subscribe for curated quizzes and quizee tips.</p>
+  <h3 class="text-2xl font-bold text-indigo-900">Get weekly learning insights</h3>
+  <p class="mt-2 text-slate-600">Receive curated quizzes, practical tips, and insights to keep your practice focused and effective.</p>
         <form @submit.prevent class="mt-6">
           <label for="homepage-newsletter" class="sr-only">Email address</label>
           <div class="mx-auto max-w-xl grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
@@ -422,6 +417,7 @@ import SubjectCard from '~/components/ui/SubjectCard.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
 import LevelCard from '~/components/ui/LevelCard.vue'
+import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useTaxonomy from '~/composables/useTaxonomy'
 
@@ -540,7 +536,10 @@ function pickPaletteClass(id){
 }
 
 onMounted(async () => {
-  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics(), fetchLevels()])
+  // Fetch levels first so grades/subjects can be derived from it and avoid
+  // duplicate parallel requests. Then ensure topics are loaded.
+  await fetchLevels()
+  await fetchAllTopics()
 })
 
 // Return a human-friendly grade label for a topic (from topic.grade, topic.grades, or its subject)
@@ -589,12 +588,14 @@ function getTopicSubjectLabel(topic) {
 const selectedGrade = ref(null)
 
 const filteredSubjects = computed(()=>{
-  if (!selectedGrade || !selectedGrade.value) return SUBJECTS
-  return SUBJECTS.filter(s=>{
+  const subjectsArr = safeArray(SUBJECTS)
+  if (!selectedGrade || !selectedGrade.value) return subjectsArr
+  return subjectsArr.filter(s => {
+    if (!s) return false
     if (s.grade_id) return String(s.grade_id) === String(selectedGrade.value)
     if (s.grade) return String(s.grade.id || s.grade) === String(selectedGrade.value)
     if (s.grades && Array.isArray(s.grades)) return s.grades.some(g => String(g.id || g) === String(selectedGrade.value))
-    return true
+    return false
   })
 })
 
@@ -745,6 +746,11 @@ async function login(){
     error.value = null
   }
   finally{ loading.value = false }
+}
+
+// Redirect to backend Google OAuth redirect endpoint (same behavior as pages/login.vue)
+function handleGoogleLogin(){
+  window.location.href = `${config.public.apiBase}/api/auth/google/redirect`
 }
 
 </script>

@@ -2,7 +2,7 @@
   <div>
     <PageHero
       title="Topic Library"
-      description="Browse and manage topics for your quizzes. Create engaging content within specific topics."
+      description="Manage topic-level content and create structured assessments. Organize topics to align with curriculum objectives and learning pathways."
       :showSearch="true"
       :flush="true"
       @search="onServerSearch"
@@ -13,7 +13,7 @@
 
       <template #actions>
         <div class="flex items-center gap-3">
-          <button 
+            <button 
             @click="router.push('/quiz-master/topics/create')"
             class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
