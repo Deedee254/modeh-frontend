@@ -1,35 +1,35 @@
 <template>
   <div class="rich-editor relative">
     <!-- Bubble Menu for inline formatting -->
-    <bubble-menu v-if="editor" :editor="editor" :tippy-options="{ duration: 100, animation: 'scale-subtle' }" class="bubble-menu">
-      <button @click="editor.chain().focus().toggleBold().run()" :class="{ 'is-active': editor.isActive('bold') }" title="Bold">
+  <BubbleMenu v-if="ed && BubbleMenu" :editor="ed" :tippy-options="{ duration: 100, animation: 'scale-subtle' }" class="bubble-menu">
+      <button @click="ed && ed.chain().focus().toggleBold().run()" :class="{ 'is-active': ed && ed.isActive('bold') }" title="Bold">
         <Icon name="heroicons:bold-20-solid" />
       </button>
-      <button @click="editor.chain().focus().toggleItalic().run()" :class="{ 'is-active': editor.isActive('italic') }" title="Italic">
+      <button @click="ed && ed.chain().focus().toggleItalic().run()" :class="{ 'is-active': ed && ed.isActive('italic') }" title="Italic">
         <Icon name="heroicons:italic-20-solid" />
       </button>
-      <button @click="editor.chain().focus().toggleStrike().run()" :class="{ 'is-active': editor.isActive('strike') }" title="Strikethrough">
+      <button @click="ed && ed.chain().focus().toggleStrike().run()" :class="{ 'is-active': ed && ed.isActive('strike') }" title="Strikethrough">
         <Icon name="heroicons:bars-3-bottom-left-20-solid" />
       </button>
-      <button @click="editor.chain().focus().toggleCode().run()" :class="{ 'is-active': editor.isActive('code') }" title="Inline Code">
+      <button @click="ed && ed.chain().focus().toggleCode().run()" :class="{ 'is-active': ed && ed.isActive('code') }" title="Inline Code">
         <Icon name="heroicons:code-bracket-20-solid" />
       </button>
-    </bubble-menu>
+  </BubbleMenu>
 
     <!-- Toolbar for block elements -->
     <div class="toolbar mb-2 flex flex-wrap gap-1 border-b pb-2">
-      <button @click="addCodeBlock" title="Add Code Block" :class="{ 'is-active': editor?.isActive('codeBlock') }">
+      <button @click="addCodeBlock" title="Add Code Block" :class="{ 'is-active': ed && ed.isActive('codeBlock') }">
         <Icon name="heroicons:code-bracket-square-20-solid" />
         <span class="text-xs ml-1">Code</span>
       </button>
-      <button v-if="features?.math" @click="addMathBlock" title="Add Math Block" :class="{ 'is-active': editor?.isActive('math-block') }">
+  <button v-if="features?.math" @click="addMathBlock" title="Add Math Block" :class="{ 'is-active': ed && ed.isActive('math-block') }">
         <Icon name="heroicons:calculator-20-solid" />
         <span class="text-xs ml-1">Math</span>
       </button>
     </div>
 
-    <div v-if="editor" class="editor-content">
-      <TiptapEditorContent :editor="editor" />
+    <div v-if="ed" class="editor-content">
+      <TiptapEditorContent :editor="ed" />
     </div>
     <textarea v-else :value="modelValue || ''" @input="onTextInput" placeholder="Enter text..." class="fallback-textarea"></textarea>
   </div>
@@ -38,7 +38,7 @@
 <script setup lang="ts">
 // IMPORTANT: You may need to run `npm install` to make sure all Tiptap extensions are available.
 
-import { watch, onBeforeUnmount, defineExpose, defineAsyncComponent } from 'vue'
+import { watch, onBeforeUnmount, defineExpose, defineAsyncComponent, computed } from 'vue'
 import { useEditor, EditorContent as TiptapEditorContent } from '@tiptap/vue-3'
 import { Icon } from '#components'
 
@@ -56,14 +56,14 @@ import Dropcursor from '@tiptap/extension-dropcursor'
 import Gapcursor from '@tiptap/extension-gapcursor'
 import HardBreak from '@tiptap/extension-hard-break'
 
-// Math extension
-import MathExtension from '@aarkue/tiptap-math-extension'
+// Math extension will be dynamically imported on the client to avoid build-time
+// failures when optional runtime deps (like `evaluatex`) are not installed.
 
 const props = defineProps<{ modelValue?: string; editable?: boolean; features?: { math?: boolean; code?: boolean } }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void; (e: 'ready'): void; (e: 'error', err: Error): void }>()
 
 // Manually build the extensions list to disable markdown shortcuts
-const extensions = [
+const baseExtensions = [
   Document,
   Paragraph,
   Text,
@@ -77,67 +77,121 @@ const extensions = [
   HardBreak,
   // Note: BubbleMenu is a Vue component (imported above) and not a Tiptap extension.
   // Do not add it to the extensions array.
-];
-
-if (props.features?.code !== false) {
-  extensions.push(CodeBlock.configure({ languageClassPrefix: 'language-' }))
-}
-if (props.features?.math) {
-  // Note: The math extension itself might still use $...$ as an input rule.
-  // This is a feature of the extension itself.
-  extensions.push(MathExtension.configure({}))
-}
+]
 
 const isClient = typeof window !== 'undefined'
 
-const editor = isClient ? useEditor({
-  content: props.modelValue || '',
-  editable: props.editable !== false,
-  extensions: extensions,
-  onUpdate({ editor: e }) {
-    emit('update:modelValue', e.getHTML())
-  },
-  editorProps: {
-    attributes: {
-      class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-2 focus:outline-none',
-    },
-  },
-}) : null
+// Editor instance (ref) — created onMounted so we can dynamically import optional extensions
+import { ref as vueRef, onMounted } from 'vue'
+import type { Editor } from '@tiptap/core'
+const editor = vueRef<Editor | null>(null)
 
-// Dynamically load the BubbleMenu component at runtime to avoid build-time
-// ESM export errors when the installed @tiptap/vue-3 package does not
-// provide a named export for BubbleMenu. This uses a dynamic import so
-// Vite won't fail at build time if the named export is missing.
-const BubbleMenu = isClient
-  ? defineAsyncComponent(async () => {
-      const mod = await import('@tiptap/extension-bubble-menu')
-      // Try common locations for the BubbleMenu component
-      if (mod.BubbleMenu) return mod.BubbleMenu
-      if (mod.default && mod.default.BubbleMenu) return mod.default.BubbleMenu
-      throw new Error('BubbleMenu not found in @tiptap/extension-bubble-menu')
-    })
-  : null
+onMounted(async () => {
+  if (!isClient) return
+
+  const extensions = [...baseExtensions]
+  if (props.features?.code !== false) {
+    extensions.push(CodeBlock.configure({ languageClassPrefix: 'language-' }))
+  }
+
+  if (props.features?.math) {
+    try {
+      const mod = await import('@aarkue/tiptap-math-extension')
+      const mathExt = mod?.default ?? mod
+      if (mathExt?.configure) extensions.push(mathExt.configure({}))
+      else extensions.push(mathExt)
+    } catch (e) {
+      // Notify parent and continue without math support
+      emit('error', new Error('Failed to load math extension: ' + (e?.message || e)))
+      // Do not rethrow — editor should still work without math extension
+      console.warn('Math extension load failed', e)
+    }
+  }
+
+  // useEditor may return either an Editor instance or a ref containing the instance
+  // depending on the installed version. Normalize so `editor.value` is always the
+  // raw Editor instance to make methods like `getHTML()` and `chain()` available.
+  const created = useEditor({
+    content: props.modelValue || '',
+    editable: props.editable !== false,
+    extensions: extensions,
+    onUpdate({ editor: e }) {
+      emit('update:modelValue', e.getHTML())
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-2 focus:outline-none',
+      },
+    },
+  })
+
+  // `created` may be a ref (contains `.value`) or the editor directly. Unwrap.
+  try {
+    // @ts-ignore - defensive runtime check
+    editor.value = (created && typeof (created as any).value !== 'undefined') ? (created as any).value : created
+  } catch (e) {
+    editor.value = created as any
+  }
+    // Try to dynamically load the BubbleMenu component from tiptap on the client.
+    // This avoids static type/import issues during SSR and keeps initial bundle size smaller.
+    try {
+      const mod = await import('@tiptap/vue-3')
+      BubbleMenu.value = mod?.BubbleMenu ?? (mod?.default && mod.default.BubbleMenu) ?? null
+    } catch (e) {
+      // Non-fatal: editor will work without BubbleMenu
+      console.warn('Failed to load Tiptap BubbleMenu component', e)
+    }
+
+    emit('ready')
+})
+
+// Import the BubbleMenu component under a different local name to avoid
+// redeclaring the same identifier (which caused a TDZ / initialization error).
+// BubbleMenu is a client-only UI component from Tiptap. Import it dynamically
+// inside onMounted to avoid type/import issues during SSR and keep the
+// initial bundle small. Expose as a ref so the template can render it once
+// it's available.
+const BubbleMenu = vueRef(null)
+
+// Helper to obtain the concrete Editor instance (handles nested ref cases)
+function getEditorInstance() {
+  const e: any = editor.value
+  if (!e) return null
+  if (typeof e.getHTML === 'function') return e
+  if (e && typeof e.value !== 'undefined' && e.value && typeof e.value.getHTML === 'function') return e.value
+  return null
+}
+
+// computed proxy for template-friendly usage. Template auto-unwraps refs,
+// but we prefer to expose the concrete instance here so template calls
+// like `ed.isActive()` work reliably.
+const ed = computed(() => getEditorInstance())
 
 watch(() => props.modelValue, (v) => {
-  if (!editor) return
-  const isSame = editor.getHTML() === v
-  if (isSame) return
-  editor.commands.setContent(v || '', false)
+  const e = getEditorInstance()
+  if (!e) return
+  try {
+    const isSame = e.getHTML() === v
+    if (isSame) return
+    e.commands.setContent(v || '', false)
+  } catch (e) {
+    console.warn('Failed to sync editor content', e)
+  }
 })
 
 onBeforeUnmount(() => {
-  if (editor?.destroy) {
-    editor.destroy()
+  if (editor.value?.destroy) {
+    editor.value.destroy()
   }
 })
 
 // --- Toolbar Actions ---
 function addCodeBlock() {
   try {
-    if (editor) {
-      // Inserts a new paragraph after the current block and turns it into a code block.
-      editor.chain().focus().createParagraphNear().toggleCodeBlock().run()
-    }
+    const inst = getEditorInstance()
+    if (!inst) return
+    // Inserts a new paragraph after the current block and turns it into a code block.
+    inst.chain().focus().createParagraphNear().toggleCodeBlock().run()
   } catch (e) { 
     console.error('Failed to insert code block', e)
   }
@@ -145,9 +199,9 @@ function addCodeBlock() {
 
 function addMathBlock() {
   try {
-    if (props.features?.math && editor) {
-      editor.chain().focus().insertMathBlock().run()
-    }
+    const inst = getEditorInstance()
+    if (!inst || !props.features?.math) return
+    inst.chain().focus().insertMathBlock().run()
   } catch (e) { 
     console.error('Failed to insert math block', e)
   }
@@ -161,10 +215,18 @@ function onTextInput(e: Event) {
 
 // --- Expose Methods ---
 defineExpose({
-  focus: () => editor?.commands.focus(),
-  getHTML: () => editor?.getHTML() || '',
-  setHTML: (html: string) => editor?.commands.setContent(html, true),
-  clearContent: () => editor?.commands.clearContent(true),
+  focus: () => {
+    const i = getEditorInstance(); return i ? i.commands?.focus() : undefined
+  },
+  getHTML: () => {
+    const i = getEditorInstance(); return i ? i.getHTML() : ''
+  },
+  setHTML: (html: string) => {
+    const i = getEditorInstance(); return i ? i.commands?.setContent(html, true) : undefined
+  },
+  clearContent: () => {
+    const i = getEditorInstance(); return i ? i.commands?.clearContent(true) : undefined
+  },
 })
 
 </script>

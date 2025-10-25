@@ -108,6 +108,16 @@ async function onTopicCreated(created) {
   } catch (e) {}
   // set the selected topic to the newly created id (or the object)
   try { topic.value = created.id ?? created.value ?? created } catch (e) {}
+  // Refresh topics for the subject so the picker definitely has the latest list
+  try {
+    const sid = created.subject_id ?? created.subjectId ?? subject.value
+    // fetchTopicsPage is provided by the taxonomy composable and may be async
+    if (typeof fetchTopicsPage === 'function') await fetchTopicsPage({ subjectId: sid, page: 1, perPage: 50, q: '' })
+  } catch (e) {
+    // ignore fetch errors; the local unshift above should still make the new topic available
+    console.warn('Failed to refresh topics after create', e)
+  }
+
   showTopicModal.value = false
 }
 

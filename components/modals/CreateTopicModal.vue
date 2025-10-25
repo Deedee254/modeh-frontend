@@ -38,7 +38,7 @@
           <select v-model="subjectId" class="mt-1 block w-full pl-3 pr-10 py-2 border-gray-300 rounded-md">
             <option value="">-- Select Subject --</option>
             <!-- subjects provided by composable are normalized arrays -->
-            <option v-for="s in subjectList" :key="s.id" :value="s.id" v-if="!gradeId || String(s.grade_id || s.grade || '') === String(gradeId)">{{ s.name }}</option>
+            <option v-for="s in filteredSubjectList" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
         </div>
         <div class="mt-2">
@@ -87,7 +87,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import UiTextarea from '~/components/ui/UiTextarea.vue'
+import UTextarea from '~/components/ui/UiTextarea.vue'
 import { useRuntimeConfig } from '#imports'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -158,6 +158,21 @@ onMounted(async () => {
   if ((!props.subjects || (Array.isArray(props.subjects) && props.subjects.length === 0)) ) {
     await fetchAllSubjects()
   }
+  // If a defaultSubjectId was provided, and gradeId is not set, try to pre-select the
+  // corresponding grade so the grade/subject selects are consistent and downstream
+  // components (parent) receive a topic with the correct subject/grade.
+  try {
+    const sid = normalizeSubjectId(props.defaultSubjectId)
+    if (sid && !gradeId.value) {
+      const all = subjectList.value || taxSubjects.value || []
+      const found = all.find(x => String(x.id) === String(sid) || String(x.id) === String(props.defaultSubjectId))
+      if (found && (found.grade_id || found.grade || found.gradeId)) {
+        gradeId.value = normalizeGradeId(found.grade_id ?? found.grade ?? found.gradeId)
+      }
+      // finally ensure subjectId internal state matches provided default
+      subjectId.value = sid
+    }
+  } catch (e) { /* ignore */ }
 })
 
 // prefer parent-provided lists, otherwise use normalized lists from composable
@@ -176,9 +191,32 @@ const gradeList = computed(() => {
 })
 const subjectList = computed(() => (Array.isArray(props.subjects) && props.subjects.length) ? props.subjects : taxSubjects.value)
 
+// Filtered subject list depending on selected grade to avoid using `v-if` inside the
+// v-for (which can lead to render-time scoping issues). This returns only subjects
+// matching the selected grade (or all when no grade is selected).
+const filteredSubjectList = computed(() => {
+  const list = subjectList.value || []
+  if (!gradeId.value) return list
+  return list.filter(s => String(s.grade_id || s.grade || '') === String(gradeId.value))
+})
+
 // when gradeId changes, request subjects filtered by that grade from server
 watch(gradeId, (nv) => {
   try { fetchSubjectsByGrade(nv) } catch (e) {}
+})
+
+// If subjectId changes (either by parent default or user selection) and gradeId
+// is empty, attempt to set gradeId automatically from the subject metadata so the
+// grade select stays in sync.
+watch(subjectId, (nv) => {
+  if (!nv) return
+  try {
+    const all = subjectList.value || taxSubjects.value || []
+    const found = all.find(x => String(x.id) === String(nv) || String(x.id) === String(props.defaultSubjectId))
+    if (found && !gradeId.value && (found.grade_id || found.grade || found.gradeId)) {
+      gradeId.value = normalizeGradeId(found.grade_id ?? found.grade ?? found.gradeId)
+    }
+  } catch (e) {}
 })
 
 // when subjectId changes, request topics for that subject so other components can pick them
@@ -193,7 +231,7 @@ async function create() {
   if (!name.value || !subjectId.value) return
   submitting.value = true
   try {
-    const payload = { name: name.value, description: description.value, subject_id: subjectId.value, grade_id: gradeId.value }
+    const payload = { name: name.value, description: description.value, subject_id: normalizeSubjectId(subjectId.value), grade_id: normalizeGradeId(gradeId.value) }
     // debug: show whether XSRF token exists and cookie keys
     try {
       const token = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
@@ -227,7 +265,7 @@ async function requestApproval() {
     const api = useApi()
     if (!createdTopic.value || !createdTopic.value.id) {
       // Topic not yet created: create it and request approval in one call
-      const payload = { name: name.value, description: description.value, subject_id: subjectId.value, grade_id: gradeId.value, request_approval: true }
+  const payload = { name: name.value, description: description.value, subject_id: normalizeSubjectId(subjectId.value), grade_id: normalizeGradeId(gradeId.value), request_approval: true }
       const res = await api.postJson('/api/topics', payload)
       if (res.ok) {
         const json = await res.json().catch(() => null)

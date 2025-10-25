@@ -24,6 +24,8 @@ export default defineNuxtConfig({
 
   // PWA configuration for @vite-pwa/nuxt
   pwa: {
+    // ensure index.html is included in the precache so navigation fallback works
+    includeAssets: ['index.html'],
     registerType: 'autoUpdate',
     manifest: {
       name: 'Modeh',
@@ -37,7 +39,8 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
+      // include html files (index.html) in precache so '/' is a precached URL
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
