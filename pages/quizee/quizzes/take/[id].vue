@@ -163,10 +163,15 @@
 
 <script setup>
 import UiTextarea from '~/components/ui/UiTextarea.vue'
-// set page layout meta for quizee
+// set page layout meta for quizee. This is an in-progress assessment page — do not index.
 definePageMeta({
   layout: 'quizee',
-  hideBottomNav: true
+  hideBottomNav: true,
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+    { name: 'description', content: 'Take this assessment on Modeh. Your progress will be saved automatically.' },
+    { property: 'og:title', content: 'Take Quiz — Modeh' }
+  ]
 })
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

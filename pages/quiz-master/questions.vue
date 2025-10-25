@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'quiz-master' })
+definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Manage your question bank and question settings as a quiz-master.' } ] })
 import { ref, onMounted, computed } from 'vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import { useRouter } from 'vue-router'

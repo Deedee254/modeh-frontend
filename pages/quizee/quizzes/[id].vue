@@ -263,6 +263,25 @@
 <script setup>
 definePageMeta({ layout: 'quizee' })
 
+// Dynamic page meta for quiz detail (uses server-fetched data when available)
+const pageTitle = computed(() => {
+  try { return (quizData?.value?.quiz?.title || quiz?.title) ? `${quizData?.value?.quiz?.title || quiz?.title} — Modeh` : 'Quiz — Modeh' } catch (e) { return 'Quiz — Modeh' }
+})
+const pageDescription = computed(() => {
+  try { return quizData?.value?.quiz?.description || quiz?.description || 'Practice and assess with Modeh quizzes.' } catch (e) { return 'Practice and assess with Modeh quizzes.' }
+})
+
+useHead(() => ({
+  title: pageTitle.value,
+  meta: [
+    { name: 'description', content: pageDescription.value },
+    { property: 'og:title', content: pageTitle.value },
+    { property: 'og:description', content: pageDescription.value },
+    { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz?.cover || '/social-share.png') },
+    { name: 'twitter:card', content: 'summary_large_image' }
+  ]
+}))
+
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 

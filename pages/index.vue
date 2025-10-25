@@ -422,6 +422,22 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 const config = useRuntimeConfig()
+
+// Page SEO: title, description and social preview tags
+definePageMeta({
+  title: 'Modeh — Practice, assess, and master curriculum skills',
+  meta: [
+    { name: 'description', content: 'Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
+    { name: 'keywords', content: 'quizzes, learning, practice, curriculum, assessment, topics, grades' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:title', content: 'Modeh — Practice, assess, and master curriculum skills' },
+    { property: 'og:description', content: 'Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
+    { property: 'og:image', content: '/social-share.png' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Modeh — Practice, assess, and master curriculum skills' },
+    { name: 'twitter:description', content: 'Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' }
+  ]
+})
 // helpers
 function safeArray(input) {
   const value = unref(input)

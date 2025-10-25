@@ -111,7 +111,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 // Use the `quizee` layout for tournament pages
-definePageMeta({ layout: 'quizee' })
+definePageMeta({ layout: 'quizee', title: 'Tournaments — Modeh', meta: [ { name: 'description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' }, { property: 'og:title', content: 'Tournaments — Modeh' }, { property: 'og:description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' } ] })
 import { useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 

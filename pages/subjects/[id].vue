@@ -219,7 +219,7 @@ onMounted(async () => {
   }
   // preload taxonomy lists for the sidebar
   try { fetchGrades(); fetchLevels(); fetchAllSubjects() } catch (e) {}
-  await Promise.all([fetchTopics(), fetchTopics({}), fetchTopics()])
+  await fetchTopics()
 })
 
 // react to filter/search/pagination changes

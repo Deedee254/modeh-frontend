@@ -41,5 +41,14 @@
 </template>
 
 <script setup>
+definePageMeta({
+  title: 'Terms of Service — Modeh',
+  meta: [
+    { name: 'description', content: 'Read Modeh Terms of Service — rules for using the platform, content ownership, account responsibilities, and termination policies.' },
+    { property: 'og:title', content: 'Terms of Service — Modeh' },
+    { property: 'og:description', content: 'Read Modeh Terms of Service — rules for using the platform, content ownership, account responsibilities, and termination policies.' }
+  ]
+})
+
 import PageHero from '~/components/ui/PageHero.vue'
 </script>

@@ -75,7 +75,15 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'quizee' })
+definePageMeta({
+  layout: 'quizee',
+  title: 'Quizzes — Modeh',
+  meta: [
+    { name: 'description', content: 'Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration.' },
+    { property: 'og:title', content: 'Quizzes — Modeh' },
+    { property: 'og:description', content: 'Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration.' }
+  ]
+})
 import { ref, computed, onMounted, watch } from 'vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'

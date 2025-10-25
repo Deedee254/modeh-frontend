@@ -60,7 +60,8 @@ import UiTextarea from '~/components/ui/UiTextarea.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useAccountApi } from '~/composables/useAccountApi'
 
-definePageMeta({ layout: 'quizee' })
+// Profile is user-specific; avoid indexing user profile edit pages
+definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Edit your Modeh profile and manage personal information, avatar, and bio.' } ] })
 
 const auth = useAuthStore()
 const alert = useAppAlert()

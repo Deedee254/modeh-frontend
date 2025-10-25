@@ -104,7 +104,7 @@ import autoTable from 'jspdf-autotable'
 Chart.register(...registerables)
 import { ref as vueRef, onMounted as vueOnMounted, computed as vueComputed } from 'vue'
 
-definePageMeta({ layout: 'quiz-master' })
+definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Analytics for this quiz — performance, attempts and insights.' } ] })
 const route = useRoute()
 const quizId = route.params.id || route.params?.id || ''
 

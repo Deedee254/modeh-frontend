@@ -290,6 +290,15 @@ const fetchChallengeData = async () => {
     // Prefer client-provided grade/subjects to select 5 randomized questions
     const auth = useAuthStore()
     const gradeId = auth.user?.grade?.id || auth.user?.grade_id || auth.user?.grade || null
+
+    if (!gradeId) {
+      console.error('User grade is not set. Redirecting to settings.')
+      // Optionally, show an alert to the user
+      // alert('Please set your grade in your profile to take the daily challenge.');
+      await router.push('/quizee/settings')
+      return
+    }
+
     const subjectIds = Array.isArray(auth.user?.subjects) ? auth.user.subjects.map(s => (s.id || s)) : []
 
     const params = {

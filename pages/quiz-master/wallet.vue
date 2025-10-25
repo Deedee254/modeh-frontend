@@ -223,7 +223,7 @@ import PageHero from '~/components/ui/PageHero.vue'
 import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '~/stores/auth'
 
-definePageMeta({ layout: 'quiz-master', title: 'QuizMaster Wallet' })
+definePageMeta({ layout: 'quiz-master', title: 'QuizMaster Wallet', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Manage your QuizMaster wallet, payouts and earnings.' } ] })
 
 const config = useRuntimeConfig()
 const auth = useAuthStore()

@@ -141,7 +141,10 @@ import { useRouter } from 'vue-router'
 
 definePageMeta({
   layout: 'quiz-master',
-  title: 'My Quizees'
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+    { name: 'description', content: 'Your quizees and created content as a quiz-master.' }
+  ]
 })
 
 useHead({

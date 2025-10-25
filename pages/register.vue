@@ -212,6 +212,16 @@
 </template>
 
 <script setup>
+// SEO meta for Register page
+definePageMeta({
+  title: 'Register — Modeh',
+  meta: [
+    { name: 'description', content: 'Create a Modeh account to start practicing quizzes, track progress, and join tournaments. Choose to register as a quizee or quiz-master.' },
+    { property: 'og:title', content: 'Register — Modeh' },
+    { property: 'og:description', content: 'Create a Modeh account to start practicing quizzes, track progress, and join tournaments. Choose to register as a quizee or quiz-master.' }
+  ]
+})
+
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'

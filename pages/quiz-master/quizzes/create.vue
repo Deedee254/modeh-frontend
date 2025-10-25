@@ -161,7 +161,7 @@ import QuestionBankModal from '~/components/bank/QuestionBankModal.vue'
 import { onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
-definePageMeta({ layout: 'quiz-master', title: 'Create quiz' })
+definePageMeta({ layout: 'quiz-master', title: 'Create quiz', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Create a new quiz as a quiz-master — add questions, settings and publish options.' } ] })
 
 const tabConfig = [
   { key: 'details', label: 'Details', savedFlag: 'detailsSaved' },

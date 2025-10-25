@@ -125,8 +125,8 @@ import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
 import { useAnswerStore } from '~/stores/answerStore'
 
-// ensure this page uses the quizee layout
-definePageMeta({ layout: 'quizee' })
+// ensure this page uses the quizee layout. Results are user-specific — mark noindex.
+definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'View your quiz results and detailed breakdowns on Modeh.' } ] })
 
 const route = useRoute()
 const attemptId = route.params.id

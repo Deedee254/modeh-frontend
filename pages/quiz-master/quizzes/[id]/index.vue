@@ -170,7 +170,7 @@ import { useRuntimeConfig, useRoute } from '#imports'
 import { computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
-definePageMeta({ layout: 'quiz-master' })
+definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Quiz details (quiz-master view) — manage quiz settings and preview.' } ] })
 
 const config = useRuntimeConfig()
 const route = useRoute()

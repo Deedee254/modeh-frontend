@@ -6,29 +6,8 @@
       <p class="mt-4 text-gray-600 dark:text-gray-300">Preparing the arena...</p>
     </div>
 
-    <!-- Waiting for Opponent Modal -->
-    <UModal v-model="waitingForOpponent" prevent-close>
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold">Waiting for Opponent</h3>
-        </template>
-        <div class="text-center py-4">
-          <p class="text-sm text-gray-600 dark:text-gray-400">The battle will begin once another player joins.</p>
-          <div class="mt-3">
-            <div v-if="countdownActive" class="text-sm text-gray-500">Auto-start in <span class="font-mono font-bold text-indigo-600">{{ waitingCountdown }}</span>s</div>
-            <div v-else-if="forceStartEnabled" class="text-sm text-gray-500">You can start the battle now.</div>
-          </div>
-          <div class="mt-6 space-y-3">
-            <UButton @click="startWithBot" block color="primary" variant="solid" label="Start with a Bot" />
-            <UButton v-if="isInitiator" @click="enableSoloMode" block color="green" variant="outline" label="Take Solo (Subscription Required)" />
-            <UButton v-if="isInitiator" @click="startBattle" :disabled="!canStart" block color="indigo" variant="solid" label="Start Battle" />
-          </div>
-        </div>
-      </UCard>
-    </UModal>
-
     <!-- Main Battle UI -->
-    <div v-if="!loading && !waitingForOpponent" class="flex-1 flex flex-col max-w-4xl w-full mx-auto p-4 sm:p-6">
+    <div v-if="!loading" class="flex-1 flex flex-col max-w-4xl w-full mx-auto p-4 sm:p-6">
       <!-- Header: Players & Scores -->
       <header class="mb-4 sm:mb-6">
         <div class="grid grid-cols-3 items-start sm:items-center gap-2 sm:gap-4">
@@ -57,7 +36,7 @@
 
           <!-- Player 2 (Opponent) -->
           <PlayerCard 
-            :player="battle.value.opponent || { first_name: opponentName, profile: { avatar: opponentAvatar } }"
+            :player="battle.opponent || { first_name: 'Opponent', profile: { avatar: '/avatars/default.png' } }"
             role="Opponent"
             :score="opponentScore"
             :is-active="false"
@@ -168,127 +147,45 @@ import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
 import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
 import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
 import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
-// navigation composable not required here (we manage currentIndex locally)
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
+import useQuestionTimer from '~/composables/useQuestionTimer'
+import useApi from '~/composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
+const auth = useAuthStore()
+const api = useApi()
 
 const loading = ref(true)
 const battle = ref({})
-const isInitiator = computed(() => auth.user && battle.value.initiator_id === auth.user.id)
 const questions = ref([])
 const currentIndex = ref(0)
-// reuse quiz answers composable so battle answers have same shape and helpers
-const { answers, initializeAnswers, clearSavedAnswers } = useQuizAnswers({ value: { questions: [] } }, id)
+const { answers, initializeAnswers, clearSavedAnswers } = useQuizAnswers(computed(() => ({ questions: questions.value })), id)
 const score = ref(0)
 const opponentScore = ref(0)
-import useQuestionTimer from '~/composables/useQuestionTimer'
+
 const { timePerQuestion, displayTime, timerColorClass, startTimer, stopTimer, resetTimer, recordAndReset, onTimeout } = useQuestionTimer(20)
 
-// Submission state (parity with quiz page)
 const submitting = ref(false)
 const lastSubmitFailed = ref(false)
 const submissionMessage = ref('')
 const showConfirm = ref(false)
 
-// We'll use the shared quiz total-timer composable so battles behave like quizzes
-// Create an adapter that looks like a 'quiz' object to the composable
 const battleAdapter = computed(() => ({
   questions: questions.value,
-  // prefer explicit battle.time_per_question or settings.time_total_seconds
   timer_seconds: battle.value?.settings?.time_total_seconds || battle.value?.time_total_seconds || null,
 }))
 
-// useQuizTimer provides unified total timer, displayTime, percent and auto-submit callback
 const { timeLeft: totalTimeLeft, displayTime: totalDisplayTime, timerPercent: totalTimerPercent, timerColorClass: totalTimerColorClass, startTimer: startTotalTimer, stopTimer: stopTotalTimer } = useQuizTimer(battleAdapter, () => finishBattle())
 
-const waitingForOpponent = ref(false)
-const useBot = ref(false)
-const useSolo = ref(false)
-let pollTimer = null
-let _echoChannel = null
-
-// Waiting room countdown (10s) and start control
-const waitingCountdown = ref(10)
-const countdownActive = ref(false)
-const forceStartEnabled = ref(false)
-let waitingInterval = null
-
-const canStart = computed(() => {
-  // Initiator can start when countdown ended or an opponent is present
-  const hasOpponent = !!(battle.value?.opponent || useBot.value || useSolo.value)
-  return isInitiator.value && (hasOpponent || forceStartEnabled.value)
-})
-
-function startWaitingCountdown(seconds = 10) {
-  clearWaitingCountdown()
-  waitingCountdown.value = seconds
-  countdownActive.value = true
-  forceStartEnabled.value = false
-  waitingInterval = setInterval(() => {
-    if (waitingCountdown.value > 0) waitingCountdown.value--
-    if (waitingCountdown.value <= 0) {
-      // countdown finished — allow initiator to force-start
-      forceStartEnabled.value = true
-      countdownActive.value = false
-      clearWaitingCountdown()
-    }
-  }, 1000)
-}
-
-function clearWaitingCountdown() {
-  if (waitingInterval) { clearInterval(waitingInterval); waitingInterval = null }
-}
-
-async function startBattle() {
-  if (!isInitiator.value) return
-  try {
-    loading.value = true
-    // Call backend start endpoint — some backends expose /api/battles/{id}/start
-    const res = await api.postJson(`/api/battles/${id}/start`, {})
-    if (api.handleAuthStatus(res)) { loading.value = false; return }
-    if (!res.ok) {
-      // fallback: try to transition locally (opponent must be present)
-      console.error('start battle failed', await res.json().catch(() => ({})))
-      loading.value = false
-      return
-    }
-    // refresh battle state and close waiting modal
-    const body = await res.json()
-    battle.value = body.battle || body
-    waitingForOpponent.value = false
-    stopTotalTimerIfNeeded()
-    // start the battle timers
-    startTimer()
-    startTotalTimer()
-  } catch (e) {
-    console.error('startBattle error', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-function stopTotalTimerIfNeeded() {
-  try { stopTotalTimer() } catch (e) {}
-}
-
-const auth = useAuthStore()
-const cfg = useRuntimeConfig()
-import useApi from '~/composables/useApi'
-const api = useApi()
-
 const currentQuestion = computed(() => questions.value[currentIndex.value] || {})
-
-// displayTime and timerColorClass are provided by the composable
 
 const progressPercentage = computed(() => {
   if (!questions.value.length) return '0%'
   return `${((currentIndex.value + 1) / questions.value.length) * 100}%`
 })
 
-// answered percent (0-100) used by enhancements
 const answeredPercent = computed(() => {
   const total = questions.value.length || 0
   if (!total) return 0
@@ -303,43 +200,16 @@ const answeredPercent = computed(() => {
   return Math.round((answered / total) * 100)
 })
 
-// enhancements (streaks/encouragement) to match quiz UI
 const { currentStreak, encouragementMessage, encouragementStyle, calculateAchievements } = useQuizEnhancements(battleAdapter, answeredPercent, computed(() => currentQuestion.value), answers)
 
 const allAnswered = computed(() => questions.value.length > 0 && Object.keys(answers.value).length === questions.value.length && Object.values(answers.value).every(v => v !== null && v !== undefined))
 
-const opponentName = computed(() => {
-  if (useBot.value) return 'Bot Player'
-  return battle.value?.opponent?.first_name || 'Opponent'
-})
-
-const opponentAvatar = computed(() => {
-  if (useBot.value) return '/avatars/bot.png'
-  return battle.value?.opponent?.profile?.avatar || '/avatars/default.png'
-})
-
-function getOptionClass(option) {
-  const isSelected = answers.value[currentQuestion.value.id] === option
-  if (isSelected) {
-    return 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 ring-2 ring-indigo-500'
-  }
-  return 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-}
-
-// wire composable timeout to auto-advance
-
 onTimeout(() => nextQuestion(true))
-
-function selectAnswer(qid) {
-  // save selected answer; backend scoring happens on submit
-  // For gamification, we could add a small score for speed, but since marking is deferred, we'll keep it simple.
-}
 
 function onQuestionSelect(val) {
   const q = currentQuestion.value
   if (!q || !q.id) return
   answers.value[q.id] = val
-  // record per-question timing
   try { const elapsed = recordAndReset(); questionTimes.value[q.id] = elapsed } catch(e) {}
   if (['mcq','image_mcq','audio_mcq','video_mcq'].includes(q.type)) {
     setTimeout(() => { if (currentIndex.value < questions.value.length - 1) nextQuestion() }, 250)
@@ -351,115 +221,25 @@ function nextQuestion(force = false) {
   if (currentIndex.value < questions.value.length - 1) {
     currentIndex.value += 1
   } else if (force) {
-    // If it's the last question and timer runs out, finish the battle
     finishBattle()
   }
 }
 watch(currentIndex, () => {
-  // reset composable timer for new question
   resetTimer(timePerQuestion.value)
   startTimer()
 })
-function startPollingForOpponent() {
-  stopPollingForOpponent()
-  attachEchoForJoin()
-  pollTimer = setInterval(async () => {
-    try {
-      const resp = await fetch(cfg.public.apiBase + `/api/battles/${id}`, { credentials: 'include' })
-      const json = await resp.json()
-      const data = json?.battle || json
-      // participants may be an array or an object, some endpoints use `players` or `participants`
-      const parts = data?.participants || data?.players || []
-      const count = Array.isArray(parts) ? parts.length : Object.keys(parts || {}).length
-      if (count > 1 || data?.opponent) {
-        battle.value = data // Update battle object with opponent
-        stopPollingForOpponent()
-      }
-    } catch (e) {
-      // swallow network/parse errors but keep polling
-      // console.debug('poll error', e)
-    }
-  }, 3000)
-}
-function stopPollingForOpponent() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null } }
-
-function attachEchoForJoin() {
-  try {
-    if (typeof window === 'undefined' || !window.Echo) return
-    // choose channel name by uuid if available
-    const chId = (battle.value && (battle.value.uuid || id)) || id
-    _echoChannel = window.Echo.private('battle.' + chId)
-    _echoChannel.listen('.BattleParticipantJoined', (payload) => {
-      battle.value.opponent = payload.participant;
-      stopPollingForOpponent()
-    })
-  } catch (e) {
-    // ignore
-  }
-}
-
-function detachEchoForJoin() {
-  try {
-    if (_echoChannel && typeof _echoChannel.stopListening === 'function') {
-      _echoChannel.stopListening('.BattleParticipantJoined')
-      if (typeof _echoChannel.leave === 'function') _echoChannel.leave()
-    }
-    _echoChannel = null
-  } catch (e) {}
-}
-
-watch(() => battle.value?.opponent, (newOpponent) => {
-  if (newOpponent || useBot.value || useSolo.value) {
-    waitingForOpponent.value = false;
-  }
-})
-// start countdown when waiting modal opens
-watch(waitingForOpponent, (val) => {
-  if (val) {
-    startWaitingCountdown(10)
-  } else {
-    clearWaitingCountdown()
-  }
-})
-function startWithBot() { useBot.value = true; waitingForOpponent.value = false }
-
-function enableSoloMode() { useSolo.value = true; waitingForOpponent.value = false }
 
 function finishBattle() {
   if (!allAnswered.value) return
-  if (useSolo.value) return soloComplete()
   submitBattle()
 }
 
-async function soloComplete() {
-  try {
-    loading.value = true
-    const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: parseInt(qid, 10) || 0, selected: answers.value[qid] })), defer_marking: true }
-    const res = await api.postJson(`/api/battles/${id}/solo-complete`, payload)
-    if (api.handleAuthStatus(res)) { loading.value = false; return }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      console.error('solo-complete failed', err)
-      throw new Error('Solo completion failed')
-    }
-    const json = await res.json().catch(() => ({}))
-    
-      // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
-      // Redirect to checkout with battle id — checkout expects `id` for battles
-      router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
-  } catch (e) {
-    console.error(e)
-  } finally {
-    loading.value = false
-  }
-}
 async function submitBattle() {
   try {
     loading.value = true
     submitting.value = true
     lastSubmitFailed.value = false
     submissionMessage.value = 'Saving answers...'
-    // Calculate achievements before submitting (parity with quiz submit flow)
     try { calculateAchievements() } catch (e) { console.warn('calculateAchievements failed', e) }
     stopTimer()
     const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: parseInt(qid, 10) || 0, selected: answers.value[qid] })), defer_marking: true }
@@ -474,29 +254,22 @@ async function submitBattle() {
       loading.value = false
       return
     }
-    // Update auth store if server returned updated user or awarded achievements
     try {
       const body = await res.json().catch(() => ({}))
       if (body?.user) {
         auth.setUser(body.user)
       } else if (body?.awarded_achievements && body.awarded_achievements.length) {
-        // refresh user to pick up awarded badges/points
         await auth.fetchUser()
       }
-      // clear saved answers after successful submit
       clearSavedAnswers()
     } catch (e) {
-      // ignore
     }
 
-    // reset submission state
     submissionMessage.value = ''
     submitting.value = false
     lastSubmitFailed.value = false
 
-      // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
-      // Redirect to checkout with battle id — checkout expects `id` for battles
-      router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
+    router.push(`/quizee/payments/checkout?type=battle&id=${id}`)
   } catch (e) {
     console.error(e)
   } finally {
@@ -518,14 +291,7 @@ onMounted(async () => {
       const data = j.battle || j
       battle.value = data
       questions.value = battle.value.questions || []
-      // initialize answers structure for questions
       initializeAnswers()
-      // Prefer top-level convenience field, then settings.time_per_question.
-      // If neither is present but a total battle time exists, compute per-question by dividing.
-      // Set up timers based on battle settings
-      if (battle.value.settings?.time_total_seconds) {
-        totalTimeRemaining.value = battle.value.settings.time_total_seconds
-      }
       
       if (battle.value.time_per_question) {
         timePerQuestion.value = battle.value.time_per_question
@@ -537,21 +303,12 @@ onMounted(async () => {
       } else {
         timePerQuestion.value = 20
       }
-
-      // start waiting/polling if only one participant
-      const b = battle.value
-      const parts = (b && (b.participants || b.players || (b.opponent ? [b.initiator, b.opponent] : [b.initiator]))) || []
-      if (!Array.isArray(parts) || parts.length <= 1) {
-        waitingForOpponent.value = true
-        startPollingForOpponent()
-      }
     }
   } catch (e) {
     console.error(e)
   } finally {
     loading.value = false
-    if (questions.value.length > 0 && !waitingForOpponent.value) {
-      // restart/initialize per-question timer and total timer
+    if (questions.value.length > 0) {
       startTimer()
       try { startTotalTimer() } catch (e) {}
     }
@@ -560,9 +317,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   stopTimer()
-  stopPollingForOpponent()
-  detachEchoForJoin()
-  if (pollTimer) clearInterval(pollTimer)
   try { stopTotalTimer() } catch (e) {}
 })
 </script>

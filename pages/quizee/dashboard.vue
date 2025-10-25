@@ -177,8 +177,8 @@
 </template>
 
 <script setup>
-// set page layout meta for quizee
-definePageMeta({ layout: 'quizee' })
+// set page layout meta for quizee — dashboard is user-specific and should not be indexed
+definePageMeta({ layout: 'quizee', title: 'Dashboard — Modeh', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Your learning dashboard — quick access to quizzes, challenges, and progress tracking.' } ] })
 import ChatBubble from '~/components/ChatBubble.vue'
 import RuntimeImg from '~/components/RuntimeImg.vue'
 import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'

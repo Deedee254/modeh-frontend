@@ -305,6 +305,17 @@
 </template>
 
 <script setup>
+// SEO meta for About page
+definePageMeta({
+  title: 'About — Modeh',
+  meta: [
+    { name: 'description', content: "We help quiz-masters create engaging quizzes and quizees learn faster with instant feedback. Modeh combines simplicity with powerful features to transform the learning experience." },
+    { property: 'og:title', content: 'About — Modeh' },
+    { property: 'og:description', content: "We help quiz-masters create engaging quizzes and quizees learn faster with instant feedback. Modeh combines simplicity with powerful features to transform the learning experience." },
+    { name: 'twitter:card', content: 'summary' }
+  ]
+})
+
 import UiTextarea from '~/components/ui/UiTextarea.vue'
 </script>
 

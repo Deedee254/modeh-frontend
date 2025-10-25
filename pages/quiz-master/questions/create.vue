@@ -14,6 +14,9 @@
 </template>
 
 <script setup>
+// Admin/creator page — do not index
+definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Create new questions for your quizzes as a quiz-master.' } ] })
+
 import { ref } from 'vue'
 import { useRoute, useRouter, useRuntimeConfig } from '#imports'
 import QuestionBuilder from '~/components/question/QuestionBuilder.vue'

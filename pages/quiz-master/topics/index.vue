@@ -99,6 +99,18 @@ import Pagination from '~/components/Pagination.vue'
 
 definePageMeta({
   layout: 'quiz-master',
+  title: 'Topic Library — Quiz Master | Modeh',
+  meta: [
+    { name: 'description', content: 'Manage topic-level content and create structured assessments. Organize topics to align with curriculum objectives and learning pathways.' },
+    { name: 'robots', content: 'noindex, nofollow' },
+    { property: 'og:title', content: 'Topic Library — Quiz Master | Modeh' },
+    { property: 'og:description', content: 'Manage topic-level content and create structured assessments. Organize topics to align with curriculum objectives and learning pathways.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:image', content: '/social-share.png' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Topic Library — Quiz Master | Modeh' },
+    { name: 'twitter:description', content: 'Manage topic-level content and create structured assessments. Organize topics to align with curriculum objectives and learning pathways.' }
+  ]
 })
 
 const router = useRouter()

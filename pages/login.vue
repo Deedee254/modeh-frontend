@@ -65,6 +65,16 @@
 </template>
 
 <script setup>
+// SEO meta for Login page
+definePageMeta({
+  title: 'Login — Modeh',
+  meta: [
+    { name: 'description', content: 'Sign in to Modeh to access quizzes, track progress, and join competitions. Secure login for quizees and quiz-masters.' },
+    { property: 'og:title', content: 'Login — Modeh' },
+    { property: 'og:description', content: 'Sign in to Modeh to access quizzes, track progress, and join competitions. Secure login for quizees and quiz-masters.' }
+  ]
+})
+
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'

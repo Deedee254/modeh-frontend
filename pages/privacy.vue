@@ -36,5 +36,14 @@
 </template>
 
 <script setup>
+definePageMeta({
+  title: 'Privacy Policy — Modeh',
+  meta: [
+    { name: 'description', content: 'Your privacy matters. Learn how Modeh collects and uses your data, and what choices you have about your information.' },
+    { property: 'og:title', content: 'Privacy Policy — Modeh' },
+    { property: 'og:description', content: 'Your privacy matters. Learn how Modeh collects and uses your data, and what choices you have about your information.' }
+  ]
+})
+
 import PageHero from '~/components/ui/PageHero.vue'
 </script>

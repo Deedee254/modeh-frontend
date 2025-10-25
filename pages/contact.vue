@@ -131,6 +131,16 @@
 </template>
 
 <script setup>
+// SEO meta for Contact page
+definePageMeta({
+  title: 'Contact — Modeh',
+  meta: [
+    { name: 'description', content: 'Questions, feedback, or partnership ideas? We’d love to hear from you. Get in touch with the Modeh team for support and partnerships.' },
+    { property: 'og:title', content: 'Contact — Modeh' },
+    { property: 'og:description', content: 'Questions, feedback, or partnership ideas? We’d love to hear from you. Get in touch with the Modeh team for support and partnerships.' }
+  ]
+})
+
 import { ref, reactive } from 'vue'
 import PageHero from '~/components/ui/PageHero.vue'
 

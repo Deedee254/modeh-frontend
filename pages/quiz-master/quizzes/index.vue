@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'quiz-master' })
+definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Manage your quizzes, drafts and published content as a quiz-master.' } ] })
 import { ref, onMounted, computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'

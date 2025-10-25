@@ -74,6 +74,24 @@
 <script setup>
 definePageMeta({ layout: 'quizee' })
 
+// Dynamic SEO for quiz-master profile
+const qmTitle = computed(() => {
+  try { return quizMaster?.value?.name ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh' } catch (e) { return 'Quiz Master — Modeh' }
+})
+const qmDescription = computed(() => {
+  try { return (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) } catch (e) { return 'Quiz Master profile on Modeh' }
+})
+
+useHead(() => ({
+  title: qmTitle.value,
+  meta: [
+    { name: 'description', content: qmDescription.value },
+    { property: 'og:title', content: qmTitle.value },
+    { property: 'og:description', content: qmDescription.value },
+    { property: 'og:image', content: quizMaster?.value?.avatar || '/social-share.png' }
+  ]
+}))
+
 const route = useRoute()
 const config = useRuntimeConfig()
 const quizMasterId = route.params.id

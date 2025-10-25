@@ -173,6 +173,16 @@
 </template>
 
 <script setup>
+// SEO meta for Pricing page
+definePageMeta({
+  title: 'Pricing — Modeh',
+  meta: [
+    { name: 'description', content: 'Flexible plans for individual learners and institutions. Start with a free trial or pick a plan that fits your needs.' },
+    { property: 'og:title', content: 'Pricing — Modeh' },
+    { property: 'og:description', content: 'Flexible plans for individual learners and institutions. Start with a free trial or pick a plan that fits your needs.' }
+  ]
+})
+
 import { ref, unref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import PageHero from '~/components/ui/PageHero.vue'
