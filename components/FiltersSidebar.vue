@@ -223,12 +223,16 @@ onMounted(() => {
     // Always attempt to fetch taxonomy lists to ensure filters show up-to-date data.
     // We await them so the UI can render labels without a later hydration mismatch.
     (async () => {
-      try {
-        if ((!Array.isArray(rawGrades) || !rawGrades.length) && (!taxGrades.value || !taxGrades.value.length)) await fetchGrades()
-      } catch (e) { console.error('FiltersSidebar.fetchGrades failed', e) }
+      // Load levels first so we can derive nested grades from levels when available.
       try {
         await fetchLevels()
       } catch (e) { console.error('FiltersSidebar.fetchLevels failed', e) }
+
+      // If caller didn't provide grades and the taxonomy doesn't already have grades,
+      // fetch grades (this will prefer deriving from loaded levels when possible).
+      try {
+        if ((!Array.isArray(rawGrades) || !rawGrades.length) && (!taxGrades.value || !taxGrades.value.length)) await fetchGrades()
+      } catch (e) { console.error('FiltersSidebar.fetchGrades failed', e) }
     })()
   } catch (e) {}
   try {

@@ -19,7 +19,7 @@
             type="text"
             id="quiz-title"
             aria-describedby="title-error"
-            :class="[ 'w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', displayTitleError ? 'border-red-300' : '' ]"
+            :class="[ 'block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm sm:text-base', displayTitleError ? 'border-red-300' : '' ]"
           />
           <p v-if="displayTitleError" id="title-error" class="mt-1 text-sm text-red-600">{{ displayTitleError }}</p>
         </div>
@@ -51,10 +51,8 @@
                       compact
                       title="Grades"
                       subtitle="Pick a grade or course"
-                      @update:modelValue="(v) => { selectedGrade = v }
-                      "
-                      @selected="(item) => { selectedGrade = item?.id || item }
-                      "
+                      @update:modelValue="onGradeModelUpdate"
+                      @selected="onGradeSelected"
                     />
                   </ClientOnly>
                 </div>
@@ -252,7 +250,7 @@ const props = defineProps({
   loadingTopics: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'createTopic', 'save', 'next', 'subject-picked', 'topic-picked'])
+const emit = defineEmits(['update:modelValue', 'create-topic', 'save', 'next', 'subject-picked', 'topic-picked'])
 
 // local client-side validation state
 const localErrors = ref({ _title: null, _topic: null })
@@ -442,6 +440,23 @@ function onSubjectModelUpdate(v) {
   } catch (e) {}
 }
 
+// Grade handlers (used by the grades TaxonomyPicker)
+function onGradeModelUpdate(v) {
+  try {
+    selectedGrade.value = (v && typeof v === 'object') ? (v.id || '') : (v || '')
+    // clear subject/topic when grade changes
+    emit('update:modelValue', { ...props.modelValue, grade_id: selectedGrade.value || null, subject_id: null, topic_id: null })
+    try { fetchSubjectsByGrade(selectedGrade.value) } catch (e) {}
+  } catch (e) {}
+}
+
+function onGradeSelected(item) {
+  try {
+    selectedGrade.value = item?.id || ''
+    onGradeModelUpdate(item)
+  } catch (e) {}
+}
+
 function onTopicModelUpdate(v) {
   try {
     selectedTopic.value = (v && typeof v === 'object') ? (v.id || '') : (v || '')
@@ -457,7 +472,8 @@ function onTopicPicked(item) {
 }
 
 function openCreateTopic() {
-  emit('createTopic')
+  // emit kebab-case event (template listeners should use kebab-case)
+  emit('create-topic')
 }
 
 function validate() {

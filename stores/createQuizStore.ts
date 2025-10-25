@@ -124,7 +124,36 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           else if (v && typeof v === 'object') copy[k] = JSON.parse(JSON.stringify(v))
           else copy[k] = v
         }
-        return copy
+          // Ensure the payload uses the canonical 'answers' array the backend expects.
+          // If frontend only set a single numeric `correct`, convert it into both
+          // `corrects` (index array) and `answers` (value array) where possible.
+          try {
+            // If answers missing but `corrects` exists, and options are present, derive answers
+            if ((!copy.answers || copy.answers === null) && Array.isArray(copy.corrects) && Array.isArray(copy.options)) {
+              const vals: any[] = []
+              for (const idx of copy.corrects) {
+                const n = Number(idx)
+                if (!Number.isNaN(n) && copy.options[n] !== undefined) vals.push(copy.options[n])
+              }
+              if (vals.length) copy.answers = vals
+            }
+
+            // If answers and corrects are missing but `correct` numeric index exists, map it
+            if ((!copy.answers || copy.answers === null) && (!Array.isArray(copy.corrects) || copy.corrects.length === 0) && (typeof q.correct !== 'undefined' && q.correct !== null)) {
+              const n = Number(q.correct)
+              if (!Number.isNaN(n)) {
+                // set corrects index and answers value when options available
+                copy.corrects = [n]
+                if (Array.isArray(copy.options) && copy.options[n] !== undefined) {
+                  copy.answers = [copy.options[n]]
+                }
+              }
+            }
+          } catch (e) {
+            // ignore mapping errors — we still send whatever we have
+          }
+
+          return copy
       }
 
       // Determine if any questions contain local File objects; if so, send as multipart/form-data

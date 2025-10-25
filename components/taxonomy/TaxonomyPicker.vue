@@ -13,12 +13,12 @@
     </div>
 
     <div class="space-y-3 p-3">
-          <div class="flex items-center gap-2">
-            <UInput ref="searchInput" v-model="query" placeholder="Search..." @input="onSearch" size="sm" icon="i-heroicons-magnifying-glass" class="flex-grow" />
-            <UButton size="sm" variant="ghost" color="gray" @click="refresh" icon="i-heroicons-arrow-path" :loading="loading" />
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <UInput ref="searchInput" v-model="query" placeholder="Search..." @input="onSearch" size="sm" icon="i-heroicons-magnifying-glass" class="flex-grow min-w-0" />
+            <UButton size="sm" variant="ghost" color="gray" @click="refresh" icon="i-heroicons-arrow-path" :loading="loading" class="w-full sm:w-auto" />
           </div>
 
-      <div class="relative h-48 overflow-y-auto rounded-md border bg-slate-50/50 p-1 dark:border-slate-700 dark:bg-slate-900/20">
+  <div class="relative h-48 overflow-y-auto overflow-x-hidden rounded-md border bg-slate-50/50 p-1 dark:border-slate-700 dark:bg-slate-900/20">
         <div v-show="loading" class="p-1">
           <div class="space-y-1 p-1">
             <UiSelectSkeleton v-for="n in 6" :key="n" />
@@ -26,9 +26,9 @@
         </div>
         <div v-show="!loading && items.length > 0">
           <ul class="divide-y divide-slate-200/50 dark:divide-slate-700/50">
-            <li v-for="item in items" :key="item.id" :class="['flex cursor-pointer items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800', props.compact ? 'py-1.5 px-2' : 'py-2 px-3', { 'bg-indigo-50 dark:bg-indigo-900/30': isSelected(item) }]" @click="select(item)">
-              <div class="flex-1">
-                <div :class="['font-medium', props.compact ? 'text-xs' : 'text-sm', 'text-slate-800 dark:text-slate-200', { 'text-indigo-700 dark:text-indigo-300': isSelected(item) }]">{{ item.display_name || item.name }}</div>
+            <li v-for="item in items" :key="item.id" class="min-w-0 flex cursor-pointer items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800" :class="[ props.compact ? 'py-1.5 px-2' : 'py-2 px-3', isSelected(item) ? 'bg-indigo-50 dark:bg-indigo-900/30' : '' ]" @click="select(item)">
+              <div class="flex-1 min-w-0">
+                <div class="font-medium break-words whitespace-normal leading-tight text-slate-800 dark:text-slate-200" :class="[ props.compact ? 'text-xs' : 'text-xs sm:text-sm', isSelected(item) ? 'text-indigo-700 dark:text-indigo-300' : '' ]" :title="item.display_name || item.name">{{ item.display_name || item.name }}</div>
               </div>
               <UIcon v-if="isSelected(item)" name="i-heroicons-check-circle-20-solid" class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </li>

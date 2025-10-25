@@ -56,7 +56,7 @@
           @update:modelValue="(v) => (store.quiz = v)"
           @subject-picked="onSelectSubject"
           @topic-picked="onSelectTopic"
-          @createTopic="() => { showTopicModal = true }"
+          @create-topic="() => { showTopicModal = true }"
           @subject-search="onSubjectSearch"
           @topic-search="onTopicSearch"
           @save="async () => { await saveDetails(); if (store.detailsSaved) { store.setTab('settings') } }"
@@ -279,7 +279,7 @@ const showPreview = ref(false)
 const showQuestionBank = ref(false)
 function openBuilder() { showBuilder.value = true }
 function onCancel() { showBuilder.value = false }
-function onSaved(saved) { showBuilder.value = false; store.questions.push(saved) }
+function onSaved(saved) { store.questions.push(saved) }
 function edit(q) {}
 
 function onAddFromBank(itemOrArray) {
