@@ -59,6 +59,8 @@
                 <QuestionEditor 
                   v-model="modelValue[idx]"
                   :errors="errors[q.uid]"
+                  @add-option="addOption(idx)"
+                  @remove-option="removeOption(idx, $event)"
                 />
               </div>
             </Transition>
@@ -189,6 +191,27 @@ function duplicateQuestion(idx) {
     uid: Math.random().toString(36).substring(2)
   }
   questions.splice(idx + 1, 0, copy)
+  emit('update:modelValue', questions)
+}
+
+function addOption(idx) {
+  const questions = [...props.modelValue]
+  if (!questions[idx].options) questions[idx].options = []
+  questions[idx].options.push('')
+  emit('update:modelValue', questions)
+}
+
+function removeOption(idx, optIdx) {
+  const questions = [...props.modelValue]
+  if (questions[idx].options && questions[idx].options.length > 2) {
+    questions[idx].options.splice(optIdx, 1)
+    if (questions[idx].correct >= optIdx) {
+      questions[idx].correct = Math.max(0, questions[idx].correct - 1)
+    }
+    if (Array.isArray(questions[idx].corrects)) {
+      questions[idx].corrects = questions[idx].corrects.filter(c => c !== optIdx).map(c => c > optIdx ? c - 1 : c)
+    }
+  }
   emit('update:modelValue', questions)
 }
 

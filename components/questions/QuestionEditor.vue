@@ -1,69 +1,73 @@
 <template>
   <div class="border rounded-lg bg-white shadow-sm">
-    <div class="flex items-center justify-between p-3">
-      <div class="flex items-center gap-3">
-        <span class="drag-handle cursor-grab select-none" title="Drag to reorder">⠿</span>
-        <UBadge color="gray" variant="soft">{{ label }}</UBadge>
-        <UBadge color="gray" variant="soft">{{ typeLabel }}</UBadge>
-        <UBadge color="gray" variant="soft">{{ difficultyLabel }}</UBadge>
-  <UBadge color="gray" variant="soft">{{ localModel.marks }} pt</UBadge>
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 gap-3">
+      <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+        <span class="drag-handle cursor-grab select-none flex-shrink-0" title="Drag to reorder">⠿</span>
+        <UBadge color="gray" variant="soft" class="flex-shrink-0">{{ label }}</UBadge>
+        <UBadge color="gray" variant="soft" class="flex-shrink-0 text-xs">{{ typeLabel }}</UBadge>
+        <UBadge color="gray" variant="soft" class="flex-shrink-0 text-xs">{{ difficultyLabel }}</UBadge>
+        <UBadge color="gray" variant="soft" class="flex-shrink-0 text-xs">{{ localModel.marks }} pt</UBadge>
       </div>
-      <div class="flex items-center gap-2">
-        <UButton size="xs" color="gray" variant="ghost" @click="$emit('duplicate')">Duplicate</UButton>
-        <UButton size="xs" color="red" variant="ghost" @click="$emit('remove')">Delete</UButton>
-        <UButton size="xs" color="gray" variant="ghost" @click="open = !open">{{ open ? 'Collapse' : 'Edit' }}</UButton>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <UButton size="xs" color="gray" variant="ghost" @click="$emit('duplicate')" class="flex-1 sm:flex-none">Dup</UButton>
+        <UButton size="xs" color="red" variant="ghost" @click="$emit('remove')" class="flex-1 sm:flex-none">Del</UButton>
+        <UButton size="xs" color="gray" variant="ghost" @click="open = !open" class="flex-1 sm:flex-none">{{ open ? 'Close' : 'Edit' }}</UButton>
       </div>
     </div>
 
     <div v-show="open" class="p-4 border-t space-y-3">
-      <div class="flex items-center gap-2">
-  <USelect v-model="localModel.type" :options="typeOptions" class="w-44" />
-  <USelect v-model="localModel.difficulty" :options="difficultyOptions" class="w-28" />
-  <UInput v-model.number="localModel.marks" type="number" class="w-24" placeholder="Marks" />
-  <UCheckbox v-model="localModel.is_banked" label="Bank" />
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <USelect v-model="localModel.type" :options="typeOptions" class="col-span-2 sm:col-span-2" />
+        <USelect v-model="localModel.difficulty" :options="difficultyOptions" />
+        <UInput v-model.number="localModel.marks" type="number" placeholder="Marks" />
+        <div class="col-span-2 sm:col-span-1 flex items-center">
+          <UCheckbox v-model="localModel.is_banked" label="Bank" />
+        </div>
       </div>
 
-        <div class="flex items-center gap-3">
-            <label class="text-sm text-gray-600">Media</label>
-            <input ref="imageInput" type="file" accept="image/*" @change="onImageSelected" class="hidden" />
-            <input ref="audioInput" type="file" accept="audio/*" @change="onAudioSelected" class="hidden" />
-            <UButton size="xs" variant="soft" @click="triggerImageInput">Choose Image</UButton>
-            <UButton size="xs" variant="soft" @click="triggerAudioInput">Choose Audio</UButton>
-            <UInput v-model="localModel.youtube_url" placeholder="YouTube link (optional)" class="max-w-md" />
-          </div>
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-600">Media</label>
+        <input ref="imageInput" type="file" accept="image/*" @change="onImageSelected" class="hidden" />
+        <input ref="audioInput" type="file" accept="audio/*" @change="onAudioSelected" class="hidden" />
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <UButton size="xs" variant="soft" @click="triggerImageInput">Image</UButton>
+          <UButton size="xs" variant="soft" @click="triggerAudioInput">Audio</UButton>
+          <UInput v-model="localModel.youtube_url" placeholder="YouTube link" class="col-span-2 sm:col-span-1" size="sm" />
+        </div>
+      </div>
 
       <div>
   <RichTextEditor v-model="localModel.text" @ready="onEditorReady" />
       </div>
 
       <div v-if="localModel.type && (localModel.type.startsWith('mcq') || localModel.type === 'image' || localModel.type === 'audio')" class="space-y-2">
-        <div v-for="(opt, i) in localModel.options" :key="i" class="flex items-start gap-2">
-          <UTextarea v-model="localModel.options[i]" class="flex-1" v-autosize />
-          <div class="flex flex-col items-start gap-2 mt-1">
+        <div v-for="(opt, i) in localModel.options" :key="i" class="flex flex-col sm:flex-row items-start gap-2">
+          <UTextarea v-model="localModel.options[i]" class="flex-1 w-full sm:w-auto" v-autosize />
+          <div class="flex flex-row sm:flex-col items-center sm:items-start gap-2 mt-1 w-full sm:w-auto">
             <template v-if="localModel.type === 'mcq-single' || localModel.type === 'image' || localModel.type === 'audio'">
               <UCheckbox :model-value="localModel.correct === i"
-                @update:model-value="(v: boolean) => localModel.correct = v ? i : localModel.correct" label="Correct" />
+                @update:model-value="(v: boolean) => localModel.correct = v ? i : localModel.correct" label="Correct" class="flex-1 sm:flex-none" />
             </template>
             <template v-else>
               <UCheckbox :model-value="(localModel.corrects || []).includes(i)"
-                @update:model-value="(v: boolean) => toggleCorrect(i, v)" label="Correct" />
+                @update:model-value="(v: boolean) => toggleCorrect(i, v)" label="Correct" class="flex-1 sm:flex-none" />
             </template>
-            <UButton size="xs" color="red" variant="ghost" @click="$emit('remove-option', i)">Remove</UButton>
+            <UButton size="xs" color="red" variant="ghost" @click="$emit('remove-option', i)" class="flex-1 sm:flex-none">Remove</UButton>
           </div>
         </div>
-  <UButton size="xs" color="gray" variant="ghost" @click="$emit('add-option')">+ Add option</UButton>
+        <UButton size="xs" color="gray" variant="ghost" @click="$emit('add-option')" class="w-full sm:w-auto">+ Add option</UButton>
       </div>
 
-      <div v-if="localModel.type === 'tf'" class="flex items-center gap-2">
-        <USelect v-model="localModel.correct" :options="tfOptions" class="w-36" />
-        <UInput v-model="localModel.options[0]" placeholder="True text" class="w-48" />
-        <UInput v-model="localModel.options[1]" placeholder="False text" class="w-48" />
+      <div v-if="localModel.type === 'tf'" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <USelect v-model="localModel.correct" :options="tfOptions" />
+        <UInput v-model="localModel.options[0]" placeholder="True text" />
+        <UInput v-model="localModel.options[1]" placeholder="False text" />
       </div>
 
-      <div v-if="localModel.type === 'fill'" class="flex items-center gap-2">
-        <UInput v-model="localModel.fill_parts[0]" placeholder="Text before blank" class="w-48" />
-        <span class="text-sm">__</span>
-        <UInput v-model="localModel.fill_parts[1]" placeholder="Text after blank" class="w-48" />
+      <div v-if="localModel.type === 'fill'" class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
+        <UInput v-model="localModel.fill_parts[0]" placeholder="Text before blank" />
+        <span class="text-sm text-center">____</span>
+        <UInput v-model="localModel.fill_parts[1]" placeholder="Text after blank" />
       </div>
 
       <div>
