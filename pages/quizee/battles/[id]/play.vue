@@ -211,7 +211,7 @@ function onQuestionSelect(val) {
   if (!q || !q.id) return
   answers.value[q.id] = val
   try { const elapsed = recordAndReset(); questionTimes.value[q.id] = elapsed } catch(e) {}
-  if (['mcq','image_mcq','audio_mcq','video_mcq'].includes(q.type)) {
+  if (q.type === 'mcq') {
     setTimeout(() => { if (currentIndex.value < questions.value.length - 1) nextQuestion() }, 250)
   }
 }

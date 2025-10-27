@@ -31,7 +31,7 @@
       <template #highlight>
         <div>
           <p class="text-xs uppercase tracking-wide text-white/70">Find the right level</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ grades.length || 0 }} grade levels curated</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ filteredGrades.length || 0 }} grade levels curated</p>
           <p class="mt-2 text-sm text-white/70">Use the hero search to jump straight to a grade.</p>
         </div>
       </template>
@@ -45,7 +45,7 @@
       <template #stats>
         <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
           <p class="text-xs uppercase tracking-wide text-white/60">Total grades</p>
-          <p class="mt-2 text-xl font-semibold">{{ grades.length || 0 }}</p>
+          <p class="mt-2 text-xl font-semibold">{{ filteredGrades.length || 0 }}</p>
         </div>
         <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
           <p class="text-xs uppercase tracking-wide text-white/60">Total subjects</p>
@@ -99,10 +99,17 @@ const error = ref(null)
 const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 const query = ref('')
 
+function isCourseType(t) {
+  return ['course', 'tertiary'].includes(String(t || '').toLowerCase())
+}
+
 const filteredGrades = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return grades.value
-  return (grades.value || []).filter(grade => String(grade.name || grade.title || grade.id).toLowerCase().includes(q))
+  const list = Array.isArray(grades.value) ? grades.value.slice() : []
+  // Exclude tertiary/course items — those belong on /courses
+  const onlyGrades = list.filter(g => !isCourseType(g.type))
+  if (!q) return onlyGrades
+  return onlyGrades.filter(grade => String(grade.name || grade.title || grade.id).toLowerCase().includes(q))
 })
 
 function onSearch(q) {

@@ -19,7 +19,7 @@ definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noin
 
 import { ref } from 'vue'
 import { useRoute, useRouter, useRuntimeConfig } from '#imports'
-import QuestionBuilder from '~/components/question/QuestionBuilder.vue'
+import QuestionBuilder from '~/components/quiz/QuestionBuilder.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
 const route = useRoute()

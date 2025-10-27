@@ -26,72 +26,11 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
           Back
         </button>
-        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gray-200">
-          <!-- Media Content -->
-          <div class="w-full h-full">
-              <!-- YouTube Video -->
-              <template v-if="isYouTube(quizMedia)">
-                  <iframe 
-                    :src="formatYouTubeUrl(quizMedia)" 
-                    class="absolute inset-0 w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen
-                    referrerpolicy="no-referrer"
-                    title="Quiz video"
-                  ></iframe>
-              </template>
+        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden" :style="heroStyle">
+          <!-- preload cover to detect load state -->
+          <img v-if="quiz.cover || quiz.cover_image" :src="quiz.cover || quiz.cover_image" class="hidden" @load="onCoverLoaded" @error="onCoverError" />
 
-              <!-- Vimeo Video -->
-              <template v-else-if="isVimeo(quizMedia)">
-                
-                  <iframe 
-                    :src="formatVimeoUrl(quizMedia)"
-                    class="absolute inset-0 w-full h-full"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowfullscreen
-                    referrerpolicy="no-referrer"
-                    title="Quiz video"
-                  ></iframe>
-                
-              </template>
-
-              <!-- Direct MP4/WebM Video -->
-              <template v-else-if="isVideo(quizMedia)">
-                <video
-                  class="absolute inset-0 w-full h-full"
-                  controls
-                  controlsList="nodownload"
-                  preload="metadata"
-                >
-                  <source :src="quizMedia" :type="getVideoType(quizMedia)">
-                  Your browser does not support the video tag.
-                </video>
-              </template>
-              <!-- Image Fallback -->
-              <template v-else>
-                  <img 
-                    :src="quizMedia" 
-                    alt="Quiz media"
-                    class="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-              </template>
-
-              <!-- Loading State -->
-              <div 
-                v-if="!mediaLoaded" 
-                class="absolute inset-0 bg-gray-100 flex items-center justify-center"
-              >
-                <div class="animate-pulse flex flex-col items-center">
-                  <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
-                  </svg>
-                  <span class="mt-2 text-sm text-gray-500">Loading media...</span>
-                </div>
-              </div>
-          </div>
-
-          <!-- Overlay Content -->
+          <!-- Overlay Content (title, badges) -->
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
             <div class="flex flex-wrap gap-2 mb-3">
               <div class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-500/90 text-white border-0 capitalize">
@@ -126,6 +65,11 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">
+          <!-- Video player (separate from hero) -->
+          <div v-if="hasVideo" class="mb-4">
+            <VideoPlayer :src="quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="quiz.cover || quiz.cover_image" />
+          </div>
+
           <!-- Media Caption/Description -->
           <div v-if="quiz.media_caption || quiz.video_description" class="bg-white rounded-xl shadow-sm p-4">
             <p class="text-sm text-gray-600">
@@ -282,8 +226,9 @@ useHead(() => ({
   ]
 }))
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import VideoPlayer from '~/components/media/VideoPlayer.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -318,8 +263,18 @@ const questionCount = computed(() => {
   return quiz.questions_count || 0
 })
 
-const quizMedia = computed(() => {
-  return quiz.video_url || quiz.media || quiz.media_url || quiz.cover_video || quiz.cover || null
+const hasVideo = computed(() => {
+  return Boolean(quiz.video_url || quiz.media || quiz.cover_video || quiz.video)
+})
+
+const heroStyle = computed(() => {
+  const cover = quiz.cover || quiz.cover_image || quiz.cover_image_url || null
+  if (!cover) return {}
+  return {
+    backgroundImage: `url(${cover})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center'
+  }
 })
 
 // Related quizzes (mock data - replace with actual API call)
@@ -330,7 +285,7 @@ const related = ref([
 
 // Mock last attempt (replace with actual API call)
 const lastAttempt = ref(null)
-const mediaLoaded = ref(false)
+
 
 // Media utility functions
 const isYouTube = (url) => typeof url === 'string' && (url.includes('youtube.com') || url.includes('youtu.be'))

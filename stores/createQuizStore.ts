@@ -1,19 +1,110 @@
 
 import { defineStore } from 'pinia'
+import { watchDebounced } from '@vueuse/core'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
+
+export interface Quiz {
+  title: string;
+  description: string;
+  youtube_url: string | null;
+  level_id: number | string | null;
+  grade_id: number | string | null;
+  subject_id: number | string | null;
+  topic_id: number | string | null;
+  timer_minutes: number;
+  per_question_seconds: number;
+  use_per_question_timer: boolean;
+  attempts_allowed: number | string | null; // string for '' (unlimited)
+  shuffle_questions: boolean;
+  shuffle_answers: boolean;
+  access: 'free' | 'paywall';
+  visibility: 'draft' | 'published' | 'scheduled';
+  cover?: any; // Can be a string (URL or tmp key) or File
+  cover_image?: string;
+  cover_file?: File;
+}
+
+export interface Question {
+  id?: number;
+  uid?: string;
+  type: string;
+  body?: string;
+  text?: string;
+  options?: any[];
+  answers?: any[];
+  correct?: number | string | null;
+  corrects?: (number | string)[];
+  difficulty: number;
+  marks: number;
+  parts?: any[];
+  fill_parts?: string[];
+  media?: any; // Can be string (URL) or File
+  media_file?: File;
+  media_metadata?: Record<string, any>;
+  youtube_url?: string;
+  explanation?: string;
+}
+
+// API response types
+interface ApiResponse<T> {
+  data: T
+  message?: string
+  errors?: Record<string, string[]>
+}
+
+function validateApiResponse<T>(response: unknown): response is ApiResponse<T> {
+  if (typeof response !== 'object' || response === null) return false
+  if (!('data' in response)) return false
+  
+  if ('message' in response && typeof response.message !== 'string') return false
+  if ('errors' in response) {
+    const errors = (response as any).errors
+    if (typeof errors !== 'object' || errors === null) return false
+    for (const key in errors) {
+      if (!Array.isArray(errors[key])) return false
+      if (!errors[key].every(e => typeof e === 'string')) return false
+    }
+  }
+  
+  return true
+}
+
+interface ApiError {
+  message: string
+  errors?: Record<string, string[]>
+  status?: number
+}
+
+function isApiError(error: unknown): error is ApiError {
+  if (typeof error !== 'object' || error === null) return false
+  if (!('message' in error) || typeof (error as any).message !== 'string') return false
+  
+  if ('errors' in error) {
+    const errors = (error as any).errors
+    if (typeof errors !== 'object' || errors === null) return false
+    for (const key in errors) {
+      if (!Array.isArray(errors[key])) return false
+      if (!errors[key].every(e => typeof e === 'string')) return false
+    }
+  }
+  
+  if ('status' in error && typeof (error as any).status !== 'number') return false
+  
+  return true
+}
 
 export const useCreateQuizStore = defineStore('createQuiz', () => {
   const api = useApi()
   const alert = useAppAlert()
   const router = useRouter()
 
-  const initialForm = {
+  const initialForm: Quiz = {
     title: '',
     description: '',
     youtube_url: null,
-  level_id: null,
-  grade_id: null,
+    level_id: null,
+    grade_id: null,
     subject_id: null,
     topic_id: null,
     timer_minutes: 10,
@@ -22,15 +113,16 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     attempts_allowed: 1,
     shuffle_questions: true,
     shuffle_answers: true,
-      access: 'free',
-      // backend expects one of: 'draft', 'published', 'scheduled'
-      // previous value 'public' is invalid and caused 422 responses. Use 'draft' as a safe default.
-      visibility: 'draft',
-  }
+    access: 'free' as 'free' | 'paywall',
+    visibility: 'draft' as 'draft' | 'published' | 'scheduled',
+    cover_image: undefined,
+      cover: undefined,
+      cover_file: undefined
+    };
 
-  const quiz = ref({ ...initialForm })
-  const questions = ref<any[]>([])
-  const questionsErrors = ref<Record<string, string[]>>({})
+    const quiz = ref<Quiz>({ ...initialForm });
+    const questions = ref<Question[]>([]);
+    const questionsErrors = ref<Record<string, string[]>>({})
   const detailsErrors = ref<Record<string, string[]>>({})
   const settingsErrors = ref<Record<string, string[]>>({})
   const quizId = ref(null)
@@ -46,16 +138,172 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     return quiz.value.title && quiz.value.grade_id && quiz.value.subject_id && quiz.value.topic_id
   })
 
+  function sanitizeQuestionForPayload(q: any) {
+    if (!q || typeof q !== 'object') return q
+    
+    const copy: any = {
+      type: q.type,
+      body: q.body || q.text || '',
+      explanation: q.explanation || null,
+      difficulty: q.difficulty || 3,
+      marks: q.marks || 1
+    }
+
+    if (q.media_type) {
+      copy.media_type = q.media_type
+      if (q.media_path) copy.media_path = q.media_path
+      if (q.youtube_url) copy.youtube_url = q.youtube_url;
+      if (q.media_metadata) copy.media_metadata = { ...q.media_metadata };
+    }
+
+    if (Array.isArray(q.options)) {
+      copy.options = q.options.map((opt: any) => ({
+        text: opt.text || '',
+        is_correct: !!opt.is_correct
+      }))
+    }
+
+    if (Array.isArray(q.answers)) {
+      copy.answers = q.answers.filter((a: any) => a !== null && typeof a !== 'undefined')
+    }
+
+    if (Array.isArray(q.corrects)) {
+      copy.corrects = q.corrects.filter((c: any) => typeof c === 'number' || !isNaN(Number(c)))
+    }
+
+    if (Array.isArray(q.parts)) {
+      if (q.type === 'math' || q.type === 'code') {
+        copy.parts = q.parts.map((p: any) => ({
+          text: typeof p === 'string' ? p : (p.text || ''),
+          marks: q.type === 'math' ? (p.marks ? Number(p.marks) : 1) : undefined
+        })).filter((p: { text: string }) => p.text.trim())
+      } else if (q.type === 'fill_blank') {
+        // Filter out any empty strings from the parts for fill_blank questions.
+        copy.parts = q.parts.filter((p: any) => typeof p === 'string' && p.trim() !== '');
+      }
+    }
+
+    return copy
+  }
+
+  function restoreProgress() {
+    try {
+      const raw = localStorage.getItem(progressKey.value)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (parsed?.quiz) quiz.value = parsed.quiz
+      if (Array.isArray(parsed?.questions)) questions.value = parsed.questions
+      detailsSaved.value = !!parsed?.detailsSaved
+      settingsSaved.value = !!parsed?.settingsSaved
+      questionsSaved.value = !!parsed?.questionsSaved
+    } catch (e) {
+      // ignore parse errors
+    }
+  }
+
   // restore any saved draft on initialization
   if (typeof window !== 'undefined') {
     try { restoreProgress() } catch (e) { /* ignore */ }
   }
 
-  // persist grade/subject/topic immediately when changed so other UIs (pickers) can rely on store state
-  watch(() => quiz.value.level_id, (nv) => { try { persistProgress() } catch (e) {} })
-  watch(() => quiz.value.grade_id, (nv) => { try { persistProgress() } catch (e) {} })
-  watch(() => quiz.value.subject_id, (nv) => { try { persistProgress() } catch (e) {} })
-  watch(() => quiz.value.topic_id, (nv) => { try { persistProgress() } catch (e) {} })
+  // Helper: find File objects nested anywhere inside an object
+  function findFilesInObject(obj: any, prefix = ''): Array<{ key: string; file: File }> {
+    const found: Array<{ key: string; file: File }> = []
+    try {
+      if (!obj || typeof obj !== 'object') return found
+      const stack: Array<{ cur: any; path: string }> = [{ cur: obj, path: prefix }]
+      while (stack.length) {
+        const { cur, path } = stack.pop() as { cur: any; path: string }
+        if (!cur || typeof cur !== 'object') continue
+        for (const k of Object.keys(cur)) {
+          const v = cur[k]
+          const p = path ? (path + '.' + k) : k
+          try {
+            if (typeof File !== 'undefined' && v instanceof File) {
+              found.push({ key: p, file: v })
+              continue
+            }
+          } catch (e) {}
+          if (v && typeof v === 'object') stack.push({ cur: v, path: p })
+        }
+      }
+    } catch (e) {}
+    return found
+  }
+
+  /**
+   * Appends quiz and question data to a FormData object, handling nested files.
+   * @param form - The FormData instance.
+   * @param quizPayload - The quiz data payload.
+   * @param questionsPayload - The sanitized questions array.
+   */
+  function appendQuizDataToForm(form: FormData, quizPayload: Record<string, any>, questionsPayload?: any[]) {
+    // Append quiz fields
+    Object.keys(quizPayload).forEach((k) => {
+      const val = quizPayload[k]
+      if (val === null || typeof val === 'undefined') return
+      if (typeof val === 'object' && !(val instanceof File)) form.append(k, JSON.stringify(val))
+      else form.append(k, val)
+    })
+
+    if (questionsPayload) {
+      // Append questions as a JSON string
+      form.append('questions', JSON.stringify(questionsPayload))
+
+      // Append any File objects found in questions
+      for (let i = 0; i < questions.value.length; i++) {
+        const file = questions.value[i]?.media_file
+        if (file instanceof File) form.append(`question_media[${i}]`, file)
+      }
+    }
+  }
+
+  /**
+   * Parses API error responses and updates the appropriate error state ref.
+   * @param res - The raw Response object.
+   * @param data - The parsed JSON body from the response.
+   * @param errorRef - The ref to update with parsed errors (e.g., detailsErrors).
+   * @returns True if an error was handled, otherwise false.
+   */
+    function handleApiErrors(res: Response, data: unknown, errorRef: Ref<Record<string, string[]>>): boolean {
+    if (res.ok) {
+      errorRef.value = {}
+      return false
+    }
+
+    const mappedErrors: Record<string, string[]> = {}
+    let alertMessage: string
+    let alertType: 'error' | 'warning' = 'error'
+
+    if (isApiError(data)) {
+      alertMessage = data.message
+      if (data.errors) {
+        Object.entries(data.errors).forEach(([key, messages]) => {
+          mappedErrors[key] = messages
+        })
+      }
+
+      // Handle specific status codes
+      if (res.status === 422) {
+        alertMessage = 'Please fix the highlighted errors.'
+      } else if (res.status === 403) {
+        alertType = 'warning'
+        if (data.message.toLowerCase().includes('topic') && data.message.toLowerCase().includes('approve')) {
+          mappedErrors._topic = [data.message]
+        }
+      }
+    } else {
+      alertMessage = `Request failed with status ${res.status}`
+    }
+
+    errorRef.value = mappedErrors
+    alert.push({
+      type: alertType,
+      message: alertMessage,
+    })
+
+    return true
+  }
 
   function setTab(tab: any) {
     activeTab.value = tab
@@ -75,10 +323,11 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     isSubmitting.value = true
     try {
-      // normalize empty strings into nulls for numeric ids coming from selects
-  if ((quiz.value as any).grade_id === '') (quiz.value as any).grade_id = null
-  if ((quiz.value as any).subject_id === '') (quiz.value as any).subject_id = null
-  if ((quiz.value as any).topic_id === '') (quiz.value as any).topic_id = null
+      // Normalize empty strings into nulls for numeric ids coming from selects
+      if ((quiz.value as any).grade_id === '') (quiz.value as any).grade_id = null
+      if ((quiz.value as any).subject_id === '') (quiz.value as any).subject_id = null
+      if ((quiz.value as any).level_id === '') (quiz.value as any).level_id = null
+      if ((quiz.value as any).topic_id === '') (quiz.value as any).topic_id = null
       // convert timer_minutes to timer_seconds to match backend expectations
       const payload: any = {
         topic_id: quiz.value.topic_id ? (Number(quiz.value.topic_id) || null) : null,
@@ -87,9 +336,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         youtube_url: quiz.value.youtube_url || null,
         timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
         per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
-        subject_id: quiz.value.subject_id ? (Number(quiz.value.subject_id) || null) : null,
-  grade_id: quiz.value.grade_id ? (Number(quiz.value.grade_id) || null) : null,
-  level_id: quiz.value.level_id ? (Number(quiz.value.level_id) || null) : null,
+        subject_id: quiz.value.subject_id ? (Number(quiz.value.subject_id) || null) : null, // This is correct
+        grade_id: quiz.value.grade_id ? (Number(quiz.value.grade_id) || null) : null,
+        level_id: quiz.value.level_id ? (Number(quiz.value.level_id) || null) : null,
         use_per_question_timer: quiz.value.use_per_question_timer,
         // Normalize attempts_allowed: '' (select for unlimited) -> null, numeric strings -> Number
         attempts_allowed: (() => {
@@ -104,206 +353,40 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         visibility: quiz.value.visibility,
       }
 
-      const sanitizedQuestions: any[] = []
-
-      // Helper: produce a JSON-safe copy of a question for sending to the server
-        function sanitizeQuestionForPayload(q: any) {
-        if (!q || typeof q !== 'object') return q
-        const copy: any = {}
-  const allowedKeys = ['uid','id','type','text','body','options','answers','correct','corrects','difficulty','marks','fill_parts','parts','media','media_metadata','youtube_url','explanation','tags','solution_steps','is_banked']
-        for (const k of Object.keys(q)) {
-          if (!allowedKeys.includes(k)) continue
-          const v = (q as any)[k]
-          try {
-            if (typeof File !== 'undefined' && v instanceof File) {
-              copy[k] = null
-              continue
-            }
-          } catch (e) {}
-          if (Array.isArray(v)) copy[k] = JSON.parse(JSON.stringify(v))
-          else if (v && typeof v === 'object') copy[k] = JSON.parse(JSON.stringify(v))
-          else copy[k] = v
-        }
-          // Ensure the payload uses the canonical 'answers' array the backend expects.
-          // If frontend only set a single numeric `correct`, convert it into both
-          // `corrects` (index array) and `answers` (value array) where possible.
-          try {
-            // If answers missing but `corrects` exists, and options are present, derive answers
-            if ((!copy.answers || copy.answers === null) && Array.isArray(copy.corrects) && Array.isArray(copy.options)) {
-              const vals: any[] = []
-              for (const idx of copy.corrects) {
-                const n = Number(idx)
-                if (!Number.isNaN(n) && copy.options[n] !== undefined) vals.push(copy.options[n])
-              }
-              if (vals.length) copy.answers = vals
-            }
-
-            // If answers and corrects are missing but `correct` numeric index exists, map it
-            if ((!copy.answers || copy.answers === null) && (!Array.isArray(copy.corrects) || copy.corrects.length === 0) && (typeof q.correct !== 'undefined' && q.correct !== null)) {
-              const n = Number(q.correct)
-              if (!Number.isNaN(n)) {
-                // set corrects index and answers value when options available
-                copy.corrects = [n]
-                if (Array.isArray(copy.options) && copy.options[n] !== undefined) {
-                  copy.answers = [copy.options[n]]
-                }
-              }
-            }
-          } catch (e) {
-            // ignore mapping errors — we still send whatever we have
-          }
-
-          return copy
-      }
-
-      // Determine if any questions contain local File objects; if so, send as multipart/form-data
-      let hasFiles = false
-      for (const q of questions.value) {
-        const sanitized = sanitizeQuestionForPayload(q)
-        sanitizedQuestions.push(sanitized)
-        for (const k in q) {
-          try {
-            // detect File objects that should be uploaded
-            const v: any = (q as any)[k]
-            if (typeof File !== 'undefined' && v instanceof File) {
-              hasFiles = true
-              break
-            }
-          } catch (e) {
-            // ignore access errors
-          }
-        }
-        if (hasFiles) break
-      }
-
-      let res: Response
-      if (hasFiles) {
-        const form = new FormData()
-        // append quiz fields (scalars/objects). Objects/arrays are stringified.
-        Object.keys(payload).forEach((k) => {
-          const val = (payload as any)[k]
-          if (val === null || typeof val === 'undefined') return
-          if (typeof val === 'object') form.append(k, JSON.stringify(val))
-          else form.append(k, String(val))
-        })
-
-        // If a top-level cover file is present on the quiz object, append it.
-        try {
-          const cov = (quiz.value as any).cover
-          if (cov) {
-            // If it's a File instance, append directly
-            if (typeof File !== 'undefined' && cov instanceof File) {
-              form.append('cover', cov)
-            } else if (typeof window !== 'undefined') {
-              const tmp: any = (window as any)['_tmpFiles'] || {}
-              if (typeof cov === 'string' && tmp[cov]) {
-                // If it's a temporary key referencing an uploaded File stored on window._tmpFiles
-                form.append('cover', tmp[cov])
-              }
-            }
-          }
-        } catch (e) {
-          // ignore cover attachment errors
-        }
-
-        // append questions as a JSON string
-        form.append('questions', JSON.stringify(sanitizedQuestions))
-
-        // Append any File objects found in questions under question_media[index] or question_media[uid]
-        // The UI may attach files inside question.media or question.file; scan sanitizedQuestions for file refs
-        for (let i = 0; i < questions.value.length; i++) {
-          const q = questions.value[i]
-          // possible file fields
-          const potentialFileFields = ['media', 'file', 'media_file', 'media_blob']
-          for (const f of potentialFileFields) {
-            try {
-              const v: any = q[f]
-              if (v && typeof File !== 'undefined' && v instanceof File) {
-                // prefer numeric index key
-                form.append(`question_media[${i}]`, v)
-                continue
-              }
-            } catch (e) {}
-          }
-          // if the question has a uid and the caller stored a File under that uid key (edge case)
-          if (q && q.uid) {
-            try {
-              const v: any = (q as any).media
-              if (v && typeof File !== 'undefined' && v instanceof File) {
-                form.append(`question_media[${q.uid}]`, v)
-              }
-            } catch (e) {}
-          }
-        }
-
-        // debug: log a summary of FormData keys being sent (avoid logging binary contents)
-        try {
-          const keys: string[] = []
-          // FormData.entries is supported in modern browsers; iterate to gather keys
-          for (const pair of (form as any).entries()) {
-            keys.push(String(pair[0]))
-          }
-          // eslint-disable-next-line no-console
-          console.debug('Submitting multipart FormData to /api/quizzes with keys:', keys)
-        } catch (e) {
-          // ignore logging errors
-        }
-
-        res = await api.postFormData('/api/quizzes', form)
+      // Use PATCH if we have a quizId, otherwise POST to create.
+      const method = quizId.value ? 'PATCH' : 'POST'
+      const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes'
+      
+      let res: Response;
+      const coverFile = (quiz.value as any).cover_file
+      if (coverFile instanceof File) {
+        const formData = new FormData()
+        if (method === 'PATCH') formData.append('_method', 'PATCH')
+        appendQuizDataToForm(formData, { ...payload, cover: coverFile })
+        res = await api.postFormData(url, formData)
       } else {
-        // debug: log JSON payload
-        try { console.debug('Submitting JSON to /api/quizzes', { ...payload }) } catch (e) {}
-        res = await api.postJson('/api/quizzes', { ...payload })
+        if (method === 'PATCH') {
+          res = await api.patchJson(url, payload)
+        } else {
+          res = await api.postJson(url, payload)
+        }
       }
+
       if (api.handleAuthStatus(res)) {
         alert.push({ type: 'warning', message: 'Session expired — please sign in again' })
         return
       }
       const data = await res.json().catch(() => null)
-      if (!res.ok) {
-        // handle validation errors (422) specially so UI can show them
-        if (res.status === 422 && data?.errors) {
-          // map server keys to UI-friendly keys (support both raw and prefixed keys used by some components)
-          const mapped: Record<string, string[]> = {}
-          const raw: string[] = []
-          Object.keys(data.errors).forEach((k) => {
-            mapped[k] = data.errors[k]
-            // collect messages into a raw array for top-level display
-            if (Array.isArray(data.errors[k])) raw.push(...data.errors[k])
-            // component expects some underscored keys like _title and _topic in places
-            if (k === 'title') mapped['_title'] = data.errors[k]
-            if (k === 'topic_id' || k === 'topic') mapped['_topic'] = data.errors[k]
-          })
-          // also include any top-level message if present
-          if (data?.message) raw.unshift(String(data.message))
-          if (raw.length) mapped['_raw'] = raw
-          detailsErrors.value = mapped
-          alert.push({ type: 'error', message: 'Please fix the highlighted errors.' })
-          return
-        }
 
-        // If server returned a 403 with a descriptive message (e.g. topic not approved),
-        // surface it inline and provide an actionable hint so the UI can offer a request-approval button.
-        if (res.status === 403 && data?.message) {
-          const mapped: Record<string, string[]> = {}
-          const raw: string[] = [String(data.message)]
-          mapped['_raw'] = raw
-          // If the message mentions topic approval, expose an action the UI can render
-          if (String(data.message).toLowerCase().includes('topic') && String(data.message).toLowerCase().includes('approve')) {
-            ;(mapped as any)['_actions'] = { requestTopicApproval: true }
-          }
-          detailsErrors.value = mapped
-          alert.push({ type: 'warning', message: data.message })
-          return
-        }
-
-        throw new Error(data?.message || 'Failed to create quiz.')
+      if (handleApiErrors(res, data, detailsErrors)) {
+        return // Stop execution if errors were handled
       }
+
 
       // clear any previously stored validation errors
       detailsErrors.value = {}
 
-  quizId.value = data.quiz.id
+      quizId.value = data.quiz.id
       detailsSaved.value = true
       // persist progress to localStorage
       persistProgress()
@@ -344,18 +427,15 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
 
       const res = await api.patchJson(`/api/quizzes/${quizId.value}`, payload)
       const data = await res.json().catch(() => null)
-      if (!res.ok) {
-        if (res.status === 422 && data?.errors) {
-          settingsErrors.value = data.errors
-          alert.push({ type: 'error', message: 'Please fix the highlighted settings errors.' })
-          return
-        }
-        throw new Error('Failed to save quiz settings')
+
+      if (handleApiErrors(res, data, settingsErrors)) {
+        return // Stop execution if errors were handled
       }
 
       settingsErrors.value = {}
       alert.push({ type: 'success', message: 'Settings saved successfully!' })
       settingsSaved.value = true
+      persistProgress()
     } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: e.message })
@@ -370,8 +450,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       return
     }
     try {
+      // sanitize payload for sending
+      const sanitizedQuestion = sanitizeQuestionForPayload(question)
       // debug: log payload
-      try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, question) } catch (e) {}
+      try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, sanitizedQuestion) } catch (e) {}
       let res: Response
       // If question contains a File (media), send as FormData with 'media' key
       let containsFile = false
@@ -383,20 +465,25 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       }
       if (containsFile) {
         const form = new FormData()
-        // append scalar fields; arrays/objects stringified
-        Object.keys(question).forEach((k) => {
-          const v: any = (question as any)[k]
+        // Append any File objects from the original question under 'media' (preserve original file refs)
+        for (const k in question) {
+          try {
+            const v: any = (question as any)[k]
+            if (v && typeof File !== 'undefined' && v instanceof File) {
+              form.append('media', v)
+            }
+          } catch (e) {}
+        }
+        // append sanitized scalar fields; arrays/objects stringified
+        Object.keys(sanitizedQuestion).forEach((k) => {
+          const v: any = (sanitizedQuestion as any)[k]
           if (v === null || typeof v === 'undefined') return
-          if (typeof File !== 'undefined' && v instanceof File) {
-            form.append('media', v)
-            return
-          }
           if (typeof v === 'object') form.append(k, JSON.stringify(v))
           else form.append(k, String(v))
         })
         res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
       } else {
-        const res2 = await api.postJson(`/api/quizzes/${quizId.value}/questions`, question)
+        const res2 = await api.postJson(`/api/quizzes/${quizId.value}/questions`, sanitizedQuestion)
         res = res2
       }
       if (api.handleAuthStatus(res)) return
@@ -442,65 +529,31 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       return 
     }
     try {
-      // debug: log payload
-      try { console.debug(`PATCH /api/quizzes/${quizId.value}/questions`, { questions: questions.value }) } catch (e) {}
+      // build sanitized question list and debug
+      const sanitizedQuestions = (questions.value || []).map((q: any) => sanitizeQuestionForPayload(q))
+      try { console.debug(`PATCH /api/quizzes/${quizId.value}/questions`, { questions: sanitizedQuestions }) } catch (e) {}
       // detect File objects inside questions; if present send as multipart/form-data
-      let hasFiles = false
-      for (const q of questions.value) {
-        try {
-          const potentialFileFields = ['media', 'file', 'media_file', 'media_blob']
-          for (const f of potentialFileFields) {
-            const v = (q as any)[f]
-            if (!v) continue
-            if (typeof File !== 'undefined' && v instanceof File) { hasFiles = true; break }
-            // support temporary keys stored in window._tmpFiles
-            try { if (typeof v === 'string' && typeof window !== 'undefined' && (window as any)['_tmpFiles'] && (window as any)['_tmpFiles'][v]) { hasFiles = true; break } } catch (e) {}
-          }
-        } catch (e) {}
-        if (hasFiles) break
-      }
+      const hasFiles = questions.value.some(q => q.media_file instanceof File)
 
       let res: Response
       if (hasFiles) {
         const form = new FormData()
-        // append questions as JSON
-        form.append('questions', JSON.stringify(questions.value))
-        // append files found in questions
-        for (let i = 0; i < questions.value.length; i++) {
-          const q = questions.value[i]
-          const potentialFileFields = ['media', 'file', 'media_file', 'media_blob']
-          for (const f of potentialFileFields) {
-            try {
-              const v = (q as any)[f]
-              if (!v) continue
-              if (typeof File !== 'undefined' && v instanceof File) {
-                form.append(`question_media[${i}]`, v)
-                continue
-              }
-              // tmp key reference
-              if (typeof v === 'string' && typeof window !== 'undefined' && (window as any)['_tmpFiles'] && (window as any)['_tmpFiles'][v]) {
-                form.append(`question_media[${i}]`, (window as any)['_tmpFiles'][v])
-                continue
-              }
-            } catch (e) {}
-          }
-          // also support question having a uid and a tmp key stored under uid reference
-          try {
-            if (q && q.uid) {
-              const maybe = (q as any).media
-              if (maybe && typeof maybe === 'string' && typeof window !== 'undefined' && (window as any)['_tmpFiles'] && (window as any)['_tmpFiles'][maybe]) {
-                form.append(`question_media[${q.uid}]`, (window as any)['_tmpFiles'][maybe])
-              }
-            }
-          } catch (e) {}
-        }
+        // The backend route for bulk question updates is PATCH, but FormData with PATCH is tricky.
+        // Laravel supports a `_method` field to tunnel PATCH requests over POST.
+        // The `bulkUpdateForQuiz` method in the backend controller handles this.
+        form.append('_method', 'PATCH')
+        appendQuizDataToForm(form, {}, sanitizedQuestions)
+        // We use postFormData which sends a POST request. The backend will interpret it as PATCH.
         res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
       } else {
-        res = await api.patchJson(`/api/quizzes/${quizId.value}/questions`, { questions: questions.value })
+        res = await api.patchJson(`/api/quizzes/${quizId.value}/questions`, { questions: sanitizedQuestions })
       }
 
       if (api.handleAuthStatus && api.handleAuthStatus(res)) return
-      if (!res.ok) throw new Error('Failed to save questions')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.message || 'Failed to save questions')
+      }
       questionsSaved.value = true
       persistProgress()
       alert.push({ type: 'success', message: 'All questions saved' })
@@ -533,31 +586,45 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
   }
 
-  // persist progress whenever the saved flags change
-  watch([detailsSaved, settingsSaved, questionsSaved], () => {
-    try { persistProgress() } catch (e) {}
-  })
-
   async function submitQuiz() {
     isSubmitting.value = true
     try {
-      // normalize numeric empty strings
-  if ((quiz.value as any).grade_id === '') (quiz.value as any).grade_id = null
-  if ((quiz.value as any).subject_id === '') (quiz.value as any).subject_id = null
-  if ((quiz.value as any).topic_id === '') (quiz.value as any).topic_id = null
-  if ((quiz.value as any).attempts_allowed === '') (quiz.value as any).attempts_allowed = null
-  if ((quiz.value as any).per_question_seconds === '') (quiz.value as any).per_question_seconds = null
-      // convert minutes to seconds and send questions in canonical shape
-      const payload: any = {
-        ...quiz.value,
-        timer_seconds: quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null,
-        questions: questions.value,
-        status: 'published'
+      // Validate quiz data before submission
+      const validationErrors: string[] = []
+      
+      if (!quiz.value.title?.trim()) {
+        validationErrors.push('Quiz title is required')
       }
-      delete payload.timer_minutes
-  // debug: log publish payload
-  try { console.debug(`PATCH /api/quizzes/${quizId.value} (publish)`, payload) } catch (e) {}
-  const res = await api.patchJson(`/api/quizzes/${quizId.value}`, payload)
+      if (!quiz.value.topic_id) {
+        validationErrors.push('Please select a topic')
+      }
+      if (!questions.value.length) {
+        validationErrors.push('Quiz must have at least one question')
+      }
+      
+      if (validationErrors.length > 0) {
+        validationErrors.forEach(error => {
+          alert.push({ type: 'error', message: error })
+        })
+        return false
+      }
+      // First, ensure all details and questions are saved, especially if files are involved.
+      // This re-uses the logic that handles multipart/form-data correctly.
+      await saveDetails()
+      if (detailsErrors.value && Object.keys(detailsErrors.value).length > 0) {
+        // saveDetails failed validation, so we stop here.
+        return
+      }
+      await saveAllQuestions()
+      if (questionsErrors.value && Object.keys(questionsErrors.value).length > 0) {
+        // saveAllQuestions failed, stop here.
+        alert.push({ type: 'error', message: 'Could not save all questions before publishing.' })
+        return
+      }
+
+      // Now, simply update the visibility to publish the quiz.
+      const payload = { visibility: 'published' }
+      const res = await api.patchJson(`/api/quizzes/${quizId.value}`, payload)
 
       if (api.handleAuthStatus(res)) { 
         alert.push({ type: 'warning', message: 'Session expired — please sign in again' }); 
@@ -567,10 +634,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const data = await res.json().catch(() => null)
       if (!res.ok) throw new Error(data?.message || 'Failed to publish quiz.')
 
-  // expose the created quiz payload so UI can show a created modal
-  lastCreated.value = data.quiz
-  alert.push({ type: 'success', message: 'Quiz published successfully!' })
-  // Note: do not reset or navigate here. Let the page show the created modal and navigate when the user clicks View/Edit.
+      // expose the created quiz payload so UI can show a created modal
+      lastCreated.value = data.quiz || data
+      alert.push({ type: 'success', message: 'Quiz published successfully!' })
+      // Clear the local draft since it's now published.
+      clearProgress()
+      // Note: do not reset or navigate here. Let the page show the created modal and navigate when the user clicks View/Edit.
     } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: e.message })
@@ -589,6 +658,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         const loaded: any = { ...initialForm, ...serverQuiz }
           // normalize level fields if present on server payload
           loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.levelId ?? null
+          loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? null
+          loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? null
+          loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? null
+
           loaded.level = serverQuiz.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
         // convert timer_seconds (server) to timer_minutes (client UI)
         const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
@@ -641,6 +714,14 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
   }
 
+  function clearProgress() {
+    try {
+      localStorage.removeItem(progressKey.value)
+    } catch (e) {
+      // ignore
+    }
+  }
+
   function restoreProgress() {
     try {
       const raw = localStorage.getItem(progressKey.value)
@@ -656,12 +737,51 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
   }
 
+  // Persist progress to localStorage with a debounce to avoid excessive writes.
+  // A deep watch ensures any change to the quiz or questions object triggers it.
+  watchDebounced([quiz, questions], () => {
+    persistProgress()
+  }, { debounce: 500, deep: true })
+
+  // Cleanup function to reset store state
+  function cleanup() {
+    quiz.value = { ...initialForm }
+    questions.value = []
+    questionsErrors.value = {}
+    detailsErrors.value = {}
+    settingsErrors.value = {}
+    quizId.value = null
+    lastCreated.value = null
+    detailsSaved.value = false
+    settingsSaved.value = false
+    questionsSaved.value = false
+    isSubmitting.value = false
+    isSaving.value = false
+    activeTab.value = 'details'
+    clearProgress()
+  }
+
+  // Setup cleanup handlers
+  function setupCleanup() {
+    if (process.client) {
+      const unloadHandler = () => {
+        persistProgress()
+      }
+      window.addEventListener('beforeunload', unloadHandler)
+      
+      onBeforeUnmount(() => {
+        window.removeEventListener('beforeunload', unloadHandler)
+        cleanup()
+      })
+    }
+  }
+
   return {
     quiz,
     questions,
     questionsErrors,
     detailsErrors,
-  settingsErrors,
+    settingsErrors,
     quizId,
     lastCreated,
     detailsSaved,
@@ -678,6 +798,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     saveQuestion,
     saveAllQuestions,
     submitQuiz,
-    loadQuiz
+    loadQuiz,
+    clearProgress,
+    setupCleanup
   }
 })

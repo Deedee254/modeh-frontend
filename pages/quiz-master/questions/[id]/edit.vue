@@ -18,7 +18,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from '#imports'
-import QuestionBuilder from '~/components/question/QuestionBuilder.vue'
+import QuestionBuilder from '~/components/quiz/QuestionBuilder.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 

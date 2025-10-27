@@ -49,7 +49,7 @@ const embedUrl = computed(() => props.question?.youtube_url || props.question?.y
 const layoutClass = computed(() => hasMedia.value ? 'sm:flex sm:items-start sm:space-x-6' : '')
 const componentName = computed(() => {
   const t = (props.question?.type || 'mcq').toString()
-  if (['mcq','image_mcq','audio_mcq','video_mcq'].includes(t)) return McqCard
+  if (t === 'mcq') return McqCard
   if (t === 'multi') return MultiCard
   if (t === 'short') return ShortAnswerCard
   if (t === 'numeric') return NumericCard

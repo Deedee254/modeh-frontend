@@ -331,7 +331,7 @@ function onQuestionSelect(val) {
   answers.value[q.id] = val
   // record per-question time
   recordQuestionTime(q.id)
-  if (['mcq', 'image_mcq', 'audio_mcq', 'video_mcq'].includes(q.type)) {
+  if (q.type === 'mcq') {
     setTimeout(() => { if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion() }, 250)
   }
 }

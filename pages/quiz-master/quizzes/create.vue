@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 pb-16">
-    <div class="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-[320px] sm:max-w-2xl lg:max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div class="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">Create a new quiz</h1>
@@ -73,6 +73,7 @@
           @save="async () => { await saveSettings(); if (store.settingsSaved) { store.setTab('questions') } }"
           @next="() => trySetTab('questions')"
           @prev="() => trySetTab('details')"
+          @error="(e) => alert.push(e)"
         />
 
         <QuizQuestionsTab
@@ -83,9 +84,9 @@
           @update:modelValue="(v) => (store.questions = v)"
           @save="store.saveAllQuestions"
           @open-builder="openBuilder"
-          @open-bank="() => { showQuestionBank = true }"
+          @open-bank="onOpenBank"
           @edit="(q) => edit(q)"
-          @preview="() => { showPreview.value = true }"
+          @preview="onPreview"
           @prev="() => store.setTab('settings')"
           @publish="onPublish"
         />
@@ -148,7 +149,7 @@ import { computed, ref, watch } from 'vue'
 import { useRuntimeConfig } from '#imports'
 import { useCreateQuizStore } from '~/stores/createQuizStore'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
-import QuestionBuilder from '~/components/question/QuestionBuilder.vue'
+import QuestionBuilder from '~/components/quiz/QuestionBuilder.vue'
 import CreateTopicModal from '~/components/modals/CreateTopicModal.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -200,8 +201,11 @@ function trySetTab(tab) {
 }
 
 async function onPublish() {
-  if (!store.quizId) await store.saveDetails()
-  await store.saveSettings()
+  // If no quiz ID, we need to save details first
+  if (!store.quizId) {
+    await store.saveDetails()
+  }
+  // Save settings and questions in a single publish call
   await store.submitQuiz()
 }
 
@@ -230,6 +234,9 @@ const onSubjectSearch = debounce((q) => _doSubjectSearch(q), 350)
 const onTopicSearch = debounce((q) => _doTopicSearch(q), 350)
 
 onMounted(async () => {
+  // Set up cleanup handlers
+  store.setupCleanup()
+  
   try {
     await fetchGrades()
     try { await fetchLevels() } catch (e) {}
@@ -277,10 +284,13 @@ const showCreatedModal = ref(false)
 const createdPayload = ref(null)
 const showPreview = ref(false)
 const showQuestionBank = ref(false)
+
 function openBuilder() { showBuilder.value = true }
 function onCancel() { showBuilder.value = false }
 function onSaved(saved) { store.questions.push(saved) }
 function edit(q) {}
+function onPreview() { showPreview.value = true }
+function onOpenBank() { showQuestionBank.value = true }
 
 function onAddFromBank(itemOrArray) {
   try {

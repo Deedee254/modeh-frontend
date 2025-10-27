@@ -128,7 +128,7 @@
                     type="button"
                     @click="openCreateTopic"
                     :disabled="!selectedSubject"
-                    class="inline-flex items-center justify-center gap-x-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50 disabled:opacity-60"
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-x-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50 disabled:opacity-60"
                   ><span>New Topic</span></button>
                 </template>
               </TaxonomyPicker>
@@ -163,20 +163,20 @@
         <ClientOnly>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Cover image</label>
-            <div class="flex items-start gap-4">
-              <div class="w-48 h-28 bg-gray-100 rounded overflow-hidden flex items-center justify-center border">
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+              <div class="w-full sm:w-48 h-28 bg-gray-100 rounded overflow-hidden flex items-center justify-center border">
                 <img v-if="previewUrl" :src="previewUrl" class="object-cover w-full h-full" />
                 <div v-else class="text-xs text-gray-500">No cover</div>
               </div>
 
-              <div class="flex-1">
+              <div class="flex-1 w-full sm:w-auto">
                 <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onCoverChange" />
-                <div class="flex gap-2 mb-2">
-                  <UButton size="sm" variant="soft" @click="triggerFileInput">Choose file</UButton>
-                  <UButton size="sm" variant="ghost" color="gray" @click="removeCover" :disabled="!hasCover">Remove</UButton>
+                <div class="flex flex-col sm:flex-row gap-2 mb-2 w-full">
+                  <UButton size="sm" variant="soft" @click="triggerFileInput" class="w-full sm:w-auto">Choose file</UButton>
+                  <UButton size="sm" variant="ghost" color="gray" @click="removeCover" :disabled="!hasCover" class="w-full sm:w-auto">Remove</UButton>
                 </div>
-                <p class="text-xs text-gray-500">Recommended: JPEG/PNG up to 5MB.</p>
-                <p v-if="modelValue.cover_image" class="text-xs text-slate-500 mt-2">Current uploaded cover will be used until you choose a new file.</p>
+                <p class="text-xs text-gray-500 text-center sm:text-left">Recommended: JPEG/PNG up to 5MB.</p>
+                <p v-if="modelValue.cover_image" class="text-xs text-slate-500 mt-2 text-center sm:text-left">Current uploaded cover will be used until you choose a new file.</p>
               </div>
             </div>
           </div>
@@ -227,7 +227,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -417,17 +417,17 @@ function onSubjectPicked(item) {
   // preload topics for the selected subject via composable
   try { fetchTopicsBySubject(sid) } catch (e) {}
   // auto-focus the topics picker so users can quickly pick a topic after selecting a subject
-  try {
-    const tp = topicsPicker?.value || null
-    if (tp && typeof tp.focusSearch === 'function') {
-      setTimeout(() => {
-        try {
-          tp.focusSearch()
-          if (tp.$el && typeof tp.$el.scrollIntoView === 'function') tp.$el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-        } catch (e) {}
-      }, 120)
-    }
-  } catch (e) {}
+  nextTick(() => {
+    try {
+      const tp = topicsPicker?.value || null
+      if (tp && typeof tp.focusSearch === 'function') {
+        tp.focusSearch()
+        if (tp.$el && typeof tp.$el.scrollIntoView === 'function') {
+          tp.$el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+      }
+    } catch (e) {}
+  })
 }
 
 // Model update handlers used by TaxonomyPicker's v-model (@update:modelValue)
@@ -454,6 +454,16 @@ function onGradeSelected(item) {
   try {
     selectedGrade.value = item?.id || ''
     onGradeModelUpdate(item)
+    // Auto focus subjects picker after grade selection
+    nextTick(() => {
+      const subjectsPicker = document.querySelector('[aria-labelledby="subject-label"] input')
+      if (subjectsPicker) {
+        subjectsPicker.focus()
+        if (typeof subjectsPicker.scrollIntoView === 'function') {
+          subjectsPicker.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }
+    })
   } catch (e) {}
 }
 

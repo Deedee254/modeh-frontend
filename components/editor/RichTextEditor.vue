@@ -1,7 +1,13 @@
 <template>
   <div class="rich-editor relative">
     <!-- Bubble Menu for inline formatting -->
-  <BubbleMenu v-if="ed && BubbleMenu" :editor="ed" :tippy-options="{ duration: 100, animation: 'scale-subtle' }" class="bubble-menu">
+  <component 
+      :is="bubbleMenuComponent" 
+      v-if="ed && bubbleMenuComponent" 
+      :editor="ed" 
+      :tippy-options="{ duration: 100, animation: 'scale-subtle' }" 
+      class="bubble-menu"
+  >
       <button @click="ed && ed.chain().focus().toggleBold().run()" :class="{ 'is-active': ed && ed.isActive('bold') }" title="Bold">
         <Icon name="heroicons:bold-20-solid" />
       </button>
@@ -14,7 +20,7 @@
       <button @click="ed && ed.chain().focus().toggleCode().run()" :class="{ 'is-active': ed && ed.isActive('code') }" title="Inline Code">
         <Icon name="heroicons:code-bracket-20-solid" />
       </button>
-  </BubbleMenu>
+  </component>
 
     <!-- Toolbar for block elements -->
     <div class="toolbar mb-2 flex flex-wrap gap-1 border-b pb-2">
@@ -55,11 +61,17 @@ import History from '@tiptap/extension-history'
 import Dropcursor from '@tiptap/extension-dropcursor'
 import Gapcursor from '@tiptap/extension-gapcursor'
 import HardBreak from '@tiptap/extension-hard-break'
+import Placeholder from '@tiptap/extension-placeholder'
 
 // Math extension will be dynamically imported on the client to avoid build-time
 // failures when optional runtime deps (like `evaluatex`) are not installed.
 
-const props = defineProps<{ modelValue?: string; editable?: boolean; features?: { math?: boolean; code?: boolean } }>()
+const props = defineProps<{ 
+  modelValue?: string; 
+  editable?: boolean; 
+  features?: { math?: boolean; code?: boolean }; 
+  placeholder?: string;
+}>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void; (e: 'ready'): void; (e: 'error', err: Error): void }>()
 
 // Manually build the extensions list to disable markdown shortcuts
@@ -75,16 +87,23 @@ const baseExtensions = [
   Dropcursor,
   Gapcursor,
   HardBreak,
-  // Note: BubbleMenu is a Vue component (imported above) and not a Tiptap extension.
-  // Do not add it to the extensions array.
+  Placeholder.configure({
+    placeholder: props.placeholder || 'Start typing...',
+    emptyEditorClass: 'is-editor-empty',
+  }),
+// BubbleMenu is a Vue component (imported above) and not a Tiptap extension.
+// Do not add it to the extensions array.
 ]
 
-const isClient = typeof window !== 'undefined'
-
-// Editor instance (ref) — created onMounted so we can dynamically import optional extensions
 import { ref as vueRef, onMounted } from 'vue'
 import type { Editor } from '@tiptap/core'
-const editor = vueRef<Editor | null>(null)
+import type { Component } from 'vue'
+
+const isClient = typeof window !== 'undefined'
+const bubbleMenuComponent = vueRef<Component | null>(null)
+
+// Editor instance (ref) — created onMounted so we can dynamically import optional extensions
+const editor = vueRef<any>(null)
 
 onMounted(async () => {
   if (!isClient) return
@@ -100,9 +119,9 @@ onMounted(async () => {
       const mathExt = mod?.default ?? mod
       if (mathExt?.configure) extensions.push(mathExt.configure({}))
       else extensions.push(mathExt)
-    } catch (e) {
+    } catch (e: unknown) {
       // Notify parent and continue without math support
-      emit('error', new Error('Failed to load math extension: ' + (e?.message || e)))
+      emit('error', new Error('Failed to load math extension: ' + String(e)))
       // Do not rethrow — editor should still work without math extension
       console.warn('Math extension load failed', e)
     }
@@ -111,47 +130,41 @@ onMounted(async () => {
   // useEditor may return either an Editor instance or a ref containing the instance
   // depending on the installed version. Normalize so `editor.value` is always the
   // raw Editor instance to make methods like `getHTML()` and `chain()` available.
+  // Cast options to any to allow placeholder property
   const created = useEditor({
     content: props.modelValue || '',
     editable: props.editable !== false,
     extensions: extensions,
-    onUpdate({ editor: e }) {
-      emit('update:modelValue', e.getHTML())
+    onUpdate(params: { editor: any }) {
+      const { editor } = params
+      emit('update:modelValue', editor.getHTML())
     },
     editorProps: {
       attributes: {
         class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-2 focus:outline-none',
       },
-    },
-  })
+    }
+  } as any);
 
   // `created` may be a ref (contains `.value`) or the editor directly. Unwrap.
-  try {
-    // @ts-ignore - defensive runtime check
-    editor.value = (created && typeof (created as any).value !== 'undefined') ? (created as any).value : created
-  } catch (e) {
-    editor.value = created as any
+  if ('value' in created) {
+    editor.value = created.value;
+  } else {
+    editor.value = created;
   }
-    // Try to dynamically load the BubbleMenu component from tiptap on the client.
-    // This avoids static type/import issues during SSR and keeps initial bundle size smaller.
-    try {
-      const mod = await import('@tiptap/vue-3')
-      BubbleMenu.value = mod?.BubbleMenu ?? (mod?.default && mod.default.BubbleMenu) ?? null
-    } catch (e) {
-      // Non-fatal: editor will work without BubbleMenu
-      console.warn('Failed to load Tiptap BubbleMenu component', e)
-    }
 
-    emit('ready')
-})
+  // Try to dynamically load the BubbleMenu component from tiptap on the client.
+  // This avoids static type/import issues during SSR and keeps initial bundle size smaller.
+  try {
+    const bubbleMenuModule = await import('@tiptap/extension-bubble-menu');
+    bubbleMenuComponent.value = bubbleMenuModule.BubbleMenu;
+  } catch (e) {
+    // Non-fatal: editor will work without BubbleMenu
+    console.warn('Failed to load Tiptap BubbleMenu component', e);
+  }
 
-// Import the BubbleMenu component under a different local name to avoid
-// redeclaring the same identifier (which caused a TDZ / initialization error).
-// BubbleMenu is a client-only UI component from Tiptap. Import it dynamically
-// inside onMounted to avoid type/import issues during SSR and keep the
-// initial bundle small. Expose as a ref so the template can render it once
-// it's available.
-const BubbleMenu = vueRef(null)
+  emit('ready');
+});
 
 // Helper to obtain the concrete Editor instance (handles nested ref cases)
 function getEditorInstance() {
@@ -256,49 +269,78 @@ defineExpose({
   color: rgb(229, 231, 235);
 }
 
+.editor-content :global(.ProseMirror.is-editor-empty:before) {
+  content: attr(data-placeholder);
+  float: left;
+  color: rgb(156, 163, 175);
+  pointer-events: none;
+  height: 0;
+}
+
+.dark .editor-content :global(.ProseMirror.is-editor-empty:before) {
+  color: rgb(107, 114, 128);
+}
+
 /* Bubble Menu Styling */
 .bubble-menu {
   display: flex;
-  background-color: #262626;
-  padding: 0.2rem;
+  background-color: rgb(31, 41, 55);
+  padding: 0.4rem;
   border-radius: 0.5rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 50;
 }
 
 .bubble-menu button {
   border: none;
   background: none;
   color: #fff;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  padding: 0.3rem 0.5rem;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.25rem;
+  opacity: 0.8;
+  transition: all 0.2s ease;
 }
 
-.bubble-menu button:hover, .bubble-menu button.is-active {
+.bubble-menu button:hover {
   opacity: 1;
+  background-color: rgba(255,255,255,0.1);
+}
+
+.bubble-menu button.is-active {
+  opacity: 1;
+  background-color: rgba(255,255,255,0.15);
+  color: rgb(147, 197, 253);
 }
 
 /* Toolbar Styling */
 .toolbar {
-  border-color: rgb(229, 231, 235);
-  padding: 0.5rem;
+  border-bottom: 1px solid rgb(229, 231, 235);
+  padding: 0.75rem;
+  background: rgb(250, 250, 250);
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
 }
 .dark .toolbar {
   border-color: rgb(75, 85, 99);
+  background: rgb(41, 49, 63);
 }
 
 .toolbar button {
   display: inline-flex;
   align-items: center;
   font-size: 0.875rem;
-  transition: all 0.2s;
-  color: rgb(107, 114, 128);
-  background-color: transparent;
-  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  color: rgb(55, 65, 81);
+  background-color: white;
+  border: 1px solid rgb(229, 231, 235);
   border-radius: 0.375rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.375rem 0.75rem;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .dark .toolbar button {

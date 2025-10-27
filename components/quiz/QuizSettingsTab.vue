@@ -67,20 +67,6 @@
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label for="quiz-access" class="block text-sm font-medium text-gray-700 mb-1">Access</label>
-            <select 
-              v-model="modelValue.access"
-              id="quiz-access"
-              class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="free">Free</option>
-              <!-- backend accepts 'paywall' to indicate paid quizzes -->
-              <option value="paywall">Premium</option>
-            </select>
-            <p v-if="errors && errors.access" class="mt-1 text-sm text-red-600">{{ errors.access[0] }}</p>
-          </div>
-
-          <div>
             <label for="quiz-visibility" class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
             <select 
               v-model="modelValue.visibility"
@@ -118,11 +104,30 @@
     </div>
 
     <!-- Bottom Actions -->
-    <div class="mt-6 flex justify-between gap-3">
-      <UButton size="sm" variant="soft" @click="$emit('prev')">Back to Details</UButton>
-      <div class="flex gap-2">
-        <UButton size="sm" variant="soft" @click="saveAndContinue">Save and Continue</UButton>
-        <UButton size="sm" color="primary" @click="validate">Continue to Questions</UButton>
+    <div class="mt-6 flex flex-col sm:flex-row justify-between gap-3">
+      <UButton 
+        size="sm" 
+        variant="soft" 
+        @click="$emit('prev')"
+        :disabled="saving"
+        class="w-full sm:w-auto"
+      >Back to Details</UButton>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <UButton 
+          size="sm" 
+          variant="soft" 
+          @click="saveAndContinue"
+          :loading="saving"
+          :disabled="saving || !isValid"
+          class="w-full sm:w-auto"
+        >Save and Continue</UButton>
+        <UButton 
+          size="sm" 
+          color="primary" 
+          @click="validate"
+          :disabled="saving || !isValid"
+          class="w-full sm:w-auto"
+        >Continue to Questions</UButton>
       </div>
     </div>
   </div>
@@ -144,21 +149,47 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'save', 'prev', 'next'])
+const emit = defineEmits(['update:modelValue', 'save', 'prev', 'next', 'error'])
 
 function validate() {
-  // Add any settings validation here if needed
+  const errors = []
+  if (!props.modelValue.timer_minutes && !props.modelValue.use_per_question_timer) {
+    errors.push('Please set either a total time limit or enable per-question timer')
+  }
+  if (props.modelValue.use_per_question_timer && !props.modelValue.per_question_seconds) {
+    errors.push('Per-question time limit is required when using per-question timer')
+  }
+  // Access validation removed as it's not needed
+
+  if (errors.length > 0) {
+    errors.forEach(error => {
+      emit('error', { type: 'error', message: error })
+    })
+    return false
+  }
+
   emit('next')
   return true
 }
 
 function saveAndContinue() {
   if (validate()) {
-    // Emit save and let the parent await the save and navigate when appropriate.
     emit('save')
+    emit('error', { type: 'success', message: 'Settings saved successfully' })
   }
 }
 
 // expose errors locally for template convenience
 const errors = props.errors || {}
+
+// Computed property to check if the form is valid
+const isValid = computed(() => {
+  if (!props.modelValue) return false
+  
+  // Basic validation rules
+  if (props.modelValue.use_per_question_timer && !props.modelValue.per_question_seconds) return false
+  if (!props.modelValue.use_per_question_timer && !props.modelValue.timer_minutes) return false
+  
+  return true
+})
 </script>

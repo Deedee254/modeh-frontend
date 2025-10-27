@@ -12,10 +12,11 @@ export function useApi() {
 
   async function ensureCsrf() {
     // Fetch Sanctum CSRF cookie to initialize session and XSRF-TOKEN
+    // We must await this fetch call to ensure the cookie is set before subsequent requests.
     try {
       await fetch(config.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include' })
     } catch (e) {
-      // ignore: caller should handle fail
+      console.error('Failed to fetch CSRF cookie', e)
     }
   }
 
