@@ -36,6 +36,12 @@
               <div class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-500/90 text-white border-0 capitalize">
                 {{ difficulty_level }} {{ getDifficultyEmoji(quiz.difficulty) }}
               </div>
+              <span v-if="level_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/80 text-white">
+                {{ level_name }}
+              </span>
+              <span v-if="grade_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/80 text-white">
+                {{ grade_name }}
+              </span>
               <span v-if="topic_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/80 text-white">
                 {{ topic_name }}
               </span>
@@ -166,6 +172,18 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                  </svg>
+                  <span>{{ level_name ? level_name : 'Level: —' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                  </svg>
+                  <span>{{ grade_name ? grade_name : 'Grade: —' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                   </svg>
                   <span>{{ quiz.points || quiz.marks || 10 }} points possible</span>
@@ -243,10 +261,11 @@ const quiz = quizData?.value?.quiz || quizData?.value || {
   questions: [] 
 }
 
-// Computed properties for nested data
+// Computed properties for nested taxonomy data
 const topic_name = computed(() => quiz.topic?.name)
-const subject_name = computed(() => quiz.topic?.subject?.name)
-const grade_id = computed(() => quiz.topic?.subject?.grade_id)
+const subject_name = computed(() => quiz.topic?.subject?.name || quiz.subject?.name)
+const grade_name = computed(() => quiz.grade?.name || quiz.topic?.subject?.grade?.name || null)
+const level_name = computed(() => quiz.level?.name || quiz.grade?.level?.name || null)
 const difficulty_level = computed(() => getDifficultyLevel(quiz.difficulty))
 
 // Tab configuration

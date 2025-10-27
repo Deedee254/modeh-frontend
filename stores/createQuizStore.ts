@@ -186,21 +186,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     return copy
   }
 
-  function restoreProgress() {
-    try {
-      const raw = localStorage.getItem(progressKey.value)
-      if (!raw) return
-      const parsed = JSON.parse(raw)
-      if (parsed?.quiz) quiz.value = parsed.quiz
-      if (Array.isArray(parsed?.questions)) questions.value = parsed.questions
-      detailsSaved.value = !!parsed?.detailsSaved
-      settingsSaved.value = !!parsed?.settingsSaved
-      questionsSaved.value = !!parsed?.questionsSaved
-    } catch (e) {
-      // ignore parse errors
-    }
-  }
-
   // restore any saved draft on initialization
   if (typeof window !== 'undefined') {
     try { restoreProgress() } catch (e) { /* ignore */ }
@@ -319,7 +304,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   async function saveDetails() {
     if (!isDetailsValid.value) {
       alert.push({ type: 'warning', message: 'Please fill in all quiz details.' })
-      return
+      return false
     }
     isSubmitting.value = true
     try {
@@ -391,9 +376,11 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       // persist progress to localStorage
       persistProgress()
       alert.push({ type: 'success', message: 'Quiz details saved!' })
+      return true
     } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: e.message })
+      return false
     } finally {
       isSubmitting.value = false
     }
@@ -610,15 +597,22 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       }
       // First, ensure all details and questions are saved, especially if files are involved.
       // This re-uses the logic that handles multipart/form-data correctly.
-      await saveDetails()
-      if (detailsErrors.value && Object.keys(detailsErrors.value).length > 0) {
-        // saveDetails failed validation, so we stop here.
+      const detailsOk = await saveDetails()
+      if (!detailsOk || (detailsErrors.value && Object.keys(detailsErrors.value).length > 0)) {
+        // saveDetails failed validation or errored, so stop here.
+        alert.push({ type: 'error', message: 'Please fix quiz details before publishing.' })
         return
       }
       await saveAllQuestions()
       if (questionsErrors.value && Object.keys(questionsErrors.value).length > 0) {
         // saveAllQuestions failed, stop here.
         alert.push({ type: 'error', message: 'Could not save all questions before publishing.' })
+        return
+      }
+
+      // Ensure we have a quizId before attempting to publish
+      if (!quizId.value) {
+        alert.push({ type: 'error', message: 'Missing quiz id — could not publish.' })
         return
       }
 
@@ -657,12 +651,14 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         // Build a frontend-friendly quiz object, converting timer_seconds -> timer_minutes
         const loaded: any = { ...initialForm, ...serverQuiz }
           // normalize level fields if present on server payload
-          loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.levelId ?? null
+          // Support level provided either directly on the quiz (level/level_id)
+          // or nested under the grade relation (grade.level)
+          loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.grade?.level?.id ?? serverQuiz.levelId ?? null
           loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? null
           loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? null
           loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? null
 
-          loaded.level = serverQuiz.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
+          loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
         // convert timer_seconds (server) to timer_minutes (client UI)
         const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
         loaded.timer_minutes = ts ? Math.floor(Number(ts) / 60) : initialForm.timer_minutes

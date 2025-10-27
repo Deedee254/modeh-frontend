@@ -213,12 +213,8 @@ onMounted(async () => {
   try {
     // ensure levels are loaded first so we can map level ids to names
     try { await fetchLevels() } catch (e) {}
-    // Prefer the authenticated quiz-master details endpoint which includes relations
-    let res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id) + '/detail', { credentials: 'include' })
-    // fallback to public attempt-oriented endpoint if detail is not available
-    if (!res.ok) {
-      res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id), { credentials: 'include' })
-    }
+    // Use the canonical quiz details endpoint which returns full relations for owners
+    const res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id), { credentials: 'include' })
     if (res.ok) {
       const json = await res.json()
       const serverQuiz = json.quiz || json || {}
@@ -244,13 +240,14 @@ onMounted(async () => {
   loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? serverQuiz.topicId ?? null
   loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? serverQuiz.subjectId ?? null
   loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? serverQuiz.gradeId ?? null
-  loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.levelId ?? null
+  // accept level coming either as top-level level or nested under grade.level
+  loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.grade?.level?.id ?? serverQuiz.levelId ?? null
 
   // prefer nested object if present, else use name fields if available
   loaded.topic = serverQuiz.topic || (serverQuiz.topic_name ? { id: loaded.topic_id, name: serverQuiz.topic_name } : (serverQuiz.topicName ? { id: loaded.topic_id, name: serverQuiz.topicName } : null))
   loaded.subject = serverQuiz.subject || (serverQuiz.subject_name ? { id: loaded.subject_id, name: serverQuiz.subject_name } : (serverQuiz.subjectName ? { id: loaded.subject_id, name: serverQuiz.subjectName } : null))
   loaded.grade = serverQuiz.grade || (serverQuiz.grade_name ? { id: loaded.grade_id, name: serverQuiz.grade_name } : (serverQuiz.gradeName ? { id: loaded.grade_id, name: serverQuiz.gradeName } : null))
-    loaded.level = serverQuiz.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
+  loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
 
       // normalize questions shape so templates can display consistently
       loaded.questions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions.map((q) => ({

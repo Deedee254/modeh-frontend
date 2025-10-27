@@ -46,7 +46,7 @@
     <div v-if="isOptionType" class="space-y-2">
       <h4 class="text-sm font-semibold text-slate-700">Options</h4>
       <div v-for="(opt, i) in local.options" :key="i" class="space-y-1 pb-2 border-b last:border-b-0">
-        <UTextarea v-model="local.options[i]" placeholder="Option text" rows="2" v-autosize />
+        <UTextarea v-model="local.options[i]" placeholder="Option text" :rows="2" v-autosize />
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex items-center gap-2">
             <template v-if="isSingleChoiceType">
