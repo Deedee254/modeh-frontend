@@ -167,6 +167,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRuntimeConfig, useRoute } from '#imports'
+import useApi from '~/composables/useApi'
 import { computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
@@ -182,6 +183,7 @@ const loading = ref(true)
 
 // taxonomy: load levels so we can display quiz.level properly and link into edit flow
 const { fetchLevels, levels } = useTaxonomy()
+const api = useApi()
 
 const youtubeEmbedUrl = computed(() => {
   const url = quiz.value?.youtube_url
@@ -210,12 +212,13 @@ function difficultyLabel(diff) {
 }
 
 onMounted(async () => {
-  try {
+    try {
     // ensure levels are loaded first so we can map level ids to names
     try { await fetchLevels() } catch (e) {}
     // Use the canonical quiz details endpoint which returns full relations for owners
-    const res = await fetch(config.public.apiBase + '/api/quizzes/' + encodeURIComponent(id), { credentials: 'include' })
-    if (res.ok) {
+    const res = await api.get('/api/quizzes/' + encodeURIComponent(id))
+    if (api.handleAuthStatus(res)) return
+    if (res && res.ok) {
       const json = await res.json()
       const serverQuiz = json.quiz || json || {}
 

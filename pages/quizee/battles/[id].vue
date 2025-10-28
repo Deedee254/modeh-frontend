@@ -178,8 +178,9 @@ const displayTime = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await fetch(cfg.public.apiBase + `/api/battles/${id}`, { credentials: 'include' })
-    if (res.ok) {
+    const res = await api.get(`/api/battles/${id}`)
+    if (api.handleAuthStatus(res)) return
+    if (res && res.ok) {
       const j = await res.json()
       battle.value = j.battle || j
       if (battle.value.questions && Array.isArray(battle.value.questions) && battle.value.questions.length > 0) {
@@ -193,8 +194,9 @@ onMounted(async () => {
         if (s.subject) params.set('subject', s.subject)
         if (s.difficulty) params.set('difficulty', s.difficulty)
         if (s.grade) params.set('grade', s.grade)
-        const qb = await fetch(cfg.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
-        if (qb.ok) { const qbj = await qb.json(); questions.value = qbj.questions || qbj || [] }
+        const qb = await api.get('/api/question-bank?' + params.toString())
+        if (api.handleAuthStatus(qb)) return
+        if (qb && qb.ok) { const qbj = await qb.json(); questions.value = qbj.questions || qbj || [] }
       }
     }
   } catch (e) { }

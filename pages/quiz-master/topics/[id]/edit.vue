@@ -50,8 +50,9 @@ async function fetchTopic() {
   const config = useRuntimeConfig()
   loading.value = true
   try {
-    const res = await fetch(config.public.apiBase + `/api/topics?per_page=1&q=${encodeURIComponent(id)}`, { credentials: 'include' })
-    if (res.ok) {
+    const res = await api.get(`/api/topics?per_page=1&q=${encodeURIComponent(id)}`)
+    if (api.handleAuthStatus(res)) return
+    if (res && res.ok) {
       const json = await res.json()
       // Try to find by id in returned list
       const data = (json.topics?.data || json.topics || json.data || [])

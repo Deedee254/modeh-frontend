@@ -129,9 +129,11 @@ const currentPage = ref(1)
 // --- Filtering ---
 const gradeFilter = ref('')
 const subjectFilter = ref('')
-const { grades, subjects, fetchGrades, fetchAllSubjects } = useTaxonomy()
+const { grades, subjects, fetchLevels, fetchGrades, fetchAllSubjects } = useTaxonomy()
 
 onMounted(async () => {
+  // prefer loading levels first so taxonomy can derive grades/subjects from levels
+  await fetchLevels()
   await Promise.all([fetchGrades(), fetchAllSubjects()])
 })
 

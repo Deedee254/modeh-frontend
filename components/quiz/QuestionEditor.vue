@@ -50,7 +50,7 @@ watch(() => props.modelValue, (nv) => {
       localModel.value = nv || {}
     }
   }
-}, { deep: true })
+}, { deep: true, flush: 'post' })
 
 // Emit local -> parent
 watch(localModel, (newValue) => {
@@ -63,7 +63,7 @@ watch(localModel, (newValue) => {
   } catch (e) {
     emit('update:modelValue', newValue)
   }
-}, { deep: true })
+}, { deep: true, flush: 'post' })
 
 const open = ref(true)
 const label = computed(() => `Q${(props.index ?? 0) + 1}`)

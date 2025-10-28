@@ -95,6 +95,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'quizee' })
 import { ref, onMounted, computed } from 'vue'
+import useApi from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
 import { useRoute } from 'vue-router'
 const route = useRoute()
@@ -123,24 +124,27 @@ function synthesizeBot(user: any) {
 }
 
 onMounted(async () => {
+  const api = useApi()
   try {
     const q = route.query || {}
     // Try endpoint to fetch a result for tournament battle
     const tid = route.params.id
     const bid = route.params.battleId
     let fetched: any = null
-    try {
-      const res = await fetch(cfg.public.apiBase + `/api/tournaments/${tid}/battles/${bid}/result`, { credentials: 'include' })
-      if (res.ok) fetched = await res.json()
-    } catch (e) {
-      // fallback to fetching the battle resource
       try {
-        const res2 = await fetch(cfg.public.apiBase + `/api/tournaments/${tid}/battles/${bid}`, { credentials: 'include' })
-        if (res2.ok) fetched = await res2.json()
-      } catch (e2) {
-        // ignore
+        const res = await api.get(`/api/tournaments/${tid}/battles/${bid}/result`)
+        if (api.handleAuthStatus(res)) return
+        if (res && res.ok) fetched = await res.json()
+      } catch (e) {
+        // fallback to fetching the battle resource
+        try {
+          const res2 = await api.get(`/api/tournaments/${tid}/battles/${bid}`)
+          if (api.handleAuthStatus(res2)) return
+          if (res2 && res2.ok) fetched = await res2.json()
+        } catch (e2) {
+          // ignore
+        }
       }
-    }
 
     const data = (fetched && (fetched.result || fetched.data || fetched)) || null
     if (data) {

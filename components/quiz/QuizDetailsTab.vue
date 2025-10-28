@@ -75,17 +75,17 @@
                   </div>
                 </div>
               </template>
-              <TaxonomyPicker
-                resource="subjects"
-                :grade-id="selectedGrade || null"
-                :per-page="50"
-                :model-value="selectedSubject || null"
-                title="Subjects"
-                subtitle="Pick a subject"
-                @update:modelValue="onSubjectModelUpdate"
-                @selected="onSubjectPicked"
-                aria-labelledby="subject-label"
-              />
+                              <TaxonomyPicker
+                                resource="subjects"
+                                :grade-id="selectedGrade || null"
+                                :per-page="50"
+                                :model-value="selectedSubjectObj || null"
+                                title="Subjects"
+                                subtitle="Pick a subject"
+                                @update:modelValue="onSubjectModelUpdate"
+                                @selected="onSubjectPicked"
+                                aria-labelledby="subject-label"
+                              />
             </ClientOnly>
           </div>
         </div>
@@ -115,7 +115,7 @@
                 resource="topics"
                 :subject-id="selectedSubject || null"
                 :per-page="50"
-                :model-value="selectedTopic || null"
+                :model-value="selectedTopicObj || null"
                 title="Topics"
                 subtitle="Pick or create a topic"
                 aria-labelledby="topic-label"
@@ -344,22 +344,53 @@ const selectedGradeName = computed(() => {
 })
 
 const selectedSubjectName = computed(() => {
-  if (!selectedSubject.value || !Array.isArray(props.subjects)) return ''
-  const s = props.subjects.find(x => x && String(x.id) === String(selectedSubject.value))
-  return s && s.name ? s.name : ''
+  // prefer name from subjects list
+  if (selectedSubject.value && Array.isArray(props.subjects)) {
+    const s = props.subjects.find(x => x && String(x.id) === String(selectedSubject.value))
+    if (s && s.name) return s.name
+  }
+  // fallback to model-provided subject object
+  const modelSub = props.modelValue?.subject
+  if (modelSub && modelSub.name) return modelSub.name
+  return ''
 })
 
 const selectedTopicName = computed(() => {
   const tid = props.modelValue?.topic_id || ''
-  if (!tid || !Array.isArray(props.topics)) return ''
-  const t = props.topics.find(x => x && String(x.id) === String(tid))
-  return t && t.name ? t.name : ''
+  if (tid && Array.isArray(props.topics)) {
+    const t = props.topics.find(x => x && String(x.id) === String(tid))
+    if (t && t.name) return t.name
+  }
+  const modelTopic = props.modelValue?.topic
+  if (modelTopic && modelTopic.name) return modelTopic.name
+  return ''
 })
 
 const selectedTopicObj = computed(() => {
+  // prefer a full topic object from the model if available
+  const modelTopic = props.modelValue?.topic || null
+  if (modelTopic && typeof modelTopic === 'object' && modelTopic.id) return modelTopic
   const tid = props.modelValue?.topic_id || ''
-  if (!tid || !Array.isArray(props.topics)) return null
-  return props.topics.find(x => x && String(x.id) === String(tid)) || null
+  if (!tid) return null
+  if (Array.isArray(props.topics)) {
+    const found = props.topics.find(x => x && String(x.id) === String(tid))
+    if (found) return found
+  }
+  return tid
+})
+
+// Provide a subject object (or id) for TaxonomyPicker so it can display
+// the selected subject even when the subjects list is not yet populated.
+const selectedSubjectObj = computed(() => {
+  const modelSub = props.modelValue?.subject || null
+  if (modelSub && typeof modelSub === 'object' && modelSub.id) return modelSub
+  const sid = props.modelValue?.subject_id || ''
+  if (!sid) return null
+  if (Array.isArray(props.subjects)) {
+    const found = props.subjects.find(x => x && String(x.id) === String(sid))
+    if (found) return found
+  }
+  return sid
 })
 
 async function requestApproval() {

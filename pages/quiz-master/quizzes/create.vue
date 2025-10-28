@@ -59,7 +59,7 @@
           @create-topic="() => { showTopicModal = true }"
           @subject-search="onSubjectSearch"
           @topic-search="onTopicSearch"
-          @save="async () => { await saveDetails(); if (store.detailsSaved) { store.setTab('settings') } }"
+          @save="async () => { const ok = await saveDetails(); if (ok) trySetTab('settings'); }"
           @next="() => trySetTab('settings')"
           @approval-requested="async (id) => { try { await fetchTopicsPage({ subjectId: store.quiz?.subject_id ?? null, page: 1, perPage: 50, q: '' }) } catch (e) {} }"
         />
@@ -70,7 +70,7 @@
           :saving="store.isSubmitting"
           :errors="store.settingsErrors"
           @update:modelValue="(v) => (store.quiz = v)"
-          @save="async () => { await saveSettings(); if (store.settingsSaved) { store.setTab('questions') } }"
+          @save="saveSettings"
           @next="() => trySetTab('questions')"
           @prev="() => trySetTab('details')"
           @error="(e) => alert.push(e)"
@@ -78,11 +78,8 @@
 
         <QuizQuestionsTab
           v-else
-          :model-value="store.questions"
           :errors="store.questionsErrors"
           :saving="store.isSubmitting"
-          @update:modelValue="(v) => (store.questions = v)"
-          @save="store.saveAllQuestions"
           @open-builder="openBuilder"
           @open-bank="onOpenBank"
           @edit="(q) => edit(q)"
@@ -145,7 +142,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useRuntimeConfig } from '#imports'
 import { useCreateQuizStore } from '~/stores/createQuizStore'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
@@ -153,6 +150,7 @@ import QuestionBuilder from '~/components/quiz/QuestionBuilder.vue'
 import CreateTopicModal from '~/components/modals/CreateTopicModal.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
+import useApi from '~/composables/useApi'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 import QuizDetailsTab from '~/components/quiz/QuizDetailsTab.vue'
 import QuizSettingsTab from '~/components/quiz/QuizSettingsTab.vue'
@@ -177,36 +175,29 @@ const router = useRouter()
 const cfg = useRuntimeConfig()
 
 function trySetTab(tab) {
-  if (tab === 'details') { store.setTab('details'); return }
-  if (tab === 'settings') {
-    if (!store.isDetailsValid) {
-      alert.push({ type: 'warning', message: 'Please complete quiz details before moving to settings.' })
-      return
-    }
-    store.setTab('settings')
-    return
+  if (tab === 'details') {
+    store.setTab('details');
+    return;
   }
-  if (tab === 'questions') {
-    if (!store.detailsSaved) {
-      alert.push({ type: 'warning', message: 'Please save quiz details first.' })
-      return
+  if (tab === 'settings' || tab === 'questions') {
+    if (!store.isDetailsValid) {
+      alert.push({ type: 'warning', message: 'Please complete quiz details before proceeding.' });
+      return;
     }
-    if (!store.settingsSaved) {
-      alert.push({ type: 'warning', message: 'Please save settings before adding questions.' })
-      return
-    }
-    store.setTab('questions')
-    return
+    store.setTab(tab);
   }
 }
 
 async function onPublish() {
-  // If no quiz ID, we need to save details first
-  if (!store.quizId) {
-    await store.saveDetails()
-  }
-  // Save settings and questions in a single publish call
   await store.submitQuiz()
+}
+
+async function saveDetails() {
+  await store.saveDetails();
+}
+
+async function saveSettings() {
+  await store.saveSettings();
 }
 
 const { fetchGrades, grades, subjects, topics, fetchSubjectsPage, fetchTopicsPage, addTopic, loadingSubjects, loadingTopics, levels, fetchLevels, loadingLevels } = useTaxonomy()
@@ -233,9 +224,17 @@ const _doTopicSearch = async (q) => {
 const onSubjectSearch = debounce((q) => _doSubjectSearch(q), 350)
 const onTopicSearch = debounce((q) => _doTopicSearch(q), 350)
 
+// Prepare a slot for the cleanup function that will be set on client mount.
+let _cleanup = null
+
+// Register onBeforeUnmount during setup so Vue can associate the hook with this component.
+onBeforeUnmount(() => {
+  try { if (typeof _cleanup === 'function') _cleanup() } catch (e) {}
+})
+
 onMounted(async () => {
-  // Set up cleanup handlers
-  store.setupCleanup()
+  // Set up cleanup handlers (client-only) and store the returned cleanup function.
+  _cleanup = store.setupCleanup()
   
   try {
     await fetchGrades()
@@ -264,6 +263,27 @@ onMounted(async () => {
       if (s) {
         try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: '' }) } catch (e) {}
       }
+      // Defensive: ensure the loaded topic object is present in the topics list
+      try {
+        const tId = store.quiz.topic_id
+        if (tId) {
+          const has = (topics.value || []).some(x => String(x?.id) === String(tId))
+          if (!has) {
+            // fetch single topic and insert into taxonomy list so picker can display it
+            try {
+              const api = useApi()
+              const r = await api.get(`/api/topics/${tId}`)
+              if (r.ok) {
+                const d = await r.json().catch(() => null)
+                const topicObj = d?.topic || d
+                if (topicObj && topicObj.id) {
+                  try { addTopic(topicObj) } catch (e) {}
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      } catch (e) {}
     } catch (e) {}
   }
 })
@@ -347,6 +367,5 @@ function onSelectTopic(item) {
   store.quiz.topic_id = item?.id ? (Number(item.id) || null) : null
 }
 
-function saveDetails() { return store.saveDetails() }
-function saveSettings() { return store.saveSettings() }
+
 </script>

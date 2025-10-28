@@ -138,16 +138,64 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     return quiz.value.title && quiz.value.grade_id && quiz.value.subject_id && quiz.value.topic_id
   })
 
-  function sanitizeQuestionForPayload(q: any) {
-    if (!q || typeof q !== 'object') return q
-    
-    const copy: any = {
-      type: q.type,
-      body: q.body || q.text || '',
-      explanation: q.explanation || null,
-      difficulty: q.difficulty || 3,
-      marks: q.marks || 1
+  /**
+   * Normalizes a question object for use in the editor components.
+   * Ensures a consistent structure for options, correct answers, etc.
+   * @param q The raw question object.
+   * @returns A normalized question object.
+   */
+  function normalizeQuestionForEditor(q: any) {
+    const question = JSON.parse(JSON.stringify(q || {}))
+
+    // Ensure all necessary fields exist to prevent reactivity issues
+    if (!question.uid) question.uid = Math.random().toString(36).substring(2);
+    if (typeof question.open === 'undefined') question.open = true;
+    if (typeof question.is_banked === 'undefined') question.is_banked = false;
+    if (typeof question.difficulty === 'undefined') question.difficulty = 2;
+    if (typeof question.marks === 'undefined') question.marks = 1;
+    if (typeof question.text === 'undefined') question.text = '<p></p>';
+
+    // Use a consistent structure for options: always array of objects for the editor
+    if (Array.isArray(question.options)) {
+      if (question.options.length > 0 && typeof question.options[0] === 'object') {
+        const corrects: number[] = []
+        question.options.forEach((opt: any, i: number) => {
+          if (opt.is_correct) corrects.push(i)
+        })
+        if (question.type === 'mcq') {
+          question.correct = corrects.length > 0 ? corrects[0] : -1
+        } else {
+          question.corrects = corrects
+        }
+      } else if (question.options.length > 0 && typeof question.options[0] === 'string') {
+        // Convert string options to object format
+        question.options = question.options.map((text: string) => ({ text: text || '', is_correct: false }))
+      }
     }
+
+    if (!Array.isArray(question.options) || question.options.length === 0) {
+      question.options = [
+        { text: '', is_correct: true },
+        { text: '', is_correct: false }
+      ]
+    }
+    if (typeof question.correct !== 'number') question.correct = -1
+    if (!Array.isArray(question.corrects)) question.corrects = []
+    if (!Array.isArray(question.answers)) question.answers = []
+
+    return question
+  }
+  function sanitizeQuestionForPayload(q: any) {
+    try {
+      if (!q || typeof q !== 'object') return q
+
+      const copy: any = {
+        type: q.type,
+        body: q.body || q.text || '',
+        explanation: q.explanation || null,
+        difficulty: q.difficulty || 3,
+        marks: q.marks || 1
+      }
 
     if (q.media_type) {
       copy.media_type = q.media_type
@@ -157,10 +205,21 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
 
     if (Array.isArray(q.options)) {
-      copy.options = q.options.map((opt: any) => ({
-        text: opt.text || '',
-        is_correct: !!opt.is_correct
-      }))
+      copy.options = q.options.map((opt: any) => {
+        // Handle both string and object formats
+        if (typeof opt === 'string') {
+          return { text: opt, is_correct: false }
+        }
+        return {
+          text: opt.text || '',
+          is_correct: !!opt.is_correct
+        }
+      })
+    }
+
+    // Handle correct answer for MCQ
+    if (typeof q.correct === 'number' && q.correct >= 0) {
+      copy.correct = q.correct
     }
 
     if (Array.isArray(q.answers)) {
@@ -184,6 +243,24 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
 
     return copy
+    } catch (e) {
+      // Defensive fallback: never throw from sanitizer. Return a minimal payload
+      try { console.error('sanitizeQuestionForPayload:error', e) } catch (ex) {}
+      // Include options in fallback as they are often required by MCQ-type questions
+      const fallbackOptions = (q && Array.isArray(q.options)) ? q.options.map((opt: any) => {
+        if (!opt) return { text: '', is_correct: false }
+        if (typeof opt === 'string') return { text: opt, is_correct: false }
+        return { text: String(opt.text ?? opt.value ?? ''), is_correct: Boolean(opt.is_correct) }
+      }) : [ { text: '', is_correct: false }, { text: '', is_correct: false } ]
+
+      return {
+        type: (q && q.type) ? q.type : 'mcq',
+        body: (q && (q.body || q.text)) ? (q.body || q.text) : '',
+        difficulty: (q && q.difficulty) ? q.difficulty : 3,
+        marks: (q && q.marks) ? q.marks : 1,
+        options: fallbackOptions,
+      }
+    }
   }
 
   // restore any saved draft on initialization
@@ -301,7 +378,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     activeTab.value = 'details'
   }
 
-  async function saveDetails() {
+    async function saveDetails() {
     if (!isDetailsValid.value) {
       alert.push({ type: 'warning', message: 'Please fill in all quiz details.' })
       return false
@@ -319,23 +396,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         title: quiz.value.title,
         description: quiz.value.description || null,
         youtube_url: quiz.value.youtube_url || null,
-        timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
-        per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
         subject_id: quiz.value.subject_id ? (Number(quiz.value.subject_id) || null) : null, // This is correct
         grade_id: quiz.value.grade_id ? (Number(quiz.value.grade_id) || null) : null,
         level_id: quiz.value.level_id ? (Number(quiz.value.level_id) || null) : null,
-        use_per_question_timer: quiz.value.use_per_question_timer,
-        // Normalize attempts_allowed: '' (select for unlimited) -> null, numeric strings -> Number
-        attempts_allowed: (() => {
-          const raw: any = quiz.value.attempts_allowed
-          if (raw === '' || raw === null || typeof raw === 'undefined') return null
-          const n = Number(raw)
-          return Number.isFinite(n) ? n : null
-        })(),
-        shuffle_questions: Boolean(quiz.value.shuffle_questions),
-        shuffle_answers: Boolean(quiz.value.shuffle_answers),
-        access: quiz.value.access,
-        visibility: quiz.value.visibility,
       }
 
       // Use PATCH if we have a quizId, otherwise POST to create.
@@ -367,12 +430,21 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         return // Stop execution if errors were handled
       }
 
-
       // clear any previously stored validation errors
       detailsErrors.value = {}
 
-      quizId.value = data.quiz.id
-      detailsSaved.value = true
+      // API may return different shapes: { quiz: {...} }, { data: { quiz: {...} } }, or raw quiz object
+      // Accept any of those and log the returned shape for debugging
+      try { console.debug('saveDetails: api response', data) } catch (e) {}
+      const returnedQuiz = (data && (data.quiz || (data.data && data.data.quiz))) ? (data.quiz || data.data.quiz) : (data && data.data && data.data.id ? data.data : (data && data.id ? data : null))
+      if (returnedQuiz && returnedQuiz.id) {
+        quizId.value = returnedQuiz.id
+        // Merge returned fields onto local quiz object conservatively
+        try { quiz.value = { ...quiz.value, ...returnedQuiz } } catch (e) {}
+        detailsSaved.value = true
+      } else {
+        console.error('API response missing quiz object:', data)
+      }
       // persist progress to localStorage
       persistProgress()
       alert.push({ type: 'success', message: 'Quiz details saved!' })
@@ -383,6 +455,113 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       return false
     } finally {
       isSubmitting.value = false
+    }
+  }
+
+  async function saveQuiz() {
+    if (!isDetailsValid.value) {
+      alert.push({ type: 'warning', message: 'Please fill in all quiz details.' });
+      return false;
+    }
+    isSubmitting.value = true;
+    try {
+      // Normalize form values
+      const quizValue = quiz.value as any;
+      if (quizValue.grade_id === '') quizValue.grade_id = null;
+      if (quizValue.subject_id === '') quizValue.subject_id = null;
+      if (quizValue.level_id === '') quizValue.level_id = null;
+      if (quizValue.topic_id === '') quizValue.topic_id = null;
+
+      const payload: any = {
+        topic_id: quizValue.topic_id ? Number(quizValue.topic_id) || null : null,
+        title: quizValue.title,
+        description: quizValue.description || null,
+        youtube_url: quizValue.youtube_url || null,
+        timer_seconds: quizValue.use_per_question_timer ? null : (quizValue.timer_minutes ? Number(quizValue.timer_minutes) * 60 : null),
+        per_question_seconds: quizValue.use_per_question_timer ? Number(quizValue.per_question_seconds || 0) : null,
+        subject_id: quizValue.subject_id ? Number(quizValue.subject_id) || null : null,
+        grade_id: quizValue.grade_id ? Number(quizValue.grade_id) || null : null,
+        level_id: quizValue.level_id ? Number(quizValue.level_id) || null : null,
+        use_per_question_timer: quizValue.use_per_question_timer,
+        attempts_allowed: (() => {
+          const raw = quizValue.attempts_allowed;
+          if (raw === '' || raw === null || typeof raw === 'undefined') return null;
+          const n = Number(raw);
+          return Number.isFinite(n) ? n : null;
+        })(),
+        shuffle_questions: Boolean(quizValue.shuffle_questions),
+        shuffle_answers: Boolean(quizValue.shuffle_answers),
+        access: quizValue.access,
+        visibility: quizValue.visibility,
+      };
+
+      // Sanitize questions and include them in the payload
+      const sanitizedQuestions = questions.value.map(q => sanitizeQuestionForPayload(q));
+      
+      const method = quizId.value ? 'PATCH' : 'POST';
+      const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes';
+
+      let res: Response;
+      const coverFile = quizValue.cover_file;
+      const hasQuestionFiles = questions.value.some(q => q.media_file instanceof File);
+
+      if (coverFile instanceof File || hasQuestionFiles) {
+        const formData = new FormData();
+        if (method === 'PATCH') formData.append('_method', 'PATCH');
+        
+        const quizData = { ...payload };
+        if (coverFile instanceof File) {
+          quizData.cover = coverFile;
+        }
+        
+        appendQuizDataToForm(formData, quizData, sanitizedQuestions);
+        res = await api.postFormData(url, formData);
+      } else {
+        const finalPayload = { ...payload, questions: sanitizedQuestions };
+        if (method === 'PATCH') {
+          res = await api.patchJson(url, finalPayload);
+        } else {
+          res = await api.postJson(url, finalPayload);
+        }
+      }
+
+      if (api.handleAuthStatus(res)) {
+        alert.push({ type: 'warning', message: 'Session expired — please sign in again' });
+        return false;
+      }
+
+      const data = await res.json().catch(() => null);
+
+      if (handleApiErrors(res, data, detailsErrors)) {
+        return false; // Stop execution if errors were handled
+      }
+
+      detailsErrors.value = {};
+      try { console.debug('saveQuiz: api response', data) } catch (e) {}
+      // Accept multiple shapes: { quiz: {...} }, { data: { quiz: {...} } }, or raw quiz object
+      const returnedQuiz = (data && (data.quiz || (data.data && data.data.quiz))) ? (data.quiz || data.data.quiz) : (data && data.data && data.data.id ? data.data : (data && data.id ? data : null))
+      if (returnedQuiz && returnedQuiz.id) {
+        quizId.value = returnedQuiz.id;
+        // If API returned updated quiz object with fields, merge into local quiz
+        try { quiz.value = { ...quiz.value, ...returnedQuiz } } catch (e) {}
+        // If API returned questions nested on the quiz, update local questions
+        if (Array.isArray(returnedQuiz.questions) && returnedQuiz.questions.length) {
+          questions.value = returnedQuiz.questions.map((q: any, idx: number) => normalizeQuestionForEditor(q))
+        }
+      } else {
+        console.error('API response missing quiz object:', data);
+      }
+      detailsSaved.value = true;
+      questionsSaved.value = true; // Since we're saving them together
+      persistProgress();
+      alert.push({ type: 'success', message: 'Quiz saved successfully!' });
+      return true;
+    } catch (err: unknown) {
+      const e = err as Error;
+      alert.push({ type: 'error', message: e.message });
+      return false;
+    } finally {
+      isSubmitting.value = false;
     }
   }
 
@@ -437,6 +616,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       return
     }
     try {
+      try { console.debug('saveQuestion:start', { quizId: quizId.value, uid: question?.uid || question?.id, type: question?.type }) } catch (e) {}
       // sanitize payload for sending
       const sanitizedQuestion = sanitizeQuestionForPayload(question)
       // debug: log payload
@@ -476,6 +656,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       if (api.handleAuthStatus(res)) return
       if (!res.ok) throw new Error('Failed to save question')
       const data = await res.json().catch(()=>null)
+  try { console.debug('saveQuestion:response', { status: res.status, body: data }) } catch (e) {}
       
       const idx = questions.value.findIndex(q => q.uid === question.uid || q.id === question.id)
       if (idx !== -1 && data?.question) {
@@ -486,6 +667,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       questionsSaved.value = true
       alert.push({ type: 'success', message: 'Question saved' })
     } catch (err: unknown) {
+      try { console.debug('saveQuestion:error', { err: (err as any)?.message || String(err) }) } catch (e) {}
       const e = err as Error
       // if validation error from server, map to field-level errors
       try {
@@ -510,135 +692,22 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
   }
 
-  async function saveAllQuestions() {
-    if (!quizId.value) { 
-      alert.push({ type: 'warning', message: 'Please save quiz details first.' }); 
-      return 
-    }
-    try {
-      // build sanitized question list and debug
-      const sanitizedQuestions = (questions.value || []).map((q: any) => sanitizeQuestionForPayload(q))
-      try { console.debug(`PATCH /api/quizzes/${quizId.value}/questions`, { questions: sanitizedQuestions }) } catch (e) {}
-      // detect File objects inside questions; if present send as multipart/form-data
-      const hasFiles = questions.value.some(q => q.media_file instanceof File)
 
-      let res: Response
-      if (hasFiles) {
-        const form = new FormData()
-        // The backend route for bulk question updates is PATCH, but FormData with PATCH is tricky.
-        // Laravel supports a `_method` field to tunnel PATCH requests over POST.
-        // The `bulkUpdateForQuiz` method in the backend controller handles this.
-        form.append('_method', 'PATCH')
-        appendQuizDataToForm(form, {}, sanitizedQuestions)
-        // We use postFormData which sends a POST request. The backend will interpret it as PATCH.
-        res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
-      } else {
-        res = await api.patchJson(`/api/quizzes/${quizId.value}/questions`, { questions: sanitizedQuestions })
-      }
-
-      if (api.handleAuthStatus && api.handleAuthStatus(res)) return
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.message || 'Failed to save questions')
-      }
-      questionsSaved.value = true
-      persistProgress()
-      alert.push({ type: 'success', message: 'All questions saved' })
-    } catch (err: unknown) {
-      const e = err as Error
-      try {
-        // attempt to parse validation errors and map to per-question entries
-        if ((err as any)?.response && (err as any).response.status === 422) {
-          const data = await (err as any).response.json().catch(() => null)
-          if (data?.errors) {
-            // Laravel returns keys like 'questions.0.title' - map them
-            const mapped: Record<string, string[]> = { ...questionsErrors.value }
-            Object.keys(data.errors).forEach(key => {
-              const m = key.match(/^questions\.(\d+)\.(.+)$/)
-              if (m) {
-                const idx = Number(m[1])
-                const q = questions.value[idx]
-                const uid = q?.uid || q?.id
-                if (uid) {
-                  mapped[uid] = [...(mapped[uid] || []), ...(data.errors[key] || [])]
-                }
-              }
-            })
-            questionsErrors.value = mapped
-          }
-        }
-      } catch (ex) {}
-
-      alert.push({ type: 'error', message: e.message })
-    }
-  }
 
   async function submitQuiz() {
-    isSubmitting.value = true
+    isSubmitting.value = true;
     try {
-      // Validate quiz data before submission
-      const validationErrors: string[] = []
-      
-      if (!quiz.value.title?.trim()) {
-        validationErrors.push('Quiz title is required')
+      const success = await saveQuiz();
+      if (success) {
+        lastCreated.value = { ...quiz.value, id: quizId.value };
+        alert.push({ type: 'success', message: 'Quiz published successfully!' });
+        clearProgress();
       }
-      if (!quiz.value.topic_id) {
-        validationErrors.push('Please select a topic')
-      }
-      if (!questions.value.length) {
-        validationErrors.push('Quiz must have at least one question')
-      }
-      
-      if (validationErrors.length > 0) {
-        validationErrors.forEach(error => {
-          alert.push({ type: 'error', message: error })
-        })
-        return false
-      }
-      // First, ensure all details and questions are saved, especially if files are involved.
-      // This re-uses the logic that handles multipart/form-data correctly.
-      const detailsOk = await saveDetails()
-      if (!detailsOk || (detailsErrors.value && Object.keys(detailsErrors.value).length > 0)) {
-        // saveDetails failed validation or errored, so stop here.
-        alert.push({ type: 'error', message: 'Please fix quiz details before publishing.' })
-        return
-      }
-      await saveAllQuestions()
-      if (questionsErrors.value && Object.keys(questionsErrors.value).length > 0) {
-        // saveAllQuestions failed, stop here.
-        alert.push({ type: 'error', message: 'Could not save all questions before publishing.' })
-        return
-      }
-
-      // Ensure we have a quizId before attempting to publish
-      if (!quizId.value) {
-        alert.push({ type: 'error', message: 'Missing quiz id — could not publish.' })
-        return
-      }
-
-      // Now, simply update the visibility to publish the quiz.
-      const payload = { visibility: 'published' }
-      const res = await api.patchJson(`/api/quizzes/${quizId.value}`, payload)
-
-      if (api.handleAuthStatus(res)) { 
-        alert.push({ type: 'warning', message: 'Session expired — please sign in again' }); 
-        return 
-      }
-
-      const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.message || 'Failed to publish quiz.')
-
-      // expose the created quiz payload so UI can show a created modal
-      lastCreated.value = data.quiz || data
-      alert.push({ type: 'success', message: 'Quiz published successfully!' })
-      // Clear the local draft since it's now published.
-      clearProgress()
-      // Note: do not reset or navigate here. Let the page show the created modal and navigate when the user clicks View/Edit.
     } catch (err: unknown) {
-      const e = err as Error
-      alert.push({ type: 'error', message: e.message })
+      const e = err as Error;
+      alert.push({ type: 'error', message: e.message });
     } finally {
-      isSubmitting.value = false
+      isSubmitting.value = false;
     }
   }
   
@@ -676,9 +745,26 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           loaded.cover_image = serverQuiz.cover_image
           loaded.cover = serverQuiz.cover_image
         }
+        // Defensive fallbacks: ensure nested taxonomy objects exist to avoid `.id` access errors
+        loaded.topic = loaded.topic || (loaded.topic_id ? { id: loaded.topic_id } : null)
+        loaded.subject = loaded.subject || (loaded.subject_id ? { id: loaded.subject_id } : null)
+        loaded.grade = loaded.grade || (loaded.grade_id ? { id: loaded.grade_id } : null)
+        loaded.level = loaded.level || (loaded.level_id ? { id: loaded.level_id } : null)
 
         quiz.value = loaded
-        questions.value = serverQuiz.questions || []
+        // Normalize questions: ensure array, and that each question has an id or uid to be used as key
+        const rawQuestions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions : []
+        questions.value = rawQuestions.map((q: any, idx: number) => ({
+          id: q?.id ?? q?.uid ?? null,
+          uid: q?.uid ?? `q_${idx}`,
+          type: q?.type ?? 'mcq',
+          body: q?.body ?? q?.text ?? q?.question ?? '',
+          question: q?.question ?? q?.body ?? q?.text ?? '',
+          options: Array.isArray(q?.options) ? q.options : (Array.isArray(q?.answers) ? q.answers : []),
+          marks: q?.marks ?? 0,
+          difficulty: q?.difficulty ?? 2,
+          explanation: q?.explanation ?? null,
+        }))
         quizId.value = serverQuiz.id || id
 
         // set saved flags conservatively
@@ -764,12 +850,21 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         persistProgress()
       }
       window.addEventListener('beforeunload', unloadHandler)
-      
-      onBeforeUnmount(() => {
-        window.removeEventListener('beforeunload', unloadHandler)
-        cleanup()
-      })
+
+      // Return a cleanup function so the calling component can register
+      // its own onBeforeUnmount and call this to remove listeners.
+      return () => {
+        try { window.removeEventListener('beforeunload', unloadHandler) } catch (e) {}
+        try { cleanup() } catch (e) {}
+      }
     }
+    // If not running in client, return noop
+    return () => {}
+  }
+
+  function addQuestion(q?: any) {
+    const newQuestion = normalizeQuestionForEditor(q || {});
+    questions.value.push(newQuestion);
   }
 
   return {
@@ -791,11 +886,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     reset,
     saveDetails,
     saveSettings,
-    saveQuestion,
-    saveAllQuestions,
     submitQuiz,
     loadQuiz,
     clearProgress,
-    setupCleanup
+    setupCleanup,
+    addQuestion
   }
 })

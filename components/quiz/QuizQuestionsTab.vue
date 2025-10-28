@@ -1,6 +1,7 @@
 <template>
   <div class="mx-auto max-w-xs sm:max-w-2xl lg:max-w-4xl px-2 py-4 sm:px-4 sm:py-6">
-    <div class="bg-white rounded-lg shadow-sm p-3 sm:p-6">
+    <!-- The localQuestions ref is now directly bound to the store's questions -->
+    <div class="bg-white rounded-lg shadow-sm p-3 sm:p-6" v-if="localQuestions">
       <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
         <h2 class="text-lg font-medium">Questions</h2>
         <div class="flex flex-col gap-2 w-full sm:w-auto">
@@ -19,7 +20,7 @@
           <UButton 
             size="sm" 
             color="primary" 
-            class="w-full sm:w-auto" 
+            class="w-full sm:w-auto"
             @click="addQuestion"
           >Add Question</UButton>
         </div>
@@ -33,7 +34,7 @@
           class="space-y-3 sm:space-y-4"
         >
           <div
-            v-for="(q, idx) in modelValue"
+            v-for="(q, idx) in localQuestions"
             :key="q.uid || q.id || idx"
             class="group bg-gray-50 rounded-lg p-3 sm:p-4 border border-transparent hover:border-gray-300 transition-colors duration-200"
           >
@@ -56,6 +57,16 @@
                 </div>
               </div>
 
+              <!-- Validation Errors -->
+              <div v-if="questionValidationErrors[q.uid] && questionValidationErrors[q.uid].length > 0" class="mt-2 text-xs text-red-500 space-y-1">
+                <div v-for="(error, errorIdx) in questionValidationErrors[q.uid]" :key="errorIdx" class="flex items-start gap-1.5">
+                  <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ error }}</span>
+                </div>
+              </div>
+
               <div class="flex items-center gap-1 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <UButton size="xs" variant="ghost" @click="duplicateQuestion(idx)" title="Duplicate"><span class="sr-only">Duplicate</span><i class="fas fa-copy"></i></UButton>
                 <UButton size="xs" variant="ghost" color="red" @click="removeQuestion(idx)" title="Delete"><span class="sr-only">Delete</span><i class="fas fa-trash"></i></UButton>
@@ -72,7 +83,7 @@
             >
               <div v-show="q.open" class="space-y-4">
                 <QuestionEditor 
-                  v-model="modelValue[idx]"
+                  v-model="localQuestions[idx]"
                   :index="idx"
                   :errors="errors[q.uid]"
                   @add-option="addOption(idx)"
@@ -88,7 +99,7 @@
 
       <!-- Empty State -->
       <div 
-        v-if="!modelValue.length"
+        v-if="!localQuestions.length"
         class="text-center py-8 sm:py-12"
       >
         <div class="text-gray-400 mb-3">
@@ -110,13 +121,13 @@
       <div class="grid grid-cols-3 gap-2 sm:gap-4">
         <div>
           <div class="text-xs sm:text-sm text-gray-500">Total Questions</div>
-          <div class="text-xl sm:text-2xl font-medium">{{ modelValue.length }}</div>
+          <div class="text-xl sm:text-2xl font-medium">{{ localQuestions.length }}</div>
         </div>
         
         <div>
           <div class="text-xs sm:text-sm text-gray-500">Total Marks</div>
           <div class="text-xl sm:text-2xl font-medium">
-            {{ modelValue.reduce((sum, q) => sum + (Number(q.marks) || 0), 0) }}
+            {{ localQuestions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0) }}
           </div>
         </div>
 
@@ -130,20 +141,17 @@
     <!-- Bottom Actions -->
     <div class="mt-4 sm:mt-6 flex flex-col gap-2 sm:flex-row sm:justify-between sm:gap-3">
       <UButton size="sm" variant="soft" @click="$emit('prev')" class="w-full sm:w-auto">Back to Settings</UButton>
-      <UButton size="sm" color="primary" @click="$emit('publish')" :loading="publishing" :disabled="!canPublish" class="w-full sm:w-auto">Publish Quiz</UButton>
+      <UButton size="sm" color="primary" @click="handlePublish" :loading="publishing" class="w-full sm:w-auto">Publish Quiz</UButton>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, toRef } from 'vue'
 import QuestionEditor from './QuestionEditor.vue'
+import { useCreateQuizStore } from '~/stores/createQuizStore'
 
 const props = defineProps({
-  modelValue: {
-    type: Array,
-    required: true
-  },
   errors: {
     type: Object,
     default: () => ({})
@@ -151,7 +159,8 @@ const props = defineProps({
   saving: {
     type: Boolean,
     default: false
-  },
+  }
+  ,
   publishing: {
     type: Boolean,
     default: false
@@ -159,6 +168,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'save', 'publish', 'prev', 'open-bank', 'preview'])
+
+const store = useCreateQuizStore()
+// Use a ref to the store's questions array directly.
+// The `modelValue` prop is no longer needed for questions.
+const localQuestions = toRef(store, 'questions')
 
 const typeLabels = {
   mcq: 'Multiple Choice',
@@ -170,153 +184,144 @@ const typeLabels = {
   code: 'Code Answer',
 }
 
-const questionTemplate = {
-  type: 'mcq',
-  text: '<p></p>',
-  options: ['', ''],
-  correct: -1,
-  corrects: [],
-  difficulty: 2,
-  marks: 1,
-  fill_parts: [],
-  answers: [],
-  media: null,
-  explanation: '',
-  tags: '',
-  hint: '',
-  solution_steps: '<p></p>',
-  open: true,
-  is_banked: false,
-}
-
 // Methods
-function makeQuestion() {
-  const base = JSON.parse(JSON.stringify(questionTemplate))
-  base.uid = Math.random().toString(36).substring(2)
-  setQuestionTypeDefaults(base)
-  return base
-}
-
 function addQuestion() {
-  const questions = [...props.modelValue]
-  const q = makeQuestion()
-  questions.push(q)
-  emit('update:modelValue', questions)
-}
-
-function setQuestionTypeDefaults(q) {
-  if (!q || typeof q !== 'object') return
-  if (q.type === 'fill_blank') {
-    q.answers = Array.isArray(q.answers) ? q.answers : []
-    q.fill_parts = Array.isArray(q.fill_parts) ? q.fill_parts : []
-    q.parts = Array.isArray(q.parts) ? q.parts : []
-    if (!q.text) q.text = ''
-  } else {
-    q.answers = []
-    q.fill_parts = []
-    q.parts = []
-  }
-
-  if (['mcq', 'multi'].includes(q.type)) {
-    if (!Array.isArray(q.options) || q.options.length < 2) q.options = ['', '']
-    if (['mcq'].includes(q.type)) {
-      q.correct = typeof q.correct === 'number' ? q.correct : -1
-      q.corrects = []
-    } else {
-      q.corrects = Array.isArray(q.corrects) ? q.corrects : []
-      q.correct = -1
-    }
-  } else {
-    q.options = []
-    q.correct = -1
-    q.corrects = []
-  }
+  // Use the new store action which handles normalization
+  store.addQuestion()
 }
 
 function removeQuestion(idx) {
-  const questions = [...props.modelValue]
-  questions.splice(idx, 1)
-  emit('update:modelValue', questions)
+  localQuestions.value.splice(idx, 1)
 }
 
 function duplicateQuestion(idx) {
-  const questions = [...props.modelValue]
-  const original = questions[idx]
-  const copy = {
-    ...JSON.parse(JSON.stringify(original)),
-    uid: Math.random().toString(36).substring(2)
-  }
-  questions.splice(idx + 1, 0, copy)
-  emit('update:modelValue', questions)
+  const original = localQuestions.value[idx]
+  // Use the store action to add a normalized copy
+  store.addQuestion(original)
 }
 
 function addOption(idx) {
-  const questions = [...props.modelValue]
-  if (!questions[idx].options) questions[idx].options = []
-  questions[idx].options.push('')
-  emit('update:modelValue', questions)
+  const question = localQuestions.value[idx]
+  if (!question.options) question.options = []
+  question.options.push('')
+  // No emit needed here, watch will catch it
 }
 
 function removeOption(idx, optIdx) {
-  const questions = [...props.modelValue]
-  if (questions[idx].options && questions[idx].options.length > 2) {
-    questions[idx].options.splice(optIdx, 1)
-    if (questions[idx].correct >= optIdx) {
-      questions[idx].correct = Math.max(0, questions[idx].correct - 1)
+  const question = localQuestions.value[idx]
+  if (question.options && question.options.length > 2) {
+    question.options.splice(optIdx, 1)
+    // Also adjust correct answer indexes
+    if (question.type === 'mcq') {
+      if (question.correct === optIdx) {
+        question.correct = -1
+      } else if (question.correct > optIdx) {
+        question.correct--
+      }
     }
-    if (Array.isArray(questions[idx].corrects)) {
-      questions[idx].corrects = questions[idx].corrects.filter(c => c !== optIdx).map(c => c > optIdx ? c - 1 : c)
+    if (Array.isArray(question.corrects)) {
+      question.corrects = question.corrects
+        .filter(c => c !== optIdx)
+        .map(c => (c > optIdx ? c - 1 : c))
     }
   }
-  emit('update:modelValue', questions)
 }
 
+function handlePublish() {
+  if (canPublish.value) {
+    emit('publish');
+    return;
+  }
+
+  // Find the first question with validation errors
+  const firstInvalidQuestion = localQuestions.value.find(q => questionValidationErrors.value[q.uid]);
+  if (firstInvalidQuestion) {
+    // Find the corresponding DOM element using a data attribute
+    const element = document.querySelector(`[data-question-uid="${firstInvalidQuestion.uid}"]`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Optionally, briefly highlight the element
+      element.classList.add('ring-2', 'ring-red-400', 'ring-offset-2');
+      setTimeout(() => element.classList.remove('ring-2', 'ring-red-400', 'ring-offset-2'), 2000);
+    }
+  }
+}
+
+function getQuestionValidationErrors(question) {
+  const errors = [];
+  if (!question) {
+    errors.push('Question data is missing.');
+    return errors;
+  }
+
+  if (!question.text?.trim() || question.text === '<p></p>') {
+    errors.push('Question text cannot be empty.');
+  }
+  if (!question.type) {
+    errors.push('A question type must be selected.');
+  }
+
+  // Validate marks and difficulty
+  if (!question.marks || question.marks < 1) {
+    errors.push('Marks must be at least 1.');
+  }
+  if (!question.difficulty || question.difficulty < 1 || question.difficulty > 3) {
+    errors.push('A difficulty level must be set.');
+  }
+
+  // Validate based on question type
+  switch (question.type) {
+    case 'mcq':
+      if (!Array.isArray(question.options) || question.options.length < 2) {
+        errors.push('MCQ questions require at least 2 options.');
+      }
+      if (question.correct < 0 || question.correct >= (question.options?.length || 0)) {
+        errors.push('A correct option must be selected for MCQ.');
+      }
+      break;
+    case 'multi':
+      if (!Array.isArray(question.options) || question.options.length < 2) {
+        errors.push('Multiple select questions require at least 2 options.');
+      }
+      if (!Array.isArray(question.corrects) || question.corrects.length === 0) {
+        errors.push('At least one correct option must be selected for multiple select.');
+      }
+      break;
+    case 'fill_blank':
+    case 'short':
+    case 'numeric':
+      if (!Array.isArray(question.answers) || question.answers.length === 0 || !question.answers.some(a => String(a).trim())) {
+        errors.push('At least one answer must be provided.');
+      }
+      break;
+  }
+  return errors;
+}
 // Computed
 const averageDifficulty = computed(() => {
-  if (!props.modelValue.length) return { avg: 0, label: 'N/A' }
-  const sum = props.modelValue.reduce((s, q) => s + (Number(q.difficulty) || 0), 0)
-  const avg = +(sum / props.modelValue.length).toFixed(2)
+  if (!localQuestions.value.length) return { avg: 0, label: 'N/A' }
+  const sum = localQuestions.value.reduce((s, q) => s + (Number(q.difficulty) || 0), 0)
+  const avg = +(sum / localQuestions.value.length).toFixed(2)
   const label = avg <= 1.6 ? 'Easy' : avg <= 2.3 ? 'Medium' : 'Hard'
   return { avg, label }
 })
 
-const canPublish = computed(() => {
-  // Check if we have any questions
-  if (!props.modelValue.length) return false
-  
-  // Check for any validation errors
-  if (Object.keys(props.errors).length > 0) return false
-  
-  // Validate each question
-  for (const question of props.modelValue) {
-    // Check required fields
-    if (!question.text?.trim()) return false
-    if (!question.type) return false
-    
-    // Validate based on question type
-    switch (question.type) {
-      case 'mcq':
-        if (!Array.isArray(question.options) || question.options.length < 2) return false
-        if (question.correct < 0 || question.correct >= question.options.length) return false
-        break
-      case 'multi':
-        if (!Array.isArray(question.options) || question.options.length < 2) return false
-        if (!Array.isArray(question.corrects) || question.corrects.length === 0) return false
-        break
-      case 'fill_blank':
-        if (!Array.isArray(question.answers) || question.answers.length === 0) return false
-        break
-      case 'short':
-      case 'numeric':
-        if (!Array.isArray(question.answers) || question.answers.length === 0) return false
-        break
+const questionValidationErrors = computed(() => {
+  const errorMap = {};
+  for (const q of localQuestions.value) {
+    const errors = getQuestionValidationErrors(q);
+    if (errors.length > 0) {
+      errorMap[q.uid] = errors;
     }
-    
-    // Validate marks and difficulty
-    if (!question.marks || question.marks < 1) return false
-    if (!question.difficulty || question.difficulty < 1 || question.difficulty > 3) return false
   }
-  
-  return true
+  return errorMap;
+});
+
+const canPublish = computed(() => {
+  return (
+    localQuestions.value.length > 0 &&
+    Object.keys(props.errors).length === 0 &&
+    Object.keys(questionValidationErrors.value).length === 0
+  );
 })
 </script>

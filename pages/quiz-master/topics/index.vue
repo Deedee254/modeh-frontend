@@ -124,7 +124,7 @@ const page = ref(1)
 const perPage = ref(12)
 
 import useTaxonomy from '~/composables/useTaxonomy'
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+const { fetchLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 
 const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
 const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
@@ -133,7 +133,8 @@ const topicsResponse = ref(null)
 const topics = computed(() => topicsResponse.value?.data || [])
 
 onMounted(async () => {
-  // ensure taxonomy lists are available for filters and load topics
+  // Ensure levels are loaded first so FiltersSidebar can derive grades/subjects reliably
+  await fetchLevels()
   await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
   await loadTopics()
 })

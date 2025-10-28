@@ -112,10 +112,12 @@ const { data: subjectsResponse, pending, error, refresh } = await useFetch(confi
 
 const subjects = computed(() => subjectsResponse.value?.subjects?.data || [])
 
-const { fetchGrades, fetchAllSubjects, grades: taxGrades } = useTaxonomy()
+const { fetchLevels, fetchGrades, fetchAllSubjects, grades: taxGrades } = useTaxonomy()
 const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
 
 onMounted(async () => {
+  // Load levels first so FiltersSidebar can derive grades/subjects reliably
+  await fetchLevels()
   await Promise.all([fetchGrades(), fetchAllSubjects()])
 })
 

@@ -46,7 +46,7 @@
         <QuestionEditor
           v-model="localQuestions[index]"
           :index="index"
-          :errors="props.errors[element.id]"
+          :errors="(props.errors && element && typeof element.id !== 'undefined') ? props.errors[element.id] : {}"
           @remove="removeQuestion(index)"
           @duplicate="duplicateQuestion(index)"
           @add-option="addOptionToQuestion(index)"
@@ -130,7 +130,7 @@ const props = withDefaults(defineProps<Props>(), {
   errors: () => ({})
 })
 
-const emit = defineEmits(['update:questions', 'save-question'])
+const emit = defineEmits(['update:questions', 'save-question', 'saved'])
 const alert = useAppAlert()
 
 // State
@@ -189,7 +189,9 @@ function getDefaultForm(type = 'mcq') {
     answers: [],
     parts: [],
     difficulty: 2,
-    marks: 1
+    marks: 1,
+    correct: -1,
+    corrects: []
   }
 }
 
@@ -214,15 +216,30 @@ function addOption() {
   }
 }
 
+
+
 function removeOption(index: number) {
   if (questionForm.value.options.length > 2) {
     questionForm.value.options.splice(index, 1)
+    // Adjust correct answer indexes
+    if (questionForm.value.correct === index) {
+      questionForm.value.correct = -1
+    } else if (questionForm.value.correct > index) {
+      questionForm.value.correct--
+    }
+    if (Array.isArray(questionForm.value.corrects)) {
+      questionForm.value.corrects = questionForm.value.corrects
+        .filter(c => c !== index)
+        .map(c => (c > index ? c - 1 : c))
+    }
   }
 }
 
 function addOptionToQuestion(questionIndex: number) {
-  if (localQuestions.value[questionIndex].options.length < 6) {
-    localQuestions.value[questionIndex].options.push({ text: '', is_correct: false })
+  const q = localQuestions.value[questionIndex]
+  if (!Array.isArray(q.options)) q.options = []
+  if (q.options.length < 6) {
+    q.options.push({ text: '', is_correct: false })
     emit('update:questions', localQuestions.value)
   }
 }
@@ -247,8 +264,10 @@ async function saveQuestion() {
       localQuestions.value.push(questionData)
     }
     
-    emit('update:questions', localQuestions.value)
-    emit('save-question', questionData)
+  emit('update:questions', localQuestions.value)
+  emit('save-question', questionData)
+  // Also emit legacy 'saved' event so parent listeners (create.vue) receive the saved question
+  try { emit('saved', questionData) } catch (e) {}
     
     closeQuestionModal()
     alert.push({
@@ -293,7 +312,10 @@ function addFromBank(questions: any | any[]) {
   
   localQuestions.value.push(...toAdd)
   emit('update:questions', localQuestions.value)
-  toAdd.forEach(q => emit('save-question', q))
+  toAdd.forEach(q => {
+    emit('save-question', q)
+    try { emit('saved', q) } catch (e) {}
+  })
   showQuestionBankModal.value = false
   alert.push({
     type: 'success',

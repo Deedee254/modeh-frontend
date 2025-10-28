@@ -339,8 +339,9 @@ function onQuestionSelect(val) {
 onMounted(async () => {
   const cfg = useRuntimeConfig()
   try {
-    const res = await fetch(cfg.public.apiBase + `/api/quizzes/${id}`, { credentials: 'include' })
-    if (res.ok) {
+    const res = await api.get(`/api/quizzes/${id}`)
+    if (api.handleAuthStatus(res)) { /* auth redirect handled */ }
+    else if (res && res.ok) {
       const body = await res.json()
       quiz.value = body.quiz || body
       initializeAnswers()

@@ -110,6 +110,7 @@ definePageMeta({ layout: 'quiz-master' })
 
 import { ref, onMounted, computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
+import useApi from '~/composables/useApi'
 import { useRoute, useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
@@ -201,10 +202,12 @@ const config = useRuntimeConfig()
 
 async function fetchTopicDetails() {
   try {
-  const res = await fetch(`${config.public.apiBase}/api/topics/${topicId}`, { credentials: 'include' })
+    const api = useApi()
+    const res = await api.get(`/api/topics/${topicId}`)
+    if (api.handleAuthStatus(res)) return
     if (!res.ok) throw new Error('Failed to fetch topic details.')
-    const data = await res.json()
-    topic.value = data.topic || data.data
+    const data = await res.json().catch(() => null)
+    topic.value = data?.topic || data?.data || null
     // warm related taxonomy caches so subject/grade lists are available elsewhere in the UI
     try {
       if (topic.value) {
@@ -218,19 +221,21 @@ async function fetchTopicDetails() {
       // ignore warming errors
     }
   } catch (e) {
-    alert.push({ type: 'error', message: e.message })
+    alert.push({ type: 'error', message: (e && e.message) ? e.message : String(e) })
   }
 }
 
 async function fetchQuizzesForTopic() {
   try {
+    const api = useApi()
     const params = new URLSearchParams({ per_page: 100 }) // Fetch all quizzes
-  const res = await fetch(`${config.public.apiBase}/api/topics/${topicId}/quizzes?${params.toString()}`, { credentials: 'include' })
+    const res = await api.get(`/api/topics/${topicId}/quizzes?${params.toString()}`)
+    if (api.handleAuthStatus(res)) return
     if (!res.ok) throw new Error('Failed to fetch quizzes for this topic.')
-    const data = await res.json()
-    quizzes.value = data.quizzes || data.data || []
+    const data = await res.json().catch(() => null)
+    quizzes.value = data?.quizzes || data?.data || []
   } catch (e) {
-    alert.push({ type: 'error', message: e.message })
+    alert.push({ type: 'error', message: (e && e.message) ? e.message : String(e) })
   }
 }
 

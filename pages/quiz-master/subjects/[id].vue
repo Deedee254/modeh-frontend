@@ -70,6 +70,7 @@ definePageMeta({ layout: 'quiz-master' })
 
 import { ref, onMounted } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
+import useApi from '~/composables/useApi'
 import { useRoute } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -87,8 +88,10 @@ const config = useRuntimeConfig()
 
 async function fetchSubjectDetails() {
   try {
-    const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}`, { credentials: 'include' })
-    if (!res.ok) throw new Error('Failed to fetch subject details.')
+    const api = useApi()
+    const res = await api.get(`/api/subjects/${subjectId}`)
+    if (api.handleAuthStatus(res)) return
+    if (!res || !res.ok) throw new Error('Failed to fetch subject details.')
     const data = await res.json()
     subject.value = data.subject || data.data
   } catch (e) {
@@ -110,9 +113,11 @@ async function fetchTopicsForSubject() {
 
     // fallback to direct fetch
     const params = new URLSearchParams({ approved: 1, per_page: 100 })
-    const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}/topics?${params.toString()}`, { credentials: 'include' })
-    if (!res.ok) throw new Error('Failed to fetch topics for this subject.')
-    const data = await res.json()
+  const api = useApi()
+  const res = await api.get(`/api/subjects/${subjectId}/topics?${params.toString()}`)
+  if (api.handleAuthStatus(res)) return
+  if (!res || !res.ok) throw new Error('Failed to fetch topics for this subject.')
+  const data = await res.json()
     topics.value = (data.topics || data.data || []).filter(Boolean)
 
     // warm grade and subject caches for UI consistency

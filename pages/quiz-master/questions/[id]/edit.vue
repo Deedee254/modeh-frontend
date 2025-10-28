@@ -21,7 +21,6 @@ import { useRoute, useRouter } from '#imports'
 import QuestionBuilder from '~/components/quiz/QuestionBuilder.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
-
 const route = useRoute()
 const router = useRouter()
 const alert = useAppAlert()
@@ -31,12 +30,15 @@ const loading = ref(true)
 const error = ref('')
 const question = ref(null)
 
+const api = useApi()
+
 onMounted(async () => {
   const config = useRuntimeConfig()
   loading.value = true
   try {
-    const res = await fetch(config.public.apiBase + `/api/questions/${encodeURIComponent(id)}`, { credentials: 'include' })
-    if (!res.ok) throw new Error('Failed to load question')
+    const res = await api.get(`/api/questions/${encodeURIComponent(id)}`)
+    if (api.handleAuthStatus(res)) return
+    if (!res || !res.ok) throw new Error('Failed to load question')
     const json = await res.json()
     question.value = json.question || json
   } catch (e) {
@@ -54,8 +56,6 @@ function onSaved(saved) {
 function onCancel() {
   router.push('/quiz-master/questions')
 }
-
-const api = useApi()
 
 async function onDelete() {
   if (!confirm('Delete this question? This action cannot be undone.')) return

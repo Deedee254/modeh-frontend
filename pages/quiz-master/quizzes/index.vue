@@ -145,7 +145,7 @@ const isAdmin = computed(() => !!auth.user?.is_admin)
 
 const paginator = ref(null)
 const topics = ref([])
-const { fetchAllTopics, fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+const { fetchLevels, fetchAllTopics, fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
 const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
 const loading = ref(false)
@@ -185,7 +185,8 @@ function onServerSearch(search) {
 }
 
 onMounted(async () => {
-  // load taxonomy first, then items
+  // load taxonomy first (levels first so grades/subjects can be derived), then items
+  await fetchLevels()
   await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
   await fetchTopics()
   topics.value = Array.isArray(taxTopics.value) ? taxTopics.value : topics.value

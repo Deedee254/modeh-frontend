@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3">
+  <div v-if="local" class="space-y-3">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
       <USelect v-model="local.type" :options="typeOptions" size="sm" />
       <div class="grid grid-cols-2 gap-2">
@@ -46,7 +46,7 @@
     <div v-if="isOptionType" class="space-y-2">
       <h4 class="text-sm font-semibold text-slate-700">Options</h4>
       <div v-for="(opt, i) in local.options" :key="i" class="space-y-1 pb-2 border-b last:border-b-0">
-        <UTextarea v-model="local.options[i]" placeholder="Option text" :rows="2" v-autosize />
+        <UTextarea :model-value="getOptionText(opt)" @update:model-value="(v) => setOptionText(i, v)" placeholder="Option text" :rows="2" v-autosize />
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex items-center gap-2">
             <template v-if="isSingleChoiceType">
@@ -91,141 +91,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, getCurrentInstance, computed } from 'vue'
+import { watch, getCurrentInstance, computed } from 'vue'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 
 interface Props {
-  modelValue?: Record<string, any>
+  modelValue: Record<string, any>
   errors?: any[]
 }
 const props = defineProps<Props>()
-const emit = defineEmits<{
-  (e: 'update:modelValue', v: any): void
-  (e: 'add-option'): void
-  (e: 'remove-option', idx: number): void
-}>()
+const emit = defineEmits(['update:modelValue', 'add-option', 'remove-option'])
 
-// Normalize incoming model to a friendly internal shape and remember original shape
-const original = JSON.parse(JSON.stringify(props.modelValue || {}))
-const optionsAreObjects = Array.isArray(original.options) && original.options.length > 0 && typeof original.options[0] === 'object'
-// No legacy type mapping: UI and API use canonical types only
+const local = defineModel<Record<string, any>>({ required: true })
+
 const optionTypes = ['mcq', 'multi']
 const singleChoiceTypes = ['mcq']
-
-function toInternalModel(src: Record<string, any>) {
-  const m = JSON.parse(JSON.stringify(src || {}))
-  if (!m.type) m.type = 'mcq'
-  // map body -> text (legacy naming)
-  if (!m.text && (src.body || src.text)) {
-    m.text = src.body || src.text
-  }
-
-  const rawOptions = Array.isArray((src as any)?.options) ? (src as any).options : (Array.isArray(m.options) ? m.options : [])
-  if (optionsAreObjects || (rawOptions.length && typeof rawOptions[0] === 'object')) {
-    m._optionsAreObjects = true
-    m.options = (rawOptions || []).map((o: any) => o?.text || '')
-    if ((rawOptions || []).some((o: any) => o?.is_correct)) {
-      const corrects = [] as number[]
-      (rawOptions || []).forEach((o: any, i: number) => { if (o?.is_correct) corrects.push(i) })
-      m.corrects = corrects
-      m.correct = corrects.length ? corrects[0] : -1
-    } else {
-      m.corrects = Array.isArray(m.corrects) ? m.corrects : []
-      m.correct = typeof m.correct === 'number' ? m.correct : -1
-    }
-  } else {
-    const normalizedOptions = Array.isArray(rawOptions) ? rawOptions : []
-    m.options = normalizedOptions.map((o: any) => typeof o === 'string' ? o : (o?.text || ''))
-  }
-
-  if (!Array.isArray(m.options)) m.options = []
-  if (typeof m.correct !== 'number') m.correct = -1
-  if (!Array.isArray(m.corrects)) m.corrects = []
-
-  const answersSource = Array.isArray((src as any)?.answers) ? (src as any).answers : m.answers
-  m.answers = Array.isArray(answersSource) ? answersSource.map((a: any) => String(a ?? '')) : []
-
-  const partsSource = Array.isArray(m.parts)
-    ? m.parts
-    : (Array.isArray(m.fill_parts)
-      ? m.fill_parts
-      : (Array.isArray((src as any)?.parts)
-        ? (src as any).parts
-        : (Array.isArray((src as any)?.fill_parts) ? (src as any).fill_parts : [])))
-  const normalizedParts = Array.isArray(partsSource) ? partsSource.map((p: any) => String(p ?? '')) : []
-  m.parts = [...normalizedParts]
-  m.fill_parts = [...normalizedParts]
-
-  return m
-}
-
 const blankPattern = /__+/g
-
-const local = ref(toInternalModel(original))
-
-watch(() => props.modelValue, (nv) => {
-  try {
-    const nvClone = JSON.parse(JSON.stringify(nv || {}))
-    // only update if different
-    if (JSON.stringify(nvClone) !== JSON.stringify(original)) {
-      Object.assign(original, nvClone)
-      local.value = toInternalModel(nvClone)
-    }
-  } catch (e) {
-    // fallback
-    local.value = toInternalModel(nv || {})
-  }
-}, { deep: true })
-
-// Convert internal back to original shape when emitting
-function toExternalModel(internal: Record<string, any>) {
-  const out = JSON.parse(JSON.stringify(internal || {}))
-  // map text -> body for legacy consumers
-  if (out.text !== undefined) {
-    out.body = out.text
-  }
-
-  // no legacy type migration here — UI and API use canonical types only
-
-  if (!Array.isArray(out.answers)) out.answers = []
-  if (!Array.isArray(out.parts)) out.parts = []
-
-  if (optionsAreObjects || internal._optionsAreObjects) {
-    out.options = (internal.options || []).map((txt: any, i: number) => ({ text: String(txt || ''), is_correct: (internal.corrects || []).includes(i) || internal.correct === i }))
-  } else if (Array.isArray(internal.options)) {
-    out.options = internal.options.map((txt: any) => String(txt ?? ''))
-  }
-
-  if (singleChoiceTypes.includes(out.type)) {
-    out.correct = typeof internal.correct === 'number' ? internal.correct : -1
-    out.corrects = []
-  } else if (optionTypes.includes(out.type)) {
-    out.correct = -1
-    out.corrects = Array.isArray(internal.corrects) ? Array.from(new Set(internal.corrects.map((c: any) => Number(c)).filter((c: any) => Number.isFinite(c)))) : []
-  } else {
-    delete out.correct
-    delete out.corrects
-  }
-
-  if (out.type === 'fill_blank') {
-    out.answers = Array.isArray(internal.answers) ? internal.answers.map((a: any) => String(a ?? '')) : []
-    out.parts = Array.isArray(internal.parts) ? internal.parts.map((p: any) => String(p ?? '')) : []
-  } else {
-    out.answers = Array.isArray(internal.answers) ? internal.answers : []
-    out.parts = Array.isArray(internal.parts) ? internal.parts : []
-  }
-
-  return out
-}
-
-watch(local, (newVal) => {
-  try {
-    const ext = toExternalModel(newVal)
-    emit('update:modelValue', ext)
-  } catch (e) {
-    emit('update:modelValue', newVal)
-  }
-}, { deep: true })
 
 const typeOptions = [
   { label: 'Multiple Choice', value: 'mcq' },
@@ -257,6 +137,21 @@ function toggleCorrect(i: number, v: boolean) {
   local.value.corrects = arr
 }
 
+function getOptionText(opt: any): string {
+  if (typeof opt === 'string') return opt
+  if (typeof opt === 'object' && opt !== null) return opt.text || ''
+  return ''
+}
+
+function setOptionText(i: number, text: string) {
+  const opt = local.value.options[i]
+  if (typeof opt === 'string') {
+    local.value.options[i] = { text, is_correct: false }
+  } else if (typeof opt === 'object' && opt !== null) {
+    opt.text = text
+  }
+}
+
 const isOptionType = computed(() => optionTypes.includes(local.value.type))
 const isSingleChoiceType = computed(() => singleChoiceTypes.includes(local.value.type))
 const fillBlankCount = computed(() => (local.value.text || '').match(blankPattern)?.length || 0)
@@ -264,7 +159,17 @@ const fillBlankCount = computed(() => (local.value.text || '').match(blankPatter
 watch(() => local.value.type, (type) => {
   if (optionTypes.includes(type)) {
     if (!Array.isArray(local.value.options) || local.value.options.length < 2) {
-      local.value.options = ['', '']
+      local.value.options = [
+        { text: '', is_correct: true },
+        { text: '', is_correct: false }
+      ]
+    } else {
+      local.value.options = local.value.options.map((opt: any) => {
+        if (typeof opt === 'string') {
+          return { text: opt, is_correct: false }
+        }
+        return opt
+      })
     }
     if (singleChoiceTypes.includes(type)) {
       local.value.correct = typeof local.value.correct === 'number' ? local.value.correct : -1
@@ -274,22 +179,16 @@ watch(() => local.value.type, (type) => {
       local.value.corrects = Array.from(new Set(normalized.filter((c: any) => Number.isFinite(c))))
       local.value.correct = -1
     }
-    local.value._optionsAreObjects = true
   } else {
     local.value.options = []
     local.value.correct = -1
     local.value.corrects = []
-    local.value._optionsAreObjects = false
   }
 
   if (type === 'fill_blank') {
     if (!Array.isArray(local.value.answers)) local.value.answers = []
-    if (!Array.isArray(local.value.parts)) local.value.parts = []
-    if (!Array.isArray(local.value.fill_parts)) local.value.fill_parts = []
   } else {
     local.value.answers = []
-    local.value.parts = []
-    local.value.fill_parts = []
   }
 }, { immediate: true })
 
@@ -301,8 +200,6 @@ watch(() => local.value.text, (val) => {
   if (!Array.isArray(local.value.answers)) local.value.answers = []
   while (local.value.answers.length < blanks) local.value.answers.push('')
   if (local.value.answers.length > blanks) local.value.answers.splice(blanks)
-  local.value.parts = segments.map((s) => String(s ?? ''))
-  local.value.fill_parts = [...local.value.parts]
 }, { immediate: true })
 
 function onEditorReady() { /* placeholder for parent hook */ }
