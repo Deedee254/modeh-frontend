@@ -228,6 +228,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -278,29 +279,49 @@ const selectedLevel = ref(props.modelValue?.level_id || '')
 const selectedSubject = ref(props.modelValue?.subject_id || '')
 const topicsPicker = ref(null)
 const selectedTopic = ref(props.modelValue?.topic_id || '')
+
+function sameId(a, b) {
+  const left = a === null || typeof a === 'undefined' ? '' : String(a)
+  const right = b === null || typeof b === 'undefined' ? '' : String(b)
+  return left === right
+}
 const api = useApi()
 const alert = useAppAlert()
 const approvalRequestLoading = ref(false)
+const runtimeConfig = useRuntimeConfig()
+const suppressWatchers = ref(true)
+nextTick(() => { suppressWatchers.value = false })
 
 // Cover picker related refs
 const fileInput = ref(null)
+
+function resolveAssetUrl(value) {
+  if (!value || typeof value !== 'string') return null
+  if (/^(?:https?:)?\/\//.test(value)) return value
+  if (/^(?:data:|blob:)/.test(value)) return value
+  const base = runtimeConfig?.public?.apiBase || ''
+  if (!base) return value.startsWith('/') ? value : `/${value}`
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
+  const cleanPath = value.startsWith('/') ? value : `/${value}`
+  return `${cleanBase}${cleanPath}`
+}
 
 // compute preview URL from either modelValue.cover (tmp key or File) or modelValue.cover_image (server URL)
 const previewUrl = computed(() => {
   try {
     const cov = props.modelValue?.cover
-    // if cov is a string and matches a tmp key stored on window, try to read its object URL
     if (cov && typeof cov === 'string') {
-      const m = window['_tmpFiles'] || {}
-      const f = m[cov]
+      const store = typeof window !== 'undefined' ? (window['_tmpFiles'] || {}) : {}
+      const f = store[cov]
       if (f instanceof File) return URL.createObjectURL(f)
-      // if it's a remote URL string, return as-is
-      if (/^https?:\/\//.test(cov)) return cov
+      if (/^(?:https?:)?\/\//.test(cov) || /^(?:data:|blob:)/.test(cov)) return cov
+      if (cov.startsWith('tmpfile_')) return null
+      const resolvedCover = resolveAssetUrl(cov)
+      if (resolvedCover) return resolvedCover
     }
-    // if cov is a File object
     if (cov instanceof File) return URL.createObjectURL(cov)
-    // fallback to server-provided cover_image
-    if (props.modelValue?.cover_image) return props.modelValue.cover_image
+    const stored = props.modelValue?.cover_image
+    if (typeof stored === 'string' && stored) return resolveAssetUrl(stored)
   } catch (e) {}
   return null
 })
@@ -416,27 +437,35 @@ async function requestApproval() {
 
 // When grade changes, clear subject/topic and notify parent; also fetch subjects for the selected grade
 const { fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
-watch(selectedGrade, async (nv) => {
+watch(selectedGrade, async (nv, ov) => {
+  if (suppressWatchers.value) return
+  if (sameId(nv, ov)) return
   selectedSubject.value = ''
-  // clear subject/topic selection and emit null for topic_id (avoid empty string)
-  emit('update:modelValue', { ...props.modelValue, grade_id: nv || null, subject_id: null, topic_id: null })
+  if (!sameId(props.modelValue?.grade_id, nv)) {
+    emit('update:modelValue', { ...props.modelValue, grade_id: nv || null, subject_id: null, topic_id: null })
+  }
   try { await fetchSubjectsByGrade(nv) } catch (e) {}
 })
 
 // When level changes, clear grade/subject/topic and notify parent
-watch(selectedLevel, (nv) => {
+watch(selectedLevel, (nv, ov) => {
+  if (suppressWatchers.value) return
+  if (sameId(nv, ov)) return
   selectedGrade.value = ''
   selectedSubject.value = ''
-  emit('update:modelValue', { ...props.modelValue, level_id: nv || null, grade_id: null, subject_id: null, topic_id: null })
+  if (!sameId(props.modelValue?.level_id, nv)) {
+    emit('update:modelValue', { ...props.modelValue, level_id: nv || null, grade_id: null, subject_id: null, topic_id: null })
+  }
 })
 
 // Keep internal selected values in sync with parent changes
 watch(() => props.modelValue, (nv) => {
   if (!nv) return
-  selectedGrade.value = nv.grade_id || ''
-  selectedSubject.value = nv.subject_id || ''
-  selectedLevel.value = nv.level_id || ''
-  selectedTopic.value = nv.topic_id || ''
+  const { grade_id, subject_id, level_id, topic_id } = nv
+  if (!sameId(selectedGrade.value, grade_id)) selectedGrade.value = grade_id || ''
+  if (!sameId(selectedSubject.value, subject_id)) selectedSubject.value = subject_id || ''
+  if (!sameId(selectedLevel.value, level_id)) selectedLevel.value = level_id || ''
+  if (!sameId(selectedTopic.value, topic_id)) selectedTopic.value = topic_id || ''
 }, { deep: true })
 
 function onSubjectPicked(item) {

@@ -74,23 +74,7 @@
 <script setup>
 definePageMeta({ layout: 'quizee' })
 
-// Dynamic SEO for quiz-master profile
-const qmTitle = computed(() => {
-  try { return quizMaster?.value?.name ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh' } catch (e) { return 'Quiz Master — Modeh' }
-})
-const qmDescription = computed(() => {
-  try { return (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) } catch (e) { return 'Quiz Master profile on Modeh' }
-})
 
-useHead(() => ({
-  title: qmTitle.value,
-  meta: [
-    { name: 'description', content: qmDescription.value },
-    { property: 'og:title', content: qmTitle.value },
-    { property: 'og:description', content: qmDescription.value },
-    { property: 'og:image', content: quizMaster?.value?.avatar || '/social-share.png' }
-  ]
-}))
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -107,7 +91,25 @@ const quizMaster = computed(() => {
     return quizMasterData.value.data || quizMasterData.value
 })
 
-import { ref } from 'vue'
+// Update head/meta reactively once quizMaster resolves
+watchEffect(() => {
+  try {
+    useHead({
+      title: quizMaster?.value?.name ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh',
+      meta: [
+        { name: 'description', content: (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) },
+        { property: 'og:title', content: quizMaster?.value?.name ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh' },
+        { property: 'og:description', content: (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) },
+        { property: 'og:image', content: quizMaster?.value?.avatar || '/social-share.png' }
+      ]
+    })
+  } catch (e) {
+    // ignore head update errors
+  }
+})
+
+import { ref, computed, watchEffect } from 'vue'
+import { useHead } from '#imports'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'

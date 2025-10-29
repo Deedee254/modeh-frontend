@@ -16,14 +16,7 @@
             @click.prevent="activeTab = 'details'"
             :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'details' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
           >
-            Quiz Details
-          </a>
-          <a
-            href="#"
-            @click.prevent="activeTab = 'questions'"
-            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'questions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
-          >
-            Questions
+            Details
           </a>
           <a
             href="#"
@@ -31,6 +24,13 @@
             :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
           >
             Settings
+          </a>
+          <a
+            href="#"
+            @click.prevent="activeTab = 'questions'"
+            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'questions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
+          >
+            Questions
           </a>
         </nav>
       </div>
@@ -84,34 +84,8 @@
           <div>
             <label class="block text-sm font-medium text-gray-700">Cover Image</label>
             <div class="mt-1">
-              <img v-if="quiz.cover_image" :src="quiz.cover_image" alt="Cover" class="w-32 h-32 object-cover rounded" />
+              <img v-if="quiz.cover_image" :src="coverImageUrl" alt="Cover" class="w-32 h-32 object-cover rounded" />
               <div v-else class="w-32 h-32 bg-gray-200 rounded flex items-center justify-center text-gray-500">No image</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Questions -->
-      <div v-show="activeTab === 'questions'">
-        <div class="mb-2 flex items-center justify-between">
-          <div class="text-sm text-gray-600">Questions: {{ quiz.questions_count ?? (quiz.questions ? quiz.questions.length : 0) }}</div>
-        </div>
-
-        <div class="space-y-4">
-          <div v-for="(q, idx) in quiz.questions || []" :key="q.id || idx" class="border rounded p-4">
-            <div class="flex items-center justify-between mb-2">
-              <div class="font-medium">Question {{ idx + 1 }}</div>
-              <div class="text-sm text-gray-500">{{ q.marks || 0 }} marks • {{ difficultyLabel(q.difficulty) }}</div>
-            </div>
-            <div class="mb-3 prose max-w-none" v-html="q.question"></div>
-            <div v-if="q.options && q.options.length" class="space-y-1">
-              <div v-for="(opt, oidx) in q.options" :key="oidx" class="text-sm">
-                <span v-if="opt.is_correct" class="font-medium text-green-600">✓ </span>
-                <span v-html="opt.option"></span>
-              </div>
-            </div>
-            <div v-if="q.explanation" class="mt-3 p-2 bg-blue-50 rounded text-sm">
-              <strong>Explanation:</strong> <span v-html="q.explanation"></span>
             </div>
           </div>
         </div>
@@ -160,6 +134,32 @@
           </div>
         </div>
       </div>
+
+      <!-- Questions -->
+      <div v-show="activeTab === 'questions'">
+        <div class="mb-2 flex items-center justify-between">
+          <div class="text-sm text-gray-600">Questions: {{ quiz.questions_count ?? (quiz.questions ? quiz.questions.length : 0) }}</div>
+        </div>
+
+        <div class="space-y-4">
+          <div v-for="(q, idx) in quiz.questions || []" :key="q.id || idx" class="border rounded p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-medium">Question {{ idx + 1 }}</div>
+              <div class="text-sm text-gray-500">{{ q.marks || 0 }} marks • {{ difficultyLabel(q.difficulty) }}</div>
+            </div>
+            <div class="mb-3 prose max-w-none" v-html="q.question"></div>
+            <div v-if="q.options && q.options.length" class="space-y-1">
+              <div v-for="(opt, oidx) in q.options" :key="oidx" class="text-sm">
+                <span v-if="opt.is_correct" class="font-medium text-green-600">✓ </span>
+                <span v-html="opt.option"></span>
+              </div>
+            </div>
+            <div v-if="q.explanation" class="mt-3 p-2 bg-blue-50 rounded text-sm">
+              <strong>Explanation:</strong> <span v-html="q.explanation"></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -198,6 +198,23 @@ const youtubeEmbedUrl = computed(() => {
     if (m3 && m3[1]) return `https://www.youtube.com/embed/${m3[1]}`
     return null
   } catch (e) { return null }
+})
+
+function resolveAssetUrl(value) {
+  if (!value || typeof value !== 'string') return null
+  if (/^(?:https?:)?\/\//.test(value)) return value
+  if (/^(?:data:|blob:)/.test(value)) return value
+  const base = config?.public?.apiBase || ''
+  if (!base) return value.startsWith('/') ? value : `/${value}`
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
+  const cleanPath = value.startsWith('/') ? value : `/${value}`
+  return `${cleanBase}${cleanPath}`
+}
+
+const coverImageUrl = computed(() => {
+  const stored = quiz.value?.cover_image
+  if (typeof stored === 'string' && stored) return resolveAssetUrl(stored)
+  return null
 })
 
 function tabClass(tab) {

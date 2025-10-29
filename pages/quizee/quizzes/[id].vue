@@ -225,6 +225,29 @@
 <script setup>
 definePageMeta({ layout: 'quizee' })
 
+// page meta will be defined after we fetch the quiz data (so computed values
+// referencing the fetched `quizData` are available at runtime). See below.
+
+import { ref, computed, watch, watchEffect } from 'vue'
+import { useHead } from '#imports'
+import { useRouter, useRoute } from 'vue-router'
+import VideoPlayer from '~/components/media/VideoPlayer.vue'
+
+const router = useRouter()
+const route = useRoute()
+const config = useRuntimeConfig()
+
+// Fetch data without blocking; useFetch returns refs (no top-level await).
+// Avoid `await` here so `definePageMeta` and computed getters can react to the
+// `quizData` ref safely without causing server-side timing/500 errors.
+const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`)
+const quiz = quizData?.value?.quiz || quizData?.value || { 
+  id: route.params.id, 
+  title: 'Loading...', 
+  description: '', 
+  questions: [] 
+}
+
 // Dynamic page meta for quiz detail (uses server-fetched data when available)
 const pageTitle = computed(() => {
   try { return (quizData?.value?.quiz?.title || quiz?.title) ? `${quizData?.value?.quiz?.title || quiz?.title} — Modeh` : 'Quiz — Modeh' } catch (e) { return 'Quiz — Modeh' }
@@ -233,33 +256,12 @@ const pageDescription = computed(() => {
   try { return quizData?.value?.quiz?.description || quiz?.description || 'Practice and assess with Modeh quizzes.' } catch (e) { return 'Practice and assess with Modeh quizzes.' }
 })
 
-useHead(() => ({
-  title: pageTitle.value,
-  meta: [
-    { name: 'description', content: pageDescription.value },
-    { property: 'og:title', content: pageTitle.value },
-    { property: 'og:description', content: pageDescription.value },
-    { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz?.cover || '/social-share.png') },
-    { name: 'twitter:card', content: 'summary_large_image' }
-  ]
-}))
-
-import { ref, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import VideoPlayer from '~/components/media/VideoPlayer.vue'
-
-const router = useRouter()
-const route = useRoute()
-const config = useRuntimeConfig()
-
-// Fetch data without blocking, use `pending` for loading state
-const { data: quizData, pending } = await useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`)
-const quiz = quizData?.value?.quiz || quizData?.value || { 
-  id: route.params.id, 
-  title: 'Loading...', 
-  description: '', 
-  questions: [] 
-}
+// Use definePageMeta reactively so meta updates when `quizData` resolves.
+// Passing a function defers evaluation and avoids reading awaited values too early.
+// We avoid using `definePageMeta` with top-level await or complex awaits inside
+// its callback because the Nuxt macro runs at build-time and can error if it
+// encounters `await` in the module. Instead, update document head reactively
+// when `quizData` resolves using `useHead` inside a `watchEffect` below.
 
 // Computed properties for nested taxonomy data
 const topic_name = computed(() => quiz.topic?.name)
@@ -380,6 +382,24 @@ function startQuiz() {
 function showPreview() {
   router.push(`/quizzes/${quiz.id}/preview`)
 }
+
+// Update head reactively when quizData becomes available
+watchEffect(() => {
+  try {
+    useHead({
+      title: pageTitle.value,
+      meta: [
+        { name: 'description', content: pageDescription.value },
+        { property: 'og:title', content: pageTitle.value },
+        { property: 'og:description', content: pageDescription.value },
+        { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz?.cover || '/social-share.png') },
+        { name: 'twitter:card', content: 'summary_large_image' }
+      ]
+    })
+  } catch (e) {
+    // swallow errors from head updates to avoid breaking the page
+  }
+})
 </script>
 
 <style scoped>

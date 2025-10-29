@@ -139,6 +139,69 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   })
 
   /**
+   * Consolidates quiz data normalization for sending to API.
+   * Handles taxonomy IDs, timer conversions, and field validation.
+   */
+  function normalizeQuizForPayload(data: any) {
+    const result: any = { ...data }
+    
+    if (result.grade_id === '') result.grade_id = null
+    if (result.subject_id === '') result.subject_id = null
+    if (result.level_id === '') result.level_id = null
+    if (result.topic_id === '') result.topic_id = null
+    if (result.attempts_allowed === '') result.attempts_allowed = null
+    if (result.per_question_seconds === '') result.per_question_seconds = null
+    
+    result.topic_id = result.topic_id ? (Number(result.topic_id) || null) : null
+    result.subject_id = result.subject_id ? (Number(result.subject_id) || null) : null
+    result.grade_id = result.grade_id ? (Number(result.grade_id) || null) : null
+    result.level_id = result.level_id ? (Number(result.level_id) || null) : null
+    
+    result.attempts_allowed = (() => {
+      const raw = result.attempts_allowed
+      if (raw === '' || raw === null || typeof raw === 'undefined') return null
+      const n = Number(raw)
+      return Number.isFinite(n) ? n : null
+    })()
+    
+    return result
+  }
+
+  /**
+   * Builds the API payload for saving quiz data.
+   * Consolidates payload construction for both details and full save operations.
+   */
+  function buildQuizPayload(includeTimers = true, includeSettings = true): Record<string, any> {
+    const normalized = normalizeQuizForPayload(quiz.value as any)
+    
+    const payload: any = {
+      topic_id: normalized.topic_id,
+      title: normalized.title,
+      description: normalized.description || null,
+      youtube_url: normalized.youtube_url || null,
+      subject_id: normalized.subject_id,
+      grade_id: normalized.grade_id,
+      level_id: normalized.level_id,
+    }
+    
+    if (includeTimers) {
+      payload.timer_seconds = normalized.use_per_question_timer ? null : (normalized.timer_minutes ? Number(normalized.timer_minutes) * 60 : null)
+      payload.per_question_seconds = normalized.use_per_question_timer ? Number(normalized.per_question_seconds || 0) : null
+      payload.use_per_question_timer = Boolean(normalized.use_per_question_timer)
+    }
+    
+    if (includeSettings) {
+      payload.attempts_allowed = normalized.attempts_allowed
+      payload.shuffle_questions = Boolean(normalized.shuffle_questions)
+      payload.shuffle_answers = Boolean(normalized.shuffle_answers)
+      payload.access = normalized.access
+      payload.visibility = normalized.visibility
+    }
+    
+    return payload
+  }
+
+  /**
    * Normalizes a question object for use in the editor components.
    * Ensures a consistent structure for options, correct answers, etc.
    * @param q The raw question object.
@@ -294,13 +357,30 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   }
 
   /**
+   * Builds FormData for sending questions with optional media files.
+   * Unified approach for handling question media uploads.
+   */
+  function buildQuestionsFormData(questionsPayload: any[]): FormData {
+    const form = new FormData()
+    form.append('questions', JSON.stringify(questionsPayload))
+    
+    for (let i = 0; i < questions.value.length; i++) {
+      const file = questions.value[i]?.media_file
+      if (file instanceof File) {
+        form.append(`question_media[${i}]`, file)
+      }
+    }
+    
+    return form
+  }
+
+  /**
    * Appends quiz and question data to a FormData object, handling nested files.
    * @param form - The FormData instance.
    * @param quizPayload - The quiz data payload.
    * @param questionsPayload - The sanitized questions array.
    */
   function appendQuizDataToForm(form: FormData, quizPayload: Record<string, any>, questionsPayload?: any[]) {
-    // Append quiz fields
     Object.keys(quizPayload).forEach((k) => {
       const val = quizPayload[k]
       if (val === null || typeof val === 'undefined') return
@@ -309,10 +389,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     })
 
     if (questionsPayload) {
-      // Append questions as a JSON string
       form.append('questions', JSON.stringify(questionsPayload))
 
-      // Append any File objects found in questions
       for (let i = 0; i < questions.value.length; i++) {
         const file = questions.value[i]?.media_file
         if (file instanceof File) form.append(`question_media[${i}]`, file)
@@ -385,23 +463,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     isSubmitting.value = true
     try {
-      // Normalize empty strings into nulls for numeric ids coming from selects
-      if ((quiz.value as any).grade_id === '') (quiz.value as any).grade_id = null
-      if ((quiz.value as any).subject_id === '') (quiz.value as any).subject_id = null
-      if ((quiz.value as any).level_id === '') (quiz.value as any).level_id = null
-      if ((quiz.value as any).topic_id === '') (quiz.value as any).topic_id = null
-      // convert timer_minutes to timer_seconds to match backend expectations
-      const payload: any = {
-        topic_id: quiz.value.topic_id ? (Number(quiz.value.topic_id) || null) : null,
-        title: quiz.value.title,
-        description: quiz.value.description || null,
-        youtube_url: quiz.value.youtube_url || null,
-        subject_id: quiz.value.subject_id ? (Number(quiz.value.subject_id) || null) : null, // This is correct
-        grade_id: quiz.value.grade_id ? (Number(quiz.value.grade_id) || null) : null,
-        level_id: quiz.value.level_id ? (Number(quiz.value.level_id) || null) : null,
-      }
+      const payload = buildQuizPayload(true, false)
 
-      // Use PATCH if we have a quizId, otherwise POST to create.
       const method = quizId.value ? 'PATCH' : 'POST'
       const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes'
       
@@ -422,30 +485,25 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
 
       if (api.handleAuthStatus(res)) {
         alert.push({ type: 'warning', message: 'Session expired — please sign in again' })
-        return
+        return false
       }
       const data = await res.json().catch(() => null)
 
       if (handleApiErrors(res, data, detailsErrors)) {
-        return // Stop execution if errors were handled
+        return false
       }
 
-      // clear any previously stored validation errors
       detailsErrors.value = {}
 
-      // API may return different shapes: { quiz: {...} }, { data: { quiz: {...} } }, or raw quiz object
-      // Accept any of those and log the returned shape for debugging
       try { console.debug('saveDetails: api response', data) } catch (e) {}
       const returnedQuiz = (data && (data.quiz || (data.data && data.data.quiz))) ? (data.quiz || data.data.quiz) : (data && data.data && data.data.id ? data.data : (data && data.id ? data : null))
       if (returnedQuiz && returnedQuiz.id) {
         quizId.value = returnedQuiz.id
-        // Merge returned fields onto local quiz object conservatively
         try { quiz.value = { ...quiz.value, ...returnedQuiz } } catch (e) {}
         detailsSaved.value = true
       } else {
         console.error('API response missing quiz object:', data)
       }
-      // persist progress to localStorage
       persistProgress()
       alert.push({ type: 'success', message: 'Quiz details saved!' })
       return true
@@ -465,45 +523,20 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     isSubmitting.value = true;
     try {
-      // Normalize form values
-      const quizValue = quiz.value as any;
-      if (quizValue.grade_id === '') quizValue.grade_id = null;
-      if (quizValue.subject_id === '') quizValue.subject_id = null;
-      if (quizValue.level_id === '') quizValue.level_id = null;
-      if (quizValue.topic_id === '') quizValue.topic_id = null;
+      const payload = buildQuizPayload(true, true);
 
-      const payload: any = {
-        topic_id: quizValue.topic_id ? Number(quizValue.topic_id) || null : null,
-        title: quizValue.title,
-        description: quizValue.description || null,
-        youtube_url: quizValue.youtube_url || null,
-        timer_seconds: quizValue.use_per_question_timer ? null : (quizValue.timer_minutes ? Number(quizValue.timer_minutes) * 60 : null),
-        per_question_seconds: quizValue.use_per_question_timer ? Number(quizValue.per_question_seconds || 0) : null,
-        subject_id: quizValue.subject_id ? Number(quizValue.subject_id) || null : null,
-        grade_id: quizValue.grade_id ? Number(quizValue.grade_id) || null : null,
-        level_id: quizValue.level_id ? Number(quizValue.level_id) || null : null,
-        use_per_question_timer: quizValue.use_per_question_timer,
-        attempts_allowed: (() => {
-          const raw = quizValue.attempts_allowed;
-          if (raw === '' || raw === null || typeof raw === 'undefined') return null;
-          const n = Number(raw);
-          return Number.isFinite(n) ? n : null;
-        })(),
-        shuffle_questions: Boolean(quizValue.shuffle_questions),
-        shuffle_answers: Boolean(quizValue.shuffle_answers),
-        access: quizValue.access,
-        visibility: quizValue.visibility,
-      };
-
-      // Sanitize questions and include them in the payload
       const sanitizedQuestions = questions.value.map(q => sanitizeQuestionForPayload(q));
       
       const method = quizId.value ? 'PATCH' : 'POST';
       const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes';
 
       let res: Response;
-      const coverFile = quizValue.cover_file;
+      const coverFile = (quiz.value as any).cover_file;
       const hasQuestionFiles = questions.value.some(q => q.media_file instanceof File);
+
+      try {
+        try { console.debug('saveQuiz: outgoing payload preview', { payload, questionsCount: sanitizedQuestions?.length, hasQuestionFiles }) } catch (e) {}
+      } catch (e) {}
 
       if (coverFile instanceof File || hasQuestionFiles) {
         const formData = new FormData();
@@ -518,6 +551,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         res = await api.postFormData(url, formData);
       } else {
         const finalPayload = { ...payload, questions: sanitizedQuestions };
+        try { console.debug('saveQuiz: final JSON payload keys', Object.keys(finalPayload || {})) } catch (e) {}
         if (method === 'PATCH') {
           res = await api.patchJson(url, finalPayload);
         } else {
@@ -533,18 +567,15 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const data = await res.json().catch(() => null);
 
       if (handleApiErrors(res, data, detailsErrors)) {
-        return false; // Stop execution if errors were handled
+        return false;
       }
 
       detailsErrors.value = {};
       try { console.debug('saveQuiz: api response', data) } catch (e) {}
-      // Accept multiple shapes: { quiz: {...} }, { data: { quiz: {...} } }, or raw quiz object
       const returnedQuiz = (data && (data.quiz || (data.data && data.data.quiz))) ? (data.quiz || data.data.quiz) : (data && data.data && data.data.id ? data.data : (data && data.id ? data : null))
       if (returnedQuiz && returnedQuiz.id) {
         quizId.value = returnedQuiz.id;
-        // If API returned updated quiz object with fields, merge into local quiz
         try { quiz.value = { ...quiz.value, ...returnedQuiz } } catch (e) {}
-        // If API returned questions nested on the quiz, update local questions
         if (Array.isArray(returnedQuiz.questions) && returnedQuiz.questions.length) {
           questions.value = returnedQuiz.questions.map((q: any, idx: number) => normalizeQuestionForEditor(q))
         }
@@ -552,7 +583,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         console.error('API response missing quiz object:', data);
       }
       detailsSaved.value = true;
-      questionsSaved.value = true; // Since we're saving them together
+      questionsSaved.value = true;
       persistProgress();
       alert.push({ type: 'success', message: 'Quiz saved successfully!' });
       return true;
@@ -568,46 +599,68 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   async function saveSettings() {
     if (!quizId.value) {
       alert.push({ type: 'warning', message: 'Please save quiz details first.' })
-      return
+      return false
     }
     isSubmitting.value = true
     try {
-      // normalize numeric empty strings
-  if ((quiz.value as any).attempts_allowed === '') (quiz.value as any).attempts_allowed = null
-  if ((quiz.value as any).per_question_seconds === '') (quiz.value as any).per_question_seconds = null
-      const payload: any = {
-        timer_seconds: quiz.value.use_per_question_timer ? null : (quiz.value.timer_minutes ? Number(quiz.value.timer_minutes) * 60 : null),
-        per_question_seconds: quiz.value.use_per_question_timer ? Number(quiz.value.per_question_seconds || 0) : null,
-        use_per_question_timer: Boolean(quiz.value.use_per_question_timer),
-        attempts_allowed: (() => {
-          const raw: any = quiz.value.attempts_allowed
-          if (raw === '' || raw === null || typeof raw === 'undefined') return null
-          const n = Number(raw)
-          return Number.isFinite(n) ? n : null
-        })(),
-        shuffle_questions: Boolean(quiz.value.shuffle_questions),
-        shuffle_answers: Boolean(quiz.value.shuffle_answers),
-        access: quiz.value.access,
-        visibility: quiz.value.visibility,
-      }
+      const payload = buildQuizPayload(true, true)
 
       const res = await api.patchJson(`/api/quizzes/${quizId.value}`, payload)
       const data = await res.json().catch(() => null)
 
       if (handleApiErrors(res, data, settingsErrors)) {
-        return // Stop execution if errors were handled
+        return false
       }
 
       settingsErrors.value = {}
       alert.push({ type: 'success', message: 'Settings saved successfully!' })
       settingsSaved.value = true
       persistProgress()
+      return true
     } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: e.message })
+      return false
     } finally {
       isSubmitting.value = false
     }
+  }
+
+  /**
+   * Helper: checks if a question object contains any File objects
+   */
+  function questionContainsFile(q: any): boolean {
+    if (!q || typeof q !== 'object') return false
+    for (const k in q) {
+      try {
+        if (typeof File !== 'undefined' && q[k] instanceof File) return true
+      } catch (e) {}
+    }
+    return false
+  }
+
+  /**
+   * Builds FormData for a single question with media.
+   */
+  function buildQuestionFormData(sanitizedQuestion: any, question: any): FormData {
+    const form = new FormData()
+    
+    for (const k in question) {
+      try {
+        if (typeof File !== 'undefined' && question[k] instanceof File) {
+          form.append('media', question[k])
+        }
+      } catch (e) {}
+    }
+    
+    Object.keys(sanitizedQuestion).forEach((k) => {
+      const v: any = sanitizedQuestion[k]
+      if (v === null || typeof v === 'undefined') return
+      if (typeof v === 'object') form.append(k, JSON.stringify(v))
+      else form.append(k, String(v))
+    })
+    
+    return form
   }
 
   async function saveQuestion(question: any) {
@@ -617,46 +670,25 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     try {
       try { console.debug('saveQuestion:start', { quizId: quizId.value, uid: question?.uid || question?.id, type: question?.type }) } catch (e) {}
-      // sanitize payload for sending
+      
       const sanitizedQuestion = sanitizeQuestionForPayload(question)
-      // debug: log payload
       try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, sanitizedQuestion) } catch (e) {}
+      
       let res: Response
-      // If question contains a File (media), send as FormData with 'media' key
-      let containsFile = false
-      for (const k in question) {
-        try {
-          const v: any = question[k]
-          if (typeof File !== 'undefined' && v instanceof File) { containsFile = true; break }
-        } catch (e) {}
-      }
-      if (containsFile) {
-        const form = new FormData()
-        // Append any File objects from the original question under 'media' (preserve original file refs)
-        for (const k in question) {
-          try {
-            const v: any = (question as any)[k]
-            if (v && typeof File !== 'undefined' && v instanceof File) {
-              form.append('media', v)
-            }
-          } catch (e) {}
-        }
-        // append sanitized scalar fields; arrays/objects stringified
-        Object.keys(sanitizedQuestion).forEach((k) => {
-          const v: any = (sanitizedQuestion as any)[k]
-          if (v === null || typeof v === 'undefined') return
-          if (typeof v === 'object') form.append(k, JSON.stringify(v))
-          else form.append(k, String(v))
-        })
+      const hasFile = questionContainsFile(question)
+      
+      if (hasFile) {
+        const form = buildQuestionFormData(sanitizedQuestion, question)
         res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
       } else {
-        const res2 = await api.postJson(`/api/quizzes/${quizId.value}/questions`, sanitizedQuestion)
-        res = res2
+        res = await api.postJson(`/api/quizzes/${quizId.value}/questions`, sanitizedQuestion)
       }
+      
       if (api.handleAuthStatus(res)) return
       if (!res.ok) throw new Error('Failed to save question')
-      const data = await res.json().catch(()=>null)
-  try { console.debug('saveQuestion:response', { status: res.status, body: data }) } catch (e) {}
+      
+      const data = await res.json().catch(() => null)
+      try { console.debug('saveQuestion:response', { status: res.status, body: data }) } catch (e) {}
       
       const idx = questions.value.findIndex(q => q.uid === question.uid || q.id === question.id)
       if (idx !== -1 && data?.question) {
@@ -669,12 +701,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     } catch (err: unknown) {
       try { console.debug('saveQuestion:error', { err: (err as any)?.message || String(err) }) } catch (e) {}
       const e = err as Error
-      // if validation error from server, map to field-level errors
       try {
         if ((err as any)?.response && (err as any).response.status === 422) {
           const data = await (err as any).response.json().catch(() => null)
           if (data?.errors) {
-            // assign all messages to this question's uid (best-effort)
             const uid = question.uid || question.id || Math.random().toString(36).slice(2)
             const msgs: string[] = []
             Object.keys(data.errors).forEach(k => {
@@ -684,9 +714,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
             questionsErrors.value = { ...questionsErrors.value, [uid]: msgs }
           }
         }
-      } catch (ex) {
-        // ignore mapping errors
-      }
+      } catch (ex) {}
 
       alert.push({ type: 'error', message: e.message })
     }
@@ -717,21 +745,18 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       if(res.ok) {
         const data = await res.json()
         const serverQuiz = data.quiz || {}
-        // Build a frontend-friendly quiz object, converting timer_seconds -> timer_minutes
         const loaded: any = { ...initialForm, ...serverQuiz }
-          // normalize level fields if present on server payload
-          // Support level provided either directly on the quiz (level/level_id)
-          // or nested under the grade relation (grade.level)
-          loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.grade?.level?.id ?? serverQuiz.levelId ?? null
-          loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? null
-          loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? null
-          loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? null
+        
+        loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.grade?.level?.id ?? serverQuiz.levelId ?? null
+        loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? null
+        loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? null
+        loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? null
 
-          loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
-        // convert timer_seconds (server) to timer_minutes (client UI)
+        loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
+        
         const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
         loaded.timer_minutes = ts ? Math.floor(Number(ts) / 60) : initialForm.timer_minutes
-        // copy settings that the UI expects
+        
         loaded.per_question_seconds = serverQuiz.per_question_seconds ?? loaded.per_question_seconds
         loaded.use_per_question_timer = !!serverQuiz.use_per_question_timer
         loaded.attempts_allowed = serverQuiz.attempts_allowed ?? loaded.attempts_allowed
@@ -740,19 +765,18 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.access = serverQuiz.is_paid ? 'paywall' : (serverQuiz.access ?? loaded.access)
         loaded.visibility = serverQuiz.visibility ?? loaded.visibility
 
-        // map cover image to both cover_image (server URL) and cover (url for UI)
         if (serverQuiz.cover_image) {
           loaded.cover_image = serverQuiz.cover_image
           loaded.cover = serverQuiz.cover_image
         }
-        // Defensive fallbacks: ensure nested taxonomy objects exist to avoid `.id` access errors
+        
         loaded.topic = loaded.topic || (loaded.topic_id ? { id: loaded.topic_id } : null)
         loaded.subject = loaded.subject || (loaded.subject_id ? { id: loaded.subject_id } : null)
         loaded.grade = loaded.grade || (loaded.grade_id ? { id: loaded.grade_id } : null)
         loaded.level = loaded.level || (loaded.level_id ? { id: loaded.level_id } : null)
 
         quiz.value = loaded
-        // Normalize questions: ensure array, and that each question has an id or uid to be used as key
+        
         const rawQuestions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions : []
         questions.value = rawQuestions.map((q: any, idx: number) => ({
           id: q?.id ?? q?.uid ?? null,
@@ -767,9 +791,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         }))
         quizId.value = serverQuiz.id || id
 
-        // set saved flags conservatively
         detailsSaved.value = !!(quiz.value.title && quiz.value.grade_id && quiz.value.subject_id && quiz.value.topic_id)
-        settingsSaved.value = true // loaded quiz implies settings exist on server
+        settingsSaved.value = true
         questionsSaved.value = Array.isArray(questions.value) && questions.value.length > 0
       }
     } catch(err: unknown) {
@@ -886,6 +909,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     reset,
     saveDetails,
     saveSettings,
+    saveQuestion,
     submitQuiz,
     loadQuiz,
     clearProgress,

@@ -70,7 +70,7 @@
           :saving="store.isSubmitting"
           :errors="store.settingsErrors"
           @update:modelValue="(v) => (store.quiz = v)"
-          @save="saveSettings"
+          @save="async () => { const ok = await saveSettings(); if (ok) trySetTab('questions'); }"
           @next="() => trySetTab('questions')"
           @prev="() => trySetTab('details')"
           @error="(e) => alert.push(e)"
@@ -90,7 +90,7 @@
       </div>
 
       <div v-if="showBuilder" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" @saved="onSaved" @cancel="onCancel" />
+  <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" @saved="onQuestionSaved" @cancel="onCancel" />
       </div>
 
       <CreateTopicModal
@@ -189,6 +189,13 @@ function trySetTab(tab) {
 }
 
 async function onPublish() {
+  // Prevent publishing when no questions exist in the quiz
+  if (!Array.isArray(store.questions) || store.questions.length === 0) {
+    alert.push({ type: 'warning', message: 'Please add at least one question before publishing.' })
+    store.setTab('questions')
+    return
+  }
+
   await store.submitQuiz()
 }
 
@@ -307,7 +314,9 @@ const showQuestionBank = ref(false)
 
 function openBuilder() { showBuilder.value = true }
 function onCancel() { showBuilder.value = false }
-function onSaved(saved) { store.questions.push(saved) }
+// Use the store action which ensures normalization/uid assignment when a question
+// is returned from the QuestionBuilder. This avoids missing uid/shape issues.
+function onQuestionSaved(saved) { store.addQuestion(saved) }
 function edit(q) {}
 function onPreview() { showPreview.value = true }
 function onOpenBank() { showQuestionBank.value = true }

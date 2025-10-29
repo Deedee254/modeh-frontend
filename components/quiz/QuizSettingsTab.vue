@@ -134,6 +134,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   modelValue: {
     type: Object,
@@ -175,7 +177,6 @@ function validate() {
 function saveAndContinue() {
   if (validate()) {
     emit('save')
-    emit('error', { type: 'success', message: 'Settings saved successfully' })
   }
 }
 
