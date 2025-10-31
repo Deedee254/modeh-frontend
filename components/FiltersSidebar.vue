@@ -283,7 +283,11 @@ watch(localLevel, (v) => {
   emit('update:level', v)
   // ensure grades for this level are loaded
   if (v) {
-    try { fetchGrades() } catch (e) {}
+    try {
+      // prefer server-filtered grades when available
+      if (typeof fetchGradesByLevel === 'function') fetchGradesByLevel(v)
+      else fetchGrades()
+    } catch (e) {}
   }
 })
 

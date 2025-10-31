@@ -5,35 +5,35 @@
         <div class="p-4 md:p-6 border-b">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <div class="text-lg md:text-xl font-semibold text-gray-900">{{ quiz.title || 'Loading...' }}</div>
-              <div class="text-sm text-gray-600">{{ quiz.description }}</div>
+              <div class="text-lg md:text-xl font-semibold text-gray-900">{{ Q.title || 'Loading...' }}</div>
+              <div class="text-sm text-gray-600">{{ Q.description }}</div>
 
               <!-- Quiz rules badges -->
               <div class="mt-2 flex flex-wrap gap-2 text-sm">
-                <div v-if="quiz.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded">🔁 {{ quiz.attempts_allowed === 'unlimited' ? 'Unlimited attempts' : quiz.attempts_allowed + ' attempts' }}</div>
-                <div v-if="quiz.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded">🔀 Questions shuffled</div>
-                <div v-if="quiz.shuffle_answers" class="px-2 py-1 bg-gray-100 rounded">🔀 Answers shuffled</div>
-                <div v-if="quiz.access && quiz.access !== 'free'" class="px-2 py-1 bg-amber-50 text-amber-700 rounded">🔒 Paywalled</div>
+                <div v-if="Q.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded">🔁 {{ Q.attempts_allowed === 'unlimited' ? 'Unlimited attempts' : Q.attempts_allowed + ' attempts' }}</div>
+                <div v-if="Q.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded">🔀 Questions shuffled</div>
+                <div v-if="Q.shuffle_answers" class="px-2 py-1 bg-gray-100 rounded">🔀 Answers shuffled</div>
+                <div v-if="Q.access && Q.access !== 'free'" class="px-2 py-1 bg-amber-50 text-amber-700 rounded">🔒 Paywalled</div>
               </div>
             </div>
 
             <!-- Accessible announcements -->
             <div class="sr-only" aria-live="polite">{{ lastAnnouncement }}</div>
-            <div class="flex items-center gap-4" v-if="quiz.questions.length > 0">
+            <div class="flex items-center gap-4" v-if="Q.questions.length > 0">
               <!-- Quiz Timer -->
               <div class="flex flex-col items-end">
-                <div v-if="quiz.timer_seconds" class="text-sm text-gray-500">Total Time</div>
+                <div v-if="Q.timer_seconds" class="text-sm text-gray-500">Total Time</div>
                 <div class="text-lg font-mono font-bold" :class="{
                   'text-red-500': timeLeft.value < 60,
                   'text-orange-500': timeLeft.value < 180,
-                  'text-indigo-600': timeLeft.value >= 180 || !quiz.timer_seconds
+                  'text-indigo-600': timeLeft.value >= 180 || !Q.timer_seconds
                 }">
                   {{ displayTime }}
                 </div>
               </div>
 
               <!-- Question Timer -->
-              <div v-if="quiz.use_per_question_timer || quiz.per_question_seconds" class="flex flex-col items-end border-l pl-4">
+              <div v-if="Q.use_per_question_timer || Q.per_question_seconds" class="flex flex-col items-end border-l pl-4">
                 <div class="text-sm text-gray-500">Question Time</div>
                 <div class="text-lg font-mono font-bold" :class="qTimerColorClass">
                   {{ qDisplayTime }}
@@ -41,29 +41,29 @@
               </div>
 
               <!-- Time per Remaining -->
-              <div v-else-if="quiz.timer_seconds" class="flex flex-col items-end border-l pl-4">
+              <div v-else-if="Q.timer_seconds" class="flex flex-col items-end border-l pl-4">
                 <div class="text-sm text-gray-500">Per Question</div>
                 <div class="text-sm font-mono font-medium text-gray-600">
-                  ~{{ formatTime(Math.floor(timeLeft.value / (quiz.questions.length - currentQuestion))) }}
+                  ~{{ formatTime(Math.floor(timeLeft.value / (Q.questions.length - currentQuestion))) }}
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Timer progress (timed quizzes) -->
-          <div v-if="quiz.timer_seconds" class="w-full mb-3">
-            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden" role="progressbar" :aria-valuenow="timeLeft" :aria-valuemax="quiz.timer_seconds" :aria-valuetext="`Time remaining ${displayTime}`">
+          <div v-if="Q.timer_seconds" class="w-full mb-3">
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden" role="progressbar" :aria-valuenow="timeLeft" :aria-valuemax="Q.timer_seconds" :aria-valuetext="`Time remaining ${displayTime}`">
               <div :class="timerColorClass" class="h-2 rounded-full transition-all duration-500" :style="{ width: `${timerPercent}%` }"></div>
             </div>
           </div>
 
           <!-- Progress bar (questions answered) -->
-          <div v-if="!loading && quiz.questions.length > 0" class="w-full bg-gray-200 rounded-full h-2 mb-4">
+          <div v-if="!loading && Q.questions.length > 0" class="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${progressPercent}%` }"></div>
           </div>
           <div class="flex items-center justify-between">
             <div class="text-xs text-gray-500">
-              Question {{ currentQuestion + 1 }} of {{ quiz.questions.length }}
+              Question {{ currentQuestion + 1 }} of {{ Q.questions.length }}
             </div>
             <!-- Encouragement badge based on progress -->
             <div v-if="encouragementMessage" class="text-sm px-3 py-1 rounded-full bg-gradient-to-r" :class="encouragementStyle">
@@ -93,7 +93,7 @@
                     <div class="font-semibold text-lg text-gray-900 mb-4">Question {{ currentQuestion + 1 }}</div>
                     <div class="text-gray-800 mb-4" v-html="currentQuestionData.body || currentQuestionData.text || currentQuestionData.question"></div>
                     <div class="space-y-3">
-                      <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" />
+                      <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
                     </div>
                     <div class="text-xs text-gray-500 mt-3 flex items-center gap-1">
                       <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
@@ -112,7 +112,7 @@
                   Previous
                 </button>
                 <div class="flex gap-2">
-                  <button v-if="currentQuestion < quiz.questions.length - 1" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="nextQuestion">
+                  <button v-if="currentQuestion < Q.questions.length - 1" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="nextQuestion">
                     Next
                   </button>
                   <button v-else type="button" :disabled="submitting.value" :class="['px-6 py-2 rounded-lg transition-colors', submitting.value ? 'bg-green-500 text-white opacity-60 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700']" @click="confirmSubmit">
@@ -189,7 +189,26 @@ const router = useRouter()
 const id = route.params.id
 
 // --- Core State ---
-const quiz = ref({ questions: [] })
+// Provide a defensive default shape so SSR/template rendering never reads properties
+// off an undefined `quiz` value.
+const quiz = ref({
+  id: id || null,
+  title: 'Loading...',
+  description: '',
+  questions: [],
+  timer_seconds: null,
+  attempts_allowed: null,
+  shuffle_questions: false,
+  shuffle_answers: false,
+  access: 'free',
+  use_per_question_timer: false,
+  per_question_seconds: null,
+  _attempt_id: null,
+  _started_at_ms: null
+})
+
+// Template-safe alias that returns a plain object when `quiz.value` is undefined
+const Q = computed(() => quiz.value || { title: 'Loading...', description: '', questions: [], timer_seconds: null, attempts_allowed: null, shuffle_questions: false, shuffle_answers: false, access: 'free', use_per_question_timer: false, per_question_seconds: null })
 const loading = ref(true)
 const submitting = ref(false)
 const lastSubmitFailed = ref(false)
@@ -230,6 +249,71 @@ const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, 
 // per-question timer composable
 const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
 const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
+import { normalizeAnswer, formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
+
+// Progress persistence helpers (include attempt_id so restore maps to server attempt)
+// Per-question timing state (declare early so functions/watchers below can reference it)
+const questionTimes = ref({})
+
+let persistTimeoutRef = { t: null }
+function progressKey() {
+  return `quiz:attempt:progress:${quiz.value?.id || id}:${quiz.value?._attempt_id || 'draft'}`
+}
+
+function restoreProgress() {
+  try {
+    const raw = localStorage.getItem(progressKey())
+    if (!raw) {
+      // No attempt-specific saved progress yet. Try to migrate any existing 'draft' progress
+      try {
+        const legacyKey = `quiz:attempt:progress:${quiz.value?.id || id}:draft`
+        const legacyRaw = localStorage.getItem(legacyKey)
+        if (legacyRaw) {
+          // copy legacy to the new key so future saves use the server attempt id
+          localStorage.setItem(progressKey(), legacyRaw)
+          try { localStorage.removeItem(legacyKey) } catch (e) {}
+        } else {
+          return
+        }
+      } catch (e) { return }
+    }
+    const parsed = JSON.parse(localStorage.getItem(progressKey()) || '{}')
+    if (parsed?.answers && typeof parsed.answers === 'object') {
+      Object.keys(parsed.answers).forEach(k => { answers.value[k] = parsed.answers[k] })
+    }
+    if (parsed?.question_times && typeof parsed.question_times === 'object') {
+      questionTimes.value = parsed.question_times
+    }
+    if (!quiz.value._started_at_ms && parsed?.started_at) {
+      try { quiz.value._started_at_ms = new Date(parsed.started_at).getTime() } catch (e) {}
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function persistProgress() {
+  try {
+    if (persistTimeoutRef.t) clearTimeout(persistTimeoutRef.t)
+    persistTimeoutRef.t = setTimeout(() => {
+      const payload = {
+        quiz_id: quiz.value?.id || id,
+        attempt_id: quiz.value?._attempt_id || null,
+        started_at: quiz.value?._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : null,
+        answers: answers.value,
+        question_times: questionTimes.value
+      }
+      try { localStorage.setItem(progressKey(), JSON.stringify(payload)) } catch (e) {}
+    }, 400)
+  } catch (e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(progressKey()) } catch (e) {}
+}
+
+// Persist on changes
+watch(answers, () => persistProgress(), { deep: true })
+watch(questionTimes, () => persistProgress(), { deep: true })
+watch(() => quiz.value?._attempt_id, () => persistProgress())
 
 // Wrapped answer handlers to capture timing
 function selectMcq(qid, opt) {
@@ -276,7 +360,6 @@ const { currentStreak, achievements, encouragementMessage, encouragementStyle, c
 const currentQuestionData = computed(() => quiz.value.questions[currentQuestion.value] || {})
 
 // Per-question timing (uses composable)
-const questionTimes = ref({})
 
 function recordQuestionTime(qid) {
   // record elapsed time from composable and reset the per-question timer
@@ -345,13 +428,34 @@ onMounted(async () => {
       const body = await res.json()
       quiz.value = body.quiz || body
       initializeAnswers()
-  // Record client-side started_at timestamp. If you prefer server-trusted starts,
-  // re-enable the POST /api/quizzes/{id}/start call and store returned attempt id.
-  quiz.value._started_at_ms = Date.now()
-  startTimer()
-  // start per-question timer and question timer
-  startQuestionTimer()
-  schedulePerQuestionLimit()
+        // Try to create a server-side attempt to get authoritative attempt_id and started_at.
+        // If that fails (unauthenticated or network), fall back to a client-side started_at timestamp.
+        try {
+          const startRes = await api.postJson(`/api/quizzes/${id}/start`, {})
+          if (!api.handleAuthStatus(startRes) && startRes && startRes.ok) {
+            const startBody = await startRes.json().catch(() => null)
+            quiz.value._attempt_id = startBody?.attempt_id ?? startBody?.attempt?.id ?? null
+            if (startBody?.started_at) {
+              try { quiz.value._started_at_ms = new Date(startBody.started_at).getTime() } catch (e) { quiz.value._started_at_ms = Date.now() }
+            } else {
+              quiz.value._started_at_ms = Date.now()
+            }
+          } else {
+            // server start failed or returned non-ok (e.g. unauthenticated) — use client timestamp
+            quiz.value._started_at_ms = Date.now()
+          }
+        } catch (e) {
+          // network error — fallback to client timestamp
+          quiz.value._started_at_ms = Date.now()
+        }
+
+        // Start timers after establishing started_at / attempt_id
+        startTimer()
+        // start per-question timer and question timer
+        startQuestionTimer()
+        schedulePerQuestionLimit()
+
+        try { restoreProgress() } catch (e) {}
 
       // fill-blank handling is handled by the FillBlankCard component via v-model/select
 
@@ -382,25 +486,15 @@ async function submitAnswers() {
   stopTimer()
   const totalTime = Math.floor((Date.now() - (quiz.value._started_at_ms || Date.now())) / 1000)
 
-  // Normalize answer values before sending to backend
-  function normalizeAnswer(answer) {
-    if (!answer) return answer;
-    if (Array.isArray(answer)) {
-      return answer.map(a => normalizeAnswer(a));
-    }
-    if (typeof answer === 'object') {
-      return answer.body || answer.text || answer.toString();
-    }
-    return answer;
-  }
+  // Build answers payload using central normalization helpers.
+  // This ensures consistent formatting between different quiz flows (battles, tournaments, normal quizzes).
+  const sanitizedAnswers = formatAnswersForSubmission(answers.value, questionTimes.value)
+    // formatAnswersForSubmission may coerce invalid ids to 0; filter out those entries here
+    .filter(a => Number.isFinite(Number(a.question_id)) && Number(a.question_id) > 0)
 
   const payload = {
-    answers: Object.keys(answers.value).map(qid => ({ 
-      question_id: parseInt(qid, 10) || 0, 
-      selected: normalizeAnswer(answers.value[qid])
-    })),
+    answers: sanitizedAnswers,
     defer_marking: true,
-    question_times: questionTimes.value,
     total_time_seconds: totalTime,
     started_at: quiz.value._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : (quiz.value.started_at || null),
     attempt_id: quiz.value._attempt_id || null,
@@ -413,6 +507,7 @@ async function submitAnswers() {
       submissionMessage.value = ''
       const body = await res.json()
       stopTimer()
+      try { clearProgress() } catch (e) {}
       clearSavedAnswers()
 
       // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
@@ -460,6 +555,7 @@ function cancel() { router.push('/quizee/quizzes') }
 
 function retakeQuiz() {
   // Clear local storage and reload to retake
+  try { clearProgress() } catch (e) {}
   clearSavedAnswers()
   // Reset achievement tracking
   resetAchievements()

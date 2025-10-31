@@ -195,6 +195,7 @@ import ActionMenu from '~/components/ui/ActionMenu.vue'
 import UiLevelProgress from '~/components/ui/LevelProgress.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ChatDrawer from '~/components/ChatDrawer.vue'
+import { useApi } from '~/composables/useApi'
 
 // Standard runtime config reference
 const config = useRuntimeConfig()
@@ -214,6 +215,7 @@ const notificationsCount = computed(() => unreadChatCount.value || notifications
 const auth = useAuthStore()
 const router = useRouter()
 const { isquizee } = useUserRole()
+const api = useApi()
 
 const searchInput = ref(null)
 const mobileSearchInput = ref(null)
@@ -254,7 +256,7 @@ function goToChat() {
 
 async function updateUnreadCount() {
   try {
-    const res = await fetch(config.public.apiBase + '/api/chat/threads', { credentials: 'include' })
+    const res = await api.get('/api/chat/threads')
     if (res.ok) {
       const json = await res.json()
       let count = 0

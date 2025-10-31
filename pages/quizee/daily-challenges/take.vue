@@ -19,7 +19,7 @@
           </div>
           <div class="text-left sm:text-right w-full sm:w-auto bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-lg">
             <div class="text-sm text-gray-500">Time Remaining</div>
-            <div class="text-lg font-mono font-bold text-indigo-600">{{ formatTime(timeRemaining) }}</div>
+            <div class="text-lg font-mono font-bold text-indigo-600">{{ displayTime }}</div>
           </div>
         </div>
         <div class="mt-4 bg-gray-200 rounded-full h-2">
@@ -30,7 +30,7 @@
       <!-- Question Card -->
       <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-8 mb-8">
         <div v-if="currentQuestion" class="mb-6">
-          <QuestionCard v-model="selectedAnswer" :question="currentQuestion" @select="(val) => { if (currentQuestion && currentQuestion.id) answers[currentQuestion.id] = val }" />
+          <QuestionCard v-model="selectedAnswer" :question="currentQuestion" @select="(val) => { if (currentQuestion && currentQuestion.id) answers[currentQuestion.id] = val }" @toggle="(opt) => { if (currentQuestion && currentQuestion.id) rawToggleMulti(currentQuestion.id, opt) }" />
         </div>
 
         <!-- Navigation -->
@@ -96,7 +96,7 @@
         </div>
         
         <div class="bg-gray-50 rounded-lg p-4 mb-4">
-          <div class="text-sm text-gray-600">Time taken: {{ formatTime(600 - timeRemaining) }}</div>
+          <div class="text-sm text-gray-600">Time taken: {{ formatTime(challengeAdapter.timer_seconds - timeLeft) }}</div>
           <div class="text-sm text-gray-600">Questions answered: {{ Object.keys(answers).length }}/{{ questions.length }}</div>
         </div>
 
@@ -126,6 +126,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAnswerNormalization } from '~/composables/useAnswerNormalization'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
+import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
 import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
 const config = useRuntimeConfig()
 const router = useRouter()
@@ -135,7 +136,10 @@ const auth = useAuthStore()
 const challenge = ref(null)
 const questions = ref([])
 // reuse shared answers composable so daily-challenge answers are same shape as quizzes/battles
-const { answers, initializeAnswers, clearSavedAnswers } = useQuizAnswers({ value: { questions: [] } }, 'daily-challenge')
+// Pass a computed wrapper around the local `questions` ref so the composable reads
+// the actual questions when initializeAnswers() is called later (avoids initializing
+// with an empty static array).
+const { answers, initializeAnswers, clearSavedAnswers, toggleMulti: rawToggleMulti } = useQuizAnswers(computed(() => ({ questions: questions.value })), 'daily-challenge')
 const startedAt = ref(null)
 const currentQuestionIndex = ref(0)
 // selectedAnswer is bound to the shared answers map via computed getter/setter
@@ -151,7 +155,6 @@ const selectedAnswer = computed({
     answers.value[q.id] = v
   }
 })
-const timeRemaining = ref(600) // 10 minutes
 const submitting = ref(false)
 const showResultsModal = ref(false)
 const resultPayload = ref(null)
@@ -160,26 +163,20 @@ const earnedAchievements = ref([])
 // Computed
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
 const progress = computed(() => ((currentQuestionIndex.value + 1) / questions.value.length) * 100)
+const challengeAdapter = computed(() => ({
+  timer_seconds: 600 // Daily challenges have a fixed 10-minute timer
+}))
 
 import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 
 // Timer
-let timer = null
-const startTimer = () => {
-  // record client-side started_at for timing/persistence purposes
-  startedAt.value = new Date().toISOString()
-  timer = setInterval(() => {
-    timeRemaining.value--
-    if (timeRemaining.value <= 0) {
-      clearInterval(timer)
-      submitChallenge()
-    }
-  }, 1000)
-}
+const { timeLeft, displayTime, startTimer, stopTimer } = useQuizTimer(challengeAdapter, () => submitChallenge())
 
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
+  // Handle potential negative values if timer overruns slightly
+  if (mins < 0 || secs < 0) return '0:00'
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
@@ -205,7 +202,7 @@ const submitChallenge = async () => {
   if (submitting.value) return
 
   submitting.value = true
-  clearInterval(timer)
+  stopTimer()
 
   try {
     // Import the shared answer normalization
@@ -290,6 +287,7 @@ const fetchChallengeData = async () => {
     // Prefer client-provided grade/subjects to select 5 randomized questions
     const auth = useAuthStore()
     const gradeId = auth.user?.grade?.id || auth.user?.grade_id || auth.user?.grade || null
+    const levelId = auth.user?.level?.id || auth.user?.level_id || auth.user?.level || null
 
     if (!gradeId) {
       console.error('User grade is not set. Redirecting to settings.')
@@ -306,6 +304,9 @@ const fetchChallengeData = async () => {
       question_count: 5,
       grade_id: gradeId,
     }
+    if (levelId) {
+      params.level_id = levelId
+    }
     if (subjectIds.length) params.subject_id = subjectIds
 
     const questionsData = await $fetch(config.public.apiBase + '/api/questions', {
@@ -319,6 +320,8 @@ const fetchChallengeData = async () => {
   // initialize answers structure to match questions
   initializeAnswers()
 
+  // record client-side started_at for timing/persistence purposes
+  startedAt.value = new Date().toISOString()
   startTimer()
   } catch (error) {
     console.error('Failed to fetch challenge data:', error)
@@ -332,7 +335,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (timer) clearInterval(timer)
+  stopTimer()
 })
 
 const closeResults = async () => {

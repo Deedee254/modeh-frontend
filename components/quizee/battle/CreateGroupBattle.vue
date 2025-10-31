@@ -17,44 +17,14 @@
           <UInput v-model="battleName" placeholder="e.g., 'Friday Night Trivia'" />
         </div>
 
+        <BattleTaxonomySelectors
+          v-model:level="level"
+          v-model:grade="grade"
+          v-model:subject="subject"
+          v-model:topic="topic"
+        />
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Level</label>
-            <select v-model="level" class="w-full rounded-md border px-3 py-2">
-              <option value="">All levels</option>
-              <option v-for="l in (levels || [])" :key="l.id" :value="l.id">{{ l.name }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Grade</label>
-            <USelect v-model="grade" :options="grades" placeholder="Select grade" />
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Subject</label>
-            <TaxonomyPicker
-              ref="subjectPicker"
-              resource="subjects"
-              :grade-id="grade"
-              compact
-              v-model="subject"
-           />
-            <div v-if="selectedSubjectName" class="mt-2 text-xs text-slate-600 dark:text-slate-300">Selected: <span class="font-medium">{{ selectedSubjectName }}</span></div>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Topic</label>
-            <TaxonomyPicker
-              ref="topicPicker"
-              resource="topics"
-              :subject-id="subject"
-              compact
-              v-model="topic"
-           >
-              <template #actions>
-                <UButton size="sm" variant="ghost" title="Create topic" @click.prevent="openTopicModal">+</UButton>
-              </template>
-            </TaxonomyPicker>
-            <div v-if="selectedTopicName" class="mt-2 text-xs text-slate-600 dark:text-slate-300">Selected: <span class="font-medium">{{ selectedTopicName }}</span></div>
-          </div>
           <div>
             <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Difficulty</label>
             <USelect v-model="difficulty" :options="difficulties" />
@@ -63,11 +33,11 @@
             <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Number of Questions</label>
             <USelect v-model="totalQuestions" :options="questionCountOptions" />
           </div>
-              <div class="md:col-span-2">
-                <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Total Battle Time (minutes)</label>
-                <UInput v-model.number="totalTimeMinutes" type="number" min="1" placeholder="e.g., 10" />
-                <p class="text-xs text-gray-500 mt-1">Optional — if set, each question will be given an equal share of this time.</p>
-              </div>
+          <div class="md:col-span-2">
+            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Total Battle Time (minutes)</label>
+            <UInput v-model.number="totalTimeMinutes" type="number" min="1" placeholder="e.g., 10" />
+            <p class="text-xs text-gray-500 mt-1">Optional — if set, each question will be given an equal share of this time.</p>
+          </div>
           <div class="md:col-span-2">
             <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Max Players</label>
             <USelect v-model="maxPlayers" :options="maxPlayerOptions" />
@@ -89,27 +59,12 @@
     </div>
   </ClientOnly>
 
-  <Teleport to="#modal-root">
-    <ClientOnly>
-      <CreateTopicModal
-        :model-value="showTopicModal"
-        :grades="taxGrades"
-        :subjects="taxSubjects"
-        :defaultGradeId="grade"
-        :defaultSubjectId="Number(subject) || null"
-        @update:modelValue="(v) => (showTopicModal = v)"
-        @created="onTopicCreated"
-      />
-    </ClientOnly>
-  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 import { useBattleCreation } from '~/composables/useBattleCreation'
-import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
-import CreateTopicModal from '~/components/modals/CreateTopicModal.vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import BattleTaxonomySelectors from '~/components/battle/BattleTaxonomySelectors.vue'
 
 const emit = defineEmits(['battleCreated'])
 
@@ -126,48 +81,7 @@ const maxPlayerOptions = [
   { label: '16 Players', value: 16 },
 ]
 
-const { level, grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, levels, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: 'group', battleName, maxPlayers })
-
-const subjectPicker = ref(null)
-const topicPicker = ref(null)
-const showTopicModal = ref(false)
-
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchTopicsPage, addTopic } = useTaxonomy()
-
-const selectedSubjectName = computed(() => {
-  const id = subject.value
-  const s = (taxSubjects.value || []).find(x => String(x.id) === String(id))
-  return s?.name || ''
-})
-
-const selectedTopicName = computed(() => {
-  const id = topic.value
-  const t = (taxTopics.value || []).find(x => String(x.id) === String(id))
-  return t?.name || ''
-})
-
-// autofocus subject picker after grade selection
-watch(grade, (nv, ov) => {
-  if (!nv) return
-  setTimeout(() => { try { subjectPicker.value?.focusSearch?.() } catch(e) {} }, 120)
-})
-
-// autofocus topic picker after subject selection
-watch(subject, (nv, ov) => {
-  if (!nv) return
-  setTimeout(() => { try { topicPicker.value?.focusSearch?.() } catch(e) {} }, 120)
-  // preload topics for the selected subject so picker is ready
-  try { fetchTopicsPage({ subjectId: nv, page: 1, perPage: 50, q: '' }) } catch(e){}
-})
-
-function openTopicModal() { showTopicModal.value = true }
-
-function onTopicCreated(created) {
-  if (!created) { showTopicModal.value = false; return }
-  try { addTopic(created) } catch (e) {}
-  try { topic.value = created.id ?? created.value ?? created } catch (e) {}
-  showTopicModal.value = false
-}
+const { level, grade, subject, topic, difficulty, totalQuestions, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: 'group', battleName, maxPlayers })
 
 async function startBattle() {
   const totalTimeSeconds = totalTimeMinutes && totalTimeMinutes.value ? Math.max(0, Math.floor(totalTimeMinutes.value * 60)) : null

@@ -124,7 +124,7 @@ const subjectFilter = ref('')
 const gradeFilter = ref('')
 const levelFilter = ref('')
 
-const { grades: taxGrades, subjects: taxSubjects, levels: taxLevels, fetchGrades, fetchLevels } = useTaxonomy()
+const { grades: taxGrades, subjects: taxSubjects, levels: taxLevels, fetchGrades, fetchLevels, fetchGradesByLevel } = useTaxonomy()
 
 const subjectsFiltered = computed(() => {
   const q = String(query.value || '').toLowerCase().trim()
@@ -194,7 +194,13 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-  // ensure taxonomy lists are available for the sidebar
-  try { fetchGrades(); fetchLevels(); } catch (e) {}
+
+  // ensure taxonomy lists are available for the sidebar (levels-first)
+  try {
+    await fetchLevels()
+    const levelId = courseMeta.value?.level_id || courseMeta.value?.level?.id || null
+    if (levelId) await fetchGradesByLevel(levelId)
+    else await fetchGrades()
+  } catch (e) {}
 })
 </script>

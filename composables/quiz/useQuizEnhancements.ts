@@ -47,6 +47,9 @@ export function useQuizEnhancements(quiz: any, progressPercent: any, currentQues
     }
     const correctCount = Object.values(answeredCorrectly.value).filter(Boolean).length
 
+    // clear previous achievements in-place to avoid replacing the array reference
+    achievements.value.length = 0
+
     if (currentStreak.value >= 5) {
       achievements.value.push({
         title: "Hot Streak",

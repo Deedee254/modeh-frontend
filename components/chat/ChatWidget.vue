@@ -1,14 +1,14 @@
 <template>
-  <div class="flex min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] bg-background/70 md:bg-transparent px-4 py-6 md:px-6">
+  <div class="flex min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] bg-[#f0f2f5] px-4 py-6 md:px-6">
     <!-- Sidebar -->
     <div class="hidden md:flex w-80 flex-shrink-0">
       <!-- Sidebar keeps the hero gradient treatment just within the header, leaving the list area clean and white -->
       <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl backdrop-blur">
         <!-- Header -->
-        <div class="p-4 border-b border-border bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white rounded-t-3xl sticky top-0 z-30">
-          <div class="flex items-center justify-between mb-3">
-            <h1 class="text-xl font-semibold text-primary-foreground">Chats</h1>
-            <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground h-9 w-9 rounded-full hover:bg-primary-foreground/20 text-primary-foreground">
+        <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl sticky top-0 z-30">
+          <div class="flex items-center justify-between mb-4">
+            <h1 class="text-xl font-semibold">Chats</h1>
+            <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted h-9 w-9 rounded-full hover:text-foreground text-muted-foreground">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-5 w-5">
                 <path d="M5 12h14"></path>
                 <path d="M12 5v14"></path>
@@ -22,7 +22,7 @@
               <path d="m21 21-4.3-4.3"></path>
             </svg>
             <input 
-              class="flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-white/10 border-white/25 text-white placeholder:text-white/60" 
+              class="flex h-10 w-full rounded-md border border-border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-muted/20 text-foreground placeholder:text-muted-foreground" 
               placeholder="Search conversations..."
               v-model="searchQuery"
             >
@@ -54,8 +54,8 @@
           <button 
             v-for="chat in filteredConversations" 
             :key="chat.id" 
-            class="w-full p-4 flex items-start gap-3 hover:bg-sidebar-hover transition-colors border-b border-border"
-            :class="{ 'bg-sidebar-active': String(chat.id) === String(activeConversation?.id) }"
+            class="w-full p-4 flex items-start gap-3 hover:bg-muted/20 transition-colors border-b border-border/60"
+            :class="String(chat.id) === String(activeConversation?.id) ? 'bg-muted/10' : ''"
             @click="selectConversation(chat)"
           >
             <div class="relative flex-shrink-0">
@@ -66,14 +66,14 @@
                   {{ chat.name[0] }}
                 </span>
               </span>
-              <div v-if="chat.status === 'online'" class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-sidebar-bg"></div>
+              <div v-if="chat.status === 'online'" class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-white"></div>
             </div>
             <div class="flex-1 min-w-0 text-left">
               <div class="flex items-baseline justify-between mb-1">
                 <h3 class="font-semibold text-foreground truncate">{{ chat.name }}</h3>
                 <div class="flex items-center gap-2">
                   <span class="text-xs text-muted-foreground flex-shrink-0">{{ formatTimeLocal(chat.last_at) }}</span>
-                  <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="inline-flex items-center justify-center bg-rose-500 text-white text-xs rounded-full px-2 py-0.5">{{ chat.unread_count ?? chat.unread }}</span>
+                  <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="inline-flex items-center justify-center bg-primary text-white text-xs rounded-full px-2 py-0.5">{{ chat.unread_count ?? chat.unread }}</span>
                 </div>
               </div>
               <!-- allow long words to break and wrap instead of growing the row -->
@@ -89,10 +89,10 @@
     <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl h-full min-h-0">
       <div class="flex flex-col h-full min-h-0 bg-white text-foreground">
         <!-- Header (mobile list) -->
-  <div class="p-4 border-b border-border bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white sticky top-0 z-50 w-full">
-          <div class="flex items-center justify-between mb-3">
-            <h1 class="text-xl font-semibold text-white">Chats</h1>
-            <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground h-9 w-9 rounded-full hover:bg-white/20 text-white">
+  <div class="p-4 border-b border-border bg-white text-foreground sticky top-0 z-50 w-full">
+          <div class="flex items-center justify-between mb-4">
+            <h1 class="text-xl font-semibold">Chats</h1>
+            <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-foreground h-9 w-9 rounded-full hover:bg-muted text-muted-foreground">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-5 w-5">
                 <path d="M5 12h14"></path>
                 <path d="M12 5v14"></path>
@@ -105,7 +105,7 @@
               <path d="m21 21-4.3-4.3"></path>
             </svg>
             <input 
-              class="flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-white/10 border-white/30 text-white placeholder:text-white/70" 
+              class="flex h-10 w-full rounded-md border border-border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-gray-100 text-foreground placeholder:text-muted-foreground" 
               placeholder="Search conversations..."
               v-model="searchQuery"
             >
@@ -117,8 +117,8 @@
             <button
               v-for="chat in filteredConversations"
               :key="chat.id"
-              class="w-full p-4 flex items-start gap-3 hover:bg-sidebar-hover transition-colors border-b border-border"
-              :class="{ 'bg-sidebar-active': String(chat.id) === String(activeConversation?.id) }"
+              class="w-full p-4 flex items-start gap-3 hover:bg-muted/20 transition-colors border-b border-border/60"
+              :class="String(chat.id) === String(activeConversation?.id) ? 'bg-muted/10' : ''"
               @click="selectConversation(chat)"
             >
             <div class="relative flex-shrink-0">
@@ -128,12 +128,13 @@
                   {{ chat.name[0] }}
                 </span>
               </span>
-              <div v-if="chat.status === 'online'" class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-sidebar-bg"></div>
+              <div v-if="chat.status === 'online'" class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-white"></div>
             </div>
             <div class="flex-1 min-w-0 text-left">
               <div class="flex items-baseline justify-between mb-1">
                 <h3 class="font-semibold text-foreground truncate">{{ chat.name }}</h3>
                 <span class="text-xs text-muted-foreground ml-2 flex-shrink-0">{{ formatTimeLocal(chat.last_at) }}</span>
+                <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="inline-flex items-center justify-center bg-primary text-white text-xs rounded-full px-2 py-0.5">{{ chat.unread_count ?? chat.unread }}</span>
               </div>
               <p class="text-sm text-muted-foreground whitespace-normal break-words overflow-hidden">{{ chat.last_preview || '' }}</p>
             </div>
@@ -145,9 +146,9 @@
 
     <!-- Main Chat Area -->
   <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6">
-    <div class="flex flex-col h-full bg-chat-bg">
+    <div class="flex flex-col h-full bg-[#efeae2]">
         <!-- Chat Header -->
-  <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white/5 border-b border-border md:static md:z-auto">
+  <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white border-b border-border md:static md:z-auto">
           <button 
             v-if="isMobile && showChatWindowOnMobile" 
             class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"
@@ -338,6 +339,8 @@ const fileInput = ref<HTMLInputElement | null>(null);
 // local DOM refs for the messages pane and sentinel; we'll assign them into the composable
 const messagesPaneRef = ref<HTMLElement | null>(null)
 const messagesEndRef = ref<HTMLElement | null>(null)
+// keep a stable handler reference so we can remove it on unmount
+let _onMessagesPaneScroll: ((e: Event) => void) | null = null
 
 const tabs = [
   { label: 'All', value: 'all' },
@@ -460,7 +463,13 @@ onMounted(() => {
       chatWindowRef.value = { messagesPane: { value: messagesPaneRef.value }, messagesEnd: { value: messagesEndRef.value } }
     }
     // attach the older-messages loader to the DOM pane
-    if (messagesPaneRef.value && maybeLoadOlder) messagesPaneRef.value.addEventListener('scroll', maybeLoadOlder)
+    if (messagesPaneRef.value && maybeLoadOlder) {
+      // wrap the composable-provided function in a stable local handler so removal is reliable
+      _onMessagesPaneScroll = (_ev: Event) => {
+        try { maybeLoadOlder() } catch (e) {}
+      }
+      messagesPaneRef.value.addEventListener('scroll', _onMessagesPaneScroll)
+    }
     // ensure we scroll to bottom when the component mounts
     scrollToBottom()
   } catch (e) {}
@@ -468,6 +477,12 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  // remove the messages pane scroll handler if we attached one
+  try {
+    if (messagesPaneRef.value && _onMessagesPaneScroll) {
+      messagesPaneRef.value.removeEventListener('scroll', _onMessagesPaneScroll)
+    }
+  } catch (e) {}
 })
 </script>
 
@@ -494,28 +509,26 @@ onUnmounted(() => {
 }
 
 .chat-bubble.sent {
-  /* WhatsApp-like sent bubble */
-  background: linear-gradient(180deg, #6366F1 0%, #4F46E5 100%);
-  color: white;
+  background: #d9fdd3;
+  color: #111827;
   border-radius: 18px 18px 4px 18px;
 }
 
 .chat-bubble.received {
-  /* WhatsApp-like received bubble */
   background: #ffffff;
-  color: var(--foreground, #111827);
+  color: #111827;
   border-radius: 18px 18px 18px 4px;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
 }
 
 /* make sure message row doesn't overflow */
 .flex.w-full > .chat-bubble { max-width: 70%; }
 
 /* tick icon styles */
-.tick { display: inline-block; vertical-align: middle; stroke: rgba(255,255,255,0.9); color: rgba(255,255,255,0.9); }
-.tick-read { stroke: #39B3FF; color: #39B3FF; }
+.tick { display: inline-block; vertical-align: middle; stroke: #8696a0; color: #8696a0; }
+.tick-read { stroke: #0b93f6; color: #0b93f6; }
 .chat-bubble.received .tick { stroke: rgba(0,0,0,0.45); color: rgba(0,0,0,0.45); }
-.chat-bubble.sent .tick { stroke: rgba(255,255,255,0.95); color: rgba(255,255,255,0.95); }
+.chat-bubble.sent .tick { stroke: #8696a0; color: #8696a0; }
 .tick { width: 14px; height: 14px; margin-left: 6px }
 
 /* time and small meta */

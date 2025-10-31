@@ -29,24 +29,26 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   const STORAGE_KEY = `modeh:battle:${battleType}:draft`
 
   // attempt to load existing draft from localStorage
-  try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (parsed) {
-        if (parsed.level) level.value = parsed.level
-        if (parsed.grade) grade.value = parsed.grade
-        if (parsed.subject) subject.value = parsed.subject
-        if (parsed.topic) topic.value = parsed.topic
-        if (parsed.difficulty) difficulty.value = parsed.difficulty
-        if (parsed.totalQuestions) totalQuestions.value = parsed.totalQuestions
-        // restore optional fields when provided
-        if (battleName && parsed.battleName) battleName.value = parsed.battleName
-        if (maxPlayers && parsed.maxPlayers) maxPlayers.value = parsed.maxPlayers
+  if (process.client) {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed) {
+          if (parsed.level) level.value = parsed.level
+          if (parsed.grade) grade.value = parsed.grade
+          if (parsed.subject) subject.value = parsed.subject
+          if (parsed.topic) topic.value = parsed.topic
+          if (parsed.difficulty) difficulty.value = parsed.difficulty
+          if (parsed.totalQuestions) totalQuestions.value = parsed.totalQuestions
+          // restore optional fields when provided
+          if (battleName && parsed.battleName) battleName.value = parsed.battleName
+          if (maxPlayers && parsed.maxPlayers) maxPlayers.value = parsed.maxPlayers
+        }
       }
+    } catch (e) {
+      // ignore storage errors
     }
-  } catch (e) {
-    // ignore storage errors
   }
 
   // helper to persist draft
@@ -62,7 +64,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
         ...(battleName && { battleName: battleName.value }),
         ...(maxPlayers && { maxPlayers: maxPlayers.value })
       }
-      if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+      if (process.client) localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
     } catch (e) {
       // ignore
     }
@@ -157,6 +159,15 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
 
   // When grade changes, reset dependent fields and fetch subjects
   watch(grade, async (g) => {
+    // Only act when grade actually changes (avoid clearing when API refreshes list)
+    try {
+      const old = arguments[1]
+      const nv = g
+      const ov = old
+      const left = nv === null || typeof nv === 'undefined' ? '' : String(nv)
+      const right = ov === null || typeof ov === 'undefined' ? '' : String(ov)
+      if (left === right) return
+    } catch (e) {}
     subject.value = ''
     topic.value = ''
     subjects.value = [] // Clear options immediately
@@ -179,12 +190,19 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
     if (!taxLevels.value || taxLevels.value.length === 0) await fetchLevels()
   })
 
-  // When subject changes, reset topic and fetch topics
-  watch(subject, async (s) => {
+  // When subject changes, reset topic and fetch topics. Only clear topic when
+  // the subject actually changed to avoid losing topic when the subjects list
+  // is refreshed but the selected id remains the same (string vs number coercion).
+  watch(subject, async (nv, ov) => {
+    try {
+      const left = nv === null || typeof nv === 'undefined' ? '' : String(nv)
+      const right = ov === null || typeof ov === 'undefined' ? '' : String(ov)
+      if (left === right) return
+    } catch (e) {}
     topic.value = ''
     topics.value = []
-    if (!s) return
-    await fetchTopicsBySubject(s)
+    if (!nv) return
+    await fetchTopicsBySubject(nv)
   })
 
   // --- Battle Creation ---
@@ -225,10 +243,14 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
       const data = await res.json().catch(() => null)
       // only clear the draft after the server returns a battle object
       try {
-        if (data && data.battle && typeof localStorage !== 'undefined') {
+        if (data && data.battle && process.client) {
           localStorage.removeItem(STORAGE_KEY)
         }
       } catch (e) {}
+      // After creating battle, redirect to waiting room
+      if (data && data.battle) {
+        await navigateTo(`/quizee/battles/${data.battle.uuid}/waiting`)
+      }
       return { battle: data?.battle ?? data }
     } catch (e) {
       return { error: e.message || 'Failed to create battle' }

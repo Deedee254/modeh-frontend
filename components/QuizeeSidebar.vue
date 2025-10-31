@@ -74,6 +74,8 @@ const navItems = [
   { to: '/quizee/battles', label: 'Battles', icon: TrophyIcon },
   { to: '/quizee/tournaments', label: 'Tournaments', icon: FlagIcon },
   { to: '/quizee/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+  // Link to the daily challenge leaderboard (placed below the main leaderboard)
+  { to: '/quizee/daily-challenges/leaderboard', label: 'Daily Challenge Leaderboard', icon: CalendarDaysIcon },
   { to: '/quizee/points', label: 'Points', icon: StarIcon },
   { to: '/quizee/badges', label: 'Badges', icon: StarIcon },
   { to: '/quizee/subscription', label: 'Subscription', icon: CreditCardIcon },

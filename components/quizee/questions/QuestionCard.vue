@@ -12,7 +12,7 @@
 
       <div class="content-col">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4" v-html="question?.body"></h3>
-  <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" />
+  <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" @toggle="$emit('toggle',$event)" />
   <div v-else class="text-sm text-red-600 dark:text-red-400">Component missing for question type: {{ question?.type || 'unknown' }}</div>
                   <div>
                     <span v-if="question.is_approved === 1 || question.is_approved === true" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Approved</span>
@@ -35,7 +35,7 @@ import FillBlankCard from './FillBlankCard.vue'
 import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
 
 const props = defineProps({ question: { type: Object, required: true }, modelValue: null })
-const emit = defineEmits(['update:modelValue','select'])
+const emit = defineEmits(['update:modelValue','select','toggle'])
 
 const quizMedia = useQuizMedia()
 

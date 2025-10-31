@@ -13,9 +13,15 @@ if (import.meta.client) {
   } catch {}
 
   // Keep in sync across tabs (if user toggles later)
-  window.addEventListener('storage', (ev) => {
+  const _onStorage = (ev: StorageEvent) => {
     if (ev.key === SIDEBAR_MOBILE_KEY) sidebarMobileOpen.value = ev.newValue === 'true'
-  })
+  }
+  window.addEventListener('storage', _onStorage)
+  // remove listener on page unload to avoid leaving dangling references
+  try {
+    const _removeStorage = () => { try { window.removeEventListener('storage', _onStorage) } catch (e) {} }
+    window.addEventListener('beforeunload', _removeStorage)
+  } catch (e) {}
 }
 
 watch(sidebarMobileOpen, (val) => {

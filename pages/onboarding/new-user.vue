@@ -19,7 +19,7 @@
       </div>
 
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Set a password (optional)</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Set a password</label>
         <input v-model="password" type="password" minlength="8" class="w-full px-3 py-2 border rounded" placeholder="Choose a password (min 8 chars)" />
       </div>
 
@@ -41,6 +41,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const config = useRuntimeConfig()
 
+// Set default role to 'quizee'
 const role = ref('quizee')
 const password = ref('')
 const submitting = ref(false)
@@ -52,6 +53,11 @@ async function submit() {
   error.value = ''
   if (!role.value) {
     error.value = 'Please select a role to continue.'
+    return
+  }
+   if (!password.value) {
+    error.value = 'Please set a password to continue.'
+
     return
   }
   submitting.value = true

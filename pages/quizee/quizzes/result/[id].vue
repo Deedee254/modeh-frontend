@@ -250,8 +250,18 @@ onMounted(async () => {
 })
 
 function formatProvided(p) {
-  if (p === null || p === undefined) return 'No answer'
-  if (Array.isArray(p)) return p.map(item => `<code>${item}</code>`).join(', ')
+  // Normalize null/undefined
+  if (p === null || p === undefined) return 'Not provided'
+
+  // Handle arrays: filter out empty entries and render readable fallback when empty
+  if (Array.isArray(p)) {
+    const filtered = p.filter(item => item !== null && item !== undefined && String(item).trim() !== '')
+    if (!filtered.length) return 'Not provided'
+    return filtered.map(item => `<code>${item}</code>`).join(', ')
+  }
+
+  // Non-array values
+  if (String(p).trim() === '') return 'Not provided'
   return `<code>${p}</code>`
 }
 

@@ -238,10 +238,11 @@ async function fetchBattle() {
         opponent: d.opponent,
         players: d.players || undefined,
       }
-      // Fetch all necessary taxonomy data once
-      await fetchGrades()
-      if (battle.value.settings?.grade_id) await fetchSubjectsByGrade(battle.value.settings.grade_id)
-      if (battle.value.settings?.subject_id) await fetchTopicsBySubject(battle.value.settings.subject_id)
+  // Fetch all necessary taxonomy data once (levels-first so grades can be derived)
+  try { await fetchLevels() } catch (e) {}
+  await fetchGrades()
+  if (battle.value.settings?.grade_id) await fetchSubjectsByGrade(battle.value.settings.grade_id)
+  if (battle.value.settings?.subject_id) await fetchTopicsBySubject(battle.value.settings.subject_id)
     }
   } catch (e) {
     console.error('Failed to fetch battle details', e)

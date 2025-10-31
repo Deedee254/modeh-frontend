@@ -154,6 +154,8 @@ async function onServerSearch(q) {
 const { fetchAllSubjects, fetchAllTopics, fetchGrades: fetchTaxGrades } = useTaxonomy()
 onMounted(async () => {
   try {
+    // prefer loading levels first so the composable can derive nested grades when available
+    await fetchLevels()
     await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
   } catch (e) {
     // ignore

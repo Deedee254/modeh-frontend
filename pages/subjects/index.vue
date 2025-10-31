@@ -125,13 +125,13 @@ import useTaxonomy from '~/composables/useTaxonomy'
 const config = useRuntimeConfig()
 
 // Use taxonomy composable for subjects and grades
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingSubjects, loadingGrades } = useTaxonomy()
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingSubjects, loadingGrades, fetchLevels, loadingLevels } = useTaxonomy()
 const pending = loadingSubjects
 const error = null
-const subjects = taxSubjects
 
-const subjectsCount = computed(() => (subjects || []).length)
-const subjectsForFilters = computed(() => (subjects || []).map(s => ({
+// use the taxonomy composable's `subjects` ref directly to avoid SSR unwrap bugs
+const subjectsCount = computed(() => (taxSubjects.value || []).length)
+const subjectsForFilters = computed(() => (taxSubjects.value || []).map(s => ({
   id: s.id,
   name: s.name,
   slug: s.slug || s.id,
@@ -165,7 +165,7 @@ const totalQuizzes = computed(() => {
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
-  let list = subjects || []
+  let list = taxSubjects.value || []
   if (q) list = list.filter(s => (s.name || '').toLowerCase().includes(q))
   if (gradeFilter.value) list = list.filter(s => {
     if (s.grade || s.grade_id) return String(s.grade || s.grade_id) === String(gradeFilter.value)
@@ -180,9 +180,9 @@ async function onServerSearch(q) {
   try {
     const res = await $fetch(config.public.apiBase + '/api/subjects', { params: { query: q }, credentials: 'include' })
     const items = res?.subjects?.data || res?.subjects || res?.data || []
-    if (Array.isArray(items)) {
-      subjects.length = 0
-      subjects.push(...items)
+      if (Array.isArray(items)) {
+      taxSubjects.value.length = 0
+      taxSubjects.value.push(...items)
     }
   } catch (e) {
     // ignore network errors
@@ -201,12 +201,12 @@ function setFilter(v) {
   if (activeFilter.value === v) activeFilter.value = ''
   else activeFilter.value = v
 
-  if (activeFilter.value === 'top') {
-    subjects.sort((a, b) => (b.quizzes_count || 0) - (a.quizzes_count || 0))
+    if (activeFilter.value === 'top') {
+    taxSubjects.value.sort((a, b) => (b.quizzes_count || 0) - (a.quizzes_count || 0))
   } else if (activeFilter.value === 'featured') {
-    subjects.sort((a, b) => ((b.is_featured || b.featured || 0) - (a.is_featured || a.featured || 0)))
+    taxSubjects.value.sort((a, b) => ((b.is_featured || b.featured || 0) - (a.is_featured || a.featured || 0)))
   } else if (activeFilter.value === 'new') {
-    subjects.sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))
+    taxSubjects.value.sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))
   }
 }
 

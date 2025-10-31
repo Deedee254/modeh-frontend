@@ -66,17 +66,30 @@
       <div v-else-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
       <h2 class="text-xl font-semibold mb-4">Education Information</h2>
       <form @submit.prevent="submitGradeAndSubjects" class="space-y-6">
-        <!-- Select Grade -->
+        <!-- Select Level then Grade -->
         <div class="space-y-4">
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Your Level</label>
+            <select
+              v-model="gradeForm.level_id"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="">Select your level</option>
+              <option v-for="level in levels" :key="level.id" :value="level.id">
+                {{ level.name }}
+              </option>
+            </select>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Your Grade</label>
-            <select 
+            <select
               v-model="gradeForm.grade_id"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
               <option value="">Select your grade</option>
-              <option v-for="grade in grades" :key="grade.id" :value="grade.id">
+              <option v-for="grade in filteredGrades" :key="grade.id" :value="grade.id">
                 {{ grade.name }}
               </option>
             </select>
@@ -90,7 +103,7 @@
             </label>
             <div class="grid grid-cols-2 gap-2">
               <label 
-                v-for="subject in subjects" 
+                v-for="subject in filteredSubjects" 
                 :key="subject.id" 
                 class="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer"
               >
@@ -108,7 +121,6 @@
             </p>
           </div>
         </div>
-
         <div>
           <button 
             type="submit"
@@ -159,7 +171,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 
@@ -189,7 +201,8 @@ useHead(() => ({
 const institutionForm = ref({ name: '' })
 const roleForm = ref({ role: 'quizee', password: '' })
 const roleSelected = ref(false)
-const gradeForm = ref({ grade_id: '', subjects: [] })
+const gradeForm = ref({ level_id: '', grade_id: '', subjects: [] })
+const levels = ref([])
 const grades = ref([])
 const subjects = ref([])
 
@@ -200,15 +213,40 @@ const gradeAndSubjectsAdded = ref(false)
 // Fetch grades and subjects
 async function fetchData() {
   try {
-    const [gradesRes, subjectsRes] = await Promise.all([
-      $fetch(config.public.apiBase + '/api/grades', { credentials: 'include' }),
-      $fetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
-    ])
-  grades.value = (gradesRes?.data || gradesRes || []).filter ? (gradesRes?.data || gradesRes || []).filter(Boolean) : []
-  subjects.value = (subjectsRes?.data || subjectsRes || []).filter ? (subjectsRes?.data || subjectsRes || []).filter(Boolean) : []
+    // Only fetch top-level Levels on initial load. Grades and subjects are fetched on-demand
+    const levelsRes = await $fetch(config.public.apiBase + '/api/levels', { credentials: 'include' })
+    levels.value = (levelsRes?.data || levelsRes || []).filter ? (levelsRes?.data || levelsRes || []).filter(Boolean) : []
   } catch (err) {
     console.error('Failed to fetch data:', err)
     error.value = 'Failed to load form data. Please refresh the page.'
+  }
+}
+
+async function fetchGradesForLevel(levelId) {
+  if (!levelId) {
+    grades.value = []
+    return
+  }
+  try {
+    const res = await $fetch(config.public.apiBase + `/api/grades?level_id=${encodeURIComponent(levelId)}`, { credentials: 'include' })
+    grades.value = (res?.data || res || []).filter ? (res?.data || res || []).filter(Boolean) : []
+  } catch (err) {
+    console.error('Failed to fetch grades for level:', err)
+    grades.value = []
+  }
+}
+
+async function fetchSubjectsForGrade(gradeId) {
+  if (!gradeId) {
+    subjects.value = []
+    return
+  }
+  try {
+    const res = await $fetch(config.public.apiBase + `/api/subjects?grade_id=${encodeURIComponent(gradeId)}`, { credentials: 'include' })
+    subjects.value = (res?.data || res || []).filter ? (res?.data || res || []).filter(Boolean) : []
+  } catch (err) {
+    console.error('Failed to fetch subjects for grade:', err)
+    subjects.value = []
   }
 }
 
@@ -225,6 +263,26 @@ function getSubjectName(id) {
   const subject = subjects.value.find(s => s.id === id)
   return subject ? subject.name : ''
 }
+
+const filteredGrades = computed(() => grades.value)
+
+// When level changes, reset selected grade and subjects and fetch grades for the level
+watch(() => gradeForm.value.level_id, (val) => {
+  gradeForm.value.grade_id = ''
+  gradeForm.value.subjects = []
+  grades.value = []
+  subjects.value = []
+  if (val) fetchGradesForLevel(val)
+})
+
+// When grade changes, reset subjects and fetch subjects for the grade
+watch(() => gradeForm.value.grade_id, (val) => {
+  gradeForm.value.subjects = []
+  subjects.value = []
+  if (val) fetchSubjectsForGrade(val)
+})
+
+const filteredSubjects = computed(() => subjects.value)
 
 // Form submission handlers
 async function submitInstitution() {
@@ -251,13 +309,13 @@ async function submitGradeAndSubjects() {
   message.value = null
   error.value = null
   try {
-    // Save grade
+    // Save grade (include level_id)
     await $fetch(config.public.apiBase + '/api/onboarding/step', {
       method: 'POST',
       credentials: 'include',
       body: {
         step: 'grade',
-        data: { grade_id: gradeForm.value.grade_id }
+        data: { grade_id: gradeForm.value.grade_id, level_id: gradeForm.value.level_id }
       }
     })
     // Save subjects

@@ -73,7 +73,8 @@
         <div class="lg:col-span-2 space-y-6">
           <!-- Video player (separate from hero) -->
           <div v-if="hasVideo" class="mb-4">
-            <VideoPlayer :src="quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="quiz.cover || quiz.cover_image" />
+            <!-- Accept youtube_url (canonical), video_url and other fallbacks -->
+            <VideoPlayer :src="quiz.youtube_url || quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="quiz.cover || quiz.cover_image" />
           </div>
 
           <!-- Media Caption/Description -->
@@ -241,12 +242,19 @@ const config = useRuntimeConfig()
 // Avoid `await` here so `definePageMeta` and computed getters can react to the
 // `quizData` ref safely without causing server-side timing/500 errors.
 const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`)
-const quiz = quizData?.value?.quiz || quizData?.value || { 
-  id: route.params.id, 
-  title: 'Loading...', 
-  description: '', 
-  questions: [] 
-}
+
+// Make `quiz` a computed ref so its value is derived from `quizData` reactively.
+// This avoids taking a snapshot of `quizData` at setup time (which caused the
+// server to render placeholders while the client immediately had data,
+// producing hydration mismatches).
+const quiz = computed(() => (
+  quizData?.value?.quiz || quizData?.value || {
+    id: route.params.id,
+    title: 'Loading...',
+    description: '',
+    questions: []
+  }
+))
 
 // Dynamic page meta for quiz detail (uses server-fetched data when available)
 const pageTitle = computed(() => {
@@ -264,11 +272,11 @@ const pageDescription = computed(() => {
 // when `quizData` resolves using `useHead` inside a `watchEffect` below.
 
 // Computed properties for nested taxonomy data
-const topic_name = computed(() => quiz.topic?.name)
-const subject_name = computed(() => quiz.topic?.subject?.name || quiz.subject?.name)
-const grade_name = computed(() => quiz.grade?.name || quiz.topic?.subject?.grade?.name || null)
-const level_name = computed(() => quiz.level?.name || quiz.grade?.level?.name || null)
-const difficulty_level = computed(() => getDifficultyLevel(quiz.difficulty))
+const topic_name = computed(() => quiz.value.topic?.name)
+const subject_name = computed(() => quiz.value.topic?.subject?.name || quiz.value.subject?.name)
+const grade_name = computed(() => quiz.value.grade?.name || quiz.value.topic?.subject?.grade?.name || null)
+const level_name = computed(() => quiz.value.level?.name || quiz.value.grade?.level?.name || null)
+const difficulty_level = computed(() => getDifficultyLevel(quiz.value.difficulty))
 
 // Tab configuration
 const tabs = [
@@ -280,16 +288,20 @@ const activeTab = ref('overview')
 
 // Computed properties
 const questionCount = computed(() => {
-  if (Array.isArray(quiz.questions)) return quiz.questions.length
-  return quiz.questions_count || 0
+  if (Array.isArray(quiz.value.questions)) return quiz.value.questions.length
+  return quiz.value.questions_count || 0
 })
 
 const hasVideo = computed(() => {
-  return Boolean(quiz.video_url || quiz.media || quiz.cover_video || quiz.video)
+  return Boolean(quiz.value.youtube_url || quiz.value.video_url || quiz.value.media || quiz.value.cover_video || quiz.value.video)
 })
 
+// Safe no-op handlers for the hidden preload image above
+function onCoverLoaded() {}
+function onCoverError() {}
+
 const heroStyle = computed(() => {
-  const cover = quiz.cover || quiz.cover_image || quiz.cover_image_url || null
+  const cover = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
   if (!cover) return {}
   return {
     backgroundImage: `url(${cover})`,
@@ -376,11 +388,11 @@ function getDifficultyEmoji(level) {
 
 // Actions
 function startQuiz() {
-  router.push(`/quizee/quizzes/take/${quiz.id}`)
+  router.push(`/quizee/quizzes/take/${quiz.value.id}`)
 }
 
 function showPreview() {
-  router.push(`/quizzes/${quiz.id}/preview`)
+  router.push(`/quizzes/${quiz.value.id}/preview`)
 }
 
 // Update head reactively when quizData becomes available
@@ -392,7 +404,7 @@ watchEffect(() => {
         { name: 'description', content: pageDescription.value },
         { property: 'og:title', content: pageTitle.value },
         { property: 'og:description', content: pageDescription.value },
-        { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz?.cover || '/social-share.png') },
+  { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz.value.cover || '/social-share.png') },
         { name: 'twitter:card', content: 'summary_large_image' }
       ]
     })

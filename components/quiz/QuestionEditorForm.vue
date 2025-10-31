@@ -6,6 +6,7 @@
         <USelect v-model="local.difficulty" :options="difficultyOptions" size="sm" />
         <UInput v-model.number="local.marks" type="number" placeholder="Marks" size="sm" />
       </div>
+      <!-- Taxonomy selectors removed: questions inherit quiz taxonomy. -->
       <div class="col-span-1 sm:col-span-2 flex items-center">
         <UCheckbox v-model="local.is_banked" label="Bank this question" />
       </div>
@@ -23,6 +24,12 @@
         <UButton size="xs" variant="soft" @click="triggerImageInput" class="w-full">Image</UButton>
         <UButton size="xs" variant="soft" @click="triggerAudioInput" class="w-full">Audio</UButton>
         <UInput v-model="local.youtube_url" placeholder="YouTube link" class="col-span-2 sm:col-span-1" size="sm" />
+      </div>
+      <div v-if="uploading" class="text-sm text-gray-500">Uploading...</div>
+      <div v-if="mediaUrl" class="mt-2">
+        <img v-if="local.media_type === 'image'" :src="mediaUrl" class="max-w-full h-auto rounded-lg" />
+        <audio v-if="local.media_type === 'audio'" :src="mediaUrl" controls class="w-full"></audio>
+        <UButton size="xs" color="red" variant="ghost" @click="mediaUrl = null; local.media_url = null; local.media_type = null">Remove</UButton>
       </div>
     </div>
 
@@ -50,12 +57,12 @@
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex items-center gap-2">
             <template v-if="isSingleChoiceType">
-              <UCheckbox :model-value="local.correct === i"
-                @update:model-value="(v) => local.correct = v ? i : local.correct" label="Correct" />
+              <UCheckbox :model-value="(local.answers || []).includes(i.toString())"
+                @update:model-value="(v) => toggleAnswer(i.toString(), v)" label="Correct" />
             </template>
             <template v-else>
-              <UCheckbox :model-value="(local.corrects || []).includes(i)"
-                @update:model-value="(v) => toggleCorrect(i, v)" label="Correct" />
+              <UCheckbox :model-value="(local.answers || []).includes(i.toString())"
+                @update:model-value="(v) => toggleAnswer(i.toString(), v)" label="Correct" />
             </template>
           </div>
           <UButton size="xs" color="red" variant="ghost" @click="$emit('remove-option', i)">Remove</UButton>
@@ -91,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, getCurrentInstance, computed } from 'vue'
+import { watch, getCurrentInstance, computed, ref } from 'vue'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 
 interface Props {
@@ -102,6 +109,10 @@ const props = defineProps<Props>()
 const emit = defineEmits(['update:modelValue', 'add-option', 'remove-option'])
 
 const local = defineModel<Record<string, any>>({ required: true })
+const mediaUrl = ref<string | null>(null)
+const uploading = ref(false)
+
+// taxonomy is determined by the parent quiz; no local selectors here
 
 const optionTypes = ['mcq', 'multi']
 const singleChoiceTypes = ['mcq']
@@ -129,12 +140,51 @@ const tfOptions = [
   { label: 'None are correct', value: 3 },
 ]
 
-function toggleCorrect(i: number, v: boolean) {
-  const arr = Array.isArray(local.value.corrects) ? [...local.value.corrects] : []
-  const pos = arr.indexOf(i)
-  if (v && pos === -1) arr.push(i)
+function getDefaultForm(type = 'mcq') {
+  return {
+    type,
+    text: '',
+    explanation: '',
+    options: type === 'mcq' || type === 'multi' ? [
+      { text: '', is_correct: false },
+      { text: '', is_correct: false }
+    ] : [],
+    answers: type === 'mcq' ? ['0'] : [],
+    parts: [],
+    difficulty: 2,
+    marks: 1
+  }
+}
+
+async function uploadMedia(file: File, type: 'image' | 'audio') {
+  uploading.value = true
+  mediaUrl.value = null
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type)
+
+  try {
+    const { useApi } = await import('~/composables/useApi')
+    const api = useApi()
+    const response = await api.postFormData('/uploads', formData)
+    mediaUrl.value = response.url
+    local.value.media_url = response.url
+    local.value.media_type = type
+  } catch (error) {
+    console.error('Upload failed:', error)
+    // Handle error (e.g., show a notification)
+  } finally {
+    uploading.value = false
+  }
+}
+
+
+function toggleAnswer(answer: string, v: boolean) {
+  const arr = Array.isArray(local.value.answers) ? [...local.value.answers] : []
+  const pos = arr.indexOf(answer)
+  if (v && pos === -1) arr.push(answer)
   if (!v && pos !== -1) arr.splice(pos, 1)
-  local.value.corrects = arr
+  local.value.answers = arr
 }
 
 function getOptionText(opt: any): string {
@@ -160,9 +210,15 @@ watch(() => local.value.type, (type) => {
   if (optionTypes.includes(type)) {
     if (!Array.isArray(local.value.options) || local.value.options.length < 2) {
       local.value.options = [
-        { text: '', is_correct: true },
+        { text: '', is_correct: false },
         { text: '', is_correct: false }
       ]
+      // Set first option as correct for single choice
+      if (singleChoiceTypes.includes(type)) {
+        local.value.answers = ['0']
+      } else {
+        local.value.answers = []
+      }
     } else {
       local.value.options = local.value.options.map((opt: any) => {
         if (typeof opt === 'string') {
@@ -172,22 +228,22 @@ watch(() => local.value.type, (type) => {
       })
     }
     if (singleChoiceTypes.includes(type)) {
-      local.value.correct = typeof local.value.correct === 'number' ? local.value.correct : -1
-      local.value.corrects = []
+      if (!Array.isArray(local.value.answers) || local.value.answers.length === 0) {
+        local.value.answers = ['0']
+      }
     } else {
-      const normalized = Array.isArray(local.value.corrects) ? local.value.corrects.map((c: any) => Number(c)) : []
-      local.value.corrects = Array.from(new Set(normalized.filter((c: any) => Number.isFinite(c))))
-      local.value.correct = -1
+      if (!Array.isArray(local.value.answers)) {
+        local.value.answers = []
+      }
     }
   } else {
     local.value.options = []
-    local.value.correct = -1
-    local.value.corrects = []
+    local.value.answers = []
   }
 
   if (type === 'fill_blank') {
     if (!Array.isArray(local.value.answers)) local.value.answers = []
-  } else {
+  } else if (!optionTypes.includes(type)) {
     local.value.answers = []
   }
 }, { immediate: true })
@@ -207,16 +263,14 @@ function onEditorReady() { /* placeholder for parent hook */ }
 function onImageSelected(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files && input.files[0]) {
-    local.value.media = input.files[0]
-    local.value.media_metadata = { type: 'image', name: input.files[0].name }
+    uploadMedia(input.files[0], 'image')
   }
 }
 
 function onAudioSelected(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files && input.files[0]) {
-    local.value.media = input.files[0]
-    local.value.media_metadata = { type: 'audio', name: input.files[0].name }
+    uploadMedia(input.files[0], 'audio')
   }
 }
 

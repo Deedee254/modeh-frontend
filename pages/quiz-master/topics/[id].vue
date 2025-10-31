@@ -240,10 +240,11 @@ async function fetchQuizzesForTopic() {
 }
 
 // optionally warm taxonomy caches for related subjects/grades used in the UI
-const { fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
+const { fetchLevels, fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
 onMounted(async () => {
   try {
-    await fetchGrades()
+    // prefer to load levels first so downstream callers receive levels-aware data
+    await fetchLevels()
   } catch (e) {}
 })
 

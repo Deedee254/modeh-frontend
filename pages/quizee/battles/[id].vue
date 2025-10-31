@@ -136,7 +136,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
+import { formatAnswersForSubmission, normalizeAnswer } from '~/composables/useAnswerNormalization'
 // page meta and quizee layout
 definePageMeta({ layout: 'quizee' })
 useHead({
@@ -230,7 +230,8 @@ function recordTimingForQuestion(qid, seconds) { perQuestionTimings.value = { ..
 function selectAnswer(qid) {
   const elapsed = Math.max(0, (Date.now() - questionStartTs.value) / 1000)
   recordTimingForQuestion(qid, Math.min(elapsed, timePerQuestion.value))
-  answers.value[qid] = answers.value[qid] || null
+  // normalize selected value immediately so stored answers match backend expectations
+  answers.value[qid] = normalizeAnswer(answers.value[qid]) || null
 }
 
 function prevQuestion() {

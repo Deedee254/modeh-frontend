@@ -63,24 +63,9 @@ const level = ref({})
 const loading = ref(true)
 const error = ref(null)
 
-const { grades: taxGrades, fetchGrades } = useTaxonomy()
+const { grades: taxGrades, fetchGradesByLevel } = useTaxonomy()
 
-const levelGrades = computed(() => {
-  // Prefer server-provided nested grades when available
-  if (Array.isArray(level.value?.grades) && level.value.grades.length) return level.value.grades
 
-  const arr = Array.isArray(taxGrades.value) ? taxGrades.value : []
-  if (!arr || !arr.length) return []
-  // Match grades where grade.level_id === id or grade.level?.id === id
-  return arr.filter(g => {
-    if (!g) return false
-    if (g.level_id && String(g.level_id) === String(id)) return true
-    if (g.level && (String(g.level.id) === String(id) || String(g.level) === String(id))) return true
-    // fallback: some grades may include a 'levels' array
-    if (Array.isArray(g.levels) && g.levels.some(l => String(l.id || l) === String(id))) return true
-    return false
-  })
-})
 
 function onSearch() { /* no-op: PageHero search not used here */ }
 
@@ -99,7 +84,7 @@ onMounted(async () => {
     // ensure taxonomy grades are loaded only if the server didn't return nested grades
     try {
       if (!Array.isArray(level.value?.grades) || !level.value.grades.length) {
-        await fetchGrades()
+        await fetchGradesByLevel(id)
       }
     } catch (e) {}
   } catch (e) {
@@ -107,6 +92,12 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
+
+const levelGrades = computed(() => {
+  // Prefer server-provided nested grades when available
+  if (Array.isArray(level.value?.grades) && level.value.grades.length) return level.value.grades
+  return Array.isArray(taxGrades.value) ? taxGrades.value : []
 })
 </script>
 

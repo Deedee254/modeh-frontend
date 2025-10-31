@@ -1,11 +1,10 @@
-
 import { defineStore } from 'pinia'
 import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 import type { QuestionId, Answer, AttemptData, AttemptCacheEntry } from '~/types/quiz'
 
 export const useAnswerStore = defineStore('answers', () => {
   const answers = ref(new Map<QuestionId, Answer>())
-  const quizId = ref<number | null>(null)
+  const quizId = ref<number | null | undefined>(undefined)
 
   // For storing completed quiz/battle attempts for review
   const reviewAttempts = ref(new Map<number, AttemptCacheEntry>())
@@ -20,12 +19,12 @@ export const useAnswerStore = defineStore('answers', () => {
     return answers.value.get(questionId)
   }
 
-  function reset(newQuizId: number | null = null) {
+  function reset(newQuizId: number | null | undefined = undefined) {
     answers.value.clear()
     quizId.value = newQuizId
   }
 
-  function loadAnswers(newAnswers: [QuestionId, Answer][], newQuizId: number | null) {
+  function loadAnswers(newAnswers: [QuestionId, Answer][], newQuizId: number | null | undefined) {
     answers.value = new Map(newAnswers)
     quizId.value = newQuizId
   }
@@ -42,11 +41,11 @@ export const useAnswerStore = defineStore('answers', () => {
     const normalizedAttempt: AttemptCacheEntry = {
       attempt: attemptData.attempt ?? attemptData,
       badges: attemptData.badges ?? [],
-      points: attemptData.points ?? attemptData.points_earned ?? null,
-      rank: attemptData.rank ?? null,
-      total_participants: attemptData.total_participants ?? null,
-      quiz_id: attemptData.quiz_id ?? attemptData.attempt?.quiz_id ?? null,
-      battle_id: attemptData.battle_id ?? attemptData.attempt?.battle_id ?? null
+      points: attemptData.points ?? attemptData.points_earned ?? undefined,
+      rank: attemptData.rank ?? undefined,
+      total_participants: attemptData.total_participants ?? undefined,
+      quiz_id: attemptData.quiz_id ?? attemptData.attempt?.quiz_id ?? undefined,
+      battle_id: attemptData.battle_id ?? attemptData.attempt?.battle_id ?? undefined
     }
     reviewAttempts.value.set(Number(attemptId), normalizedAttempt)
   }

@@ -91,7 +91,10 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <Icon name="mdi:trophy" class="text-yellow-500" />
-              <span class="font-medium">{{ formatPrize(tournament.prize_pool) }}</span>
+                <div class="flex flex-col">
+                  <span class="font-medium">{{ formatPrize(tournament.prize_pool) }}</span>
+                  <span class="text-sm text-gray-500">Entry: {{ formatPrize(tournament.entry_fee || 0) }}</span>
+                </div>
             </div>
             <button 
               @click="router.push(`/quizee/tournaments/${tournament.id}`)"
@@ -124,6 +127,7 @@ interface Tournament {
   start_date: string
   participants_count: number
   prize_pool: number
+  entry_fee?: number
 }
 
 const tournaments = ref<Tournament[]>([])

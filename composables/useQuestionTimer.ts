@@ -36,7 +36,7 @@ export default function useQuestionTimer(defaultSeconds = 20) {
         // on timeout call handler if set
         if (typeof _onTimeout === 'function') _onTimeout()
       }
-    }, 250)
+    }, 500)
   }
 
   function stopTimer() {

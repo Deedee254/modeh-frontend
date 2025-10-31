@@ -152,6 +152,9 @@ const showAwaitingModal = ref(false)
 const selectedPackage = ref(null)
 
 const showReview = ref(false)
+const isTournamentCheckout = computed(() => type === 'tournament' && !!id)
+const tournamentJoinAttempted = ref(false)
+const tournamentJoinSucceeded = ref(false)
 const reviewLoading = ref(false)
 const reviewError = ref('')
 const reviewDetails = ref([])
@@ -252,6 +255,36 @@ async function initiatePayment(type, details) {
   }
 }
 
+async function joinTournamentAfterPayment() {
+  if (!isTournamentCheckout.value) return false
+  if (tournamentJoinAttempted.value) return tournamentJoinSucceeded.value
+  tournamentJoinAttempted.value = true
+  try {
+    const res = await api.postJson(`/api/tournaments/${id}/join`, {})
+    if (api.handleAuthStatus(res)) return false
+    if (res?.ok || res?.status === 204) {
+      tournamentJoinSucceeded.value = true
+      return true
+    }
+    if (res?.status === 409) {
+      tournamentJoinSucceeded.value = true
+      return true
+    }
+    if (res && typeof res.json === 'function') {
+      try {
+        const data = await res.json()
+        if (data?.code === 'already_registered' || data?.isRegistered) {
+          tournamentJoinSucceeded.value = true
+          return true
+        }
+      } catch (e) {}
+    }
+  } catch (e) {
+    return false
+  }
+  return false
+}
+
 function openPayment() {
   if (selectedPackage.value) {
     initiatePayment('subscription', selectedPackage.value);
@@ -259,10 +292,21 @@ function openPayment() {
 }
 
 async function onPaymentAttemptClosed() {
+  const joined = await joinTournamentAfterPayment()
   await checkSubscription()
-  // If subscription is now active, user can see results.
+  if (joined) {
+    checkout.status = 'success'
+  }
   if(isActive.value) checkout.status = 'success'
   showAwaitingModal.value = false
+  if (joined) {
+    router.push(`/quizee/tournaments/${id}`)
+    return
+  }
+  if (isTournamentCheckout.value) {
+    checkout.status = 'error'
+    checkout.pendingMessage = 'Unable to register for the tournament automatically. Please try joining from the tournament page.'
+  }
 }
 
 async function openAnswerReview() {

@@ -100,24 +100,51 @@ export default function useTaxonomy() {
   const topicsCache = new Map()
   const subjectsPageCache = new Map()
   const topicsPageCache = new Map()
+  const gradesCache = new Map()
+  const MAX_CACHE_ENTRIES = 150
+
+  function isSimpleIdOnlyArray(arr) {
+    if (!Array.isArray(arr)) return false
+    return arr.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
+  }
+
+  function setCacheWithLimit(map, key, value) {
+    try {
+      if (map.size >= MAX_CACHE_ENTRIES) {
+        // delete oldest entry (Map preserves insertion order)
+        const firstKey = map.keys().next().value
+        if (firstKey !== undefined) map.delete(firstKey)
+      }
+      map.set(key, value)
+    } catch (e) {
+      map.set(key, value)
+    }
+  }
 
   const config = useRuntimeConfig()
   const api = useApi()
+  // promise used to coordinate concurrent fetchLevels callers (avoid busy-wait polling)
+  let _levelsPromise = null
 
   async function fetchGrades() {
+    // Ensure levels are loaded first — levels are the top-most taxonomy and
+    // may contain nested grades. This makes fetchGrades() levels-first by
+    // default so callers don't need to orchestrate fetchLevels() themselves.
+    try {
+      if ((!levels.value || !levels.value.length) && !loadingLevels.value) {
+        await fetchLevels()
+      }
+    } catch (e) {
+      // ignore fetchLevels errors and fall back to grades endpoint
+    }
     loadingGrades.value = true
     try {
       // If a levels fetch is currently running, wait for it to finish so
       // we can reuse nested grades (this avoids two concurrent requests
       // for the same logical data and reduces SSR/CSR mismatch risk).
-      if (loadingLevels.value && (!levels.value || !levels.value.length)) {
-        // wait for levels to be populated or for loadingLevels to stop
-        const start = Date.now()
-        while (loadingLevels.value && Date.now() - start < 5000) {
-          // small sleep
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise(r => setTimeout(r, 50))
-        }
+      // If a levels fetch is currently running, await the promise instead of busy-waiting
+      if (loadingLevels.value && (!levels.value || !levels.value.length) && _levelsPromise) {
+        try { await _levelsPromise } catch (e) { /* ignore */ }
       }
 
       // If levels were already loaded and include nested grades, prefer
@@ -151,28 +178,39 @@ export default function useTaxonomy() {
   async function fetchLevels() {
     // avoid refetching if we already have levels
     if (levels.value && levels.value.length) return
+    // If a fetch is already in-flight, return that promise so callers can await it
+    if (_levelsPromise) return _levelsPromise
     loadingLevels.value = true
     try { console.debug('useTaxonomy.fetchLevels: starting fetch') } catch (e) {}
-    try {
-      const res = await api.get('/api/levels')
-      if (!res.ok) return
-      const data = await res.json().catch(() => null)
-      if (!data) return
-      // data.levels expected
-      const list = normalizeList(data.levels ? { grades: data.levels } : data)
-      // normalizeList expects arrays of grade-like objects; preserve structure on levels
-      // But for consumers we want levels as objects with id,name,grades
-      if (data.levels && Array.isArray(data.levels)) {
-        levels.value = data.levels.map(l => ({ ...l, grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null })) }))
-      } else {
-        levels.value = list
+
+    _levelsPromise = (async () => {
+      try {
+        const res = await api.get('/api/levels')
+        if (!res.ok) return
+        const data = await res.json().catch(() => null)
+        if (!data) return
+        // data.levels expected
+        const list = normalizeList(data.levels ? { grades: data.levels } : data)
+        // normalizeList expects arrays of grade-like objects; preserve structure on levels
+        // But for consumers we want levels as objects with id,name,grades
+        if (data.levels && Array.isArray(data.levels)) {
+          levels.value = data.levels.map(l => ({ ...l, grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null })) }))
+        } else {
+          levels.value = list
+        }
+        try { console.debug('useTaxonomy.fetchLevels: loaded', (levels.value || []).length, 'levels') } catch (e) {}
+      } catch (e) {
+        // ignore
+      } finally {
+        // Clear loading state and allow later refetches. Do NOT return the
+        // promise itself from inside the promise executor — returning the
+        // same promise would create a promise chaining cycle.
+        loadingLevels.value = false
+        _levelsPromise = null
       }
-      try { console.debug('useTaxonomy.fetchLevels: loaded', (levels.value || []).length, 'levels') } catch (e) {}
-    } catch (e) {
-      // ignore
-    } finally {
-      loadingLevels.value = false
-    }
+    })()
+
+    return _levelsPromise
   }
 
   // Friendly header list: small objects with id,name,slug (slug optional)
@@ -182,43 +220,68 @@ export default function useTaxonomy() {
   })
 
   async function fetchSubjectsByGrade(gradeId) {
-    // treat explicit null/undefined/empty-string as no-grade; allow 0 if it were valid
     if (gradeId === null || gradeId === undefined || gradeId === '') {
       subjects.value = []
       return
     }
     const key = String(gradeId)
-    // return cached if available
     if (subjectsCache.has(key)) {
       subjects.value = subjectsCache.get(key)
       return
     }
     loadingSubjects.value = true
     try {
-      const res = await api.get(`/api/subjects?grade_id=${gradeId}`)
-      if (res.ok) {
-        const data = await res.json().catch(() => null)
-  const list = normalizeList(data)
-    subjects.value = list
-  subjectsCache.set(key, list)
+      const res = await api.get(`/api/subjects?grade_id=${encodeURIComponent(gradeId)}`)
+      if (!res.ok) {
+        subjects.value = []
+        subjectsCache.delete(key)
         return
       }
-      // fallback: fetch all subjects then filter
-      const allRes = await api.get('/api/subjects')
-      if (allRes.ok) {
-        const allData = await allRes.json().catch(() => null)
-        const list = normalizeList(allData)
-        const filtered = list.filter(s => {
-          const g = s.grade_id ?? s.grade ?? (s.grade && typeof s.grade === 'object' ? s.grade.id : null) ?? ''
-          return String(g) === key
-        })
-        subjects.value = filtered
-        subjectsCache.set(key, filtered)
-      }
+      const data = await res.json().catch(() => null)
+      const list = normalizeList(data)
+      const filtered = list.filter((s) => {
+        if (!s) return false
+        const gradeRef = s.grade_id ?? (s.grade && typeof s.grade === 'object' ? s.grade.id : null)
+        if (gradeRef == null) return false
+        return String(gradeRef) === key
+      })
+      subjects.value = filtered
+      setCacheWithLimit(subjectsCache, key, filtered)
+      try { console.debug('useTaxonomy.fetchSubjectsByGrade: gradeId', gradeId, 'fetched', filtered.length, 'subjects') } catch (e) {}
     } catch (e) {
-      // ignore
+      subjects.value = []
+      subjectsCache.delete(key)
     } finally {
       loadingSubjects.value = false
+    }
+  }
+
+  // Fetch grades filtered by level (server-side). Cached by levelId.
+  async function fetchGradesByLevel(levelId) {
+    if (levelId === null || levelId === undefined || levelId === '') {
+      grades.value = []
+      return
+    }
+    const key = String(levelId)
+    if (gradesCache.has(key)) {
+      grades.value = gradesCache.get(key)
+      return
+    }
+    loadingGrades.value = true
+    try {
+      const res = await api.get(`/api/grades?level_id=${encodeURIComponent(levelId)}`)
+      if (!res.ok) {
+        grades.value = []
+        return
+      }
+      const data = await res.json().catch(() => null)
+      const list = normalizeList(data)
+  grades.value = list
+  setCacheWithLimit(gradesCache, key, list)
+    } catch (e) {
+      grades.value = []
+    } finally {
+      loadingGrades.value = false
     }
   }
 
@@ -272,7 +335,7 @@ export default function useTaxonomy() {
   async function fetchSubjectsPage(opts = {}) {
     const { gradeId, page = 1, perPage = 20, q } = opts
     const key = `${gradeId || 'all'}|${page}|${perPage}|${q || ''}`
-    if (subjectsPageCache.has(key)) return subjectsPageCache.get(key)
+  if (subjectsPageCache.has(key)) return subjectsPageCache.get(key)
     loadingSubjects.value = true
     try {
       const params = new URLSearchParams()
@@ -299,7 +362,7 @@ export default function useTaxonomy() {
       }
       else if (data && data.meta) meta = data.meta
       const out = { items, meta }
-  subjectsPageCache.set(key, out)
+  setCacheWithLimit(subjectsPageCache, key, out)
   // also populate the public subjects ref so callers that call this function
   // (eg. page preloaders) get immediate access to the items
   subjects.value = items
@@ -326,9 +389,9 @@ export default function useTaxonomy() {
       const res = await api.get(`/api/subjects/${subjectId}/topics`)
       if (res.ok) {
         const data = await res.json().catch(() => null)
-  const list = normalizeList(data)
-  topics.value = list
-  topicsCache.set(key, list)
+    const list = normalizeList(data)
+    topics.value = list
+    setCacheWithLimit(topicsCache, key, list)
       }
     } catch (e) {
       // ignore
@@ -358,7 +421,7 @@ export default function useTaxonomy() {
     const { subjectId, page = 1, perPage = 20, q } = opts
     if (!subjectId) return { items: [], meta: null }
     const key = `${subjectId}|${page}|${perPage}|${q || ''}`
-    if (topicsPageCache.has(key)) return topicsPageCache.get(key)
+  if (topicsPageCache.has(key)) return topicsPageCache.get(key)
     loadingTopics.value = true
     try {
       const params = new URLSearchParams()
@@ -379,7 +442,7 @@ export default function useTaxonomy() {
         total: data.topics.total || items.length
       }
       const out = { items, meta }
-  topicsPageCache.set(key, out)
+  setCacheWithLimit(topicsPageCache, key, out)
   // populate topics ref for consumers
   topics.value = items
   return out
@@ -422,6 +485,7 @@ export default function useTaxonomy() {
     loadingTopics,
     loadingLevels,
     fetchGrades,
+    fetchGradesByLevel,
     fetchLevels,
     fetchSubjectsByGrade,
     fetchAllSubjects,

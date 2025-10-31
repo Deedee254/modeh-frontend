@@ -20,40 +20,73 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 const showInstallPrompt = ref(false)
 let deferredPrompt = null
 let beforeInstallHandler = null
+let appInstalledHandler = null
 
 onMounted(() => {
+  // Handler for the browser event. We `preventDefault()` and keep the event so we can
+  // call `prompt()` later in response to user action. Show the banner promptly so the
+  // user can see the option.
   beforeInstallHandler = (e) => {
-    e.preventDefault()
+    try { e.preventDefault() } catch (err) {}
     deferredPrompt = e
+    // show promptly (short delay to avoid jank); if you still want a longer delay change this
     setTimeout(() => {
       showInstallPrompt.value = true
-    }, 5000) // 5-second delay
+      // helpful debug when troubleshooting why prompt isn't shown
+      try { console.debug('[PWA] beforeinstallprompt fired — showing install banner') } catch {}
+    }, 1000)
   }
 
   window.addEventListener('beforeinstallprompt', beforeInstallHandler)
 
-  // Hide button if PWA is already installed
-  if (window.matchMedia('(display-mode: standalone)').matches) {
+  // If the app is already installed, don't show the banner
+  try {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      showInstallPrompt.value = false
+    }
+  } catch (err) {}
+
+  // Hide the banner when the app is installed (user accepted or install completed)
+  appInstalledHandler = () => {
+    deferredPrompt = null
     showInstallPrompt.value = false
+    try { console.debug('[PWA] appinstalled event received') } catch {}
   }
+  window.addEventListener('appinstalled', appInstalledHandler)
 })
 
 onBeforeUnmount(() => {
   if (beforeInstallHandler) {
     window.removeEventListener('beforeinstallprompt', beforeInstallHandler)
   }
+  if (appInstalledHandler) {
+    window.removeEventListener('appinstalled', appInstalledHandler)
+  }
 })
 
 const installPWA = async () => {
-  if (!deferredPrompt) return
-
-  deferredPrompt.prompt()
-  const { outcome } = await deferredPrompt.userChoice
-
-  if (outcome === 'accepted') {
-    showInstallPrompt.value = false
+  if (!deferredPrompt) {
+    // nothing to do — helpful debug
+    try { console.debug('[PWA] installPWA called but no deferredPrompt available') } catch {}
+    return
   }
 
-  deferredPrompt = null
+  try {
+    await deferredPrompt.prompt()
+    const choice = await deferredPrompt.userChoice
+    const outcome = choice?.outcome
+    if (outcome === 'accepted') {
+      showInstallPrompt.value = false
+      deferredPrompt = null
+      try { console.debug('[PWA] user accepted the install prompt') } catch {}
+    } else {
+      // user dismissed; keep the prompt object cleared so we don't show again until browser fires
+      deferredPrompt = null
+      try { console.debug('[PWA] user dismissed the install prompt') } catch {}
+    }
+  } catch (err) {
+    try { console.error('[PWA] prompt failed', err) } catch {}
+    deferredPrompt = null
+  }
 }
 </script>

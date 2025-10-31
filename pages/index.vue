@@ -420,8 +420,12 @@ import LevelCard from '~/components/ui/LevelCard.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useTaxonomy from '~/composables/useTaxonomy'
+import useApi from '~/composables/useApi'
 
 const config = useRuntimeConfig()
+
+// ensure CSRF cookie/presence is requested early on pages that contain login forms
+const api = useApi()
 
 // Page SEO: title, description and social preview tags
 definePageMeta({
@@ -552,6 +556,11 @@ function pickPaletteClass(id){
 }
 
 onMounted(async () => {
+  // Start CSRF prefetch immediately (non-blocking) so the login form on this
+  // page won't race with cookie setup. This runs in parallel with the other
+  // initial data fetches below.
+  try { api.ensureCsrf().catch(() => {}) } catch (e) {}
+
   // Fetch levels first so grades/subjects can be derived from it and avoid
   // duplicate parallel requests. Then ensure topics are loaded.
   await fetchLevels()

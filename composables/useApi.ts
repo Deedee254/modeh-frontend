@@ -1,23 +1,85 @@
 import { useRuntimeConfig } from '#imports'
 
+// Module-scoped memoization so all callers (and multiple composable instances)
+// share the same CSRF init state and avoid duplicate /sanctum/csrf-cookie calls.
+let _ensureCsrfPromise: Promise<void> | null = null
+let _csrfFetchedAt = 0
+// cache XSRF token reads briefly to avoid repeated document.cookie parsing
+let _lastXsrf: string | null = null
+let _lastXsrfAt = 0
+
 export function useApi() {
   const config = useRuntimeConfig()
 
   function getXsrfFromCookie() {
-    if (typeof document === 'undefined') return null
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-    if (!match || typeof match[1] !== 'string') return null
-    return decodeURIComponent(match[1])
+    try {
+      if (typeof document === 'undefined') return null
+      // if we recently parsed the cookie, reuse the cached token for 5s
+      if (_lastXsrf && Date.now() - _lastXsrfAt < 5_000) return _lastXsrf
+      const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
+      if (!match || typeof match[1] !== 'string') return null
+      _lastXsrf = decodeURIComponent(match[1])
+      _lastXsrfAt = Date.now()
+      return _lastXsrf
+    } catch (e) {
+      return null
+    }
   }
 
   async function ensureCsrf() {
-    // Fetch Sanctum CSRF cookie to initialize session and XSRF-TOKEN
-    // We must await this fetch call to ensure the cookie is set before subsequent requests.
+    // Avoid repeated network calls: if an ensure is in-flight, reuse its promise.
+    // Also skip a new fetch if we recently fetched and the cookie appears present.
     try {
-      await fetch(config.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include' })
+      if (typeof document !== 'undefined') {
+        const xsrf = getXsrfFromCookie()
+        if (xsrf && Date.now() - _csrfFetchedAt < 30_000) return
+      }
     } catch (e) {
-      console.error('Failed to fetch CSRF cookie', e)
+      // ignore cookie read errors and fall through to fetch
     }
+
+    if (_ensureCsrfPromise) return _ensureCsrfPromise
+
+    // Start the CSRF fetch and then poll briefly until the XSRF cookie is visible
+    // in document.cookie. Some browsers/sites may not expose the cookie immediately
+    // to document.cookie right when fetch resolves; polling helps avoid a race
+    // where the subsequent login POST runs before the cookie is usable.
+    _ensureCsrfPromise = (async () => {
+      try {
+        await fetch(config.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include' })
+
+        // If we're in a browser, wait up to 1s, checking every 50ms for the
+        // XSRF-TOKEN cookie to appear. If it appears earlier we return immediately.
+        if (typeof document !== 'undefined') {
+          const start = Date.now()
+          const timeout = 1000
+          const interval = 50
+          while (Date.now() - start < timeout) {
+            const xs = getXsrfFromCookie()
+            if (xs) {
+              _csrfFetchedAt = Date.now()
+              return
+            }
+            // small sleep
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise((r) => setTimeout(r, interval))
+          }
+          // final attempt
+          if (getXsrfFromCookie()) _csrfFetchedAt = Date.now()
+        } else {
+          // server / SSR: mark as fetched so subsequent calls don't refetch repeatedly
+          _csrfFetchedAt = Date.now()
+        }
+      } catch (e) {
+        // keep the original behavior of logging the failure
+        try { console.error('Failed to fetch CSRF cookie', e) } catch (err) {}
+      } finally {
+        // allow a subsequent call to create a new promise if needed
+        _ensureCsrfPromise = null
+      }
+    })()
+
+    return _ensureCsrfPromise
   }
 
   function defaultJsonHeaders() {
@@ -105,12 +167,31 @@ export function useApi() {
     if (!resp) return false
     if (resp.status === 419 || resp.status === 401) {
       try { console.warn('[useApi] auth error', resp.status) } catch (e) {}
-      // Friendly redirect to login for SPAs
+      // Simple router-based redirect to login. Use a global flag to avoid
+      // duplicate redirects when multiple requests fail at once.
       try {
-        // prefer client-side navigation if available
         if (typeof window !== 'undefined') {
-          // show a small delay to allow callers to show a message first
-          window.setTimeout(() => { window.location.href = '/login' }, 700)
+          const globalAny: any = window as any
+          if (globalAny.__modeh_auth_redirected) return true
+          // If we're already on the login page, don't redirect again
+          const isLoginPath = window.location && window.location.pathname && window.location.pathname.startsWith('/login')
+          if (isLoginPath) return true
+
+          // Attempt to use the app router for SPA navigation. If unavailable,
+          // fall back to a hard navigation (very rare in a Nuxt client).
+          try {
+            const router = (typeof useRouter === 'function') ? useRouter() : null
+            globalAny.__modeh_auth_redirected = true
+            if (router && typeof router.push === 'function') {
+              // Simple push to login (no returnTo query)
+              router.push('/login')
+            } else {
+              window.location.href = '/login'
+            }
+          } catch (e) {
+            // If router usage fails, do a direct navigation.
+            try { globalAny.__modeh_auth_redirected = true; window.location.href = '/login' } catch (err) {}
+          }
         }
       } catch (e) {}
       return true

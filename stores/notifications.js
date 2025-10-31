@@ -1,10 +1,11 @@
-import { defineStore } from 'pinia'
-import { ref, computed, onBeforeUnmount } from 'vue'
-import { useRuntimeConfig } from '#app'
-import { useAuthStore } from './auth'
-import { useAppAlert } from '~/composables/useAppAlert'
-import { useBadgeToast } from '~/composables/useBadgeToast'
-import useApi from '~/composables/useApi'
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import { useRuntimeConfig } from '#app';
+import { useAuthStore } from './auth';
+import { useAppAlert } from '~/composables/useAppAlert';
+import { useBadgeToast } from '~/composables/useBadgeToast';
+import useApi from '~/composables/useApi';
+import Pusher from 'pusher-js';
 
 export const useNotificationsStore = defineStore('notifications', () => {
   const drawerOpen = ref(false)
@@ -40,7 +41,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   function readXsrfTokenFromCookie() {
-    if (process.client) {
+    if (import.meta.client) {
       const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
       return match ? decodeURIComponent(match[1]) : null
     }
@@ -84,16 +85,30 @@ export const useNotificationsStore = defineStore('notifications', () => {
   // Echo listener wiring
   let _echoChannel = null
 
-  function _ensureEcho() {
-    // Safe guard: Echo might not be available during SSR or when plugin not installed
-    if (!process.client) return null
-    // global Echo instance created by plugin is expected on window.Echo
-    return (window && window.Echo) ? window.Echo : null
+  let echoInstance = null;
+
+  function getEcho() {
+    if (import.meta.server) {
+      return null;
+    }
+    if (echoInstance) {
+      return echoInstance;
+    }
+    if (window.Echo) { // From laravel-echo plugin
+      echoInstance = window.Echo;
+    } else { // Manual instantiation
+      echoInstance = new Echo({
+        broadcaster: 'pusher',
+        key: config.public.pusherAppKey,
+        cluster: config.public.pusherAppCluster,
+        forceTLS: true
+      });
+    }
+    return echoInstance;
   }
 
   function attachEchoListeners() {
-    if (!process.client) return
-    const Echo = _ensureEcho()
+    const Echo = getEcho();
     const userId = auth.user?.id
     if (!Echo || !userId) return
 
@@ -189,8 +204,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   function detachEchoListeners() {
-    if (!process.client) return
-    const Echo = _ensureEcho()
+    if (!import.meta.client) return
+    const Echo = getEcho();
     const userId = auth.user?.id
     if (!Echo || !userId) return
     try {

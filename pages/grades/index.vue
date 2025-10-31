@@ -118,6 +118,8 @@ function onSearch(q) {
 
 onMounted(async () => {
   try {
+    // prefer levels-first so the grades list can be derived or server-filtered
+    await fetchLevels()
     await fetchGrades()
     // populate local grades ref for template convenience
     grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []

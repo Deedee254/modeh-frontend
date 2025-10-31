@@ -42,28 +42,33 @@ onMounted(async () => {
     // Also store token in localStorage so client-side logic that checks 'token' works
     if (process.client) {
       try { localStorage.setItem('token', token) } catch (e) {}
+      // Clean the URL to remove the token and other params from the address bar
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // Set a default auth header for fetch/axios (we'll use $fetch which will pick up cookie)
 
     // Fetch current user (api/me) to hydrate app state
+    let user = null;
     try {
       const me = await $fetch(config.public.apiBase + '/api/me', { credentials: 'include' })
       const authUser = useState('authUser', () => null)
       authUser.value = me
+      user = me;
     } catch (err) {
       // ignore - user may be created server-side but me may require cookies; still continue
       console.warn('Failed to fetch /api/me after social login', err)
     }
 
-    // If onboarding is required, send user to new-user role selection first
+    // If onboarding is required, send user to the specific step needed.
     if (requires) {
-      return router.replace('/onboarding/new-user')
+      // Use the `next_step` from the backend to go to the correct onboarding page.
+      // e.g., /onboarding/institution, /onboarding/role, etc.
+      return router.replace(`/onboarding/${nextStep || 'new-user'}`)
     }
 
     // Otherwise go to dashboard depending on role
-    const userState = useState('authUser')
-    const role = userState?.value?.role || null
+    const role = user?.role || useState('authUser').value?.role || null;
     if (role === 'quiz-master') return router.replace('/quiz-master/dashboard')
     return router.replace('/quizee/dashboard')
 
@@ -73,6 +78,4 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-</style>
+<style scoped></style>

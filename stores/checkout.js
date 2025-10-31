@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'
 
 export const useCheckoutStore = defineStore('checkout', () => {
-  const router = useRouter()
+  // const router = useRouter() // Should be called inside actions when needed.
   const cfg = useRuntimeConfig()
 
   // State
@@ -36,28 +35,39 @@ export const useCheckoutStore = defineStore('checkout', () => {
     }, 800)
 
     try {
-      const endpoint = type === 'battle'
-        ? `${cfg.public.apiBase}/api/battles/${id}/mark`
-        : `${cfg.public.apiBase}/api/quiz-attempts/${attemptId}/mark`
-
+      const api = useApi()
       const resultPath = type === 'battle' ? `/quizee/battles/${id}/result` : `/quizee/quizzes/result/${attemptId}`
 
-      const api = useApi()
-      
-      // Add retry logic
-      let retries = 3
+      // For tournament battles we prefer the tournament-specific mark endpoint.
+      // Try tournament mark first, then fallback to the generic battle mark endpoint.
+      let endpoints = []
+      if (type === 'battle') {
+        endpoints = [
+          `${cfg.public.apiBase}/api/tournaments/battles/${id}/mark`,
+          `${cfg.public.apiBase}/api/battles/${id}/mark`
+        ]
+        // Note: the above includes a tournament-scoped attempt; frontend may provide the tournament id via attemptId in some flows.
+        // We'll try each endpoint until one succeeds or all fail.
+      } else {
+        endpoints = [`${cfg.public.apiBase}/api/quiz-attempts/${attemptId}/mark`]
+      }
+
       let res = null
-      
-      while (retries > 0) {
-        res = await api.postJson(endpoint.replace(cfg.public.apiBase, ''), {}).catch(() => null)
-        // If backend returned a structured limit error object, stop and handle below
-        if (res && (res.code === 'limit_reached' || res.ok || res.status === 'success')) break
-        retries--
-        if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
+      for (let e of endpoints) {
+        // Retry logic for marking answers
+        let retries = 3
+        while (retries > 0) {
+          res = await api.postJson(e.replace(cfg.public.apiBase, ''), {}).catch(() => null)
+          if (res && (res.code === 'limit_reached' || res.ok || res.status === 'success')) break
+          retries--
+          if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+        if (res && (res.ok || res.status === 'success' || res.code === 'limit_reached')) break
       }
 
       if (res && res.code === 'limit_reached') {
         // Route the user to the subscription/checkout page with the limit context so they can upgrade
+        const router = useRouter()
         const qs = new URLSearchParams({ reason: 'limit', type: res.limit?.type || 'unknown', value: String(res.limit?.value || '') })
         router.push('/quizee/subscription?' + qs.toString())
         return
@@ -66,6 +76,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
       if (res && (res.ok || res.status === 'success')) {
         pendingMessage.value = 'Completed. Redirecting to results...'
         status.value = 'success'
+        const router = useRouter()
         router.push(resultPath)
       } else {
         throw new Error('Failed to mark results. Please try again in a few seconds.')

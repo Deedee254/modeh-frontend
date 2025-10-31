@@ -28,6 +28,20 @@
               <Icon name="mdi:trophy" class="text-yellow-400" />
               <span>{{ formatPrize(tournament.prize_pool) }}</span>
             </div>
+            <div class="mt-3">
+              <div v-if="nextRoundAt" class="inline-flex items-center gap-2 px-3 py-1 bg-black/40 text-white rounded">
+                <Icon name="mdi:clock-outline" />
+                <span>Next round: {{ formatDate(nextRoundAt) }}</span>
+              </div>
+            </div>
+            <div v-if="tournament.winner" class="ml-4 flex items-center gap-3">
+              <Icon name="mdi:trophy-outline" class="text-yellow-300" />
+              <img :src="tournament.winner.avatar" alt="winner avatar" class="w-10 h-10 rounded-full object-cover" />
+              <div class="text-sm">
+                <div class="font-semibold">Winner</div>
+                <div class="text-sm">{{ tournament.winner.name }}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -36,6 +50,30 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Main Content -->
         <div class="lg:col-span-2 space-y-8">
+          <!-- User Battle / Taking Area -->
+          <div v-if="currentBattle" class="bg-white rounded-xl p-6 shadow-sm">
+            <h2 class="text-xl font-bold mb-4">Your Battle — Round {{ currentBattle.round }}</h2>
+
+            <template v-if="isTaking">
+              <p class="text-gray-600 mb-4">You have an active battle. Answer the questions below to complete your match.</p>
+              <div v-if="currentBattle.question">
+                <QuestionCard :question="currentBattle.question" />
+                <div class="mt-4">
+                  <button @click="router.push(`/quizee/tournaments/${tournament.id}/battles/${currentBattle.id}`)" class="bg-primary text-white px-4 py-2 rounded">Open Battle Details</button>
+                </div>
+              </div>
+              <div v-else class="text-gray-600">Questions for this battle are not yet available. <button @click="viewBattles" class="text-primary underline">Go to Battles</button></div>
+            </template>
+
+            <template v-else>
+              <p class="text-gray-600 mb-4">You are scheduled to play in this round.</p>
+              <div class="flex gap-3">
+                <button @click="viewBattles" class="bg-primary text-white px-4 py-2 rounded">View Battle</button>
+                <button @click="router.push(`/quizee/tournaments/${tournament.id}/battles/${currentBattle.id}`)" class="border px-4 py-2 rounded">Battle Details</button>
+              </div>
+            </template>
+
+          </div>
           <!-- Description -->
           <div class="bg-white rounded-xl p-6 shadow-sm">
             <h2 class="text-xl font-bold mb-4">About this Tournament</h2>
@@ -144,7 +182,8 @@
 <script setup lang="ts">
 // Ensure this page uses the quizee layout when rendered
 definePageMeta?.({ layout: 'quizee' })
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 import useApi from '~/composables/useApi'
 const api = useApi()
 import { useRoute, useRouter } from 'vue-router'
@@ -164,6 +203,8 @@ type Tournament = {
   timeline: { name: string; date: string }[]
   registration_end_date: string
   status: string
+  // optional winner object may be attached by the API envelope
+  winner?: { avatar?: string; name?: string } | null
 }
 
 type Player = {
@@ -176,6 +217,8 @@ type Player = {
 // State
 const loading = ref(false)
 const tournament = ref<Tournament | null>(null)
+const battles = ref<any[]>([])
+const nextRoundAt = ref<string | null>(null)
 const isRegistered = ref(false)
 const topPlayers = ref<Player[]>([])
 const canRegister = ref(true)
@@ -193,8 +236,25 @@ const fetchTournament = async () => {
     // Use $fetch with credentials to call the backend API
   const json: any = await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}`, { credentials: 'include' })
 
-    // Defensive: backend may return the model directly or in different envelopes
-    tournament.value = (json?.data ?? json) as Tournament || null
+  // Defensive: backend may return the model directly or in different envelopes
+  tournament.value = (json?.data ?? json) as Tournament || null
+  // attach winner if present in envelope
+  if (!tournament.value && json?.data) tournament.value = json.data as Tournament
+  if (json?.winner) tournament.value = { ...(tournament.value || {}), winner: json.winner }
+  if (json?.data?.winner) tournament.value = { ...(tournament.value || {}), winner: json.data.winner }
+
+    // compute next scheduled round time if battles are present
+    try {
+      const _battles = (json?.battles ?? json?.data?.battles) || []
+      battles.value = Array.isArray(_battles) ? _battles : []
+      if (Array.isArray(battles) && battles.length) {
+        const scheduled = battles.value.filter((b: any) => b.status === 'scheduled' && b.scheduled_at)
+        if (scheduled.length) {
+          scheduled.sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+          nextRoundAt.value = scheduled[0].scheduled_at
+        }
+      }
+    } catch (e) { /* ignore */ }
 
     await checkRegistrationStatus()
     await fetchLeaderboard()
@@ -204,6 +264,19 @@ const fetchTournament = async () => {
     loading.value = false
   }
 }
+
+// computed: current battle for logged-in user
+const currentBattle = computed(() => {
+  try {
+    const userId = (auth.user as any)?.id
+    if (!userId || !battles.value || !battles.value.length) return null
+    return battles.value.find((b: any) => (b.player1_id === userId || b.player2_id === userId) && b.status !== 'completed') || null
+  } catch (e) { return null }
+})
+
+const isTaking = computed(() => {
+  return !!(currentBattle.value && ['active', 'in_progress', 'started'].includes((currentBattle.value.status || '').toString()))
+})
 
 // Check if user is registered
 const checkRegistrationStatus = async () => {
@@ -234,9 +307,37 @@ const registerForTournament = async () => {
     loading.value = true
     const res = await api.postJson(`/api/tournaments/${route.params.id}/join`, {})
     if (api.handleAuthStatus(res)) return
-    if (!res.ok) throw new Error('Registration failed')
-    isRegistered.value = true
-    await fetchTournament()
+
+    // If registration succeeded
+    if (res.ok) {
+      isRegistered.value = true
+      await fetchTournament()
+      return
+    }
+
+    // Try to parse structured JSON response for special cases
+    let body = null
+    try { body = await res.json() } catch (e) { body = null }
+
+    // Backend indicates the user must pay an entry fee to join
+    if (res.status === 402 && body && body.code === 'payment_required') {
+      // Redirect to checkout page with type=tournament and id so user can pay once for the whole tournament
+      const qs: Record<string, string> = { type: 'tournament', id: String(route.params.id) }
+      // include amount when available so checkout can pre-fill price
+      if (body.amount) qs['amount'] = String(body.amount)
+      router.push({ path: '/quizee/payments/checkout', query: qs })
+      return
+    }
+
+    // Handle known structured errors like limit_reached (403) if present
+    if (res.status === 403 && body && body.code === 'limit_reached') {
+      const qs = new URLSearchParams({ reason: 'limit', type: body.limit?.type || 'unknown', value: String(body.limit?.value || '') })
+      router.push('/quizee/subscription?' + qs.toString())
+      return
+    }
+
+    // Fallback: log and show generic error
+    console.error('Registration failed', res.status, body)
   } catch (error) {
     console.error('Error registering for tournament:', error)
   } finally {

@@ -95,14 +95,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from '#imports'
 import useApi from '~/composables/useApi'
 import { Chart, registerables } from 'chart.js'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 Chart.register(...registerables)
-import { ref as vueRef, onMounted as vueOnMounted, computed as vueComputed } from 'vue'
+// consolidated imports above; removed duplicate vue imports
 
 definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Analytics for this quiz — performance, attempts and insights.' } ] })
 const route = useRoute()
@@ -114,8 +114,8 @@ const error = ref(null)
 const analytics = ref({})
 const exportLoading = ref(false)
 
-const trendCanvas = vueRef(null)
-const distCanvas = vueRef(null)
+const trendCanvas = ref(null)
+const distCanvas = ref(null)
 let trendChart = null
 let distChart = null
 

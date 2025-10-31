@@ -48,6 +48,7 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
 
   const subjectsCache = new Map()
   const topicsCache = new Map()
+  const gradesCache = new Map()
   const subjectsPageCache = new Map()
   const topicsPageCache = new Map()
   function extractId(v: any) {
@@ -73,6 +74,34 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
       grades.value = normalizeList(data)
     } catch (e) {
       // ignore
+    } finally {
+      loadingGrades.value = false
+    }
+  }
+
+  async function fetchGradesByLevel(levelId: any) {
+    if (!levelId) {
+      grades.value = []
+      return
+    }
+    const key = String(levelId)
+    if (gradesCache.has(key)) {
+      grades.value = gradesCache.get(key)
+      return
+    }
+    loadingGrades.value = true
+    try {
+      const res = await fetch(`${config.public.apiBase}/api/grades?level_id=${encodeURIComponent(levelId)}`, { credentials: 'include' })
+      if (!res.ok) {
+        grades.value = []
+        return
+      }
+      const data = await res.json().catch(() => null)
+      const list = normalizeList(data)
+      grades.value = list
+      gradesCache.set(key, list)
+    } catch (e) {
+      grades.value = []
     } finally {
       loadingGrades.value = false
     }
@@ -277,6 +306,7 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     loadingSubjects,
     loadingTopics,
     fetchGrades,
+  fetchGradesByLevel,
     fetchAllSubjects,
     fetchSubjectsByGrade,
     fetchSubjectsPage,

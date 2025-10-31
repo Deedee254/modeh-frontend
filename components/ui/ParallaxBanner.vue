@@ -72,6 +72,9 @@ onMounted(()=>{
 
 onBeforeUnmount(()=>{
   if (observer && root.value) observer.unobserve(root.value)
+  // remove fallback window listeners if they were attached
+  try { window.removeEventListener('scroll', onScroll) } catch (e) {}
+  try { window.removeEventListener('resize', onScroll) } catch (e) {}
 })
 
 // Simple parallax effect — translateY based on scroll position

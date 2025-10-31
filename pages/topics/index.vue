@@ -115,7 +115,7 @@ import { getHeroClass } from '~/utils/heroPalettes'
 // Ensure runtime config is available in this setup script
 const config = useRuntimeConfig()
 
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingTopics } = useTaxonomy()
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingTopics } = useTaxonomy()
 
 const pending = loadingTopics
 // derive a safe, reactive array from the taxonomy topics ref

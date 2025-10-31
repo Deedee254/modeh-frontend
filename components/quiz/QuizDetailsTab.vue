@@ -54,6 +54,7 @@
                       @update:modelValue="onGradeModelUpdate"
                       @selected="onGradeSelected"
                     />
+                    <p v-if="displayGradeError" class="mt-1 text-sm text-red-600">{{ displayGradeError }}</p>
                   </ClientOnly>
                 </div>
 
@@ -76,16 +77,18 @@
                 </div>
               </template>
                               <TaxonomyPicker
+                                ref="subjectsPicker"
                                 resource="subjects"
                                 :grade-id="selectedGrade || null"
                                 :per-page="50"
                                 :model-value="selectedSubjectObj || null"
                                 title="Subjects"
                                 subtitle="Pick a subject"
-                                @update:modelValue="onSubjectModelUpdate"
                                 @selected="onSubjectPicked"
                                 aria-labelledby="subject-label"
+                                v-model:query="subjectQuery"
                               />
+                            <p v-if="displaySubjectError" class="mt-1 text-sm text-red-600">{{ displaySubjectError }}</p>
             </ClientOnly>
           </div>
         </div>
@@ -120,8 +123,8 @@
                 subtitle="Pick or create a topic"
                 aria-labelledby="topic-label"
                 aria-describedby="topic-error"
-                @update:modelValue="onTopicModelUpdate"
                 @selected="onTopicPicked"
+                v-model:query="topicQuery"
               >
                 <template #actions>
                   <button
@@ -219,9 +222,9 @@
     <!-- Approval request moved into CreateTopicModal; details tab only shows selection summary -->
 
     <!-- Bottom Actions -->
-    <div class="mt-6 flex justify-end gap-3">
-      <UButton size="sm" variant="soft" @click="saveAndContinue" :loading="saving">Save and Continue</UButton>
-      <UButton size="sm" color="primary" @click="validate">Continue to Settings</UButton>
+    <div class="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+      <UButton size="sm" variant="soft" @click="saveAndContinue" :loading="saving" class="w-full sm:w-auto">Save and Continue</UButton>
+      <UButton size="sm" color="primary" @click="validateAndGoNext" class="w-full sm:w-auto">Continue to Settings</UButton>
     </div>
   </div>
 </template>
@@ -234,11 +237,6 @@ import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useAppAlert } from '~/composables/useAppAlert'
 
-// small helper to generate a temporary key for window._tmpFiles
-function makeTmpKey() {
-  return `tmpfile_${Date.now()}_${Math.floor(Math.random() * 10000)}`
-}
-
 const props = defineProps({
   modelValue: { type: Object, required: true },
   levels: { type: Array, default: () => [] },
@@ -246,24 +244,33 @@ const props = defineProps({
   subjects: { type: Array, default: () => [] },
   topics: { type: Array, default: () => [] },
   errors: { type: Object, default: () => ({}) },
-  saving: { type: Boolean, default: false },
-  loadingSubjects: { type: Boolean, default: false },
-  loadingTopics: { type: Boolean, default: false }
+  saving: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'create-topic', 'save', 'next', 'subject-picked', 'topic-picked'])
+const emit = defineEmits(['update:modelValue', 'create-topic', 'save', 'next', 'approval-requested'])
 
 // local client-side validation state
-const localErrors = ref({ _title: null, _topic: null })
+const localErrors = ref({ _title: null, _grade: null, _subject: null, _topic: null })
 const displayTitleError = computed(() => props.errors?._title || localErrors.value._title)
+const displayGradeError = computed(() => props.errors?._grade || localErrors.value._grade)
+const displaySubjectError = computed(() => props.errors?._subject || localErrors.value._subject)
 const displayTopicError = computed(() => props.errors?._topic || localErrors.value._topic)
-
-function validateBeforeSave() {
+function validate() {
   let ok = true
   localErrors.value._title = null
+  localErrors.value._grade = null
+  localErrors.value._subject = null
   localErrors.value._topic = null
   if (!props.modelValue.title || !props.modelValue.title.trim()) {
     localErrors.value._title = 'Title is required.'
+    ok = false
+  }
+  if (!props.modelValue.grade_id) {
+    localErrors.value._grade = 'Grade is required.'
+    ok = false
+  }
+  if (!props.modelValue.subject_id) {
+    localErrors.value._subject = 'Subject is required.'
     ok = false
   }
   if (!props.modelValue.topic_id) {
@@ -272,13 +279,6 @@ function validateBeforeSave() {
   }
   return ok
 }
-
-// Internal selection refs initialized from parent modelValue
-const selectedGrade = ref(props.modelValue?.grade_id || '')
-const selectedLevel = ref(props.modelValue?.level_id || '')
-const selectedSubject = ref(props.modelValue?.subject_id || '')
-const topicsPicker = ref(null)
-const selectedTopic = ref(props.modelValue?.topic_id || '')
 
 function sameId(a, b) {
   const left = a === null || typeof a === 'undefined' ? '' : String(a)
@@ -290,6 +290,30 @@ const alert = useAppAlert()
 const approvalRequestLoading = ref(false)
 const runtimeConfig = useRuntimeConfig()
 const suppressWatchers = ref(true)
+let suppressionRun = 0
+const loadedTopicSubjects = new Set()
+
+// Internal selection refs initialized from parent modelValue
+const selectedLevel = ref(props.modelValue?.level_id ?? '')
+const selectedGrade = ref(props.modelValue?.grade_id ?? '')
+const lastSelectedGrade = ref(null)
+const selectedSubject = ref(props.modelValue?.subject_id ?? '')
+const lastSelectedSubject = ref(null)
+const topicsPicker = ref(null)
+const selectedTopic = ref(props.modelValue?.topic_id ?? '')
+const subjectsPicker = ref(null)
+const lastSelectedTopic = ref(null)
+const initialSubjectId = props.modelValue?.subject_id ? String(props.modelValue.subject_id) : ''
+if (initialSubjectId) {
+  nextTick(() => {
+    ensureTopicsForSubject(initialSubjectId, true)
+  })
+}
+
+const subjectQuery = ref('')
+const topicQuery = ref('')
+
+nextTick(() => { suppressWatchers.value = false })
 nextTick(() => { suppressWatchers.value = false })
 
 // Cover picker related refs
@@ -308,17 +332,15 @@ function resolveAssetUrl(value) {
 
 // compute preview URL from either modelValue.cover (tmp key or File) or modelValue.cover_image (server URL)
 const previewUrl = computed(() => {
+  // modelValue.cover can be a File object (from picker) or a string (from server)
   try {
     const cov = props.modelValue?.cover
-    if (cov && typeof cov === 'string') {
-      const store = typeof window !== 'undefined' ? (window['_tmpFiles'] || {}) : {}
-      const f = store[cov]
-      if (f instanceof File) return URL.createObjectURL(f)
-      if (/^(?:https?:)?\/\//.test(cov) || /^(?:data:|blob:)/.test(cov)) return cov
-      if (cov.startsWith('tmpfile_')) return null
-      const resolvedCover = resolveAssetUrl(cov)
-      if (resolvedCover) return resolvedCover
+    // If it's a string, it could be a blob URL or a server path
+    if (typeof cov === 'string') {
+      if (cov.startsWith('blob:')) return cov
+      return resolveAssetUrl(cov)
     }
+    // If it's a File object, create a URL for it
     if (cov instanceof File) return URL.createObjectURL(cov)
     const stored = props.modelValue?.cover_image
     if (typeof stored === 'string' && stored) return resolveAssetUrl(stored)
@@ -347,40 +369,97 @@ const filteredGrades = computed(() => {
 })
 
 const filteredTopics = computed(() => {
-  if (!selectedSubject.value || !Array.isArray(props.topics)) return []
-  return props.topics.filter(t => t && typeof t === 'object' && t.subject_id && String(t.subject_id) === String(selectedSubject.value))
+  const subjectId = selectedSubject.value || props.modelValue?.subject_id || ''
+  if (!subjectId) return []
+  if (Array.isArray(props.topics) && props.topics.length) {
+    const list = props.topics.filter(t => topicMatchesSubject(t, subjectId))
+    if (list.length) return list
+  }
+  if (Array.isArray(props.modelValue?.subject?.topics)) {
+    const list = props.modelValue.subject.topics.filter(t => topicMatchesSubject(t, subjectId))
+    if (list.length) return list
+  }
+  return []
 })
 
 // Selected names for confirmation display
 const selectedLevelName = computed(() => {
-  if (!selectedLevel.value || !Array.isArray(props.levels)) return ''
-  const l = props.levels.find(x => x && String(x.id) === String(selectedLevel.value))
-  return l && l.name ? l.name : ''
+  const levelId = selectedLevel.value || props.modelValue?.level_id || ''
+  if (!levelId) {
+    if (props.modelValue?.level && props.modelValue.level.name) return props.modelValue.level.name
+    if (props.modelValue?.level_name) return props.modelValue.level_name
+    return ''
+  }
+  if (Array.isArray(props.levels)) {
+    const l = props.levels.find(x => x && sameId(x.id, levelId))
+    if (l && l.name) return l.name
+  }
+  if (props.modelValue?.level && sameId(props.modelValue.level.id, levelId)) return props.modelValue.level.name || ''
+  if (props.modelValue?.level_name && sameId(props.modelValue?.level_id, levelId)) return props.modelValue.level_name
+  return ''
 })
 
 const selectedGradeName = computed(() => {
-  if (!selectedGrade.value || !Array.isArray(props.grades)) return ''
-  const g = props.grades.find(x => x && String(x.id) === String(selectedGrade.value))
-  return g && g.name ? g.name : ''
+  const gradeId = selectedGrade.value || props.modelValue?.grade_id || ''
+  if (!gradeId) {
+    if (props.modelValue?.grade && props.modelValue.grade.name) return props.modelValue.grade.name
+    if (props.modelValue?.grade_name) return props.modelValue.grade_name
+    return ''
+  }
+  const lists = []
+  if (Array.isArray(props.grades)) lists.push(props.grades)
+  if (Array.isArray(props.levels)) {
+    for (const lvl of props.levels) {
+      const list = Array.isArray(lvl?.grades) ? lvl.grades : []
+      if (list.length) lists.push(list)
+    }
+  }
+  for (const list of lists) {
+    const found = list.find(g => g && sameId(g.id, gradeId))
+    if (found && found.name) return found.name
+  }
+  if (props.modelValue?.grade && sameId(props.modelValue.grade.id, gradeId)) {
+    return props.modelValue.grade.name || ''
+  }
+  if (props.modelValue?.grade_name && sameId(props.modelValue?.grade_id, gradeId)) return props.modelValue.grade_name
+  return ''
 })
 
 const selectedSubjectName = computed(() => {
-  // prefer name from subjects list
-  if (selectedSubject.value && Array.isArray(props.subjects)) {
-    const s = props.subjects.find(x => x && String(x.id) === String(selectedSubject.value))
+  const subjectId = selectedSubject.value || props.modelValue?.subject_id || ''
+  if (!subjectId) {
+    if (props.modelValue?.subject && props.modelValue.subject.name) return props.modelValue.subject.name
+    return ''
+  }
+  if (Array.isArray(props.subjects)) {
+    const s = props.subjects.find(x => x && sameId(x.id, subjectId))
     if (s && s.name) return s.name
   }
-  // fallback to model-provided subject object
-  const modelSub = props.modelValue?.subject
-  if (modelSub && modelSub.name) return modelSub.name
+  if (lastSelectedSubject.value && sameId(lastSelectedSubject.value?.id, subjectId)) {
+    return lastSelectedSubject.value?.name || lastSelectedSubject.value?.display_name || ''
+  }
+  if (props.modelValue?.subject && sameId(props.modelValue.subject.id, subjectId)) {
+    return props.modelValue.subject.name || ''
+  }
   return ''
 })
 
 const selectedTopicName = computed(() => {
-  const tid = props.modelValue?.topic_id || ''
-  if (tid && Array.isArray(props.topics)) {
-    const t = props.topics.find(x => x && String(x.id) === String(tid))
+  const topicId = selectedTopic.value || props.modelValue?.topic_id || ''
+  if (!topicId) {
+    if (props.modelValue?.topic && props.modelValue.topic.name) return props.modelValue.topic.name
+    return ''
+  }
+  if (Array.isArray(props.topics)) {
+    const t = props.topics.find(x => x && sameId(x.id, topicId))
     if (t && t.name) return t.name
+  }
+  if (Array.isArray(filteredTopics.value)) {
+    const t = filteredTopics.value.find(x => x && sameId(x.id, topicId))
+    if (t && t.name) return t.name
+  }
+  if (lastSelectedTopic.value && sameId(lastSelectedTopic.value?.id, topicId)) {
+    return lastSelectedTopic.value?.name || lastSelectedTopic.value?.display_name || ''
   }
   const modelTopic = props.modelValue?.topic
   if (modelTopic && modelTopic.name) return modelTopic.name
@@ -391,12 +470,17 @@ const selectedTopicObj = computed(() => {
   // prefer a full topic object from the model if available
   const modelTopic = props.modelValue?.topic || null
   if (modelTopic && typeof modelTopic === 'object' && modelTopic.id) return modelTopic
-  const tid = props.modelValue?.topic_id || ''
+  const tid = selectedTopic.value || props.modelValue?.topic_id || ''
   if (!tid) return null
   if (Array.isArray(props.topics)) {
-    const found = props.topics.find(x => x && String(x.id) === String(tid))
+    const found = props.topics.find(x => x && sameId(x.id, tid))
     if (found) return found
   }
+  if (Array.isArray(filteredTopics.value)) {
+    const found = filteredTopics.value.find(x => x && sameId(x.id, tid))
+    if (found) return found
+  }
+  if (lastSelectedTopic.value && sameId(lastSelectedTopic.value?.id, tid)) return lastSelectedTopic.value
   return tid
 })
 
@@ -405,14 +489,64 @@ const selectedTopicObj = computed(() => {
 const selectedSubjectObj = computed(() => {
   const modelSub = props.modelValue?.subject || null
   if (modelSub && typeof modelSub === 'object' && modelSub.id) return modelSub
-  const sid = props.modelValue?.subject_id || ''
+  const sid = selectedSubject.value || props.modelValue?.subject_id || ''
   if (!sid) return null
   if (Array.isArray(props.subjects)) {
-    const found = props.subjects.find(x => x && String(x.id) === String(sid))
+    const found = props.subjects.find(x => x && sameId(x.id, sid))
     if (found) return found
   }
+  if (lastSelectedSubject.value && sameId(lastSelectedSubject.value?.id, sid)) return lastSelectedSubject.value
+  if (props.modelValue?.subject && sameId(props.modelValue.subject.id, sid)) return props.modelValue.subject
   return sid
 })
+
+function gradeDisplayName(grade) {
+  if (!grade || typeof grade !== 'object') return ''
+  return grade.name || grade.display_name || grade.title || grade.label || ''
+}
+
+function findGradeById(id) {
+  if (id === null || typeof id === 'undefined' || id === '') return null
+  const target = String(id)
+  if (Array.isArray(props.grades)) {
+    const direct = props.grades.find(g => g && sameId(g.id, target))
+    if (direct) return direct
+  }
+  if (Array.isArray(props.levels)) {
+    for (const lvl of props.levels) {
+      const list = Array.isArray(lvl?.grades) ? lvl.grades : []
+      const found = list.find(g => g && sameId(g.id, target))
+      if (found) return found
+    }
+  }
+  const current = props.modelValue?.grade
+  if (current && sameId(current.id, target)) return current
+  return null
+}
+
+function topicSubjectId(topic) {
+  if (!topic || typeof topic !== 'object') return null
+  if (topic.subject_id != null) return topic.subject_id
+  if (topic.subject && typeof topic.subject === 'object') return topic.subject.id ?? null
+  return null
+}
+
+function topicMatchesSubject(topic, subjectId) {
+  if (!subjectId) return false
+  const sid = topicSubjectId(topic)
+  if (sid == null) return false
+  return sameId(sid, subjectId)
+}
+
+async function ensureTopicsForSubject(subjectId, force = false) {
+  if (subjectId === null || typeof subjectId === 'undefined' || subjectId === '') return
+  const key = String(subjectId)
+  if (!force && loadedTopicSubjects.has(key)) return
+  try {
+    await fetchTopicsBySubject(subjectId)
+    loadedTopicSubjects.add(key)
+  } catch (e) {}
+}
 
 async function requestApproval() {
   const t = selectedTopicObj.value
@@ -436,47 +570,143 @@ async function requestApproval() {
 }
 
 // When grade changes, clear subject/topic and notify parent; also fetch subjects for the selected grade
-const { fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
+const { fetchSubjectsByGrade, fetchTopicsBySubject, fetchGradesByLevel } = useTaxonomy()
 watch(selectedGrade, async (nv, ov) => {
+  try { console.debug('QuizDetailsTab: selectedGrade changed from', ov, 'to', nv) } catch (e) {}
   if (suppressWatchers.value) return
   if (sameId(nv, ov)) return
+  subjectQuery.value = ''
+  topicQuery.value = ''
   selectedSubject.value = ''
-  if (!sameId(props.modelValue?.grade_id, nv)) {
-    emit('update:modelValue', { ...props.modelValue, grade_id: nv || null, subject_id: null, topic_id: null })
+  selectedTopic.value = ''
+  lastSelectedSubject.value = null
+  lastSelectedTopic.value = null
+  const currentId = nv === null || typeof nv === 'undefined' ? '' : String(nv)
+  if (!currentId) lastSelectedGrade.value = null
+  let gradeItem = null
+  if (lastSelectedGrade.value && sameId(lastSelectedGrade.value?.id, currentId)) gradeItem = lastSelectedGrade.value
+  if (!gradeItem) gradeItem = findGradeById(currentId)
+  if (!gradeItem && props.modelValue?.grade && sameId(props.modelValue.grade.id, currentId)) gradeItem = props.modelValue.grade
+  const nameSource = gradeDisplayName(gradeItem) || props.modelValue?.grade_name || ''
+  const normalizedGradeName = nameSource ? String(nameSource) : null
+  const gradePayload = currentId && (gradeItem || normalizedGradeName)
+    ? (gradeItem ? { ...gradeItem } : { id: currentId, name: normalizedGradeName })
+    : null
+  if (gradePayload) {
+    if (!gradePayload.name && normalizedGradeName) gradePayload.name = normalizedGradeName
+    lastSelectedGrade.value = gradePayload
+  } else {
+    lastSelectedGrade.value = null
   }
-  try { await fetchSubjectsByGrade(nv) } catch (e) {}
+  const nextModel = {
+    ...props.modelValue,
+    grade_id: currentId ? currentId : null,
+    grade: gradePayload,
+    grade_name: normalizedGradeName,
+    subject_id: null,
+    subject: null,
+    topic_id: null,
+    topic: null
+  }
+  emit('update:modelValue', nextModel)
+  try { await fetchSubjectsByGrade(currentId) } catch (e) {}
+  // Fetch topics for the new grade's subjects if needed, but avoid clearing topic picker unnecessarily
 })
 
 // When level changes, clear grade/subject/topic and notify parent
-watch(selectedLevel, (nv, ov) => {
+watch(selectedLevel, async (nv, ov) => {
   if (suppressWatchers.value) return
   if (sameId(nv, ov)) return
+  subjectQuery.value = ''
+  topicQuery.value = ''
   selectedGrade.value = ''
   selectedSubject.value = ''
-  if (!sameId(props.modelValue?.level_id, nv)) {
-    emit('update:modelValue', { ...props.modelValue, level_id: nv || null, grade_id: null, subject_id: null, topic_id: null })
-  }
+  selectedTopic.value = ''
+  lastSelectedGrade.value = null
+  lastSelectedSubject.value = null
+  lastSelectedTopic.value = null
+  emit('update:modelValue', {
+    ...props.modelValue,
+    level_id: nv || null,
+    grade_id: null,
+    grade: null,
+    grade_name: null,
+    subject_id: null,
+    subject: null,
+    topic_id: null,
+    topic: null
+  })
+  if (!nv) return
+  try { await fetchGradesByLevel(nv) } catch (e) {}
 })
 
 // Keep internal selected values in sync with parent changes
 watch(() => props.modelValue, (nv) => {
   if (!nv) return
+  suppressionRun += 1
+  const ticket = suppressionRun
+  suppressWatchers.value = true
+  const prevLevel = selectedLevel.value
+  const prevGrade = selectedGrade.value
+  const prevSubject = selectedSubject.value
+  const prevTopic = selectedTopic.value
   const { grade_id, subject_id, level_id, topic_id } = nv
-  if (!sameId(selectedGrade.value, grade_id)) selectedGrade.value = grade_id || ''
-  if (!sameId(selectedSubject.value, subject_id)) selectedSubject.value = subject_id || ''
-  if (!sameId(selectedLevel.value, level_id)) selectedLevel.value = level_id || ''
-  if (!sameId(selectedTopic.value, topic_id)) selectedTopic.value = topic_id || ''
+  if (!sameId(prevLevel, level_id)) selectedLevel.value = level_id ?? ''
+  if (!sameId(prevGrade, grade_id)) selectedGrade.value = grade_id ?? ''
+  if (!sameId(prevSubject, subject_id)) selectedSubject.value = subject_id ?? ''
+  if (!sameId(prevTopic, topic_id)) selectedTopic.value = topic_id ?? ''
+  if (grade_id && !sameId(prevGrade, grade_id)) {
+    if (props.modelValue?.grade && sameId(props.modelValue.grade.id, grade_id)) {
+      lastSelectedGrade.value = props.modelValue.grade
+    }
+  } else if (!grade_id) {
+    lastSelectedGrade.value = null
+  }
+  if (subject_id && !sameId(prevSubject, subject_id)) {
+    if (props.modelValue?.subject && sameId(props.modelValue.subject.id, subject_id)) {
+      lastSelectedSubject.value = props.modelValue.subject
+    }
+    lastSelectedTopic.value = null
+  } else if (!subject_id) {
+    lastSelectedSubject.value = null
+  }
+  if (topic_id && !sameId(prevTopic, topic_id)) {
+    if (props.modelValue?.topic && sameId(props.modelValue.topic.id, topic_id)) {
+      lastSelectedTopic.value = props.modelValue.topic
+    }
+  } else if (!topic_id) {
+    lastSelectedTopic.value = null
+  }
+  const ensureSubjectId = subject_id
+  const shouldFetchSubjects = grade_id && !sameId(prevGrade, grade_id)
+  const shouldFetchTopics = subject_id && !sameId(prevSubject, subject_id)
+  nextTick(async () => {
+    if (shouldFetchSubjects) {
+      try { await fetchSubjectsByGrade(grade_id) } catch (e) {}
+    }
+    if (ensureSubjectId) {
+      try { await ensureTopicsForSubject(ensureSubjectId, shouldFetchTopics) } catch (e) {}
+    }
+    if (!shouldFetchTopics && ensureSubjectId && !loadedTopicSubjects.has(String(ensureSubjectId))) {
+      try { await ensureTopicsForSubject(ensureSubjectId, true) } catch (e) {}
+    }
+    if (shouldFetchTopics) {
+      try { await fetchTopicsBySubject(subject_id) } catch (e) {}
+    }
+    if (suppressionRun === ticket) suppressWatchers.value = false
+  })
 }, { deep: true })
 
 function onSubjectPicked(item) {
   selectedSubject.value = item?.id || ''
   const sid = item?.id ? (Number(item.id) || null) : null
-  emit('update:modelValue', { ...props.modelValue, subject_id: sid, topic_id: null })
-  // also notify parent directly so callers can preload topics or update other state
-  emit('subject-picked', item)
-  // preload topics for the selected subject via composable
-  try { fetchTopicsBySubject(sid) } catch (e) {}
-  // auto-focus the topics picker so users can quickly pick a topic after selecting a subject
+  // Only clear topic_id when the subject actually changes. Avoids clearing
+  // the topic when the subjects list is refreshed but the selected subject
+  // remains the same (which caused accidental topic clears).
+  if (!sameId(sid, props.modelValue?.subject_id)) {
+    topicQuery.value = ''
+    emit('update:modelValue', { ...props.modelValue, subject_id: sid, topic_id: null, subject: item })
+  }
   nextTick(() => {
     try {
       const tp = topicsPicker?.value || null
@@ -488,57 +718,45 @@ function onSubjectPicked(item) {
       }
     } catch (e) {}
   })
-}
-
-// Model update handlers used by TaxonomyPicker's v-model (@update:modelValue)
-function onSubjectModelUpdate(v) {
-  try {
-    // v may be an id or an object; normalize for local ref
-    selectedSubject.value = (v && typeof v === 'object') ? (v.id || '') : (v || '')
-    const item = (v && typeof v === 'object') ? v : (props.subjects || []).find(s => String(s.id) === String(v)) || null
-    onSubjectPicked(item)
-  } catch (e) {}
+  // Fetch topics for the selected subject to populate the picker
+  if (sid) {
+    try { fetchTopicsBySubject(sid) } catch (e) {}
+  }
 }
 
 // Grade handlers (used by the grades TaxonomyPicker)
 function onGradeModelUpdate(v) {
   try {
-    selectedGrade.value = (v && typeof v === 'object') ? (v.id || '') : (v || '')
-    // clear subject/topic when grade changes
-    emit('update:modelValue', { ...props.modelValue, grade_id: selectedGrade.value || null, subject_id: null, topic_id: null })
-    try { fetchSubjectsByGrade(selectedGrade.value) } catch (e) {}
+    if (v && typeof v === 'object') {
+      lastSelectedGrade.value = v
+      selectedGrade.value = v.id || ''
+    } else {
+      if (!v) lastSelectedGrade.value = null
+      selectedGrade.value = v || ''
+    }
   } catch (e) {}
 }
 
 function onGradeSelected(item) {
   try {
+    lastSelectedGrade.value = item || null
     selectedGrade.value = item?.id || ''
-    onGradeModelUpdate(item)
+    try { console.debug('QuizDetailsTab: onGradeSelected item', item, 'selectedGrade', selectedGrade.value) } catch (e) {}
     // Auto focus subjects picker after grade selection
     nextTick(() => {
-      const subjectsPicker = document.querySelector('[aria-labelledby="subject-label"] input')
-      if (subjectsPicker) {
-        subjectsPicker.focus()
-        if (typeof subjectsPicker.scrollIntoView === 'function') {
-          subjectsPicker.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      if (subjectsPicker.value) {
+        subjectsPicker.value.focusSearch()
+        if (subjectsPicker.value.$el && typeof subjectsPicker.value.$el.scrollIntoView === 'function') {
+          subjectsPicker.value.$el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
       }
     })
   } catch (e) {}
 }
 
-function onTopicModelUpdate(v) {
-  try {
-    selectedTopic.value = (v && typeof v === 'object') ? (v.id || '') : (v || '')
-    const item = (v && typeof v === 'object') ? v : (props.topics || []).find(t => String(t.id) === String(v)) || null
-    onTopicPicked(item)
-  } catch (e) {}
-}
-
 function onTopicPicked(item) {
   const tid = item?.id ? (Number(item.id) || null) : null
-  emit('update:modelValue', { ...props.modelValue, topic_id: tid })
-  emit('topic-picked', item)
+  emit('update:modelValue', { ...props.modelValue, topic_id: tid, topic: item })
 }
 
 function openCreateTopic() {
@@ -546,17 +764,16 @@ function openCreateTopic() {
   emit('create-topic')
 }
 
-function validate() {
-  if (!props.modelValue.title?.trim()) return false
-  if (!props.modelValue.topic_id) return false
-  emit('next')
-  return true
+function validateAndGoNext() {
+  if (validate()) {
+    emit('next')
+  }
 }
 
 function saveAndContinue() {
-  // client-side validate before emitting save to avoid server 422
-  if (!validateBeforeSave()) return
-  emit('save')
+  if (validate()) {
+    emit('save')
+  }
 }
 
 function triggerFileInput() {
@@ -566,26 +783,20 @@ function triggerFileInput() {
 function removeCover() {
   // remove both cover and cover_image
   const newModel = { ...props.modelValue }
-  newModel.cover = null
+  // Also clear the file object if it exists
+  newModel.cover_file = undefined
+  newModel.cover = undefined
   newModel.cover_image = null
   emit('update:modelValue', newModel)
 }
 
 async function onCoverChange(e) {
   const f = (e.target && e.target.files && e.target.files[0]) || null
-  if (!f) return
-  // store in a global tmp map so preview and other components can access it
-  try {
-  if (!window['_tmpFiles']) window['_tmpFiles'] = {}
-  const key = makeTmpKey()
-  window['_tmpFiles'][key] = f
-    // emit update with cover set to tmp key
-    const newModel = { ...props.modelValue, cover: key }
-    emit('update:modelValue', newModel)
-  } catch (err) {
-    // fallback: emit the File directly
-    const newModel = { ...props.modelValue, cover: f }
-    emit('update:modelValue', newModel)
+  const newModel = { ...props.modelValue }
+  if (f) {
+    newModel.cover = URL.createObjectURL(f) // For preview
+    newModel.cover_file = f // The actual file for upload
   }
+  emit('update:modelValue', newModel)
 }
 </script>

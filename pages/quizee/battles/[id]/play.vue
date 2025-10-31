@@ -69,7 +69,7 @@
               <h2 class="text-lg sm:text-xl font-semibold mb-6 text-center text-gray-900 dark:text-gray-100" v-html="currentQuestion.body"></h2>
               
               <div>
-                <QuestionCard :question="currentQuestion" v-model="answers[currentQuestion.id]" @select="onQuestionSelect" />
+                <QuestionCard :question="currentQuestion" v-model="answers[currentQuestion.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)" />
               </div>
             </div>
           </transition>
@@ -105,7 +105,7 @@
             <span>{{ submitting ? 'Submitting…' : 'Finish Battle' }}</span>
           </template>
         </UButton>
-        <UButton v-else type="button" v-if="lastSubmitFailed" @click="submitBattle" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">Retry</UButton>
+        <UButton v-else-if="lastSubmitFailed" type="button" @click="submitBattle" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">Retry</UButton>
       </footer>
 
       <!-- confirmation modal -->
@@ -161,7 +161,7 @@ const loading = ref(true)
 const battle = ref({})
 const questions = ref([])
 const currentIndex = ref(0)
-const { answers, initializeAnswers, clearSavedAnswers } = useQuizAnswers(computed(() => ({ questions: questions.value })), id)
+const { answers, initializeAnswers, clearSavedAnswers, toggleMulti: rawToggleMulti } = useQuizAnswers(computed(() => ({ questions: questions.value })), id)
 const score = ref(0)
 const opponentScore = ref(0)
 

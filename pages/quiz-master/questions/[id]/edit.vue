@@ -1,76 +1,235 @@
 <template>
   <div class="p-6">
-    <h1 class="text-xl font-semibold mb-4">Edit question</h1>
+    <PageHero
+      :title="`Edit Question`"
+      description="Modify the question details, options, and correct answers."
+      :breadcrumbs="[
+        { text: 'Dashboard', href: '/quiz-master/dashboard' },
+        { text: 'Questions', href: '/quiz-master/questions' },
+        { text: 'Edit', current: true }
+      ]"
+    >
+      <template #eyebrow>
+        <Icon name="heroicons:pencil-square" class="h-4 w-4 mr-1" />
+        Editing
+      </template>
+    </PageHero>
 
-    <div v-if="loading">Loading question…</div>
-    <div v-else-if="error" class="text-rose-500">{{ error }}</div>
-    <div v-else>
-      <div class="mb-4 flex gap-2">
-        <QuestionBuilder :prefill="question" :editId="id" @saved="onSaved" @cancel="onCancel" :subjectId="question.subject_id" :topicId="question.topic_id" />
+    <div class="max-w-4xl mx-auto py-10">
+      <div v-if="loading" class="text-center">
+        <p>Loading question...</p>
       </div>
-      <div class="mt-4">
-        <button @click="onDelete" class="text-sm bg-rose-600 text-white px-3 py-2 rounded">Delete question</button>
+      <div v-else-if="error" class="text-center text-red-500">
+        <p>{{ error }}</p>
+        <UButton to="/quiz-master/questions" class="mt-4">Back to Questions</UButton>
+      </div>
+      <div v-else class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md">
+        <!-- Reuse the QuestionBuilder component to edit the question in-place -->
+        <QuestionBuilder ref="builder" :questions="builderQuestions" @update:questions="onBuilderUpdate" @saved="onBuilderSaved" />
+
+        <div class="flex justify-end gap-4 mt-6">
+          <UButton type="button" color="gray" variant="ghost" @click="router.back()">Back</UButton>
+          <UButton type="button" :loading="saving" @click="saveQuestion">Save Changes</UButton>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from '#imports'
+definePageMeta({
+  layout: 'quiz-master',
+  meta: [ { name: 'robots', content: 'noindex, nofollow' } ]
+})
+
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import QuizQuestionEditorForm from '~/components/quiz/QuestionEditorForm.vue' // Import the editor form component (kept for compatibility)
 import QuestionBuilder from '~/components/quiz/QuestionBuilder.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
+
 const route = useRoute()
 const router = useRouter()
 const alert = useAppAlert()
-
-const id = route.params.id
-const loading = ref(true)
-const error = ref('')
-const question = ref(null)
-
 const api = useApi()
 
-onMounted(async () => {
-  const config = useRuntimeConfig()
-  loading.value = true
-  try {
-    const res = await api.get(`/api/questions/${encodeURIComponent(id)}`)
-    if (api.handleAuthStatus(res)) return
-    if (!res || !res.ok) throw new Error('Failed to load question')
-    const json = await res.json()
-    question.value = json.question || json
-  } catch (e) {
-    error.value = e.message || 'Error loading question'
-  } finally { loading.value = false }
+const questionId = route.params.id
+const loading = ref(true)
+const saving = ref(false)
+const error = ref(null)
+
+const form = ref({
+  // server-side shape
+  id: null,
+  body: '',
+  type: 'mcq',
+  grade_id: null,
+  subject_id: null,
+  topic_id: null,
+  level_id: null,
+  options: [],
+  answers: [],
+  explanation: '',
+  difficulty: 2,
+  marks: 1,
 })
 
-function onSaved(saved) {
-  alert.push({ message: 'Question updated', type: 'success' })
-  // store updated question for optimistic update on list page
-  try { sessionStorage.setItem('question:updated', JSON.stringify(saved)) } catch (e) {}
-  router.push('/quiz-master/questions')
-}
+const builder = ref(null)
+const builderQuestions = ref([]) // array with single question for builder
 
-function onCancel() {
-  router.push('/quiz-master/questions')
-}
-
-async function onDelete() {
-  if (!confirm('Delete this question? This action cannot be undone.')) return
+const { fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, fetchGradesByLevel, grades, subjects, topics, levels } = useTaxonomy()
+async function fetchQuestion() {
+  loading.value = true
+  error.value = null
   try {
-    const res = await api.del(`/api/questions/${encodeURIComponent(id)}`)
-    if (api.handleAuthStatus(res)) { alert.push({ message: 'Session expired', type: 'warning' }); return }
-    if (!res.ok) throw new Error('Failed to delete')
-    // signal list page to remove item optimistically
-    try { sessionStorage.setItem('question:deleted', JSON.stringify({ id })) } catch (e) {}
-    alert.push({ message: 'Question deleted', type: 'success' })
-    router.push('/quiz-master/questions')
+    const res = await api.get(`/api/questions/${questionId}`)
+    if (!res.ok) throw new Error('Question not found or you do not have permission to edit it.')
+    const data = await res.json()
+    const serverQuestion = data.question || data.data || data
+    // normalize server -> builder/server shape
+    form.value = {
+      id: serverQuestion.id,
+      body: serverQuestion.body || serverQuestion.question || serverQuestion.text || '',
+      type: serverQuestion.type || serverQuestion.question_type || 'mcq',
+      grade_id: serverQuestion.grade_id ?? null,
+      subject_id: serverQuestion.subject_id ?? null,
+      topic_id: serverQuestion.topic_id ?? null,
+      level_id: serverQuestion.level_id ?? serverQuestion.levelId ?? null,
+      options: serverQuestion.options || serverQuestion.answers || serverQuestion.options_list || [],
+      answers: serverQuestion.answers || [],
+      explanation: serverQuestion.explanation || serverQuestion.explain || '',
+      difficulty: serverQuestion.difficulty ?? 2,
+      marks: serverQuestion.marks ?? 1,
+    }
+
+    // Prepare builderQuestions (QuestionBuilder expects a list of questions using 'text' field)
+    builderQuestions.value = [normalizeToBuilder(form.value)]
   } catch (e) {
-    alert.push({ message: 'Failed to delete question', type: 'error' })
+    error.value = e.message
+    alert.push({ type: 'error', message: e.message })
+  } finally {
+    loading.value = false
   }
 }
-</script>
 
-<style scoped></style>
+function normalizeToBuilder(q) {
+  // Map server question shape to QuestionBuilder/QuestionEditorForm shape
+  return {
+    id: q.id,
+    type: q.type || 'mcq',
+    text: q.body || '',
+    explanation: q.explanation || '',
+    options: Array.isArray(q.options) ? q.options.map(o => ({ text: o.text ?? o.option ?? '', is_correct: !!o.is_correct })) : [],
+    answers: q.answers || [],
+    difficulty: q.difficulty ?? 2,
+    marks: q.marks ?? 1,
+    grade_id: q.grade_id,
+    subject_id: q.subject_id,
+    topic_id: q.topic_id,
+    level_id: q.level_id
+  }
+}
+
+function normalizeFromBuilder(bq) {
+  // Map builder shape back to server payload
+  // build canonical answers array (text) from options + correct/corrects where applicable
+  let answers = []
+  const opts = Array.isArray(bq.options) ? bq.options : []
+  const getOptText = (o) => {
+    if (!o) return ''
+    if (typeof o === 'string') return o
+    return o.text ?? o.option ?? ''
+  }
+
+  if (bq.type === 'mcq') {
+    const idx = Number(bq.correct)
+    if (Number.isFinite(idx) && opts[idx]) answers = [getOptText(opts[idx])]
+  } else if (bq.type === 'multi') {
+    if (Array.isArray(bq.corrects)) {
+      answers = bq.corrects.map(i => {
+        const o = opts[Number(i)]
+        return getOptText(o)
+      }).filter(Boolean)
+    }
+  } else if (bq.type === 'fill_blank') {
+    answers = Array.isArray(bq.answers) ? bq.answers : []
+  } else {
+    answers = bq.answers || []
+  }
+
+  return {
+    id: bq.id,
+    body: bq.text || bq.question || '',
+    type: bq.type || 'mcq',
+    explanation: bq.explanation || '',
+    options: opts.map(o => ({ text: getOptText(o), is_correct: !!(o && o.is_correct) })),
+    answers,
+    // preserve index-based correct markers as well so backend that expects them still receives them
+    correct: (typeof bq.correct !== 'undefined' && bq.correct !== null) ? Number(bq.correct) : (bq.type === 'mcq' ? -1 : undefined),
+  corrects: Array.isArray(bq.corrects) ? bq.corrects.map(c => Number(c)) : (bq.type === 'multi' ? [] : undefined),
+    difficulty: bq.difficulty ?? 2,
+    marks: bq.marks ?? 1,
+    grade_id: bq.grade_id || null,
+    subject_id: bq.subject_id || null,
+    topic_id: bq.topic_id || null,
+    level_id: bq.level_id || null
+  }
+}
+
+function onBuilderUpdate(list) {
+  // keep server-side form in sync with builder changes
+  if (!Array.isArray(list) || !list[0]) return
+  const bq = list[0]
+  const normalized = normalizeFromBuilder(bq)
+  form.value = { ...form.value, ...normalized }
+}
+
+function onBuilderSaved(saved) {
+  // When builder emits saved, keep form updated and show toast
+  if (!saved) return
+  const normalized = normalizeFromBuilder(saved)
+  form.value = { ...form.value, ...normalized }
+  alert.push({ type: 'success', message: 'Question saved locally' })
+}
+
+async function saveQuestion() {
+  saving.value = true
+  try {
+    // send normalized payload from builder/form
+    const payload = normalizeFromBuilder(builderQuestions.value[0] || form.value)
+    const res = await api.patchJson(`/api/questions/${questionId}`, payload)
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.message || 'Failed to save question.')
+    }
+    alert.push({ type: 'success', message: 'Question updated successfully!' })
+    // Store optimistic update for the list page
+    sessionStorage.setItem('question:updated', JSON.stringify(form.value))
+    // do not redirect — stay on the editor so user can continue editing
+  } catch (e) {
+    alert.push({ type: 'error', message: e.message })
+  } finally {
+    saving.value = false
+  }
+}
+
+onMounted(async () => {
+  // Fetch question first so we can decide whether to load grades by its level
+  await fetchQuestion()
+  // ensure levels are available for the editor and for grade filtering
+  await fetchLevels()
+  // if the question already has a level set, fetch grades filtered by that level;
+  // otherwise fallback to the unfiltered grades list for backwards compatibility
+  if (form.value && form.value.level_id) {
+    await fetchGradesByLevel(form.value.level_id)
+  } else {
+    await fetchGrades()
+  }
+  await Promise.all([
+    fetchAllSubjects(),
+    fetchAllTopics()
+  ])
+})
+</script>

@@ -78,37 +78,50 @@
           <div v-else>
             <div v-if="!sortedQuestions || sortedQuestions.length === 0" class="text-center py-12 text-gray-500">No questions found.</div>
             <div v-else class="space-y-3">
-              <UiHorizontalCard
-                v-for="(qitem, idx) in sortedQuestions"
-                :key="qitem?.id || idx"
-                :title="qitem.title || 'Untitled Question'"
-                :eyebrow="(qitem.type || 'Question').toUpperCase()"
-                :badge="statusLabel(qitem.is_approved)"
-              >
-                <template #lead>
-                  <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-lg font-bold text-gray-500 dark:text-gray-400">Q</div>
-                </template>
-
-                <div class="text-sm text-slate-600 dark:text-slate-400 space-y-1" v-html="qitem.body"></div>
-
-                <template #meta>
-                  <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <span class="inline-flex items-center gap-1"><UIcon name="i-heroicons-academic-cap" /> Grade: <strong class="font-semibold">{{ getGradeName(qitem.grade_id) }}</strong></span>
-                    <span class="inline-flex items-center gap-1"><UIcon name="i-heroicons-book-open" /> Subject: <strong class="font-semibold">{{ getSubjectName(qitem.subject_id) }}</strong></span>
-                    <span class="inline-flex items-center gap-1"><UIcon name="i-heroicons-tag" /> Topic: <strong class="font-semibold">{{ getTopicName(qitem.topic_id) }}</strong></span>
-                  </div>
-                </template>
-
-                <template #actions>
-                  <UButton v-if="!qitem.is_approved" size="xs" variant="outline" color="gray" @click="requestApproval(qitem)" :disabled="!!qitem.approval_requested_at">Request Approval</UButton>
-                  <UButton @click.prevent="goToEdit(qitem)" icon="i-heroicons-pencil-square" size="sm" color="gray" variant="ghost" />
-                  <UButton v-if="isAdmin" size="sm" color="red" variant="ghost" @click.prevent="confirmDelete(qitem)" icon="i-heroicons-trash" />
-                </template>
-              </UiHorizontalCard>
+              <div class="overflow-x-auto bg-white rounded shadow">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 w-2/3">Title</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Type</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Level</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Grade</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Subject</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Topic</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Marks</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Quiz</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Status</th>
+                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-100">
+                    <tr v-for="(qitem, idx) in sortedQuestions" :key="qitem?.id || idx">
+                      <td class="px-4 py-3 text-sm text-gray-700 whitespace-normal">{{ qitem.title || (qitem.body ? (qitem.body.replace(/<[^>]*>?/gm, '').slice(0, 140) + (qitem.body.length > 140 ? '…' : '')) : 'Untitled') }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 uppercase hidden sm:table-cell">{{ (qitem.type || 'question').toUpperCase() }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getLevelName(qitem.level_id) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getGradeName(qitem.grade_id) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getSubjectName(qitem.subject_id) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getTopicName(qitem.topic_id) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-700 hidden sm:table-cell">{{ (qitem.marks !== undefined && qitem.marks !== null) ? Math.round(Number(qitem.marks)) : 0 }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getQuizName(qitem) }}</td>
+                      <td class="px-4 py-3 text-sm hidden sm:table-cell">
+                        <span :class="['inline-flex items-center px-2 py-0.5 rounded text-xs font-medium', qitem.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">{{ statusLabel(qitem.is_approved) }}</span>
+                      </td>
+                      <td class="px-4 py-3 text-right text-sm">
+                        <div class="inline-flex items-center space-x-2">
+                          <UButton v-if="!qitem.is_approved" size="xs" variant="outline" color="gray" @click="requestApproval(qitem)" :disabled="!!qitem.approval_requested_at" class="hidden sm:inline-flex">Request</UButton>
+                          <UButton @click.prevent="goToEdit(qitem)" icon="i-heroicons-pencil-square" size="sm" color="gray" variant="ghost" />
+                          <UButton v-if="isAdmin" size="sm" color="red" variant="ghost" @click.prevent="confirmDelete(qitem)" icon="i-heroicons-trash" class="hidden sm:inline-flex" />
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div class="mt-4">
-              <Pagination :paginator="paginator" @change-page="onPageChange" />
+              <Pagination :paginator="paginatorObj" @change-page="onPageChange" />
             </div>
           </div>
         </main>
@@ -136,7 +149,9 @@ const auth = useAuthStore()
 const isAdmin = computed(() => !!auth.user?.is_admin)
 const api = useApi()
 
+// full questions array returned from server; we paginate client-side
 const paginator = ref(null)
+const allQuestions = ref([])
 const loading = ref(false)
 const q = ref('')
 const perPage = ref(10)
@@ -144,12 +159,13 @@ const page = ref(1)
 const selectedSubject = ref('')
 const selectedGrade = ref('')
 const selectedTopic = ref('')
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+const { fetchGrades, fetchGradesByLevel, fetchAllSubjects, fetchAllTopics, fetchLevels, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels } = useTaxonomy()
 const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
 const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
 const topics = computed(() => Array.isArray(taxTopics.value) ? taxTopics.value : [])
 
 const gradeMap = computed(() => new Map(grades.value.map(g => [g.id, g.name])))
+const levelMap = computed(() => new Map((typeof levels !== 'undefined' && Array.isArray(levels.value) ? levels.value : []).map(l => [l.id, l.name])))
 
 const sortOptions = [
   { label: 'Newest', value: 'created_at:desc' },
@@ -178,12 +194,25 @@ function getSubjectName(id) {
 function getTopicName(id) {
   return topicMap.value.get(id) || '—'
 }
+function getLevelName(id) {
+  return levelMap.value.get(id) || '—'
+}
+function getQuizName(qitem) {
+  if (!qitem) return '—'
+  if (qitem.quiz && (qitem.quiz.title || qitem.quiz.name)) return qitem.quiz.title || qitem.quiz.name
+  if (qitem.quiz_title) return qitem.quiz_title
+  if (qitem.quiz_name) return qitem.quiz_name
+  // sometimes backend returns quiz_id only
+  if (qitem.quiz_id) return `Quiz #${qitem.quiz_id}`
+  return '—'
+}
 const router = useRouter()
 
-const totalQuestions = computed(() => Array.isArray(paginator.value?.data) ? paginator.value.data.length : (paginator.value?.total || 0))
+const totalQuestions = computed(() => allQuestions.value.length)
 
-const sortedQuestions = computed(() => {
-  const data = Array.isArray(paginator.value?.data) ? paginator.value.data.filter(Boolean) : []
+// Sort the full array according to sortBy, then paginate client-side
+const sortedAll = computed(() => {
+  const data = Array.isArray(allQuestions.value) ? allQuestions.value.filter(Boolean) : []
   if (!sortBy.value) return data
 
   const [field, direction] = sortBy.value.split(':')
@@ -191,7 +220,6 @@ const sortedQuestions = computed(() => {
 
   return [...data].sort((a, b) => {
     let valA, valB
-
     switch (field) {
       case 'title':
         valA = a.title || ''
@@ -216,14 +244,25 @@ const sortedQuestions = computed(() => {
     }
   })
 })
-const approvedCount = computed(() => Array.isArray(paginator.value?.data) ? paginator.value.data.filter(x => x.is_approved).length : 0)
-const pendingCount = computed(() => Array.isArray(paginator.value?.data) ? paginator.value.data.filter(x => !x.is_approved).length : 0)
 
-onMounted(fetchItems)
+// paginatorObj provides the shape expected by Pagination.vue
+const paginatorObj = computed(() => {
+  const total = sortedAll.value.length
+  const last_page = Math.max(1, Math.ceil(total / perPage.value))
+  const current_page = Math.min(Math.max(1, page.value), last_page)
+  const start = (current_page - 1) * perPage.value
+  const data = sortedAll.value.slice(start, start + perPage.value)
+  return { data, total, last_page, current_page }
+})
+
+const sortedQuestions = computed(() => paginatorObj.value.data)
+const approvedCount = computed(() => allQuestions.value.filter(x => x.is_approved).length)
+const pendingCount = computed(() => allQuestions.value.filter(x => !x.is_approved).length)
+
 
 async function fetchItems() {
   loading.value = true
-  try {
+    try {
     const params = new URLSearchParams()
     if (q.value) params.set('q', q.value)
       if (selectedSubject.value) params.set('subject_id', selectedSubject.value)
@@ -234,26 +273,23 @@ async function fetchItems() {
     const res = await api.get('/api/questions?' + params.toString())
     if (res.ok) {
       const json = await res.json()
-      paginator.value = json.questions || json.data || json
+      const arr = json.questions || json.data || json || []
+      allQuestions.value = Array.isArray(arr) ? arr : []
 
       // Apply optimistic updates from sessionStorage (edits/deletes)
       try {
         const updatedRaw = sessionStorage.getItem('question:updated')
         if (updatedRaw) {
           const updated = JSON.parse(updatedRaw)
-          if (paginator.value?.data && Array.isArray(paginator.value.data)) {
-            const i = paginator.value.data.findIndex(x => String(x.id) === String(updated.id))
-            if (i !== -1) paginator.value.data[i] = { ...paginator.value.data[i], ...updated }
-          }
+          const i = allQuestions.value.findIndex(x => String(x.id) === String(updated.id))
+          if (i !== -1) allQuestions.value[i] = { ...allQuestions.value[i], ...updated }
           sessionStorage.removeItem('question:updated')
         }
 
         const deletedRaw = sessionStorage.getItem('question:deleted')
         if (deletedRaw) {
           const deleted = JSON.parse(deletedRaw)
-          if (paginator.value?.data && Array.isArray(paginator.value.data)) {
-            paginator.value.data = paginator.value.data.filter(x => String(x.id) !== String(deleted.id))
-          }
+          allQuestions.value = allQuestions.value.filter(x => String(x.id) !== String(deleted.id))
           sessionStorage.removeItem('question:deleted')
         }
       } catch (e) {
@@ -274,7 +310,30 @@ function onFilterChange(type, val) {
   page.value = 1
   fetchItems()
 }
-onMounted(async () => { await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()]); fetchItems() })
+onMounted(async () => {
+  // Load levels first and then prefer fetching grades by saved level if present.
+  try {
+    await fetchLevels()
+  } catch (e) {}
+
+  // If the FiltersSidebar saved a selected level in localStorage, use it to
+  // fetch server-filtered grades for that level. Otherwise fall back to
+  // fetchGrades() which is levels-first by default.
+  try {
+    let savedLevel = null
+    if (process.client) {
+      try { savedLevel = localStorage.getItem('filters:quiz-master-questions:level') || null } catch (e) { savedLevel = null }
+    }
+    if (savedLevel) {
+      await fetchGradesByLevel(savedLevel)
+    } else {
+      await fetchGrades()
+    }
+  } catch (e) {}
+
+  await Promise.all([fetchAllSubjects(), fetchAllTopics()])
+  fetchItems()
+})
 
 function statusLabel(v) { return v ? 'Approved' : 'Pending Review' }
 function statusColor(v) { return v ? 'green' : 'yellow' }
@@ -298,7 +357,7 @@ async function requestApproval(item) {
 
 function onPageChange(p) {
   page.value = p
-  fetchItems()
+  // client-side paging; no need to refetch
 }
 
 function goToCreate() {
@@ -316,9 +375,8 @@ async function deleteQuestion(id) {
     if (api.handleAuthStatus(res)) { throw new Error('Session expired') }
     if (!res.ok) throw new Error('Delete failed')
     // remove from paginator.data if present
-    if (paginator.value?.data && Array.isArray(paginator.value.data)) {
-      paginator.value.data = paginator.value.data.filter(x => String(x.id) !== String(id))
-    }
+    // remove from full array
+    allQuestions.value = allQuestions.value.filter(x => String(x.id) !== String(id))
     alert.push({ type: 'success', message: 'Question deleted', icon: 'heroicons:check-circle' })
   } catch (e) {
     alert.push({ type: 'error', message: e?.message || 'Delete failed', icon: 'heroicons:exclamation-circle' })
@@ -330,13 +388,11 @@ function confirmDelete(item) {
   // simple confirm dialog; you can replace with modal later
   if (!confirm('Are you sure you want to delete this question? This action cannot be undone.')) return
   // optimistic removal: keep a copy
-  const prev = paginator.value?.data ? [...paginator.value.data] : null
-  if (paginator.value?.data && Array.isArray(paginator.value.data)) {
-    paginator.value.data = paginator.value.data.filter(x => String(x.id) !== String(item.id))
-  }
+  const prev = [...allQuestions.value]
+  allQuestions.value = allQuestions.value.filter(x => String(x.id) !== String(item.id))
   deleteQuestion(item.id).catch(() => {
     // rollback on failure
-    if (prev) paginator.value.data = prev
+    allQuestions.value = prev
   })
 }
 

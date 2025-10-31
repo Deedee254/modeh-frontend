@@ -46,7 +46,7 @@
         <QuestionEditor
           v-model="localQuestions[index]"
           :index="index"
-          :errors="(props.errors && element && typeof element.id !== 'undefined') ? props.errors[element.id] : {}"
+          :errors="(props.errors && element && typeof element.id !== 'undefined') ? props.errors[element.id] : []"
           @remove="removeQuestion(index)"
           @duplicate="duplicateQuestion(index)"
           @add-option="addOptionToQuestion(index)"
@@ -253,22 +253,27 @@ function removeOptionFromQuestion(questionIndex: number, optionIndex: number) {
 
 async function saveQuestion() {
   if (!isQuestionValid.value || isSubmitting.value) return
-  
+
   isSubmitting.value = true
   try {
     const questionData = JSON.parse(JSON.stringify(questionForm.value))
-    
+
+    // Ensure answers are properly formatted
+    if (!Array.isArray(questionData.answers)) {
+      questionData.answers = []
+    }
+
     if (editingIndex.value !== null) {
       localQuestions.value[editingIndex.value] = questionData
     } else {
       localQuestions.value.push(questionData)
     }
-    
-  emit('update:questions', localQuestions.value)
-  emit('save-question', questionData)
-  // Also emit legacy 'saved' event so parent listeners (create.vue) receive the saved question
-  try { emit('saved', questionData) } catch (e) {}
-    
+
+    emit('update:questions', localQuestions.value)
+    emit('save-question', questionData)
+    // Also emit legacy 'saved' event so parent listeners (create.vue) receive the saved question
+    try { emit('saved', questionData) } catch (e) {}
+
     closeQuestionModal()
     alert.push({
       type: 'success',
@@ -309,10 +314,26 @@ function addFromBank(questions: any | any[]) {
     })
     return
   }
-  
-  localQuestions.value.push(...toAdd)
+
+  // Normalize answers for added questions
+  const normalizedToAdd = toAdd.map(q => {
+    const normalized = { ...q }
+    if (q.type === 'mcq' && q.correct !== undefined && Array.isArray(q.options)) {
+      // Convert legacy correct index to answers array
+      const idx = parseInt(q.correct)
+      if (!isNaN(idx) && q.options[idx]) {
+        normalized.answers = [idx.toString()]
+      }
+    } else if (q.type === 'multi' && Array.isArray(q.corrects) && q.corrects.length > 0) {
+      // Convert legacy corrects array to answers array
+      normalized.answers = q.corrects.map((c: any) => c.toString())
+    }
+    return normalized
+  })
+
+  localQuestions.value.push(...normalizedToAdd)
   emit('update:questions', localQuestions.value)
-  toAdd.forEach(q => {
+  normalizedToAdd.forEach(q => {
     emit('save-question', q)
     try { emit('saved', q) } catch (e) {}
   })

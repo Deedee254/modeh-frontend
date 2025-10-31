@@ -55,7 +55,7 @@
                         <div class="max-h-64 overflow-auto">
                           <ul class="space-y-1">
                             <li v-for="lvl in headerLevels" :key="lvl.id">
-                              <NuxtLink :to="`/levels/${lvl.slug ?? lvl.id}`" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="showQuizzesDropdown=false">{{ lvl.name }}</NuxtLink>
+                              <NuxtLink :to="`/levels/${lvl.id}`" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="showQuizzesDropdown=false">{{ lvl.name }}</NuxtLink>
                             </li>
                             <li v-if="!headerLevels || headerLevels.length === 0" class="text-sm text-slate-500 px-2 py-1">No levels found</li>
                           </ul>
@@ -66,6 +66,33 @@
                       </div>
                     </transition>
                   </div>
+
+                      <!-- Categories dropdown -->
+                      <div class="relative" @mouseenter="showCategoriesDropdown = true" @mouseleave="showCategoriesDropdown = false">
+                        <button class="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 py-2 px-2 rounded-md transition">
+                          <span>Categories</span>
+                          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+
+                        <transition name="fade">
+                          <div v-if="showCategoriesDropdown" class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg z-50 border dark:border-slate-700 p-3">
+                            <ul class="space-y-1">
+                              <li>
+                                <NuxtLink to="/grades" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Grades</NuxtLink>
+                              </li>
+                              <li>
+                                <NuxtLink to="/subjects" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Subjects</NuxtLink>
+                              </li>
+                              <li>
+                                <NuxtLink to="/topics" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Topics</NuxtLink>
+                              </li>
+                              <li>
+                                <NuxtLink to="/quizzes" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Quizzes</NuxtLink>
+                              </li>
+                            </ul>
+                          </div>
+                        </transition>
+                      </div>
 
           <NuxtLink to="/quiz-masters" class="hover:text-blue-600 dark:hover:text-blue-400 py-2">Quiz Masters</NuxtLink>
           <NuxtLink to="/pricing" class="hover:text-blue-600 dark:hover:text-blue-400 py-2">Pricing</NuxtLink>
@@ -124,18 +151,30 @@
                 <div class="font-semibold">Courses</div>
                 <div class="text-xs text-slate-500">Tertiary courses</div>
               </NuxtLink>
-              <NuxtLink to="/grades" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
-                <div class="font-semibold">Grades</div>
-                <div class="text-xs text-slate-500">By grade</div>
-              </NuxtLink>
-              <NuxtLink to="/subjects" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
-                <div class="font-semibold">Subjects</div>
-                <div class="text-xs text-slate-500">Browse subjects</div>
-              </NuxtLink>
-              <NuxtLink to="/topics" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
-                <div class="font-semibold">Topics</div>
-                <div class="text-xs text-slate-500">Narrow topics</div>
-              </NuxtLink>
+              <div class="relative">
+                <button @click="showMobileCategoriesDropdown = !showMobileCategoriesDropdown" class="block w-full p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center">
+                  <div class="font-semibold">Categories</div>
+                  <div class="text-xs text-slate-500">Browse categories</div>
+                </button>
+                <transition name="fade">
+                  <div v-if="showMobileCategoriesDropdown" class="absolute top-full left-0 mt-2 w-full bg-white dark:bg-slate-800 rounded-md shadow-lg z-50 border dark:border-slate-700 p-3">
+                    <ul class="space-y-1">
+                      <li>
+                        <NuxtLink to="/grades" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="closeMobileMenu">Grades</NuxtLink>
+                      </li>
+                      <li>
+                        <NuxtLink to="/subjects" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="closeMobileMenu">Subjects</NuxtLink>
+                      </li>
+                      <li>
+                        <NuxtLink to="/topics" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="closeMobileMenu">Topics</NuxtLink>
+                      </li>
+                      <li>
+                        <NuxtLink to="/quizzes" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="closeMobileMenu">Quizzes</NuxtLink>
+                      </li>
+                    </ul>
+                  </div>
+                </transition>
+              </div>
               <NuxtLink to="/quiz-masters" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
                 <div class="font-semibold">Quiz Masters</div>
                 <div class="text-xs text-slate-500">Our creators</div>
@@ -169,6 +208,8 @@ const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).l
 const showDropdown = ref(false)
 const showMobileMenu = ref(false)
 const showQuizzesDropdown = ref(false)
+const showCategoriesDropdown = ref(false)
+const showMobileCategoriesDropdown = ref(false)
 const showSearch = ref(false)
 const route = useRoute()
 // account menu functionality moved into AccountMenu component

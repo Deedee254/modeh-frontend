@@ -82,7 +82,18 @@
       <!-- Grade Selection Step (quizees) -->
       <div v-if="currentStep === 'grade'" class="space-y-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Select Your Grade Level</label>
+          <label class="block text-sm font-medium text-gray-700">Select Your Education Level</label>
+          <select
+            v-model="formData.level_id"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Select Level (optional)</option>
+            <option v-for="lvl in levels" :key="lvl.id" :value="lvl.id">{{ lvl.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Select Your Grade</label>
           <select 
             v-model="formData.grade"
             class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -165,10 +176,11 @@
 
 <script setup>
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 // Meta setup
 definePageMeta({
@@ -216,6 +228,7 @@ const formData = ref({
   institution: '',
   role: '',
   grade: '',
+  level_id: '',
   subjects: []
 })
 
@@ -231,6 +244,13 @@ const subjects = [
   'Geography',
   'Computer Science'
 ]
+
+// load taxonomy levels for level selector
+const { levels, fetchLevels, loadingLevels } = useTaxonomy()
+
+onMounted(async () => {
+  try { await fetchLevels() } catch (e) {}
+})
 
 // Computed properties for navigation
 const activeSteps = computed(() => steps.filter(step => 

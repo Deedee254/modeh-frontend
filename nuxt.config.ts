@@ -39,6 +39,15 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
+      // Ensure the root URL and index.html are explicitly added to the precache.
+      // Some Nuxt/Vite build outputs don't include `/` or `index.html` in the
+      // generated precache by default which makes
+      // `createHandlerBoundToURL('/')` throw `non-precached-url` at runtime.
+      // Adding these here guarantees the navigation handler has a cached URL.
+      additionalManifestEntries: [
+        { url: '/', revision: null },
+        { url: '/index.html', revision: null }
+      ],
       // include html files (index.html) in precache so '/' is a precached URL
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
       runtimeCaching: [

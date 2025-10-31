@@ -14,7 +14,7 @@
 
     <div class="space-y-3 p-3">
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <UInput ref="searchInput" v-model="query" placeholder="Search..." @input="onSearch" size="sm" icon="i-heroicons-magnifying-glass" class="flex-grow min-w-0" />
+            <UInput ref="searchInput" :model-value="query" @update:modelValue="v => emit('update:query', v)" placeholder="Search..." @input="onSearch" size="sm" icon="i-heroicons-magnifying-glass" class="flex-grow min-w-0" />
             <UButton size="sm" variant="ghost" color="gray" @click="refresh" icon="i-heroicons-arrow-path" :loading="loading" class="w-full sm:w-auto" />
           </div>
 
@@ -57,6 +57,7 @@ import UiSelectSkeleton from '~/components/ui/UiSelectSkeleton.vue'
 
 const props = defineProps({
   modelValue: { type: [String, Number, Object, null], default: null },
+  query: { type: String, default: '' },
   resource: { type: String, required: true }, // 'subjects' or 'topics'
   gradeId: { type: [String, Number], default: null },
   levelId: { type: [String, Number], default: null },
@@ -66,34 +67,78 @@ const props = defineProps({
   subtitle: { type: String, default: '' },
   compact: { type: Boolean, default: false }
 })
-const emit = defineEmits(['update:modelValue', 'selected'])
+const emit = defineEmits(['update:modelValue', 'update:query', 'selected'])
 
-const query = ref('')
 const items = ref([])
 const meta = ref(null)
 const loading = ref(false)
 const page = ref(1)
 const searchInput = ref(null)
 
+function extractId(val) {
+  if (val === null || typeof val === 'undefined') return null
+  if (typeof val === 'object') {
+    if (val.id != null) return val.id
+    if (val.value != null) return val.value
+  }
+  return val
+}
+
+function resolveModelItem() {
+  const mv = props.modelValue
+  if (!mv || (typeof mv === 'string' && mv.trim() === '')) return null
+  if (typeof mv === 'object') {
+    const id = extractId(mv)
+    if (id == null) return null
+    return { ...mv, id }
+  }
+  return null
+}
+
+function ensureModelPresent() {
+  const modelItem = resolveModelItem()
+  if (!modelItem) return
+  const id = extractId(modelItem)
+  if (id == null) return
+  const target = String(id)
+  for (let i = 0; i < items.value.length; i++) {
+    const existing = items.value[i]
+    const existingId = extractId(existing)
+    if (existingId != null && String(existingId) === target) {
+      if (typeof existing === 'object' && existing !== null) {
+        items.value.splice(i, 1, { ...existing, ...modelItem })
+      } else {
+        items.value.splice(i, 1, modelItem)
+      }
+      return
+    }
+  }
+  items.value = [modelItem, ...items.value]
+}
+
 const effectivePerPage = computed(() => {
   if (!meta.value) return props.perPage
   return (meta.value.per_page ?? meta.value.perPage ?? props.perPage)
 })
 
-const { fetchSubjectsPage, fetchTopicsPage, fetchGrades, grades, fetchLevels, levels } = useTaxonomy()
+const { fetchSubjectsPage, fetchSubjectsByGrade, fetchTopicsPage, fetchGrades, grades, subjects, fetchLevels, levels } = useTaxonomy()
 
 watch([() => props.gradeId, () => props.subjectId], () => { 
   page.value = 1; 
-  query.value = '';
+  emit('update:query', '');
   fetchPage();
 })
 
 // when levelId changes, refetch (affects grades resource which filters by level)
 watch(() => props.levelId, () => {
   page.value = 1
-  query.value = ''
+  emit('update:query', '')
   fetchPage()
 })
+
+watch(() => props.modelValue, () => {
+  ensureModelPresent()
+}, { deep: true, immediate: true })
 
 let debounce = null
 function onSearch() {
@@ -111,7 +156,7 @@ function onSearch() {
     meta.value = null
     return
   }
-  debounce = setTimeout(() => { page.value = 1; fetchPage() }, 300)
+  debounce = setTimeout(() => { page.value = 1; fetchPage(); }, 300)
 }
 
 async function fetchPage() {
@@ -120,6 +165,7 @@ async function fetchPage() {
   if (props.resource === 'subjects' && (props.gradeId === null || props.gradeId === undefined || props.gradeId === '')) {
     items.value = []
     meta.value = null
+    ensureModelPresent()
     loading.value = false
     return
   }
@@ -127,67 +173,77 @@ async function fetchPage() {
   if (props.resource === 'topics' && (props.subjectId === null || props.subjectId === undefined || props.subjectId === '')) {
     items.value = []
     meta.value = null
+    ensureModelPresent()
     loading.value = false
     return
   }
-  const fetcherMap = {
-    subjects: fetchSubjectsPage,
-    topics: fetchTopicsPage,
+
+  const resourceHandlers = {
+    subjects: async () => {
+      // Only fetch subjects filtered by grade. If no gradeId is provided
+      // return an empty list (fetchPage() already guards against calling
+      // this handler without a grade). We DO NOT fall back to the
+      // unfiltered/paginated endpoint to avoid loading all subjects.
+      if (!props.gradeId) {
+        return { items: [], meta: null }
+      }
+
+      try {
+        await fetchSubjectsByGrade(props.gradeId)
+      } catch (e) {
+        // ignore errors and return empty list
+        return { items: [], meta: null }
+      }
+      const fetched = (subjects && subjects.value) ? subjects.value.slice() : []
+      return { items: fetched, meta: null }
+    },
+    topics: async () => {
+      const out = await fetchTopicsPage({ gradeId: props.gradeId, levelId: props.levelId, subjectId: props.subjectId, page: page.value, perPage: props.perPage, q: props.query });
+      let fetched = out.items || [];
+      if (props.subjectId) {
+        const sKey = String(props.subjectId);
+        fetched = fetched.filter(t => {
+          const s = t?.subject_id ?? t?.subject ?? (t?.subject && typeof t.subject === 'object' ? t.subject.id : null) ?? '';
+          return String(s) === sKey;
+        });
+      }
+      return { items: fetched, meta: out.meta };
+    },
+    grades: async () => {
+      await fetchGrades();
+      let list = grades.value || [];
+      if (props.levelId) {
+        list = list.filter(g => String(g.level_id || g.levelId || g.level || '') === String(props.levelId));
+      }
+      return { items: list, meta: null };
+    },
+    levels: async () => {
+      await fetchLevels();
+      let list = levels.value || [];
+      if (props.query && String(props.query).trim()) {
+        const qlow = String(props.query).toLowerCase();
+        list = list.filter(l => String(l.name || '').toLowerCase().includes(qlow));
+      }
+      return { items: list, meta: null };
+    }
   };
-  const fetcher = fetcherMap[props.resource] || null;
-  if (!fetcher && props.resource !== 'grades') {
-    console.error(`TaxonomyPicker: Unknown resource type "${props.resource}"`);
-    items.value = [];
-    loading.value = false;
-    return;
-  }
+
+  const handler = resourceHandlers[props.resource];
 
   try {
-    // debug: log the fetch parameters for troubleshooting grade->subject behavior
-    try { console.debug('TaxonomyPicker.fetchPage', { resource: props.resource, gradeId: props.gradeId, levelId: props.levelId, subjectId: props.subjectId, page: page.value, q: query.value }) } catch (e) {}
-    let out = null
-    if (props.resource === 'grades') {
-      // fetch all grades and filter by levelId on client
-      await fetchGrades()
-      let list = grades.value || []
-      if (props.levelId) {
-        list = list.filter(g => String(g.level_id || g.levelId || g.level || '') === String(props.levelId))
-      }
-      out = { items: list, meta: null }
-    } else if (props.resource === 'levels') {
-      await fetchLevels()
-      let list = levels.value || []
-      // if query is provided, apply a local filter by name
-      if (query.value && String(query.value).trim()) {
-        const qlow = String(query.value).toLowerCase()
-        list = list.filter(l => String(l.name || '').toLowerCase().includes(qlow))
-      }
-      out = { items: list, meta: null }
+    if (handler) {
+      const out = await handler();
+      items.value = out.items;
+      meta.value = out.meta;
     } else {
-      out = await fetcher({ gradeId: props.gradeId, levelId: props.levelId, subjectId: props.subjectId, page: page.value, perPage: props.perPage, q: query.value })
+      console.error(`TaxonomyPicker: Unknown resource type "${props.resource}"`);
+      items.value = [];
     }
-    // defensive filter: if requesting subjects for a grade, enforce client-side filtering
-    let fetched = out.items || []
-    if (props.resource === 'subjects' && (props.gradeId !== null && props.gradeId !== undefined && props.gradeId !== '')) {
-      const gKey = String(props.gradeId)
-      fetched = fetched.filter(s => {
-        const g = s?.grade_id ?? s?.grade ?? (s?.grade && typeof s.grade === 'object' ? s.grade.id : null) ?? ''
-        return String(g) === gKey
-      })
-    }
-    // defensive filter for topics: ensure items belong to the requested subject
-    if (props.resource === 'topics' && (props.subjectId !== null && props.subjectId !== undefined && props.subjectId !== '')) {
-      const sKey = String(props.subjectId)
-      fetched = fetched.filter(t => {
-        const s = t?.subject_id ?? t?.subject ?? (t?.subject && typeof t.subject === 'object' ? t.subject.id : null) ?? ''
-        return String(s) === sKey
-      })
-    }
-    items.value = fetched;
-    meta.value = out.meta;
+    ensureModelPresent()
   } catch (e) {
     items.value = []
     meta.value = null
+    ensureModelPresent()
   } finally {
     loading.value = false
   }
@@ -199,18 +255,18 @@ watch(page, () => {
 
 function isSelected(item) {
   if (!props.modelValue || !item) return false;
-  const modelId = typeof props.modelValue === 'object' ? props.modelValue.id : props.modelValue;
-  const itemId = item.id ?? item.value;
-  return String(modelId) === String(itemId);
+  const modelId = (typeof props.modelValue === 'object' && props.modelValue !== null) ? props.modelValue.id : props.modelValue;
+  const itemId = (typeof item === 'object' && item !== null) ? item.id : item;
+  return modelId != null && itemId != null && String(modelId) === String(itemId);
 }
 
 function select(item) {
   // Emit a model update for v-model usage. Prefer the item's id/value when present
   const newVal = item?.id ?? item?.value ?? item ?? null
   try { emit('update:modelValue', newVal) } catch (e) {}
-  emit('selected', item)
+  emit('selected', item);
 }
-function refresh() { page.value = 1; query.value = ''; fetchPage() }
+function refresh() { page.value = 1; emit('update:query', ''); fetchPage(); }
 
 onMounted(() => fetchPage())
 

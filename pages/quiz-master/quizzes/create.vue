@@ -50,16 +50,13 @@
           :subjects="subjects"
           :topics="topics"
           :loading-subjects="loadingSubjects"
-          :loading-topics="loadingTopics"
           :errors="store.detailsErrors"
           :saving="store.isSubmitting"
           @update:modelValue="(v) => (store.quiz = v)"
-          @subject-picked="onSelectSubject"
-          @topic-picked="onSelectTopic"
           @create-topic="() => { showTopicModal = true }"
           @subject-search="onSubjectSearch"
           @topic-search="onTopicSearch"
-          @save="async () => { const ok = await saveDetails(); if (ok) trySetTab('settings'); }"
+          @save="async () => { const ok = await saveDetails(); if (ok) { try { await fetchTopicsPage({ subjectId: store.quiz?.subject_id ?? null, page: 1, perPage: 50, q: '' }); const topic = topics.value.find(t => String(t.id) === String(store.quiz.topic_id)); if (topic) store.quiz.topic = topic; } catch (e) {}; trySetTab('settings'); } }"
           @next="() => trySetTab('settings')"
           @approval-requested="async (id) => { try { await fetchTopicsPage({ subjectId: store.quiz?.subject_id ?? null, page: 1, perPage: 50, q: '' }) } catch (e) {} }"
         />
@@ -126,7 +123,7 @@
             <div>
               <div class="text-xl font-bold">{{ createdPayload?.title || store.quiz?.title || '' }}</div>
               <div class="text-sm text-gray-600">{{ createdPayload?.description || store.quiz?.description || '' }}</div>
-              <div class="text-sm text-gray-500">Topic: {{ createdPayload?.topic_name || store.quiz?.topic_id || '—' }}</div>
+              <div class="text-sm text-gray-500">Topic: {{ createdPayload?.topic?.name || createdPayload?.topic_name || store.quiz?.topic?.name || store.quiz?.topic_name || store.quiz?.topic_id || '—' }}</div>
               <div class="text-sm text-gray-500">Questions: {{ store.questions.length }}</div>
             </div>
             <div class="flex justify-end gap-2">
@@ -207,7 +204,7 @@ async function saveSettings() {
   await store.saveSettings();
 }
 
-const { fetchGrades, grades, subjects, topics, fetchSubjectsPage, fetchTopicsPage, addTopic, loadingSubjects, loadingTopics, levels, fetchLevels, loadingLevels } = useTaxonomy()
+const { fetchGrades, fetchGradesByLevel, grades, subjects, topics, fetchSubjectsPage, fetchTopicsPage, addTopic, loadingSubjects, loadingTopics, levels, fetchLevels, loadingLevels } = useTaxonomy()
 const alert = useAppAlert()
 
 function debounce(fn, wait = 300) {
@@ -242,56 +239,24 @@ onBeforeUnmount(() => {
 onMounted(async () => {
   // Set up cleanup handlers (client-only) and store the returned cleanup function.
   _cleanup = store.setupCleanup()
-  
+
+  // Fetch essential taxonomies on mount.
+  // Subjects and Topics will be fetched reactively based on user selections.
   try {
-    await fetchGrades()
-    try { await fetchLevels() } catch (e) {}
+    await Promise.all([
+      fetchLevels(),
+      fetchGrades() // Fetch all grades initially for the picker
+    ]).catch(() => {});
   } catch (e) {}
-  try {
-    const g = store.quiz.grade_id
-    if (g) {
-      try { await fetchSubjectsPage({ gradeId: g, page: 1, perPage: 50, q: '' }) } catch (e) {}
-    }
-    const s = store.quiz.subject_id
-    if (s) {
-      try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: '' }) } catch (e) {}
-    }
-  } catch (e) {}
+
   const incomingId = route.query.id
-  if (incomingId && incomingId !== 'null' && !store.quizId) {
-    try {
-      const coerced = isNaN(Number(incomingId)) ? incomingId : Number(incomingId)
-      await store.loadQuiz(coerced)
-      const g = store.quiz.grade_id
-      if (g) {
-        try { await fetchSubjectsPage({ gradeId: g, page: 1, perPage: 50, q: '' }) } catch (e) {}
-      }
-      const s = store.quiz.subject_id
-      if (s) {
-        try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: '' }) } catch (e) {}
-      }
-      // Defensive: ensure the loaded topic object is present in the topics list
-      try {
-        const tId = store.quiz.topic_id
-        if (tId) {
-          const has = (topics.value || []).some(x => String(x?.id) === String(tId))
-          if (!has) {
-            // fetch single topic and insert into taxonomy list so picker can display it
-            try {
-              const api = useApi()
-              const r = await api.get(`/api/topics/${tId}`)
-              if (r.ok) {
-                const d = await r.json().catch(() => null)
-                const topicObj = d?.topic || d
-                if (topicObj && topicObj.id) {
-                  try { addTopic(topicObj) } catch (e) {}
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      } catch (e) {}
-    } catch (e) {}
+  if (incomingId && String(incomingId) !== 'null' && !store.quizId) {
+    const coerced = isNaN(Number(incomingId)) ? incomingId : Number(incomingId);
+    await store.loadQuiz(coerced);
+    // After loading quiz, fetch topics if subject is set to populate the picker
+    if (store.quiz.subject_id) {
+      try { await fetchTopicsPage({ subjectId: store.quiz.subject_id, page: 1, perPage: 50, q: '' }) } catch (e) {}
+    }
   }
 })
 
@@ -350,11 +315,32 @@ async function onTopicCreated(created) {
     if (Array.isArray(topics.value)) topics.value.unshift(created)
     try { addTopic(created) } catch (e) {}
     store.quiz.topic_id = created.id
-    try { await fetchTopicsPage({ subjectId: created.subject_id || created.subjectId || created.subject || store.quiz.subject_id, page: 1, perPage: 50, q: '' }) } catch (e) {}
+    try {
+      await fetchTopicsPage({ subjectId: created.subject_id || created.subjectId || created.subject || store.quiz.subject_id, page: 1, perPage: 50, q: '' })
+    } catch (e) {}
+
+    // Persist selection if details are valid (title/grade/subject/topic present)
+    try {
+      if (store.isDetailsValid) {
+        try { await store.saveDetails() } catch (e) {}
+      }
+    } catch (e) {}
+
     try { alert.push({ type: 'success', message: `Topic "${created.name || 'Topic'}" created` }) } catch (e) {}
     if (created.is_approved) {
       store.detailsSaved = true
     }
+
+    // After ensuring topics list is refreshed, focus the topics picker input so the user
+    // can see/select the newly created topic immediately.
+    try {
+      await nextTick()
+      const input = document.querySelector('[aria-labelledby="topic-label"] input')
+      if (input && typeof input.focus === 'function') {
+        input.focus()
+        if (typeof input.scrollIntoView === 'function') input.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    } catch (e) {}
   } catch (e) {}
   showTopicModal.value = false
 }

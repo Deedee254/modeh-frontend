@@ -24,18 +24,22 @@ export function useQuizAnswers(quiz: { value: Quiz }, quizId: string) {
   }
 
   const toggleMulti = (qid: string, opt: any) => {
-    const arr = answers.value[qid] || []
+    if (!Array.isArray(answers.value[qid])) answers.value[qid] = []
+    const arr = answers.value[qid]
     const idx = arr.indexOf(opt)
     if (idx === -1) arr.push(opt)
     else arr.splice(idx, 1)
-    answers.value[qid] = arr
   }
 
   const updateBlank = (qid: string, index: number, value: string) => {
     if (!Array.isArray(answers.value[qid])) answers.value[qid] = []
-    const currentAnswers = [...answers.value[qid]]
-    currentAnswers[index] = value
-    answers.value[qid] = currentAnswers
+    const arr = answers.value[qid]
+    // ensure array is large enough
+    if (index >= arr.length) {
+      for (let i = arr.length; i <= index; i++) arr[i] = ''
+    }
+    // mutate in-place to preserve reference identity
+    arr[index] = value
   }
 
   const clearSavedAnswers = () => {

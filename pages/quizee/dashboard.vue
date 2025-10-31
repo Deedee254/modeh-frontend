@@ -185,14 +185,43 @@ import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
 import { ref, computed, onMounted } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
+import useApi from '~/composables/useApi'
 
-// placeholder data fetch - adapt API endpoints as needed
 const config = useRuntimeConfig()
   const auth = useAuthStore()
   const grade = auth.user?.grade ?? 8
-  const { data: quizMastersData, pending: quizMastersPending, error: quizMastersError } = await useFetch(config.public.apiBase + `/api/quiz-masters?grade=${grade}`)
+  const api = useApi()
+  // fetch quiz masters via centralized api helper
+  let quizMastersData = { value: null }
+  try {
+    const res = await api.get(`/api/quiz-masters?grade=${grade}`)
+    if (api.handleAuthStatus(res)) {
+      quizMastersData = { value: null }
+    } else if (res && res.ok) {
+      const j = await res.json().catch(() => null)
+      quizMastersData = { value: j }
+    } else {
+      quizMastersData = { value: null }
+    }
+  } catch (e) {
+    quizMastersData = { value: null }
+  }
   const { fetchSubjectsByGrade, subjects: taxSubjects } = useTaxonomy()
-const { data: rewardsData, pending: rewardsPending, error: rewardsError } = await useFetch(config.public.apiBase + '/api/rewards/my', { credentials: 'include' })
+// fetch rewards via centralized api helper
+  let rewardsData = { value: null }
+  try {
+    const res = await api.get('/api/rewards/my')
+    if (api.handleAuthStatus(res)) {
+      rewardsData = { value: null }
+    } else if (res && res.ok) {
+      const j = await res.json().catch(() => null)
+      rewardsData = { value: j }
+    } else {
+      rewardsData = { value: null }
+    }
+  } catch (e) {
+    rewardsData = { value: null }
+  }
 
 // normalize paginated or direct shapes for subjects and quiz-masters
 // taxSubjects is a ref provided by useTaxonomy(); create a computed wrapper
@@ -239,7 +268,16 @@ const rewards = rewardsData?.value || { points: 0, vouchers: [], nextThreshold: 
   let recentAttempts = []
 let recentBadges = []
   try {
-    const { data: attemptsData } = await useFetch(config.public.apiBase + '/api/quiz-attempts?per_page=5', { credentials: 'include' })
+    const res = await api.get('/api/quiz-attempts?per_page=5')
+    let attemptsData = { value: null }
+    if (api.handleAuthStatus(res)) {
+      attemptsData = { value: null }
+    } else if (res && res.ok) {
+      const j = await res.json().catch(() => null)
+      attemptsData = { value: j }
+    } else {
+      attemptsData = { value: null }
+    }
     // attemptsData may be: { ok:true, data: { data: [items], ... } } or direct array
     if (attemptsData?.value?.data?.data && Array.isArray(attemptsData.value.data.data)) {
       recentAttempts = attemptsData.value.data.data
@@ -255,10 +293,17 @@ let recentBadges = []
   }
 
   try {
-    const { data: badgesData } = await useFetch(config.public.apiBase + '/api/user/badges?per_page=6', { credentials: 'include' })
-    if (badgesData?.value?.badges && Array.isArray(badgesData.value.badges)) recentBadges = badgesData.value.badges
-    else if (Array.isArray(badgesData?.value)) recentBadges = badgesData.value
-    else recentBadges = []
+    const res = await api.get('/api/user/badges?per_page=6')
+    if (api.handleAuthStatus(res)) {
+      recentBadges = []
+    } else if (res && res.ok) {
+      const j = await res.json().catch(() => null)
+      if (j?.badges && Array.isArray(j.badges)) recentBadges = j.badges
+      else if (Array.isArray(j)) recentBadges = j
+      else recentBadges = []
+    } else {
+      recentBadges = []
+    }
   } catch (e) {
     recentBadges = []
   }
@@ -266,7 +311,16 @@ let recentBadges = []
 // Recommended quizzes for quizee (public API call, fallback to empty)
 let recQuizzes = []
   try {
-    const { data: recData } = await useFetch(config.public.apiBase + '/api/recommendations/quizzes?per_page=5')
+    const res = await api.get('/api/recommendations/quizzes?per_page=5')
+    let recData = { value: null }
+    if (api.handleAuthStatus(res)) {
+      recData = { value: null }
+    } else if (res && res.ok) {
+      const j = await res.json().catch(() => null)
+      recData = { value: j }
+    } else {
+      recData = { value: null }
+    }
     // recData may be { quizzes: paginator } or direct array
     if (recData?.value?.quizzes?.data && Array.isArray(recData.value.quizzes.data)) recQuizzes = recData.value.quizzes.data
     else if (Array.isArray(recData?.value?.quizzes)) recQuizzes = recData.value.quizzes

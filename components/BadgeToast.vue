@@ -14,7 +14,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 const visible = ref(false)
 const title = ref('')
 const message = ref('')
@@ -33,19 +33,29 @@ function open(badgeData = {}, opts = {}) {
 }
 
 // Listen for global events (fired by composable) to open/close, register listeners once
-if (process.client) {
-  const openHandler = (e) => { const { badgeData, opts } = e.detail || {}; open(badgeData, opts) }
-  const closeHandler = () => close()
-  window.addEventListener('badge-toast-open', openHandler)
-  window.addEventListener('badge-toast-close', closeHandler)
-  // clean up on page unload
-  try {
-    window.addEventListener('beforeunload', () => {
-      window.removeEventListener('badge-toast-open', openHandler)
-      window.removeEventListener('badge-toast-close', closeHandler)
+  if (process.client) {
+    const openHandler = (e) => { const { badgeData, opts } = e.detail || {}; open(badgeData, opts) }
+    const closeHandler = () => close()
+    const _onBadgeToastBeforeUnload = () => {
+      try { window.removeEventListener('badge-toast-open', openHandler) } catch (e) {}
+      try { window.removeEventListener('badge-toast-close', closeHandler) } catch (e) {}
+      try { window.removeEventListener('beforeunload', _onBadgeToastBeforeUnload) } catch (e) {}
+    }
+    window.addEventListener('badge-toast-open', openHandler)
+    window.addEventListener('badge-toast-close', closeHandler)
+    // clean up on page unload
+    try {
+      window.addEventListener('beforeunload', _onBadgeToastBeforeUnload)
+    } catch (e) {}
+
+    // also remove listeners when the component is unmounted (SPA navigation)
+    onBeforeUnmount(() => {
+      try { window.removeEventListener('badge-toast-open', openHandler) } catch (e) {}
+      try { window.removeEventListener('badge-toast-close', closeHandler) } catch (e) {}
+      try { window.removeEventListener('beforeunload', _onBadgeToastBeforeUnload) } catch (e) {}
+      try { clearTimeout(timeoutId) } catch (e) {}
     })
-  } catch (e) {}
-}
+  }
 
 function close() {
   visible.value = false

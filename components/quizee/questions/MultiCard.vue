@@ -21,7 +21,7 @@
 <script setup>
 import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
 const props = defineProps({ question: { type: Object, required: true }, modelValue: null })
-const emit = defineEmits(['update:modelValue','select'])
+const emit = defineEmits(['toggle'])
 
 const { isImage, isAudio, isYouTube, formatYouTubeUrl } = useQuizMedia()
 
@@ -31,11 +31,8 @@ function isSelected(opt) {
 }
 
 function toggle(opt) {
-  const arr = Array.isArray(props.modelValue) ? [...props.modelValue] : []
-  const idx = arr.indexOf(opt)
-  if (idx === -1) arr.push(opt); else arr.splice(idx, 1)
-  emit('update:modelValue', arr)
-  emit('select', arr)
+  // Emit an intent event so parents (and composables) can handle mutation centrally.
+  emit('toggle', opt)
 }
 
 function optionMedia(opt) {

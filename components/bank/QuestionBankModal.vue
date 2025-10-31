@@ -107,6 +107,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 const props = defineProps<{ modelValue: boolean, gradeOptions?: any[], subjectOptions?: any[], topicOptions?: any[], levelOptions?: any[], inline?: boolean, initialFilters?: any }>()
 const emit = defineEmits(['update:modelValue', 'add'])
@@ -132,7 +133,10 @@ const selectedIds = ref<any[]>([])
 const perPageOpts = [5,10,20].map(v => ({ label: String(v), value: v }))
 const maxPage = computed(() => paginator.value ? Math.ceil((paginator.value.total || 0) / (paginator.value.per_page || 10)) : 1)
 const taxonomyStore = useTaxonomyStore()
-const { fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject } = taxonomyStore
+const taxonomy = useTaxonomy()
+const { fetchLevels } = taxonomy
+const taxLevels = computed(() => taxonomy.levels)
+const { fetchGrades, fetchGradesByLevel, fetchSubjectsByGrade, fetchTopicsBySubject } = taxonomyStore
 const taxGrades = computed(() => taxonomyStore.grades)
 const taxSubjects = computed(() => taxonomyStore.subjects)
 const taxTopics = computed(() => taxonomyStore.topics)
@@ -161,9 +165,28 @@ if (props.levelOptions && Array.isArray(props.levelOptions) && props.levelOption
 // If props not supplied, load taxonomy root lists (grades). We'll load subjects/topics on demand via server driven APIs.
 async function loadTaxonomy() {
   try {
-    if (!props.gradeOptions || !props.gradeOptions.length) {
-  await fetchGrades()
-  gradeOptions.value = Array.isArray(taxGrades.value) ? (taxGrades.value as any[]).map(g => ({ label: (g as any).name || `Grade ${(g as any).id}`, value: (g as any).id })) : []
+    // Prefer fetching levels first — levels are the top-most taxonomy and may
+    // include nested grades/subjects. This avoids an unconditional grades
+    // fetch and aligns with server-filtered grade-by-level behavior.
+    await fetchLevels()
+    // populate levelOptions if not provided by parent
+    if ((!props.levelOptions || !props.levelOptions.length) && Array.isArray(taxLevels.value)) {
+      const lv = (taxLevels.value as any[])
+      levelOptions.value = lv.map(l => ({ label: l.name || l.display_name || String(l.id), value: l.id }))
+      // If levels include nested grades, build a flat grade list so the UI
+      // can show an initial unfiltered grade list. Otherwise leave gradeOptions
+      // empty so users pick a level first and we fetch grades by level on demand.
+      const nestedGrades = lv.reduce((acc: any[], l: any) => {
+        if (Array.isArray(l.grades) && l.grades.length) {
+          for (const g of l.grades) acc.push({ ...g, level_id: l.id })
+        }
+        return acc
+      }, [])
+      if (nestedGrades.length) {
+        gradeOptions.value = nestedGrades.map(g => ({ label: g.name || `Grade ${g.id}`, value: g.id, level_id: g.level_id }))
+      } else {
+        gradeOptions.value = []
+      }
     }
     // keep subject/topic props if provided; otherwise subject/topic lists will be fetched on demand
   } catch (e) {
@@ -178,10 +201,10 @@ async function fetchItems() {
     if (q.value) params.set('q', q.value)
     params.set('per_page', String(perPage.value))
     params.set('page', String(page.value))
-    if (selectedGrade.value) params.set('grade', String(selectedGrade.value))
-    if (selectedSubject.value) params.set('subject', String(selectedSubject.value))
-      if (selectedLevel.value) params.set('level', String(selectedLevel.value))
-    if (selectedTopic.value) params.set('topic', String(selectedTopic.value))
+    if (selectedLevel.value) params.set('level_id', String(selectedLevel.value))
+    if (selectedGrade.value) params.set('grade_id', String(selectedGrade.value))
+    if (selectedSubject.value) params.set('subject_id', String(selectedSubject.value))
+    if (selectedTopic.value) params.set('topic_id', String(selectedTopic.value))
   const runtime = useRuntimeConfig()
   const res = await fetch(runtime.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
     if (res.ok) {
@@ -197,11 +220,36 @@ async function fetchItems() {
   loading.value = false
 }
 
+// Normalize and validate a question type coming from the bank. Defensive: avoid
+// calling string methods on non-strings and fall back to a safe default.
+const allowedTypes = new Set(['mcq','multi','short','numeric','fill_blank','math','code'])
+function normalizeType(raw: any) {
+  if (typeof raw === 'string') {
+    const s = raw.trim()
+    // preserve known types; if it's a variant like 'mcq_single' that starts with 'mcq'
+    // we allow that form to pass through; otherwise coerce to baseline types when unknown
+    if (s.startsWith('mcq')) return s
+    if (allowedTypes.has(s)) return s
+    // some payloads may have capitalized labels
+    const low = s.toLowerCase()
+    if (allowedTypes.has(low)) return low
+    // unknown string -> default to 'mcq'
+    return 'mcq'
+  }
+  // if it's an object with a name/type field, try extracting a string
+  if (raw && typeof raw === 'object') {
+    const candidate = raw.type ?? raw.name ?? raw.label ?? null
+    if (typeof candidate === 'string') return normalizeType(candidate)
+  }
+  // otherwise default
+  return 'mcq'
+}
+
 function add(it: any) {
   // Normalize to the builder shape
   const q = {
     uid: Math.random().toString(36).slice(2),
-    type: (it.type?.startsWith('mcq') ? it.type : (it.type || 'mcq')),
+    type: normalizeType(it.type),
     text: it.body || it.text || '',
     options: Array.isArray(it.options) ? it.options : [],
     correct: Array.isArray(it.answers) && it.answers.length ? it.answers[0] : -1,
@@ -225,7 +273,7 @@ function addSelected() {
     // normalize each and emit as an array
     const normalized = found.map(it => ({
       uid: Math.random().toString(36).slice(2),
-      type: (it.type?.startsWith('mcq') ? it.type : (it.type || 'mcq')),
+      type: normalizeType(it.type),
       text: it.body || it.text || '',
       options: Array.isArray(it.options) ? it.options : [],
       correct: Array.isArray(it.answers) && it.answers.length ? it.answers[0] : -1,
@@ -272,6 +320,42 @@ watch(selectedGrade, (val) => {
     }
   await fetchSubjectsByGrade(val)
   subjectOptions.value = Array.isArray(taxSubjects.value) ? (taxSubjects.value as any[]).map(s => ({ label: (s as any).name || (s as any).title || (s as any).id, value: (s as any).id, grade_id: (s as any).grade_id })) : []
+  }, 250)
+})
+
+// When a level is selected, fetch grades filtered by that level and reset dependent selects
+watch(selectedLevel, (val) => {
+  selectedGrade.value = ''
+  selectedSubject.value = ''
+  selectedTopic.value = ''
+  gradeOptions.value = []
+  if (!val) return
+  if (_debounceTimers.grade) clearTimeout(_debounceTimers.grade)
+  _debounceTimers.grade = setTimeout(async () => {
+    // If parent supplied gradeOptions, filter that list first
+    if (props.gradeOptions && props.gradeOptions.length) {
+      gradeOptions.value = props.gradeOptions.filter(g => String(g.level_id ?? g.level ?? '') === String(val))
+      return
+    }
+    // Use server-side filtered grades if available
+    if (typeof fetchGradesByLevel === 'function') {
+      await fetchGradesByLevel(val)
+      if (Array.isArray(taxGrades.value)) {
+        const tg = taxGrades.value as any[]
+        gradeOptions.value = tg.map(g => ({ label: g.name || `Grade ${g.id}`, value: g.id, level_id: g.level_id ?? g.level }))
+      } else {
+        gradeOptions.value = []
+      }
+    } else {
+      // fallback: call fetchGrades and filter by level locally
+      await fetchGrades()
+      if (Array.isArray(taxGrades.value)) {
+        const tg = taxGrades.value as any[]
+        gradeOptions.value = tg.filter(g => String(g.level_id ?? g.level ?? '') === String(val)).map(g => ({ label: g.name || `Grade ${g.id}`, value: g.id, level_id: g.level_id ?? g.level }))
+      } else {
+        gradeOptions.value = []
+      }
+    }
   }, 250)
 })
 

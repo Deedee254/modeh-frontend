@@ -256,8 +256,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         type: q.type,
         body: q.body || q.text || '',
         explanation: q.explanation || null,
-        difficulty: q.difficulty || 3,
-        marks: q.marks || 1
+        difficulty: (typeof q.difficulty !== 'undefined' && q.difficulty !== null) ? Number(q.difficulty) : 3,
+        marks: (typeof q.marks !== 'undefined' && q.marks !== null) ? Number(q.marks) : 1
       }
 
     if (q.media_type) {
@@ -319,8 +319,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       return {
         type: (q && q.type) ? q.type : 'mcq',
         body: (q && (q.body || q.text)) ? (q.body || q.text) : '',
-        difficulty: (q && q.difficulty) ? q.difficulty : 3,
-        marks: (q && q.marks) ? q.marks : 1,
+        difficulty: (q && typeof q.difficulty !== 'undefined' && q.difficulty !== null) ? q.difficulty : 3,
+        marks: (q && typeof q.marks !== 'undefined' && q.marks !== null) ? q.marks : 1,
         options: fallbackOptions,
       }
     }
@@ -384,6 +384,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     Object.keys(quizPayload).forEach((k) => {
       const val = quizPayload[k]
       if (val === null || typeof val === 'undefined') return
+      if (typeof val === 'boolean') {
+        form.append(k, val ? '1' : '0')
+        return
+      }
       if (typeof val === 'object' && !(val instanceof File)) form.append(k, JSON.stringify(val))
       else form.append(k, val)
     })
@@ -398,42 +402,58 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
   }
 
-  /**
-   * Parses API error responses and updates the appropriate error state ref.
-   * @param res - The raw Response object.
-   * @param data - The parsed JSON body from the response.
-   * @param errorRef - The ref to update with parsed errors (e.g., detailsErrors).
-   * @returns True if an error was handled, otherwise false.
-   */
-    function handleApiErrors(res: Response, data: unknown, errorRef: Ref<Record<string, string[]>>): boolean {
+  function handleApiErrors(res: Response, data: unknown, errorRef: Ref<Record<string, string[]>>): boolean {
     if (res.ok) {
       errorRef.value = {}
       return false
     }
 
     const mappedErrors: Record<string, string[]> = {}
-    let alertMessage: string
+    const rawMessages: string[] = []
+    let alertMessage = `Request failed with status ${res.status}`
     let alertType: 'error' | 'warning' = 'error'
 
     if (isApiError(data)) {
-      alertMessage = data.message
+      if (data.message) {
+        alertMessage = data.message
+        rawMessages.push(data.message)
+      }
       if (data.errors) {
+        const fieldMap: Record<string, string> = {
+          title: '_title',
+          name: '_title',
+          grade: '_grade',
+          grade_id: '_grade',
+          subject: '_subject',
+          subject_id: '_subject',
+          topic: '_topic',
+          topic_id: '_topic',
+        }
         Object.entries(data.errors).forEach(([key, messages]) => {
-          mappedErrors[key] = messages
+          if (!Array.isArray(messages) || messages.length === 0) return
+          const mappedKey = fieldMap[key] || key
+          const current = mappedErrors[mappedKey] || []
+          mappedErrors[mappedKey] = current.concat(messages)
+          rawMessages.push(...messages)
         })
       }
+    }
 
-      // Handle specific status codes
-      if (res.status === 422) {
+    if (res.status === 422) {
+      if (!alertMessage || alertMessage === `Request failed with status ${res.status}`) {
         alertMessage = 'Please fix the highlighted errors.'
-      } else if (res.status === 403) {
-        alertType = 'warning'
-        if (data.message.toLowerCase().includes('topic') && data.message.toLowerCase().includes('approve')) {
-          mappedErrors._topic = [data.message]
-        }
       }
-    } else {
-      alertMessage = `Request failed with status ${res.status}`
+    } else if (res.status === 403) {
+      alertType = 'warning'
+      if (mappedErrors._topic?.length) {
+        rawMessages.push(...mappedErrors._topic)
+      }
+    }
+
+    if (rawMessages.length) {
+      mappedErrors._raw = Array.from(new Set(rawMessages))
+    } else if (alertMessage) {
+      mappedErrors._raw = [alertMessage]
     }
 
     errorRef.value = mappedErrors
@@ -469,7 +489,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes'
       
       let res: Response;
-      const coverFile = (quiz.value as any).cover_file
+      const coverFile = quiz.value.cover_file
       if (coverFile instanceof File) {
         const formData = new FormData()
         if (method === 'PATCH') formData.append('_method', 'PATCH')
@@ -499,7 +519,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const returnedQuiz = (data && (data.quiz || (data.data && data.data.quiz))) ? (data.quiz || data.data.quiz) : (data && data.data && data.data.id ? data.data : (data && data.id ? data : null))
       if (returnedQuiz && returnedQuiz.id) {
         quizId.value = returnedQuiz.id
-        try { quiz.value = { ...quiz.value, ...returnedQuiz } } catch (e) {}
+        const { level, grade, subject, topic, level_id, grade_id, subject_id, topic_id } = quiz.value;
+        quiz.value = { ...quiz.value, ...returnedQuiz, level, grade, subject, topic, level_id, grade_id, subject_id, topic_id };
         detailsSaved.value = true
       } else {
         console.error('API response missing quiz object:', data)
@@ -531,7 +552,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes';
 
       let res: Response;
-      const coverFile = (quiz.value as any).cover_file;
+      const coverFile = quiz.value.cover_file;
       const hasQuestionFiles = questions.value.some(q => q.media_file instanceof File);
 
       try {
@@ -742,6 +763,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   async function loadQuiz(id: any) {
     try {
       const res = await api.get(`/api/quizzes/${id}`)
+      const { addTopic } = useTaxonomy()
+
       if(res.ok) {
         const data = await res.json()
         const serverQuiz = data.quiz || {}
@@ -752,18 +775,21 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? null
         loaded.topic_id = serverQuiz.topic_id ?? serverQuiz.topic?.id ?? null
 
-        loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
+        loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null));
+        loaded.grade = serverQuiz.grade || (loaded.grade_id ? { id: loaded.grade_id, name: serverQuiz.grade_name } : null);
+        loaded.subject = serverQuiz.subject || (loaded.subject_id ? { id: loaded.subject_id, name: serverQuiz.subject_name } : null);
+        loaded.topic = serverQuiz.topic || (loaded.topic_id ? { id: loaded.topic_id, name: serverQuiz.topic_name } : null);
         
         const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
         loaded.timer_minutes = ts ? Math.floor(Number(ts) / 60) : initialForm.timer_minutes
-        
-        loaded.per_question_seconds = serverQuiz.per_question_seconds ?? loaded.per_question_seconds
-        loaded.use_per_question_timer = !!serverQuiz.use_per_question_timer
-        loaded.attempts_allowed = serverQuiz.attempts_allowed ?? loaded.attempts_allowed
-        loaded.shuffle_questions = typeof serverQuiz.shuffle_questions !== 'undefined' ? !!serverQuiz.shuffle_questions : loaded.shuffle_questions
-        loaded.shuffle_answers = typeof serverQuiz.shuffle_answers !== 'undefined' ? !!serverQuiz.shuffle_answers : loaded.shuffle_answers
-        loaded.access = serverQuiz.is_paid ? 'paywall' : (serverQuiz.access ?? loaded.access)
-        loaded.visibility = serverQuiz.visibility ?? loaded.visibility
+
+        loaded.per_question_seconds = serverQuiz.per_question_seconds ?? initialForm.per_question_seconds
+        loaded.use_per_question_timer = serverQuiz.use_per_question_timer ?? initialForm.use_per_question_timer
+        loaded.attempts_allowed = serverQuiz.attempts_allowed ?? initialForm.attempts_allowed
+        loaded.shuffle_questions = serverQuiz.shuffle_questions ?? initialForm.shuffle_questions
+        loaded.shuffle_answers = serverQuiz.shuffle_answers ?? initialForm.shuffle_answers
+        loaded.access = serverQuiz.access ?? (serverQuiz.is_paid ? 'paywall' : initialForm.access)
+        loaded.visibility = serverQuiz.visibility ?? initialForm.visibility
 
         if (serverQuiz.cover_image) {
           loaded.cover_image = serverQuiz.cover_image
@@ -774,6 +800,21 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.subject = loaded.subject || (loaded.subject_id ? { id: loaded.subject_id } : null)
         loaded.grade = loaded.grade || (loaded.grade_id ? { id: loaded.grade_id } : null)
         loaded.level = loaded.level || (loaded.level_id ? { id: loaded.level_id } : null)
+
+        // If the specific topic is not in the initial list for the subject, fetch it directly
+        // This ensures the TaxonomyPicker can display the selection correctly.
+        if (loaded.topic_id && serverQuiz.topic) {
+          try {
+            // The useTaxonomy composable returns a singleton, so this updates the shared state
+            addTopic(serverQuiz.topic)
+          } catch (e) {
+            // This might fail if useTaxonomy is not initialized, but it's a safe attempt.
+          }
+        }
+        // Ensure the full topic object is on the quiz object for the picker
+        if (loaded.topic_id && !loaded.topic) {
+          loaded.topic = serverQuiz.topic || { id: loaded.topic_id, name: serverQuiz.topic_name || `Topic #${loaded.topic_id}` }
+        }
 
         quiz.value = loaded
         

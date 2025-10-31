@@ -3,14 +3,20 @@ type AnswerValue = string | number | boolean | { body?: string; text?: string } 
 /**
  * Normalizes a single answer value to match backend format
  */
+function stripHtml(input: string): string {
+  // remove simple HTML tags
+  return input.replace(/<[^>]*>/g, '');
+}
+
 function normalizeValue(val: AnswerValue): string {
   if (val === null || val === undefined) return '';
   if (typeof val === 'object') {
-    return val.body || val.text || '';
+    const v = (val.body || val.text || '') as string;
+    return stripHtml(v.toString()).trim().toLowerCase();
   }
-  if (typeof val === 'number') return val.toString();
+  if (typeof val === 'number') return stripHtml(val.toString()).trim().toLowerCase();
   if (typeof val === 'boolean') return val ? 'true' : 'false';
-  return val.toString().trim().toLowerCase();
+  return stripHtml(val.toString()).trim().toLowerCase();
 }
 
 /**
@@ -32,10 +38,13 @@ export function normalizeAnswer(answer: AnswerValue | AnswerValue[]): string | s
 export function formatAnswersForSubmission(answers: Record<number, AnswerValue>, timings: Record<number, number> = {}) {
   return Object.keys(answers).map(qid => {
     const questionId = parseInt(qid, 10) || 0;
+    // support keys that might be strings or numbers
+    const rawValue = (answers as any)[qid] ?? (answers as any)[questionId];
+    const timeTaken = (timings as any)[qid] ?? (timings as any)[questionId] ?? null;
     return {
       question_id: questionId,
-      selected: normalizeAnswer(answers[questionId]),
-      time_taken: timings[questionId] || null
+      selected: normalizeAnswer(rawValue),
+      time_taken: timeTaken
     };
   });
 }

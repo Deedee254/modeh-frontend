@@ -75,10 +75,11 @@ definePageMeta({
   ]
 })
 
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useRuntimeConfig } from '#app'
+import useApi from '~/composables/useApi'
 
 const email = ref('')
 const password = ref('')
@@ -89,6 +90,9 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const config = useRuntimeConfig()
+// prefetch CSRF token/cookie early so the login POST doesn't race with cookie setup
+const api = useApi()
+onMounted(() => { api.ensureCsrf().catch(() => {}) })
 
 async function submit() {
   if (isLoading.value) return

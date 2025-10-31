@@ -129,22 +129,13 @@ const displayTopics = computed(() => {
 })
 const subject = ref({})
 // taxonomy for sidebar
-const { fetchGrades, fetchLevels, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects } = useTaxonomy()
+const { fetchGrades, fetchLevels, fetchGradesByLevel, grades: taxGrades, subjects: taxSubjects, fetchTopicsPage, fetchSubjectsByGrade } = useTaxonomy()
 const loading = ref(true)
 
 // Provide subject options to the FiltersSidebar: prefer all subjects for the grade when available
 const subjectOptionsForSidebar = computed(() => {
-  try {
-    const all = Array.isArray(taxSubjects.value) && taxSubjects.value.length ? taxSubjects.value : []
-    const gid = subject.value?.grade?.id || subject.value?.grade_id || null
-    if (all.length && gid) {
-      return all.filter(s => String(s.grade_id || s.grade || '') === String(gid))
-    }
-    // fallback: expose current subject only
-    return subject.value ? [subject.value] : []
-  } catch (e) {
-    return subject.value ? [subject.value] : []
-  }
+  // taxSubjects will now be populated by fetchSubjectsByGrade(gid) if gid exists
+  return Array.isArray(taxSubjects.value) ? taxSubjects.value : []
 })
 const error = ref(null)
 
@@ -153,7 +144,6 @@ function resolveIcon(t) { return t.icon || t.image || t.cover_image || '/images/
 async function fetchTopics(params = {}) {
   loading.value = true
   try {
-    // Build params using numeric _id when available (from fetched subject) otherwise use slug/string
     const baseParams = {
       page: page.value,
       per_page: perPage.value,
@@ -187,21 +177,16 @@ async function fetchTopics(params = {}) {
       else baseParams.topic = filterTopic.value
     }
 
-    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: baseParams })
-    // normalize paginator/data shapes
-    if (res && res.topics && Array.isArray(res.topics.data)) {
-      paginator.value = res.topics
-      topics.value = res.topics.data
-    } else if (Array.isArray(res?.topics)) {
-      paginator.value = { data: res.topics }
-      topics.value = res.topics
-    } else if (Array.isArray(res)) {
-      paginator.value = { data: res }
-      topics.value = res
-    } else {
-      paginator.value = { data: [] }
-      topics.value = []
-    }
+    const { items, meta } = await fetchTopicsPage({
+      subjectId: baseParams.subject_id || baseParams.subject,
+      gradeId: baseParams.grade_id || baseParams.grade,
+      page: baseParams.page,
+      perPage: baseParams.per_page,
+      q: baseParams.q,
+      topicId: baseParams.topic_id || baseParams.topic
+    })
+    paginator.value = { data: items, ...meta }
+    topics.value = items
   } catch (e) {
     error.value = e
   } finally {
@@ -217,8 +202,19 @@ onMounted(async () => {
   } catch (e) {
     // ignore subject fetch error here
   }
-  // preload taxonomy lists for the sidebar
-  try { fetchGrades(); fetchLevels(); fetchAllSubjects() } catch (e) {}
+
+  // preload taxonomy lists for the sidebar (levels-first)
+  try {
+    await fetchLevels()
+    // if the subject has a grade with a known level, fetch grades for that level
+    const levelId = subject.value?.grade?.level_id || null
+    if (levelId) await fetchGradesByLevel(levelId)
+    else await fetchGrades()
+    // Fetch subjects for the sidebar based on the current subject's grade
+    const gid = subject.value?.grade?.id || subject.value?.grade_id || null
+    if (gid) await fetchSubjectsByGrade(gid)
+  } catch (e) {}
+
   await fetchTopics()
 })
 

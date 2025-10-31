@@ -216,7 +216,7 @@ watch(subjectFilter, (nv, ov) => {
 })
 
 // taxonomy composable provides grades/subjects/topics with simple caching
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchGrades, fetchSubjectsByGrade, fetchAllSubjects, fetchTopicsBySubject, fetchAllTopics } = useTaxonomy()
+const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchGrades, fetchSubjectsByGrade, fetchAllSubjects, fetchTopicsBySubject, fetchAllTopics, fetchLevels } = useTaxonomy()
 
 // Defensive computed wrappers used by the UI/cards
 const SUBJECTS = computed(() => {

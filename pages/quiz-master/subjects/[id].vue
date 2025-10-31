@@ -103,7 +103,7 @@ async function fetchSubjectDetails() {
 async function fetchTopicsForSubject() {
   try {
     // Prefer composable cache if available
-    const { fetchTopicsBySubject, topics: taxTopics, fetchGrades } = useTaxonomy()
+    const { fetchTopicsBySubject, topics: taxTopics, fetchGrades, fetchLevels, fetchGradesByLevel, grades: taxGrades } = useTaxonomy()
     // attempt to prime from composable cache
     if (fetchTopicsBySubject) await fetchTopicsBySubject(subjectId)
     if (Array.isArray(taxTopics.value) && taxTopics.value.length) {
@@ -120,13 +120,15 @@ async function fetchTopicsForSubject() {
   const data = await res.json()
     topics.value = (data.topics || data.data || []).filter(Boolean)
 
-    // warm grade and subject caches for UI consistency
+    // warm taxonomy caches for UI consistency (levels-first)
     try {
       if (subject.value) {
-        await Promise.all([
-          fetchGrades ? fetchGrades() : Promise.resolve(),
-          fetchTopicsBySubject ? fetchTopicsBySubject(subjectId) : Promise.resolve(),
-        ])
+        await fetchLevels()
+        const levelId = subject.value?.grade?.level_id || null
+        if (levelId && fetchGradesByLevel) await fetchGradesByLevel(levelId)
+        else if (fetchGrades) await fetchGrades()
+        // also ensure topics by subject are warmed
+        if (fetchTopicsBySubject) await fetchTopicsBySubject(subjectId)
       }
     } catch (e) {
       // ignore warming errors

@@ -41,6 +41,23 @@ export default function useChat() {
   const messagesPane = ref<any>(null)
   const messagesEnd = ref<any>(null)
 
+  // Cached canonical conversations list (threads + groups) kept sorted by last_at.
+  // Rebuild only when threads or groups change to avoid sorting inside a computed
+  const conversations = ref<any[]>([])
+
+  function rebuildConversations() {
+    try {
+      const convs = (threads.value || []).map(c => ({ id: String(c.other_user_id || c.otherId || c.id), type: 'direct', name: c.other_name || c.otherName || c.name, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: c.status || 'offline', avatar: c.avatar_url }))
+      const grps = (groups.value || []).map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: g.avatar_url }))
+      conversations.value = [...convs, ...grps].sort((a,b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime())
+    } catch (e) {
+      // fallback: linear merge
+      try {
+        conversations.value = []
+      } catch (err) {}
+    }
+  }
+
   // nav helpers (defined here so they can be registered/removed cleanly)
   function updateNavVars() {
     try {
@@ -118,11 +135,10 @@ export default function useChat() {
   })
 
   const allConversations = computed(() => {
-    const convs = threads.value.map(c => ({ id: String(c.other_user_id || c.otherId || c.id), type: 'direct', name: c.other_name || c.otherName || c.name, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: c.status || 'offline', avatar: c.avatar_url }))
-    const grps = groups.value.map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: g.avatar_url }))
-    let all = [...convs, ...grps].sort((a,b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime())
-  if (activeTab.value === 'unread') all = all.filter(x => ((x.unread_count ?? x.unread) || 0) > 0)
-    if (searchQuery.value) all = all.filter(c => c.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
+    // conversations is kept sorted and updated only when threads/groups change
+    let all = (conversations.value || []).slice()
+    if (activeTab.value === 'unread') all = all.filter(x => ((x.unread_count ?? x.unread) || 0) > 0)
+    if (searchQuery.value) all = all.filter(c => c.name && c.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
     return all
   })
 
@@ -142,12 +158,15 @@ export default function useChat() {
       threads.value.splice(idx,1)
       threads.value.unshift(existing)
     }
+    // update canonical conversations list
+    try { rebuildConversations() } catch (e) {}
   }
 
   function markThreadRead(otherId: any) {
     try { api.postJson('/api/chat/threads/mark-read', { other_user_id: otherId }).catch(()=>{}) } catch (e) {}
     const idx = threads.value.findIndex(c => String(c.other_user_id || c.otherId || c.id) === String(otherId))
     if (idx !== -1) threads.value[idx].unread_count = 0
+    try { rebuildConversations() } catch (e) {}
   }
 
   function groupedByTime(list: any[]) {
@@ -197,6 +216,7 @@ export default function useChat() {
         const json = await res.json()
         threads.value = json.conversations || json.messages || []
         groups.value = json.groups || []
+        try { rebuildConversations() } catch (e) {}
       }
     } catch (e) {}
   }
@@ -298,17 +318,31 @@ export default function useChat() {
     try {
       const res = await api.postJson('/api/chat/groups', { name: newGroupName.value, emails })
       if (api.handleAuthStatus(res)) return
-      if (res.ok) { const json = await res.json(); groups.value.unshift(json.group); newGroupName.value = ''; newGroupEmails.value = ''; selectedUsers.value = []; showCreate.value = false; alert.push({ message: 'Group created', type: 'success' }) }
+  if (res.ok) { const json = await res.json(); groups.value.unshift(json.group); try { rebuildConversations() } catch (e) {} newGroupName.value = ''; newGroupEmails.value = ''; selectedUsers.value = []; showCreate.value = false; alert.push({ message: 'Group created', type: 'success' }) }
       else { const err = await res.json().catch(() => null); alert.push({ message: err?.errors ? 'Invalid group data' : 'Failed to create group', type: 'error' }) }
     } catch (e) { alert.push({ message: 'Network error', type: 'error' }) }
   }
 
   let _userSearchTimer: any = null
-  async function onUserSearch() {
+  let _onWindowKeydown: any = null
+  async function _doUserSearch(q: string) {
+    if (!q) { searchResults.value = []; return }
+    try {
+      const res = await fetch(apiBase + '/api/users/search?q=' + encodeURIComponent(q), { credentials: 'include' })
+      if (res.ok) {
+        const json = await res.json()
+        searchResults.value = (json.users || []).filter((u: any) => !selectedUsers.value.some(s => s.id === u.id))
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  function onUserSearch() {
     const q = userSearch.value.trim()
     if (_userSearchTimer) clearTimeout(_userSearchTimer)
-    if (!q) { searchResults.value = []; return }
-  _userSearchTimer = setTimeout(async () => { try { const res = await fetch(apiBase + '/api/users/search?q=' + encodeURIComponent(q), { credentials: 'include' }); if (res.ok) { const json = await res.json(); searchResults.value = (json.users || []).filter((u: any) => !selectedUsers.value.some(s => s.id === u.id)) } } catch (e) {} }, 250)
+    // debounce network requests by 250ms
+    _userSearchTimer = setTimeout(() => { void _doUserSearch(q) }, 250)
   }
 
   function addUserToInvite(u: any) { if (selectedUsers.value.length >= 9) { alert.push({ message: 'Maximum 10 members allowed', type: 'error' }); return } selectedUsers.value.push(u); userSearch.value = ''; searchResults.value = [] }
@@ -320,7 +354,9 @@ export default function useChat() {
   function attachEcho() {
     if (!import.meta.client || !window?.Echo || !userId.value) return
     try {
-      window.Echo.private(`App.Models.User.${userId.value}`).listen('.MessageSent', (payload: any) => {
+  if (_channel && _channel.leave) _channel.leave()
+  _channel = window.Echo.private(`App.Models.User.${userId.value}`)
+      _channel.listen('.MessageSent', (payload: any) => {
         const msg = payload.message ?? payload
         upsertThreadFromMessage(msg)
         const otherId = msg.sender_id === userId.value ? msg.recipient_id : msg.sender_id
@@ -378,6 +414,8 @@ export default function useChat() {
             messages.value.push(msg)
           }
         }
+        // update conversations to reflect new group last_at
+        try { rebuildConversations() } catch (e) {}
         nextTick(() => scrollToBottom())
       })
     } catch (e) { console.error('attachGroupChannel error', e) }
@@ -426,7 +464,9 @@ export default function useChat() {
 
     nextTick(() => { const ta = messageInput.value; if (ta) { ta.addEventListener('input', autoResizeTextarea); autoResizeTextarea() } })
 
-    window.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') { if (showCreate.value) closeCreate(); else if (showChatWindowOnMobile.value) showChatWindowOnMobile.value = false } })
+  // named handler so we can remove it on unmount
+  _onWindowKeydown = (e: KeyboardEvent) => { if (e.key === 'Escape') { if (showCreate.value) closeCreate(); else if (showChatWindowOnMobile.value) showChatWindowOnMobile.value = false } }
+  window.addEventListener('keydown', _onWindowKeydown)
 
     try {
       const q = route && route.query ? route.query : {}
@@ -441,10 +481,21 @@ export default function useChat() {
       window.addEventListener('resize', _onResizeForNavHide)
   })
 
-  onBeforeUnmount(() => { try { document.body.classList.remove('chat-keyboard-open') } catch (e) {} })
-
-  // cleanup for nav vars listener
-  onBeforeUnmount(() => { try { window.removeEventListener('resize', updateNavVars) } catch (e) {} try { window.removeEventListener('resize', _onResizeForNavHide as any) } catch (e) {} })
+  // Consolidated cleanup on unmount: remove all listeners, timers and leave channels
+  onBeforeUnmount(() => {
+    try { document.body.classList.remove('chat-keyboard-open') } catch (e) {}
+    try { window.removeEventListener('resize', updateNavVars) } catch (e) {}
+    try { window.removeEventListener('resize', _onResizeForNavHide as any) } catch (e) {}
+    try { document.removeEventListener('click', _onDocClickForEmoji) } catch (e) {}
+    try { if (_userSearchTimer) clearTimeout(_userSearchTimer) } catch (e) {}
+    try { if (_channel && _channel.leave) _channel.leave() } catch (e) {}
+    try {
+      const el = messagesPane.value || (chatWindowRef.value && chatWindowRef.value.messagesPane && chatWindowRef.value.messagesPane.value)
+      if (el && el.removeEventListener) el.removeEventListener('scroll', maybeLoadOlder)
+    } catch (e) {}
+    try { const ta = messageInput.value; if (ta && ta.removeEventListener) ta.removeEventListener('input', autoResizeTextarea) } catch (e) {}
+    try { window.removeEventListener('keydown', _onWindowKeydown as any) } catch (e) {}
+  })
 
   watch(() => selectedGroupId.value, (id) => { if (id) attachGroupChannel(id); else if (_channel && _channel.leave) { try { _channel.leave() } catch (e) {} } })
 
