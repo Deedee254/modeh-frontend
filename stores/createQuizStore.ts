@@ -226,9 +226,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           if (opt.is_correct) corrects.push(i)
         })
         if (question.type === 'mcq') {
-          question.correct = corrects.length > 0 ? corrects[0] : -1
-        } else {
-          question.corrects = corrects
+          question.answers = corrects.length > 0 ? [corrects[0].toString()] : []
+        } else if (question.type === 'multi') {
+          question.answers = corrects.map(i => i.toString())
         }
       } else if (question.options.length > 0 && typeof question.options[0] === 'string') {
         // Convert string options to object format
@@ -242,8 +242,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         { text: '', is_correct: false }
       ]
     }
-    if (typeof question.correct !== 'number') question.correct = -1
-    if (!Array.isArray(question.corrects)) question.corrects = []
     if (!Array.isArray(question.answers)) question.answers = []
 
     return question
@@ -281,16 +279,11 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
 
     // Handle correct answer for MCQ
-    if (typeof q.correct === 'number' && q.correct >= 0) {
-      copy.correct = q.correct
-    }
-
     if (Array.isArray(q.answers)) {
-      copy.answers = q.answers.filter((a: any) => a !== null && typeof a !== 'undefined')
-    }
-
-    if (Array.isArray(q.corrects)) {
-      copy.corrects = q.corrects.filter((c: any) => typeof c === 'number' || !isNaN(Number(c)))
+      // Ensure all answers are strings for consistency
+      copy.answers = q.answers
+        .filter((a: any) => a !== null && typeof a !== 'undefined')
+        .map((a: any) => String(a))
     }
 
     if (Array.isArray(q.parts)) {

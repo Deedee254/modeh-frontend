@@ -275,7 +275,8 @@ function getQuestionValidationErrors(question) {
       if (!Array.isArray(question.options) || question.options.length < 2) {
         errors.push('MCQ questions require at least 2 options.');
       }
-      if (question.correct < 0 || question.correct >= (question.options?.length || 0)) {
+      if (!Array.isArray(question.answers) || question.answers.length !== 1 || 
+          Number(question.answers[0]) < 0 || Number(question.answers[0]) >= (question.options?.length || 0)) {
         errors.push('A correct option must be selected for MCQ.');
       }
       break;
@@ -283,8 +284,9 @@ function getQuestionValidationErrors(question) {
       if (!Array.isArray(question.options) || question.options.length < 2) {
         errors.push('Multiple select questions require at least 2 options.');
       }
-      if (!Array.isArray(question.corrects) || question.corrects.length === 0) {
-        errors.push('At least one correct option must be selected for multiple select.');
+      if (!Array.isArray(question.answers) || question.answers.length === 0 || 
+          !question.answers.every(idx => Number(idx) >= 0 && Number(idx) < (question.options?.length || 0))) {
+        errors.push('At least one valid correct option must be selected for multiple select.');
       }
       break;
     case 'fill_blank':
