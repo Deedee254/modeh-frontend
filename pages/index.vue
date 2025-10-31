@@ -555,16 +555,15 @@ function pickPaletteClass(id){
   return palettes[(id||0)%palettes.length]
 }
 
-onMounted(async () => {
-  // Start CSRF prefetch immediately (non-blocking) so the login form on this
-  // page won't race with cookie setup. This runs in parallel with the other
-  // initial data fetches below.
-  try { api.ensureCsrf().catch(() => {}) } catch (e) {}
+onMounted(() => {
+  // Do CSRF prefetch first
+  api.ensureCsrf().catch(() => {})
 
-  // Fetch levels first so grades/subjects can be derived from it and avoid
-  // duplicate parallel requests. Then ensure topics are loaded.
-  await fetchLevels()
-  await fetchAllTopics()
+  // Then fetch other data in parallel
+  Promise.all([
+    fetchLevels(),
+    fetchAllTopics()
+  ]).catch(() => {})
 })
 
 // Return a human-friendly grade label for a topic (from topic.grade, topic.grades, or its subject)

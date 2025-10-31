@@ -332,13 +332,14 @@ async function loadQuiz() {
       const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
       loaded.timer_minutes = ts ? Math.floor(Number(ts) / 60) : serverQuiz.timer_minutes ?? null
 
+      // Handle per-question timer settings
       loaded.per_question_seconds = serverQuiz.per_question_seconds ?? null
-      loaded.use_per_question_timer = !!serverQuiz.use_per_question_timer
+      loaded.use_per_question_timer = Boolean(serverQuiz.use_per_question_timer)
 
-      // attempts/shuffle/access/visibility
-      loaded.attempts_allowed = serverQuiz.attempts_allowed ?? serverQuiz.attempts_allowed
-      loaded.shuffle_questions = typeof serverQuiz.shuffle_questions !== 'undefined' ? !!serverQuiz.shuffle_questions : !!serverQuiz.shuffle
-      loaded.shuffle_answers = typeof serverQuiz.shuffle_answers !== 'undefined' ? !!serverQuiz.shuffle_answers : !!serverQuiz.shuffle_answers
+      // Normalize attempts and shuffle settings
+      loaded.attempts_allowed = serverQuiz.attempts_allowed
+      loaded.shuffle_questions = Boolean(serverQuiz.shuffle_questions)
+      loaded.shuffle_answers = Boolean(serverQuiz.shuffle_answers)
       loaded.access = serverQuiz.access ?? (serverQuiz.is_paid ? 'paywall' : 'free')
       loaded.visibility = serverQuiz.visibility ?? serverQuiz.status ?? null
 
@@ -377,12 +378,15 @@ onMounted(() => {
 
 function startEditSettings() {
   if (!quiz.value) return
+  // Explicitly convert to booleans with direct value access for checkboxes
+  settingsForm.use_per_question_timer = Boolean(quiz.value.use_per_question_timer)
+  settingsForm.shuffle_questions = Boolean(quiz.value.shuffle_questions)
+  settingsForm.shuffle_answers = Boolean(quiz.value.shuffle_answers)
+  
+  // Use nullish coalescing for non-boolean fields
   settingsForm.timer_minutes = quiz.value.timer_minutes ?? null
   settingsForm.per_question_seconds = quiz.value.per_question_seconds ?? null
-  settingsForm.use_per_question_timer = !!quiz.value.use_per_question_timer
   settingsForm.attempts_allowed = quiz.value.attempts_allowed ?? null
-  settingsForm.shuffle_questions = !!quiz.value.shuffle_questions
-  settingsForm.shuffle_answers = !!quiz.value.shuffle_answers
   settingsForm.access = quiz.value.access ?? 'free'
   settingsForm.visibility = quiz.value.visibility ?? null
   settingsForm.scheduled_at = quiz.value.scheduled_at ?? null

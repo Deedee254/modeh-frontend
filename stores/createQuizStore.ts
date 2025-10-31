@@ -904,7 +904,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   function setupCleanup() {
     if (process.client) {
       const unloadHandler = () => {
-        persistProgress()
+        // Only warn about navigation when creating a new quiz (no quizId)
+        if (!quizId.value) {
+          persistProgress()
+        }
       }
       window.addEventListener('beforeunload', unloadHandler)
 
