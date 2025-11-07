@@ -172,17 +172,10 @@ const router = useRouter()
 const cfg = useRuntimeConfig()
 
 function trySetTab(tab) {
-  if (tab === 'details') {
-    store.setTab('details');
-    return;
-  }
-  if (tab === 'settings' || tab === 'questions') {
-    if (!store.isDetailsValid) {
-      alert.push({ type: 'warning', message: 'Please complete quiz details before proceeding.' });
-      return;
-    }
-    store.setTab(tab);
-  }
+  // Allow free navigation between tabs. Previously navigation to settings/questions
+  // was blocked until details were valid; we remove that restriction so users
+  // can switch tabs (e.g. to import questions) even if details aren't fully set.
+  store.setTab(tab)
 }
 
 async function onPublish() {

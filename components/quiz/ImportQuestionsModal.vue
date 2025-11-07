@@ -1,0 +1,301 @@
+<template>
+  <UModal v-model="modelValue" :ui="{ width: 'sm:max-w-2xl' }">
+    <div class="p-4 sm:p-6 max-h-[80vh] overflow-auto">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-semibold">Import Questions (CSV / Excel)</h3>
+          <p class="text-sm text-gray-500">Upload a CSV or Excel file to bulk-import questions. See template download for headers.</p>
+        </div>
+        <div>
+          <UButton size="sm" variant="ghost" @click="close">Close</UButton>
+        </div>
+      </div>
+
+      <div class="mt-4 sm:mt-6 space-y-4">
+        <div class="flex flex-col sm:flex-row gap-2">
+          <UButton size="sm" variant="soft" @click="downloadTemplate">Download CSV Template</UButton>
+          <UButton size="sm" variant="primary" @click="openFilePicker">Choose File</UButton>
+          <input ref="fileInput" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="onFileSelected" />
+        </div>
+
+        <div v-if="loading" class="text-sm text-gray-600">Processing file…</div>
+
+        <div v-if="createdCount !== null" class="text-sm text-green-700">Imported {{ createdCount }} question(s).</div>
+
+        <div v-if="importErrors.length" class="mt-2">
+          <h4 class="text-sm font-medium text-red-700">Errors</h4>
+          <div class="space-y-2 mt-2">
+            <div v-for="(e, idx) in importErrors" :key="idx" class="p-2 bg-red-50 border rounded">
+              <div class="text-sm font-medium text-red-700">Row {{ e.row }}</div>
+              <ul class="list-disc list-inside text-sm text-red-600 mt-1">
+                <li v-for="(m, i2) in e.errors" :key="i2">{{ m }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+          <UButton size="sm" variant="soft" @click="close">Cancel</UButton>
+          <UButton size="sm" color="primary" class="ml-2" @click="finish" :disabled="loading">Done</UButton>
+        </div>
+      </div>
+    </div>
+  </UModal>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { useCreateQuizStore } from '~/stores/createQuizStore'
+import { useAppAlert } from '~/composables/useAppAlert'
+import { getQuestionValidationErrors } from '~/composables/useQuestionValidation'
+
+const props = defineProps({
+  modelValue: { type: Boolean, required: true }
+})
+const emit = defineEmits(['update:modelValue','imported'])
+
+const store = useCreateQuizStore()
+const alert = useAppAlert()
+
+const fileInput = ref(null)
+const loading = ref(false)
+const importErrors = ref([])
+const createdCount = ref(null)
+
+function close() { emit('update:modelValue', false) }
+
+function finish() {
+  emit('imported', { created: createdCount.value || 0, errors: importErrors.value })
+  close()
+}
+
+function openFilePicker() {
+  try { if (fileInput.value && typeof fileInput.value.click === 'function') fileInput.value.click() } catch (e) {}
+}
+
+function downloadTemplate() {
+  const headers = ['type','text','options','answers','marks','difficulty','explanation','youtube_url','media']
+  const sample = [
+    'mcq',
+    'What is 2+2?',
+    '1|2|3|4',
+    '3',
+    '1',
+    '1',
+    'A simple arithmetic question',
+    '',
+    ''
+  ]
+  const lines = [headers.join(','), sample.map(s => '"' + String(s).replace(/"/g,'""') + '"').join(',')]
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'questions-template.csv'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+async function onFileSelected(e) {
+  const f = e?.target?.files?.[0]
+  if (!f) return
+  loading.value = true
+  importErrors.value = []
+  createdCount.value = null
+  try {
+    const name = String(f.name || '').toLowerCase()
+    let rows = []
+    if (name.endsWith('.csv') || f.type === 'text/csv' || name.endsWith('.txt')) {
+      rows = await parseCsvFile(f)
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      const XLSX = (await import('xlsx')).default
+      rows = await parseExcelFile(f, XLSX)
+    } else {
+      const message = 'Unsupported file type. Please upload CSV or Excel.'
+      alert.push({ type: 'error', message })
+      return
+    }
+
+    const result = await handleParsedRows(rows)
+    createdCount.value = result.created
+    if (result.errors && result.errors.length) importErrors.value = result.errors
+    const msg = `Imported ${result.created} question(s).`
+    alert.push({ type: 'success', message: msg })
+  } catch (err) {
+    console.error(err)
+    alert.push({ type: 'error', message: 'Import failed' })
+  } finally {
+    loading.value = false
+    try { e.target.value = '' } catch (e) {}
+  }
+}
+
+function parseCsvFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '')
+        const rows = csvToObjects(text)
+        resolve(rows)
+      } catch (err) { reject(err) }
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsText(file)
+  })
+}
+
+async function parseExcelFile(file, XLSX) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = new Uint8Array(reader.result)
+        const wb = XLSX.read(data, { type: 'array' })
+        const first = wb.SheetNames[0]
+        const sheet = wb.Sheets[first]
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        resolve(rows)
+      } catch (err) { reject(err) }
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+function csvToObjects(text) {
+  const lines = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    const next = text[i + 1]
+    if (ch === '"') {
+      if (inQuotes && next === '"') { cur += '"'; i++ } else { inQuotes = !inQuotes }
+      continue
+    }
+    if (ch === '\n' && !inQuotes) { lines.push(cur); cur = ''; continue }
+    if (ch === '\r') continue
+    cur += ch
+  }
+  if (cur !== '') lines.push(cur)
+
+  const rows = lines.map(l => parseCsvLine(l))
+  if (!rows.length) return []
+  const headers = rows[0]
+  const objs = []
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r]
+    const obj = {}
+    for (let c = 0; c < headers.length; c++) {
+      const key = headers[c] || `col${c}`
+      obj[key.trim()] = (row[c] != null) ? row[c] : ''
+    }
+    objs.push(obj)
+  }
+  return objs
+}
+
+function parseCsvLine(line) {
+  const out = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    const next = line[i + 1]
+    if (ch === '"') {
+      if (inQuotes && next === '"') { cur += '"'; i++ } else { inQuotes = !inQuotes }
+      continue
+    }
+    if (ch === ',' && !inQuotes) { out.push(cur); cur = ''; continue }
+    cur += ch
+  }
+  out.push(cur)
+  return out
+}
+
+function buildQuestionFromRow(row) {
+  if (!row || typeof row !== 'object') return null
+  const type = String((row.type || row.Type || row.TYPE || '')).trim() || 'mcq'
+  const text = String(row.text || row.Text || row.body || row.Body || '').trim()
+  const marks = Number(row.marks ?? row.Marks ?? 1) || 1
+  const difficulty = Number(row.difficulty ?? row.Difficulty ?? 2) || 2
+
+  const optionsRaw = String(row.options || row.Options || '')
+  const answersRaw = String(row.answers || row.Answers || '')
+
+  const options = optionsRaw ? optionsRaw.split('|').map(s => String(s || '').trim()) : []
+  let answers = []
+  if (answersRaw) {
+    answers = answersRaw.split('|').map(s => s.trim()).filter(Boolean)
+    if (answers.every(a => /^\d+$/.test(a))) {
+      answers = answers.map(a => Number(a))
+    }
+  }
+
+  const question = {
+    uid: Math.random().toString(36).substring(2),
+    type,
+    text: text || '<p></p>',
+    marks: marks,
+    difficulty: difficulty,
+    options: options.length ? options : undefined,
+    answers: answers.length ? answers : undefined,
+    open: true,
+  }
+
+  if (type === 'mcq') {
+    if (Array.isArray(question.answers)) {
+      const a = question.answers[0]
+      if (typeof a === 'number') question.correct = a
+      else if (typeof a === 'string' && question.options) {
+        const idx = question.options.findIndex(o => String(o).trim() === String(a).trim())
+        question.correct = idx >= 0 ? idx : -1
+      }
+      delete question.answers
+    }
+  }
+
+  if (type === 'multi') {
+    if (Array.isArray(question.answers)) {
+      question.corrects = question.answers.map(a => (typeof a === 'string' && /^\d+$/.test(a) ? Number(a) : a))
+      delete question.answers
+    }
+  }
+
+  return question
+}
+
+// validation handled by shared composable `useQuestionValidation`
+
+async function handleParsedRows(rows) {
+  const created = []
+  const errors = []
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const q = buildQuestionFromRow(row)
+    const rowNumber = i + 2
+    if (!q) { errors.push({ row: rowNumber, errors: ['Failed to parse row'] }); continue }
+
+    if (row.explanation || row.Explanation) q.explanation = row.explanation || row.Explanation
+    if (row.youtube_url || row.Youtube_url || row.YOUTUBE_URL) q.youtube_url = row.youtube_url || row.Youtube_url || row.YOUTUBE_URL
+    if (row.media || row.Media) q.media = row.media || row.Media
+
+    q.is_banked = true
+    q.is_approved = true
+
+    const tmp = JSON.parse(JSON.stringify(q))
+    if (tmp.type === 'mcq') { if (typeof tmp.correct !== 'undefined') tmp.answers = [tmp.correct] }
+    if (tmp.type === 'multi') { if (Array.isArray(tmp.corrects)) tmp.answers = tmp.corrects.slice() }
+
+    const verrors = getQuestionValidationErrors(tmp)
+    if (verrors && verrors.length) { errors.push({ row: rowNumber, errors: verrors }); continue }
+
+    store.addQuestion(q)
+    created.push(q)
+  }
+  return { created: created.length, errors }
+}
+</script>

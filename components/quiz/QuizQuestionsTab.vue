@@ -5,24 +5,36 @@
       <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
         <h2 class="text-lg font-medium">Questions</h2>
         <div class="flex flex-col gap-2 w-full sm:w-auto">
-          <UButton 
-            size="sm" 
-            variant="soft" 
-            class="w-full sm:w-auto" 
+          <UButton
+            size="sm"
+            variant="soft"
+            class="w-full sm:w-auto"
             @click="$emit('open-bank')"
           >Question Bank</UButton>
-          <UButton 
-            size="sm" 
-            variant="soft" 
-            class="w-full sm:w-auto" 
+          <UButton
+            size="sm"
+            variant="soft"
+            class="w-full sm:w-auto"
             @click="$emit('preview')"
           >Preview Questions</UButton>
-          <UButton 
-            size="sm" 
-            color="primary" 
-            class="w-full sm:w-auto"
-            @click="addQuestion"
-          >Add Question</UButton>
+
+          <!-- Import CSV / Excel button + template download -->
+          <div class="flex gap-2 items-center">
+              <UButton
+                size="sm"
+                variant="soft"
+                class="w-full sm:w-auto"
+                @click.prevent="() => { showImportModal = true }"
+              >Import CSV / Excel</UButton>
+              <ImportQuestionsModal v-model="showImportModal" @imported="onImported" />
+
+            <UButton
+              size="sm"
+              color="primary"
+              class="w-full sm:w-auto"
+              @click="addQuestion"
+            >Add Question</UButton>
+          </div>
         </div>
       </div>
 
@@ -115,6 +127,25 @@
       </div>
     </div>
 
+  <!-- Import errors modal -->
+  <UModal v-model="showImportErrorsModal" :ui="{ width: 'sm:max-w-2xl' }">
+    <div class="p-4 sm:p-6">
+      <h3 class="text-lg font-medium mb-3">Import Errors</h3>
+      <div v-if="importErrors.length === 0" class="text-sm text-gray-600">No errors</div>
+      <div v-else class="space-y-3">
+        <div v-for="(e, idx) in importErrors" :key="idx" class="border rounded p-3 bg-red-50">
+          <div class="text-sm font-medium text-red-700">Row {{ e.row }}</div>
+          <ul class="mt-1 list-disc list-inside text-sm text-red-600">
+            <li v-for="(m, i2) in e.errors" :key="i2">{{ m }}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <UButton size="sm" variant="soft" @click="showImportErrorsModal = false">Close</UButton>
+      </div>
+    </div>
+  </UModal>
+
     <!-- Question Summary -->
     <div class="mt-4 sm:mt-6 bg-white rounded-lg shadow-sm p-3 sm:p-6">
       <h3 class="text-base font-medium mb-3 sm:mb-4">Quiz Summary</h3>
@@ -150,6 +181,9 @@
 import { computed, ref, watch, toRef } from 'vue'
 import QuestionEditor from './QuestionEditor.vue'
 import { useCreateQuizStore } from '~/stores/createQuizStore'
+import { useAppAlert } from '~/composables/useAppAlert'
+import ImportQuestionsModal from '~/components/quiz/ImportQuestionsModal.vue'
+import { getQuestionValidationErrors } from '~/composables/useQuestionValidation'
 
 const props = defineProps({
   errors: {
@@ -173,6 +207,22 @@ const store = useCreateQuizStore()
 // Use a ref to the store's questions array directly.
 // The `modelValue` prop is no longer needed for questions.
 const localQuestions = toRef(store, 'questions')
+
+// (file input and import helpers were moved to ImportQuestionsModal)
+
+  const alert = useAppAlert()
+  const showImportModal = ref(false)
+
+function onImported(payload) {
+  // payload: { created: number, errors: [] }
+  // We already add imported questions to the store inside the modal; here we can show a toast if needed.
+  try { if (payload && payload.created) alert.push({ type: 'success', message: `Imported ${payload.created} question(s).` }) } catch (e) {}
+  if (payload && payload.errors && payload.errors.length) {
+    // let the modal already show errors; nothing else required here
+  }
+}
+
+// import/parsing helpers moved to `ImportQuestionsModal.vue`
 
 const typeLabels = {
   mcq: 'Multiple Choice',
@@ -247,58 +297,7 @@ function handlePublish() {
   }
 }
 
-function getQuestionValidationErrors(question) {
-  const errors = [];
-  if (!question) {
-    errors.push('Question data is missing.');
-    return errors;
-  }
-
-  if (!question.text?.trim() || question.text === '<p></p>') {
-    errors.push('Question text cannot be empty.');
-  }
-  if (!question.type) {
-    errors.push('A question type must be selected.');
-  }
-
-  // Validate marks and difficulty
-  if (!question.marks || question.marks < 1) {
-    errors.push('Marks must be at least 1.');
-  }
-  if (!question.difficulty || question.difficulty < 1 || question.difficulty > 3) {
-    errors.push('A difficulty level must be set.');
-  }
-
-  // Validate based on question type
-  switch (question.type) {
-    case 'mcq':
-      if (!Array.isArray(question.options) || question.options.length < 2) {
-        errors.push('MCQ questions require at least 2 options.');
-      }
-      if (!Array.isArray(question.answers) || question.answers.length !== 1 || 
-          Number(question.answers[0]) < 0 || Number(question.answers[0]) >= (question.options?.length || 0)) {
-        errors.push('A correct option must be selected for MCQ.');
-      }
-      break;
-    case 'multi':
-      if (!Array.isArray(question.options) || question.options.length < 2) {
-        errors.push('Multiple select questions require at least 2 options.');
-      }
-      if (!Array.isArray(question.answers) || question.answers.length === 0 || 
-          !question.answers.every(idx => Number(idx) >= 0 && Number(idx) < (question.options?.length || 0))) {
-        errors.push('At least one valid correct option must be selected for multiple select.');
-      }
-      break;
-    case 'fill_blank':
-    case 'short':
-    case 'numeric':
-      if (!Array.isArray(question.answers) || question.answers.length === 0 || !question.answers.some(a => String(a).trim())) {
-        errors.push('At least one answer must be provided.');
-      }
-      break;
-  }
-  return errors;
-}
+// validation moved to shared composable `useQuestionValidation`
 // Computed
 const averageDifficulty = computed(() => {
   if (!localQuestions.value.length) return { avg: 0, label: 'N/A' }
