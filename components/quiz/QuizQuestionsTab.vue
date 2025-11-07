@@ -4,7 +4,7 @@
     <div class="bg-white rounded-lg shadow-sm p-3 sm:p-6" v-if="localQuestions">
       <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
         <h2 class="text-lg font-medium">Questions</h2>
-        <div class="flex flex-col gap-2 w-full sm:w-auto">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-end gap-2 w-full sm:w-auto">
           <UButton
             size="sm"
             variant="soft"
@@ -17,26 +17,21 @@
             class="w-full sm:w-auto"
             @click="$emit('preview')"
           >Preview Questions</UButton>
-
-          <!-- Import CSV / Excel button + template download -->
-          <div class="flex gap-2 items-center">
-              <UButton
-                size="sm"
-                variant="soft"
-                class="w-full sm:w-auto"
-                @click.prevent="() => { showImportModal = true }"
-              >Import CSV / Excel</UButton>
-              <ImportQuestionsModal v-model="showImportModal" @imported="onImported" />
-
-            <UButton
-              size="sm"
-              color="primary"
-              class="w-full sm:w-auto"
-              @click="addQuestion"
-            >Add Question</UButton>
-          </div>
+          <UButton
+            size="sm"
+            variant="soft"
+            class="w-full sm:w-auto"
+            @click.prevent="showImportModal = true"
+          >Import CSV / Excel</UButton>
+          <UButton
+            size="sm"
+            color="primary"
+            class="w-full sm:w-auto sm:ml-auto"
+            @click="addQuestion"
+          >Add Question</UButton>
         </div>
       </div>
+      <ImportQuestionsModal v-model="showImportModal" @imported="onImported" />
 
       <!-- Question List -->
       <div class="space-y-3 sm:space-y-4">

@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model="modelValue" :ui="{ width: 'sm:max-w-2xl' }">
+  <UModal v-model="isOpen" :ui="{ width: 'sm:max-w-2xl' }">
     <div class="p-4 sm:p-6 max-h-[80vh] overflow-auto">
       <div class="flex items-start justify-between gap-4">
         <div>
@@ -16,6 +16,17 @@
           <UButton size="sm" variant="soft" @click="downloadTemplate">Download CSV Template</UButton>
           <UButton size="sm" variant="primary" @click="openFilePicker">Choose File</UButton>
           <input ref="fileInput" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="onFileSelected" />
+        </div>
+
+        <div class="text-sm text-gray-600 space-y-2">
+          <p>Include one row per question with the following columns:</p>
+          <ul class="list-disc list-inside space-y-1">
+            <li><span class="font-medium">type</span>: mcq, multi, short, numeric, fill_blank</li>
+            <li><span class="font-medium">text</span>: main question text (HTML allowed)</li>
+            <li><span class="font-medium">option1...optionN</span>: answers for choice-based questions</li>
+            <li><span class="font-medium">answers</span>: correct answers. Use commas for multiple values. Numbers reference option positions; text is accepted for short, numeric, and fill_blank.</li>
+            <li>Optional columns: marks, difficulty (1-3), explanation, youtube_url, media</li>
+          </ul>
         </div>
 
         <div v-if="loading" class="text-sm text-gray-600">Processing file…</div>
@@ -44,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useCreateQuizStore } from '~/stores/createQuizStore'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { getQuestionValidationErrors } from '~/composables/useQuestionValidation'
@@ -53,6 +64,11 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true }
 })
 const emit = defineEmits(['update:modelValue','imported'])
+
+const isOpen = computed({
+  get: () => props.modelValue,
+  set: value => emit('update:modelValue', value)
+})
 
 const store = useCreateQuizStore()
 const alert = useAppAlert()
@@ -74,19 +90,16 @@ function openFilePicker() {
 }
 
 function downloadTemplate() {
-  const headers = ['type','text','options','answers','marks','difficulty','explanation','youtube_url','media']
-  const sample = [
-    'mcq',
-    'What is 2+2?',
-    '1|2|3|4',
-    '3',
-    '1',
-    '1',
-    'A simple arithmetic question',
-    '',
-    ''
+  const headers = ['type','text','option1','option2','option3','option4','answers','marks','difficulty','explanation','youtube_url','media']
+  const samples = [
+    ['mcq','What is the capital of Kenya?','Nairobi','Mombasa','Kisumu','Nakuru','Nairobi','1','2','Correct answer is Nairobi.','',''],
+    ['multi','Select the even numbers less than six','1','2','3','4','2,4','2','2','Mark all even numbers.','',''],
+    ['short','Name the longest river in Africa','','','','','Nile','2','2','','',''],
+    ['numeric','What is 12 divided by 3?','','','','','4','1','1','','',''],
+    ['fill_blank','Photosynthesis happens in the __ of plant cells','chloroplasts','mitochondria','nucleus','vacuole','chloroplasts','1','2','','','']
   ]
-  const lines = [headers.join(','), sample.map(s => '"' + String(s).replace(/"/g,'""') + '"').join(',')]
+  const escapeValue = value => '"' + String(value ?? '').replace(/"/g,'""') + '"'
+  const lines = [headers.join(','), ...samples.map(row => row.map(escapeValue).join(','))]
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -226,13 +239,17 @@ function buildQuestionFromRow(row) {
   const optionsRaw = String(row.options || row.Options || '')
   const answersRaw = String(row.answers || row.Answers || '')
 
-  const options = optionsRaw ? optionsRaw.split('|').map(s => String(s || '').trim()) : []
+  const optionKeys = Object.keys(row || {}).map(key => {
+    const normalized = String(key).toLowerCase().replace(/[^a-z0-9]/g,'')
+    return { key, match: /^option(\d+)$/.exec(normalized) }
+  }).filter(entry => entry.match)
+  optionKeys.sort((a, b) => Number(a.match[1]) - Number(b.match[1]))
+  const optionsFromColumns = optionKeys.map(entry => String(row[entry.key] ?? '').trim()).filter(val => val.length)
+  const options = optionsFromColumns.length ? optionsFromColumns : (optionsRaw ? optionsRaw.split('|').map(s => String(s || '').trim()) : [])
   let answers = []
   if (answersRaw) {
-    answers = answersRaw.split('|').map(s => s.trim()).filter(Boolean)
-    if (answers.every(a => /^\d+$/.test(a))) {
-      answers = answers.map(a => Number(a))
-    }
+    answers = answersRaw.split(/[,|]/).map(s => s.trim()).filter(Boolean)
+    answers = answers.map(a => (/^\d+$/.test(a) ? Number(a) : a))
   }
 
   const question = {
@@ -258,7 +275,7 @@ function buildQuestionFromRow(row) {
     }
   }
 
-  if (type === 'multi') {
+  if (type === 'multi' || type === 'fill_blank') {
     if (Array.isArray(question.answers)) {
       question.corrects = question.answers.map(a => (typeof a === 'string' && /^\d+$/.test(a) ? Number(a) : a))
       delete question.answers
@@ -287,8 +304,8 @@ async function handleParsedRows(rows) {
     q.is_approved = true
 
     const tmp = JSON.parse(JSON.stringify(q))
-    if (tmp.type === 'mcq') { if (typeof tmp.correct !== 'undefined') tmp.answers = [tmp.correct] }
-    if (tmp.type === 'multi') { if (Array.isArray(tmp.corrects)) tmp.answers = tmp.corrects.slice() }
+    if (tmp.type === 'mcq') { if (typeof tmp.correct !== 'undefined') tmp.answers = [String(tmp.correct)] }
+    if (tmp.type === 'multi') { if (Array.isArray(tmp.corrects)) tmp.answers = tmp.corrects.map(c => String(c)) }
 
     const verrors = getQuestionValidationErrors(tmp)
     if (verrors && verrors.length) { errors.push({ row: rowNumber, errors: verrors }); continue }

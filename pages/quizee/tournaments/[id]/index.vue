@@ -43,6 +43,14 @@
               </div>
             </div>
           </div>
+          <!-- Share button -->
+          <div class="absolute right-6 bottom-6">
+            <AffiliateShareButton
+              itemType="Tournament"
+              :itemId="tournament.id"
+              :baseUrl="baseUrl"
+            />
+          </div>
         </div>
       </div>
 
@@ -181,13 +189,17 @@
 
 <script setup lang="ts">
 // Ensure this page uses the quizee layout when rendered
-definePageMeta?.({ layout: 'quizee' })
+definePageMeta({ layout: 'quizee' })
 import { ref, onMounted, computed } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 import useApi from '~/composables/useApi'
+import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 const api = useApi()
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+
+const baseUrl = computed(() => `${config.public.baseUrl}/tournaments`)
 
 // Types
 type Tournament = {
@@ -234,14 +246,26 @@ const fetchTournament = async () => {
   try {
     loading.value = true
     // Use $fetch with credentials to call the backend API
-  const json: any = await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}`, { credentials: 'include' })
+  const response = await fetch(config.public.apiBase + `/api/tournaments/${route.params.id}`, { credentials: 'include' })
+  const json: any = await response.json()
 
   // Defensive: backend may return the model directly or in different envelopes
-  tournament.value = (json?.data ?? json) as Tournament || null
-  // attach winner if present in envelope
-  if (!tournament.value && json?.data) tournament.value = json.data as Tournament
-  if (json?.winner) tournament.value = { ...(tournament.value || {}), winner: json.winner }
-  if (json?.data?.winner) tournament.value = { ...(tournament.value || {}), winner: json.data.winner }
+  const data = json?.data ?? json
+  tournament.value = data ? {
+    id: data.id,
+    banner: data.banner,
+    name: data.name,
+    start_date: data.start_date,
+    end_date: data.end_date,
+    participants_count: data.participants_count,
+    prize_pool: data.prize_pool,
+    description: data.description,
+    rules: data.rules || [],
+    timeline: data.timeline || [],
+    registration_end_date: data.registration_end_date,
+    status: data.status,
+    winner: data.winner
+  } as Tournament : null
 
     // compute next scheduled round time if battles are present
     try {
@@ -281,7 +305,8 @@ const isTaking = computed(() => {
 // Check if user is registered
 const checkRegistrationStatus = async () => {
   try {
-  const json: any = await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/registration-status`, { credentials: 'include' })
+    const response = await fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/registration-status`, { credentials: 'include' })
+    const json: any = await response.json()
     // Accept { isRegistered: true } or { data: { isRegistered: true } }
     isRegistered.value = !!(json?.data?.isRegistered ?? json?.isRegistered)
   } catch (error) {
@@ -292,7 +317,8 @@ const checkRegistrationStatus = async () => {
 // Fetch leaderboard
 const fetchLeaderboard = async () => {
   try {
-  const json: any = await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/leaderboard`, { credentials: 'include' })
+    const response = await fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/leaderboard`, { credentials: 'include' })
+    const json: any = await response.json()
     // Backend returns { tournament: {...}, leaderboard: [...] }
     const list = json?.leaderboard ?? json?.data ?? json ?? []
     topPlayers.value = Array.isArray(list) ? (list as Player[]).slice(0, 5) : []

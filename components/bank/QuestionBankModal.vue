@@ -105,9 +105,17 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useTaxonomy from '~/composables/useTaxonomy'
+
+// The project relies on global auto-imported UI components (Nuxt/components).
+// Tell TypeScript about them so the editor doesn't flag unknown-component errors.
+declare const UInput: any
+declare const USelect: any
+declare const UButton: any
+declare const UModal: any
 
 const props = defineProps<{ modelValue: boolean, gradeOptions?: any[], subjectOptions?: any[], topicOptions?: any[], levelOptions?: any[], inline?: boolean, initialFilters?: any }>()
 const emit = defineEmits(['update:modelValue', 'add'])
@@ -205,8 +213,8 @@ async function fetchItems() {
     if (selectedGrade.value) params.set('grade_id', String(selectedGrade.value))
     if (selectedSubject.value) params.set('subject_id', String(selectedSubject.value))
     if (selectedTopic.value) params.set('topic_id', String(selectedTopic.value))
-  const runtime = useRuntimeConfig()
-  const res = await fetch(runtime.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
+  const config = useRuntimeConfig()
+  const res = await fetch(config.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
     if (res.ok) {
       const json = await res.json()
       paginator.value = json.questions || json

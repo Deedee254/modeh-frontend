@@ -81,6 +81,14 @@
           <NuxtLink v-if="showEdit && editLink" :to="editLink" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
             Edit
           </NuxtLink>
+          <AffiliateShareButton 
+            v-if="quizId"
+            :itemType="'Quiz'"
+            :itemId="quizId"
+            :baseUrl="baseUrl"
+            class="relative z-10"
+            @click.stop
+          />
         </div>
       </div>
     </div>
@@ -91,6 +99,11 @@
 import { computed, ref } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
+import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
+import { useRuntimeConfig } from '#app'
+
+const config = useRuntimeConfig()
+const baseUrl = computed(() => `${config.public.baseUrl}/quizzes`)
 
 const props = defineProps({
   to: { type: [String, Object], default: null },
@@ -253,7 +266,6 @@ const localLikes = ref(Number(props.likes) || 0)
 const localLiked = ref(Boolean(props.liked))
 let likeInFlight = false
 let likeTimeout = null
-const config = useRuntimeConfig()
 
 // Only treat explicit `takeLink` as the primary "Take Quiz" action.
 // Do not use `to` as the take link; `to` is used as the clickable overlay

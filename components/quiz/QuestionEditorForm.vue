@@ -71,18 +71,12 @@
       <UButton size="xs" color="gray" variant="soft" @click="$emit('add-option')" class="w-full">+ Add option</UButton>
     </div>
 
-    <div v-if="local.type === 'fill_blank'" class="space-y-2">
-      <div v-if="fillBlankCount > 0" class="space-y-2">
-        <div
-          v-for="(answer, idx) in local.answers"
-          :key="idx"
-          class="space-y-1"
-        >
-          <label class="text-sm text-gray-600">Blank {{ idx + 1 }}</label>
-          <UInput v-model="local.answers[idx]" placeholder="Correct answer" size="sm" />
-        </div>
-      </div>
-      <div v-else class="text-xs text-gray-500">Add blanks using __ in the question text.</div>
+
+
+    <div v-if="local.type === 'short' || local.type === 'numeric'" class="space-y-2">
+      <UFormGroup label="Correct Answer">
+        <UInput v-model="local.answers[0]" placeholder="Enter the correct answer" size="sm" />
+      </UFormGroup>
     </div>
 
     <div>
@@ -114,7 +108,7 @@ const uploading = ref(false)
 
 // taxonomy is determined by the parent quiz; no local selectors here
 
-const optionTypes = ['mcq', 'multi']
+const optionTypes = ['mcq', 'multi', 'fill_blank']
 const singleChoiceTypes = ['mcq']
 const blankPattern = /__+/g
 
@@ -145,11 +139,11 @@ function getDefaultForm(type = 'mcq') {
     type,
     text: '',
     explanation: '',
-    options: type === 'mcq' || type === 'multi' ? [
+    options: (type === 'mcq' || type === 'multi' || type === 'fill_blank') ? [
       { text: '', is_correct: false },
       { text: '', is_correct: false }
     ] : [],
-    answers: type === 'mcq' ? ['0'] : [],
+    answers: type === 'mcq' ? ['0'] : (type === 'short' || type === 'numeric' ? [''] : []),
     parts: [],
     difficulty: 2,
     marks: 1
@@ -241,22 +235,14 @@ watch(() => local.value.type, (type) => {
     local.value.answers = []
   }
 
-  if (type === 'fill_blank') {
-    if (!Array.isArray(local.value.answers)) local.value.answers = []
+  if (type === 'short' || type === 'numeric') {
+    if (!Array.isArray(local.value.answers) || local.value.answers.length === 0) local.value.answers = ['']
   } else if (!optionTypes.includes(type)) {
     local.value.answers = []
   }
 }, { immediate: true })
 
-watch(() => local.value.text, (val) => {
-  if (local.value.type !== 'fill_blank') return
-  const text = typeof val === 'string' ? val : ''
-  const segments = text.split(blankPattern)
-  const blanks = Math.max(segments.length - 1, 0)
-  if (!Array.isArray(local.value.answers)) local.value.answers = []
-  while (local.value.answers.length < blanks) local.value.answers.push('')
-  if (local.value.answers.length > blanks) local.value.answers.splice(blanks)
-}, { immediate: true })
+
 
 function onEditorReady() { /* placeholder for parent hook */ }
 

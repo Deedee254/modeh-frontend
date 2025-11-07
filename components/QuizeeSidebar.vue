@@ -1,4 +1,5 @@
 <template>
+  <div>
   <aside :class="[ui.sidebarCollapsed ? 'w-20' : 'w-64']" class="bg-white border-r h-screen sticky top-0 flex-col py-4 transition-all duration-300 hidden lg:flex">
     <div class="mb-6 flex items-center px-4" :class="[ui.sidebarCollapsed ? 'justify-center' : '']">
       <img src="/logo/modeh-logo.png" alt="Modeh" :class="[ui.sidebarCollapsed ? 'h-8' : 'h-10']" class="transition-all duration-300" />
@@ -34,6 +35,7 @@
         <ul class="flex flex-col gap-2">
           <li v-for="item in navItems" :key="item.to">
             <NuxtLink @click="onMobileNavClick" :to="item.to" :class="linkClass(item.to)">
+              <component :is="item.icon" class="w-5 h-5 inline-block mr-2" />
               {{ item.label }}
             </NuxtLink>
           </li>
@@ -50,6 +52,7 @@
       </div>
     </aside>
   </div>
+  </div>
 </template>
 
 <script setup>
@@ -58,7 +61,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
 // Heroicons outline
-import { HomeIcon, ClipboardDocumentListIcon, TrophyIcon, FlagIcon, StarIcon, CreditCardIcon, UserGroupIcon, CogIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline'
+import { HomeIcon, ClipboardDocumentListIcon, TrophyIcon, FlagIcon, StarIcon, CreditCardIcon, UserGroupIcon, CogIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon, CalendarDaysIcon, LinkIcon } from '@heroicons/vue/24/outline'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -79,6 +82,7 @@ const navItems = [
   { to: '/quizee/points', label: 'Points', icon: StarIcon },
   { to: '/quizee/badges', label: 'Badges', icon: StarIcon },
   { to: '/quizee/subscription', label: 'Subscription', icon: CreditCardIcon },
+  { to: '/quizee/affiliate', label: 'Affiliate Program', icon: LinkIcon },
   { to: '/quizee/chat', label: 'Messages', icon: ChatBubbleLeftRightIcon },
   { to: '/quizee/quiz-masters', label: 'Quiz Masters', icon: UserGroupIcon },
   { to: '/quizee/settings', label: 'Settings', icon: CogIcon },

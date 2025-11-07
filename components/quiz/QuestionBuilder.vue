@@ -103,12 +103,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useAppAlert } from '~/composables/useAppAlert'
-import QuestionEditor from './QuestionEditor.vue'
-import QuestionEditorForm from './QuestionEditorForm.vue'
-import QuestionBankModal from '~/components/bank/QuestionBankModal.vue'
+import QuestionEditorComp from './QuestionEditor.vue'
+import QuestionEditorFormComp from './QuestionEditorForm.vue'
+import QuestionBankModalComp from '~/components/bank/QuestionBankModal.vue'
+
+const QuestionEditor = QuestionEditorComp
+const QuestionEditorForm = QuestionEditorFormComp
+const QuestionBankModal = QuestionBankModalComp
 
 interface Props {
   questions: any[]
@@ -140,7 +144,7 @@ const editingIndex = ref<number | null>(null)
 const isSubmitting = ref(false)
 const questionForm = ref<any>(getDefaultForm())
 const localQuestions = ref<any[]>([...props.questions])
-const formErrors = ref<Record<string, string[]>>({}) // Renamed to avoid confusion with props
+const formErrors = ref<any[]>([]) // Form-level errors for the modal (array expected by QuestionEditorForm)
 
 // Watch for external changes to questions
 watch(() => props.questions, (newVal) => {
@@ -161,15 +165,19 @@ const isQuestionValid = computed(() => {
   switch (form.type) {
     case 'mcq':
     case 'multi':
-      return form.options?.length >= 2 && 
+      return form.options?.length >= 2 &&
              form.options.every((o: any) => o.text.trim()) &&
              form.options.some((o: any) => o.is_correct)
     case 'fill_blank':
-      return form.answers?.length > 0 && 
-             form.answers.every((a: string) => a.trim())
+      return form.options?.length >= 2 &&
+             form.options.every((o: any) => o.text.trim()) &&
+             form.options.some((o: any) => o.is_correct)
+    case 'short':
+    case 'numeric':
+      return form.answers?.[0]?.trim()
     case 'math':
     case 'code':
-      return form.parts?.length > 0 && 
+      return form.parts?.length > 0 &&
              form.parts.every((p: any) => p.text?.trim())
     default:
       return true
@@ -207,7 +215,7 @@ function closeQuestionModal() {
   showQuestionModal.value = false
   questionForm.value = getDefaultForm()
   editingIndex.value = null
-  formErrors.value = {}
+  formErrors.value = []
 }
 
 function addOption() {
@@ -229,8 +237,8 @@ function removeOption(index: number) {
     }
     if (Array.isArray(questionForm.value.corrects)) {
       questionForm.value.corrects = questionForm.value.corrects
-        .filter(c => c !== index)
-        .map(c => (c > index ? c - 1 : c))
+        .filter((c: number) => c !== index)
+        .map((c: number) => (c > index ? c - 1 : c))
     }
   }
 }
@@ -327,6 +335,13 @@ function addFromBank(questions: any | any[]) {
     } else if (q.type === 'multi' && Array.isArray(q.corrects) && q.corrects.length > 0) {
       // Convert legacy corrects array to answers array
       normalized.answers = q.corrects.map((c: any) => c.toString())
+    } else if (q.type === 'fill_blank' && Array.isArray(q.corrects) && q.corrects.length > 0 && Array.isArray(q.options)) {
+      // For fill_blank, corrects may be strings, convert to indexes
+      normalized.answers = q.corrects.map((c: any) => {
+        if (typeof c === 'number') return c.toString()
+        const idx = q.options.findIndex((o: any) => String(o).trim() === String(c).trim())
+        return idx >= 0 ? idx.toString() : c.toString()
+      })
     }
     return normalized
   })
