@@ -1,8 +1,14 @@
 
 import { defineStore } from 'pinia'
 import { watchDebounced } from '@vueuse/core'
+// Vue reactivity / types
+import { ref, computed } from 'vue'
+import type { Ref } from 'vue'
+// Nuxt auto-imported helpers (useRouter) are available via #imports in non-SFC modules
+import { useRouter } from '#imports'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 export interface Quiz {
   title: string;
@@ -23,6 +29,11 @@ export interface Quiz {
   cover?: any; // Can be a string (URL or tmp key) or File
   cover_image?: string;
   cover_file?: File;
+  // Optional rich objects used by the UI (may be populated from server)
+  level?: any;
+  grade?: any;
+  subject?: any;
+  topic?: any;
 }
 
 export interface Question {
@@ -226,7 +237,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           if (opt.is_correct) corrects.push(i)
         })
         if (question.type === 'mcq') {
-          question.answers = corrects.length > 0 ? [corrects[0].toString()] : []
+          // `corrects[0]` is safe here because we check `corrects.length > 0`.
+          // Use a non-null assertion to satisfy `noUncheckedIndexedAccess` configurations.
+          question.answers = corrects.length > 0 ? [corrects[0]!.toString()] : []
         } else if (question.type === 'multi') {
           question.answers = corrects.map(i => i.toString())
         }

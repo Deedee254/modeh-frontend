@@ -1,25 +1,25 @@
-&lt;template>
-  &lt;div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-    &lt;div v-for="card in infoCards" :key="card.title" class="rounded-lg border bg-card text-card-foreground shadow-sm">
-      &lt;div class="flex flex-col space-y-1.5 p-4 xl:p-6 pb-2">
-        &lt;div class="font-semibold tracking-tight text-lg flex items-center gap-2">
-          &lt;component :is="card.icon" :class="['h-5 w-5', card.iconClass]" />
+<template>
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div v-for="card in infoCards" :key="card.title" class="rounded-lg border bg-card text-card-foreground shadow-sm">
+      <div class="flex flex-col space-y-1.5 p-4 xl:p-6 pb-2">
+        <div class="font-semibold tracking-tight text-lg flex items-center gap-2">
+          <component :is="card.icon" :class="['h-5 w-5', card.iconClass]" />
           {{ card.title }}
-        &lt;/div>
-      &lt;/div>
-      &lt;div class="p-4 xl:p-6 xl:pt-0">
-        &lt;ul class="space-y-1 text-sm">
-          &lt;li v-for="(item, index) in card.items" :key="index" class="flex items-center gap-2">
-            &lt;div :class="['h-2 w-2 rounded-full', card.bulletClass]">&lt;/div>
-            &lt;span>{{ item }}&lt;/span>
-          &lt;/li>
-        &lt;/ul>
-      &lt;/div>
-    &lt;/div>
-  &lt;/div>
-&lt;/template>
+        </div>
+      </div>
+      <div class="p-4 xl:p-6 xl:pt-0">
+        <ul class="space-y-1 text-sm">
+          <li v-for="(item, index) in card.items" :key="index" class="flex items-center gap-2">
+            <div :class="['h-2 w-2 rounded-full', card.bulletClass]"></div>
+            <span>{{ item }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</template>
 
-&lt;script setup>
+<script setup>
 const infoCards = [
   {
     title: 'Rewards',
@@ -55,4 +55,5 @@ const infoCards = [
     ]
   }
 ]
-&lt;/script>
+</script>
+

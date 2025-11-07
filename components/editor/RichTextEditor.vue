@@ -42,10 +42,12 @@
 </template>
 
 <script setup lang="ts">
-// IMPORTANT: You may need to run `npm install` to make sure all Tiptap extensions are available.
 
 import { watch, onBeforeUnmount, defineAsyncComponent, computed } from 'vue'
-import { useEditor, EditorContent as TiptapEditorContent } from '@tiptap/vue-3' // Removed BubbleMenu from here
+import { useEditor, EditorContent as TiptapEditorContent } from '@tiptap/vue-3'
+// Import the package as a namespace so we can access runtime exports that
+// may not be present on the static TypeScript definitions (BubbleMenu etc.)
+import * as TiptapVue from '@tiptap/vue-3'
 import { Icon } from '#components'
 
 // Import Tiptap extensions individually to have full control
@@ -102,7 +104,9 @@ const isClient = process.client
 const bubbleMenuComponent = vueRef<Component | null>(null)
 
 // Editor instance (ref) — created onMounted so we can dynamically import optional extensions
-const tiptapEditor = vueRef<Editor | null>(null)
+// Use `any` for the runtime editor reference to avoid strict type mismatches
+// between tiptap runtime and its TypeScript definitions in some versions.
+const tiptapEditor = vueRef<any>(null)
 
 // Initialization separated so we can call it directly when there's no active
 // component instance (some environments or tests may call this module outside
@@ -121,12 +125,12 @@ const extensions = computed(() => {
 onMounted(async () => {
   if (!isClient) return;
 
-  // Dynamically import BubbleMenu component
+  // Resolve the BubbleMenu component from the Tiptap package at runtime.
+  // We access it via the namespace import and cast to `any` to avoid
+  // TypeScript errors when the type definitions don't mention the export.
   try {
-    // dynamic import may not have proper typings in our environment; cast to any
-    const bubbleMenuModule: any = await import('@tiptap/vue-3');
-    // support multiple possible shapes (named export or default)
-    bubbleMenuComponent.value = bubbleMenuModule.BubbleMenu ?? bubbleMenuModule.default?.BubbleMenu ?? null
+    const anyT = TiptapVue as any
+    bubbleMenuComponent.value = anyT.BubbleMenu ?? anyT.default?.BubbleMenu ?? null
   } catch (e) {
     emit('error', new Error('Failed to load Tiptap BubbleMenu component: ' + String(e)));
     console.warn('Tiptap BubbleMenu component load failed', e);
@@ -182,10 +186,10 @@ function getEditorInstance() {
   return tiptapEditor.value;
 }
 
-// computed proxy for template-friendly usage. Template auto-unwraps refs,
-// but we prefer to expose the concrete instance here so template calls
-// like `ed.isActive()` work reliably.
-const ed = computed(() => tiptapEditor.value)
+// computed proxy for template-friendly usage. We type it `any` to avoid
+// TypeScript incompatibilities between the editor runtime shape and the
+// static type definitions shipped by tiptap.
+const ed = computed<any>(() => tiptapEditor.value)
 
 watch(() => props.modelValue, (v) => {
   const e = getEditorInstance()
@@ -193,7 +197,9 @@ watch(() => props.modelValue, (v) => {
   try {
     const isSame = e.getHTML() === v
     if (isSame) return
-    e.commands.setContent(v || '', false)
+    // `setContent` typing may expect an options object; cast to any to allow
+    // boolean flags used in runtime code and avoid TS errors.
+    ;(e.commands as any).setContent(v || '', false)
   } catch (e) {
     console.warn('Failed to sync editor content', e)
   }
@@ -221,7 +227,10 @@ function addMathBlock() {
   try { // This assumes a `insertMathBlock` command exists, which is provided by the math extension.
     const inst = getEditorInstance()
     if (!inst || !props.features?.math) return
-    inst.chain().focus().insertMathBlock().run()
+    // `insertMathBlock` is provided by the math extension at runtime but may
+    // not be present in the static `ChainedCommands` type. Cast chain() to
+    // any to avoid TypeScript errors while keeping runtime behavior.
+    ;(inst.chain() as any).focus().insertMathBlock().run()
   } catch (e) { 
     console.error('Failed to insert math block', e)
   }
@@ -242,10 +251,10 @@ defineExpose({
     const i = getEditorInstance(); return i ? i.getHTML() : ''
   },
   setHTML: (html: string) => {
-    const i = getEditorInstance(); return i ? i.commands?.setContent(html, true) : undefined
+    const i = getEditorInstance(); return i ? (i.commands as any).setContent(html, true) : undefined
   },
   clearContent: () => {
-    const i = getEditorInstance(); return i ? i.commands?.clearContent(true) : undefined
+    const i = getEditorInstance(); return i ? (i.commands as any).clearContent(true) : undefined
   },
 })
 

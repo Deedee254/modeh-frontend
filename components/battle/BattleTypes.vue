@@ -1,6 +1,6 @@
-&lt;template>
-  &lt;div role="tablist" aria-orientation="horizontal" class="h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-6 flex overflow-x-auto gap-4 sm:grid grid-cols-2">
-    &lt;button
+<template>
+  <div role="tablist" aria-orientation="horizontal" class="h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-6 flex overflow-x-auto gap-4 sm:grid grid-cols-2">
+    <button
       v-for="type in battleTypes"
       :key="type.id"
       type="button"
@@ -12,13 +12,13 @@
       ]"
       @click="$emit('update:selectedType', type.id)"
     >
-      &lt;component :is="type.icon" class="h-4 w-4" />
-      &lt;span>{{ type.label }}&lt;/span>
-    &lt;/button>
-  &lt;/div>
-&lt;/template>
+      <component :is="type.icon" class="h-4 w-4" />
+      <span>{{ type.label }}</span>
+    </button>
+  </div>
+</template>
 
-&lt;script setup>
+<script setup>
 import { ref } from 'vue'
 
 const props = defineProps({
@@ -42,4 +42,5 @@ const battleTypes = [
     icon: 'i-lucide-users'
   }
 ]
-&lt;/script>
+</script>
+
