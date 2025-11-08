@@ -2,15 +2,17 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
-  const config = useRuntimeConfig()
   const packages = ref([])
   const loading = ref(false)
+  const api = useApi()
 
   async function fetchPackages() {
     loading.value = true
     try {
-      const res = await $fetch(config.public.apiBase + '/api/packages', { method: 'GET', credentials: 'include' })
-        packages.value = res?.packages || res?.data || []
+      const res = await api.get('/api/packages')
+      if (!res.ok) return
+      const data = await res.json()
+      packages.value = data?.packages || data?.data || []
     } catch (e) {
       packages.value = []
     } finally {
@@ -20,12 +22,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
   async function subscribeToPackage(pkg, opts = {}) {
     // expects server route POST /api/packages/{package}/subscribe
-    const res = await $fetch(config.public.apiBase + `/api/packages/${pkg.id}/subscribe`, {
-      method: 'POST',
-      credentials: 'include',
-      body: opts,
-    })
-    return res
+    const res = await api.postJson(`/api/packages/${pkg.id}/subscribe`, opts)
+    if (!res.ok) throw new Error('Failed to subscribe to package')
+    return await res.json()
   }
 
   return { packages, loading, fetchPackages, subscribeToPackage }

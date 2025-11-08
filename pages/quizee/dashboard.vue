@@ -358,7 +358,9 @@ const pointsToday = ref(0)
 
 async function fetchStats() {
   try {
-    const data = await $fetch(config.public.apiBase + '/api/user/quiz-stats', { credentials: 'include' })
+    const resp = await api.get('/api/user/quiz-stats')
+    if (!resp.ok) throw new Error('Failed to fetch quiz stats')
+    const data = await resp.json()
     if (data) {
       totalAttempts.value = data.total_attempts || 0
       avgScore.value = Math.round(data.average_score || 0)

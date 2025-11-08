@@ -43,6 +43,7 @@
           <div
             v-for="(q, idx) in localQuestions"
             :key="q.uid || q.id || idx"
+            :data-question-uid="q.uid"
             class="group bg-gray-50 rounded-lg p-3 sm:p-4 border border-transparent hover:border-gray-300 transition-colors duration-200"
           >
             <!-- Question Header -->
@@ -207,13 +208,18 @@ const localQuestions = toRef(store, 'questions')
 
   const alert = useAppAlert()
   const showImportModal = ref(false)
+  // showImportErrorsModal and importErrors are used by the errors modal below
+  const showImportErrorsModal = ref(false)
+  const importErrors = ref([])
 
 function onImported(payload) {
   // payload: { created: number, errors: [] }
   // We already add imported questions to the store inside the modal; here we can show a toast if needed.
   try { if (payload && payload.created) alert.push({ type: 'success', message: `Imported ${payload.created} question(s).` }) } catch (e) {}
   if (payload && payload.errors && payload.errors.length) {
-    // let the modal already show errors; nothing else required here
+    // Populate errors and show the import errors modal so the user can review them
+    importErrors.value = payload.errors
+    showImportErrorsModal.value = true
   }
 }
 

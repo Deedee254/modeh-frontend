@@ -218,10 +218,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import PageHero from '~/components/ui/PageHero.vue'
-import { useRuntimeConfig } from '#app'
-import { useAuthStore } from '~/stores/auth'
+
+import useApi from '~/composables/useApi'
 
 definePageMeta({ layout: 'quiz-master', title: 'QuizMaster Wallet', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Manage your QuizMaster wallet, payouts and earnings.' } ] })
 
@@ -263,13 +261,12 @@ function statusClass(s) {
   return 'text-gray-700'
 }
 
-async function apiFetch(path, opts = {}) {
-  return await $fetch(path, { baseURL: config.public.apiBase || '', credentials: 'include', ...opts })
-}
+const api = useApi()
 
 async function fetchWallet() {
   try {
-    const res = await apiFetch('/api/wallet')
+    const resp = await api.get('/api/wallet')
+    const res = await resp.json()
     wallet.value = res.wallet || res
   } catch (e) {
     console.error('fetchWallet', e)
@@ -279,7 +276,8 @@ async function fetchWallet() {
 async function fetchTransactions() {
   loading.value = true
   try {
-    const res = await apiFetch('/api/wallet/transactions')
+    const resp = await api.get('/api/wallet/transactions')
+    const res = await resp.json()
     transactions.value = res.transactions?.data || res.transactions || res
   } catch (e) {
     console.error('fetchTransactions', e)
@@ -290,7 +288,8 @@ async function fetchTransactions() {
 
 async function fetchWithdrawals() {
   try {
-    const res = await apiFetch('/api/wallet/withdrawals')
+    const resp = await api.get('/api/wallet/withdrawals')
+    const res = await resp.json()
     withdrawals.value = res.withdrawals || res
   } catch (e) {
     console.error('fetchWithdrawals', e)
@@ -309,7 +308,8 @@ async function requestWithdrawal() {
     return
   }
   try {
-    await apiFetch('/api/wallet/withdraw', { method: 'POST', body: { amount: a, method: method.value } })
+    const resp = await api.postJson('/api/wallet/withdraw', { amount: a, method: method.value })
+    if (!resp.ok) throw new Error('Withdrawal request failed')
     amount.value = null
     await fetchWallet()
     await fetchWithdrawals()

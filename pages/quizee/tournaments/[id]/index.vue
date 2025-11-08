@@ -245,27 +245,27 @@ const config = useRuntimeConfig()
 const fetchTournament = async () => {
   try {
     loading.value = true
-    // Use $fetch with credentials to call the backend API
-  const response = await fetch(config.public.apiBase + `/api/tournaments/${route.params.id}`, { credentials: 'include' })
-  const json: any = await response.json()
+    // Use useApi composable for authenticated API call
+    const response = await api.get(`/api/tournaments/${route.params.id}`)
+    const json: any = await response.json()
 
-  // Defensive: backend may return the model directly or in different envelopes
-  const data = json?.data ?? json
-  tournament.value = data ? {
-    id: data.id,
-    banner: data.banner,
-    name: data.name,
-    start_date: data.start_date,
-    end_date: data.end_date,
-    participants_count: data.participants_count,
-    prize_pool: data.prize_pool,
-    description: data.description,
-    rules: data.rules || [],
-    timeline: data.timeline || [],
-    registration_end_date: data.registration_end_date,
-    status: data.status,
-    winner: data.winner
-  } as Tournament : null
+    // Defensive: backend may return the model directly or in different envelopes
+    const data = json?.data ?? json
+    tournament.value = data ? {
+      id: data.id,
+      banner: data.banner,
+      name: data.name,
+      start_date: data.start_date,
+      end_date: data.end_date,
+      participants_count: data.participants_count,
+      prize_pool: data.prize_pool,
+      description: data.description,
+      rules: data.rules || [],
+      timeline: data.timeline || [],
+      registration_end_date: data.registration_end_date,
+      status: data.status,
+      winner: data.winner
+    } as Tournament : null
 
     // compute next scheduled round time if battles are present
     try {
@@ -305,7 +305,7 @@ const isTaking = computed(() => {
 // Check if user is registered
 const checkRegistrationStatus = async () => {
   try {
-    const response = await fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/registration-status`, { credentials: 'include' })
+    const response = await api.get(`/api/tournaments/${route.params.id}/registration-status`)
     const json: any = await response.json()
     // Accept { isRegistered: true } or { data: { isRegistered: true } }
     isRegistered.value = !!(json?.data?.isRegistered ?? json?.isRegistered)
@@ -317,7 +317,7 @@ const checkRegistrationStatus = async () => {
 // Fetch leaderboard
 const fetchLeaderboard = async () => {
   try {
-    const response = await fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/leaderboard`, { credentials: 'include' })
+    const response = await api.get(`/api/tournaments/${route.params.id}/leaderboard`)
     const json: any = await response.json()
     // Backend returns { tournament: {...}, leaderboard: [...] }
     const list = json?.leaderboard ?? json?.data ?? json ?? []

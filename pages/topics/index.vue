@@ -203,17 +203,20 @@ function pickPaletteClass(id) {
 
 // Server-side search handler (debounced by UiSearch)
   async function onServerSearch(q) {
+    const api = useApi()
     try {
-    const res = await $fetch(config.public.apiBase + '/api/topics', { params: { query: q }, credentials: 'include' })
-    const items = res?.topics?.data || res?.topics || res?.data || []
-    if (Array.isArray(items)) {
-      taxTopics.value.length = 0
-      taxTopics.value.push(...items)
+      const res = await api.get(`/api/topics?query=${encodeURIComponent(q)}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const items = data?.topics?.data || data?.topics || data?.data || []
+      if (Array.isArray(items)) {
+        taxTopics.value.length = 0
+        taxTopics.value.push(...items)
+      }
+    } catch (e) {
+      // ignore errors
     }
-  } catch (e) {
-    // ignore errors
   }
-}
 
 function onServerSubmit(q) { onServerSearch(q) }
 
@@ -243,7 +246,13 @@ onMounted(async () => {
 })
 
 // fetch quizzes meta for totals
-const { data: quizzesData } = await useFetch(config.public.apiBase + '/api/quizzes?per_page=1', { credentials: 'include' })
 let totalQuizzes = 0
-try { totalQuizzes = quizzesData?.value?.quizzes?.total || quizzesData?.value?.total || 0 } catch (e) { totalQuizzes = 0 }
+const api = useApi()
+try {
+  const res = await api.get('/api/quizzes?per_page=1')
+  if (res.ok) {
+    const data = await res.json()
+    totalQuizzes = data?.quizzes?.total || data?.total || 0
+  }
+} catch (e) { totalQuizzes = 0 }
 </script>

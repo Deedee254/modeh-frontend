@@ -200,18 +200,19 @@ const availableRewards = ref([
 onMounted(async () => {
   loading.value = true
   try {
-    const [achievementsRes, rewardsRes] = await Promise.all([
+    const [achievementsRes, rewardsRes, userStatsRes] = await Promise.all([
       api.get('/api/achievements/progress').then(res => res.ok ? res.json() : null),
-      api.get('/api/rewards/my').then(res => res.ok ? res.json() : null)
+      api.get('/api/rewards/my').then(res => res.ok ? res.json() : null),
+      api.get('/api/user/stats').then(res => res.ok ? res.json() : null)
     ])
     
     if (!achievementsRes || !rewardsRes) {
       throw new Error('Failed to load data')
     }
-    
+
     // Update achievements data
     achievements.value = achievementsRes.achievements || []
-    
+
     // Process recent and next achievements
     recentAchievements.value = achievements.value
       .filter(a => a.unlocked && a.completed_at)
@@ -223,12 +224,21 @@ onMounted(async () => {
       .sort((a, b) => b.progress - a.progress)
       .slice(0, 3)
 
-    // Update user stats
+    // Merge user stats: prefer authoritative user/stats endpoint for points/level info
+    const backendPoints = userStatsRes?.points ?? null
+    const backendLevel = userStatsRes?.level ?? null
+    const backendNextLevel = userStatsRes?.next_level ?? null
+
     userStats.value = {
-      total_points: achievementsRes.stats.total_points || 0,
-      unlocked_achievements: achievementsRes.stats.unlocked_achievements || 0,
-      total_achievements: achievementsRes.stats.total_achievements || 0,
-      rank: rewardsRes.stats?.rank || 'N/A'
+      // Prefer backend user-level points, fall back to achievements-derived points
+      total_points: backendPoints ?? (achievementsRes.stats?.total_points ?? 0),
+      unlocked_achievements: achievementsRes.stats?.unlocked_achievements ?? 0,
+      total_achievements: achievementsRes.stats?.total_achievements ?? 0,
+      // rank: prefer the dedicated user stats rank if present, otherwise fallback to rewards response
+      rank: (userStatsRes?.ranks?.global ?? rewardsRes.stats?.rank) ?? 'N/A',
+      // include level and next_level objects so the template can show color, icon, progress etc.
+      level: backendLevel,
+      next_level: backendNextLevel
     }
 
     // Update activity

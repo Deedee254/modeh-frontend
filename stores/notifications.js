@@ -50,15 +50,15 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   async function fetchNotifications() {
     try {
-      const res = await fetch(config.public.apiBase + '/api/notifications', { credentials: 'include' })
-      if (res.ok) {
-        const json = await res.json()
-        items.value = json.notifications || []
-        return items.value
-      }
+      const res = await api.get('/api/notifications')
       // if unauthorized, clear the list
       if (res.status === 401) {
         items.value = []
+        return items.value
+      }
+      if (res.ok) {
+        const json = await res.json()
+        items.value = json.notifications || []
       }
     } catch (e) {
       // ignore network errors for now; caller can handle

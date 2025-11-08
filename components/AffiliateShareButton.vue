@@ -98,10 +98,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { ShareIcon, ClipboardIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
 
 const props = defineProps({
   itemType: {
@@ -120,14 +121,51 @@ const props = defineProps({
 })
 
 const auth = useAuthStore()
+const api = useApi()
 const showShareModal = ref(false)
 const copied = ref(false)
+const fetchedAffiliateCode = ref(null)
 
 // Compute the affiliate link with the user's referral code
 const affiliateLink = computed(() => {
-  const baseUrl = props.baseUrl?.endsWith('/') ? props.baseUrl.slice(0, -1) : (props.baseUrl || '')
-  const refCode = auth.user?.affiliate_code || ''
-  return `${baseUrl}/${props.itemId}?ref=${refCode}`
+  const base = props.baseUrl?.endsWith('/') ? props.baseUrl.slice(0, -1) : (props.baseUrl || '')
+  // Prefer the affiliate relation's referral_code, then any appended affiliate_code on user,
+  // then a cached value fetched from /api/affiliates/me. If none, return base without query.
+  const code = auth.user?.affiliate?.referral_code ?? auth.user?.affiliate_code ?? fetchedAffiliateCode.value ?? ''
+  if (!code) return `${base}/${props.itemId}`
+  return `${base}/${props.itemId}?ref=${encodeURIComponent(code)}`
+})
+
+// When the modal opens, fetch the affiliate code if it's not already present on the user
+const fetchAffiliateIfMissing = async () => {
+  try {
+    // If user already has affiliate code, nothing to do
+    const existing = auth.user?.affiliate?.referral_code ?? auth.user?.affiliate_code
+    if (existing) {
+      fetchedAffiliateCode.value = existing
+      return
+    }
+
+    const res = await api.get('/api/affiliates/me')
+    // API may return either the affiliate object or a consistent shape like { referral_code: null }
+    if (!res) {
+      fetchedAffiliateCode.value = null
+      return
+    }
+    if (res.referral_code !== undefined) {
+      fetchedAffiliateCode.value = res.referral_code
+      return
+    }
+    // If the API returned full affiliate object, it should have referral_code
+    fetchedAffiliateCode.value = res.referral_code ?? null
+  } catch (err) {
+    // network or auth error: leave as null
+    fetchedAffiliateCode.value = null
+  }
+}
+
+watch(showShareModal, (val) => {
+  if (val) fetchAffiliateIfMissing()
 })
 
 // Copy to clipboard function

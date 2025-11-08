@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, getCurrentInstance } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -464,6 +464,8 @@ export default function useChat() {
 
     nextTick(() => { const ta = messageInput.value; if (ta) { ta.addEventListener('input', autoResizeTextarea); autoResizeTextarea() } })
 
+  function closeCreate() { showCreate.value = false }
+
   // named handler so we can remove it on unmount
   _onWindowKeydown = (e: KeyboardEvent) => { if (e.key === 'Escape') { if (showCreate.value) closeCreate(); else if (showChatWindowOnMobile.value) showChatWindowOnMobile.value = false } }
   window.addEventListener('keydown', _onWindowKeydown)
@@ -483,18 +485,27 @@ export default function useChat() {
 
   // Consolidated cleanup on unmount: remove all listeners, timers and leave channels
   onBeforeUnmount(() => {
-    try { document.body.classList.remove('chat-keyboard-open') } catch (e) {}
-    try { window.removeEventListener('resize', updateNavVars) } catch (e) {}
-    try { window.removeEventListener('resize', _onResizeForNavHide as any) } catch (e) {}
-    try { document.removeEventListener('click', _onDocClickForEmoji) } catch (e) {}
-    try { if (_userSearchTimer) clearTimeout(_userSearchTimer) } catch (e) {}
-    try { if (_channel && _channel.leave) _channel.leave() } catch (e) {}
+    // Only register the hook when inside a component's setup; otherwise skip to
+    // avoid Vue warnings about missing active component instances (e.g. during
+    // SSR or when the composable is called from a non-setup context).
     try {
-      const el = messagesPane.value || (chatWindowRef.value && chatWindowRef.value.messagesPane && chatWindowRef.value.messagesPane.value)
-      if (el && el.removeEventListener) el.removeEventListener('scroll', maybeLoadOlder)
+      if (getCurrentInstance()) {
+        try { document.body.classList.remove('chat-keyboard-open') } catch (e) {}
+        try { window.removeEventListener('resize', updateNavVars) } catch (e) {}
+        try { window.removeEventListener('resize', _onResizeForNavHide as any) } catch (e) {}
+        try { document.removeEventListener('click', _onDocClickForEmoji) } catch (e) {}
+        try { if (_userSearchTimer) clearTimeout(_userSearchTimer) } catch (e) {}
+        try { if (_channel && _channel.leave) _channel.leave() } catch (e) {}
+        try {
+          const el = messagesPane.value || (chatWindowRef.value && chatWindowRef.value.messagesPane && chatWindowRef.value.messagesPane.value)
+          if (el && el.removeEventListener) el.removeEventListener('scroll', maybeLoadOlder)
+        } catch (e) {}
+        try { const ta = messageInput.value; if (ta && ta.removeEventListener) ta.removeEventListener('input', autoResizeTextarea) } catch (e) {}
+        try { window.removeEventListener('keydown', _onWindowKeydown as any) } catch (e) {}
+      } else {
+        // No active instance; skip lifecycle registration.
+      }
     } catch (e) {}
-    try { const ta = messageInput.value; if (ta && ta.removeEventListener) ta.removeEventListener('input', autoResizeTextarea) } catch (e) {}
-    try { window.removeEventListener('keydown', _onWindowKeydown as any) } catch (e) {}
   })
 
   watch(() => selectedGroupId.value, (id) => { if (id) attachGroupChannel(id); else if (_channel && _channel.leave) { try { _channel.leave() } catch (e) {} } })
@@ -591,4 +602,5 @@ export default function useChat() {
     markThreadRead,
     formatTime,
   }
+
 }

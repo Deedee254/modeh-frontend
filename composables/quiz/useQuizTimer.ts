@@ -1,4 +1,4 @@
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount, getCurrentInstance } from 'vue'
 
 export function useQuizTimer(quiz: any, onTimerEnd: () => void) {
   const timer = ref<ReturnType<typeof setInterval> | null>(null)
@@ -54,7 +54,14 @@ export function useQuizTimer(quiz: any, onTimerEnd: () => void) {
     if (timer.value) clearInterval(timer.value)
   }
 
-  onBeforeUnmount(stopTimer)
+  // Only register the lifecycle hook when called from inside a component's setup()
+  // function. Calling composables outside setup (or during SSR) will result in
+  // a Vue warning because there is no active component instance. Guarding here
+  // avoids that warning and makes the composable safe to call from non-setup
+  // contexts (stores, tests, SSR code) where automatic cleanup isn't available.
+  try {
+    if (getCurrentInstance()) onBeforeUnmount(stopTimer)
+  } catch (e) {}
 
   return { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, startTimer, stopTimer }
 }

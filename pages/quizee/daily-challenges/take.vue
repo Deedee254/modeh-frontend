@@ -228,11 +228,10 @@ const submitChallenge = async () => {
     const body = { answers: payloadAnswers, score }
     if (startedAt.value) body.started_at = startedAt.value
 
-    const res = await $fetch(`${config.public.apiBase}/api/daily-challenges/${challenge.value?.id}/submit`, {
-      method: 'POST',
-      credentials: 'include',
-      body
-    })
+    const api = useApi()
+    const res = await api.postJson(`/api/daily-challenges/${challenge.value?.id}/submit`, body)
+    if (!res.ok) throw new Error('Failed to submit challenge')
+    const data = await res.json()
 
     // Update auth store if server returned updated user or awarded achievements
     const auth = useAuthStore()
@@ -268,8 +267,14 @@ const submitChallenge = async () => {
 // Fetch data
 const fetchChallengeData = async () => {
   try {
+    const api = useApi()
     // Fetch today's challenge
-    const challengeData = await $fetch(config.public.apiBase + '/api/daily-challenges/today', { credentials: 'include' })
+    const challengeRes = await api.get('/api/daily-challenges/today')
+    if (!challengeRes.ok) {
+      await router.push('/quizee/daily-challenges')
+      return
+    }
+    const challengeData = await challengeRes.json()
     if (!challengeData || !challengeData.challenge) {
       await router.push('/quizee/daily-challenges')
       return
@@ -299,22 +304,24 @@ const fetchChallengeData = async () => {
 
     const subjectIds = Array.isArray(auth.user?.subjects) ? auth.user.subjects.map(s => (s.id || s)) : []
 
-    const params = {
-      random: 1,
-      question_count: 5,
-      grade_id: gradeId,
-    }
-    if (levelId) {
-      params.level_id = levelId
-    }
-    if (subjectIds.length) params.subject_id = subjectIds
-
-    const questionsData = await $fetch(config.public.apiBase + '/api/questions', {
-      credentials: 'include',
-      params
+    // Build query string for questions fetch
+    const queryParams = new URLSearchParams({
+      random: '1',
+      question_count: '5',
+      grade_id: gradeId.toString()
     })
+    if (levelId) queryParams.set('level_id', levelId.toString())
+    if (subjectIds.length) queryParams.set('subject_id', subjectIds.join(','))
+
+    const questionsRes = await api.get(`/api/questions?${queryParams.toString()}`)
 
   // normalize various API shapes
+  if (!questionsRes.ok) {
+    console.error('Failed to fetch questions')
+    await router.push('/quizee/daily-challenges')
+    return
+  }
+  const questionsData = await questionsRes.json()
   questions.value = questionsData?.questions?.data || questionsData?.data || questionsData?.questions || questionsData || []
 
   // initialize answers structure to match questions

@@ -31,6 +31,9 @@ export const useAuthStore = defineStore('auth', () => {
       // backend returns the authenticated user directly from login; normalize
       const returnedUser = json?.user || json?.data || json || null;
       if (returnedUser) setUser(returnedUser);
+      
+      // Return the normalized response for the component
+      return { data: { user: returnedUser }, ok: true };
   // If we previously triggered a global auth redirect flag, clear it
   try { if (import.meta.client) { window.__modeh_auth_redirected = false } } catch (e) {}
       // After login, attempt to attach Echo listeners for realtime notifications

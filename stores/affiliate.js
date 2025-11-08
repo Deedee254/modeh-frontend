@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { useRuntimeConfig } from '#app'
+import useApi from '~/composables/useApi'
 
 export const useAffiliateStore = defineStore('affiliate', {
   state: () => ({
@@ -17,13 +17,15 @@ export const useAffiliateStore = defineStore('affiliate', {
 
   actions: {
     async fetchAffiliateStats() {
-      const config = useRuntimeConfig()
       this.isLoading = true
+      const api = useApi()
       try {
-        const response = await fetch(`${config.public.apiBase}/api/affiliates/stats`, {
-          credentials: 'include'
-        })
-        const data = await response.json()
+        const res = await api.get('/api/affiliates/stats')
+        if (!res.ok) {
+          this.error = 'Failed to fetch affiliate statistics'
+          return
+        }
+        const data = await res.json()
         this.stats = data
       } catch (err) {
         this.error = 'Failed to fetch affiliate statistics'
@@ -34,13 +36,15 @@ export const useAffiliateStore = defineStore('affiliate', {
     },
 
     async fetchReferrals() {
-      const config = useRuntimeConfig()
       this.isLoading = true
+      const api = useApi()
       try {
-        const response = await fetch(`${config.public.apiBase}/api/affiliates/referrals`, {
-          credentials: 'include'
-        })
-        const data = await response.json()
+        const res = await api.get('/api/affiliates/referrals')
+        if (!res.ok) {
+          this.error = 'Failed to fetch referrals'
+          return
+        }
+        const data = await res.json()
         this.referrals = data
       } catch (err) {
         this.error = 'Failed to fetch referrals'
@@ -51,14 +55,15 @@ export const useAffiliateStore = defineStore('affiliate', {
     },
 
     async requestPayout() {
-      const config = useRuntimeConfig()
       this.isLoading = true
+      const api = useApi()
       try {
-        const response = await fetch(`${config.public.apiBase}/api/affiliates/payout-request`, {
-          method: 'POST',
-          credentials: 'include'
-        })
-        const data = await response.json()
+        const res = await api.postJson('/api/affiliates/payout-request', {})
+        if (!res.ok) {
+          this.error = 'Failed to request payout'
+          throw new Error('Failed to request payout')
+        }
+        const data = await res.json()
         if (data.success) {
           this.stats.pendingPayouts += this.stats.totalEarned - this.stats.pendingPayouts
         }

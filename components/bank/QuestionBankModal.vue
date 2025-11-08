@@ -106,6 +106,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRuntimeConfig } from '#imports'
+import useApi from '~/composables/useApi'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -213,10 +214,10 @@ async function fetchItems() {
     if (selectedGrade.value) params.set('grade_id', String(selectedGrade.value))
     if (selectedSubject.value) params.set('subject_id', String(selectedSubject.value))
     if (selectedTopic.value) params.set('topic_id', String(selectedTopic.value))
-  const config = useRuntimeConfig()
-  const res = await fetch(config.public.apiBase + '/api/question-bank?' + params.toString(), { credentials: 'include' })
-    if (res.ok) {
-      const json = await res.json()
+    const api = useApi()
+    const resp = await api.get('/api/question-bank?' + params.toString())
+    if (resp.ok) {
+      const json = await resp.json()
       paginator.value = json.questions || json
       items.value = paginator.value.data || []
     } else {

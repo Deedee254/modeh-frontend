@@ -121,6 +121,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+// give the component an explicit name to help resolver/debugging/runtime tools
+defineOptions({ name: 'PageHero' })
 
 interface Props {
   title: string

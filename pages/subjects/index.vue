@@ -156,12 +156,15 @@ const gradesCount = computed(() => allGrades.value.length)
 // topics count provided by taxonomy composable (fetchAllTopics called in onMounted)
 const topicsCount = computed(() => Array.isArray(taxSubjects.value) ? (taxSubjects.value.reduce((acc, s) => acc + (s.topics_count || 0), 0)) : 0)
 
-const quizzesResponse = await useFetch(config.public.apiBase + '/api/quizzes?per_page=1')
-const totalQuizzes = computed(() => {
-  const raw = quizzesResponse?.data?.value
-  if (!raw) return 0
-  return raw.quizzes?.total || raw.total || (Array.isArray(raw.quizzes) ? raw.quizzes.length : 0)
-})
+const api = useApi()
+let totalQuizzes = 0
+try {
+  const res = await api.get('/api/quizzes?per_page=1')
+  if (res.ok) {
+    const data = await res.json()
+    totalQuizzes = data?.quizzes?.total || data?.total || 0
+  }
+} catch (e) { totalQuizzes = 0 }
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -177,10 +180,13 @@ const filtered = computed(() => {
 })
 
 async function onServerSearch(q) {
+  const api = useApi()
   try {
-    const res = await $fetch(config.public.apiBase + '/api/subjects', { params: { query: q }, credentials: 'include' })
-    const items = res?.subjects?.data || res?.subjects || res?.data || []
-      if (Array.isArray(items)) {
+    const res = await api.get(`/api/subjects?query=${encodeURIComponent(q)}`)
+    if (!res.ok) return
+    const data = await res.json()
+    const items = data?.subjects?.data || data?.subjects || data?.data || []
+    if (Array.isArray(items)) {
       taxSubjects.value.length = 0
       taxSubjects.value.push(...items)
     }

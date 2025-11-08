@@ -159,29 +159,33 @@ import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
 import { useAuthStore } from '~/stores/auth'
 import { computed } from 'vue'
+import useApi from '~/composables/useApi'
 
 definePageMeta({ layout: 'quiz-master' })
 
-const config = useRuntimeConfig()
+const api = useApi()
 
 const auth = useAuthStore()
 const isQuizMaster = computed(() => auth.user?.role === 'quiz-master' || auth.role === 'quiz-master')
 
 // Fetch recent quizzes (paginated) for this quiz-master
-const { data: quizzesData, pending: quizzesPending, error: quizzesError } = await useFetch(
-  config.public.apiBase + '/api/quizzes?per_page=5',
-  { credentials: 'include' }
-)
+const { data: quizzesData, pending: quizzesPending, error: quizzesError } = await useFetch(async () => {
+  const res = await api.get('/api/quizzes?per_page=5')
+  if (res.ok) return await res.json()
+  return null
+})
 // Fetch total published quizzes (approved=1)
-const { data: publishedData } = await useFetch(
-  config.public.apiBase + '/api/quizzes?approved=1&per_page=1',
-  { credentials: 'include' }
-)
+const { data: publishedData } = await useFetch(async () => {
+  const res = await api.get('/api/quizzes?approved=1&per_page=1')
+  if (res.ok) return await res.json()
+  return null
+})
 // Fetch total questions in quiz-master's bank
-const { data: questionsData } = await useFetch(
-  config.public.apiBase + '/api/questions?per_page=1',
-  { credentials: 'include' }
-)
+const { data: questionsData } = await useFetch(async () => {
+  const res = await api.get('/api/questions?per_page=1')
+  if (res.ok) return await res.json()
+  return null
+})
 
 const recentQuizzes = quizzesData?.value?.quizzes?.data || []
 const quizzesCount = quizzesData?.value?.quizzes?.total ?? recentQuizzes.length
@@ -189,9 +193,10 @@ const publishedCount = publishedData?.value?.quizzes?.total ?? 0
 const questionsCount = questionsData?.value?.questions?.total ?? 0
 
 // Fetch pending approvals (quizzes awaiting approval by admin or moderation)
-const { data: pendingApprovalsData, pending: pendingApprovalsPending, error: pendingApprovalsError } = await useFetch(
-  config.public.apiBase + '/api/quizzes?approved=0&per_page=5',
-  { credentials: 'include' }
-)
+const { data: pendingApprovalsData, pending: pendingApprovalsPending, error: pendingApprovalsError } = await useFetch(async () => {
+  const res = await api.get('/api/quizzes?approved=0&per_page=5')
+  if (res.ok) return await res.json()
+  return null
+})
 const pendingApprovals = pendingApprovalsData?.value?.quizzes?.data || pendingApprovalsData?.value || []
 </script>

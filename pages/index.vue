@@ -15,49 +15,50 @@
             <div class="mt-4 text-sm text-slate-600">Or browse by <NuxtLink to="/topics" class="text-indigo-600 underline">topics</NuxtLink> or <NuxtLink to="/subjects" class="text-indigo-600 underline">subjects</NuxtLink>.</div>
           </div>
 
-          <!-- Right: Login form -->
+          <!-- Right: Login form or User Stats -->
           <div class="mx-auto w-full max-w-md">
-            <div class="rounded-2xl bg-white p-6 shadow-lg">
-              <h3 class="text-lg font-semibold text-gray-900">Log in to continue</h3>
-              <p class="text-sm text-slate-600 mb-4">Quick access for quizees — or <NuxtLink to="/register" class="text-indigo-600 underline">create an account</NuxtLink></p>
+            <template v-if="!auth.user">
+              <LoginForm compact />
+            </template>
 
-              <form @submit.prevent="login" class="space-y-3">
-                <div>
-                  <label class="block text-sm text-gray-700">Email</label>
-                  <input v-model="email" type="email" required class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500" />
+            <!-- User Stats when logged in -->
+            <div v-else class="rounded-2xl bg-white p-6 shadow-lg">
+              <div class="text-lg font-semibold text-gray-900 mb-4">Welcome back, {{ auth.user.name }}!</div>
+              
+              <!-- Quizee Stats -->
+              <div v-if="auth.user.role === 'quizee'" class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                  <div class="text-sm text-indigo-900">Quizzes Taken</div>
+                  <div class="text-lg font-semibold text-indigo-700">{{ userStats.quizzes_taken || 0 }}</div>
                 </div>
-                <div>
-                  <label class="block text-sm text-gray-700">Password</label>
-                  <input v-model="password" type="password" required class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500" />
+                <div class="flex items-center justify-between p-3 bg-violet-50 rounded-lg">
+                  <div class="text-sm text-violet-900">Total Points</div>
+                  <div class="text-lg font-semibold text-violet-700">{{ userStats.total_points || 0 }}</div>
                 </div>
-                <div class="flex items-center justify-between">
-                  <label class="inline-flex items-center text-sm text-gray-600"><input type="checkbox" v-model="remember" class="mr-2" /> Remember</label>
-                  <NuxtLink to="/login" class="text-sm text-indigo-600 underline">Forgot?</NuxtLink>
-                </div>
-                <div>
-                  <button type="submit" :disabled="loading" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-75 flex items-center justify-center">
-                    <svg v-if="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    <span>{{ loading ? 'Logging in...' : 'Log in' }}</span>
-                  </button>
-                </div>
-                <!-- errors shown via toasts; inline error removed -->
-              </form>
+                <NuxtLink to="/quizee/dashboard" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+                  View Full Dashboard
+                  <span class="i-heroicons-arrow-right-20-solid"></span>
+                </NuxtLink>
+              </div>
 
-              <div class="mt-4">
-                <div class="text-center text-sm text-slate-600 mb-2">Or continue with</div>
-                <div class="flex gap-2">
-                  <button type="button" @click="handleGoogleLogin" class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 48 48" role="img" aria-hidden="true"><path fill="#fbc02d" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#e53935" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4caf50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1565c0" d="M43.611 20.083 43.595 20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-                    <span>Google</span>
-                  </button>
-                  <!-- Facebook login temporarily disabled per request
-                  <a href="/auth/facebook" class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm">Facebook</a>
-                  -->
+              <!-- Quiz Master Stats -->
+              <div v-else-if="auth.user.role === 'quiz-master'" class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
+                  <div class="text-sm text-emerald-900">Wallet Balance</div>
+                  <div class="text-lg font-semibold text-emerald-700">{{ userStats.wallet_balance || 0 }}</div>
                 </div>
-                <div class="mt-3 text-center text-sm">
-                  <NuxtLink to="/register?role=quizee" class="text-indigo-600 underline mr-2">Register (Quizee)</NuxtLink>
-                  <NuxtLink to="/register?role=quiz-master" class="text-indigo-600 underline">Register (Quiz-Master)</NuxtLink>
+                <div class="flex items-center justify-between p-3 bg-sky-50 rounded-lg">
+                  <div class="text-sm text-sky-900">Quizzes Created</div>
+                  <div class="text-lg font-semibold text-sky-700">{{ userStats.quizzes_created || 0 }}</div>
                 </div>
+                <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                  <div class="text-sm text-purple-900">Questions Authored</div>
+                  <div class="text-lg font-semibold text-purple-700">{{ userStats.questions_authored || 0 }}</div>
+                </div>
+                <NuxtLink to="/quiz-master/dashboard" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+                  View Full Dashboard
+                  <span class="i-heroicons-arrow-right-20-solid"></span>
+                </NuxtLink>
               </div>
             </div>
           </div>
@@ -75,102 +76,7 @@
         </div>
 
         <div class="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-4">
-          <div
-            v-for="step in howItWorksSteps"
-            :key="step.title"
-            class="group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white p-8 shadow-[0_30px_80px_-30px_rgba(37,99,235,0.45)] ring-1 ring-indigo-100 transition duration-300 hover:-translate-y-1 hover:shadow-[0_45px_95px_-35px_rgba(37,99,235,0.55)]"
-          >
-            <div
-              class="absolute inset-x-10 -top-16 h-32 rounded-full opacity-20 blur-3xl transition group-hover:opacity-40"
-              :class="step.glow"
-            ></div>
-
-            <div class="relative flex items-center justify-between">
-              <div
-                class="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-lg shadow-indigo-500/40"
-                :class="step.badge"
-              >
-                {{ step.number }}
-              </div>
-              <span :class="['text-4xl text-slate-200 transition group-hover:text-slate-300', step.icon]"></span>
-            </div>
-
-            <div class="relative mt-6 space-y-2">
-              <h3 class="text-lg font-semibold text-slate-900">{{ step.title }}</h3>
-              <p class="text-sm leading-relaxed text-slate-600">{{ step.description }}</p>
-            </div>
-
-            <div v-if="step.link" class="relative mt-8 flex items-center gap-2 text-sm font-semibold text-indigo-600">
-              <NuxtLink :to="step.link.href" class="inline-flex items-center gap-2">
-                <span>{{ step.link.label }}</span>
-                <span class="i-heroicons-arrow-right-16-solid transition-transform group-hover:translate-x-1"></span>
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-14 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-center">
-          <NuxtLink
-            to="/grades"
-            class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500"
-          >
-            Get started now
-            <span class="i-heroicons-rocket-launch-16-solid"></span>
-          </NuxtLink>
-          <NuxtLink to="/about" class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600">
-            Explore all features
-            <span class="i-heroicons-arrow-up-right-16-solid"></span>
-          </NuxtLink>
-        </div>
-      </div>
-    </section>
-
-    <!-- Parallax banner -->
-  <ParallaxBanner image="/hero-banner.jpg" title="Practice daily, improve steadily" subtitle="Short, focused quizzes that fit into any schedule." cta-text="Start a quick quiz" cta-link="/quizzes" height="h-40 sm:h-56" class="my-8" />
-
-    <!-- Quizzes: Tabs + Grid (Top / Featured / New) -->
-    <section class="px-6 py-8">
-      <div class="mx-auto max-w-7xl">
-        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h2 class="text-3xl font-bold text-rose-900">Assessments & Practice</h2>
-            <p class="text-sm text-rose-700/80">Curated and adaptive quizzes across grades and subjects to measure and improve learning.</p>
-          </div>
-          <div class="flex items-center gap-3 py-1 -mx-3 px-3">
-            <div class="flex flex-wrap gap-2">
-              <button @click="selectedTab = 'all'" :class="selectedTab === 'all' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border'" class="px-3 py-2 rounded-xl">All</button>
-              <button @click="selectedTab = 'top'" :class="selectedTab === 'top' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border'" class="px-3 py-2 rounded-xl">Top</button>
-              <button @click="selectedTab = 'featured'" :class="selectedTab === 'featured' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border'" class="px-3 py-2 rounded-xl">Featured</button>
-              <button @click="selectedTab = 'new'" :class="selectedTab === 'new' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border'" class="px-3 py-2 rounded-xl">New</button>
-            </div>
-          </div>
-        </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-6">
-          <div class="lg:col-span-1">
-            <UiCard v-if="hasFeaturedQuiz" variant="elevated" class="h-full overflow-hidden p-0">
-              <div class="relative h-40 sm:h-56 w-full bg-gray-100 bg-center bg-cover" :style="{ backgroundImage: `url(${featuredQuiz.cover_image || featuredQuiz.cover || '/default-quiz.png'})` }">
-                <div class="absolute inset-0 bg-black/35"></div>
-                <div class="absolute inset-0 flex flex-col justify-end p-4">
-                  <div class="text-sm text-rose-200">Featured</div>
-                  <h3 class="text-xl font-bold text-white leading-tight">{{ featuredQuiz.title }}</h3>
-                </div>
-              </div>
-              <div class="p-4">
-                <div class="text-sm text-rose-700">{{ featuredQuiz.topic?.name || featuredQuiz.topic_name || 'General' }}</div>
-                  <div class="mt-3"><NuxtLink :to="`/quizee/quizzes/${featuredQuiz.id || ''}`" class="inline-flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-lg">Start practicing</NuxtLink></div>
-                  <div class="mt-3"><NuxtLink to="/quizzes" class="text-sm text-rose-600 underline">Show all quizzes</NuxtLink></div>
-              </div>
-            </UiCard>
-            <UiCard v-else variant="elevated" class="h-full overflow-hidden p-0">
-              <div class="flex h-full items-center justify-center bg-rose-50 p-6 text-center text-sm text-rose-600">
-                No featured quiz available right now. Browse all quizzes to get started.
-              </div>
-            </UiCard>
-          </div>
-
-
-<div class="lg:col-span-2">
             <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-6">
               <UiQuizCard v-for="quiz in safeArray(displayedQuizzesByGrade).slice(0,4)" :key="quiz.id" :to="`/quizee/quizzes/${quiz.id || ''}`" :startLink="`/quizee/quizzes/${quiz.id || ''}`" :takeLink="`/quizee/quizzes/take/${quiz.id || ''}`" :title="quiz.title" :topic="quiz.topic?.name || quiz.topic_name" :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name" :grade="quiz.grade || quiz.grade_id" :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count" :cover="quiz.cover_image || quiz.cover" :palette="pickPaletteClass(quiz.topic?.id || quiz.id)" :likes="quiz.likes_count ?? quiz.likes ?? 0" :quiz-id="quiz.id" :liked="quiz.liked" :description="quiz.description || quiz.summary || ''" @like="onQuizLike(quiz, $event)" />
               <div class="mt-4">
@@ -418,7 +324,8 @@ import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
 import LevelCard from '~/components/ui/LevelCard.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
-import { useAppAlert } from '~/composables/useAppAlert'
+import LoginForm from '~/components/Auth/LoginForm.vue'
+
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
 
@@ -463,26 +370,34 @@ function safeArray(input) {
 const selectedTab = ref('all')
 
 // data fetches
-const { data: quizzesData } = await useFetch(config.public.apiBase + '/api/quizzes?latest=1', { credentials: 'include' })
-const latestQuizzes = safeArray(quizzesData?.value?.quizzes?.data || quizzesData?.value?.quizzes || quizzesData?.value).slice(0, 12)
+// Fetch latest quizzes
+const quizzesRes = await api.get('/api/quizzes?latest=1')
+const quizzesData = quizzesRes.ok ? await quizzesRes.json() : null
+const latestQuizzes = safeArray(quizzesData?.quizzes?.data || quizzesData?.quizzes || quizzesData).slice(0, 12)
 const featuredQuiz = latestQuizzes.length ? latestQuizzes[0] : null
 
 const { fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels } = useTaxonomy()
 const topicsList = taxTopics
 
-const { data: quizMastersData } = await useFetch(config.public.apiBase + '/api/quiz-masters', { credentials: 'include' })
+// Fetch quiz masters
+const quizMastersRes = await api.get('/api/quiz-masters')
+const quizMastersData = quizMastersRes.ok ? await quizMastersRes.json() : null
 const featuredQuizMasters = safeArray(
-  quizMastersData?.value?.['quiz-masters']?.data ||
-  quizMastersData?.value?.['quiz-masters'] ||
-  quizMastersData?.value?.data ||
-  quizMastersData?.value
+  quizMastersData?.['quiz-masters']?.data ||
+  quizMastersData?.['quiz-masters'] ||
+  quizMastersData?.data ||
+  quizMastersData
 ).slice(0, 4)
 
-const { data: testimonialsData } = await useFetch(config.public.apiBase + '/api/testimonials', { credentials: 'include' })
-const testimonials = testimonialsData?.value?.testimonials?.data || testimonialsData?.value?.testimonials || testimonialsData?.value || []
+// Fetch testimonials
+const testimonialsRes = await api.get('/api/testimonials')
+const testimonialsData = testimonialsRes.ok ? await testimonialsRes.json() : null
+const testimonials = testimonialsData?.testimonials?.data || testimonialsData?.testimonials || testimonialsData || []
 
-const { data: sponsorsData } = await useFetch(config.public.apiBase + '/api/sponsors', { credentials: 'include' })
-const sponsors = sponsorsData?.value?.sponsors?.data || sponsorsData?.value?.sponsors || sponsorsData?.value || []
+// Fetch sponsors
+const sponsorsRes = await api.get('/api/sponsors')
+const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : null
+const sponsors = sponsorsData?.sponsors?.data || sponsorsData?.sponsors || sponsorsData || []
 
 const SUBJECTS = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
 const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
@@ -725,17 +640,26 @@ function onQuizLike(quiz, payload) {
 // Login state and handler
 import { useAuthStore } from '~/stores/auth'
 
-const email = ref('')
-const password = ref('')
-const remember = ref(false)
-const loading = ref(false)
-const error = ref(null)
-const router = useRouter()
 const auth = useAuthStore()
-const alert = useAppAlert()
+const userStats = ref({})
 
-// clear inline error when user starts typing
-watch([email, password], () => { error.value = null })
+// Fetch user stats when authenticated
+watch(() => auth.user, async (newUser) => {
+  if (!newUser) {
+    userStats.value = {}
+    return
+  }
+  
+  try {
+    const res = await api.get('/api/user/stats')
+    if (res.ok) {
+      const data = await res.json()
+      userStats.value = data
+    }
+  } catch (e) {
+    console.error('Failed to fetch user stats:', e)
+  }
+}, { immediate: true })
 
 async function login(){
   if (loading.value) return
@@ -770,11 +694,6 @@ async function login(){
     error.value = null
   }
   finally{ loading.value = false }
-}
-
-// Redirect to backend Google OAuth redirect endpoint (same behavior as pages/login.vue)
-function handleGoogleLogin(){
-  window.location.href = `${config.public.apiBase}/api/auth/google/redirect`
 }
 
 </script>

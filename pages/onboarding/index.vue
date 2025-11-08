@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-2xl mx-auto py-12 px-4">
     <h1 class="text-2xl font-bold mb-4">Complete your profile</h1>
-    <p class="mb-6">Please complete your profile information to continue.</p>
+    <p class="mb-6">Hi, {{ userEmail }}! Please complete your profile information to continue.</p>
 
     <!-- Institution Form -->
     <div v-if="!institutionAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
@@ -62,9 +62,10 @@
         </form>
       </div>
 
-      <!-- Grade and Subject Selection -->
+      <!-- Optional Education Information -->
       <div v-else-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
-      <h2 class="text-xl font-semibold mb-4">Education Information</h2>
+      <h2 class="text-xl font-semibold mb-4">Education Information <span class="text-sm font-normal text-gray-500">(Optional)</span></h2>
+      <p class="mb-4 text-sm text-gray-600">You can skip this step and complete it later from your profile settings.</p>
       <form @submit.prevent="submitGradeAndSubjects" class="space-y-6">
         <!-- Select Level then Grade -->
         <div class="space-y-4">
@@ -81,25 +82,29 @@
             </select>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Your Grade</label>
+          <div v-if="gradeForm.level_id">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              {{ isTertiaryLevel ? 'Your Course' : 'Your Grade' }}
+            </label>
             <select
               v-model="gradeForm.grade_id"
-              required
               class="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
-              <option value="">Select your grade</option>
+              <option value="">{{ isTertiaryLevel ? 'Select your course' : 'Select your grade' }}</option>
               <option v-for="grade in filteredGrades" :key="grade.id" :value="grade.id">
                 {{ grade.name }}
               </option>
             </select>
+            <p v-if="isTertiaryLevel" class="mt-1 text-sm text-gray-500">
+              Select your course to see relevant subjects
+            </p>
           </div>
 
           <!-- Select Subjects -->
-          <div>
+          <div v-if="gradeForm.grade_id">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Select Your Subjects
-              <span class="text-sm text-gray-500">(Choose subjects you want to focus on)</span>
+              <span class="text-sm text-gray-500">(Optional)</span>
             </label>
             <div class="grid grid-cols-2 gap-2">
               <label 
@@ -116,19 +121,21 @@
                 <span>{{ subject.name }}</span>
               </label>
             </div>
-            <p class="mt-2 text-sm text-gray-500" v-if="gradeForm.subjects.length === 0">
-              Please select at least one subject
+            <p class="mt-2 text-sm text-gray-500">
+              You can modify your subject preferences later from your profile settings
             </p>
           </div>
         </div>
-        <div>
+        <div class="space-y-3">
           <button 
             type="submit"
-            :disabled="!gradeForm.grade_id || gradeForm.subjects.length === 0"
-            class="w-full px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-gray-400"
+            class="w-full px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           >
-            Save and Continue
+            {{ gradeForm.level_id ? 'Save and Continue' : 'Skip for now' }}
           </button>
+          <p class="text-center text-sm text-gray-500">
+            You can complete or update this information later from your profile settings
+          </p>
         </div>
       </form>
     </div>
@@ -174,6 +181,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
 
 // Page meta: use the authenticated layout and require auth middleware
 definePageMeta({
@@ -186,6 +194,90 @@ const error = ref(null)
 const router = useRouter()
 const auth = useAuthStore()
 const config = useRuntimeConfig()
+const api = useApi()
+
+// Import taxonomy composable for levels, grades, and subjects
+import useTaxonomy from '~/composables/useTaxonomy'
+const { fetchLevels, fetchGradesByLevel, fetchSubjectsByGrade, levels, grades: taxGrades, subjects: taxSubjects } = useTaxonomy()
+
+// Fetch initial data
+onMounted(async () => {
+  await fetchLevels()
+})
+
+// Form states
+const institutionAdded = ref(false)
+const roleSelected = ref(false)
+const gradeAndSubjectsAdded = ref(false)
+
+// Form data
+const institutionForm = ref({ name: '' })
+const roleForm = ref({ role: '', password: '' })
+const gradeForm = ref({
+  level_id: '',
+  grade_id: '',
+  subjects: []
+})
+
+// Watch level changes to fetch corresponding grades
+watch(() => gradeForm.value.level_id, async (newLevelId) => {
+  if (newLevelId) {
+    await fetchGradesByLevel(newLevelId)
+  }
+})
+
+// Watch grade changes to fetch corresponding subjects
+watch(() => gradeForm.value.grade_id, async (newGradeId) => {
+  if (newGradeId) {
+    await fetchSubjectsByGrade(newGradeId)
+  }
+})
+
+  // Computed properties for filtered lists
+const isTertiaryLevel = computed(() => {
+  const selectedLevel = levels.value?.find(l => String(l.id) === String(gradeForm.value.level_id))
+  return selectedLevel?.name?.toLowerCase().includes('tertiary')
+})
+
+const filteredGrades = computed(() => {
+  if (!gradeForm.value.level_id) return []
+  const grades = taxGrades.value.filter(grade => 
+    String(grade.level_id) === String(gradeForm.value.level_id)
+  )
+  // For tertiary level, show only items with type 'course'
+  if (isTertiaryLevel.value) {
+    return grades.filter(g => g.type === 'course' || g.type === 'tertiary')
+  }
+  // For other levels, show only regular grades
+  return grades.filter(g => !g.type || g.type === 'grade')
+})
+
+const filteredSubjects = computed(() => {
+  if (!gradeForm.value.grade_id) return []
+  // Get subjects for the selected grade/course
+  const subjects = taxSubjects.value.filter(subject => 
+    !subject.grade_id || String(subject.grade_id) === String(gradeForm.value.grade_id)
+  )
+  // For tertiary level, ensure subjects are marked as course subjects
+  if (isTertiaryLevel.value) {
+    return subjects.map(subject => ({
+      ...subject,
+      isCourseSubject: true
+    }))
+  }
+  return subjects
+})
+
+// Helper functions for displaying names
+const getGradeName = (gradeId) => {
+  const grade = taxGrades.value.find(g => String(g.id) === String(gradeId))
+  return grade?.name || ''
+}
+
+const getSubjectName = (subjectId) => {
+  const subject = taxSubjects.value.find(s => String(s.id) === String(subjectId))
+  return subject?.name || ''
+}
 
 // Dynamic head/meta based on current user
 useHead(() => ({
@@ -197,106 +289,18 @@ useHead(() => ({
   ]
 }))
 
-// Data for forms
-const institutionForm = ref({ name: '' })
-const roleForm = ref({ role: 'quizee', password: '' })
-const roleSelected = ref(false)
-const gradeForm = ref({ level_id: '', grade_id: '', subjects: [] })
-const levels = ref([])
-const grades = ref([])
-const subjects = ref([])
-
-// Progress tracking
-const institutionAdded = ref(false)
-const gradeAndSubjectsAdded = ref(false)
-
-// Fetch grades and subjects
-async function fetchData() {
-  try {
-    // Only fetch top-level Levels on initial load. Grades and subjects are fetched on-demand
-    const levelsRes = await $fetch(config.public.apiBase + '/api/levels', { credentials: 'include' })
-    levels.value = (levelsRes?.data || levelsRes || []).filter ? (levelsRes?.data || levelsRes || []).filter(Boolean) : []
-  } catch (err) {
-    console.error('Failed to fetch data:', err)
-    error.value = 'Failed to load form data. Please refresh the page.'
-  }
-}
-
-async function fetchGradesForLevel(levelId) {
-  if (!levelId) {
-    grades.value = []
-    return
-  }
-  try {
-    const res = await $fetch(config.public.apiBase + `/api/grades?level_id=${encodeURIComponent(levelId)}`, { credentials: 'include' })
-    grades.value = (res?.data || res || []).filter ? (res?.data || res || []).filter(Boolean) : []
-  } catch (err) {
-    console.error('Failed to fetch grades for level:', err)
-    grades.value = []
-  }
-}
-
-async function fetchSubjectsForGrade(gradeId) {
-  if (!gradeId) {
-    subjects.value = []
-    return
-  }
-  try {
-    const res = await $fetch(config.public.apiBase + `/api/subjects?grade_id=${encodeURIComponent(gradeId)}`, { credentials: 'include' })
-    subjects.value = (res?.data || res || []).filter ? (res?.data || res || []).filter(Boolean) : []
-  } catch (err) {
-    console.error('Failed to fetch subjects for grade:', err)
-    subjects.value = []
-  }
-}
-
-// Initialize data
-onMounted(fetchData)
-
-// Helper functions to get names
-function getGradeName(id) {
-  const grade = grades.value.find(g => g.id === id)
-  return grade ? grade.name : ''
-}
-
-function getSubjectName(id) {
-  const subject = subjects.value.find(s => s.id === id)
-  return subject ? subject.name : ''
-}
-
-const filteredGrades = computed(() => grades.value)
-
-// When level changes, reset selected grade and subjects and fetch grades for the level
-watch(() => gradeForm.value.level_id, (val) => {
-  gradeForm.value.grade_id = ''
-  gradeForm.value.subjects = []
-  grades.value = []
-  subjects.value = []
-  if (val) fetchGradesForLevel(val)
-})
-
-// When grade changes, reset subjects and fetch subjects for the grade
-watch(() => gradeForm.value.grade_id, (val) => {
-  gradeForm.value.subjects = []
-  subjects.value = []
-  if (val) fetchSubjectsForGrade(val)
-})
-
-const filteredSubjects = computed(() => subjects.value)
+// Form submission handlers
 
 // Form submission handlers
 async function submitInstitution() {
   message.value = null
   error.value = null
   try {
-    await $fetch(config.public.apiBase + '/api/onboarding/step', {
-      method: 'POST',
-      credentials: 'include',
-      body: {
-        step: 'institution',
-        data: { institution: institutionForm.value.name }
-      }
+    const resp = await api.postJson('/api/onboarding/step', {
+      step: 'institution',
+      data: { institution: institutionForm.value.name }
     })
+    if (!resp.ok) throw new Error('Failed to save institution')
     institutionAdded.value = true
     message.value = 'Institution saved successfully.'
   } catch (err) {
@@ -309,26 +313,30 @@ async function submitGradeAndSubjects() {
   message.value = null
   error.value = null
   try {
-    // Save grade (include level_id)
-    await $fetch(config.public.apiBase + '/api/onboarding/step', {
-      method: 'POST',
-      credentials: 'include',
-      body: {
+    // If level/grade were selected, save them
+    if (gradeForm.value.level_id && gradeForm.value.grade_id) {
+      let resp = await api.postJson('/api/onboarding/step', {
         step: 'grade',
-        data: { grade_id: gradeForm.value.grade_id, level_id: gradeForm.value.level_id }
+        data: { 
+          grade_id: gradeForm.value.grade_id, 
+          level_id: gradeForm.value.level_id 
+        }
+      })
+      if (!resp.ok) throw new Error('Failed to save grade/course')
+
+      // If subjects were selected, save them
+      if (gradeForm.value.subjects.length > 0) {
+        resp = await api.postJson('/api/onboarding/step', {
+          step: 'subjects',
+          data: { subjects: gradeForm.value.subjects }
+        })
+        if (!resp.ok) throw new Error('Failed to save subjects')
       }
-    })
-    // Save subjects
-    await $fetch(config.public.apiBase + '/api/onboarding/step', {
-      method: 'POST',
-      credentials: 'include',
-      body: {
-        step: 'subjects',
-        data: { subjects: gradeForm.value.subjects }
-      }
-    })
+      message.value = 'Education information saved successfully.'
+    }
+    
+    // Mark as complete whether saved or skipped
     gradeAndSubjectsAdded.value = true
-    message.value = 'Education information saved successfully.'
   } catch (err) {
     console.error(err)
     error.value = err?.message || 'Failed to save education information'
@@ -340,14 +348,11 @@ async function submitRole() {
   error.value = null
   try {
     const stepName = roleForm.value.role === 'quiz-master' ? 'role_quiz-master' : 'role_quizee'
-    await $fetch(config.public.apiBase + '/api/onboarding/step', {
-      method: 'POST',
-      credentials: 'include',
-      body: {
-        step: stepName,
-        data: { role: roleForm.value.role, password: roleForm.value.password }
-      }
+    const resp = await api.postJson('/api/onboarding/step', {
+      step: stepName,
+      data: { role: roleForm.value.role, password: roleForm.value.password }
     })
+    if (!resp.ok) throw new Error('Failed to save role and password')
     roleSelected.value = true
     message.value = 'Role and password saved.'
   } catch (err) {
@@ -360,11 +365,10 @@ async function finalize() {
   message.value = null
   error.value = null
   try {
-    await $fetch(config.public.apiBase + '/api/onboarding/finalize', {
-      method: 'POST',
-      credentials: 'include'
-    })
-    const me = await $fetch(config.public.apiBase + '/api/me', { credentials: 'include' })
+    let resp = await api.postJson('/api/onboarding/finalize', {})
+    if (!resp.ok) throw new Error('Finalize failed')
+    resp = await api.get('/api/me')
+    const me = await resp.json()
     try { localStorage.removeItem('modeh:onboarding:skipped') } catch (e) {}
     message.value = 'Profile finalized.'
     if (me && me.role === 'quiz-master') {
@@ -377,6 +381,9 @@ async function finalize() {
     error.value = err?.message || 'Finalize failed'
   }
 }
+
+// User email for greeting
+const userEmail = computed(() => auth.user?.email || '')
 </script>
 
 <style scoped>

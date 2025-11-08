@@ -227,25 +227,78 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     if (typeof question.is_banked === 'undefined') question.is_banked = false;
     if (typeof question.difficulty === 'undefined') question.difficulty = 2;
     if (typeof question.marks === 'undefined') question.marks = 1;
-    if (typeof question.text === 'undefined') question.text = '<p></p>';
+    // Populate the editor text from common server-side fields if present.
+    // Some API responses use `body` or `question` while the editor expects `text`.
+    if (typeof question.text === 'undefined' || question.text === null) {
+      if (typeof question.body === 'string' && question.body.trim() !== '') {
+        question.text = question.body
+      } else if (typeof question.question === 'string' && question.question.trim() !== '') {
+        question.text = question.question
+      } else {
+        question.text = '<p></p>'
+      }
+    }
+
+    // Ensure explanation is present for the editor. Some server responses may use
+    // `explain` or `explanation` keys; prefer `explanation` but fall back to others.
+    if (typeof question.explanation === 'undefined' || question.explanation === null) {
+      if (typeof question.explain === 'string' && question.explain.trim() !== '') {
+        question.explanation = question.explain
+      } else if (typeof question.explanation === 'string') {
+        // keep as-is (already string)
+      } else {
+        question.explanation = ''
+      }
+    }
 
     // Use a consistent structure for options: always array of objects for the editor
     if (Array.isArray(question.options)) {
+      // If options are objects, derive answers from any `is_correct` flags.
       if (question.options.length > 0 && typeof question.options[0] === 'object') {
         const corrects: number[] = []
         question.options.forEach((opt: any, i: number) => {
           if (opt.is_correct) corrects.push(i)
         })
         if (question.type === 'mcq') {
-          // `corrects[0]` is safe here because we check `corrects.length > 0`.
-          // Use a non-null assertion to satisfy `noUncheckedIndexedAccess` configurations.
-          question.answers = corrects.length > 0 ? [corrects[0]!.toString()] : []
+          question.answers = corrects.length > 0 ? [String(corrects[0])] : (Array.isArray(question.answers) ? question.answers.map(String) : [])
         } else if (question.type === 'multi') {
-          question.answers = corrects.map(i => i.toString())
+          question.answers = corrects.length > 0 ? corrects.map(i => String(i)) : (Array.isArray(question.answers) ? question.answers.map(String) : [])
         }
       } else if (question.options.length > 0 && typeof question.options[0] === 'string') {
         // Convert string options to object format
         question.options = question.options.map((text: string) => ({ text: text || '', is_correct: false }))
+
+        // If the source question supplied `correct` or `corrects` (from CSV/import or API), mark those indices
+        // and populate `answers` so the editor and payload builders are consistent.
+        const setCorrectIndices: number[] = []
+        if (typeof question.correct === 'number') {
+          setCorrectIndices.push(question.correct)
+        } else if (Array.isArray(question.corrects)) {
+          question.corrects.forEach((c: any) => {
+            if (typeof c === 'number' || (typeof c === 'string' && /^\d+$/.test(c))) setCorrectIndices.push(Number(c))
+          })
+        } else if (Array.isArray(question.answers)) {
+          // answers may be strings or numbers referencing option positions or option text
+          question.answers.forEach((a: any) => {
+            if (typeof a === 'number' || (typeof a === 'string' && /^\d+$/.test(a))) {
+              setCorrectIndices.push(Number(a))
+            } else if (typeof a === 'string') {
+              const idx = question.options.findIndex((o: any) => String(o.text).trim() === String(a).trim())
+              if (idx >= 0) setCorrectIndices.push(idx)
+            }
+          })
+        }
+
+        if (setCorrectIndices.length) {
+          setCorrectIndices.forEach(i => {
+            if (i >= 0 && i < question.options.length) question.options[i].is_correct = true
+          })
+          if (question.type === 'mcq') {
+            question.answers = [String(setCorrectIndices[0])]
+          } else if (question.type === 'multi') {
+            question.answers = setCorrectIndices.map(i => String(i))
+          }
+        }
       }
     }
 
@@ -825,17 +878,11 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         quiz.value = loaded
         
         const rawQuestions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions : []
-        questions.value = rawQuestions.map((q: any, idx: number) => ({
-          id: q?.id ?? q?.uid ?? null,
-          uid: q?.uid ?? `q_${idx}`,
-          type: q?.type ?? 'mcq',
-          body: q?.body ?? q?.text ?? q?.question ?? '',
-          question: q?.question ?? q?.body ?? q?.text ?? '',
-          options: Array.isArray(q?.options) ? q.options : (Array.isArray(q?.answers) ? q.answers : []),
-          marks: q?.marks ?? 0,
-          difficulty: q?.difficulty ?? 2,
-          explanation: q?.explanation ?? null,
-        }))
+        // Normalize questions using the shared normalizer so fields like `open`, `text`, `options`,
+        // and `uid` are consistently present for the editor UI. This fixes issues when editing
+        // existing quizzes where the incoming question objects may not contain editor-specific
+        // fields and the editor couldn't open or render correctly.
+        questions.value = rawQuestions.map((q: any, idx: number) => normalizeQuestionForEditor(q))
         quizId.value = serverQuiz.id || id
 
         detailsSaved.value = !!(quiz.value.title && quiz.value.grade_id && quiz.value.subject_id && quiz.value.topic_id)

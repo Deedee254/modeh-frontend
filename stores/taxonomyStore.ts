@@ -51,6 +51,7 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
   const gradesCache = new Map()
   const subjectsPageCache = new Map()
   const topicsPageCache = new Map()
+  const api = useApi()
   function extractId(v: any) {
     if (v === null || v === undefined) return null
     if (typeof v === 'object') return v.id ?? v.value ?? null
@@ -62,15 +63,15 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
   const selectedTopic = ref(null)
   const stepTwo = ref<{ grade_id: any; subject_id: any; topic_id: any; } | null>(null)
 
-  async function fetchGrades() {
+    async function fetchGrades() {
     if (grades.value.length) {
       return
     }
     loadingGrades.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/grades`, { credentials: 'include' })
+      const res = await api.get('/api/grades')
       if (!res.ok) return
-      const data = await res.json().catch(() => null)
+      const data = await res.json()
       grades.value = normalizeList(data)
     } catch (e) {
       // ignore
@@ -91,12 +92,12 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     }
     loadingGrades.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/grades?level_id=${encodeURIComponent(levelId)}`, { credentials: 'include' })
+      const res = await api.get(`/api/grades?level_id=${encodeURIComponent(levelId)}`)
       if (!res.ok) {
         grades.value = []
         return
       }
-      const data = await res.json().catch(() => null)
+      const data = await res.json()
       const list = normalizeList(data)
       grades.value = list
       gradesCache.set(key, list)
@@ -113,9 +114,9 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     }
     loadingSubjects.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/subjects`, { credentials: 'include' })
+      const res = await api.get('/api/subjects')
       if (res.ok) {
-        const data = await res.json().catch(() => null)
+        const data = await res.json()
         subjects.value = normalizeList(data)
       }
     } catch (e) {
@@ -136,18 +137,18 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     }
     loadingSubjects.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/subjects?grade_id=${gradeId}`, { credentials: 'include' })
+      const res = await api.get(`/api/subjects?grade_id=${gradeId}`)
       if (res.ok) {
-        const data = await res.json().catch(() => null)
+        const data = await res.json()
         const list = normalizeList(data)
         subjects.value = list
         subjectsCache.set(gradeId, list)
         return
       }
       // fallback: fetch all subjects then filter
-      const allRes = await fetch(`${config.public.apiBase}/api/subjects`, { credentials: 'include' })
+      const allRes = await api.get('/api/subjects')
       if (allRes.ok) {
-        const allData = await allRes.json().catch(() => null)
+        const allData = await allRes.json()
         const list = normalizeList(allData)
         const filtered = list.filter((s: any) => {
           const g = s.grade_id ?? s.grade ?? (s.grade && typeof s.grade === 'object' ? s.grade.id : null) ?? ''
@@ -169,9 +170,9 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     }
     loadingTopics.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/topics`, { credentials: 'include' })
+      const res = await api.get('/api/topics')
       if (res.ok) {
-        const data = await res.json().catch(() => null)
+        const data = await res.json()
         topics.value = normalizeList(data)
       }
     } catch (e) {
@@ -193,9 +194,9 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
       if (q) params.set('q', q)
       if (perPage) params.set('per_page', String(perPage))
       if (page) params.set('page', String(page))
-      const res = await fetch(`${config.public.apiBase}/api/subjects?${params.toString()}`, { credentials: 'include' })
+      const res = await api.get(`/api/subjects?${params.toString()}`)
       if (!res.ok) return { items: [], meta: null }
-      const data = await res.json().catch(() => null)
+      const data = await res.json()
       const items = normalizeList(data)
       let meta = null
       if (data && data.subjects && data.subjects.meta) meta = data.subjects.meta
@@ -228,9 +229,9 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
       if (q) params.set('q', q)
       if (perPage) params.set('per_page', String(perPage))
       if (page) params.set('page', String(page))
-      const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}/topics?${params.toString()}`, { credentials: 'include' })
+      const res = await api.get(`/api/subjects/${subjectId}/topics?${params.toString()}`)
       if (!res.ok) return { items: [], meta: null }
-      const data = await res.json().catch(() => null)
+      const data = await res.json()
       const items = normalizeList(data)
       let meta = null
       if (data && data.meta) meta = data.meta
@@ -262,12 +263,12 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     }
     loadingTopics.value = true
     try {
-      const res = await fetch(`${config.public.apiBase}/api/subjects/${subjectId}/topics`, { credentials: 'include' })
+      const res = await api.get(`/api/subjects/${subjectId}/topics`)
       if (res.ok) {
-        const data = await res.json().catch(() => null)
-  const list = normalizeList(data)
-  topics.value = list
-  topicsCache.set(subjectId, list)
+        const data = await res.json()
+        const list = normalizeList(data)
+        topics.value = list
+        topicsCache.set(subjectId, list)
       }
     } catch (e) {
       // ignore
