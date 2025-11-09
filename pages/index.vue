@@ -66,7 +66,7 @@
       </div>
     </section>
 
-    <!-- Steps: Quizee flow -->
+    <!-- How It Works -->
     <section class="relative mt-16 px-6">
       <div class="mx-auto max-w-6xl">
         <div class="text-center">
@@ -75,16 +75,45 @@
           <p class="mt-3 text-base text-slate-600">A learning workflow designed for clarity and steady progress — pick a learning path, practice with targeted quizzes, review instant feedback, and track improvement over time.</p>
         </div>
 
-        <div class="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-4">
-          <div>
-            <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-6">
-              <UiQuizCard v-for="quiz in safeArray(displayedQuizzesByGrade).slice(0,4)" :key="quiz.id" :to="`/quizee/quizzes/${quiz.id || ''}`" :startLink="`/quizee/quizzes/${quiz.id || ''}`" :takeLink="`/quizee/quizzes/take/${quiz.id || ''}`" :title="quiz.title" :topic="quiz.topic?.name || quiz.topic_name" :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name" :grade="quiz.grade || quiz.grade_id" :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count" :cover="quiz.cover_image || quiz.cover" :palette="pickPaletteClass(quiz.topic?.id || quiz.id)" :likes="quiz.likes_count ?? quiz.likes ?? 0" :quiz-id="quiz.id" :liked="quiz.liked" :description="quiz.description || quiz.summary || ''" @like="onQuizLike(quiz, $event)" />
-              <div class="mt-4">
-                <NuxtLink to="/quizzes" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 rounded-lg">Show all quizzes</NuxtLink>
-              </div>
+        <div class="mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div v-for="step in howItWorksSteps" :key="step.number" class="text-center">
+            <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl" :class="step.badge">
+              <span class="absolute inset-0.5 rounded-2xl" :class="step.glow" />
+              <span class="relative text-white text-2xl" :class="step.icon" />
             </div>
-            <div v-else class="text-rose-700/70 text-sm">No quizzes yet. Check back soon.</div>
+            <h3 class="mt-5 text-lg font-semibold text-slate-900">{{ step.title }}</h3>
+            <p class="mt-2 text-sm text-slate-600">{{ step.description }}</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quizzes section -->
+    <section class="px-6 py-10">
+      <div class="mx-auto max-w-6xl">
+        <header class="text-center max-w-2xl mx-auto">
+          <h2 class="text-3xl font-bold text-slate-900">Featured Quizzes</h2>
+          <p class="mt-3 text-slate-600">Explore quizzes curated by our community. Find new challenges, top-rated content, and featured picks to test your knowledge.</p>
+        </header>
+
+        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div class="flex items-center gap-2 rounded-full border p-1">
+            <button @click="selectedTab = 'all'" :class="selectedTab === 'all' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">All</button>
+            <button @click="selectedTab = 'new'" :class="selectedTab === 'new' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">New</button>
+            <button @click="selectedTab = 'top'" :class="selectedTab === 'top' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Top</button>
+            <button @click="selectedTab = 'featured'" :class="selectedTab === 'featured' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Featured</button>
+          </div>
+        </div>
+
+        <div class="mt-10">
+          <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <UiQuizCard v-for="quiz in safeArray(displayedQuizzesByGrade).slice(0,8)" :key="quiz.id" :to="`/quizee/quizzes/${quiz.id || ''}`" :startLink="`/quizee/quizzes/${quiz.id || ''}`" :takeLink="`/quizee/quizzes/take/${quiz.id || ''}`" :title="quiz.title" :topic="quiz.topic?.name || quiz.topic_name" :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name" :grade="quiz.grade || quiz.grade_id" :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count" :cover="quiz.cover_image || quiz.cover" :palette="pickPaletteClass(quiz.topic?.id || quiz.id)" :likes="quiz.likes_count ?? quiz.likes ?? 0" :quiz-id="quiz.id" :liked="quiz.liked" :description="quiz.description || quiz.summary || ''" @like="onQuizLike(quiz, $event)" />
+          </div>
+          <div v-else class="text-center text-rose-700/70 text-sm">No quizzes yet for this filter. Check back soon.</div>
+        </div>
+
+        <div class="mt-8 text-center">
+          <NuxtLink to="/quizzes" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 rounded-lg">Show all quizzes</NuxtLink>
         </div>
       </div>
     </section>
