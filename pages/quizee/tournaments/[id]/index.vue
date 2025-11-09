@@ -48,7 +48,6 @@
             <AffiliateShareButton
               itemType="Tournament"
               :itemId="tournament.id"
-              :baseUrl="baseUrl"
             />
           </div>
         </div>
@@ -112,12 +111,27 @@
           </div>
         </div>
 
+          <!-- Bracket -->
+          <div class="bg-white rounded-xl p-6 shadow-sm mt-6 lg:col-span-2">
+            <h2 class="text-xl font-bold mb-4">Bracket</h2>
+            <TournamentBracket :tournamentId="tournamentIdStr" />
+          </div>
+
+          <!-- Recent Matches -->
+          <div class="bg-white rounded-xl p-6 shadow-sm mt-6 lg:col-span-2">
+            <h2 class="text-xl font-bold mb-4">Recent Matches</h2>
+            <div v-if="recentMatches.length === 0" class="text-gray-600">No completed matches yet.</div>
+            <div v-else class="space-y-4">
+              <MatchResultCard v-for="m in recentMatches" :key="m.id" :match="m" :tournamentId="tournamentIdStr || String(tournament?.id ?? '')" />
+            </div>
+          </div>
+
         <!-- Sidebar -->
         <div class="space-y-6">
           <!-- Registration Status -->
           <div class="bg-white rounded-xl p-6 shadow-sm">
             <h2 class="text-xl font-bold mb-4">Registration</h2>
-            <template v-if="!isRegistered">
+            <template v-if="!isRegistered && registrationStatus !== 'pending'">
               <p class="text-gray-600 mb-4">Join this tournament to compete with other participants!</p>
               <button 
                 @click="registerForTournament"
@@ -126,6 +140,13 @@
               >
                 Register Now
               </button>
+            </template>
+            <template v-else-if="registrationStatus === 'pending'">
+              <div class="text-yellow-600 font-medium mb-4">
+                <Icon name="mdi:clock-outline" class="inline-block mr-2" />
+                Registration pending approval
+              </div>
+              <button disabled class="w-full bg-gray-200 text-gray-600 px-6 py-3 rounded-lg font-medium">Awaiting approval</button>
             </template>
             <template v-else>
               <div class="text-green-600 font-medium mb-4">
@@ -193,6 +214,8 @@ definePageMeta({ layout: 'quizee' })
 import { ref, onMounted, computed } from 'vue'
 import { useRuntimeConfig } from '#imports'
 import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+import TournamentBracket from '~/components/TournamentBracket.vue'
+import MatchResultCard from '~/components/quizee/tournaments/MatchResultCard.vue'
 import useApi from '~/composables/useApi'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 const api = useApi()
@@ -232,6 +255,7 @@ const tournament = ref<Tournament | null>(null)
 const battles = ref<any[]>([])
 const nextRoundAt = ref<string | null>(null)
 const isRegistered = ref(false)
+const registrationStatus = ref<string | null>(null) // 'pending' | 'approved' | 'rejected' | null
 const topPlayers = ref<Player[]>([])
 const canRegister = ref(true)
 
@@ -302,17 +326,32 @@ const isTaking = computed(() => {
   return !!(currentBattle.value && ['active', 'in_progress', 'started'].includes((currentBattle.value.status || '').toString()))
 })
 
-// Check if user is registered
+// Check if user is registered and their registration status
 const checkRegistrationStatus = async () => {
   try {
     const response = await api.get(`/api/tournaments/${route.params.id}/registration-status`)
     const json: any = await response.json()
     // Accept { isRegistered: true } or { data: { isRegistered: true } }
-    isRegistered.value = !!(json?.data?.isRegistered ?? json?.isRegistered)
+    const isReg = !!(json?.data?.isRegistered ?? json?.isRegistered)
+    isRegistered.value = isReg
+    registrationStatus.value = (json?.data?.status ?? json?.status) || (isReg ? 'approved' : null)
   } catch (error) {
     console.error('Error checking registration status:', error)
   }
 }
+
+const recentMatches = computed(() => {
+  try {
+    return (battles.value || []).filter((b: any) => b.status === 'completed').slice(0, 6)
+  } catch (e) { return [] }
+})
+
+// Normalize route param id (could be string | string[] | undefined) into a plain string
+const tournamentIdStr = computed(() => {
+  const p = route.params.id as unknown as string | string[] | undefined
+  if (Array.isArray(p)) return p[0] ?? ''
+  return (p ?? '')
+})
 
 // Fetch leaderboard
 const fetchLeaderboard = async () => {

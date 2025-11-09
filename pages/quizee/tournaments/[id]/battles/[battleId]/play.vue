@@ -25,67 +25,43 @@
       </div>
     </div>
 
+    <!-- Connection status banner -->
+    <div v-if="connectionStatus !== 'connected'" class="max-w-7xl mx-auto px-4 py-2 sm:px-6 lg:px-8">
+      <div :class="[
+        'rounded-md p-3 text-sm',
+        connectionStatus === 'disconnected' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
+      ]">
+        <div v-if="connectionStatus === 'disconnected'">Connection lost — answers may not be saved. Reconnect to continue.</div>
+        <div v-else-if="connectionStatus === 'reconnecting'">Reconnecting to realtime service…</div>
+      </div>
+    </div>
+
     <!-- Battle Content -->
     <div class="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
       </div>
 
+      <div v-else-if="error" class="flex flex-col items-center justify-center min-h-[400px]">
+        <div class="text-red-600 mb-4">{{ error }}</div>
+        <button 
+          @click="fetchBattle" 
+          class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+
       <template v-else>
         <!-- Current Question -->
-        <div v-if="currentQuestion" class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-          <div class="p-6">
-            <!-- Question Content -->
-            <div class="mb-6">
-              <h2 class="text-lg font-medium text-gray-900 mb-4">
-                {{ currentQuestion.content }}
-              </h2>
-
-              <!-- Question Media -->
-              <div v-if="currentQuestion.media_url" class="mb-4">
-                <img 
-                  v-if="currentQuestion.media_type === 'image'"
-                  :src="currentQuestion.media_url" 
-                  :alt="currentQuestion.content"
-                  class="max-w-full h-auto rounded-lg"
-                >
-                <!-- Add video/audio support if needed -->
-              </div>
-            </div>
-
-            <!-- Answer Options -->
-            <div class="space-y-3">
-              <button
-                v-for="(option, index) in currentQuestion.options"
-                :key="option.id"
-                @click="selectAnswer(option.id)"
-                :disabled="answerSubmitted"
-                :class="[
-                  'w-full text-left px-4 py-3 rounded-lg transition-colors duration-200',
-                  answerSubmitted && option.id === currentQuestion.correct_option_id ? 'bg-green-100 text-green-800 hover:bg-green-100' :
-                  answerSubmitted && option.id === selectedAnswerId ? 'bg-red-100 text-red-800 hover:bg-red-100' :
-                  selectedAnswerId === option.id ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' :
-                  'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                ]"
-              >
-                <div class="flex items-center">
-                  <div 
-                    :class="[
-                      'w-6 h-6 rounded-full flex items-center justify-center mr-3 border',
-                      answerSubmitted && option.id === currentQuestion.correct_option_id ? 'border-green-500 text-green-500' :
-                      answerSubmitted && option.id === selectedAnswerId ? 'border-red-500 text-red-500' :
-                      selectedAnswerId === option.id ? 'border-blue-500 text-blue-500' :
-                      'border-gray-300 text-gray-500'
-                    ]"
-                  >
-                    {{ ['A', 'B', 'C', 'D'][index] }}
-                  </div>
-                  <span>{{ option.content }}</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
+        <QuestionCard 
+          v-if="currentQuestion"
+          :question="currentQuestion"
+          :model-value="selectedAnswerId"
+          @update:model-value="selectAnswer"
+          @select="selectAnswer"
+          class="mb-8"
+        />
 
   <!-- Battle Progress -->
   <div class="flex justify-between items-center">
@@ -174,26 +150,34 @@
 // Use the quizee layout
 definePageMeta({ layout: 'quizee' })
 
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
+import { QuestionCard } from '#components'
+import { useAnswerStore } from '~/stores/answerStore'
 
 // Types
-type Option = {
+interface Option {
   id: number | string
   content: string
 }
 
-type Question = {
+interface Question {
   id: number | string
+  type?: string
   content: string
+  body?: string
   media_url?: string
+  media?: string
   media_type?: string
+  media_path?: string
+  youtube_url?: string
+  youtube?: string
   options: Option[]
   correct_option_id?: number | string
 }
 
-type Battle = {
+interface Battle {
   id: number | string
   questions: Question[]
   duration: number
@@ -206,6 +190,7 @@ const router = useRouter()
 
 // State
 const loading = ref<boolean>(true)
+const error = ref<string | null>(null)
 const battle = ref<Battle | null>(null)
 const questions = ref<Question[]>([])
 const currentQuestionIndex = ref<number>(0)
@@ -214,6 +199,18 @@ const timeRemaining = ref<number>(0)
 const answerSubmitted = ref<boolean>(false)
 const showConfirmation = ref<boolean>(false)
 const score = ref<number>(0)
+const isSubmitting = ref<boolean>(false)
+
+// Connection status for realtime
+const connectionStatus = ref<'connected'|'disconnected'|'reconnecting'>('connected')
+
+// Per-question timer
+let questionTimer: ReturnType<typeof setTimeout> | undefined
+const timePerQuestion = ref<number | null>(null)
+
+// Use persisted answer store
+const answerStore = useAnswerStore()
+const progressKey = computed(() => `tournament_battle_progress_${route.params.id}_${route.params.battleId}`)
 
 // Timer
 let timer: ReturnType<typeof setInterval> | undefined
@@ -223,7 +220,12 @@ const currentQuestion = computed<Question | undefined>(() => questions.value[cur
 const totalQuestions = computed<number>(() => questions.value.length)
 const isFirstQuestion = computed<boolean>(() => currentQuestionIndex.value === 0)
 const isLastQuestion = computed<boolean>(() => currentQuestionIndex.value === totalQuestions.value - 1)
-const selectedAnswerId = computed<string | number | undefined>(() => currentQuestion.value ? selectedAnswers.value[currentQuestion.value.id] : undefined)
+const selectedAnswerId = computed<string | number | undefined>(() => {
+  if (!currentQuestion.value) return undefined
+  const stored = answerStore.getAnswer(Number(String(currentQuestion.value.id)))
+  if (typeof stored !== 'undefined') return stored as any
+  return selectedAnswers.value[currentQuestion.value.id]
+})
 const canNavigate = computed<boolean>(() => !!(currentQuestion.value && selectedAnswers.value[currentQuestion.value.id]))
 const allQuestionsAnswered = computed<boolean>(() => 
   Object.keys(selectedAnswers.value).length === totalQuestions.value
@@ -238,8 +240,19 @@ const fetchBattle = async () => {
     const response = await useFetch(config.public.apiBase + `/api/tournaments/${route.params.id}/battles/${route.params.battleId}`, { credentials: 'include' })
     const data = response.data.value as Battle
     battle.value = data
-    questions.value = data.questions
-    startTimer(data.duration * 60) // Convert minutes to seconds
+    // Normalize questions for QuestionCard component
+    questions.value = data.questions.map(q => ({
+      ...q,
+      type: 'mcq', // Default to MCQ type
+      body: q.content, // Map content to body for QuestionCard
+      media: q.media_url, // Map media_url to media
+      media_path: q.media_url // Also set media_path for compatibility
+    }))
+  startTimer(data.duration * 60) // Convert minutes to seconds
+  // Use per-question timing if provided by battle payload
+  timePerQuestion.value = (data as any).per_question_seconds ?? null
+  // Try to restore saved progress for this battle (answers, index, remaining time)
+  restoreProgress()
     // If only one participant, start polling for an opponent
     if (data && (data as any).participants && Array.isArray((data as any).participants) && (data as any).participants.length <= 1) {
       waitingForOpponent.value = true
@@ -257,47 +270,55 @@ const fetchBattle = async () => {
 const selectAnswer = async (optionId: string | number) => {
   if (answerSubmitted.value || !currentQuestion.value) return
 
-  selectedAnswers.value[currentQuestion.value.id] = optionId
+  // Lock to prevent double submits locally
   answerSubmitted.value = true
 
-  // Submit answer to backend
+  // Persist immediately to local answer store
   try {
-    const response = await useFetch(
-      config.public.apiBase + `/api/tournaments/${route.params.id}/battles/${route.params.battleId}/questions/${currentQuestion.value.id}/answer`,
-      {
-        method: 'POST',
-        body: { option_id: optionId },
-        credentials: 'include'
-      }
-    )
-    
-    // Update score if available in response
-    const respData = response.data.value as { score?: number }
-    if (respData?.score !== undefined) {
-      score.value = respData.score
-    }
-
-    // Auto-advance to next question after a short delay
-    setTimeout(() => {
-      if (!isLastQuestion.value) {
-        nextQuestion()
-      }
-      answerSubmitted.value = false
-    }, 1500)
-  } catch (error) {
-    console.error('Error submitting answer:', error)
+  answerStore.setAnswer(Number(String(currentQuestion.value.id)), optionId as any)
+    selectedAnswers.value[currentQuestion.value.id] = optionId
+    persistProgress()
+  } catch (e) {
+    console.warn('Failed to persist answer locally', e)
   }
+
+  // Optimistic local-only: do not require connection for per-question submits.
+  // We'll submit all answers in bulk on `submitBattle()` so skip network call here.
+  // Auto-advance to next question after a short delay
+  setTimeout(() => {
+    if (!isLastQuestion.value) {
+      nextQuestion()
+    }
+    answerSubmitted.value = false
+  }, 300)
 }
 
 const previousQuestion = () => {
   if (!isFirstQuestion.value) {
+    // Reset answer submitted state when changing questions
+    answerSubmitted.value = false
     currentQuestionIndex.value--
+    
+    // Reset per-question timer if using one
+    startQuestionTimer(timePerQuestion.value)
   }
 }
 
 const nextQuestion = () => {
   if (!isLastQuestion.value) {
+    // Reset answer submitted state when changing questions
+    answerSubmitted.value = false
     currentQuestionIndex.value++
+    
+    // Reset per-question timer if using one
+    startQuestionTimer(timePerQuestion.value)
+
+    // Pre-fetch next question's media if available
+    const nextQuestion = questions.value[currentQuestionIndex.value]
+    if (nextQuestion?.media_url) {
+      const img = new Image()
+      img.src = nextQuestion.media_url
+    }
   }
 }
 
@@ -309,11 +330,42 @@ const finishBattle = () => {
 
 const submitBattle = async () => {
   try {
+    // Ensure we're online before attempting final submit
+    if (typeof window !== 'undefined' && !window.navigator.onLine) {
+      error.value = 'You must be online to submit the battle.'
+      return
+    }
+
     loading.value = true
-    await useFetch(
-      config.public.apiBase + `/api/tournaments/${route.params.id}/battles/${route.params.battleId}/submit`,
-      { method: 'POST', credentials: 'include' }
-    )
+
+    // Build answers payload from persisted answers
+  const answersPayload = (answerStore.allAnswers?.value ?? []).map(a => ({ question_id: a.question_id, answer: a.answer }))
+
+    // Compute a best-effort score locally if possible (backend trusts score param)
+    let computedScore = 0
+    try {
+      questions.value.forEach((q) => {
+        const ansEntry = answersPayload.find(x => String(x.question_id) === String(q.id))
+        if (ansEntry && ansEntry.answer !== '' && typeof q['correct_option_id'] !== 'undefined') {
+          if (String(ansEntry.answer) === String((q as any).correct_option_id)) {
+            computedScore += (q as any).points ?? 1
+          }
+        }
+      })
+    } catch (e) {
+      // fallback: computedScore stays 0
+    }
+
+    // Post final answers and score to backend
+    await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/battles/${route.params.battleId}/submit`, {
+      method: 'POST',
+      credentials: 'include',
+      body: {
+        answers: answersPayload,
+        score: computedScore
+      }
+    })
+
     const qs = useBot.value ? '?bot=1' : ''
     router.push(`/quizee/tournaments/${route.params.id}/battles/${route.params.battleId}/results${qs}`)
   } catch (error) {
@@ -331,16 +383,73 @@ function startWithBot() {
   started.value = true
 }
 
+function startQuestionTimer(seconds: number | null) {
+  if (questionTimer) clearTimeout(questionTimer)
+  if (!seconds || seconds <= 0) return
+  questionTimer = setTimeout(() => {
+    // If no answer, mark empty and persist
+    if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
+  answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
+      selectedAnswers.value[currentQuestion.value.id] = ''
+      persistProgress()
+    }
+    if (!isLastQuestion.value) {
+      nextQuestion()
+    } else {
+      // Auto-submit on last question per-question expiry
+      submitBattle()
+    }
+  }, seconds * 1000)
+}
+
+function clearQuestionTimer() {
+  if (questionTimer) { clearTimeout(questionTimer); questionTimer = undefined }
+}
+
 const startTimer = (seconds: number) => {
   timeRemaining.value = seconds
   timer = setInterval(() => {
     if (timeRemaining.value !== null && timeRemaining.value > 0) {
       timeRemaining.value--
+      // persist every 5 seconds
+      if (timeRemaining.value % 5 === 0) persistProgress()
     } else {
       if (timer) clearInterval(timer)
       submitBattle()
     }
   }, 1000)
+}
+
+// Persist/restore progress helpers
+function persistProgress() {
+  try {
+    const meta = {
+      currentQuestionIndex: currentQuestionIndex.value,
+      timeRemaining: timeRemaining.value,
+  answers: (answerStore.allAnswers?.value ?? []).map(a => [a.question_id, a.answer])
+    }
+    localStorage.setItem(progressKey.value, JSON.stringify(meta))
+  } catch (e) {}
+}
+
+function restoreProgress() {
+  try {
+    const raw = localStorage.getItem(progressKey.value)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed?.answers && Array.isArray(parsed.answers)) {
+      answerStore.loadAnswers(parsed.answers, Number(route.params.battleId))
+      parsed.answers.forEach(([qid, ans]: any) => {
+        selectedAnswers.value[qid] = ans
+      })
+    }
+    if (typeof parsed.currentQuestionIndex === 'number') currentQuestionIndex.value = parsed.currentQuestionIndex
+    if (typeof parsed.timeRemaining === 'number' && parsed.timeRemaining > 0) timeRemaining.value = parsed.timeRemaining
+    // Start per-question timer for restored question
+    startQuestionTimer(timePerQuestion.value)
+  } catch (e) {
+    // ignore malformed data
+  }
 }
 
 const formatTime = (seconds: number) => {
@@ -352,6 +461,10 @@ const formatTime = (seconds: number) => {
 // Lifecycle
 onMounted(() => {
   fetchBattle()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => { connectionStatus.value = 'reconnecting' })
+    window.addEventListener('offline', () => { connectionStatus.value = 'disconnected' })
+  }
 })
 
 onBeforeUnmount(() => {
@@ -360,6 +473,7 @@ onBeforeUnmount(() => {
   }
   stopPollingForOpponent()
   detachEchoForJoin()
+  clearQuestionTimer()
 })
 
 // Polling for opponent
@@ -404,6 +518,25 @@ function attachEchoForJoin() {
       started.value = true
       stopPollingForOpponent()
     })
+    // Try to bind to underlying pusher connection events for status
+    try {
+      const pusher = (window as any).Echo?.connector?.pusher
+      if (pusher && pusher.connection && typeof pusher.connection.bind === 'function') {
+        pusher.connection.bind('connected', () => {
+          connectionStatus.value = 'connected'
+          // Reconcile state after reconnect
+          fetchBattle()
+        })
+        pusher.connection.bind('disconnected', () => {
+          connectionStatus.value = 'disconnected'
+        })
+        pusher.connection.bind('connecting_in', () => {
+          connectionStatus.value = 'reconnecting'
+        })
+      }
+    } catch (e) {
+      // ignore binding errors
+    }
   } catch (e) {
     // ignore
   }

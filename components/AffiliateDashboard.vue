@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <!-- Affiliate Link Section -->
+    <!-- Affiliate Code Generation & Benefits -->
     <div class="bg-white shadow-sm border border-gray-200 sm:rounded-xl mb-8">
       <div class="px-6 py-6 sm:px-8">
         <div class="flex items-center mb-4">
@@ -37,30 +37,83 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
           </div>
-          <h3 class="text-lg font-semibold text-gray-900">Your Affiliate Link</h3>
+          <h3 class="text-lg font-semibold text-gray-900">Affiliate Program</h3>
         </div>
-        <div class="mb-4 text-sm text-gray-600">
-          <p>Share this link to earn commissions from referrals</p>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-3">
-          <div class="flex-1">
-            <input
-              type="text"
-              :value="affiliateLink"
-              :placeholder="affiliateCode ? 'No affiliate code yet' : ''"
-              readonly
-              class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3 bg-gray-50"
-            />
+
+        <!-- No Code State -->
+        <div v-if="!affiliateCode" class="space-y-6">
+          <div class="prose max-w-none">
+            <h4 class="text-lg font-semibold text-gray-900">Join Our Affiliate Program</h4>
+            <p class="text-gray-600">Earn money by sharing educational content with your network. Our affiliate program offers:</p>
+            <ul class="mt-4 space-y-3">
+              <li class="flex items-start">
+                <CheckCircleIcon class="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
+                <span class="text-gray-700">10% commission on all referral purchases</span>
+              </li>
+              <li class="flex items-start">
+                <CheckCircleIcon class="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
+                <span class="text-gray-700">Real-time tracking of referrals and earnings</span>
+              </li>
+              <li class="flex items-start">
+                <CheckCircleIcon class="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
+                <span class="text-gray-700">Monthly payouts for earnings over 1000 KES</span>
+              </li>
+            </ul>
           </div>
           <button
-            @click="copyToClipboard(affiliateLink)"
-            :disabled="!affiliateCode"
-            class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="generateAffiliateCode"
+            :disabled="isGenerating"
+            class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ClipboardIcon v-if="!copied" class="h-4 w-4 mr-2" />
-            <CheckIcon v-else class="h-4 w-4 mr-2" />
-            {{ copied ? 'Copied!' : 'Copy Link' }}
+            <SparklesIcon v-if="!isGenerating" class="h-4 w-4 mr-2" />
+            <ArrowPathIcon v-else class="h-4 w-4 mr-2 animate-spin" />
+            {{ isGenerating ? 'Generating...' : 'Generate Affiliate Code' }}
           </button>
+        </div>
+
+        <!-- Has Code State -->
+        <div v-else class="space-y-6">
+          <div class="prose max-w-none">
+            <h4 class="text-lg font-semibold text-gray-900">Your Affiliate Code</h4>
+            <p class="text-gray-600">Share quizzes with your referral code to earn commissions. Your code will be automatically added to any quiz links you share.</p>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1">
+              <input
+                type="text"
+                :value="affiliateCode"
+                readonly
+                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3 bg-gray-50"
+              />
+            </div>
+            <button
+              @click="copyToClipboard(affiliateCode)"
+              class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+            >
+              <ClipboardIcon v-if="!copied" class="h-4 w-4 mr-2" />
+              <CheckIcon v-else class="h-4 w-4 mr-2" />
+              {{ copied ? 'Copied!' : 'Copy Code' }}
+            </button>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h5 class="text-sm font-semibold text-gray-900 mb-3">How to Share Quizzes</h5>
+            <ol class="space-y-2 text-sm text-gray-600">
+              <li class="flex items-start">
+                <span class="font-medium text-indigo-600 mr-2">1.</span>
+                <span>Navigate to any quiz you want to share</span>
+              </li>
+              <li class="flex items-start">
+                <span class="font-medium text-indigo-600 mr-2">2.</span>
+                <span>Click the share button on the quiz card or page</span>
+              </li>
+              <li class="flex items-start">
+                <span class="font-medium text-indigo-600 mr-2">3.</span>
+                <span>Your affiliate code will be automatically added to the share link</span>
+              </li>
+            </ol>
+          </div>
         </div>
       </div>
     </div>
@@ -171,7 +224,10 @@ import {
   ChartBarIcon,
   CurrencyDollarIcon,
   ClipboardIcon,
-  CheckIcon
+  CheckIcon,
+  CheckCircleIcon,
+  SparklesIcon,
+  ArrowPathIcon
 } from '@heroicons/vue/24/outline'
 
 // accept userType from pages that render this component (quizee / quiz-master)
@@ -185,6 +241,24 @@ const auth = useAuthStore() as any
 const affiliate = useAffiliateStore() as any
 const api = useApi()
 const copied = ref(false)
+const isGenerating = ref(false)
+
+// Generate affiliate code
+const generateAffiliateCode = async () => {
+  try {
+    isGenerating.value = true
+    const res = await api.postJson('/api/affiliates/generate-code', {})
+    if (!res.ok) throw new Error('Failed to generate code')
+    const data = await res.json()
+    fetchedAffiliateCode.value = data.referral_code
+    // Show success notification or toast
+  } catch (err) {
+    console.error('Failed to generate code:', err)
+    // Show error notification or toast
+  } finally {
+    isGenerating.value = false
+  }
+}
 
 // Computed values
 // Build a robust affiliate link. If runtime config doesn't provide a base URL
@@ -324,12 +398,17 @@ onMounted(async () => {
       if (existing) {
         fetchedAffiliateCode.value = existing
       } else {
-        const af = await api.get('/api/affiliates/me')
+        const afRes = await api.get('/api/affiliates/me')
+        let af: any = null
+        if (afRes && afRes.ok) {
+          af = await afRes.json().catch(() => null)
+        }
         if (af && af.referral_code !== undefined) {
+          // Common case: top-level referral_code
           fetchedAffiliateCode.value = af.referral_code
-        } else if (af && af.referral_code === undefined && af.referral_code !== undefined) {
-          // defensive: if API returned full object with referral_code not at top, try to read it
-          fetchedAffiliateCode.value = af.referral_code ?? null
+        } else if (af && (af.data?.referral_code !== undefined || af.affiliate?.referral_code !== undefined)) {
+          // Defensive: API may nest the referral code under different keys (data or affiliate)
+          fetchedAffiliateCode.value = af.data?.referral_code ?? af.affiliate?.referral_code ?? null
         } else {
           // API returned null or unexpected shape
           fetchedAffiliateCode.value = null

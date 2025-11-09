@@ -1,7 +1,7 @@
 <template>
   <div>
     <button
-      @click="showShareModal = true"
+      @click="handleShare"
       class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
     >
       <ShareIcon class="w-4 h-4" />
@@ -35,16 +35,55 @@
               leave-to="opacity-0 scale-95"
             >
               <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
-                  Share {{ itemType }}
-                </DialogTitle>
+                <!-- No Affiliate Code State -->
+                <div v-if="!hasAffiliateCode">
+                  <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
+                    Start Earning with Referrals
+                  </DialogTitle>
+                  <div class="mt-4">
+                    <p class="text-sm text-gray-500 mb-4">
+                      Generate your affiliate code to start earning commissions when you share content!
+                    </p>
+                    <div class="space-y-4">
+                      <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-900 mb-2">Benefits:</h4>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                          <li class="flex items-start">
+                            <CheckCircleIcon class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+                            <span>Earn 10% commission on referral purchases</span>
+                          </li>
+                          <li class="flex items-start">
+                            <CheckCircleIcon class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+                            <span>Track your earnings in real-time</span>
+                          </li>
+                          <li class="flex items-start">
+                            <CheckCircleIcon class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+                            <span>Get paid monthly</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <button
+                        @click="goToAffiliateDashboard"
+                        class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        Get Started
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-                <div class="mt-4">
-                  <p class="text-sm text-gray-500 mb-4">
-                    Share this {{ itemType.toLowerCase() }} with your network and earn when they subscribe!
-                  </p>
+                <!-- Has Affiliate Code State -->
+                <div v-else>
+                  <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
+                    Share {{ itemType }}
+                  </DialogTitle>
 
-                  <div class="flex flex-col gap-4">
+                  <div class="mt-4">
+                    <p class="text-sm text-gray-500 mb-4">
+                      Share this {{ itemType.toLowerCase() }} with your network and earn when they subscribe!
+                    </p>
+
+                    <div class="flex flex-col gap-4">
                     <!-- Affiliate Link -->
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1">Your Affiliate Link</label>
@@ -88,6 +127,7 @@
                     </div>
                   </div>
                 </div>
+                </div>
               </DialogPanel>
             </TransitionChild>
           </div>
@@ -100,8 +140,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
-import { ShareIcon, ClipboardIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import { ShareIcon, ClipboardIcon, CheckIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '~/stores/auth'
+import { useRuntimeConfig } from '#imports'
 import useApi from '~/composables/useApi'
 
 const props = defineProps({
@@ -116,19 +157,44 @@ const props = defineProps({
   },
   baseUrl: {
     type: String,
-    required: true
+    default: null
   }
 })
 
+// Handle share button click
+const handleShare = () => {
+  showShareModal.value = true
+}
+
 const auth = useAuthStore()
 const api = useApi()
+const config = useRuntimeConfig()
 const showShareModal = ref(false)
 const copied = ref(false)
 const fetchedAffiliateCode = ref(null)
 
+// Computed property to check if user has an affiliate code
+const hasAffiliateCode = computed(() => {
+  return Boolean(
+    auth.user?.affiliate?.referral_code || 
+    auth.user?.affiliate_code || 
+    fetchedAffiliateCode.value
+  )
+})
+
+// Compute the base URL (use prop if provided, otherwise from config)
+const computedBaseUrl = computed(() => {
+  if (props.baseUrl) {
+    return props.baseUrl.endsWith('/') ? props.baseUrl.slice(0, -1) : props.baseUrl
+  }
+  // Default base URL based on item type
+  const base = `${config.public.baseUrl}/${props.itemType.toLowerCase()}s`
+  return base.endsWith('/') ? base.slice(0, -1) : base
+})
+
 // Compute the affiliate link with the user's referral code
 const affiliateLink = computed(() => {
-  const base = props.baseUrl?.endsWith('/') ? props.baseUrl.slice(0, -1) : (props.baseUrl || '')
+  const base = computedBaseUrl.value
   // Prefer the affiliate relation's referral_code, then any appended affiliate_code on user,
   // then a cached value fetched from /api/affiliates/me. If none, return base without query.
   const code = auth.user?.affiliate?.referral_code ?? auth.user?.affiliate_code ?? fetchedAffiliateCode.value ?? ''
@@ -194,5 +260,22 @@ const shareToSocial = (platform) => {
   }
   
   window.open(urls[platform], '_blank')
+}
+
+// Navigate to affiliate dashboard
+const goToAffiliateDashboard = () => {
+  showShareModal.value = false
+
+  // Determine the correct dashboard path based on user role
+  const userRole = auth.user?.role || auth.role
+  let dashboardPath = '/affiliate/'
+
+  if (userRole === 'quizee') {
+    dashboardPath = '/quizee/affiliate/'
+  } else if (userRole === 'quiz-master') {
+    dashboardPath = '/quiz-master/affiliate/'
+  }
+
+  navigateTo(dashboardPath)
 }
 </script>

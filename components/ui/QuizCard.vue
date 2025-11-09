@@ -103,7 +103,11 @@ import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import { useRuntimeConfig } from '#app'
 
 const config = useRuntimeConfig()
-const baseUrl = computed(() => `${config.public.baseUrl}/quizzes`)
+const baseUrl = computed(() => {
+  const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  if (!base) return ''
+  return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`
+})
 
 const props = defineProps({
   to: { type: [String, Object], default: null },

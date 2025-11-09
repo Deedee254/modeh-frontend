@@ -115,9 +115,16 @@
                       Start Quiz
                       <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                     </NuxtLink>
-                    <button @click="reportIssue" class="inline-flex items-center justify-center rounded-xl border border-indigo-300 px-6 py-3 text-sm md:text-base font-semibold text-indigo-700 transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                      Report an Issue
-                    </button>
+                    <div class="flex gap-4">
+                      <button @click="reportIssue" class="flex-1 inline-flex items-center justify-center rounded-xl border border-indigo-300 px-6 py-3 text-sm md:text-base font-semibold text-indigo-700 transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Report an Issue
+                      </button>
+                      <AffiliateShareButton 
+                        :itemType="'Quiz'"
+                        :itemId="quiz.id"
+                        :baseUrl="baseUrl"
+                      />
+                    </div>
                   </div>
                 </div>
               </aside>
@@ -170,11 +177,18 @@ definePageMeta({ layout: 'quizee' })
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppAlert } from '~/composables/useAppAlert'
+import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
+
 const route = useRoute()
 const id = route.params.id
 const alert = useAppAlert()
 
 const config = useRuntimeConfig()
+const baseUrl = computed(() => {
+  const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  if (!base) return ''
+  return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`
+})
 const { data: quizData, pending } = await useFetch(config.public.apiBase + `/api/quizzes/${id}`)
 const quiz = computed(() => quizData?.value?.quiz || quizData?.value || {})
 

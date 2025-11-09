@@ -158,9 +158,16 @@
                 <button @click="startQuiz" class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-colors">
                   Begin Assessment
                 </button>
-                <button @click="showPreview" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                  Preview Questions
-                </button>
+                <div class="flex gap-3">
+                  <button @click="showPreview" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Preview Questions
+                  </button>
+                  <AffiliateShareButton 
+                    :itemType="'Quiz'"
+                    :itemId="quiz.id"
+                    :baseUrl="baseUrl"
+                  />
+                </div>
               </div>
 
               <!-- Quiz info -->
@@ -233,10 +240,17 @@ import { ref, computed, watch, watchEffect } from 'vue'
 import { useHead } from '#imports'
 import { useRouter, useRoute } from 'vue-router'
 import VideoPlayer from '~/components/media/VideoPlayer.vue'
+import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
+
+const baseUrl = computed(() => {
+  const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  if (!base) return ''
+  return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`
+})
 
 // Fetch data without blocking; useFetch returns refs (no top-level await).
 // Avoid `await` here so `definePageMeta` and computed getters can react to the

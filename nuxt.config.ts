@@ -1,5 +1,10 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
+// During development we generally don't want the PWA service worker to be
+// registered or precaching assets — it often serves stale or blocked assets
+// which breaks the dev experience. Only enable the PWA module in production.
+const isProd = process.env.NODE_ENV === 'production'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
   devtools: { enabled: true },
@@ -9,7 +14,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     ['nuxt-tiptap-editor', { prefix: 'Tiptap' }],
     '@nuxt/ui',
-    '@vite-pwa/nuxt'
+    ...(isProd ? ['@vite-pwa/nuxt'] : [])
   ],
 
   // UI configuration
