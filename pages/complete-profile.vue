@@ -107,24 +107,46 @@
         >
           Previous
         </button>
-
-        <button
-          @click="nextStep"
-          :disabled="!canProceed || isLoading"
-          class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          <svg 
-            v-if="isLoading" 
-            class="animate-spin -ml-1 mr-2 h-4 w-4" 
-            xmlns="http://www.w3.org/2000/svg" 
-            fill="none" 
-            viewBox="0 0 24 24"
+        <div class="flex-1 flex space-x-3">
+          <button
+            type="button"
+            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            @click="showSkipConfirmation(currentStep)"
           >
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          {{ isLastStep ? 'Complete Profile' : 'Next' }}
-        </button>
+            Skip
+          </button>
+
+          <button
+            @click="nextStep"
+            :disabled="!canProceed || isLoading"
+            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            <svg 
+              v-if="isLoading" 
+              class="animate-spin -ml-1 mr-2 h-4 w-4" 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            {{ isLastStep ? 'Complete Profile' : 'Next' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Skip confirmation modal -->
+      <div v-if="showSkipModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black opacity-50"></div>
+        <div class="bg-white rounded-lg shadow-lg z-60 max-w-lg w-full p-6 mx-4">
+          <h3 class="text-lg font-semibold mb-2">Are you sure you want to skip this step?</h3>
+          <p class="text-sm text-gray-700 mb-4">{{ skipReason }}</p>
+          <div class="flex justify-end space-x-3">
+            <button class="px-4 py-2 bg-white border rounded" @click="cancelSkip">Cancel</button>
+            <button class="px-4 py-2 bg-red-600 text-white rounded" @click="performSkip">Yes, skip</button>
+          </div>
+        </div>
       </div>
 
       <!-- Error Message -->
@@ -181,6 +203,61 @@ useHead(() => ({
 
 const router = useRouter()
 const isLoading = ref(false)
+const error = ref(null)
+
+// Skip modal state and handlers
+const showSkipModal = ref(false)
+const skipReason = ref('')
+const skipStepKey = ref(null)
+
+function showSkipConfirmation(stepKey) {
+  skipStepKey.value = stepKey
+  if (stepKey === 'institution') {
+    skipReason.value = "Skipping institution means we won't be able to show school-specific content or verify your school affiliation. You can add this later from your profile settings."
+  } else if (stepKey === 'grade') {
+    skipReason.value = "Skipping grade selection means we may give less accurate recommendations for quizzes and content. You can add this later from your profile settings."
+  } else if (stepKey === 'subjects') {
+    skipReason.value = "Skipping subject selection means we can't tailor recommended quizzes to your specialties. You can add subjects later from your profile settings."
+  } else {
+    skipReason.value = "You can complete this information later from your profile settings."
+  }
+  showSkipModal.value = true
+}
+
+function cancelSkip() {
+  showSkipModal.value = false
+  skipReason.value = ''
+  skipStepKey.value = null
+}
+
+async function performSkip() {
+  showSkipModal.value = false
+  const step = skipStepKey.value || currentStep.value
+  try {
+    // Call backend to persist the skipped step
+    const api = useApi()
+    const payload = { step, data: { skipped: true } }
+    const res = await api.postJson('/api/onboarding/step', payload)
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to skip step on server')
+
+    // mark step locally and advance
+    if (!completedSteps.value.includes(step)) completedSteps.value.push(step)
+    const nextIndex = currentStepIndex.value + 1
+    if (nextIndex < activeSteps.value.length) {
+      currentStep.value = activeSteps.value[nextIndex].key
+    } else {
+      // if last step, finalize profile
+      await completeProfile()
+    }
+  } catch (err) {
+    console.error('performSkip error', err)
+    error.value = 'Failed to skip step; please try again.'
+  } finally {
+    skipStepKey.value = null
+    skipReason.value = ''
+  }
+}
 
 // Step configuration
 const steps = [
@@ -219,9 +296,13 @@ const subjects = [
 const { levels, fetchLevels, loadingLevels } = useTaxonomy()
 
 onMounted(async () => {
-  try { 
-    await fetchLevels() 
+  try {
+    await fetchLevels()
     fetchUserData() // Fetch user data on mount
+    // Set role from auth store if available
+    if (auth.user?.role) {
+      formData.value.role = auth.user.role
+    }
   } catch (e) {}
 })
 
@@ -289,7 +370,7 @@ async function completeProfile() {
 
   try {
     const api = useApi()
-    const response = await api.postJson('/api/profile/complete', { ...formData.value })
+    const response = await api.postJson('/api/onboarding/finalize')
     if (api.handleAuthStatus(response)) return
     if (!response.ok) throw new Error('Failed to complete profile')
     const data = await response.json()
@@ -310,9 +391,23 @@ async function completeProfile() {
 }
 
 // Fetch user data and populate formData
-function fetchUserData() {
-  // Logic to fetch user data and set formData.email
-  formData.value.email = 'user@example.com' // Replace with actual fetching logic
+async function fetchUserData() {
+  try {
+    const api = useApi()
+    const response = await api.get('/api/me')
+    if (api.handleAuthStatus(response)) return
+    if (!response.ok) throw new Error('Failed to fetch user data')
+    const userData = await response.json()
+    formData.value.email = userData.email
+    // Also set role from auth store if available
+    if (auth.user?.role) {
+      formData.value.role = auth.user.role
+    }
+  } catch (err) {
+    console.error('fetchUserData error', err)
+    // Keep the fallback email if fetch fails
+    formData.value.email = 'user@example.com'
+  }
 }
 
 </script>

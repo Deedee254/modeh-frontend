@@ -109,7 +109,10 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = newUser;
     role.value = newUser?.role || null;
 
-    // If running in the browser and the user profile is incomplete, route to onboarding
+    // If running in the browser and the user profile is incomplete, route to the
+    // appropriate profile completion flow. We send social-registered/new users
+    // to `/onboarding` (used for social signups that need role selection), and
+    // non-social users to `/complete-profile` which supports skipping.
     try {
       if (import.meta.client && newUser && newUser.is_profile_completed === false) {
         // Respect a client-side skip flag so the user can opt to go directly to the dashboard
@@ -118,7 +121,16 @@ export const useAuthStore = defineStore('auth', () => {
           const router = useRouter();
           // small timeout so other post-login navigation finishes first
           setTimeout(() => {
-            try { router.push('/onboarding'); } catch (e) { /* ignore navigation errors */ }
+            try {
+              const isSocial = Boolean(newUser.social_provider || newUser.social_id);
+              if (isSocial) {
+                // Social signups may need the onboarding role flow
+                router.push('/onboarding');
+              } else {
+                // Existing non-social accounts should go to the full complete-profile flow
+                router.push('/complete-profile');
+              }
+            } catch (e) { /* ignore navigation errors */ }
           }, 50)
         }
       }

@@ -2,7 +2,7 @@
   <form @submit.prevent="save" class="p-4 space-y-4 max-w-lg">
     <div>
       <label class="block text-sm font-medium">Current password</label>
-      <input v-model="form.current" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+      <input v-model="form.current" type="password" autocomplete="current-password" class="mt-1 block w-full border rounded px-3 py-2" />
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

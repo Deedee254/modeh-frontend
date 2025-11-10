@@ -194,7 +194,12 @@ export default function useTaxonomy() {
         // normalizeList expects arrays of grade-like objects; preserve structure on levels
         // But for consumers we want levels as objects with id,name,grades
         if (data.levels && Array.isArray(data.levels)) {
-          levels.value = data.levels.map(l => ({ ...l, grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null })) }))
+          // Ensure level ids and nested grade ids are strings to avoid v-model/type mismatch
+          levels.value = data.levels.map(l => ({
+            ...l,
+            id: l.id ? String(l.id) : null,
+            grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null }))
+          }))
         } else {
           levels.value = list
         }
@@ -216,7 +221,7 @@ export default function useTaxonomy() {
   // Friendly header list: small objects with id,name,slug (slug optional)
   const headerLevels = computed(() => {
     if (!levels.value) return []
-    return (levels.value || []).map(l => ({ id: l.id, name: l.name || l.display_name || '', slug: l.slug || null }))
+    return (levels.value || []).map(l => ({ id: l.id ? String(l.id) : l.id, name: l.name || l.display_name || '', slug: l.slug || null }))
   })
 
   async function fetchSubjectsByGrade(gradeId) {

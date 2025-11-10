@@ -48,6 +48,9 @@
               <option v-if="l" :key="l.id ?? idx" :value="l.id">{{ l.name || ('Level ' + (l.id ?? idx)) }}</option>
             </template>
           </select>
+          <span v-if="loadingLevels" class="absolute right-2 top-1/2 -translate-y-1/2">
+            <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
+          </span>
         </div>
 
         <div class="mt-3">
@@ -59,28 +62,41 @@
                 <option v-if="g" :key="g.id ?? idx" :value="g.id">{{ g.display_name || g.name || ('Grade ' + (g.id ?? idx)) }}</option>
               </template>
             </select>
+            <span v-if="loadingGrades" class="absolute right-2 top-1/2 -translate-y-1/2">
+              <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
+            </span>
           </div>
         </div>
       </div>
 
       <div class="mt-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
-        <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-          <option value="">All subjects</option>
-          <template v-for="(s, idx) in (filteredSubjects || [])" :key="idx">
-            <option v-if="s" :key="s.id ?? idx" :value="s.id">{{ s.name || '' }}</option>
-          </template>
-        </select>
+        <div class="relative">
+          <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+            <option value="">All subjects</option>
+            <template v-for="(s, idx) in (filteredSubjects || [])" :key="idx">
+              <option v-if="s" :key="s.id ?? idx" :value="s.id">{{ s.name || '' }}</option>
+            </template>
+          </select>
+          <span v-if="loadingSubjects" class="absolute right-2 top-1/2 -translate-y-1/2">
+            <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
+          </span>
+        </div>
       </div>
 
       <div v-if="showTopic" class="mt-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">Topic</label>
-        <select v-model="localTopic" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-          <option value="">All topics</option>
-          <template v-for="(t, idx) in (filteredTopics || [])" :key="idx">
-            <option v-if="t" :key="t.id ?? idx" :value="t.id">{{ t.name || '' }}</option>
-          </template>
-        </select>
+        <div class="relative">
+          <select v-model="localTopic" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+            <option value="">All topics</option>
+            <template v-for="(t, idx) in (filteredTopics || [])" :key="idx">
+              <option v-if="t" :key="t.id ?? idx" :value="t.id">{{ t.name || '' }}</option>
+            </template>
+          </select>
+          <span v-if="loadingTopics" class="absolute right-2 top-1/2 -translate-y-1/2">
+            <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
+          </span>
+        </div>
       </div>
 
       <div class="mt-4 flex gap-2">
@@ -113,11 +129,12 @@ const localSubject = ref(props.subject)
 const localTopic = ref(props.topic)
 const localGrade = ref(props.grade)
 const localLevel = ref(props.level)
-const collapsed = ref(false)
+// start collapsed and fetch taxonomy only when the sidebar is opened
+const collapsed = ref(true)
 const cookieCollapsed = props.storageKey ? useCookie(props.storageKey + ':collapsed') : null
 
 // taxonomy composable (single instance)
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels: taxLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
+const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels: taxLevels, fetchGrades, fetchGradesByLevel, fetchAllSubjects, fetchAllTopics, fetchLevels, fetchSubjectsByGrade, fetchTopicsBySubject, loadingLevels, loadingGrades, loadingSubjects, loadingTopics } = useTaxonomy()
 
 // compute label lookups from either props.options or taxonomy composable
 const gradeLookup = computed(() => {
@@ -202,6 +219,33 @@ const filteredTopics = computed(() => {
 })
 
 // restore collapsed from localStorage if storageKey provided - do this after mount to avoid hydration mismatches
+let _prefetched = false
+async function prefetchIfNeeded() {
+  if (_prefetched) return
+  _prefetched = true
+  try {
+    const rawGrades = unref(props.gradeOptions)
+    const rawSubjects = unref(props.subjectOptions)
+    const rawTopics = unref(props.topicOptions)
+
+    // Load levels first so we can derive nested grades from levels when available.
+    try { if ((!taxLevels.value || !taxLevels.value.length) && typeof fetchLevels === 'function') await fetchLevels() } catch (e) { console.error('FiltersSidebar.prefetch.fetchLevels failed', e) }
+
+    // If caller didn't provide grades and the taxonomy doesn't already have grades, fetch grades
+    try {
+      if ((!Array.isArray(rawGrades) || !rawGrades.length) && (!taxGrades.value || !taxGrades.value.length) && typeof fetchGrades === 'function') {
+        await fetchGrades()
+      }
+    } catch (e) { console.error('FiltersSidebar.prefetch.fetchGrades failed', e) }
+
+    // Only fetch subjects/topics if caller didn't pass them and taxonomy hasn't loaded them yet
+    try { if ((!Array.isArray(rawSubjects) || !rawSubjects.length) && (!taxSubjects.value || !taxSubjects.value.length) && typeof fetchAllSubjects === 'function') await fetchAllSubjects() } catch (e) { console.error('FiltersSidebar.prefetch.fetchAllSubjects failed', e) }
+    try { if ((!Array.isArray(rawTopics) || !rawTopics.length) && (!taxTopics.value || !taxTopics.value.length) && typeof fetchAllTopics === 'function') await fetchAllTopics() } catch (e) { console.error('FiltersSidebar.prefetch.fetchAllTopics failed', e) }
+  } catch (e) {
+    console.error('FiltersSidebar.prefetch failed', e)
+  }
+}
+
 onMounted(() => {
   if (!props.storageKey) return
   try {
@@ -213,36 +257,12 @@ onMounted(() => {
       if (raw !== null) collapsed.value = raw === 'true'
     }
   } catch (e) {}
-})
 
-// ensure taxonomy is loaded so chips can show labels when no options are passed
-onMounted(() => {
-  // if caller didn't pass gradeOptions/subjectOptions/topicOptions, fetch the global lists
-  try {
-    const rawGrades = unref(props.gradeOptions)
-    // Always attempt to fetch taxonomy lists to ensure filters show up-to-date data.
-    // We await them so the UI can render labels without a later hydration mismatch.
-    (async () => {
-      // Load levels first so we can derive nested grades from levels when available.
-      try {
-        await fetchLevels()
-      } catch (e) { console.error('FiltersSidebar.fetchLevels failed', e) }
-
-      // If caller didn't provide grades and the taxonomy doesn't already have grades,
-      // fetch grades (this will prefer deriving from loaded levels when possible).
-      try {
-        if ((!Array.isArray(rawGrades) || !rawGrades.length) && (!taxGrades.value || !taxGrades.value.length)) await fetchGrades()
-      } catch (e) { console.error('FiltersSidebar.fetchGrades failed', e) }
-    })()
-  } catch (e) {}
-  try {
-    const rawSubjects = unref(props.subjectOptions)
-    if ((!Array.isArray(rawSubjects) || !rawSubjects.length) && (!taxSubjects.value || !taxSubjects.value.length)) fetchAllSubjects()
-  } catch (e) {}
-  try {
-    const rawTopics = unref(props.topicOptions)
-    if ((!Array.isArray(rawTopics) || !rawTopics.length) && (!taxTopics.value || !taxTopics.value.length)) fetchAllTopics()
-  } catch (e) {}
+  // If the sidebar is open after restore, prefetch taxonomy now
+  if (!collapsed.value) {
+    // fire-and-forget
+    try { prefetchIfNeeded() } catch (e) {}
+  }
 })
 
 watch(() => props.subject, (v) => { localSubject.value = v })
@@ -253,6 +273,13 @@ watch(collapsed, (v) => {
   if (props.storageKey) {
     try { if (cookieCollapsed) cookieCollapsed.value = String(v) } catch (e) {}
     if (process.client) { try { localStorage.setItem(props.storageKey + ':collapsed', String(v)) } catch (e) {} }
+  }
+})
+
+// When the sidebar is opened, prefetch taxonomy data on demand
+watch(collapsed, (v) => {
+  if (!v) {
+    try { prefetchIfNeeded() } catch (e) {}
   }
 })
 // persist local fields too so users don't lose in-flight filters
@@ -337,6 +364,13 @@ function removeLevel() {
   localSubject.value = ''
   localTopic.value = ''
 }
+
+// Load levels immediately so they behave like grades/subjects/topics
+// (levels are critical for initial filtering/derivation of grades)
+onMounted(() => {
+  // Fire-and-forget: we don't need to await here; loading refs will update the UI
+  try { if ((!taxLevels.value || !taxLevels.value.length) && typeof fetchLevels === 'function') fetchLevels() } catch (e) { console.error('FiltersSidebar.fetchLevels on mount failed', e) }
+})
 </script>
 
 <style scoped>

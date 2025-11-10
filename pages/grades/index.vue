@@ -96,7 +96,7 @@ const grades = ref([])
 const loading = ref(true)
 const error = ref(null)
 
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+const { fetchLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 const query = ref('')
 
 function isCourseType(t) {

@@ -145,7 +145,7 @@
 
 <script setup lang="ts">
 // Ensure this page uses the quizee layout when rendered
-definePageMeta?.({ layout: 'quizee' })
+definePageMeta({ layout: 'quizee' })
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'

@@ -79,8 +79,17 @@ onMounted(async () => {
     }
 
     // If onboarding is required, send user to the specific step needed
+    // If the OAuth callback explicitly requested onboarding, respect it first
     if (requires) {
       // Use the validated next_step to go to the correct onboarding page
+      return router.replace(`/onboarding/${nextStep || 'new-user'}`)
+    }
+
+    // If we couldn't fetch a user role (common when a social login just created
+    // a new user server-side), redirect social-created users to the onboarding
+    // flow so they can choose their role and complete profile. We only do this
+    // when a user object exists but has no role set.
+    if (user && (!user.role || user.role === null)) {
       return router.replace(`/onboarding/${nextStep || 'new-user'}`)
     }
 
