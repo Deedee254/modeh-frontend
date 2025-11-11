@@ -30,7 +30,7 @@ export default defineNuxtConfig({
   // PWA configuration for @vite-pwa/nuxt
   pwa: {
     // ensure index.html is included in the precache so navigation fallback works
-    includeAssets: ['index.html'],
+    includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
     registerType: 'autoUpdate',
     manifest: {
       name: 'Modeh',
@@ -38,23 +38,28 @@ export default defineNuxtConfig({
       description: 'Your ultimate learning platform',
       theme_color: '#ffffff',
       lang: 'en',
+      scope: '/',
+      start_url: '/',
+      display: 'standalone',
+      orientation: 'portrait-primary',
       icons: [
-        { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-        { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png' }
+        { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+        { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
       ]
     },
     workbox: {
-      // Ensure the root URL and index.html are explicitly added to the precache.
-      // Some Nuxt/Vite build outputs don't include `/` or `index.html` in the
-      // generated precache by default which makes
-      // `createHandlerBoundToURL('/')` throw `non-precached-url` at runtime.
-      // Adding these here guarantees the navigation handler has a cached URL.
-      additionalManifestEntries: [
-        { url: '/', revision: null },
-        { url: '/index.html', revision: null }
-      ],
+      mode: 'production',
+      // Use skipWaiting and clientsClaim for automatic updates
+      skipWaiting: true,
+      clientsClaim: true,
+      // Ensure the root URL and index.html are explicitly added to the precache
+      navigateFallback: '/index.html',
+      navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
       // include html files (index.html) in precache so '/' is a precached URL
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      globIgnores: ['**/node_modules/**/*', '.nuxt/**/*'],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -89,8 +94,25 @@ export default defineNuxtConfig({
           options: {
             cacheName: 'pages',
             networkTimeoutSeconds: 10, // Optional: fallback to cache after 10s
-            cacheableResponse: { statuses: [200] }
+            cacheableResponse: { statuses: [0, 200] }
           }
+        }
+      ],
+      cleanupOutdatedCaches: true,
+      manifestTransforms: [
+        (manifestEntries) => {
+          const manifest = manifestEntries.map((entry) => {
+            const isJS = entry.url.endsWith('.js');
+            const isCSS = entry.url.endsWith('.css');
+            const isHTML = entry.url.endsWith('.html');
+            
+            // Ensure proper revision hashing for cache busting
+            if (isJS || isCSS || isHTML) {
+              entry.revision = null;
+            }
+            return entry;
+          });
+          return { manifest, warnings: [] };
         }
       ]
     }
