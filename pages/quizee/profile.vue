@@ -2,9 +2,9 @@
   <div class="min-h-screen">
     <div class="max-w-4xl mx-auto space-y-6">
       <ProfileHeader
-        :title="form.name || user?.name || 'quizee'"
+        :title="user?.name || 'Profile'"
         :subtitle="user?.email"
-        :avatar-url="preview || userAvatar"
+        :avatar-url="userAvatar"
       >
         <template #meta>
           <span v-if="pointsDisplay" class="inline-flex items-center gap-1 text-slate-700">
@@ -13,10 +13,12 @@
           </span>
         </template>
         <template #actions>
-          <label for="quizee-avatar-upload" class="px-3 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 cursor-pointer">
-            Change photo
-          </label>
-          <input id="quizee-avatar-upload" type="file" @change="onFile" class="hidden" accept="image/*" />
+          <NuxtLink
+            to="/settings"
+            class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer inline-block"
+          >
+            Edit Profile
+          </NuxtLink>
         </template>
       </ProfileHeader>
 
@@ -24,87 +26,131 @@
         <template #header>
           <div class="text-sm font-semibold">Profile details</div>
         </template>
-        <form @submit.prevent="submit" class="space-y-6">
+        <div class="space-y-6">
+          <!-- Basic Info -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label for="name" class="block text-sm font-medium text-slate-700">Name</label>
-              <input id="name" v-model="form.name" class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <label class="block text-sm font-medium text-slate-500">Name</label>
+              <p class="mt-1 text-lg text-slate-900">{{ user?.name || '—' }}</p>
             </div>
             <div>
-              <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
-              <input id="email" v-model="form.email" class="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-50" readonly />
+              <label class="block text-sm font-medium text-slate-500">Email</label>
+              <p class="mt-1 text-lg text-slate-900">{{ user?.email || '—' }}</p>
             </div>
           </div>
 
-          <div>
-            <label for="bio" class="block text-sm font-medium text-slate-700">Bio</label>
-            <UTextarea id="bio" v-model="form.bio" :rows="4" placeholder="Tell us about yourself" />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-500">Institution</label>
+              <p class="mt-1 text-lg text-slate-900">{{ profile?.institution || '—' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-500">Phone</label>
+              <p class="mt-1 text-lg text-slate-900">{{ user?.phone || '—' }}</p>
+            </div>
           </div>
 
-          <div class="flex flex-col sm:flex-row justify-end gap-3">
-            <NuxtLink to="/quizee/dashboard" class="px-4 py-2 border rounded-md text-sm bg-white hover:bg-gray-50 w-full sm:w-auto text-center">Cancel</NuxtLink>
-            <button type="submit" class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">Save</button>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-500">Grade</label>
+              <p class="mt-1 text-lg text-slate-900">{{ gradeLabel || '—' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-500">Level</label>
+              <p class="mt-1 text-lg text-slate-900">{{ levelLabel || '—' }}</p>
+            </div>
           </div>
-        </form>
+
+          <!-- Subjects -->
+          <div>
+            <label class="block text-sm font-medium text-slate-500">Subjects</label>
+            <div v-if="subjectLabels.length > 0" class="mt-2 flex flex-wrap gap-2">
+              <span
+                v-for="subject in subjectLabels"
+                :key="subject"
+                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+              >
+                {{ subject }}
+              </span>
+            </div>
+            <p v-else class="mt-1 text-lg text-slate-500">—</p>
+          </div>
+
+          <!-- Bio -->
+          <div>
+            <label class="block text-sm font-medium text-slate-500">Bio</label>
+            <p class="mt-1 text-base text-slate-900 whitespace-pre-line">{{ profile?.bio || '—' }}</p>
+          </div>
+
+          <!-- Action Button -->
+          <div class="flex justify-end pt-4 border-t">
+            <NuxtLink
+              to="/settings"
+              class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              Edit Profile
+            </NuxtLink>
+          </div>
+        </div>
       </UiCard>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import UiCard from '~/components/ui/UiCard.vue'
-import UiTextarea from '~/components/ui/UiTextarea.vue'
-import { useAppAlert } from '~/composables/useAppAlert'
-import { useAccountApi } from '~/composables/useAccountApi'
 
 // Profile is user-specific; avoid indexing user profile edit pages
-definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Edit your Modeh profile and manage personal information, avatar, and bio.' } ] })
+definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'View your Modeh profile and manage personal information, avatar, and bio.' } ] })
 
 const auth = useAuthStore()
-const alert = useAppAlert()
-const { patchMe } = useAccountApi()
 
-const user = computed<any>(() => auth.user || {})
-const userAvatar = computed(() => (user.value && (user.value as any).avatar_url) ? (user.value as any).avatar_url : '/logo/avatar-placeholder.png')
+interface User {
+  name?: string
+  email?: string
+  phone?: string
+  avatar_url?: string
+  points?: number
+  rewards?: { points?: number }
+  quizeeProfile?: {
+    institution?: string
+    grade?: { id: number; name: string }
+    grade_id?: number
+    level?: { id: number; name: string }
+    level_id?: number
+    subjects?: Array<{ id: number; name: string }>
+    bio?: string
+  }
+}
+
+const user = computed<User>(() => auth.user || {})
+const userAvatar = computed(() => (user.value && user.value.avatar_url) ? user.value.avatar_url : '/logo/avatar-placeholder.png')
 const pointsDisplay = computed(() => {
-  const p = (auth.user as any)?.points ?? (auth.user as any)?.rewards?.points
+  const p = user.value?.points ?? user.value?.rewards?.points
   return typeof p === 'number' ? `${p} points` : ''
 })
 
-const form = ref({ name: '', email: '', bio: '' })
-const file = ref<File|null>(null)
-const preview = ref<string|null>(null)
+// Get profile based on user type
+const profile = computed(() => user.value?.quizeeProfile || {})
 
-if (user.value) {
-  form.value.name = (user.value as any).name || ''
-  form.value.email = (user.value as any).email || ''
-  form.value.bio = (user.value as any).bio || ''
-}
+// Get grade label from profile
+const gradeLabel = computed(() => {
+  return profile.value?.grade?.name || null
+})
 
-function onFile(e: Event) {
-  const input = e.target as HTMLInputElement
-  const f = input.files?.[0]
-  if (!f) return
-  file.value = f
-  const reader = new FileReader()
-  reader.onload = (ev) => { preview.value = String(ev.target?.result || '') }
-  reader.readAsDataURL(f)
-}
+// Get level label from profile
+const levelLabel = computed(() => {
+  return profile.value?.level?.name || null
+})
 
-async function submit() {
-  try {
-    const data = new FormData()
-    data.append('name', form.value.name)
-    data.append('bio', form.value.bio || '')
-    if (file.value) data.append('avatar', file.value)
-    await patchMe(data)
-    await auth.fetchUser?.()
-    alert.push({ type: 'success', message: 'Profile updated', icon: 'heroicons:check-circle' })
-  } catch (e: any) {
-    alert.push({ type: 'error', message: e?.message || 'Update failed', icon: 'heroicons:exclamation-circle' })
-  }
-}
+// Get subject labels from profile
+const subjectLabels = computed(() => {
+  if (!Array.isArray(profile.value?.subjects)) return []
+  return profile.value.subjects
+    .map((s: any) => s.name || s)
+    .filter(Boolean)
+})
 </script>

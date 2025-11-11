@@ -61,18 +61,25 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Education Level</label>
-                <select v-model="form.level_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                  <option value="">Select level (Optional)</option>
-                  <option v-for="lvl in levels" :key="lvl.id" :value="lvl.id">{{ lvl.name }}</option>
-                </select>
+                <TaxonomyPicker
+                  resource="levels"
+                  v-model="form.level_id"
+                  title="Level"
+                  subtitle="Select education level"
+                  compact
+                />
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Class / Grade</label>
-                <select v-model="form.grade" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                  <option value="">Select Grade (Optional)</option>
-                  <option v-for="grade in grades" :key="grade" :value="grade">Grade {{ grade }}</option>
-                </select>
+                <TaxonomyPicker
+                  resource="grades"
+                  :level-id="form.level_id"
+                  v-model="form.grade_id"
+                  title="Grade / Course"
+                  subtitle="Select class, course or grade"
+                  compact
+                />
               </div>
 
               <div>
@@ -101,11 +108,39 @@
               </div>
 
               <div>
+                <label class="block text-sm font-medium text-gray-700">Education Level</label>
+                <TaxonomyPicker
+                  resource="levels"
+                  v-model="form.level_id"
+                  title="Level"
+                  subtitle="Select education level"
+                  compact
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Class / Grade (Optional)</label>
+                <TaxonomyPicker
+                  resource="grades"
+                  :level-id="form.level_id"
+                  v-model="form.grade_id"
+                  title="Grade / Course"
+                  subtitle="Select class, course or grade"
+                  compact
+                />
+              </div>
+
+              <div>
                 <label class="block text-sm font-medium text-gray-700">Subject Specializations</label>
-                <select v-model="form.subjects" multiple class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                  <option v-for="subject in subjects" :key="subject" :value="subject">{{ subject }}</option>
-                </select>
-                <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple subjects</p>
+                <MultiTaxonomyPicker
+                  resource="subjects"
+                  :grade-id="null"
+                  compact
+                  v-model="form.subjects"
+                  title="Subjects"
+                  subtitle="Pick subjects"
+                />
+                <p class="mt-1 text-xs text-gray-500">Click to toggle subjects. Selected taxonomy IDs will be saved.</p>
               </div>
 
               <div>
@@ -228,6 +263,8 @@ import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '../stores/auth'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
+import MultiTaxonomyPicker from '~/components/taxonomy/MultiTaxonomyPicker.vue'
+import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
 
 
 const router = useRouter()
@@ -243,7 +280,7 @@ const showConfirmPassword = ref(false)
 const form = reactive({
   name: '',
   institution: '',
-  grade: '',
+  grade_id: '',
   level_id: '',
   email: '',
   parentEmail: '',
@@ -252,19 +289,6 @@ const form = reactive({
   password: '',
   confirmPassword: ''
 })
-
-// Options for dropdowns
-const grades = Array.from({ length: 12 }, (_, i) => i + 1)
-const subjects = [
-  'Mathematics',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'English',
-  'History',
-  'Geography',
-  'Computer Science'
-]
 
 // Preselect role from query if provided
 if (process.client) {
@@ -346,13 +370,31 @@ async function submit() {
   isLoading.value = true
 
   try {
-  const api = useApi()
-  // Backend exposes role-specific registration endpoints. Choose the correct one based on selected role.
-  const endpoint = role.value === 'quizee' ? '/api/register/quizee' : '/api/register/quiz-master'
-  // include level_id for quizees if present
-  const payload = { ...form, role: role.value }
-  if (form.level_id) payload.level_id = form.level_id
-  const response = await api.postJson(endpoint, payload)
+    const api = useApi()
+    // Backend exposes role-specific registration endpoints. Choose the correct one based on selected role.
+    const endpoint = role.value === 'quizee' ? '/api/register/quizee' : '/api/register/quiz-master'
+    
+    // Build payload - include common fields and role-specific fields
+    const payload = {
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      phone: form.phone,
+      institution: form.institution,
+    }
+    
+    // Add taxonomy fields (level_id, grade_id) if present
+    if (form.level_id) payload.level_id = form.level_id
+    if (form.grade_id) payload.grade_id = form.grade_id
+    
+    // Add role-specific fields
+    if (role.value === 'quizee') {
+      if (form.parentEmail) payload.parentEmail = form.parentEmail
+    } else {
+      if (form.subjects?.length) payload.subjects = form.subjects
+    }
+
+    const response = await api.postJson(endpoint, payload)
     if (api.handleAuthStatus(response)) return
     if (!response.ok) {
       const data = await response.json().catch(() => null)

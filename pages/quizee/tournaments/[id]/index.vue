@@ -8,7 +8,7 @@
       <!-- Tournament Header -->
       <div class="relative mb-8">
         <img 
-          :src="tournament.banner || '/images/tournament-default.jpg'" 
+          :src="tournament.sponsor_banner || '/images/tournament-default.jpg'" 
           alt="Tournament banner"
           class="w-full h-40 sm:h-64 object-cover rounded-xl"
         >
@@ -227,7 +227,7 @@ const baseUrl = computed(() => `${config.public.baseUrl}/tournaments`)
 // Types
 type Tournament = {
   id: number
-  banner?: string
+  sponsor_banner?: string
   name: string
   start_date: string
   end_date: string
@@ -277,7 +277,7 @@ const fetchTournament = async () => {
     const data = json?.data ?? json
     tournament.value = data ? {
       id: data.id,
-      banner: data.banner,
+      sponsor_banner: data.sponsor_banner,
       name: data.name,
       start_date: data.start_date,
       end_date: data.end_date,

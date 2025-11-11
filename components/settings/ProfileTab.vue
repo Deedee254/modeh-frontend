@@ -37,19 +37,25 @@
         </UFormGroup>
       </div>
 
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <UFormGroup label="Level" name="level_id">
+          <USelect
+            v-model="form.level_id"
+            :options="[{ name: 'Select a level', id: '' }, ...levels]"
+            option-attribute="name"
+            value-attribute="id"
+          />
+        </UFormGroup>
+        <UFormGroup label="Phone" name="phone">
+          <UInput v-model="form.phone" />
+        </UFormGroup>
+      </div>
+
       <!-- Subject Selection -->
       <fieldset>
         <legend class="block text-sm font-medium mb-2">Subjects</legend>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-lg p-4">
-          <template v-for="s in subjects" :key="s?.id">
-            <UCheckbox
-              v-if="s && s.id"
-              :value="s.id"
-              v-model="form.subjects"
-              :label="s.name || 'Unknown Subject'"
-              class="p-2 hover:bg-gray-50 rounded"
-            />
-          </template>
+        <div class="border rounded-lg p-2">
+          <MultiTaxonomyPicker resource="subjects" :grade-id="form.grade_id" v-model="form.subjects" compact />
         </div>
       </fieldset>
 
@@ -91,78 +97,50 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import { useAppAlert } from '~/composables/useAppAlert'
 import { useUserRole } from '~/composables/useUserRole'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
-import { useAccountApi } from '~/composables/useAccountApi'
-import useApi from '~/composables/useApi'
+import { useProfileForm } from '~/composables/useProfileForm'
 import useTaxonomy from '~/composables/useTaxonomy'
+import MultiTaxonomyPicker from '~/components/taxonomy/MultiTaxonomyPicker.vue'
 
-const { patchMe } = useAccountApi()
 const auth = useAuthStore()
-const alert = useAppAlert()
 const { isQuizMaster } = useUserRole()
+const { createFormState, onFile, saveProfile, avatarPreview, avatarFile } = useProfileForm()
 
 const user = auth.user
-const api = useApi()
-
 const avatarInput = ref(null)
+
 // Data lists
 const grades = ref([])
-const subjects = ref([])
-const { fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects } = useTaxonomy()
+const levels = ref([])
+const { fetchGrades, fetchLevels, grades: taxGrades, levels: taxLevels } = useTaxonomy()
 
-/**
- * Creates a clean form state object from the user data.
- * @param {object | null} u - The user object from the auth store.
- * @returns {object} A form state object.
- */
-function createFormState(u) {
-  return {
-    display_name: u?.name || '',
-    institution: u?.institution || '',
-    grade_id: u?.grade?.id || '',
-    subjects: Array.isArray(u?.subjects) ? u.subjects.map(s => s.id).filter(Boolean) : [],
-    headline: u?.headline || '',
-    bio: u?.bio || '',
-    teaching_subjects: Array.isArray(u?.teaching_subjects) ? u.teaching_subjects.join(', ') : (u?.teaching_subjects || ''),
-    first_name: u?.first_name || '',
-    last_name: u?.last_name || ''
-  }
-}
-
+// Initialize form from user data
 const form = ref(createFormState(user))
-const avatarPreview = ref(user?.avatar_url || user?.avatar || null)
-let avatarFile = null
+
+// Avatar preview initialization
+onMounted(() => {
+  avatarPreview.value = user?.avatar_url || user?.avatar || null
+})
 
 /**
- * Fetches grades and subjects from the API and populates the refs.
+ * Fetches grades and levels from the API
  */
-async function fetchGradesAndSubjects() {
+async function fetchGradesAndLevels() {
   try {
-    await Promise.all([fetchGrades(), fetchAllSubjects()])
+    await Promise.all([fetchGrades(), fetchLevels()])
     grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
-    subjects.value = Array.isArray(taxSubjects.value) ? taxSubjects.value : []
+    levels.value = Array.isArray(taxLevels.value) ? taxLevels.value : []
   } catch (err) {
     console.error('Failed to fetch form data:', err)
-    alert.push({ type: 'error', message: 'Failed to load form options.' })
     grades.value = []
-    subjects.value = []
+    levels.value = []
   }
 }
 
 onMounted(async () => {
-  await fetchGradesAndSubjects();
-});
-
-function onFile(e) {
-  const input = e.target
-  const f = input.files?.[0]
-  if (!f) return
-  avatarFile = f
-  const url = URL.createObjectURL(f)
-  avatarPreview.value = url
-}
+  await fetchGradesAndLevels()
+})
 
 function triggerAvatarUpload() {
   avatarInput.value?.click()
@@ -171,46 +149,17 @@ function triggerAvatarUpload() {
 function reset() {
   form.value = createFormState(user)
   avatarPreview.value = user?.avatar_url || user?.avatar || null
-  avatarFile = null
+  avatarFile.value = null
 }
 
 async function save() {
-  try {
-    if (!form.value.display_name || form.value.display_name.trim().length === 0) {
-      alert.push({ type: 'error', message: 'Please enter a display name' })
-      return
-    }
-
-    const data = new FormData()
-    data.append('name', form.value.display_name)
-  // include institution if present on user
-  if (user?.institution) data.append('institution', user.institution)
-    data.append('grade_id', form.value.grade_id)
-    data.append('subjects', JSON.stringify(form.value.subjects))
-
-    if (isQuizMaster.value) {
-      data.append('headline', form.value.headline)
-      data.append('bio', form.value.bio)
-      data.append('teaching_subjects', form.value.teaching_subjects || '')
-    } else {
-      data.append('first_name', form.value.first_name)
-      data.append('last_name', form.value.last_name)
-    }
-
-    if (avatarFile) {
-      data.append('avatar', avatarFile)
-    }
-
-    const json = await patchMe(data)
-    // patchMe may return the updated user object or a success payload; normalize if needed
-    if (json && json.id) {
-      auth.setUser(json)
-    } else if (json && json.user) {
-      auth.setUser(json.user)
-    }
-    alert.push({ type: 'success', message: 'Profile updated', icon: 'heroicons:check' })
-  } catch (e) {
-    alert.push({ type: 'error', message: 'Failed to save profile', icon: 'heroicons:x-mark' })
+  const success = await saveProfile(form.value, isQuizMaster.value)
+  if (success) {
+    // Reset form with updated user data
+    form.value = createFormState(auth.user)
+    avatarPreview.value = auth.user?.avatar_url || auth.user?.avatar || null
+    avatarFile.value = null
   }
 }
 </script>
+

@@ -302,6 +302,14 @@ async function handleParsedRows(rows) {
 
     q.is_banked = true
     q.is_approved = true
+    // Ensure imported questions inherit the current quiz taxonomy so server-side created
+    // questions already have grade/level/subject/topic set when the quiz is saved.
+    try {
+      q.grade_id = store.quiz?.grade_id ?? null
+      q.level_id = store.quiz?.level_id ?? null
+      q.subject_id = store.quiz?.subject_id ?? null
+      q.topic_id = store.quiz?.topic_id ?? null
+    } catch (e) {}
 
     const tmp = JSON.parse(JSON.stringify(q))
     if (tmp.type === 'mcq') { if (typeof tmp.correct !== 'undefined') tmp.answers = [String(tmp.correct)] }

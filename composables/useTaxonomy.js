@@ -180,19 +180,23 @@ export default function useTaxonomy() {
     if (levels.value && levels.value.length) return
     // If a fetch is already in-flight, return that promise so callers can await it
     if (_levelsPromise) return _levelsPromise
+    
     loadingLevels.value = true
-    try { console.debug('useTaxonomy.fetchLevels: starting fetch') } catch (e) {}
 
     _levelsPromise = (async () => {
       try {
+        try { console.debug('useTaxonomy.fetchLevels: starting fetch') } catch (e) {}
         const res = await api.get('/api/levels')
-        if (!res.ok) return
+        if (!res.ok) {
+          try { console.error('useTaxonomy.fetchLevels: response not ok', res.status) } catch (e) {}
+          return
+        }
         const data = await res.json().catch(() => null)
-        if (!data) return
-        // data.levels expected
-        const list = normalizeList(data.levels ? { grades: data.levels } : data)
-        // normalizeList expects arrays of grade-like objects; preserve structure on levels
-        // But for consumers we want levels as objects with id,name,grades
+        if (!data) {
+          try { console.error('useTaxonomy.fetchLevels: no data in response') } catch (e) {}
+          return
+        }
+        // data.levels expected to be an array
         if (data.levels && Array.isArray(data.levels)) {
           // Ensure level ids and nested grade ids are strings to avoid v-model/type mismatch
           levels.value = data.levels.map(l => ({
@@ -200,22 +204,26 @@ export default function useTaxonomy() {
             id: l.id ? String(l.id) : null,
             grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null }))
           }))
+          try { console.debug('useTaxonomy.fetchLevels: loaded', levels.value.length, 'levels with nested grades') } catch (e) {}
         } else {
+          // fallback: if no .levels key, try treating data as the list directly
+          const list = normalizeList(data)
           levels.value = list
+          try { console.debug('useTaxonomy.fetchLevels: loaded', levels.value.length, 'levels from flattened data') } catch (e) {}
         }
-        try { console.debug('useTaxonomy.fetchLevels: loaded', (levels.value || []).length, 'levels') } catch (e) {}
       } catch (e) {
-        // ignore
+        try { console.error('useTaxonomy.fetchLevels error:', e) } catch (err) {}
       } finally {
-        // Clear loading state and allow later refetches. Do NOT return the
-        // promise itself from inside the promise executor — returning the
-        // same promise would create a promise chaining cycle.
         loadingLevels.value = false
-        _levelsPromise = null
       }
     })()
 
-    return _levelsPromise
+    try {
+      await _levelsPromise
+    } finally {
+      // Clear the promise reference after it settles so later calls start fresh
+      _levelsPromise = null
+    }
   }
 
   // Friendly header list: small objects with id,name,slug (slug optional)

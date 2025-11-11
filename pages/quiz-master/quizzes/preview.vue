@@ -1,219 +1,220 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-5xl mx-auto space-y-6">
-  <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-          <div>
-            <h1 class="text-2xl font-semibold text-gray-900">Preview Quiz</h1>
-            <p class="text-sm text-gray-500">Review your quiz settings and questions before saving.</p>
-          </div>
-          <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-            <UButton size="sm" color="white" @click="editQuiz">Edit</UButton>
-            <UButton size="sm" color="primary" :loading="saving" @click="saveQuiz">Save Quiz</UButton>
+  <div>
+    <!-- Page Hero Section -->
+    <PageHero
+      :title="quiz?.title || 'Quiz Preview'"
+      :description="quiz?.description || 'Preview your quiz before publishing'"
+      :flush="true"
+    >
+      <template #eyebrow>
+        Quiz Preview
+      </template>
+
+      <template #actions>
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <ShareButton
+            :url="shareUrl"
+            class="w-full sm:w-auto"
+          />
+          <UButton
+            size="lg"
+            variant="outline"
+            class="w-full sm:w-auto text-white border-white/40 hover:bg-white/10"
+            to="/quiz-master/quizzes"
+          >
+            Back to Quizzes
+          </UButton>
+        </div>
+      </template>
+
+      <template #highlight>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-white/70">Created by</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ quiz?.user?.name || 'Quiz Master' }}</p>
+          <p class="mt-2 text-sm text-white/70">{{ quiz?.questions_count || 0 }} questions</p>
+        </div>
+      </template>
+
+      <template #highlight-icon>
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      </template>
+    </PageHero>
+
+    <!-- Questions Preview Section -->
+    <div class="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Question Preview</h2>
+          <p class="text-sm text-gray-600 mt-1">Preview of the first {{ previewQuestions.length }} question{{ previewQuestions.length !== 1 ? 's' : '' }} from your quiz</p>
+        </div>
+
+        <div class="divide-y divide-gray-200">
+          <div
+            v-for="(question, index) in previewQuestions"
+            :key="question?.uid || index"
+            class="p-6"
+          >
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-medium text-indigo-700">{{ index + 1 }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="prose prose-sm max-w-none">
+                  <div v-html="question?.text || question?.body || 'Question text'" class="text-gray-900"></div>
+                </div>
+
+                <!-- Question Options/Answers Preview -->
+                <div v-if="question?.options && question.options.length > 0" class="mt-4 space-y-2">
+                  <div
+                    v-for="(option, optIndex) in question.options.slice(0, 4)"
+                    :key="optIndex"
+                    class="flex items-center gap-3 p-3 bg-gray-50 rounded-md"
+                  >
+                    <div class="w-6 h-6 border-2 border-gray-300 rounded-full flex items-center justify-center">
+                      <span class="text-xs font-medium text-gray-500">{{ String.fromCharCode(65 + optIndex) }}</span>
+                    </div>
+                    <div class="flex-1 text-sm text-gray-700" v-html="option?.text || option"></div>
+                  </div>
+                  <div v-if="question.options.length > 4" class="text-xs text-gray-500 mt-2">
+                    +{{ question.options.length - 4 }} more options...
+                  </div>
+                </div>
+
+                <!-- Question Type and Metadata -->
+                <div class="mt-4 flex items-center gap-4 text-xs text-gray-500">
+                  <span class="px-2 py-1 bg-gray-100 rounded-full capitalize">{{ question?.type || 'multiple-choice' }}</span>
+                  <span>Difficulty: {{ getDifficultyLabel(question?.difficulty || 1) }}</span>
+                  <span>{{ question?.marks || 1 }} mark{{ (question?.marks || 1) !== 1 ? 's' : '' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-          <div class="mt-4">
-          <div class="bg-gray-50 rounded-xl p-4">
-            <nav class="flex flex-wrap gap-2" aria-label="Tabs">
-              <button
-                @click="activeTab = 'details'"
-                :class="['px-3 py-2 rounded-md text-sm font-medium', activeTab === 'details' ? 'bg-white border border-gray-200 text-indigo-700' : 'text-gray-600 hover:text-gray-800']"
-              >
-                Details
-              </button>
-              <button
-                @click="activeTab = 'questions'"
-                :class="['px-3 py-2 rounded-md text-sm font-medium', activeTab === 'questions' ? 'bg-white border border-gray-200 text-indigo-700' : 'text-gray-600 hover:text-gray-800']"
-              >
-                Questions ({{ questions.length }})
-              </button>
-            </nav>
-          </div>
-
-          <div class="mt-6 bg-white rounded-xl p-6 border shadow-sm">
-            <div v-if="activeTab === 'details'">
-              <h3 class="text-lg font-semibold mb-2">Quiz details</h3>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <div class="text-xs text-gray-500">Title</div>
-                  <div class="font-medium text-gray-900">{{ draft.title }}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-gray-500">Topic</div>
-                  <div class="font-medium text-gray-900">{{ topicName }}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-gray-500">Time limit</div>
-                  <div class="font-medium text-gray-900">{{ draft.timer_minutes || 'None' }}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-gray-500">Attempts</div>
-                  <div class="font-medium text-gray-900">{{ draft.attempts_allowed || 1 }}</div>
-                </div>
-                <div class="sm:col-span-2">
-                  <div class="text-xs text-gray-500">Description</div>
-                  <div class="prose max-w-none" v-html="draft.description"></div>
-                </div>
-              </div>
-            </div>
-
-                <div v-else>
-              <h3 class="text-lg font-semibold mb-4">Questions</h3>
-              <div class="space-y-4">
-                <div v-for="(q, idx) in questions" :key="q.uid" class="rounded-xl border p-4 bg-gray-50">
-                  <div class="flex flex-col sm:flex-row items-start justify-between gap-2">
-                    <div>
-                      <div class="text-sm text-gray-500">Question {{ idx + 1 }}</div>
-                      <div class="mt-2 text-gray-900" v-html="q.text || q.body"></div>
-                    </div>
-                    <div class="text-sm text-gray-600 sm:text-right">Difficulty: {{ q.difficulty }}</div>
-                  </div>
-
-                  <div class="mt-3">
-                    <div v-if="q.media || q.image_url || q.audio_url || q.video_url" class="mb-3">
-                      <div v-if="q.image_url || q.media" class="mb-2">
-                        <img :src="q.image_url || q.media" class="max-w-full rounded" />
-                      </div>
-                      <div v-if="q.audio_url" class="mb-2">
-                        <audio controls :src="q.audio_url" class="w-full"></audio>
-                      </div>
-                      <div v-if="q.video_url" class="mb-2">
-                        <iframe :src="formatYouTubeUrl(q.video_url)" class="w-full aspect-video" frameborder="0" allowfullscreen></iframe>
-                      </div>
-                    </div>
-
-                    <div v-if="q.options && q.options.length">
-                      <div class="text-sm text-gray-500 mb-1">Options</div>
-                      <ul class="list-disc list-inside space-y-1">
-                        <li v-for="(opt, oi) in q.options" :key="oi" v-html="opt"></li>
-                      </ul>
-                    </div>
-
-                    <div v-if="q.answers && q.answers.length" class="mt-2 text-sm text-gray-600">
-                      <div class="text-xs text-gray-500">Answers</div>
-                      <div class="font-medium">{{ q.answers.join(', ') }}</div>
-                    </div>
-
-                    <div v-if="q.explanation" class="mt-3 text-sm text-gray-700">
-                      <div class="text-xs text-gray-500">Explanation</div>
-                      <div v-html="q.explanation"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div v-if="questions.length === 0" class="px-6 py-8 text-center text-gray-500">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No questions yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Add some questions to your quiz to see a preview of the first 2 questions.</p>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter, useRuntimeConfig } from '#imports'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useApi } from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
-import useApi from '~/composables/useApi'
-const router = useRouter()
-const cfg = useRuntimeConfig()
 
-const activeTab = ref('details')
-const saving = ref(false)
-const draft = ref({})
-const questions = ref([])
+// Page meta
+definePageMeta({
+  layout: 'quiz-master',
+  title: 'Quiz Preview',
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+    { name: 'description', content: 'Preview your quiz before publishing to ensure everything looks correct.' }
+  ]
+})
+
+// Route and API
+const route = useRoute()
 const api = useApi()
+const alert = useAppAlert()
 
-function tabClass(name) {
-  return [
-    'px-3 py-2 rounded-md text-sm font-medium',
-    activeTab.value === name ? 'bg-white border border-gray-200 text-indigo-700' : 'text-gray-600 hover:text-gray-800'
-  ].join(' ')
+// Types
+interface QuizQuestion {
+  uid?: string
+  id?: number
+  type?: string
+  text?: string
+  body?: string
+  options?: any[]
+  difficulty?: number
+  marks?: number
 }
 
-function editQuiz() {
-  router.push('/quiz-master/quizzes/create')
-}
-
-function formatYouTubeUrl(u) {
-  if (!u) return ''
-  if (u.includes('youtube') || u.includes('youtu.be')) {
-    // quick embed conversion
-    try {
-      const id = u.split('v=')[1] || u.split('/').pop()
-      return `https://www.youtube.com/embed/${id}`
-    } catch (e) { return u }
+interface Quiz {
+  id?: number
+  title?: string
+  description?: string
+  user?: {
+    name?: string
   }
-  return u
+  questions_count?: number
+  questions?: QuizQuestion[]
 }
 
-async function saveQuiz() {
-  saving.value = true
+// Reactive data
+const quiz = ref<Quiz | null>(null)
+const questions = ref<QuizQuestion[]>([])
+const loading = ref(true)
+
+// Computed properties
+const shareUrl = computed(() => {
+  if (!quiz.value?.id) return ''
+  const config = useRuntimeConfig()
+  return `${config.public.siteUrl || window.location.origin}/quizzes/${quiz.value.id}`
+})
+
+const previewQuestions = computed(() => {
+  return questions.value.slice(0, 2)
+})
+
+// Helper functions
+function getDifficultyLabel(difficulty: number): string {
+  const labels = ['Easy', 'Medium', 'Hard', 'Expert']
+  return labels[difficulty - 1] || 'Medium'
+}
+
+// Fetch quiz data
+async function fetchQuiz() {
   try {
-    // Draft holds quiz fields; questions array may contain files references in window._tmpFiles
-    // Upload remaining files referenced in questions
-    const filesMap = window._tmpFiles || {}
-    // Build final FormData and post to /api/quizzes. Attach any question files as question_media[...] so backend stores them.
-    const fd = new FormData()
-    const fields = ['topic_id','title','description','youtube_url','timer_minutes','attempts_allowed','shuffle_questions','shuffle_answers','access','visibility']
-    fields.forEach(f => { if (draft.value[f] !== undefined && draft.value[f] !== null) fd.append(f, String(draft.value[f])) })
+    loading.value = true
+    const quizId = route.params.id
 
-    // Attach any files used as top-level quiz cover
-    if (draft.value.cover && window._tmpFiles && window._tmpFiles[draft.value.cover]) {
-      fd.append('cover', window._tmpFiles[draft.value.cover])
+    if (!quizId) {
+      alert.push({ type: 'error', message: 'Quiz ID is required' })
+      return
     }
 
-    // Attach per-question files under question_media[index] or question_media[uid]
-    const mediaMap = window._tmpFiles || {}
-    const questionsCopy = JSON.parse(JSON.stringify(questions.value))
-    for (let i = 0; i < questionsCopy.length; i++) {
-      const q = questionsCopy[i]
-      // if original in-memory had file refs, attach them
-      if (q._imageFileKey && mediaMap[q._imageFileKey]) {
-        // prefer uid key when available
-        const key = q.uid ?? i
-        fd.append(`question_media[${key}]`, mediaMap[q._imageFileKey])
-        // remove temporary key before sending JSON
-        delete q._imageFileKey
-      }
-      if (q._audioFileKey && mediaMap[q._audioFileKey]) {
-        const key = q.uid ?? i
-        fd.append(`question_media[${key}]`, mediaMap[q._audioFileKey])
-        delete q._audioFileKey
-      }
-    }
+    const response = await api.get(`/api/quizzes/${quizId}`)
 
-    fd.append('questions', JSON.stringify(questionsCopy))
-
-    const res = await api.postFormData('/api/quizzes', fd)
-    if (api.handleAuthStatus(res)) return
-    if (res.ok) {
-      // clear temp store
-      try { sessionStorage.removeItem('quiz:draft') } catch(e){}
-      window._tmpFiles = {}
-      const alert = useAppAlert(); alert.push({ message: 'Quiz saved', type: 'success' })
-      router.push('/quiz-master/quizzes')
+    if (response.ok) {
+      const data = await response.json()
+      quiz.value = data.quiz || {}
+      questions.value = Array.isArray(data.quiz?.questions) ? data.quiz.questions : []
     } else {
-      const t = await res.text().catch(()=>'')
-      const alert = useAppAlert(); alert.push({ message: 'Failed to save quiz: ' + t, type: 'error' })
+      alert.push({ type: 'error', message: 'Failed to load quiz data' })
     }
-  } catch (e) {
-    const alert = useAppAlert(); alert.push({ message: 'Network error', type: 'error' })
+  } catch (error) {
+    console.error('Error fetching quiz:', error)
+    alert.push({ type: 'error', message: 'Failed to load quiz data' })
   } finally {
-    saving.value = false
+    loading.value = false
   }
 }
 
+// Lifecycle
 onMounted(() => {
-  try {
-    const raw = sessionStorage.getItem('quiz:draft')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      draft.value = parsed.form || {}
-      questions.value = parsed.questions || []
-    }
-  } catch (e) {
-    console.error("Failed to load quiz draft from session storage", e)
-  }
+  fetchQuiz()
 })
 </script>
+
+<style scoped>
+.prose :deep(p) {
+  margin: 0;
+}
+
+.prose :deep(ul), .prose :deep(ol) {
+  margin: 0.5rem 0;
+}
+
+.prose :deep(li) {
+  margin: 0.25rem 0;
+}
+</style>

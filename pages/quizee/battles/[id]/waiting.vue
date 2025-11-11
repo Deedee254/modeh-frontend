@@ -102,6 +102,52 @@
               </div>
             </div>
           </div>
+
+          <!-- Battle Details -->
+          <div class="space-y-4">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Battle Details</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700 space-y-3">
+              <InfoItem icon="heroicon-o-question-mark-circle" label="Question Count" :value="battle.settings?.question_count || 10" />
+              <InfoItem icon="heroicon-o-chart-bar" label="Difficulty" :value="battle.settings?.difficulty || 'Any'" class="capitalize" />
+              <InfoItem icon="heroicon-o-academic-cap" label="Grade" :value="getGradeName(battle.settings?.grade_id)" />
+              <InfoItem icon="heroicon-o-book-open" label="Subject" :value="getSubjectName(battle.settings?.subject_id)" />
+              <InfoItem icon="heroicon-o-tag" label="Topic" :value="getTopicName(battle.settings?.topic_id)" />
+            </div>
+          </div>
+
+          <!-- Invite & Actions Section -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Invite & Actions</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700 space-y-4">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Share this battle with others to invite them to compete.</p>
+                <AffiliateShareButton 
+                  item-type="Battle" 
+                  :item-id="battle.uuid"
+                  :base-url="battleBaseUrl"
+                />
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="border-t pt-4 flex flex-col sm:flex-row items-center gap-3">
+                <button v-if="isParticipant && soloModeAvailable && battle.status === 'waiting'"
+                        @click="startSoloBattle"
+                        class="w-full sm:flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  Start Solo Battle
+                </button>
+                <button v-if="isInitiator && battle.status === 'waiting'"
+                        @click="cancelBattle"
+                        class="w-full sm:flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  Cancel Battle
+                </button>
+                <NuxtLink to="/quizee/battles" class="w-full sm:flex-1 text-center px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold rounded-lg transition-colors">
+                  Leave Room
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Right Column -->
@@ -118,8 +164,9 @@
                     {{ battle.status || 'waiting' }}
                   </span>
                 </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2" v-if="!countdownTime">Get ready for an epic battle!</p>
-                <p class="text-sm text-red-600 dark:text-red-400 mt-2 font-semibold" v-else>Battle starting in {{ countdownTime }} seconds!</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2" v-if="!countdownTime && !soloModeAvailable">Get ready for an epic battle!</p>
+                <p class="text-sm text-red-600 dark:text-red-400 mt-2 font-semibold" v-else-if="countdownTime">Battle starting in {{ countdownTime }} seconds!</p>
+                <p class="text-sm text-amber-600 dark:text-amber-400 mt-2 font-semibold" v-else-if="!soloModeAvailable && isParticipant">Solo mode available in {{ soloCountdownTime }}s</p>
               </div>
 
               <!-- Players Section -->
@@ -142,49 +189,6 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Battle Info -->
-              <div class="space-y-4">
-                <h3 class="text-base font-semibold text-gray-900">Battle Details</h3>
-                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 space-y-3">
-                  <InfoItem icon="heroicon-o-question-mark-circle" label="Question Count" :value="battle.settings?.question_count || 10" />
-                  <InfoItem icon="heroicon-o-chart-bar" label="Difficulty" :value="battle.settings?.difficulty || 'Any'" class="capitalize" />
-                  <InfoItem icon="heroicon-o-academic-cap" label="Grade" :value="getGradeName(battle.settings?.grade_id)" />
-                  <InfoItem icon="heroicon-o-book-open" label="Subject" :value="getSubjectName(battle.settings?.subject_id)" />
-                  <InfoItem icon="heroicon-o-tag" label="Topic" :value="getTopicName(battle.settings?.topic_id)" />
-                </div>
-              </div>
-
-              <!-- Invite & Actions Section -->
-              <div class="space-y-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Invite & Actions</h3>
-                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Share this link with a friend to invite them to the battle.</p>
-                  <div class="flex items-center gap-2">
-                    <input
-                      :value="inviteLink"
-                      readonly
-                      class="flex-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                    <button @click="copyLink" class="p-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row items-center gap-3 pt-2">
-                  <button v-if="isInitiator && battle.status === 'waiting'"
-                          @click="cancelBattle"
-                          class="w-full sm:w-auto flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    Cancel Battle
-                  </button>
-                  <NuxtLink to="/quizee/battles" class="w-full sm:w-auto flex-1 text-center px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold rounded-lg transition-colors">
-                    Leave Room
-                  </NuxtLink>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -205,6 +209,7 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import useTaxonomy from '~/composables/useTaxonomy'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
 import InfoItem from '~/components/quizee/battle/InfoItem.vue'
+import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -243,12 +248,18 @@ const initialized = ref(false)
 const loading = ref(true)
 const countdown = ref(null)
 const countdownTime = ref(0)
+const soloCountdown = ref(null)
+const soloCountdownTime = ref(10)
+const soloModeAvailable = ref(false)
 
 const isInitiator = computed(() => auth.user && battle.value.initiator_id === auth.user.id)
+const isParticipant = computed(() => auth.user && (battle.value.initiator_id === auth.user.id || battle.value.opponent_id === auth.user.id))
 
-const inviteLink = computed(() => {
-  if (typeof window === 'undefined' || !battle.value?.uuid) return ''
-  return `${window.location.origin}/quizee/battles/${battle.value.uuid}/waiting`
+const battleBaseUrl = computed(() => {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/quizee/battles`
+  }
+  return '/quizee/battles'
 })
 
 const statusIndicatorClass = computed(() => {
@@ -298,9 +309,9 @@ async function fetchBattle() {
         opponent_id: d.opponent_id,
         status: d.status,
         settings: d.settings,
+        name: d.name,
         initiator: d.initiator,
         opponent: d.opponent,
-        players: d.players || undefined,
         // Explicitly exclude questions from the battle object
         questions: undefined,
       }
@@ -374,11 +385,6 @@ async function cancelBattle() {
   }
 }
 
-function copyLink() {
-  navigator.clipboard.writeText(inviteLink.value)
-  showAlert({ type: 'success', message: 'Battle waiting room link copied to clipboard' })
-}
-
 watch(() => battle.value?.status, (newStatus) => {
   // don't auto-redirect on initial load if the battle was already in-progress
   if (!initialized.value) return
@@ -405,6 +411,45 @@ function startCountdown() {
   }, 1000)
 }
 
+function startSoloCountdown() {
+  if (!isParticipant.value) return
+  
+  soloCountdownTime.value = 10
+  soloCountdown.value = setInterval(() => {
+    soloCountdownTime.value--
+    if (soloCountdownTime.value <= 0) {
+      clearInterval(soloCountdown.value)
+      soloCountdown.value = null
+      soloModeAvailable.value = true
+      showAlert({ type: 'info', message: 'You can now start the battle as a solo challenge!' })
+    }
+  }, 1000)
+}
+
+async function startSoloBattle() {
+  try {
+    const res = await api.post(`/api/battles/${battle.value.uuid}/start-solo`)
+    if (api.handleAuthStatus(res)) return
+    if (res.ok) {
+      showAlert({ type: 'success', message: 'Battle started in solo mode!' })
+      // Clear any existing countdowns
+      if (soloCountdown.value) {
+        clearInterval(soloCountdown.value)
+        soloCountdown.value = null
+      }
+      // The status will be updated via Echo listener, but we can also redirect directly
+      setTimeout(() => {
+        router.push(`/quizee/battles/${uuid}/play`)
+      }, 500)
+    } else {
+      showAlert({ type: 'error', message: 'Failed to start solo battle' })
+    }
+  } catch (e) {
+    console.error('Failed to start solo battle', e)
+    showAlert({ type: 'error', message: 'Failed to start solo battle' })
+  }
+}
+
 onMounted(async () => {
   await fetchBattle()
   // mark page as initialized after initial fetch to avoid immediate redirects
@@ -417,12 +462,21 @@ onMounted(async () => {
   }
 
   attachEchoListeners()
+  
+  // Start solo countdown if user is a participant
+  if (isParticipant.value) {
+    startSoloCountdown()
+  }
 })
 onUnmounted(() => {
   detachEchoListeners()
   if (countdown.value) {
     clearInterval(countdown.value)
     countdown.value = null
+  }
+  if (soloCountdown.value) {
+    clearInterval(soloCountdown.value)
+    soloCountdown.value = null
   }
 })
 </script>

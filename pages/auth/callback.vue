@@ -30,16 +30,10 @@ const VALID_STEPS = ['institution', 'role', 'grade', 'subjects', 'complete', 'ne
 onMounted(async () => {
   try {
     // Read query params from the browser location
+    // Note: Token is now set via HttpOnly cookie by backend, not in query string
     const params = parseQuery(window.location.search)
-    const token = params.token
     const requires = params.requires_profile_completion === '1' || params.requires_profile_completion === 'true'
     let nextStep = params.next_step || null
-
-    // Validate token
-    if (!token || typeof token !== 'string') {
-      console.error('Invalid or missing token in OAuth callback')
-      return router.replace('/')
-    }
 
     // Validate and sanitize nextStep
     if (nextStep && !VALID_STEPS.includes(nextStep)) {
@@ -47,26 +41,17 @@ onMounted(async () => {
       nextStep = 'new-user'
     }
 
-    try {
-      // Persist token in cookie for SSR and subsequent requests
-      useCookie('auth_token').value = token
-      
-      // Also store token in localStorage so client-side logic that checks 'token' works
-      if (process.client) {
-        try { 
-          localStorage.setItem('token', token)
-          // Clean the URL to remove the token and other params from the address bar
-          window.history.replaceState({}, document.title, window.location.pathname)
-        } catch (err) {
-          console.warn('Failed to store token in localStorage:', err)
-        }
+    // Clean the URL to remove query params from the address bar
+    if (process.client) {
+      try { 
+        window.history.replaceState({}, document.title, window.location.pathname)
+      } catch (err) {
+        console.warn('Failed to clean URL:', err)
       }
-    } catch (err) {
-      console.warn('Failed to store auth token:', err)
-      return router.replace('/')
     }
 
     // Fetch current user (api/me) to hydrate app state
+    // The session cookie and/or auth_token cookie will authenticate this request
     let user = null
     try {
       const me = await $fetch(config.public.apiBase + '/api/me', { credentials: 'include' })

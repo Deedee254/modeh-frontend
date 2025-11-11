@@ -7,7 +7,7 @@ import type { Ref } from 'vue'
 // Nuxt auto-imported helpers (useRouter) are available via #imports in non-SFC modules
 import { useRouter } from '#imports'
 import { useAppAlert } from '~/composables/useAppAlert'
-import useApi from '~/composables/useApi'
+import { useApi } from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 export interface Quiz {
@@ -323,6 +323,21 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         difficulty: (typeof q.difficulty !== 'undefined' && q.difficulty !== null) ? Number(q.difficulty) : 3,
         marks: (typeof q.marks !== 'undefined' && q.marks !== null) ? Number(q.marks) : 1
       }
+
+      // Preserve taxonomy ids when present so imported questions carry grade/level/subject/topic
+      try {
+        if (typeof q.grade_id !== 'undefined' && q.grade_id !== null) copy.grade_id = q.grade_id
+        else if (q.grade && typeof q.grade.id !== 'undefined') copy.grade_id = q.grade.id
+
+        if (typeof q.level_id !== 'undefined' && q.level_id !== null) copy.level_id = q.level_id
+        else if (q.level && typeof q.level.id !== 'undefined') copy.level_id = q.level.id
+
+        if (typeof q.subject_id !== 'undefined' && q.subject_id !== null) copy.subject_id = q.subject_id
+        else if (q.subject && typeof q.subject.id !== 'undefined') copy.subject_id = q.subject.id
+
+        if (typeof q.topic_id !== 'undefined' && q.topic_id !== null) copy.topic_id = q.topic_id
+        else if (q.topic && typeof q.topic.id !== 'undefined') copy.topic_id = q.topic.id
+      } catch (e) {}
 
     if (q.media_type) {
       copy.media_type = q.media_type

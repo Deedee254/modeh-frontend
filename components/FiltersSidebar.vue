@@ -179,13 +179,9 @@ const hasAnyActive = computed(() => {
   return !!(localLevel.value || localGrade.value || localSubject.value || localTopic.value)
 })
 
-// compute subjects filtered by selected grade
+// subjects are already filtered by taxonomy composable
 const filteredSubjects = computed(() => {
-  // Use the full list of subjects from taxonomy for filtering, not the prop.
-  const raw = unref(props.subjectOptions)
-  const allSubjects = (taxSubjects.value && taxSubjects.value.length) ? taxSubjects.value : (Array.isArray(raw) ? raw : [])
-  if (!localGrade.value) return allSubjects
-  return (allSubjects || []).filter(s => String(s.grade_id || s.grade || '') === String(localGrade.value))
+  return taxSubjects.value || []
 })
 
 // compute filtered grades by selected level if levels are available
@@ -219,33 +215,6 @@ const filteredTopics = computed(() => {
 })
 
 // restore collapsed from localStorage if storageKey provided - do this after mount to avoid hydration mismatches
-let _prefetched = false
-async function prefetchIfNeeded() {
-  if (_prefetched) return
-  _prefetched = true
-  try {
-    const rawGrades = unref(props.gradeOptions)
-    const rawSubjects = unref(props.subjectOptions)
-    const rawTopics = unref(props.topicOptions)
-
-    // Load levels first so we can derive nested grades from levels when available.
-    try { if ((!taxLevels.value || !taxLevels.value.length) && typeof fetchLevels === 'function') await fetchLevels() } catch (e) { console.error('FiltersSidebar.prefetch.fetchLevels failed', e) }
-
-    // If caller didn't provide grades and the taxonomy doesn't already have grades, fetch grades
-    try {
-      if ((!Array.isArray(rawGrades) || !rawGrades.length) && (!taxGrades.value || !taxGrades.value.length) && typeof fetchGrades === 'function') {
-        await fetchGrades()
-      }
-    } catch (e) { console.error('FiltersSidebar.prefetch.fetchGrades failed', e) }
-
-    // Only fetch subjects/topics if caller didn't pass them and taxonomy hasn't loaded them yet
-    try { if ((!Array.isArray(rawSubjects) || !rawSubjects.length) && (!taxSubjects.value || !taxSubjects.value.length) && typeof fetchAllSubjects === 'function') await fetchAllSubjects() } catch (e) { console.error('FiltersSidebar.prefetch.fetchAllSubjects failed', e) }
-    try { if ((!Array.isArray(rawTopics) || !rawTopics.length) && (!taxTopics.value || !taxTopics.value.length) && typeof fetchAllTopics === 'function') await fetchAllTopics() } catch (e) { console.error('FiltersSidebar.prefetch.fetchAllTopics failed', e) }
-  } catch (e) {
-    console.error('FiltersSidebar.prefetch failed', e)
-  }
-}
-
 onMounted(() => {
   if (!props.storageKey) return
   try {
@@ -258,11 +227,9 @@ onMounted(() => {
     }
   } catch (e) {}
 
-  // If the sidebar is open after restore, prefetch taxonomy now
-  if (!collapsed.value) {
-    // fire-and-forget
-    try { prefetchIfNeeded() } catch (e) {}
-  }
+  // Note: taxonomy (levels/grades/subjects/topics) is fetched on mount below, so
+  // we don't need to prefetch here when the sidebar is opened. Keeping mount-time
+  // fetch ensures levels are available even if sidebar remains collapsed.
 })
 
 watch(() => props.subject, (v) => { localSubject.value = v })
@@ -277,11 +244,7 @@ watch(collapsed, (v) => {
 })
 
 // When the sidebar is opened, prefetch taxonomy data on demand
-watch(collapsed, (v) => {
-  if (!v) {
-    try { prefetchIfNeeded() } catch (e) {}
-  }
-})
+// No-op on collapse open: taxonomy is fetched on mount, so we don't prefetch here.
 // persist local fields too so users don't lose in-flight filters
 watch(localGrade, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':grade', String(v)) } catch (e) {} }

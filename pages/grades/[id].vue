@@ -31,7 +31,7 @@
       <template #highlight>
         <div>
           <p class="text-xs uppercase tracking-wide text-white/70">What you'll find</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ (subjects && subjects.value ? subjects.value.length : 0) }} subjects curated</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ (subjects ? subjects.length : 0) }} subjects curated</p>
           <p v-if="gradeMeta?.summary" class="mt-2 text-sm text-white/70">{{ gradeMeta.summary }}</p>
         </div>
       </template>
@@ -45,7 +45,7 @@
       <template #stats>
         <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
           <p class="text-xs uppercase tracking-wide text-white/60">Subjects</p>
-          <p class="mt-2 text-xl font-semibold">{{ (subjects && subjects.value ? subjects.value.length : 0) }}</p>
+          <p class="mt-2 text-xl font-semibold">{{ (subjects ? subjects.length : 0) }}</p>
         </div>
         <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
           <p class="text-xs uppercase tracking-wide text-white/60">Topics</p>
@@ -63,7 +63,7 @@
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load subjects for this grade.</div>
 
       <div v-else>
-      <div v-if="!subjects || !subjects.value || subjects.value.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No subjects found for this grade.</div>
+      <div v-if="!subjects || subjects.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No subjects found for this grade.</div>
   <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <SubjectCard
           v-for="s in displaySubjects"

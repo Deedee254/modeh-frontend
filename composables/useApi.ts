@@ -26,6 +26,29 @@ export function useApi() {
     }
   }
 
+  // Try to find an API auth token. Prefer a cookie-set token (auth_token) then fall
+  // back to localStorage 'token'. This keeps the behavior compatible with the
+  // social-login callback which stores the token in both locations.
+  function getAuthToken() {
+    try {
+      if (typeof document !== 'undefined') {
+        const m = document.cookie.match(/(?:^|; )auth_token=([^;]+)/)
+        if (m && m[1]) return decodeURIComponent(m[1])
+      }
+    } catch (e) {
+      // ignore cookie parse errors
+    }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const t = localStorage.getItem('token')
+        if (t) return t
+      }
+    } catch (e) {
+      // ignore localStorage access errors
+    }
+    return null
+  }
+
   async function ensureCsrf() {
     // Avoid repeated network calls: if an ensure is in-flight, reuse its promise.
     // Also skip a new fetch if we recently fetched and the cookie appears present.
@@ -82,10 +105,22 @@ export function useApi() {
     return _ensureCsrfPromise
   }
 
+  // Build common non-JSON headers (GET, DELETE, form-data)
+  function commonHeaders() {
+    const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
+    const xsrf = getXsrfFromCookie()
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    const auth = getAuthToken()
+    if (auth) headers['Authorization'] = `Bearer ${auth}`
+    return headers
+  }
+
   function defaultJsonHeaders() {
     const xsrf = getXsrfFromCookie()
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    const auth = getAuthToken()
+    if (auth) headers['Authorization'] = `Bearer ${auth}`
     return headers
   }
   
@@ -94,7 +129,7 @@ export function useApi() {
     return fetch(config.public.apiBase + path, {
       method: 'GET',
       credentials: 'include',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      headers: commonHeaders()
     })
   }
 
@@ -113,9 +148,9 @@ export function useApi() {
   // POST JSON and include the current Echo socket id (if available) as X-Socket-Id
   async function postJsonWithSocket(path: string, body: any) {
     await ensureCsrf()
-    const xsrf = getXsrfFromCookie()
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    const headers = defaultJsonHeaders()
+    
+    // Add Echo socket ID if available
     try {
       if (typeof window !== 'undefined' && (window as any).Echo) {
         const echo = (window as any).Echo
@@ -124,7 +159,9 @@ export function useApi() {
         else if (echo.connector && typeof echo.connector.socketId === 'function') socketId = echo.connector.socketId()
         if (socketId) headers['X-Socket-Id'] = socketId
       }
-    } catch (e) {}
+    } catch (e) {
+      // ignore Echo errors
+    }
 
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
@@ -137,13 +174,10 @@ export function useApi() {
 
   async function postFormData(path: string, formData: FormData) {
     await ensureCsrf()
-    const xsrf = getXsrfFromCookie()
-    const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
-    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
-      headers,
+      headers: commonHeaders(),
       body: formData
     })
     return resp
@@ -151,13 +185,10 @@ export function useApi() {
 
   async function del(path: string) {
     await ensureCsrf()
-    const xsrf = getXsrfFromCookie()
-    const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
-    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     const resp = await fetch(config.public.apiBase + path, {
       method: 'DELETE',
       credentials: 'include',
-      headers
+      headers: commonHeaders()
     })
     return resp
   }
