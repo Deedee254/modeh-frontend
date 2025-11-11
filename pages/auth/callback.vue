@@ -10,8 +10,9 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+
 const router = useRouter()
-const config = useRuntimeConfig()
+const api = useApi()
 
 function parseQuery(qs) {
   const params = {}
@@ -51,13 +52,26 @@ onMounted(async () => {
     }
 
     // Fetch current user (api/me) to hydrate app state
-    // The session cookie and/or auth_token cookie will authenticate this request
+    // Use the api composable to handle CORS, auth headers, and CSRF tokens properly
     let user = null
     try {
-      const me = await $fetch(config.public.apiBase + '/api/me', { credentials: 'include' })
+      const response = await api.get('/api/me')
+      
+      // Check for auth-related errors (401, 419) which are handled by the composable
+      if (api.handleAuthStatus(response)) {
+        console.warn('Session expired or unauthorized during callback')
+        return router.replace('/login')
+      }
+
+      // Check for other errors
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch user`)
+      }
+
+      // Parse the user data
+      user = await response.json()
       const authUser = useState('authUser', () => null)
-      authUser.value = me
-      user = me
+      authUser.value = user
     } catch (err) {
       console.warn('Failed to fetch /api/me after social login:', err)
       // Continue - user may be created server-side but /me may require cookies
