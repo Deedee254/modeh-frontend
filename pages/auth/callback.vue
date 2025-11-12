@@ -30,8 +30,12 @@ const VALID_STEPS = ['institution', 'role', 'grade', 'subjects', 'complete', 'ne
 
 onMounted(async () => {
   try {
+    // Small delay to allow browser to process Set-Cookie header from OAuth redirect
+    // Browsers sometimes need a tick to make the cookie available via document.cookie
+    await new Promise(r => setTimeout(r, 100))
+
     // Read query params from the browser location
-    // Note: Token is now set via HttpOnly cookie by backend, not in query string
+    // Note: Token is now set via cookie by backend, not in query string
     const params = parseQuery(window.location.search)
     const requires = params.requires_profile_completion === '1' || params.requires_profile_completion === 'true'
     let nextStep = params.next_step || null
@@ -55,6 +59,17 @@ onMounted(async () => {
     // Use the api composable to handle CORS, auth headers, and CSRF tokens properly
     let user = null
     try {
+      // Debug: log available cookies to diagnose token issues
+      if (typeof document !== 'undefined' && process.client) {
+        console.log('[auth/callback] Available cookies:', document.cookie)
+        const authTokenMatch = document.cookie.match(/(?:^|; )auth_token=([^;]+)/)
+        if (authTokenMatch) {
+          console.log('[auth/callback] auth_token found in cookies:', authTokenMatch[1].substring(0, 20) + '...')
+        } else {
+          console.warn('[auth/callback] auth_token NOT found in cookies - may cause 401 error')
+        }
+      }
+
       const response = await api.get('/api/me')
       
       // Check for auth-related errors (401, 419) which are handled by the composable
