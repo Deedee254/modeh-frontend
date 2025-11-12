@@ -58,12 +58,14 @@ onMounted(async () => {
     let user = null
     try {
       // Use direct fetch to avoid session renewal logic during callback
+      const xsrf = api.getXsrfFromCookie ? api.getXsrfFromCookie() : null
+      const headers = { 'X-Requested-With': 'XMLHttpRequest' }
+      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+
       const response = await fetch(config.public.apiBase + '/api/me', {
         method: 'GET',
         credentials: 'include',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers
       })
 
       // Check for auth-related errors (401, 419)
