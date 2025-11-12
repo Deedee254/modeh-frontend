@@ -455,11 +455,8 @@ onMounted(async () => {
   // mark page as initialized after initial fetch to avoid immediate redirects
   initialized.value = true
 
-  // If battle is already in progress, redirect to play page immediately
-  if (battle.value.status === 'in-progress') {
-    router.push(`/quizee/battles/${uuid}/play`)
-    return
-  }
+  // Always start countdown when page loads
+  startCountdown()
 
   attachEchoListeners()
   
