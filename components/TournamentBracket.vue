@@ -40,16 +40,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import useApi from '~/composables/useApi'
 const props = defineProps({ tournamentId: { type: [String, Number], required: true } })
 const rounds = ref<any[][]>([])
 const loading = ref(true)
-const config = useRuntimeConfig()
+const api = useApi()
 
 const fetchTree = async () => {
   loading.value = true
   try {
-    const res = await fetch(`${config.public.apiBase}/api/tournaments/${props.tournamentId}/tree` , { credentials: 'include' })
+    const res = await api.get(`/api/tournaments/${props.tournamentId}/tree`)
     const json = await res.json()
     // Expect { rounds: [ [match,...], ... ] } or fallback
     rounds.value = json?.rounds ?? json?.data?.rounds ?? []
