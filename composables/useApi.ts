@@ -126,23 +126,10 @@ export function useApi() {
   
   async function get(path: string) {
     // Does not require ensureCsrf() for GET requests
-    const token = getAuthToken()
-    const headers = commonHeaders()
-    
-    // Debug logging for auth callback flow
-    if (path === '/api/me' && typeof window !== 'undefined') {
-      try {
-        console.log('[useApi.get] Requesting:', path)
-        console.log('[useApi.get] Auth token present:', !!token)
-        console.log('[useApi.get] Auth token value:', token ? token.substring(0, 20) + '...' : 'null')
-        console.log('[useApi.get] Request headers:', headers)
-      } catch (e) {}
-    }
-
     return fetch(config.public.apiBase + path, {
       method: 'GET',
       credentials: 'include',
-      headers
+      headers: commonHeaders()
     })
   }
 
