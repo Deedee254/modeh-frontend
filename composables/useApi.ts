@@ -108,8 +108,11 @@ export function useApi() {
         if (res.ok) {
           _lastSessionRenewal = now
         } else if (res.status === 401) {
-          // Session is expired, let the auth error handler deal with it
-          throw new Error('Session expired')
+          // Session is expired, but if this is the first renewal attempt (before login),
+          // don't throw to allow login to proceed
+          if (_lastSessionRenewal !== 0) {
+            throw new Error('Session expired')
+          }
         }
       } catch (e) {
         // If session renewal fails, the next API call will handle the 401

@@ -57,6 +57,8 @@ onMounted(async () => {
     // via credentials: 'include' - no need for Bearer token
     let user = null
     try {
+      // Ensure CSRF token is available before fetching user
+      await api.ensureCsrf()
       // Use direct fetch to avoid session renewal logic during callback
       const xsrf = api.getXsrfFromCookie ? api.getXsrfFromCookie() : null
       const headers = { 'X-Requested-With': 'XMLHttpRequest' }
