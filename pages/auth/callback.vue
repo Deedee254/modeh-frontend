@@ -12,6 +12,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const config = useRuntimeConfig()
 const api = useApi()
 
 function parseQuery(qs) {
@@ -57,7 +58,7 @@ onMounted(async () => {
     let user = null
     try {
       // Use direct fetch to avoid session renewal logic during callback
-      const response = await fetch('/api/me', {
+      const response = await fetch(config.public.apiBase + '/api/me', {
         method: 'GET',
         credentials: 'include',
         headers: {
