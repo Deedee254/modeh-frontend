@@ -2,6 +2,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import type { Tournament, TournamentBattle } from '~/types/tournament'
 import { useAuthStore } from '~/stores/auth'
 import Echo from 'laravel-echo'
+import { useApi } from '~/composables/useApi'
 
 export function useTournamentRealtime(tournamentId: number | string) {
     const echo = ref<Echo | null>(null)
@@ -10,21 +11,27 @@ export function useTournamentRealtime(tournamentId: number | string) {
 
     const auth = useAuthStore()
     const config = useRuntimeConfig()
+    const api = useApi()
 
-    onMounted(() => {
+    onMounted(async () => {
         if (!tournamentId) return
+
+        // Ensure CSRF token is available for WebSocket authentication
+        await api.ensureCsrf()
+        const xsrfToken = api.getXsrfFromCookie()
 
         echo.value = new Echo({
             broadcaster: 'pusher',
             key: config.public.pusherKey,
             wsHost: config.public.wsHost,
             wsPort: config.public.wsPort,
-            wssPort: config.public.wssPort,
+            wssPort: config.public.wsPort,
             forceTLS: false,
             enabledTransports: ['ws', 'wss'],
             auth: {
                 headers: {
-                    Authorization: `Bearer ${auth.token}`
+                    'X-XSRF-TOKEN': xsrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             }
         })

@@ -7,6 +7,9 @@ let _csrfFetchedAt = 0
 // cache XSRF token reads briefly to avoid repeated document.cookie parsing
 let _lastXsrf: string | null = null
 let _lastXsrfAt = 0
+// Session renewal tracking
+let _lastSessionRenewal = 0
+let _sessionRenewalPromise: Promise<void> | null = null
 
 export function useApi() {
   const config = useRuntimeConfig()
@@ -84,6 +87,41 @@ export function useApi() {
     return _ensureCsrfPromise
   }
 
+  // Renew session if it's been more than 30 minutes since last renewal
+  async function ensureSession() {
+    const now = Date.now()
+    if (now - _lastSessionRenewal < 30 * 60 * 1000) return // 30 minutes
+
+    if (_sessionRenewalPromise) return _sessionRenewalPromise
+
+    _sessionRenewalPromise = (async () => {
+      try {
+        // Use direct fetch to avoid recursion - call /api/me directly
+        const res = await fetch(config.public.apiBase + '/api/me', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+
+        if (res.ok) {
+          _lastSessionRenewal = now
+        } else if (res.status === 401) {
+          // Session is expired, let the auth error handler deal with it
+          throw new Error('Session expired')
+        }
+      } catch (e) {
+        // If session renewal fails, the next API call will handle the 401
+        throw e
+      } finally {
+        _sessionRenewalPromise = null
+      }
+    })()
+
+    return _sessionRenewalPromise
+  }
+
   // Build common non-JSON headers (GET, DELETE, form-data)
   function commonHeaders() {
     const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
@@ -100,6 +138,7 @@ export function useApi() {
   }
   
   async function get(path: string) {
+    await ensureSession()
     // Does not require ensureCsrf() for GET requests
     return fetch(config.public.apiBase + path, {
       method: 'GET',
@@ -109,6 +148,7 @@ export function useApi() {
   }
 
   async function postJson(path: string, body: any) {
+    await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
@@ -148,6 +188,7 @@ export function useApi() {
   }
 
   async function postFormData(path: string, formData: FormData) {
+    await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
@@ -159,6 +200,7 @@ export function useApi() {
   }
 
   async function del(path: string) {
+    await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'DELETE',
@@ -226,6 +268,7 @@ export function useApi() {
   }
 
   async function patchJson(path: string, body: any) {
+    await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'PATCH',
@@ -236,7 +279,7 @@ export function useApi() {
     return resp
   }
 
-  return { ensureCsrf, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus }
+  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus }
 }
 
 export default useApi

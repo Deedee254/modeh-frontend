@@ -56,10 +56,17 @@ onMounted(async () => {
     // via credentials: 'include' - no need for Bearer token
     let user = null
     try {
-      const response = await api.get('/api/me')
-      
-      // Check for auth-related errors (401, 419) which are handled by the composable
-      if (api.handleAuthStatus(response)) {
+      // Use direct fetch to avoid session renewal logic during callback
+      const response = await fetch('/api/me', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+
+      // Check for auth-related errors (401, 419)
+      if (response.status === 401 || response.status === 419) {
         console.warn('Session expired or unauthorized during callback')
         return router.replace('/login')
       }
