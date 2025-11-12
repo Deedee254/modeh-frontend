@@ -26,28 +26,7 @@ export function useApi() {
     }
   }
 
-  // Try to find an API auth token. Prefer a cookie-set token (auth_token) then fall
-  // back to localStorage 'token'. This keeps the behavior compatible with the
-  // social-login callback which stores the token in both locations.
-  function getAuthToken() {
-    try {
-      if (typeof document !== 'undefined') {
-        const m = document.cookie.match(/(?:^|; )auth_token=([^;]+)/)
-        if (m && m[1]) return decodeURIComponent(m[1])
-      }
-    } catch (e) {
-      // ignore cookie parse errors
-    }
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const t = localStorage.getItem('token')
-        if (t) return t
-      }
-    } catch (e) {
-      // ignore localStorage access errors
-    }
-    return null
-  }
+
 
   async function ensureCsrf() {
     // Avoid repeated network calls: if an ensure is in-flight, reuse its promise.
@@ -110,8 +89,6 @@ export function useApi() {
     const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
     const xsrf = getXsrfFromCookie()
     if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
-    const auth = getAuthToken()
-    if (auth) headers['Authorization'] = `Bearer ${auth}`
     return headers
   }
 
@@ -119,8 +96,6 @@ export function useApi() {
     const xsrf = getXsrfFromCookie()
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
-    const auth = getAuthToken()
-    if (auth) headers['Authorization'] = `Bearer ${auth}`
     return headers
   }
   

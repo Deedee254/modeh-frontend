@@ -22,12 +22,6 @@ export const useAuthStore = defineStore('auth', () => {
       if (!res.ok) throw new Error('Login failed');
       const json = await res.json();
 
-      // If backend returns a token, store it (some setups use cookies only)
-      const token = json?.token || json?.access_token
-      if (import.meta.client && token) {
-        localStorage.setItem('token', token)
-      }
-
       // backend returns the authenticated user directly from login; normalize
       const returnedUser = json?.user || json?.data || json || null;
       if (returnedUser) setUser(returnedUser);
@@ -69,7 +63,6 @@ export const useAuthStore = defineStore('auth', () => {
     // then attempt to log out from the server.
     clear();
     if (import.meta.client) {
-      try { localStorage.removeItem('token'); } catch (e) {}
       // notify other tabs about logout
       try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })); } catch (e) {}
     }
@@ -163,14 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
             return; // Handled by explicit event, no need to check token key.
           }
 
-          // Fallback for when the token is changed directly (e.g., by another app or manual intervention).
-          if (e.key === 'token') {
-            if (!e.newValue) {
-              clear();
-            } else {
-              fetchUser().catch(() => {});
-            }
-          }
+
         } catch (err) {
           // ignore malformed events
         }
