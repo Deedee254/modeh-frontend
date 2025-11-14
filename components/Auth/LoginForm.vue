@@ -98,7 +98,7 @@ async function submit() {
   error.value = null
   
   try {
-    const res = await auth.login(email.value, password.value)
+  const res = await auth.login(email.value, password.value, remember.value)
     const user = auth.user // Use the store's user state directly
 
     // Handle `next` param safely and prefer same-role area

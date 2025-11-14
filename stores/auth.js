@@ -15,21 +15,40 @@ export const useAuthStore = defineStore('auth', () => {
   const role = ref(null);
   const api = useApi();
 
-  async function login(email, password) {
-    const payload = { email, password };
+  async function login(email, password, remember = false) {
+    const payload = { email, password, remember };
     try {
       const res = await api.postJson('/api/login', payload);
-      if (!res.ok) throw new Error('Login failed');
-      const json = await res.json();
 
+      if (!res.ok) {
+        // Try to extract a helpful error message from the response body
+        let message = 'Login failed';
+        try {
+          const errBody = await res.json();
+          if (errBody) {
+            if (errBody.message) message = errBody.message;
+            else if (errBody.errors) {
+              const vals = Object.values(errBody.errors).flat();
+              if (vals.length) message = vals.join('; ');
+            } else if (typeof errBody === 'string') message = errBody;
+          }
+        } catch (e) {
+          try {
+            const txt = await res.text();
+            if (txt) message = txt;
+          } catch (e) {}
+        }
+        throw new Error(message);
+      }
+
+      const json = await res.json();
       // backend returns the authenticated user directly from login; normalize
       const returnedUser = json?.user || json?.data || json || null;
       if (returnedUser) setUser(returnedUser);
-      
-      // Return the normalized response for the component
-      return { data: { user: returnedUser }, ok: true };
-  // If we previously triggered a global auth redirect flag, clear it
-  try { if (import.meta.client) { window.__modeh_auth_redirected = false } } catch (e) {}
+
+      // If we previously triggered a global auth redirect flag, clear it
+      try { if (import.meta.client) { window.__modeh_auth_redirected = false } } catch (e) {}
+
       // After login, attempt to attach Echo listeners for realtime notifications
       if (import.meta.client) {
         try {
@@ -51,10 +70,11 @@ export const useAuthStore = defineStore('auth', () => {
           // ignore when running in contexts without useNuxtApp
         }
       }
-      return { data: json };
+
+      return { data: json, ok: true };
     } catch (error) {
       // rethrow so callers can handle
-      throw error
+      throw error;
     }
   }
 

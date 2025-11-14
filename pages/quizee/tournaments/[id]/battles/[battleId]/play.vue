@@ -89,7 +89,7 @@
               />
             </div>
             <div class="mt-3 text-center">
-              <div v-if="waitingForOpponent" class="text-yellow-600">Waiting for an opponent to join... or <button class="underline" @click="startWithBot">start with a bot</button></div>
+              <div v-if="waitingForOpponent" class="text-yellow-600">Waiting for an opponent to join...</div>
             </div>
           </div>
 
@@ -155,6 +155,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
 import { QuestionCard } from '#components'
 import { useAnswerStore } from '~/stores/answerStore'
+import { useApi } from '~/composables/useApi'
 
 // Types
 interface Option {
@@ -233,21 +234,29 @@ const allQuestionsAnswered = computed<boolean>(() =>
 
 // Methods
 const config = useRuntimeConfig()
+const api = useApi()
 
 const fetchBattle = async () => {
   try {
     loading.value = true
-    const response = await useFetch(config.public.apiBase + `/api/tournaments/${route.params.id}/battles/${route.params.battleId}`, { credentials: 'include' })
-    const data = response.data.value as Battle
+    const resp = await api.get(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}`)
+    const json = await resp.json().catch(() => null)
+    const data = json?.data ?? json as Battle
     battle.value = data
     // Normalize questions for QuestionCard component
-    questions.value = data.questions.map(q => ({
-      ...q,
-      type: 'mcq', // Default to MCQ type
-      body: q.content, // Map content to body for QuestionCard
-      media: q.media_url, // Map media_url to media
-      media_path: q.media_url // Also set media_path for compatibility
-    }))
+    // Normalize questions for QuestionCard component without anonymous callback typing
+    const qList: any[] = []
+    for (const qItem of (data.questions || [])) {
+      const q = qItem as any
+      qList.push({
+        ...q,
+        type: 'mcq', // Default to MCQ type
+        body: q.content, // Map content to body for QuestionCard
+        media: q.media_url, // Map media_url to media
+        media_path: q.media_url // Also set media_path for compatibility
+      })
+    }
+    questions.value = qList
   startTimer(data.duration * 60) // Convert minutes to seconds
   // Use per-question timing if provided by battle payload
   timePerQuestion.value = (data as any).per_question_seconds ?? null
@@ -339,35 +348,35 @@ const submitBattle = async () => {
     loading.value = true
 
     // Build answers payload from persisted answers
-  const answersPayload = (answerStore.allAnswers?.value ?? []).map(a => ({ question_id: a.question_id, answer: a.answer }))
+    // Build answers payload from persisted answers (avoid implicit-any map)
+    const answersStoreArray = ((answerStore.allAnswers as any)?.value ?? []) as any[]
+    const answersPayload: any[] = []
+    for (const a of answersStoreArray) {
+      answersPayload.push({ question_id: a.question_id, answer: a.answer })
+    }
 
     // Compute a best-effort score locally if possible (backend trusts score param)
     let computedScore = 0
     try {
-      questions.value.forEach((q) => {
-        const ansEntry = answersPayload.find(x => String(x.question_id) === String(q.id))
-        if (ansEntry && ansEntry.answer !== '' && typeof q['correct_option_id'] !== 'undefined') {
+      for (const q of questions.value) {
+        const ansEntry = answersPayload.find((x: any) => String(x.question_id) === String((q as any).id))
+        if (ansEntry && ansEntry.answer !== '' && typeof (q as any)['correct_option_id'] !== 'undefined') {
           if (String(ansEntry.answer) === String((q as any).correct_option_id)) {
             computedScore += (q as any).points ?? 1
           }
         }
-      })
+      }
     } catch (e) {
       // fallback: computedScore stays 0
     }
 
-    // Post final answers and score to backend
-    await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/battles/${route.params.battleId}/submit`, {
-      method: 'POST',
-      credentials: 'include',
-      body: {
-        answers: answersPayload,
-        score: computedScore
-      }
+    // Post final answers and score to backend using API composable
+    await api.postJson(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}/submit`, {
+      answers: answersPayload,
+      score: computedScore
     })
 
-    const qs = useBot.value ? '?bot=1' : ''
-    router.push(`/quizee/tournaments/${route.params.id}/battles/${route.params.battleId}/results${qs}`)
+  router.push(`/quizee/tournaments/${route.params.id}/battles/${route.params.battleId}/results`)
   } catch (error) {
     console.error('Error submitting battle:', error)
   } finally {
@@ -376,12 +385,6 @@ const submitBattle = async () => {
   }
 }
 
-function startWithBot() {
-  useBot.value = true
-  waitingForOpponent.value = false
-  // mark started so UI proceeds
-  started.value = true
-}
 
 function startQuestionTimer(seconds: number | null) {
   if (questionTimer) clearTimeout(questionTimer)
@@ -426,7 +429,8 @@ function persistProgress() {
     const meta = {
       currentQuestionIndex: currentQuestionIndex.value,
       timeRemaining: timeRemaining.value,
-  answers: (answerStore.allAnswers?.value ?? []).map(a => [a.question_id, a.answer])
+  // Persist answers array for local restore (avoid implicit-any map)
+  answers: ((answerStore.allAnswers as any)?.value ?? []).map((a: any) => [a.question_id, a.answer])
     }
     localStorage.setItem(progressKey.value, JSON.stringify(meta))
   } catch (e) {}
@@ -478,7 +482,6 @@ onBeforeUnmount(() => {
 
 // Polling for opponent
 const waitingForOpponent = ref<boolean>(false)
-const useBot = ref<boolean>(false)
 const started = ref<boolean>(false)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let _echoChannel: any = null
@@ -488,8 +491,9 @@ function startPollingForOpponent() {
   attachEchoForJoin()
   pollTimer = setInterval(async () => {
     try {
-  const data: any = await $fetch(config.public.apiBase + `/api/tournaments/${route.params.id}/battles/${route.params.battleId}`, { credentials: 'include' })
-  const parts = data?.participants ?? []
+      const resp = await api.get(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}`)
+      const data: any = await resp.json().catch(() => null)
+      const parts = data?.participants ?? []
       const count = Array.isArray(parts) ? parts.length : Object.keys(parts || {}).length
       if (count > 1) {
         // opponent joined, stop waiting and start

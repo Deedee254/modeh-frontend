@@ -40,8 +40,19 @@
             role="Opponent"
             :score="opponentScore"
             :is-active="false"
-            :answered="0"
+            :answered="useBot ? botAnswered : 0"
           />
+
+          <div class="flex items-center justify-center mt-2">
+            <button v-if="!battle.opponent && !useBot" @click="startWithBot" class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md text-sm">Start with a bot</button>
+            <div v-else-if="useBot" class="text-sm text-gray-500 flex items-center gap-2">
+              <span>Playing against QuizBot</span>
+              <span v-if="botThinking" class="text-xs text-gray-400 flex items-center">
+                <span class="bot-dots mr-1"> </span>
+                thinking...
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- Progress Bar -->
@@ -161,9 +172,19 @@ const loading = ref(true)
 const battle = ref({})
 const questions = ref([])
 const currentIndex = ref(0)
+const useBot = ref(false)
+const botAnswered = ref(0)
+const botInterval = ref(null)
+const botAccuracy = ref(0.6)
+const botThinking = ref(false)
 const { answers, initializeAnswers, clearSavedAnswers, toggleMulti: rawToggleMulti } = useQuizAnswers(computed(() => ({ questions: questions.value })), id)
 const score = ref(0)
 const opponentScore = ref(0)
+
+const botUser = {
+  first_name: 'QuizBot',
+  profile: { avatar: '/avatars/bot.png' }
+}
 
 const { timePerQuestion, displayTime, timerColorClass, startTimer, stopTimer, resetTimer, recordAndReset, onTimeout } = useQuestionTimer(20)
 
@@ -232,6 +253,52 @@ watch(currentIndex, () => {
 function finishBattle() {
   if (!allAnswered.value) return
   submitBattle()
+}
+
+function startWithBot() {
+  // Initialize a local bot opponent for solo compete
+  useBot.value = true
+  botAnswered.value = 0
+  opponentScore.value = 0
+  // Ensure battle.opponent is set so UI renders correctly
+  battle.value = { ...battle.value, opponent: botUser }
+
+  // Start simulating bot answers with an initial delay and per-question jitter
+  const startDelay = 800 + Math.floor(Math.random() * 1800) // 0.8s-2.6s
+  if (botInterval.value) { clearTimeout(botInterval.value); botInterval.value = null }
+
+  const simulateNext = () => {
+    // If bot has answered all questions, stop
+    if (botAnswered.value >= questions.value.length) {
+      if (botInterval.value) { clearTimeout(botInterval.value); botInterval.value = null }
+      botThinking.value = false
+      return
+    }
+
+    // Bot 'thinks' before answering
+    botThinking.value = true
+    const thinkingTime = 400 + Math.floor(Math.random() * 1100) // 0.4s-1.5s
+    botInterval.value = setTimeout(() => {
+      botThinking.value = false
+      const q = questions.value[botAnswered.value]
+      // Decide correctness based on botAccuracy; if question has correct_option_id, prefer that
+      const willBeCorrect = Math.random() < (botAccuracy.value || 0.5)
+      if (willBeCorrect) {
+        opponentScore.value += (q?.points ?? 1)
+      }
+      botAnswered.value += 1
+
+      // Schedule next answer with jitter relative to timePerQuestion
+      const per = Math.max(3, timePerQuestion.value || 8)
+      const jitterFactor = 0.6 + Math.random() * 0.8 // 0.6 - 1.4
+      const nextDelay = Math.floor(per * 1000 * jitterFactor)
+      botInterval.value = setTimeout(simulateNext, nextDelay)
+    }, thinkingTime)
+  }
+
+  // kick off after initial startDelay
+  botThinking.value = true
+  botInterval.value = setTimeout(() => { botThinking.value = false; simulateNext() }, startDelay)
 }
 
 async function submitBattle() {
@@ -318,6 +385,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   stopTimer()
   try { stopTotalTimer() } catch (e) {}
+  try { if (botInterval && botInterval.value) { clearInterval(botInterval.value); botInterval.value = null } } catch (e) {}
 })
 </script>
 
@@ -332,5 +400,34 @@ onBeforeUnmount(() => {
 .fade-slide-enter-to, .fade-slide-leave-from {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+/* Simple animated dots for bot thinking */
+.bot-dots {
+  display: inline-block;
+  width: 18px;
+  height: 6px;
+  position: relative;
+}
+.bot-dots::before, .bot-dots::after, .bot-dots span {
+  content: '';
+}
+.bot-dots::before, .bot-dots::after {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 4px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: bot-dot 1s infinite linear;
+}
+.bot-dots::before { left: 0; animation-delay: 0s }
+.bot-dots::after { left: 7px; animation-delay: 0.15s }
+.bot-dots span { position: absolute; left: 14px; top: 0; width: 4px; height: 4px; background: #9ca3af; border-radius: 50%; animation: bot-dot 1s infinite linear; animation-delay: 0.3s }
+
+@keyframes bot-dot {
+  0% { opacity: 0.2; transform: translateY(0) }
+  50% { opacity: 1; transform: translateY(-4px) }
+  100% { opacity: 0.2; transform: translateY(0) }
 }
 </style>

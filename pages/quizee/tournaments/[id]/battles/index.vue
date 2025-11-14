@@ -33,6 +33,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useTournamentRealtime } from '~/composables/useTournamentRealtime'
+import { useApi } from '~/composables/useApi'
 import type { Tournament, TournamentBattle } from '~/types/tournament'
 
 const route = useRoute()

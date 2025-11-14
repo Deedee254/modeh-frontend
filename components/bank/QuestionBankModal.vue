@@ -378,6 +378,17 @@ watch(() => props.initialFilters, (v) => {
     selectedTopic.value = v.topic ?? selectedTopic.value
   } catch (e) {}
 })
+// When parent filters change, refresh the bank results so the displayed questions
+// reflect the details tab selections immediately.
+watch(() => props.initialFilters, (v) => {
+  try {
+    if (!v) return
+    // small delay to allow dependent watchers (which fetch subjects/grades) to run
+    setTimeout(() => {
+      try { fetchItems() } catch (e) {}
+    }, 50)
+  } catch (e) {}
+})
 
 // When a subject is selected, fetch topics for that subject if parent didn't supply topics
 watch(selectedSubject, (val) => {
@@ -393,6 +404,13 @@ watch(selectedSubject, (val) => {
   await fetchTopicsBySubject(val)
   topicOptions.value = Array.isArray(taxTopics.value) ? (taxTopics.value as any[]).map(t => ({ label: (t as any).name || (t as any).title || (t as any).id, value: (t as any).id, subject_id: (t as any).subject_id })) : []
   }, 250)
+})
+// If the modal is controlled by the parent, fetch items each time it opens so
+// filters applied in the details tab are used and results are fresh.
+watch(open, (v) => {
+  if (v) {
+    try { fetchItems() } catch (e) {}
+  }
 })
 // TODO: load filter options (grades/subjects/topics) from API if available
 </script>

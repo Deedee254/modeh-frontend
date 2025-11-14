@@ -50,7 +50,7 @@
 
       <div v-else class="space-y-6">
         <!-- Category Tabs -->
-        <div class="mb-8">
+        <div class="mb-8" v-if="categories.length > 0">
          <div class="sm:hidden">
            <label for="tabs" class="sr-only">Select a category</label>
            <select id="tabs" name="tabs" class="block w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" @change="activeTab = $event.target.value">
@@ -69,6 +69,10 @@
              </nav>
            </div>
          </div>
+        </div>
+        <div class="mb-8 text-center text-slate-600" v-else>
+          <p v-if="badges.length === 0">You haven't earned any badges yet. Keep going!</p>
+          <p v-else>No badge categories matched your badges. Showing all badges below.</p>
         </div>
 
         <!-- Badges Grid -->
@@ -133,6 +137,7 @@ import { ref, computed, onMounted } from 'vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import StatCard from '~/components/ui/StatCard.vue'
 import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
 
 // Page meta
 definePageMeta({ layout: 'quizee' })
@@ -159,30 +164,15 @@ const totalBadges = computed(() => badges.value.length)
 const totalPoints = computed(() => badges.value.reduce((sum, badge) => sum + (badge.unlocked ? badge.points : 0), 0))
 const currentLevel = computed(() => Math.floor(totalPoints.value / 1000) + 1)
 
-// Group badges by category
+// Group badges by the backend `type` field. Badges missing `type` are
+// collected under 'uncategorized' so they appear in an "Other" tab.
 const groupedBadges = computed(() => {
-  const groups = {
-    time: [],
-    subject: [],
-    improvement: [],
-    weekend: [],
-    topic: [],
-    daily_challenge: []
-  }
-  
+  const groups = {}
   badges.value.forEach(badge => {
-    if (groups[badge.category]) {
-      groups[badge.category].push(badge)
-    }
+    const cat = badge?.type || 'uncategorized'
+    if (!groups[cat]) groups[cat] = []
+    groups[cat].push(badge)
   })
-  
-  // Filter out empty categories
-  for (const category in groups) {
-    if (groups[category].length === 0) {
-      delete groups[category]
-    }
-  }
-  
   return groups
 })
 
@@ -196,9 +186,15 @@ function formatCategory(category) {
     improvement: 'Improvement',
     weekend: 'Weekend Warrior',
     topic: 'Topic',
-    daily_challenge: 'Daily Challenge'
+    daily_challenge: 'Daily Challenge',
+    streak: 'Streaks',
+    score: 'Score',
+    completion: 'Completion',
+    uncategorized: 'Other'
   }
-  return formats[category] || category
+  if (formats[category]) return formats[category]
+  // Fallback: make a friendlier label from the raw category string
+  return category.replace(/[_-]+/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
 }
 
 // Fetch badges data
@@ -206,13 +202,15 @@ onMounted(async () => {
   try {
     const response = await api.get('/api/achievements/progress')
     if (api.handleAuthStatus(response)) return
-    
+
     if (response.ok) {
-      const data = await response.json()
-      badges.value = data.achievements.map(badge => ({
+      const data = await response.json().catch(() => ({}))
+      const achievements = Array.isArray(data?.achievements) ? data.achievements : []
+      badges.value = achievements.map(badge => ({
         ...badge,
         progress: calculateProgress(badge)
       }))
+      // set initial tab to first available category if any
       if (categories.value.length > 0) {
         activeTab.value = categories.value[0]
       }

@@ -112,6 +112,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import { useApi } from '~/composables/useApi'
 
 // Use the `quizee` layout for tournament pages
 definePageMeta({ layout: 'quizee', title: 'Tournaments — Modeh', meta: [ { name: 'description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' }, { property: 'og:title', content: 'Tournaments — Modeh' }, { property: 'og:description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' } ] })
@@ -144,12 +145,14 @@ const isAdmin = computed(() => {
 })
 
 const config = useRuntimeConfig()
+const api = useApi()
 
 const fetchTournaments = async (p = 1) => {
   try {
     loading.value = true
     // Include credentials so Sanctum cookie-based auth (or similar) works from the frontend
-    const res: any = await $fetch(config.public.apiBase + `/api/tournaments?page=${p}`, { credentials: 'include' })
+    const resResp = await api.get(`/api/tournaments?page=${p}`)
+    const res: any = await resResp.json().catch(() => null)
 
     // Handle multiple response shapes:
     // - Laravel paginator: { current_page, data: [...], last_page, total, per_page }
@@ -187,7 +190,7 @@ const fetchTournaments = async (p = 1) => {
       meta.value = { current_page: 1, last_page: 1, total: 0, per_page: 20 }
     }
 
-    tournaments.value = Array.isArray(items) ? (items as Tournament[]) : []
+  tournaments.value = Array.isArray(items) ? (items as Tournament[]) : []
     page.value = meta.value.current_page ?? p
   } catch (error) {
     console.error('Error fetching tournaments:', error)

@@ -280,15 +280,15 @@ function onPreview() { showPreview.value = true }
 function onOpenBank() { showQuestionBank.value = true }
 
 function onAddFromBank(itemOrArray) {
-  try {
-    if (!itemOrArray) return
-    if (Array.isArray(itemOrArray)) {
-      for (const it of itemOrArray) store.questions.push(it)
-    } else {
-      store.questions.push(itemOrArray)
+  if (!itemOrArray) return
+  if (Array.isArray(itemOrArray)) {
+    for (const it of itemOrArray) {
+      store.addQuestion(it)
     }
-    showQuestionBank.value = false
-  } catch (e) {}
+  } else {
+    store.addQuestion(itemOrArray)
+  }
+  showQuestionBank.value = false
 }
 
 function openTopicModal() {

@@ -24,7 +24,8 @@
             </div>
             </div>
           
-          <!-- Metrics grid -->
+          <!-- Metrics grid (client-only to avoid SSR/client hydration mismatches for auth-protected data) -->
+          <ClientOnly>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <UiCard class="p-4 text-center">
               <div class="text-sm text-gray-500">Average Score</div>
@@ -50,6 +51,7 @@
               <div class="text-xs text-gray-400 mt-1">{{ streakDays }} days</div>
             </UiCard>
           </div>
+          </ClientOnly>
           
           <!-- Performance Stats -->
           <UiCard>
@@ -100,6 +102,7 @@
             </div>
           </UiCard>
 
+          <ClientOnly>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <UiCard>
               <template #header>
@@ -134,6 +137,7 @@
               </div>
             </UiCard>
           </div>
+          </ClientOnly>
         </div>
 
         <!-- Sidebar widgets -->

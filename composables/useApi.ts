@@ -50,8 +50,15 @@ export function useApi() {
     // to document.cookie right when fetch resolves; polling helps avoid a race
     // where the subsequent login POST runs before the cookie is usable.
     _ensureCsrfPromise = (async () => {
+      // Use an AbortController to avoid hanging forever if the backend is unreachable.
+      const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null
+      const timeoutMs = 5000
+      let timeoutId: any = null
       try {
-        await fetch(config.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include' })
+        if (controller) {
+          timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+        }
+        await fetch(config.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include', signal: controller?.signal })
 
         // If we're in a browser, wait up to 1s, checking every 50ms for the
         // XSRF-TOKEN cookie to appear. If it appears earlier we return immediately.
@@ -76,9 +83,12 @@ export function useApi() {
           _csrfFetchedAt = Date.now()
         }
       } catch (e) {
-        // keep the original behavior of logging the failure
+        // Surface a clearer, catchable error for callers so they can show a friendly message
         try { console.error('Failed to fetch CSRF cookie', e) } catch (err) {}
+        // Re-throw so callers (e.g. login) can catch and show an appropriate UI message.
+        throw new Error('Unable to reach API to initialize CSRF token. Please check that the backend is running and reachable.');
       } finally {
+        if (timeoutId) clearTimeout(timeoutId)
         // allow a subsequent call to create a new promise if needed
         _ensureCsrfPromise = null
       }
@@ -87,42 +97,13 @@ export function useApi() {
     return _ensureCsrfPromise
   }
 
-  // Renew session if it's been more than 30 minutes since last renewal
+  // Previously this function attempted to renew the session by calling /api/me
+  // on a timer. That behavior caused login and other auth flows to fail when
+  // the renewal returned 401 and threw before the intended request ran.
+  // To avoid those issues we make ensureSession a no-op; CSRF initialization
+  // is still performed when needed via ensureCsrf().
   async function ensureSession() {
-    const now = Date.now()
-    if (now - _lastSessionRenewal < 30 * 60 * 1000) return // 30 minutes
-
-    if (_sessionRenewalPromise) return _sessionRenewalPromise
-
-    _sessionRenewalPromise = (async () => {
-      try {
-        // Use direct fetch to avoid recursion - call /api/me directly
-        const res = await fetch(config.public.apiBase + '/api/me', {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        })
-
-        if (res.ok) {
-          _lastSessionRenewal = now
-        } else if (res.status === 401) {
-          // Session is expired, but if this is the first renewal attempt (before login),
-          // don't throw to allow login to proceed
-          if (_lastSessionRenewal !== 0) {
-            throw new Error('Session expired')
-          }
-        }
-      } catch (e) {
-        // If session renewal fails, the next API call will handle the 401
-        throw e
-      } finally {
-        _sessionRenewalPromise = null
-      }
-    })()
-
-    return _sessionRenewalPromise
+    return
   }
 
   // Build common non-JSON headers (GET, DELETE, form-data)
@@ -151,7 +132,9 @@ export function useApi() {
   }
 
   async function postJson(path: string, body: any) {
-    await ensureSession()
+    // Skip session renewal check for authentication endpoints (login/register)
+    const skipSession = typeof path === 'string' && (path === '/api/login' || path === '/login' || path.endsWith('/login'))
+    if (!skipSession) await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
@@ -217,7 +200,8 @@ export function useApi() {
   function handleAuthStatus(resp: Response) {
     if (!resp) return false
     if (resp.status === 419 || resp.status === 401) {
-      try { console.warn('[useApi] auth error', resp.status) } catch (e) {}
+      // would surface as SSR warnings in the devtools. Only log on the client.
+      try { if (typeof window !== 'undefined') console.warn('[useApi] auth error', resp.status) } catch (e) {}
       // Simple router-based redirect to login. Use a global flag to avoid
       // duplicate redirects when multiple requests fail at once.
       try {

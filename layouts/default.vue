@@ -2,6 +2,7 @@
   <!-- Base layout keeps global chrome minimal; role layouts add their own navigation -->
   <div class="min-h-screen flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
     <NuxtRouteAnnouncer />
+    <GlobalAlert />
     <template v-if="$route.path !== '/login' && $route.path !== '/register'">
       <ClientOnly>
         <PwaInstallButton />
@@ -69,6 +70,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import PwaInstallButton from '~/components/PwaInstallButton.vue'
+import GlobalAlert from '~/components/GlobalAlert.vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'

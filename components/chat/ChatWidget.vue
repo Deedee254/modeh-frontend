@@ -3,9 +3,9 @@
     <!-- Sidebar -->
     <div class="hidden md:flex w-80 flex-shrink-0">
       <!-- Sidebar keeps the hero gradient treatment just within the header, leaving the list area clean and white -->
-      <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl backdrop-blur">
+  <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl">
         <!-- Header -->
-        <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl sticky top-0 z-30">
+  <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl sticky top-0 z-60">
           <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted h-9 w-9 rounded-full hover:text-foreground text-muted-foreground">
@@ -29,7 +29,7 @@
           </div>
         </div>
         <!-- Tabs -->
-        <div class="px-4 py-3 border-b border-border bg-transparent sticky top-[128px] z-20">
+  <div class="px-4 py-3 border-b border-border bg-transparent sticky top-[128px] z-50">
           <div dir="ltr" data-orientation="horizontal">
             <div role="tablist" aria-orientation="horizontal" class="h-10 items-center justify-center rounded-md p-1 text-muted-foreground grid w-full grid-cols-3 bg-muted/50">
               <button 
@@ -148,7 +148,7 @@
   <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6">
     <div class="flex flex-col h-full bg-[#efeae2]">
         <!-- Chat Header -->
-  <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white border-b border-border md:static md:z-auto">
+          <div class="sticky top-0 z-30 flex items-center gap-3 p-4 bg-white border-b border-border md:static md:z-auto">
           <button 
             v-if="isMobile && showChatWindowOnMobile" 
             class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"

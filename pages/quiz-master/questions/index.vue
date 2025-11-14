@@ -98,10 +98,10 @@
                     <tr v-for="(qitem, idx) in sortedQuestions" :key="qitem?.id || idx">
                       <td class="px-4 py-3 text-sm text-gray-700 whitespace-normal">{{ qitem.title || (qitem.body ? (qitem.body.replace(/<[^>]*>?/gm, '').slice(0, 140) + (qitem.body.length > 140 ? '…' : '')) : 'Untitled') }}</td>
                       <td class="px-4 py-3 text-sm text-gray-500 uppercase hidden sm:table-cell">{{ (qitem.type || 'question').toUpperCase() }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getLevelName(qitem.level_id) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getGradeName(qitem.grade_id) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getSubjectName(qitem.subject_id) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getTopicName(qitem.topic_id) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getLevelName(qitem.level || qitem.level_id || qitem.level_name) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getGradeName(qitem.grade || qitem.grade_id || qitem.grade_name) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getSubjectName(qitem.subject || qitem.subject_id || qitem.subject_name) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getTopicName(qitem.topic || qitem.topic_id || qitem.topic_name) }}</td>
                       <td class="px-4 py-3 text-sm text-gray-700 hidden sm:table-cell">{{ (qitem.marks !== undefined && qitem.marks !== null) ? Math.round(Number(qitem.marks)) : 0 }}</td>
                       <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getQuizName(qitem) }}</td>
                       <td class="px-4 py-3 text-sm hidden sm:table-cell">
@@ -185,18 +185,31 @@ const sortBy = ref(sortOptions[0].value)
 const subjectMap = computed(() => new Map(subjects.value.map(s => [s.id, s.name])))
 const topicMap = computed(() => new Map(topics.value.map(t => [t.id, t.name])))
 
-function getGradeName(id) {
-  return gradeMap.value.get(id) || '—'
+// Accept either an id, a nested object ({ id, name }), or a name string
+function resolveName(val, map) {
+  if (val === null || typeof val === 'undefined' || val === '') return '—'
+  // If backend returned an object like { id, name }
+  if (typeof val === 'object') {
+    if (!val) return '—'
+    if (val.name) return val.name
+    if (val.title) return val.title
+    if (val.id) return map.value.get(val.id) || String(val.id)
+    return '—'
+  }
+  // If it's a number (id)
+  if (typeof val === 'number') return map.value.get(val) || String(val)
+  // If it's a numeric string, try lookup by id
+  const asNum = Number(val)
+  if (!Number.isNaN(asNum) && map.value.has(asNum)) return map.value.get(asNum)
+  // Otherwise assume it's already a name string
+  if (typeof val === 'string') return val || '—'
+  return '—'
 }
-function getSubjectName(id) {
-  return subjectMap.value.get(id) || '—'
-}
-function getTopicName(id) {
-  return topicMap.value.get(id) || '—'
-}
-function getLevelName(id) {
-  return levelMap.value.get(id) || '—'
-}
+
+function getGradeName(v) { return resolveName(v, gradeMap) }
+function getSubjectName(v) { return resolveName(v, subjectMap) }
+function getTopicName(v) { return resolveName(v, topicMap) }
+function getLevelName(v) { return resolveName(v, levelMap) }
 function getQuizName(qitem) {
   if (!qitem) return '—'
   if (qitem.quiz && (qitem.quiz.title || qitem.quiz.name)) return qitem.quiz.title || qitem.quiz.name
@@ -226,16 +239,16 @@ const sortedAll = computed(() => {
         valB = b.title || ''
         return valA.localeCompare(valB) * dir
       case 'grade':
-        valA = getGradeName(a.grade_id)
-        valB = getGradeName(b.grade_id)
+        valA = getGradeName(a.grade || a.grade_id || a.grade_name)
+        valB = getGradeName(b.grade || b.grade_id || b.grade_name)
         return valA.localeCompare(valB) * dir
       case 'subject':
-        valA = getSubjectName(a.subject_id)
-        valB = getSubjectName(b.subject_id)
+        valA = getSubjectName(a.subject || a.subject_id || a.subject_name)
+        valB = getSubjectName(b.subject || b.subject_id || b.subject_name)
         return valA.localeCompare(valB) * dir
       case 'topic':
-        valA = getTopicName(a.topic_id)
-        valB = getTopicName(b.topic_id)
+        valA = getTopicName(a.topic || a.topic_id || a.topic_name)
+        valB = getTopicName(b.topic || b.topic_id || b.topic_name)
         return valA.localeCompare(valB) * dir
       case 'status':
         return (a.is_approved === b.is_approved) ? 0 : a.is_approved ? -1 * dir : 1 * dir

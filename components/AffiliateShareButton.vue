@@ -2,10 +2,10 @@
   <div>
     <button
       @click="handleShare"
-      class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      :class="btnClassComputed"
     >
       <ShareIcon class="w-4 h-4" />
-      Share
+      <span class="ml-2">Share</span>
     </button>
 
     <!-- Share Modal -->
@@ -159,6 +159,22 @@ const props = defineProps({
     type: String,
     default: null
   }
+  ,
+  btnClass: {
+    type: String,
+    default: null
+  },
+  fullWidth: {
+    type: Boolean,
+    default: false
+  }
+})
+
+// Compute button classes; allow parent to override via btnClass, otherwise use default small button
+const btnClassComputed = computed(() => {
+  if (props.btnClass) return props.btnClass + (props.fullWidth ? ' w-full justify-center' : '')
+  // default fallback matches original appearance
+  return (`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`)
 })
 
 // Handle share button click
