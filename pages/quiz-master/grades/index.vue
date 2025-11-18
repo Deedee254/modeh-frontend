@@ -83,7 +83,8 @@
 
 <script setup>
 import { ref, computed, watchEffect, onMounted } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import useTaxonomy, { normalizeList } from '~/composables/useTaxonomy'
+import useApi from '~/composables/useApi'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
@@ -151,7 +152,7 @@ async function onServerSearch(q) {
 }
 
 // initialize global taxonomy caches for counts / selects used elsewhere
-const { fetchAllSubjects, fetchAllTopics, fetchGrades: fetchTaxGrades } = useTaxonomy()
+const { fetchAllSubjects, fetchAllTopics, fetchGrades: fetchTaxGrades, fetchLevels } = useTaxonomy()
 onMounted(async () => {
   try {
     // prefer loading levels first so the composable can derive nested grades when available
@@ -163,4 +164,24 @@ onMounted(async () => {
   // mark local loading complete once caches warmed
   isLoadingLocal.value = false
 })
+
+// Replace raw $fetch search with useApi + normalizeList so we update the
+// taxonomy cache (taxGrades) with server-side search results.
+async function onServerSearch(q) {
+  try {
+    const api = useApi()
+    const res = await api.get(`/api/grades?query=${encodeURIComponent(q)}`)
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) return
+    const data = await res.json().catch(() => null)
+    if (!data) return
+    const list = normalizeList(data)
+    // Update the shared grades ref so the rest of the page reacts
+    taxGrades.value = list
+    searchQuery.value = q
+    page.value = 1
+  } catch (e) {
+    // ignore network errors
+  }
+}
 </script>

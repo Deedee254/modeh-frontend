@@ -179,6 +179,7 @@ async function parseExcelFile(file, XLSX) {
 }
 
 function csvToObjects(text) {
+  // Build lines honoring quoted newlines
   const lines = []
   let cur = ''
   let inQuotes = false
@@ -195,16 +196,43 @@ function csvToObjects(text) {
   }
   if (cur !== '') lines.push(cur)
 
+  // Parse each CSV line into columns
   const rows = lines.map(l => parseCsvLine(l))
   if (!rows.length) return []
-  const headers = rows[0]
+
+  // Normalize headers
+  const rawHeaders = rows[0].map(h => String(h ?? '').trim())
+  const headers = rawHeaders
+
   const objs = []
   for (let r = 1; r < rows.length; r++) {
-    const row = rows[r]
+    let row = rows[r]
+
+    // If the row has more columns than headers, try to coalesce the extras into
+    // the `text`/`body`/question column (common case: unquoted commas inside question text).
+    if (row.length > headers.length) {
+      const extra = row.length - headers.length
+      // Find likely text field header index
+      const textIndex = headers.findIndex(h => /^text$/i.test(h) || /^body$/i.test(h) || /question/i.test(h))
+      if (textIndex >= 0) {
+        // Join the columns starting at textIndex so that the total columns match headers
+        const endIndex = textIndex + extra
+        const pieces = row.slice(textIndex, endIndex + 1)
+        const joined = pieces.join(',')
+        const newRow = row.slice(0, textIndex).concat([joined]).concat(row.slice(endIndex + 1))
+        row = newRow
+      } else {
+        // Fallback: merge any extra trailing columns into the last header
+        const last = headers.length - 1
+        const merged = row.slice(last).join(',')
+        row = row.slice(0, last).concat([merged])
+      }
+    }
+
     const obj = {}
     for (let c = 0; c < headers.length; c++) {
       const key = headers[c] || `col${c}`
-      obj[key.trim()] = (row[c] != null) ? row[c] : ''
+      obj[String(key).trim()] = (row[c] != null) ? row[c] : ''
     }
     objs.push(obj)
   }

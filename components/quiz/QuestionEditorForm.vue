@@ -94,6 +94,7 @@
 <script setup lang="ts">
 import { watch, getCurrentInstance, computed, ref } from 'vue'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 interface Props {
   modelValue: Record<string, any>
@@ -105,6 +106,7 @@ const emit = defineEmits(['update:modelValue', 'add-option', 'remove-option'])
 const local = defineModel<Record<string, any>>({ required: true })
 const mediaUrl = ref<string | null>(null)
 const uploading = ref(false)
+const alert = useAppAlert()
 
 // taxonomy is determined by the parent quiz; no local selectors here
 
@@ -150,6 +152,8 @@ function getDefaultForm(type = 'mcq') {
   }
 }
 
+import useApi from '~/composables/useApi'
+
 async function uploadMedia(file: File, type: 'image' | 'audio') {
   uploading.value = true
   mediaUrl.value = null
@@ -158,15 +162,33 @@ async function uploadMedia(file: File, type: 'image' | 'audio') {
   formData.append('type', type)
 
   try {
-    const { useApi } = await import('~/composables/useApi')
     const api = useApi()
     const response = await api.postFormData('/uploads', formData)
-    mediaUrl.value = response.url
-    local.value.media_url = response.url
+    // Handle auth redirects
+    if (api.handleAuthStatus(response)) return
+
+    if (!response || !response.ok) {
+      const text = await (response?.text?.() || '')
+      console.error('Upload failed, server response not ok', response?.status, text)
+      alert.push({ type: 'error', message: 'Upload failed — server returned an error.' })
+      return
+    }
+
+    const data = await response.json().catch(() => null)
+    // Support multiple possible shapes returned by the server
+    const url = data?.url || data?.path || data?.data?.url || data?.data?.path || null
+    if (!url) {
+      console.error('Upload succeeded but no url found in response', data)
+      alert.push({ type: 'error', message: 'Upload completed but server did not return a file URL.' })
+      return
+    }
+
+    mediaUrl.value = url
+    local.value.media_url = url
     local.value.media_type = type
   } catch (error) {
     console.error('Upload failed:', error)
-    // Handle error (e.g., show a notification)
+    try { alert.push({ type: 'error', message: 'Upload failed. Please try again.' }) } catch (e) {}
   } finally {
     uploading.value = false
   }
@@ -250,6 +272,8 @@ function onImageSelected(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files && input.files[0]) {
     uploadMedia(input.files[0], 'image')
+    // Reset input so selecting the same file again will trigger change
+    try { input.value = '' } catch (e) {}
   }
 }
 
@@ -257,6 +281,8 @@ function onAudioSelected(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files && input.files[0]) {
     uploadMedia(input.files[0], 'audio')
+    // Reset input so selecting the same file again will trigger change
+    try { input.value = '' } catch (e) {}
   }
 }
 

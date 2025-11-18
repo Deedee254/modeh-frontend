@@ -267,7 +267,10 @@ function formatProvided(p) {
 
 // share helpers
 function share(provider) {
-  const url = window.location.href
+  // Prefer sharing the quiz's public page rather than the result URL
+  const url = (typeof window !== 'undefined' && quizId.value)
+    ? `${window.location.origin}/quizee/quizzes/${quizId.value}`
+    : window.location.href
   const text = `I scored ${attempt.value.score}% on this quiz!`;
   if (provider === 'twitter') {
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer')
@@ -277,7 +280,10 @@ function share(provider) {
 }
 
 function copyLink() {
-  navigator.clipboard?.writeText(window.location.href)
+  const shareUrl = (typeof window !== 'undefined' && quizId.value)
+    ? `${window.location.origin}/quizee/quizzes/${quizId.value}`
+    : window.location.href
+  navigator.clipboard?.writeText(shareUrl)
     .then(() => {
       // You can add a toast notification here to confirm the copy
       alert('Link copied to clipboard!');

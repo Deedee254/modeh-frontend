@@ -80,7 +80,7 @@
         </div>
 
         <div class="flex justify-center">
-          <NuxtLink to="/quizee/tournaments/{{ route.params.id }}/battles" class="px-6 py-3 bg-gray-100 rounded-lg">Back to Battles</NuxtLink>
+          <NuxtLink :to="`/quizee/tournaments/${route.params.id}/battles`" class="px-6 py-3 bg-gray-100 rounded-lg">Back to Battles</NuxtLink>
         </div>
       </div>
 

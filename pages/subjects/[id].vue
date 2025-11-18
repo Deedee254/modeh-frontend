@@ -106,6 +106,7 @@ import Pagination from '~/components/Pagination.vue'
 import { ref, onMounted, computed, watch } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { getHeroClass } from '~/utils/heroPalettes'
+import useApi from '~/composables/useApi'
 
 const route = useRoute()
 const subjectId = route.params.id
@@ -196,9 +197,17 @@ async function fetchTopics(params = {}) {
 
 onMounted(async () => {
   try {
-    // fetch subject metadata
-    const s = await $fetch(`${config.public.apiBase}/api/subjects/${subjectId}`)
-    subject.value = (s && s.subject) ? s.subject : (s || {})
+    // fetch subject metadata using shared API composable (preserves auth/session)
+    try {
+      const api = useApi()
+      const subjectRes = await api.get(`/api/subjects/${subjectId}`)
+      if (subjectRes && subjectRes.ok) {
+        const s = await subjectRes.json()
+        subject.value = (s && s.subject) ? s.subject : (s || {})
+      }
+    } catch (e) {
+      // ignore subject fetch error here
+    }
   } catch (e) {
     // ignore subject fetch error here
   }

@@ -215,9 +215,27 @@ const lastSubmitFailed = ref(false)
 const submissionMessage = ref('')
 let submissionInterval = null
 const { push: pushAlert } = useAppAlert()
+
+// Show countdown alerts for overall quiz timer and per-question timer when <= 10s
+watch(timeLeft, (val) => {
+  if (typeof val === 'number' && val <= 10 && val > 0) {
+    pushAlert({ message: `${val} second${val === 1 ? '' : 's'} remaining`, type: 'info' })
+  }
+})
+
+watch(questionRemaining, (val) => {
+  const secs = Math.ceil(Number(val || 0))
+  if (secs > 0 && secs <= 10) {
+    pushAlert({ message: `${secs} second${secs === 1 ? '' : 's'} left for this question`, type: 'info' })
+  }
+})
 import useApi from '~/composables/useApi'
 const api = useApi()
 const showConfirm = ref(false)
+import useDisableUserActions from '~/composables/useDisableUserActions'
+
+// Disable context menu, common shortcuts and text selection while this page is active
+useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
 
 
 
@@ -247,7 +265,7 @@ const { isImage, isAudio, isYouTube, getAudioType, formatYouTubeUrl } = useQuizM
 // Timer composable tracks overall quiz timer. We'll also track per-question times locally here.
 const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, startTimer, stopTimer } = useQuizTimer(quiz, () => submitAnswers())
 // per-question timer composable
-const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
+const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, resetTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
 const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
 import { normalizeAnswer, formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
 
@@ -284,6 +302,21 @@ function restoreProgress() {
     if (parsed?.question_times && typeof parsed.question_times === 'object') {
       questionTimes.value = parsed.question_times
     }
+    if (typeof parsed.questionRemaining === 'number' && parsed.questionRemaining > 0) questionRemaining.value = parsed.questionRemaining
+    // If this quiz uses per-question limits, resume the per-question UI timer and schedule the authoritative expiry
+    try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    const limit = currentQuestionLimit()
+    if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < limit) ? questionRemaining.value : undefined
+      startQuestionTimer(limit, remainingForSchedule)
+      schedulePerQuestionLimit(limit, () => {
+        if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+        else {
+          submissionMessage.value = 'Time is over — submitting...'
+          submitAnswers()
+        }
+      }, remainingForSchedule)
+    }
     if (!quiz.value._started_at_ms && parsed?.started_at) {
       try { quiz.value._started_at_ms = new Date(parsed.started_at).getTime() } catch (e) {}
     }
@@ -299,7 +332,8 @@ function persistProgress() {
         attempt_id: quiz.value?._attempt_id || null,
         started_at: quiz.value?._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : null,
         answers: answers.value,
-        question_times: questionTimes.value
+        question_times: questionTimes.value,
+        questionRemaining: (typeof questionRemaining.value === 'number') ? questionRemaining.value : null
       }
       try { localStorage.setItem(progressKey(), JSON.stringify(payload)) } catch (e) {}
     }, 400)
@@ -337,23 +371,48 @@ function nextQuestion() {
   const qid = currentQuestionData.value.id
   if (qid) recordQuestionTime(qid)
   navNextQuestion()
-  // restart per-question timer for new question
-  startQuestionTimer(timePerQuestion.value)
-  schedulePerQuestionLimit(currentQuestionLimit(), () => {
-    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
-    else submitAnswers()
-  })
+  // restart per-question timer for new question using the computed per-question limit
+  const limit = currentQuestionLimit()
+  // clear any existing per-question limit (schedulePerQuestionLimit will also clear but be explicit)
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+    const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < limit) ? questionRemaining.value : undefined
+    startQuestionTimer(limit, remainingForSchedule)
+    // schedule the expiry action (auto-next or submit)
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+      else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, remainingForSchedule)
+  } else {
+    // No per-question limit for this question — ensure any running per-question timer is stopped
+    try { stopQuestionTimer() } catch (e) {}
+    try { clearPerQuestionLimit() } catch (e) {}
+  }
 }
 
 function previousQuestion() {
   const qid = currentQuestionData.value.id
   if (qid) recordQuestionTime(qid)
   navPreviousQuestion()
-  startQuestionTimer(timePerQuestion.value)
-  schedulePerQuestionLimit(currentQuestionLimit(), () => {
-    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
-    else submitAnswers()
-  })
+  const limit = currentQuestionLimit()
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+  if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+  const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < limit) ? questionRemaining.value : undefined
+  startQuestionTimer(limit, remainingForSchedule)
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+      else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, remainingForSchedule)
+  } else {
+    try { stopQuestionTimer() } catch (e) {}
+    try { clearPerQuestionLimit() } catch (e) {}
+  }
 }
 const { currentStreak, achievements, encouragementMessage, encouragementStyle, calculateAchievements, resetAchievements } = useQuizEnhancements(quiz, progressPercent, currentQuestion, answers)
 
@@ -451,9 +510,23 @@ onMounted(async () => {
 
         // Start timers after establishing started_at / attempt_id
         startTimer()
-        // start per-question timer and question timer
-        startQuestionTimer()
-        schedulePerQuestionLimit()
+        // start per-question timer and schedule expiry for the current question
+        const initialLimit = currentQuestionLimit()
+        try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+        if (typeof initialLimit === 'number' && Number.isFinite(initialLimit) && initialLimit > 0) {
+          const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < initialLimit) ? questionRemaining.value : undefined
+          startQuestionTimer(initialLimit, remainingForSchedule)
+          schedulePerQuestionLimit(initialLimit, () => {
+            if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+            else {
+              submissionMessage.value = 'Time is over — submitting...'
+              submitAnswers()
+            }
+          }, remainingForSchedule)
+        } else {
+          try { stopQuestionTimer() } catch (e) {}
+        }
+        // No onTimeout backup — we rely on schedulePerQuestionLimit as single source of truth for expiry.
 
         try { restoreProgress() } catch (e) {}
 

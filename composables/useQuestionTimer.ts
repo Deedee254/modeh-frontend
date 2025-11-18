@@ -24,11 +24,23 @@ export default function useQuestionTimer(defaultSeconds = 20) {
     return 'text-gray-800 dark:text-gray-200'
   })
 
-  function startTimer(seconds?: number) {
+  /**
+   * Start the question interval timer.
+   * @param seconds optional full-per-question limit (will replace stored timePerQuestion)
+   * @param initialRemaining optional remaining seconds to start from (useful when restoring)
+   */
+  function startTimer(seconds?: number, initialRemaining?: number) {
     stopTimer()
     if (typeof seconds === 'number') timePerQuestion.value = seconds
-    questionRemaining.value = timePerQuestion.value
-    questionStartTs.value = Date.now()
+    if (typeof initialRemaining === 'number') {
+      // start from a restored remaining time; compute a start timestamp such that
+      // elapsed = timePerQuestion - initialRemaining
+      questionRemaining.value = Math.max(0, initialRemaining)
+      questionStartTs.value = Date.now() - Math.max(0, (timePerQuestion.value - questionRemaining.value) * 1000)
+    } else {
+      questionRemaining.value = timePerQuestion.value
+      questionStartTs.value = Date.now()
+    }
     _interval = setInterval(() => {
       const elapsed = (Date.now() - questionStartTs.value) / 1000
       questionRemaining.value = Math.max(0, timePerQuestion.value - elapsed)
@@ -64,12 +76,19 @@ export default function useQuestionTimer(defaultSeconds = 20) {
     _onTimeout = cb
   }
 
-  function schedulePerQuestionLimit(limitSeconds: number | null, cb: Function) {
+  /**
+   * Schedule a single authoritative per-question expiry.
+   * @param limitSeconds full per-question limit in seconds (used as fallback)
+   * @param cb callback to invoke on expiry
+   * @param remainingSeconds optional remaining seconds to schedule for (useful when restoring)
+   */
+  function schedulePerQuestionLimit(limitSeconds: number | null, cb: Function, remainingSeconds?: number | null) {
     clearPerQuestionLimit()
     if (!limitSeconds) return
+    const ms = Math.max(0, (typeof remainingSeconds === 'number' && remainingSeconds !== null ? remainingSeconds : limitSeconds) * 1000)
     _limitTimer = setTimeout(() => {
       try { cb() } catch (e) { /* swallow */ }
-    }, limitSeconds * 1000)
+    }, ms)
   }
 
   function clearPerQuestionLimit() {

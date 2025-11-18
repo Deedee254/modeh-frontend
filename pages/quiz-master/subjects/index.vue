@@ -102,24 +102,41 @@ const isLoading = ref(true)
 const page = ref(1)
 const perPage = ref(12)
 
-const { data: subjectsResponse, pending, error, refresh } = await useFetch(config.public.apiBase + '/api/subjects', {
-  credentials: 'include',
-  params: {
-    page: page.value,
-    per_page: perPage.value
-  }
-})
-
+// Use the taxonomy composable to fetch paginated subjects. We keep the
+// `subjectsResponse` shape compatible with the old `useFetch` result so the
+// template doesn't need changes.
+const subjectsResponse = ref({ subjects: { data: [], meta: null } })
 const subjects = computed(() => subjectsResponse.value?.subjects?.data || [])
 
-const { fetchLevels, fetchGrades, fetchAllSubjects, grades: taxGrades } = useTaxonomy()
+const { fetchLevels, fetchGrades, fetchAllSubjects, grades: taxGrades, fetchSubjectsPage } = useTaxonomy()
 const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
 
 onMounted(async () => {
   // Load levels first so FiltersSidebar can derive grades/subjects reliably
   await fetchLevels()
   await Promise.all([fetchGrades(), fetchAllSubjects()])
+
+  // Load the first page of subjects using the taxonomy composable so the
+  // shared cache and deduping are used.
+  try {
+    const resp = await fetchSubjectsPage({ page: page.value, perPage: perPage.value })
+    if (resp) {
+      subjectsResponse.value = { subjects: { data: resp.items || [], meta: resp.meta || null } }
+    }
+  } catch (e) {
+    // ignore
+  }
 })
+
+// Refresh helper to match previous API (used by Pagination)
+async function refresh() {
+  try {
+    const resp = await fetchSubjectsPage({ page: page.value, perPage: perPage.value, q: query.value || '' })
+    subjectsResponse.value = { subjects: { data: resp.items || [], meta: resp.meta || null } }
+  } catch (e) {
+    // ignore
+  }
+}
 
 async function handlePageChange(newPage) {
   page.value = newPage
@@ -170,14 +187,12 @@ function filterBtnClass(v) {
 
 async function onServerSearch(q) {
   try {
-    const res = await $fetch(config.public.apiBase + '/api/subjects', {
-      params: { query: q },
-      credentials: 'include'
-    })
+    // Use the taxonomy composable to search subjects (server-side pagination)
+    page.value = 1
+    const resp = await fetchSubjectsPage({ q: q, page: 1, perPage: perPage.value })
     query.value = q
-    // update the subjects response so the UI reflects search results
-    if (res) {
-      subjectsResponse.value = res
+    if (resp) {
+      subjectsResponse.value = { subjects: { data: resp.items || [], meta: resp.meta || null } }
     }
   } catch (e) {
     // ignore network errors

@@ -123,6 +123,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import useQuestionTimer from '~/composables/useQuestionTimer'
+import { useAppAlert } from '~/composables/useAppAlert'
+import useDisableUserActions from '~/composables/useDisableUserActions'
 import { useAuthStore } from '~/stores/auth'
 import { useAnswerNormalization } from '~/composables/useAnswerNormalization'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
@@ -135,6 +138,7 @@ const auth = useAuthStore()
 // Data
 const challenge = ref(null)
 const questions = ref([])
+const questionTimes = ref({})
 // reuse shared answers composable so daily-challenge answers are same shape as quizzes/battles
 // Pass a computed wrapper around the local `questions` ref so the composable reads
 // the actual questions when initializeAnswers() is called later (avoids initializing
@@ -172,6 +176,14 @@ import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 // Timer
 const { timeLeft, displayTime, startTimer, stopTimer } = useQuizTimer(challengeAdapter, () => submitChallenge())
 
+// per-question timer (derive per-question from challenge total when available)
+const { timePerQuestion, questionRemaining, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
+
+const { push: pushAlert } = useAppAlert()
+
+// Disable context menu, common shortcuts and text selection while this page is active
+useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
+
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -189,13 +201,51 @@ const selectAnswer = (answer) => {
 
 const nextQuestion = () => {
   if (selectedAnswer.value) {
+    // record elapsed for analytics
+    try { const elapsed = recordAndReset(); questionTimes.value = questionTimes.value || {}; if (currentQuestion.value && currentQuestion.value.id) questionTimes[currentQuestion.value.id] = elapsed } catch (e) {}
+    try { persistProgress() } catch (e) {}
     currentQuestionIndex.value++
+    // reset per-question timer for new question
+    try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    const per = (challengeAdapter.value?.timer_seconds && questions.value.length) ? Math.floor(challengeAdapter.value.timer_seconds / questions.value.length) : null
+    if (typeof per === 'number' && Number.isFinite(per) && per > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < per) ? questionRemaining.value : undefined
+      startQuestionTimer(per, remainingForSchedule)
+      schedulePerQuestionLimit(per, () => {
+        if (currentQuestionIndex.value < questions.value.length - 1) {
+          pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+          currentQuestionIndex.value++
+        } else {
+          pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+          submitChallenge()
+        }
+      }, remainingForSchedule)
+    } else {
+      try { stopQuestionTimer() } catch (e) {}
+    }
     // when moving, selectedAnswer computed will reflect the new question via getter
   }
 }
 
 const previousQuestion = () => {
   currentQuestionIndex.value--
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+  const per = (challengeAdapter.value?.timer_seconds && questions.value.length) ? Math.floor(challengeAdapter.value.timer_seconds / questions.value.length) : null
+  if (typeof per === 'number' && Number.isFinite(per) && per > 0) {
+    const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < per) ? questionRemaining.value : undefined
+    startQuestionTimer(per, remainingForSchedule)
+    schedulePerQuestionLimit(per, () => {
+      if (currentQuestionIndex.value < questions.value.length - 1) {
+        pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+        currentQuestionIndex.value++
+      } else {
+        pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+        submitChallenge()
+      }
+    }, remainingForSchedule)
+  } else {
+    try { stopQuestionTimer() } catch (e) {}
+  }
 }
 
 const submitChallenge = async () => {
@@ -329,7 +379,10 @@ const fetchChallengeData = async () => {
 
   // record client-side started_at for timing/persistence purposes
   startedAt.value = new Date().toISOString()
-  startTimer()
+  // Attempt to restore any saved progress (including per-question remaining)
+  try { restoreProgress() } catch (e) {}
+  // If restore didn't start a per-question timer, start normally
+  if (typeof questionRemaining.value !== 'number') startTimer()
   } catch (error) {
     console.error('Failed to fetch challenge data:', error)
     await router.push('/quizee/daily-challenges')
@@ -343,7 +396,57 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopTimer()
+  try { clearPerQuestionLimit() } catch (e) {}
+  try { stopQuestionTimer() } catch (e) {}
 })
+
+// Persist on changes
+try { watch(answers, () => persistProgress(), { deep: true }) } catch (e) {}
+try { watch(questionTimes, () => persistProgress(), { deep: true }) } catch (e) {}
+
+// Persist/restore helpers for daily challenge (save answers, index and per-question remaining)
+function persistProgress() {
+  try {
+    const meta = {
+      currentQuestionIndex: currentQuestionIndex.value,
+      questionRemaining: (typeof questionRemaining.value === 'number') ? questionRemaining.value : null,
+      answers: answers.value,
+      startedAt: startedAt.value
+    }
+    localStorage.setItem(`daily-challenge:progress:${challenge.value?.id || 'draft'}`, JSON.stringify(meta))
+  } catch (e) {}
+}
+
+function restoreProgress() {
+  try {
+    const raw = localStorage.getItem(`daily-challenge:progress:${challenge.value?.id || 'draft'}`)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed?.answers && typeof parsed.answers === 'object') {
+      Object.keys(parsed.answers).forEach(k => { answers.value[k] = parsed.answers[k] })
+    }
+    if (typeof parsed.currentQuestionIndex === 'number') currentQuestionIndex.value = parsed.currentQuestionIndex
+    if (typeof parsed.questionRemaining === 'number' && parsed.questionRemaining > 0) questionRemaining.value = parsed.questionRemaining
+    if (parsed?.startedAt) startedAt.value = parsed.startedAt
+
+    // If per-question timing applies, start the per-question interval and schedule expiry using remaining
+    try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    const per = (challengeAdapter.value?.timer_seconds && questions.value.length) ? Math.floor(challengeAdapter.value.timer_seconds / questions.value.length) : null
+    if (typeof per === 'number' && Number.isFinite(per) && per > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < per) ? questionRemaining.value : undefined
+      startQuestionTimer(per, remainingForSchedule)
+      schedulePerQuestionLimit(per, () => {
+        if (currentQuestionIndex.value < questions.value.length - 1) {
+          pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+          currentQuestionIndex.value++
+        } else {
+          pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+          submitChallenge()
+        }
+      }, remainingForSchedule)
+    }
+  } catch (e) {}
+}
 
 const closeResults = async () => {
   showResultsModal.value = false

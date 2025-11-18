@@ -266,7 +266,7 @@ export function useApi() {
     return resp
   }
 
-  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus }
+  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus, parseResponse }
 }
 
 export default useApi

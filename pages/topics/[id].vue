@@ -43,6 +43,7 @@ import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import UiQuizCard from '~/components/ui/QuizCard.vue'
 import { ref, onMounted } from 'vue'
+import useApi from '~/composables/useApi'
 import { getHeroClass } from '~/utils/heroPalettes'
 
 const route = useRoute()
@@ -62,9 +63,12 @@ const error = ref(null)
 
 onMounted(async () => {
   try {
-      // fetch topic metadata
-      const t = await $fetch(`${config.public.apiBase}/api/topics/${topicId}`)
-      topic.value = (t && t.topic) ? t.topic : (t || {})
+  // fetch topic metadata using shared API composable (preserves auth/session)
+  const api = useApi()
+  const topicRes = await api.get(`/api/topics/${topicId}`)
+  if (!topicRes.ok) throw topicRes
+  const t = await topicRes.json()
+  topic.value = (t && t.topic) ? t.topic : (t || {})
 
     // fetch quizzes for this topic and normalize paginator vs array
     // prefer numeric topic_id (from fetched topic) otherwise fall back to the route param
@@ -77,8 +81,13 @@ onMounted(async () => {
       else quizParams.topic = topicId
     }
 
-    const res = await $fetch(`${config.public.apiBase}/api/quizzes`, { params: quizParams })
-    const raw = (res && res.quizzes && Array.isArray(res.quizzes.data)) ? res.quizzes.data : (Array.isArray(res?.quizzes) ? res.quizzes : (Array.isArray(res) ? res : []))
+  // Build query string and fetch quizzes through the shared API (includes cookies)
+  const qs = new URLSearchParams()
+  Object.keys(quizParams).forEach(k => { if (quizParams[k] !== undefined && quizParams[k] !== null) qs.set(k, String(quizParams[k])) })
+  const quizzesRes = await api.get(`/api/quizzes?${qs.toString()}`)
+  if (!quizzesRes.ok) throw quizzesRes
+  const res = await quizzesRes.json()
+  const raw = (res && res.quizzes && Array.isArray(res.quizzes.data)) ? res.quizzes.data : (Array.isArray(res?.quizzes) ? res.quizzes : (Array.isArray(res) ? res : []))
     quizzes.value = raw.map(q => ({
       ...q,
       // normalize nested topic/subject/grade

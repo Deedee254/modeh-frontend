@@ -151,6 +151,9 @@
 definePageMeta({ layout: 'quizee' })
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useAppAlert } from '~/composables/useAppAlert'
+import useDisableUserActions from '~/composables/useDisableUserActions'
+import useQuestionTimer from '~/composables/useQuestionTimer'
 import { useRoute, useRouter } from 'vue-router'
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
 import { QuestionCard } from '#components'
@@ -201,13 +204,19 @@ const answerSubmitted = ref<boolean>(false)
 const showConfirmation = ref<boolean>(false)
 const score = ref<number>(0)
 const isSubmitting = ref<boolean>(false)
+const submissionMessage = ref<string>('')
 
 // Connection status for realtime
 const connectionStatus = ref<'connected'|'disconnected'|'reconnecting'>('connected')
 
 // Per-question timer
-let questionTimer: ReturnType<typeof setTimeout> | undefined
+// use shared question timer composable for countdown UI + scheduling expiry
 const timePerQuestion = ref<number | null>(null)
+const { questionRemaining, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, schedulePerQuestionLimit, clearPerQuestionLimit, recordAndReset } = useQuestionTimer()
+
+// Local guards to avoid repeated announcements for every tick
+const lastTotalAnnouncement = ref<number | null>(null)
+const lastQuestionAnnouncement = ref<number | null>(null)
 
 // Use persisted answer store
 const answerStore = useAnswerStore()
@@ -259,8 +268,33 @@ const fetchBattle = async () => {
     questions.value = qList
   startTimer(data.duration * 60) // Convert minutes to seconds
   // Use per-question timing if provided by battle payload
-  timePerQuestion.value = (data as any).per_question_seconds ?? null
-  // Try to restore saved progress for this battle (answers, index, remaining time)
+    timePerQuestion.value = (data as any).per_question_seconds ?? null
+    // If per-question timing is enabled, start the question countdown and schedule expiry
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    if (typeof timePerQuestion.value === 'number' && Number.isFinite(timePerQuestion.value) && timePerQuestion.value > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) ? questionRemaining.value : undefined
+      // start the composable interval so `questionRemaining` updates for UI
+      startQuestionTimer(timePerQuestion.value, remainingForSchedule)
+  // schedule the authoritative per-question expiry handler (use remaining if restoring)
+  schedulePerQuestionLimit(timePerQuestion.value, () => {
+        // If no answer, mark empty and persist
+        if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
+          answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
+          selectedAnswers.value[currentQuestion.value.id] = ''
+          persistProgress()
+        }
+        if (!isLastQuestion.value) {
+          pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+          nextQuestion()
+        } else {
+          // Auto-submit on last question per-question expiry
+          submissionMessage.value = 'Time is over — submitting...'
+          pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+          submitBattle()
+        }
+      }, remainingForSchedule)
+    }
+    // Try to restore saved progress for this battle (answers, index, remaining time)
   restoreProgress()
     // If only one participant, start polling for an opponent
     if (data && (data as any).participants && Array.isArray((data as any).participants) && (data as any).participants.length <= 1) {
@@ -275,6 +309,30 @@ const fetchBattle = async () => {
     loading.value = false
   }
 }
+
+const { push: pushAlert } = useAppAlert()
+
+// Disable context menu, common shortcuts and text selection while this page is active
+useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
+
+// Announce countdowns: show second-by-second announcements when <= 10s
+watch(questionRemaining, (val) => {
+  if (typeof val !== 'number') return
+  const sec = Math.ceil(val)
+  if (sec <= 10 && sec > 0 && lastQuestionAnnouncement.value !== sec) {
+    pushAlert({ message: `${sec} seconds left for this question`, type: 'info' })
+    lastQuestionAnnouncement.value = sec
+  }
+})
+
+watch(timeRemaining, (val) => {
+  if (typeof val !== 'number') return
+  const sec = Math.ceil(val)
+  if (sec <= 10 && sec > 0 && lastTotalAnnouncement.value !== sec) {
+    pushAlert({ message: `${sec} seconds remaining for the battle`, type: 'info' })
+    lastTotalAnnouncement.value = sec
+  }
+})
 
 const selectAnswer = async (optionId: string | number) => {
   if (answerSubmitted.value || !currentQuestion.value) return
@@ -309,7 +367,26 @@ const previousQuestion = () => {
     currentQuestionIndex.value--
     
     // Reset per-question timer if using one
-    startQuestionTimer(timePerQuestion.value)
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    if (typeof timePerQuestion.value === 'number' && Number.isFinite(timePerQuestion.value) && timePerQuestion.value > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) ? questionRemaining.value : undefined
+      startQuestionTimer(timePerQuestion.value, remainingForSchedule)
+  schedulePerQuestionLimit(timePerQuestion.value, () => {
+        if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
+          answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
+          selectedAnswers.value[currentQuestion.value.id] = ''
+          persistProgress()
+        }
+        if (!isLastQuestion.value) {
+          pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+          nextQuestion()
+        } else {
+          submissionMessage.value = 'Time is over — submitting...'
+          pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+          submitBattle()
+        }
+      }, remainingForSchedule)
+    }
   }
 }
 
@@ -320,13 +397,32 @@ const nextQuestion = () => {
     currentQuestionIndex.value++
     
     // Reset per-question timer if using one
-    startQuestionTimer(timePerQuestion.value)
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    if (typeof timePerQuestion.value === 'number' && Number.isFinite(timePerQuestion.value) && timePerQuestion.value > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) ? questionRemaining.value : undefined
+      startQuestionTimer(timePerQuestion.value, remainingForSchedule)
+  schedulePerQuestionLimit(timePerQuestion.value, () => {
+        if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
+          answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
+          selectedAnswers.value[currentQuestion.value.id] = ''
+          persistProgress()
+        }
+        if (!isLastQuestion.value) {
+          pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+          nextQuestion()
+        } else {
+          submissionMessage.value = 'Time is over — submitting...'
+          pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+          submitBattle()
+        }
+      }, remainingForSchedule)
+    }
 
     // Pre-fetch next question's media if available
-    const nextQuestion = questions.value[currentQuestionIndex.value]
-    if (nextQuestion?.media_url) {
+    const upcomingQuestion = questions.value[currentQuestionIndex.value]
+    if (upcomingQuestion?.media_url) {
       const img = new Image()
-      img.src = nextQuestion.media_url
+      img.src = upcomingQuestion.media_url
     }
   }
 }
@@ -385,29 +481,8 @@ const submitBattle = async () => {
   }
 }
 
-
-function startQuestionTimer(seconds: number | null) {
-  if (questionTimer) clearTimeout(questionTimer)
-  if (!seconds || seconds <= 0) return
-  questionTimer = setTimeout(() => {
-    // If no answer, mark empty and persist
-    if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
-  answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
-      selectedAnswers.value[currentQuestion.value.id] = ''
-      persistProgress()
-    }
-    if (!isLastQuestion.value) {
-      nextQuestion()
-    } else {
-      // Auto-submit on last question per-question expiry
-      submitBattle()
-    }
-  }, seconds * 1000)
-}
-
-function clearQuestionTimer() {
-  if (questionTimer) { clearTimeout(questionTimer); questionTimer = undefined }
-}
+// Per-question timing is managed via the `useQuestionTimer` composable
+// (start/stop/schedule/clear) so the old manual timeout helpers were removed.
 
 const startTimer = (seconds: number) => {
   timeRemaining.value = seconds
@@ -429,6 +504,7 @@ function persistProgress() {
     const meta = {
       currentQuestionIndex: currentQuestionIndex.value,
       timeRemaining: timeRemaining.value,
+      questionRemaining: (typeof questionRemaining.value === 'number') ? questionRemaining.value : null,
   // Persist answers array for local restore (avoid implicit-any map)
   answers: ((answerStore.allAnswers as any)?.value ?? []).map((a: any) => [a.question_id, a.answer])
     }
@@ -448,9 +524,29 @@ function restoreProgress() {
       })
     }
     if (typeof parsed.currentQuestionIndex === 'number') currentQuestionIndex.value = parsed.currentQuestionIndex
-    if (typeof parsed.timeRemaining === 'number' && parsed.timeRemaining > 0) timeRemaining.value = parsed.timeRemaining
-    // Start per-question timer for restored question
-    startQuestionTimer(timePerQuestion.value)
+  if (typeof parsed.timeRemaining === 'number' && parsed.timeRemaining > 0) timeRemaining.value = parsed.timeRemaining
+  if (typeof parsed.questionRemaining === 'number' && parsed.questionRemaining > 0) questionRemaining.value = parsed.questionRemaining
+  // Start per-question timer for restored question (only when numeric)
+    try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    if (typeof timePerQuestion.value === 'number' && Number.isFinite(timePerQuestion.value) && timePerQuestion.value > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) ? questionRemaining.value : undefined
+      startQuestionTimer(timePerQuestion.value, remainingForSchedule)
+  schedulePerQuestionLimit(timePerQuestion.value, () => {
+        if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
+          answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
+          selectedAnswers.value[currentQuestion.value.id] = ''
+          persistProgress()
+        }
+        if (!isLastQuestion.value) {
+          pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+          nextQuestion()
+        } else {
+          submissionMessage.value = 'Time is over — submitting...'
+          pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+          submitBattle()
+        }
+      })
+    }
   } catch (e) {
     // ignore malformed data
   }
@@ -477,7 +573,7 @@ onBeforeUnmount(() => {
   }
   stopPollingForOpponent()
   detachEchoForJoin()
-  clearQuestionTimer()
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
 })
 
 // Polling for opponent

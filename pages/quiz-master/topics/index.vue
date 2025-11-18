@@ -124,6 +124,7 @@ const page = ref(1)
 const perPage = ref(12)
 
 import useTaxonomy from '~/composables/useTaxonomy'
+import useApi from '~/composables/useApi'
 const { fetchLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 
 const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
@@ -159,13 +160,13 @@ async function loadTopics() {
     if (selectedSubject.value) params.set('subject_id', selectedSubject.value)
     if (selectedGrade.value) params.set('grade_id', selectedGrade.value)
     if (searchQuery.value) params.set('q', searchQuery.value)
-
-    const res = await $fetch(config.public.apiBase + '/api/topics', {
-      credentials: 'include',
-      params
-    })
+    const api = useApi()
+    const res = await api.get(`/api/topics?${params.toString()}`)
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to fetch topics')
+    const data = await res.json().catch(() => null)
     // normalize expected shape
-    topicsResponse.value = res.topics || res.data || res
+    topicsResponse.value = data.topics || data.data || data
   } catch (e) {
     // ignore for now
   }

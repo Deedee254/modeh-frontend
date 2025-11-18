@@ -8,8 +8,8 @@
 
     <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div v-for="plan in plans" :key="plan.id" 
-           class="relative border rounded-lg p-6 flex flex-col"
-           :class="{'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50': plan.id === currentPlan?.id}">
+        class="relative border rounded-lg p-6 flex flex-col"
+        :class="{'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50': isActive(plan)}">
         <!-- Popular badge -->
         <div v-if="plan.popular" class="absolute top-0 right-0 -mr-1 -mt-1">
           <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
@@ -131,6 +131,10 @@ import useApi from '~/composables/useApi'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 
 const config = useRuntimeConfig()
+defineProps({
+  ownerType: { type: String, default: null },
+  ownerId: { type: [String, Number], default: null }
+})
 
 const alert = useAppAlert()
 const loading = ref(true)
@@ -238,10 +242,15 @@ async function confirmSubscription() {
     // Use centralized API composable which handles CSRF/session for us
     const pkgPrice = selectedPlan.value?.price ?? pendingPackagePrice.value ?? 0
     const gatewayToUse = (Number(pkgPrice) === 0) ? 'free' : 'mpesa'
-    const res = await api.postJson(`/api/packages/${selectedPlan.value.id}/subscribe`, {
+    const payload = {
       gateway: gatewayToUse,
       phone: selectedPlan.value.phone || null
-    })
+    }
+    if (typeof ownerType !== 'undefined' && ownerType && ownerId) {
+      payload.owner_type = ownerType
+      payload.owner_id = ownerId
+    }
+    const res = await api.postJson(`/api/packages/${selectedPlan.value.id}/subscribe`, payload)
 
     if (!res.ok) {
       // Helpful handling for CSRF/session expiration (Laravel returns 419)
@@ -301,10 +310,15 @@ async function confirmPhoneSubscription() {
   try {
     const pkgPrice = selectedPlan.value?.price ?? pendingPackagePrice.value ?? 0
     const gatewayToUse = (Number(pkgPrice) === 0) ? 'free' : 'mpesa'
-    const res = await api.postJson(`/api/packages/${selectedPlan.value.id}/subscribe`, {
+    const payload = {
       gateway: gatewayToUse,
       phone: phoneInput.value.trim()
-    })
+    }
+    if (typeof ownerType !== 'undefined' && ownerType && ownerId) {
+      payload.owner_type = ownerType
+      payload.owner_id = ownerId
+    }
+    const res = await api.postJson(`/api/packages/${selectedPlan.value.id}/subscribe`, payload)
 
     if (!res.ok) {
       if (res.status === 419) {
@@ -337,6 +351,15 @@ async function confirmPhoneSubscription() {
 }
 
 onMounted(fetchPlans)
+
+function isActive(plan) {
+  try {
+    // Normalize IDs to string before comparison to avoid type mismatches
+    return String(plan.id) === String(currentPlan?.id)
+  } catch (e) {
+    return false
+  }
+}
 </script>
 
 <style scoped>

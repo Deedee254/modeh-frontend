@@ -147,7 +147,7 @@ const isSubmitting = ref(false)
 const imagePreview = ref('')
 
 // Data from API (use taxonomy composable)
-const { levels, fetchLevels, fetchGrades, grades: taxGrades, subjects: taxSubjects, fetchSubjectsByGrade } = useTaxonomy()
+const { levels, fetchLevels, fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, fetchSubjectsByGrade } = useTaxonomy()
 
 // local copies for the form
 const grades = taxGrades
@@ -248,21 +248,14 @@ const handleSubmit = async () => {
 // Fetch initial data
 onMounted(async () => {
   try {
-    // Fetch grades and subjects in parallel
-    const [gradesRes, subjectsRes] = await Promise.all([
-      fetch(config.public.apiBase + '/api/grades', { credentials: 'include' }),
-      fetch(config.public.apiBase + '/api/subjects', { credentials: 'include' })
+    // Use taxonomy composable to load grades/subjects/levels into shared cache
+    await Promise.all([
+      fetchLevels(),
+      fetchGrades(),
+      fetchAllSubjects()
     ])
-
-    if (gradesRes.ok && subjectsRes.ok) {
-      const gradesData = await gradesRes.json()
-      const subjectsData = await subjectsRes.json()
-
-      grades.value = gradesData?.grades || gradesData?.data || gradesData || []
-  subjects.value = (subjectsData?.subjects || subjectsData?.data || subjectsData || []).filter ? (subjectsData?.subjects || subjectsData?.data || subjectsData || []).filter(Boolean) : []
-    }
   } catch (error) {
-    console.error('Error fetching data:', error)
+    console.error('Error fetching taxonomy data:', error)
   }
 })
 </script>
