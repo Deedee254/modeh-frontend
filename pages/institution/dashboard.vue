@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
+definePageMeta({ layout: 'institution' })
 import { ref } from 'vue';
 import { useApi } from '~/composables/useApi'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'

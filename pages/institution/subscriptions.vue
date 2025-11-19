@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
+definePageMeta({ layout: 'institution' as any })
 import { ref } from 'vue';
 import { useApi } from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
