@@ -139,17 +139,6 @@ function handlePageChange(newPage) {
   page.value = newPage
 }
 
-async function onServerSearch(q) {
-  try {
-    await $fetch(config.public.apiBase + '/api/grades', { 
-      params: { query: q },
-      credentials: 'include' 
-    })
-    searchQuery.value = q
-  } catch (e) {
-    // ignore network errors
-  }
-}
 
 // initialize global taxonomy caches for counts / selects used elsewhere
 const { fetchAllSubjects, fetchAllTopics, fetchGrades: fetchTaxGrades, fetchLevels } = useTaxonomy()
