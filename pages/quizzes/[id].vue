@@ -1,359 +1,433 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-12">
-    <div class="min-h-screen bg-gray-50">
-  <div class="max-w-7xl mx-auto p-6 grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
-        <section class="lg:col-span-2 space-y-6">
-          <div v-if="pending" class="bg-white rounded-lg shadow p-6 flex gap-6 items-center animate-pulse">
-            <div class="w-40 h-40 rounded bg-gray-200"></div>
-            <div class="flex-1 space-y-3">
-              <div class="w-32 h-4 bg-gray-200 rounded"></div>
-              <div class="w-3/4 h-8 bg-gray-200 rounded"></div>
-              <div class="w-1/2 h-4 bg-gray-200 rounded"></div>
-              <div class="flex items-center gap-3 mt-3">
-                <div class="w-24 h-8 bg-gray-200 rounded"></div>
-                <div class="w-20 h-8 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="bg-white rounded-lg shadow p-6 flex gap-6 items-center relative">
-            <div class="w-40 h-40 rounded bg-gray-100 flex items-center justify-center overflow-hidden">
-              <!-- show video if available -->
-              <template v-if="quizMedia">
-                <template v-if="isYouTube(quizMedia)">
-                  <!-- YouTube embed -->
-                  <iframe :src="quizMedia.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/')" class="w-full h-full" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-                </template>
-                <template v-else-if="isVimeo(quizMedia)">
-                  <!-- Vimeo embed -->
-                  <iframe :src="quizMedia.replace('vimeo.com/', 'player.vimeo.com/video/')" class="w-full h-full" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe>
-                </template>
-                <template v-else-if="isVideoFile(quizMedia)">
-                  <!-- native video file -->
-                  <video controls class="w-full h-full object-cover" :src="quizMedia"></video>
-                </template>
-                <template v-else>
-                  <!-- fallback image -->
-                  <img :src="quizMedia" alt="media" class="object-cover w-full h-full" onerror="this.style.display='none'" />
-                </template>
-              </template>
-              <template v-else>
-                <img :src="quiz.cover || '/assets/placeholder-quiz.png'" alt="cover" class="object-contain w-full h-full" onerror="this.style.display='none'" />
-              </template>
-            </div>
-            <div class="flex-1">
-              <div class="text-sm text-indigo-600">{{ quiz.topic_name || 'General' }}</div>
-              <h1 class="text-3xl font-extrabold mt-1">{{ quiz.title }}</h1>
-              <p class="text-sm text-gray-600 mt-2">{{ quiz.short_description || 'Practice and improve.' }}</p>
-              <div class="mt-4 flex items-center gap-3">
-                <template v-if="isLoggedIn">
-                  <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Begin Assessment</NuxtLink>
-                </template>
-                <template v-else>
-                  <NuxtLink :to="`/register?next=/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Register / Login to take</NuxtLink>
-                </template>
-                <button @click="toggleLike" :class="['px-3 py-2 border rounded', liked ? 'bg-rose-50 text-rose-600' : 'text-gray-700']">
-                  <span v-if="liked">♥</span>
-                  <span v-else>♡</span>
-                  <span class="ml-2">Like<span v-if="likesCount"> ({{ likesCount }})</span></span>
-                </button>
-                <div class="ml-3 text-sm text-gray-500">{{ quiz.marks || 10 }} pts • {{ questionCount }} questions
-                  <span v-if="avgDifficulty" class="mx-2">•</span>
-                  <span v-if="avgDifficulty" class="text-xs text-gray-500">Avg diff: {{ avgDifficulty }}</span>
-                </div>
-              </div>
-
-              <!-- Summary badges: timer / attempts / shuffle / access -->
-              <div class="mt-3 ml-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                <div v-if="quiz.timer_seconds" class="px-2 py-1 bg-gray-100 rounded">⏱ {{ Math.round((quiz.timer_seconds||0)/60) }} min</div>
-                <div v-if="quiz.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded">🔁 {{ quiz.attempts_allowed === 'unlimited' ? 'Unlimited' : quiz.attempts_allowed + ' attempts' }}</div>
-                <div v-if="quiz.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded">🔀 Questions shuffled</div>
-                <div v-if="quiz.shuffle_answers" class="px-2 py-1 bg-gray-100 rounded">🔀 Answers shuffled</div>
-                <div v-if="quiz.access && quiz.access !== 'free'" class="px-2 py-1 bg-amber-50 text-amber-700 rounded">🔒 Paywalled</div>
-              </div>
-            </div>
-            <!-- small actions menu (three-dot) -->
-            <div class="absolute top-3 right-3">
-              <ActionMenu>
-                <template #trigger>
-                  <button @click.stop class="p-2 rounded-md hover:bg-gray-100">
-                    <svg class="w-5 h-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 10a2 2 0 110-4 2 2 0 010 4zm4 0a2 2 0 110-4 2 2 0 010 4zm4 0a2 2 0 110-4 2 2 0 010 4z"/></svg>
-                  </button>
-                </template>
-
-                <template #items="{ close }">
-                  <button @click="onShare(close)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Share</button>
-                  <button @click="onLike(close)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Like</button>
-                  <button @click="onBookmark(close)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Bookmark</button>
-                  <button @click="onReport(close)" class="w-full text-left px-3 py-2 text-sm text-rose-600 hover:bg-gray-50">Report</button>
-                </template>
-              </ActionMenu>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow p-4">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-              <a href="#" @click.prevent="quizTab = 'overview'" :class="quizTabClass('overview')" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Overview</a>
-              <a href="#" @click.prevent="quizTab = 'screenshots'" :class="quizTabClass('screenshots')" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Screenshots</a>
-              <a href="#" @click.prevent="quizTab = 'features'" :class="quizTabClass('features')" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Features</a>
-            </nav>
-
-            <div v-show="quizTab === 'screenshots'" class="mt-4">
-              <div class="flex gap-3 overflow-x-auto p-2">
-                <div v-for="(s, i) in (quiz.screenshots || [])" :key="i" class="w-40 sm:w-56 h-28 sm:h-36 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-                  <img :src="s" class="object-cover w-full h-full" onerror="this.style.display='none'" />
-                </div>
-                <div v-if="!(quiz.screenshots || []).length" class="w-40 sm:w-56 h-28 sm:h-36 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-500">No screenshots</div>
-              </div>
-            </div>
-
-            <div v-show="quizTab === 'overview'" class="mt-4">
-              <div class="prose max-w-none" v-html="quiz.description || '<p>Practice questions with instant feedback.</p>'"></div>
-
-              <!-- Sample question preview -->
-              <div class="mt-6">
-                <h3 class="text-lg font-semibold mb-2">Try a sample question</h3>
-                <div v-if="quiz.questions && quiz.questions.length" class="bg-white border rounded p-4">
-                  <div class="text-sm text-gray-500 mb-2">Question 1</div>
-                  <div class="prose max-w-none" v-html="sampleQuestionText()"></div>
-
-                  <div class="mt-3 space-y-2">
-                    <div v-for="(opt, i) in (quiz.questions[0].options || [])" :key="i" class="p-2 border rounded bg-gray-50">
-                      <span v-html="opt?.text || opt"></span>
-                    </div>
-                  </div>
-
-                  <div class="text-xs text-gray-400 mt-2">Answers and explanations are shown after you complete the quiz.</div>
-                </div>
-              </div>
-            </div>
-
-            <div v-show="quizTab === 'features'" class="mt-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div class="p-3 border rounded">Timed mode</div>
-                <div class="p-3 border rounded">Instant feedback</div>
-                <div class="p-3 border rounded">Hints & explanations</div>
-                <div class="p-3 border rounded">Leaderboard</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <aside class="space-y-4">
-          <div class="bg-white rounded-lg shadow p-4">
-            <div class="text-sm text-gray-500">Details</div>
-            <div class="mt-3 flex items-center gap-3">
-              <!-- Curvy blob avatar (Uiverse-inspired) -->
-              <div class="relative w-16 h-16 flex-shrink-0">
-                <svg viewBox="0 0 120 120" class="absolute inset-0 w-full h-full curvy-bg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="g2" x1="0%" x2="100%">
-                      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.95" />
-                      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.95" />
-                    </linearGradient>
-                  </defs>
-                  <path fill="url(#g2)" d="M36.6,-46.8C47.1,-40.5,58.9,-34.9,65.6,-25.9C72.3,-16.9,74,-4.6,71.4,6.9C68.8,18.4,61.8,29.5,52.4,37.9C43,46.3,31.2,51.1,19.1,53.2C7,55.4,-5.5,54.9,-18,51.6C-30.5,48.4,-43,42.3,-50.5,32.3C-58,22.4,-60.6,8.6,-58.2,-4.3C-55.8,-17.2,-48.3,-29.1,-37.3,-36.4C-26.3,-43.6,-13.2,-46.3,-0.2,-46.1C12.8,-45.9,25.6,-42.9,36.6,-46.8Z" transform="translate(60 60)" />
-                </svg>
-                <div class="absolute inset-0 grid place-items-center">
-                  <template v-if="quiz.author_avatar || quiz.author_image">
-                    <img :src="quiz.author_avatar || quiz.author_image" alt="author" class="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover" onerror="this.style.display='none'" />
-                  </template>
-                  <template v-else>
-                    <div class="w-12 h-12 rounded-full border-2 border-white shadow-sm grid place-items-center text-white font-semibold bg-black/20">{{ (quiz.author || 'M').charAt(0).toUpperCase() }}</div>
-                  </template>
-                </div>
-              </div>
-
-              <div class="text-sm">
-                <div>Author: <span class="font-medium">{{ quiz.author || 'Modeh' }}</span></div>
-                <div class="text-xs text-gray-500">Difficulty: <span class="font-medium">{{ quiz.difficulty || 'Medium' }}</span></div>
-                <div class="text-xs text-gray-500">Published: <span class="font-medium">{{ quiz.published_at || '—' }}</span></div>
-              </div>
-            </div>
-            <div class="mt-4">
-              <template v-if="isLoggedIn">
-                <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Begin Assessment</NuxtLink>
-              </template>
-              <template v-else>
-                <NuxtLink :to="`/register?next=/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Register / Login to take</NuxtLink>
-              </template>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow p-4">
-            <div class="font-semibold">Related quizzes</div>
-            <div class="mt-3 space-y-2">
-              <div v-for="r in related" :key="r.id" class="flex items-center gap-3">
-                <div class="w-12 h-8 bg-gray-100 rounded overflow-hidden flex items-center justify-center"><img :src="r.cover" class="w-full h-full object-cover" onerror="this.style.display='none'" /></div>
-                <div class="flex-1 text-sm"><NuxtLink :to="`/quizee/quizzes/${r.id}`" class="font-medium text-indigo-700">{{ r.title }}</NuxtLink></div>
-              </div>
-            </div>
-          </div>
-        </aside>
+  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+    <!-- Skeleton Loading State -->
+    <div v-if="pending" class="max-w-7xl mx-auto px-4 py-6 animate-pulse">
+      <!-- New Integrated Hero Section -->
+      <div class="mb-6">
+        <div class="h-6 w-24 bg-gray-200 rounded-md mb-4"></div>
+        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gray-200"></div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-gray-200 rounded-xl h-48"></div>
+          <div class="bg-gray-200 rounded-xl h-64"></div>
+        </div>
+        <div class="space-y-6">
+          <div class="bg-gray-200 rounded-xl h-72 sticky top-6"></div>
+        </div>
       </div>
     </div>
+
+    <!-- Main Content - Responsive Grid -->
+    <div v-else class="max-w-7xl mx-auto px-4 py-6">
+      <!-- New Integrated Hero Section -->
+      <div class="mb-6">
+        <button @click="router.back()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+          Back
+        </button>
+        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden" :style="heroStyle">
+          <!-- preload cover to detect load state -->
+          <img v-if="quiz.cover || quiz.cover_image" :src="quiz.cover || quiz.cover_image" class="hidden" @load="onCoverLoaded" @error="onCoverError" />
+
+          <!-- Overlay Content (title, badges) -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
+            <div class="flex flex-wrap gap-2 mb-3">
+              <div class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-500/90 text-white border-0 capitalize">
+                {{ difficulty_level }} {{ getDifficultyEmoji(quiz.difficulty) }}
+              </div>
+              <span v-if="level_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/80 text-white">
+                {{ level_name }}
+              </span>
+              <span v-if="grade_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/80 text-white">
+                {{ grade_name }}
+              </span>
+              <span v-if="topic_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/80 text-white">
+                {{ topic_name }}
+              </span>
+              <span v-if="subject_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/80 text-white">
+                {{ subject_name }}
+              </span>
+            </div>
+            <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 line-clamp-2">{{ quiz.title }}</h1>
+            <div class="flex flex-wrap gap-x-4 gap-y-2 text-white/90 text-sm">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>{{ quiz.questions_count || questionCount }} questions</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ formatTimeLimit(quiz.time_limit) }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>{{ quiz.points || quiz.marks || 10 }} points</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <!-- Left Column -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Video player (separate from hero) -->
+          <div v-if="hasVideo" class="mb-4">
+            <!-- Accept youtube_url (canonical), video_url and other fallbacks -->
+            <VideoPlayer :src="quiz.youtube_url || quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="quiz.cover || quiz.cover_image" />
+          </div>
+
+          <!-- Media Caption/Description -->
+          <div v-if="quiz.media_caption || quiz.video_description" class="bg-white rounded-xl shadow-sm p-4">
+            <p class="text-sm text-gray-600">
+              {{ quiz.media_caption || quiz.video_description }}
+            </p>
+          </div>
+          <!-- Enhanced Tabs Section - Better Mobile Experience -->
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <!-- New Unified Tab Style -->
+            <div class="p-2 sm:p-4">
+              <div role="tablist" class="grid w-full grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1 text-gray-500">
+                  <button
+                    v-for="tab in tabs"
+                    :key="tab.id"
+                    @click="activeTab = tab.id"
+                    role="tab"
+                    :aria-selected="activeTab === tab.id"
+                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                    :class="activeTab === tab.id ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-white/50'"
+                  >
+                    {{ tab.name }}
+                  </button>
+              </div>
+            </div>
+
+            <!-- Tab content -->
+            <div class="p-6">
+              <!-- Overview -->
+              <div v-if="activeTab === 'overview'" class="prose max-w-none">
+                <div v-html="quiz.description || 'No description available.'"></div>
+              </div>
+
+              <!-- Requirements -->
+              <div v-else-if="activeTab === 'requirements'" class="space-y-4">
+                <div class="prose max-w-none">
+                  <h3 class="text-lg font-medium">Before you start</h3>
+                  <ul>
+                    <li>Make sure you have a stable internet connection</li>
+                    <li>You'll need {{ quiz.time_limit || 'sufficient time' }} to complete this quiz</li>
+                    <li>Have paper and pen ready for calculations if needed</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Instructions -->
+              <div v-else-if="activeTab === 'instructions'" class="space-y-4">
+                <div class="prose max-w-none">
+                  <h3 class="text-lg font-medium">How to take this quiz</h3>
+                  <ul>
+                    <li>Read each question carefully before answering</li>
+                    <li>You can't return to previous questions once answered</li>
+                    <li>Your progress is saved automatically</li>
+                    <li>Click "Submit" when you're done</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-6">
+          <!-- Action Card - Fixed bottom on mobile -->
+          <div class="bg-white rounded-xl shadow-sm p-6 sticky top-6">
+            <div class="space-y-6">
+              <!-- Progress if attempted -->
+              <div v-if="lastAttempt" class="border-b pb-4">
+                <div class="text-sm text-gray-500">Last attempt</div>
+                <div class="mt-1 font-medium">Score: {{ lastAttempt.score }}%</div>
+                <div class="mt-2 text-sm">
+                  <span class="text-green-600">{{ lastAttempt.correct || 0 }} correct</span>
+                  <span class="mx-2">•</span>
+                  <span class="text-red-600">{{ lastAttempt.incorrect || 0 }} incorrect</span>
+                </div>
+              </div>
+
+              <!-- Action buttons - Full width on mobile -->
+              <div class="flex flex-col gap-3">
+                <button @click="startQuiz" class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-colors">
+                  Begin Assessment
+                </button>
+                <div class="flex gap-3">
+                  <button @click="showPreview" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Preview Questions
+                  </button>
+                  <AffiliateShareButton 
+                    :itemType="'Quiz'"
+                    :itemId="quiz.id"
+                    :baseUrl="baseUrl"
+                  />
+                </div>
+              </div>
+
+              <!-- Quiz info -->
+              <div class="text-sm text-gray-500 space-y-2">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <span>{{ quiz.timer_seconds ? formatTimeLimit(Math.floor(quiz.timer_seconds / 60)) : 'No time limit' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                  </svg>
+                  <span>{{ level_name ? level_name : 'Level: —' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                  </svg>
+                  <span>{{ grade_name ? grade_name : 'Grade: —' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                  </svg>
+                  <span>{{ quiz.points || quiz.marks || 10 }} points possible</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span>{{ quiz.attempts_allowed ? `${quiz.attempts_allowed} attempts allowed` : 'Unlimited attempts' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Related Quizzes - Hidden on mobile -->
+          <div class="hidden md:block bg-white rounded-xl shadow-sm p-6">
+            <h3 class="font-medium mb-4">Related Quizzes</h3>
+            <div class="space-y-4">
+              <div v-for="r in related" :key="r.id" 
+                   class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="w-16 h-12 bg-gray-100 rounded overflow-hidden">
+                  <img :src="r.cover" alt="" class="w-full h-full object-cover" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-medium text-sm truncate">{{ r.title }}</h4>
+                  <p class="text-xs text-gray-500 mt-1">{{ r.questions_count || 0 }} questions</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  
   </div>
 </template>
 
 <script setup>
-// Make this page public: guests can view quiz details. If the user is logged in
-// the UI will still show the appropriate "Begin Assessment" action that leads
-// to the quizee take route. Guests will be prompted to register/login.
+definePageMeta({ layout: 'default' })
 
-import { ref, computed, onMounted, onBeforeUnmount, h, markRaw } from 'vue'
-import { useAppAlert } from '~/composables/useAppAlert'
-import { useAuthStore } from '~/stores/auth'
-import useApi from '~/composables/useApi'
-import { useBottomNavStore } from '~/stores/bottomNav'
-import ActionMenu from '~/components/ui/ActionMenu.vue'
-const config = useRuntimeConfig()
+import { ref, computed, watch, watchEffect } from 'vue'
+import { useHead } from '#imports'
+import { useRouter, useRoute } from 'vue-router'
+import VideoPlayer from '~/components/media/VideoPlayer.vue'
+import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
+
+const router = useRouter()
 const route = useRoute()
-const id = route.params.id
+const config = useRuntimeConfig()
 
-const { data: quizData, pending } = await useFetch(config.public.apiBase + `/api/quizzes/${id}`)
-const quiz = quizData?.value?.quiz || quizData?.value || { id, title: 'Loading...', description: '', screenshots: [], cover: null, questions: [] }
+const baseUrl = computed(() => {
+  const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  if (!base) return ''
+  return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`
+})
 
-// Compute actual questions count (prefer explicit array if present)
+// Fetch data without blocking; useFetch returns refs (no top-level await).
+// Avoid `await` here so `definePageMeta` and computed getters can react to the
+// `quizData` ref safely without causing server-side timing/500 errors.
+const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`)
+
+// Make `quiz` a computed ref so its value is derived from `quizData` reactively.
+// This avoids taking a snapshot of `quizData` at setup time (which caused the
+// server to render placeholders while the client immediately had data,
+// producing hydration mismatches).
+const quiz = computed(() => (
+  quizData?.value?.quiz || quizData?.value || {
+    id: route.params.id,
+    title: 'Loading...',
+    description: '',
+    questions: []
+  }
+))
+
+// Dynamic page meta for quiz detail (uses server-fetched data when available)
+const pageTitle = computed(() => {
+  try { return (quizData?.value?.quiz?.title || quiz?.title) ? `${quizData?.value?.quiz?.title || quiz?.title} — Modeh` : 'Quiz — Modeh' } catch (e) { return 'Quiz — Modeh' }
+})
+const pageDescription = computed(() => {
+  try { return quizData?.value?.quiz?.description || quiz?.description || 'Practice and assess with Modeh quizzes.' } catch (e) { return 'Practice and assess with Modeh quizzes.' }
+})
+
+// Computed properties for nested taxonomy data
+const topic_name = computed(() => quiz.value.topic?.name)
+const subject_name = computed(() => quiz.value.topic?.subject?.name || quiz.value.subject?.name)
+const grade_name = computed(() => quiz.value.grade?.name || quiz.value.topic?.subject?.grade?.name || null)
+const level_name = computed(() => quiz.value.level?.name || quiz.value.grade?.level?.name || null)
+const difficulty_level = computed(() => getDifficultyLevel(quiz.value.difficulty))
+
+// Tab configuration
+const tabs = [
+  { id: 'overview', name: 'Overview' },
+  { id: 'requirements', name: 'Requirements' },
+  { id: 'instructions', name: 'Instructions' }
+]
+const activeTab = ref('overview')
+
+// Computed properties
 const questionCount = computed(() => {
-  try {
-    if (Array.isArray(quiz.questions)) return quiz.questions.length
-  } catch (e) { /* ignore */ }
-  return quiz.questions_count || 0
+  if (Array.isArray(quiz.value.questions)) return quiz.value.questions.length
+  return quiz.value.questions_count || 0
 })
 
-// Find a media URL to show: prefer quiz-level video/image, fall back to first question media_path
-const firstQuestionMedia = computed(() => {
-  try {
-    if (Array.isArray(quiz.questions)) {
-      const q = quiz.questions.find(x => x && (x.media_path || x.media || x.video))
-      return q ? (q.media_path || q.media || q.video) : null
-    }
-  } catch (e) { }
-  return null
+const hasVideo = computed(() => {
+  return Boolean(quiz.value.youtube_url || quiz.value.video_url || quiz.value.media || quiz.value.cover_video || quiz.value.video)
 })
 
-const quizMedia = computed(() => {
-  // common fields that APIs sometimes use
-  return quiz.video_url || quiz.media || quiz.media_url || quiz.cover_video || quiz.cover_video_url || quiz.cover || firstQuestionMedia.value || null
+// Safe no-op handlers for the hidden preload image above
+function onCoverLoaded() {}
+function onCoverError() {}
+
+const heroStyle = computed(() => {
+  const cover = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
+  if (!cover) return {}
+  return {
+    backgroundImage: `url(${cover})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center'
+  }
 })
 
+// Related quizzes (mock data - replace with actual API call)
+const related = ref([
+  { id: 1, title: 'Similar Quiz 1', cover: null, questions_count: 10 },
+  { id: 2, title: 'Similar Quiz 2', cover: null, questions_count: 15 }
+])
+
+// Mock last attempt (replace with actual API call)
+const lastAttempt = ref(null)
+
+// Media utility functions
 const isYouTube = (url) => typeof url === 'string' && (url.includes('youtube.com') || url.includes('youtu.be'))
 const isVimeo = (url) => typeof url === 'string' && url.includes('vimeo.com')
-const isVideoFile = (url) => typeof url === 'string' && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)
+const isVideo = (url) => typeof url === 'string' && /\.(mp4|webm|ogg)$/i.test(url)
 
-const related = [ { id: 21, title: 'Fractions Practice', cover: null }, { id: 22, title: 'Decimals Quick', cover: null } ]
-const bottomNav = useBottomNavStore()
-const quizTab = ref('overview')
-const liked = ref(false)
-// defensive: quiz is a plain object (not a ref), read properties directly
-const likesCount = ref((quiz && (quiz.likes_count ?? quiz.likes)) ?? 0)
-const likeAnimating = ref(false)
-const api = useApi()
-const alert = useAppAlert()
-const auth = useAuthStore()
-const isLoggedIn = computed(() => !!auth.user && !!auth.user.id)
-// If a logged-in user visits the public quiz page, redirect them to the
-// appropriate role-specific route so they receive the correct layout.
-onMounted(() => {
-  try {
-    const role = auth.user?.role
-    const path = String(window?.location?.pathname || '')
-    // Only redirect when on the public path (i.e., not already under /quizee or /quiz-master)
-    if (auth.user && !path.startsWith('/quizee') && !path.startsWith('/quiz-master')) {
-      if (role === 'quizee') {
-        // use replace to avoid adding an extra history entry
-        const r = useRouter()
-        r.replace(`/quizee/quizzes/${id}`)
-        return
-      }
-      if (role === 'quiz-master') {
-        const r = useRouter()
-        r.replace(`/quiz-master/quizzes/${id}`)
-        return
-      }
+function getVideoType(url) {
+  const ext = url.split('.').pop().toLowerCase()
+  return `video/${ext}`
+}
+
+function formatYouTubeUrl(url) {
+  // Handle both youtube.com and youtu.be URLs
+  let videoId = ''
+  if (url.includes('youtube.com')) {
+    videoId = url.split('v=')[1]
+    const ampersandPosition = videoId?.indexOf('&')
+    if (ampersandPosition !== -1) {
+      videoId = videoId.substring(0, ampersandPosition)
     }
+  } else if (url.includes('youtu.be')) {
+    videoId = url.split('youtu.be/')[1]
+  }
+  
+  // Return embed URL with additional parameters for better UX
+  return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`
+}
+
+function formatVimeoUrl(url) {
+  // Extract Vimeo ID and format the embed URL
+  const vimeoId = url.split('vimeo.com/')[1]
+  return `https://player.vimeo.com/video/${vimeoId}?dnt=1&title=0&byline=0&portrait=0`
+}
+
+// Format time limit for display
+function formatTimeLimit(limit) {
+  if (!limit) return '∞'
+  if (limit < 60) return `${limit}m`
+  const hours = Math.floor(limit / 60)
+  const mins = limit % 60
+  return mins ? `${hours}h ${mins}m` : `${hours}h`
+}
+
+// Get difficulty level text
+function getDifficultyLevel(level) {
+  if (!level) return 'Medium'
+  switch (level) {
+    case 1: return 'Easy'
+    case 2: return 'Medium'
+    case 3: return 'Hard'
+    case 4: return 'Expert'
+    default: return 'Medium'
+  }
+}
+
+// Get emoji for difficulty level
+function getDifficultyEmoji(level) {
+  if (!level) return '📚'
+  switch (level) {
+    case 1: return '🌟'
+    case 2: return '⭐⭐'
+    case 3: return '🔥'
+    case 4: return '💪'
+    default: return '📚'
+  }
+}
+
+// Actions
+function startQuiz() {
+  router.push(`/quizee/quizzes/take/${quiz.value.id}`)
+}
+
+function showPreview() {
+  router.push(`/quizzes/${quiz.value.id}/preview`)
+}
+
+// Update head reactively when quizData becomes available
+watchEffect(() => {
+  try {
+    useHead({
+      title: pageTitle.value,
+      meta: [
+        { name: 'description', content: pageDescription.value },
+        { property: 'og:title', content: pageTitle.value },
+        { property: 'og:description', content: pageDescription.value },
+        { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz.value.cover || '/social-share.png') },
+        { name: 'twitter:card', content: 'summary_large_image' }
+      ]
+    })
   } catch (e) {
-    // ignore
+    // swallow errors from head updates to avoid breaking the page
   }
-})
-async function toggleLike(){
-  // optimistic
-  liked.value = !liked.value
-  likesCount.value = Math.max(0, likesCount.value + (liked.value ? 1 : -1))
-  // small pulse animation
-  likeAnimating.value = true
-  setTimeout(() => (likeAnimating.value = false), 350)
-  try{
-    let res
-    if (liked.value) res = await api.postJson(`/api/quizzes/${quiz.id}/like`, {})
-    else res = await api.postJson(`/api/quizzes/${quiz.id}/unlike`, {})
-    if (api.handleAuthStatus(res)) return
-    if (!res.ok) {
-      // revert on error
-      liked.value = !liked.value
-      likesCount.value = Math.max(0, likesCount.value + (liked.value ? 1 : -1))
-      alert.push({ message: 'Could not like/unlike quiz. Please try again.', type: 'error' })
-    }
-  }catch(err){
-    // revert on error
-    liked.value = !liked.value
-    likesCount.value = Math.max(0, likesCount.value + (liked.value ? 1 : -1))
-    console.error('Like failed', err)
-    alert.push({ message: 'Network error while liking. Try again.', type: 'error' })
-  }
-}
-function onLike(close){ if (typeof close === 'function') close(); toggleLike(); }
-function quizTabClass(t) { return quizTab.value === t ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }
-
-const avgDifficulty = computed(() => {
-  try {
-    if (!Array.isArray(quiz.questions) || quiz.questions.length === 0) return null
-    const vals = quiz.questions.map(q => Number(q.difficulty) || 0).filter(Boolean)
-    if (!vals.length) return null
-    const avg = (vals.reduce((a,b)=>a+b,0) / vals.length)
-    return Math.round(avg * 100) / 100
-  } catch (e) { return null }
-})
-
-function sampleQuestionText() {
-  try {
-    const q = Array.isArray(quiz.questions) && quiz.questions.length ? quiz.questions[0] : null
-    return q ? (q.text || q.body || q.question || '') : ''
-  } catch (e) { return '' }
-}
-
-// Action handlers accept an optional close callback (provided by ActionMenu slot)
-function onShare(close) { if (typeof close === 'function') close(); void navigator.clipboard?.writeText(window.location.href).then(()=> useAppAlert().push({ message: 'Link copied to clipboard', type: 'success' })) }
-function onPreview(close) { if (typeof close === 'function') close(); window.location.href = `/quizzes/${quiz.id}/preview` }
-function onBookmark(close) { if (typeof close === 'function') close(); useAppAlert().push({ message: 'Bookmarked (demo)', type: 'info' }) }
-function onReport(close) { if (typeof close === 'function') close(); useAppAlert().push({ message: 'Reported (demo)', type: 'info' }) }
-
-onMounted(() => {
-  // Provide a custom center slot component: Play button that starts the quiz
-  const PlayCenter = markRaw({
-    name: 'BottomNavPlayCenter',
-    setup() {
-      const router = useRouter()
-      function start() {
-        router.push(`/quizee/quizzes/take/${quiz.id}`)
-      }
-      return () => h('button', { onClick: start, class: 'bg-indigo-600 text-white rounded-full p-4 shadow-lg transform -translate-y-2 hover:scale-105 transition' }, [
-        h('svg', { class: 'w-6 h-6', xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor' }, [
-          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M14.752 11.168l-6.518-3.758A1 1 0 006 8.236v7.528a1 1 0 001.234.97l6.518-1.96a1 1 0 00.752-.97v-1.666a1 1 0 00-.752-.97z' })
-        ])
-      ])
-    }
-  })
-
-  bottomNav.setSlots({ center: PlayCenter })
-})
-
-onBeforeUnmount(() => {
-  bottomNav.setSlots({ center: null })
 })
 </script>
 
 <style scoped>
-.prose p { margin: 0 0 0.75rem 0 }
-.curvy-bg { transform-origin: center; }
+/* Custom scrollbar for better mobile experience */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
 </style>
