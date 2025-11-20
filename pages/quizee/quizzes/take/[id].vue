@@ -216,19 +216,6 @@ const submissionMessage = ref('')
 let submissionInterval = null
 const { push: pushAlert } = useAppAlert()
 
-// Show countdown alerts for overall quiz timer and per-question timer when <= 10s
-watch(timeLeft, (val) => {
-  if (typeof val === 'number' && val <= 10 && val > 0) {
-    pushAlert({ message: `${val} second${val === 1 ? '' : 's'} remaining`, type: 'info' })
-  }
-})
-
-watch(questionRemaining, (val) => {
-  const secs = Math.ceil(Number(val || 0))
-  if (secs > 0 && secs <= 10) {
-    pushAlert({ message: `${secs} second${secs === 1 ? '' : 's'} left for this question`, type: 'info' })
-  }
-})
 import useApi from '~/composables/useApi'
 const api = useApi()
 const showConfirm = ref(false)
@@ -268,6 +255,20 @@ const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, 
 const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, resetTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
 const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
 import { normalizeAnswer, formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
+
+// Show countdown alerts for overall quiz timer and per-question timer when <= 10s
+watch(timeLeft, (val) => {
+  if (typeof val === 'number' && val <= 10 && val > 0) {
+    pushAlert({ message: `${val} second${val === 1 ? '' : 's'} remaining`, type: 'info' })
+  }
+})
+
+watch(questionRemaining, (val) => {
+  const secs = Math.ceil(Number(val || 0))
+  if (secs > 0 && secs <= 10) {
+    pushAlert({ message: `${secs} second${secs === 1 ? '' : 's'} left for this question`, type: 'info' })
+  }
+})
 
 // Progress persistence helpers (include attempt_id so restore maps to server attempt)
 // Per-question timing state (declare early so functions/watchers below can reference it)
