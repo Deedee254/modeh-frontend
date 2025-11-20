@@ -9,7 +9,7 @@ import ErrorAlert from '~/components/ui/ErrorAlert.vue'
 
 const api = useApi()
 const route = useRoute();
-const institutionId = ref(route.query.institutionId || null);
+const institutionId = ref(route.query.institutionSlug || null);
 
 const packages = ref([] as any[])
 const loading = ref(false)
@@ -19,7 +19,9 @@ async function loadPackages() {
   loading.value = true
   error.value = null
   try {
-    const resp = await api.get('/api/packages')
+    let url = '/api/packages'
+    if (institutionId.value) url += '?audience=institution'
+    const resp = await api.get(url)
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     packages.value = json?.packages || []
@@ -33,7 +35,7 @@ async function loadPackages() {
 async function subscribe(pkgId: number) {
   const appAlert = useAppAlert()
   if (!institutionId.value) {
-    appAlert.push({ message: 'No institution selected. Add ?institutionId=ID to the URL.', type: 'warning' })
+    appAlert.push({ message: 'No institution selected. Add ?institutionSlug=SLUG to the URL.', type: 'warning' })
     return;
   }
 

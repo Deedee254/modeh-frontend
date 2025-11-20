@@ -50,6 +50,11 @@
             {{ notificationsCount }}
           </span>
         </button>
+        <!-- Profile progress (onboarding) -->
+        <client-only>
+          <ProfileProgress />
+        </client-only>
+
         <!-- Theme Toggle -->
         <ThemeToggle />
 
@@ -196,6 +201,7 @@ import UiLevelProgress from '~/components/ui/LevelProgress.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ChatDrawer from '~/components/ChatDrawer.vue'
 import { useApi } from '~/composables/useApi'
+import ProfileProgress from '~/components/ui/ProfileProgress.vue'
 
 // Standard runtime config reference
 const config = useRuntimeConfig()

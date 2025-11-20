@@ -11,7 +11,7 @@ import MemberList from '~/components/institution/MemberList.vue'
 
 const api = useApi()
 const route = useRoute();
-const institutionId = ref(route.query.institutionId || null);
+const institutionId = ref(route.query.institutionSlug || null);
 
 const members = ref([] as any[])
 const membersMeta = ref({ total: 0, per_page: 8, current_page: 1, last_page: 1 })
@@ -43,7 +43,7 @@ async function loadMembers(page = 1) {
     if (selectedSubject.value) params.set('subject_id', String(selectedSubject.value))
     if (selectedTopic.value) params.set('topic_id', String(selectedTopic.value))
 
-    const resp = await api.get(`/api/institutions/${institutionId.value}/members?${params.toString()}`)
+  const resp = await api.get(`/api/institutions/${institutionId.value}/members?${params.toString()}`)
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     members.value = json?.members || []
@@ -60,7 +60,7 @@ async function loadRequests(page = 1) {
   loadingRequests.value = true
   errorRequests.value = null
   try {
-    const resp = await api.get(`/api/institutions/${institutionId.value}/requests?page=${page}&per_page=${requestsMeta.value.per_page}`)
+  const resp = await api.get(`/api/institutions/${institutionId.value}/requests?page=${page}&per_page=${requestsMeta.value.per_page}`)
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     requests.value = json?.requests || []
@@ -82,7 +82,7 @@ function clearFilters() {
 
 async function accept(userId: number) {
   try {
-    const resp = await api.postJson(`/api/institutions/${institutionId.value}/members/accept`, { user_id: userId })
+  const resp = await api.postJson(`/api/institutions/${institutionId.value}/members/accept`, { user_id: userId })
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     if (resp.ok) {
@@ -110,7 +110,7 @@ if (institutionId.value) {
     <h1 class="text-2xl font-semibold mb-4">Quizees</h1>
 
     <div v-if="!institutionId" class="p-4 bg-yellow-50 border rounded">
-      <p class="text-sm">No institution selected. Add ?institutionId=ID to the URL.</p>
+      <p class="text-sm">No institution selected. Add ?institutionSlug=SLUG to the URL.</p>
     </div>
 
     <div v-else>

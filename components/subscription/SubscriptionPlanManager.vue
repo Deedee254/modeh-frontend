@@ -216,7 +216,14 @@ const api = useApi()
 async function fetchPlans() {
   loading.value = true
   try {
-    const packagesRes = await api.get('/api/packages')
+    // Request packages for the appropriate audience when ownerType is provided
+    let pkgUrl = '/api/packages'
+    if (typeof ownerType !== 'undefined' && ownerType === 'institution') {
+      pkgUrl += '?audience=institution'
+    } else if (typeof ownerType !== 'undefined' && ownerType === 'user') {
+      pkgUrl += '?audience=quizee'
+    }
+    const packagesRes = await api.get(pkgUrl)
     const subsRes = await api.get('/api/subscriptions/mine')
 
     if (packagesRes && packagesRes.ok) {

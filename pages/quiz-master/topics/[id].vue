@@ -11,13 +11,22 @@
       </template>
 
       <template #actions>
-        <button
-          @click="createQuiz"
+        <NuxtLink
+          v-if="topic && topicTaxonomy.topic_id"
+          :to="{
+            path: '/quiz-master/quizzes/create',
+            query: {
+              level_id: topicTaxonomy.level_id,
+              grade_id: topicTaxonomy.grade_id,
+              subject_id: topicTaxonomy.subject_id,
+              topic_id: topicTaxonomy.topic_id,
+            }
+          }"
           class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
         >
           <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
           Create Quiz in this Topic
-        </button>
+        </NuxtLink>
       </template>
     </PageHero>
 
@@ -29,7 +38,21 @@
     <!-- Empty State -->
     <div v-else-if="!quizzes.length" class="text-center py-12 text-gray-500">
       No quizzes found in this topic.
-      <button @click="createQuiz" class="text-indigo-600 hover:underline">Create the first one!</button>
+      <NuxtLink
+        v-if="topic && topicTaxonomy.topic_id"
+        :to="{
+          path: '/quiz-master/quizzes/create',
+          query: {
+            level_id: topicTaxonomy.level_id,
+            grade_id: topicTaxonomy.grade_id,
+            subject_id: topicTaxonomy.subject_id,
+            topic_id: topicTaxonomy.topic_id,
+          }
+        }"
+        class="text-indigo-600 hover:underline"
+      >
+        Create the first one!
+      </NuxtLink>
     </div>
 
     <!-- Filters and Sorting -->
@@ -60,13 +83,22 @@
 
         <!-- Quick Actions -->
         <div class="flex w-full sm:w-auto items-center gap-3">
-          <button
-            @click="createQuiz"
+          <NuxtLink
+            v-if="topic && topicTaxonomy.topic_id"
+            :to="{
+              path: '/quiz-master/quizzes/create',
+              query: {
+                level_id: topicTaxonomy.level_id,
+                grade_id: topicTaxonomy.grade_id,
+                subject_id: topicTaxonomy.subject_id,
+                topic_id: topicTaxonomy.topic_id,
+              }
+            }"
             class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
           >
             <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
             Create Quiz
-          </button>
+          </NuxtLink>
         </div>
       </div>
 
@@ -75,7 +107,7 @@
         <QuizCard
           v-for="quiz in filteredQuizzes"
           :key="quiz?.id || idx"
-          :startLink="quiz.startLink"
+          :to="`/quiz-master/quizzes/${quiz.id}`"
           :title="quiz.title"
           :description="quiz.description"
           :subject="quiz.subject"
@@ -88,11 +120,11 @@
           :quizId="quiz.id"
           :show-approval="true"
           :showEdit="true"
-          :editLink="quiz.editLink"
+          :editLink="`/quiz-master/quizzes/${quiz.id}/edit`"
           :is_approved="quiz.is_approved"
           :approval_requested_at="quiz.approval_requested_at"
           @approve="() => {}"
-          @edit="() => router.push(quiz.editLink)"
+          @edit="() => navigateToEdit(quiz.id)"
         />
       </div>
 
@@ -121,7 +153,7 @@ const route = useRoute()
 const router = useRouter()
 const alert = useAppAlert()
 
-const topicId = route.params.id
+const topicId = ref(route.params.id)
 const topic = ref(null)
 const quizzes = ref([])
 const loading = ref(true)
@@ -139,6 +171,68 @@ function resetFilters() {
   }
 }
 
+// Compute taxonomy IDs from topic, handling various response formats
+// Also uses taxonomy store to look up related grade/level info
+const topicTaxonomy = computed(() => {
+  if (!topic.value) return { level_id: null, grade_id: null, subject_id: null, topic_id: null }
+  
+  const t = topic.value
+  
+  // Direct extraction attempts
+  let level_id = t.grade?.level_id || t.level_id || t.levelId || null
+  let grade_id = t.grade_id || t.gradeId || t.grade?.id || null
+  let subject_id = t.subject_id || t.subjectId || t.subject?.id || null
+  
+  // Try nested paths
+  if (!level_id && t.subject?.grade?.level_id) level_id = t.subject.grade.level_id
+  if (!grade_id && t.subject?.grade_id) grade_id = t.subject.grade_id
+  if (!grade_id && t.subject?.grade?.id) grade_id = t.subject.grade.id
+  
+  // If we still don't have grade_id but have subject, look it up in taxonomy store
+  if (!grade_id && subject_id) {
+    const subjectsInStore = subjects.value || []
+    const subject = subjectsInStore.find(s => String(s.id || s._id) === String(subject_id))
+    if (subject) {
+      grade_id = subject.grade_id || subject.gradeId || subject.grade?.id || null
+    }
+  }
+  
+  // If we still don't have level_id but have grade, look it up in taxonomy store
+  if (!level_id && grade_id) {
+    const gradesInStore = grades.value || []
+    const grade = gradesInStore.find(g => String(g.id || g._id) === String(grade_id))
+    if (grade) {
+      level_id = grade.level_id || grade.levelId || grade.level?.id || null
+    }
+  }
+  
+  // Also try looking through levels for nested grade info
+  if (!level_id && grade_id) {
+    for (const level of (levels.value || [])) {
+      if (level.grades && Array.isArray(level.grades)) {
+        const g = level.grades.find(gr => String(gr.id || gr._id) === String(grade_id))
+        if (g) {
+          level_id = level.id
+          break
+        }
+      }
+    }
+  }
+  
+  const topic_id = t.id || null
+  
+  console.log('[topicTaxonomy] computed:', { 
+    level_id, 
+    grade_id, 
+    subject_id, 
+    topic_id,
+    'from direct': { grade_id: t.grade_id, level_id: t.level_id },
+    'from nested': { grade_id: t.subject?.grade_id, level_id: t.subject?.grade?.level_id },
+  })
+  
+  return { level_id, grade_id, subject_id, topic_id }
+})
+
 const normalizedQuizzes = computed(() => {
   return (quizzes.value || [])
     .filter(q => q && q.id)
@@ -154,8 +248,6 @@ const normalizedQuizzes = computed(() => {
       grade: quiz.grade?.name || quiz.grade_name || quiz.grade_id || 'N/A',
       questionsCount: quiz.questions_count ?? quiz.questions?.length ?? 0,
       likes: quiz.likes_count ?? quiz.likes ?? 0,
-      startLink: `/quiz-master/quizzes/${quiz.id}`,
-      editLink: `/quiz-master/quizzes/${quiz.id}/edit`,
       created_at: quiz.created_at || quiz.createdAt || new Date().toISOString(),
     }))
 })
@@ -203,24 +295,59 @@ const config = useRuntimeConfig()
 async function fetchTopicDetails() {
   try {
     const api = useApi()
-    const res = await api.get(`/api/topics/${topicId}`)
-    if (api.handleAuthStatus(res)) return
-    if (!res.ok) throw new Error('Failed to fetch topic details.')
+    const endpoint = `/api/topics/${topicId.value}`
+    console.log('[fetchTopicDetails] fetching from:', endpoint)
+    const res = await api.get(endpoint)
+    console.log('[fetchTopicDetails] response status:', res.status)
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn('[fetchTopicDetails] access denied', res.status)
+        alert.push({ type: 'warning', message: 'You do not have permission to view this topic.' })
+      } else {
+        throw new Error('Failed to fetch topic details.')
+      }
+      return
+    }
     const data = await res.json().catch(() => null)
     topic.value = data?.topic || data?.data || null
-    // warm related taxonomy caches so subject/grade lists are available elsewhere in the UI
+    console.log('[fetchTopicDetails] loaded topic:', topic.value?.name, 'raw topic data:', topic.value)
+    // warm related taxonomy caches so we can look up grade/level info
     try {
       if (topic.value) {
-        // fetch subjects for the grade and topics for the subject (if available)
-        await Promise.all([
-          topic.value.grade_id ? fetchSubjectsByGrade(topic.value.grade_id) : Promise.resolve(),
-          topic.value.subject_id ? fetchTopicsBySubject(topic.value.subject_id) : Promise.resolve(),
-        ])
+        // Extract IDs from the topic
+        const subject_id = topic.value.subject_id || topic.value.subjectId
+        const grade_id = topic.value.grade_id || topic.value.gradeId || topic.value.grade?.id
+        
+        // Fetch the full subject to get grade info
+        if (subject_id) {
+          const subjectRes = await api.get(`/api/subjects?q=${encodeURIComponent(subject_id)}`)
+          if (subjectRes.ok) {
+            const subjectData = await subjectRes.json().catch(() => null)
+            if (subjectData?.subjects && Array.isArray(subjectData.subjects)) {
+              const foundSubject = subjectData.subjects.find(s => String(s.id) === String(subject_id))
+              if (foundSubject && !grade_id) {
+                topic.value.grade_id = foundSubject.grade_id || foundSubject.gradeId
+              }
+            }
+          }
+        }
+        
+        // Fetch grades to populate the store for lookups
+        if (grade_id) {
+          await fetchGrades()
+        }
+        
+        // Also fetch all topics for this subject for warmth
+        if (subject_id) {
+          await fetchTopicsBySubject(subject_id)
+        }
       }
     } catch (e) {
       // ignore warming errors
+      console.log('[fetchTopicDetails] warming error (ignored):', e)
     }
   } catch (e) {
+    console.error('[fetchTopicDetails] error:', e)
     alert.push({ type: 'error', message: (e && e.message) ? e.message : String(e) })
   }
 }
@@ -228,47 +355,46 @@ async function fetchTopicDetails() {
 async function fetchQuizzesForTopic() {
   try {
     const api = useApi()
-    const params = new URLSearchParams({ per_page: 100 }) // Fetch all quizzes
-    const res = await api.get(`/api/topics/${topicId}/quizzes?${params.toString()}`)
-    if (api.handleAuthStatus(res)) return
-    if (!res.ok) throw new Error('Failed to fetch quizzes for this topic.')
+    const params = new URLSearchParams({ 
+      topic_id: topicId.value,
+      per_page: 100 
+    })
+    const endpoint = `/api/quizzes?${params.toString()}`
+    console.log('[fetchQuizzesForTopic] fetching from:', endpoint)
+    const res = await api.get(endpoint)
+    console.log('[fetchQuizzesForTopic] response status:', res.status)
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn('[fetchQuizzesForTopic] access denied', res.status)
+        alert.push({ type: 'warning', message: 'You do not have permission to view quizzes for this topic.' })
+      } else {
+        throw new Error('Failed to fetch quizzes for this topic.')
+      }
+      return
+    }
     const data = await res.json().catch(() => null)
     quizzes.value = data?.quizzes || data?.data || []
+    console.log('[fetchQuizzesForTopic] loaded', quizzes.value.length, 'quizzes')
   } catch (e) {
+    console.error('[fetchQuizzesForTopic] error:', e)
     alert.push({ type: 'error', message: (e && e.message) ? e.message : String(e) })
   }
 }
 
 // optionally warm taxonomy caches for related subjects/grades used in the UI
-const { fetchLevels, fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()
-onMounted(async () => {
-  try {
-    // prefer to load levels first so downstream callers receive levels-aware data
-    await fetchLevels()
-  } catch (e) {}
-})
+const { fetchLevels, fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject, subjects, grades, levels } = useTaxonomy()
 
-function createQuiz() {
-  if (!topic.value) {
-    alert.push({ type: 'warning', message: 'Topic details not loaded yet.' })
-    return
-  }
-  const query = {
-    topic_id: topic.value.id,
-    subject_id: topic.value.subject_id,
-    grade_id: topic.value.grade_id,
-  }
-  // Filter out undefined values
-  const filteredQuery = Object.fromEntries(Object.entries(query).filter(([_, v]) => v != null));
-
-  router.push({
-    path: '/quiz-master/quizzes/create',
-    query: filteredQuery
-  })
+function navigateToEdit(quizId) {
+  router.push(`/quiz-master/quizzes/${quizId}/edit`)
 }
 
 onMounted(async () => {
   loading.value = true
+  try {
+    // prefer to load levels first so downstream callers receive levels-aware data
+    await fetchLevels()
+  } catch (e) {}
+  
   await Promise.all([
     fetchTopicDetails(),
     fetchQuizzesForTopic()

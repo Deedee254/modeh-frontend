@@ -10,7 +10,7 @@ import useTaxonomy from '~/composables/useTaxonomy'
 
 const api = useApi()
 const route = useRoute();
-const institutionId = ref(route.query.institutionId || null);
+const institutionId = ref(route.query.institutionSlug || null);
 
 const members = ref([] as any[])
 const loading = ref(false)
@@ -56,7 +56,7 @@ const quizMasters = computed(() => (members.value || []).filter((m: any) => m.ro
     <h1 class="text-2xl font-semibold mb-4">Quiz Masters</h1>
 
     <div v-if="!institutionId" class="p-4 bg-yellow-50 border rounded">
-      <p class="text-sm">No institution selected. Add ?institutionId=ID to the URL.</p>
+      <p class="text-sm">No institution selected. Add ?institutionSlug=SLUG to the URL.</p>
     </div>
 
     <div v-else>

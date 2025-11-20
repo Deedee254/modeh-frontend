@@ -40,10 +40,25 @@
             </svg>
             I am a quiz-master
           </button>
+          <button
+            @click="role = 'institution-manager'"
+            :class="[
+              'px-6 py-3 text-sm font-medium rounded-lg flex items-center justify-center',
+              role === 'institution-manager'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-200'
+            ]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
+              <path d="M6 20v-1a4 4 0 014-4h4a4 4 0 014 4v1" />
+            </svg>
+            I manage an institution
+          </button>
         </div>
       </div>
 
-      <!-- Registration Form -->
+          <!-- Registration Form -->
       <div class="bg-white py-8 px-10 shadow rounded-lg">
         <form @submit.prevent="submit" class="space-y-6">
           <!-- quizee Form -->
@@ -52,11 +67,13 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
                 <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600">{{ fieldErrors.name }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Institution / School</label>
                 <input v-model="form.institution" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <p v-if="fieldErrors.institution" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution }}</p>
               </div>
 
               <div>
@@ -85,17 +102,19 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700">Email</label>
                 <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Parent/Guardian Email</label>
                 <input v-model="form.parentEmail" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional but recommended for minors" />
+                <p v-if="fieldErrors.parentEmail" class="mt-1 text-sm text-red-600">{{ fieldErrors.parentEmail }}</p>
               </div>
             </div>
           </template>
 
           <!-- quiz-master Form -->
-          <template v-else>
+          <template v-else-if="role === 'quiz-master'">
             <div class="grid grid-cols-1 gap-3">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
@@ -146,11 +165,42 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700">Email</label>
                 <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Phone Number</label>
                 <input v-model="form.phone" type="tel" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- institution-manager Form -->
+          <template v-else-if="role === 'institution-manager'">
+            <div class="grid grid-cols-1 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Institution Name</label>
+                <input v-model="form.institution" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Institution Email</label>
+                <input v-model="form.institution_email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <p v-if="fieldErrors.institution_email" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution_email }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Slug (used in URLs)</label>
+                <input v-model="form.institution_slug" @input="normalizeSlug" placeholder="short-slug-for-url" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <p v-if="slugError" class="mt-1 text-sm text-red-600">{{ slugError }}</p>
+                <p v-if="fieldErrors.institution_slug" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution_slug }}</p>
+                <p class="mt-1 text-xs text-gray-500">URL slug will be auto-formatted as you type (lowercase, dashes).</p>
               </div>
             </div>
           </template>
@@ -180,6 +230,7 @@
                   </svg>
                 </button>
               </div>
+                <p v-if="fieldErrors.password" class="mt-1 text-sm text-red-600">{{ fieldErrors.password }}</p>
             </div>
 
             <div>
@@ -205,6 +256,7 @@
                   </svg>
                 </button>
               </div>
+                <p v-if="fieldErrors.confirmPassword" class="mt-1 text-sm text-red-600">{{ fieldErrors.confirmPassword }}</p>
             </div>
           </div>
 
@@ -290,10 +342,49 @@ const form = reactive({
   confirmPassword: ''
 })
 
+// field-level errors from server-side validation
+const fieldErrors = reactive({
+  name: '',
+  institution: '',
+  email: '',
+  parentEmail: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  institution_email: '',
+  institution_slug: ''
+})
+
+// institution-manager specific fields
+form.institution_slug = ''
+form.institution_email = ''
+
+const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const slugError = ref('')
+
+function normalizeSlug() {
+  if (!process.client) return
+  let s = String(form.institution_slug || '')
+  s = s.trim().toLowerCase()
+  // replace spaces and invalid chars with dash
+  s = s.replace(/[^a-z0-9]+/g, '-')
+  // collapse multiple dashes
+  s = s.replace(/-+/g, '-')
+  // trim dashes
+  s = s.replace(/^-|-$/g, '')
+  form.institution_slug = s
+  // validate live
+  if (s && (s.length < 3 || s.length > 40 || !slugRegex.test(s))) {
+    slugError.value = 'Slug must be 3-40 characters, lowercase letters, numbers and dashes only'
+  } else {
+    slugError.value = ''
+  }
+}
+
 // Preselect role from query if provided
-if (process.client) {
+  if (process.client) {
   const qRole = new URLSearchParams(window.location.search).get('role')
-  if (qRole === 'quiz-master' || qRole === 'quizee') {
+  if (qRole === 'quiz-master' || qRole === 'quizee' || qRole === 'institution-manager') {
     role.value = qRole
   }
 }
@@ -303,6 +394,9 @@ const validateForm = () => {
   const requiredFields = ['name', 'institution', 'email', 'password', 'confirmPassword']
   if (role.value === 'quiz-master') {
     requiredFields.push('phone', 'subjects')
+  }
+  if (role.value === 'institution-manager') {
+    requiredFields.push('institution_email')
   }
 
   for (const field of requiredFields) {
@@ -362,26 +456,29 @@ onMounted(async () => {
 
 async function submit() {
   if (isLoading.value) return
-
+  // reset errors
   error.value = null
-  
+  for (const k in fieldErrors) fieldErrors[k] = ''
+
   if (!validateForm()) return
 
   isLoading.value = true
 
   try {
-    const api = useApi()
-    // Backend exposes role-specific registration endpoints. Choose the correct one based on selected role.
-    const endpoint = role.value === 'quizee' ? '/api/register/quizee' : '/api/register/quiz-master'
+  const api = useApi()
+  // Backend exposes role-specific registration endpoints. Choose the correct one based on selected role.
+  let endpoint = '/api/register/quiz-master'
+  if (role.value === 'quizee') endpoint = '/api/register/quizee'
+  if (role.value === 'institution-manager') endpoint = '/api/register/institution-manager'
     
     // Build payload - include common fields and role-specific fields
-    const payload = {
-      name: form.name,
-      email: form.email,
-      password: form.password,
-      phone: form.phone,
-      institution: form.institution,
-    }
+      const payload = {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone,
+        institution: form.institution,
+      }
     
     // Add taxonomy fields (level_id, grade_id) if present
     if (form.level_id) payload.level_id = form.level_id
@@ -390,32 +487,61 @@ async function submit() {
     // Add role-specific fields
     if (role.value === 'quizee') {
       if (form.parentEmail) payload.parentEmail = form.parentEmail
-    } else {
+    } else if (role.value === 'quiz-master') {
       if (form.subjects?.length) payload.subjects = form.subjects
+    } else if (role.value === 'institution-manager') {
+      // include institution-level details for manager onboarding
+      payload.institution_email = form.institution_email
+      if (form.institution_slug) payload.institution_slug = form.institution_slug
     }
 
     const response = await api.postJson(endpoint, payload)
     if (api.handleAuthStatus(response)) return
+    const data = await response.json().catch(() => null)
     if (!response.ok) {
-      const data = await response.json().catch(() => null)
-      throw { data }
+      // Map validation errors to fields if present
+      if (data?.errors) {
+        for (const key of Object.keys(data.errors)) {
+          const v = data.errors[key]
+          const msg = Array.isArray(v) ? v[0] : v
+          if (key in fieldErrors) {
+            fieldErrors[key] = msg
+          } else if (key === 'institution' && 'institution' in fieldErrors) {
+            fieldErrors['institution'] = msg
+          } else {
+            // fallback to top-level error
+            error.value = msg
+          }
+        }
+      } else {
+        error.value = data?.message || 'Registration failed. Please try again.'
+      }
+      isLoading.value = false
+      return
     }
-    const body = await response.json()
+    const body = data
     // Set user in auth store if returned
     auth.setUser(body.user || body)
 
     // Redirect based on role
     if (role.value === 'quizee') {
       router.push('/quizee/dashboard')
-    } else {
+    } else if (role.value === 'quiz-master') {
       router.push('/quiz-master/dashboard')
+    } else if (role.value === 'institution-manager') {
+      // after institution-manager registration, go to institution-manager dashboard
+      router.push('/institution-manager/dashboard')
     }
   } catch (e) {
-    // Normalize error shapes from $fetch
+    // Fallback error handling
     const data = e?.data || e?.response || null
     if (data?.errors) {
-      const firstError = Object.values(data.errors)[0]
-      error.value = Array.isArray(firstError) ? firstError[0] : firstError
+      for (const key of Object.keys(data.errors)) {
+        const v = data.errors[key]
+        const msg = Array.isArray(v) ? v[0] : v
+        if (key in fieldErrors) fieldErrors[key] = msg
+        else error.value = msg
+      }
     } else {
       error.value = data?.message || 'Registration failed. Please try again.'
     }

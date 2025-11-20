@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useRuntimeConfig } from '#app'
 import useApi from '~/composables/useApi'
 
 // singleton instance so multiple components share the same taxonomy state

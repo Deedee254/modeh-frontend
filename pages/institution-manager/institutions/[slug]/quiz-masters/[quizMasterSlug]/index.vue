@@ -63,10 +63,10 @@
 
           <!-- Subjects -->
           <div>
-            <label class="block text-sm font-medium text-slate-500">Subjects</label>
-            <div v-if="subjectLabels.length > 0" class="mt-2 flex flex-wrap gap-2">
+            <label class="block text-sm font-medium text-slate-500">Teaching Subjects</label>
+            <div v-if="teachingSubjects.length > 0" class="mt-2 flex flex-wrap gap-2">
               <span
-                v-for="subject in subjectLabels"
+                v-for="subject in teachingSubjects"
                 :key="subject"
                 class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
               >
@@ -76,20 +76,16 @@
             <p v-else class="mt-1 text-lg text-slate-500">—</p>
           </div>
 
+          <!-- Headline -->
+          <div>
+            <label class="block text-sm font-medium text-slate-500">Headline</label>
+            <p class="mt-1 text-base text-slate-900">{{ profile?.headline || '—' }}</p>
+          </div>
+
           <!-- Bio -->
           <div>
             <label class="block text-sm font-medium text-slate-500">Bio</label>
             <p class="mt-1 text-base text-slate-900 whitespace-pre-line">{{ profile?.bio || '—' }}</p>
-          </div>
-
-          <!-- Action Button -->
-          <div class="flex justify-end pt-4 border-t">
-            <NuxtLink
-              to="/settings"
-              class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              Edit Profile
-            </NuxtLink>
           </div>
         </div>
       </UiCard>
@@ -122,74 +118,61 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '~/stores/auth'
+import { useProfileForm } from '~/composables/useProfileForm'
 import useApi from '~/composables/useApi'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 
-// Profile is user-specific; avoid indexing user profile edit pages
-definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'View your Modeh profile and manage personal information, avatar, and bio.' } ] })
+definePageMeta({ layout: 'institution' })
 
-const auth = useAuthStore()
+const route = useRoute()
+const userId = route.params.quizMasterSlug as string
+
 const api = useApi()
 
+const user = ref(null)
 const attempts = ref([])
 const attemptsLoading = ref(false)
 
 onMounted(async () => {
+  // Fetch user data
+  const userRes = await api.get(`/api/users/${userId}`)
+  if (userRes.ok) {
+    const data = await userRes.json()
+    user.value = data.user
+  }
+
+  // Fetch attempts
   attemptsLoading.value = true
-  const res = await api.get('/api/quiz-attempts')
-  if (api.handleAuthStatus(res)) return
-  if (res.ok) {
-    const data = await res.json()
+  const attemptsRes = await api.get(`/api/quiz-attempts?user_id=${userId}`)
+  if (attemptsRes.ok) {
+    const data = await attemptsRes.json()
     attempts.value = data.data?.data || []
   }
   attemptsLoading.value = false
 })
 
-interface User {
-  name?: string
-  email?: string
-  phone?: string
-  avatar_url?: string
-  points?: number
-  rewards?: { points?: number }
-  quizeeProfile?: {
-    institution?: string
-    grade?: { id: number; name: string }
-    grade_id?: number
-    level?: { id: number; name: string }
-    level_id?: number
-    subjects?: Array<{ id: number; name: string }>
-    bio?: string
-  }
-}
+// Use useProfileForm to derive profile info
+const { createFormState } = useProfileForm()
 
-const user = computed<User>(() => auth.user || {})
+const profile = computed(() => user.value?.quizMasterProfile || {})
+
 const userAvatar = computed(() => (user.value && user.value.avatar_url) ? user.value.avatar_url : '/logo/avatar-placeholder.png')
+
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points
   return typeof p === 'number' ? `${p} points` : ''
 })
 
-// Get profile based on user type
-const profile = computed(() => user.value?.quizeeProfile || {})
-
-// Get grade label from profile
 const gradeLabel = computed(() => {
   return profile.value?.grade?.name || null
 })
 
-// Get level label from profile
 const levelLabel = computed(() => {
   return profile.value?.level?.name || null
 })
 
-// Get subject labels from profile
-const subjectLabels = computed(() => {
-  if (!Array.isArray(profile.value?.subjects)) return []
-  return profile.value.subjects
-    .map((s: any) => s.name || s)
-    .filter(Boolean)
+const teachingSubjects = computed(() => {
+  return profile.value?.teaching_subjects ? profile.value.teaching_subjects.split(',').map((s: string) => s.trim()).filter(Boolean) : []
 })
 </script>

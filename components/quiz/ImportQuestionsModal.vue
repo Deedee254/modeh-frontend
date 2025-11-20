@@ -14,20 +14,10 @@
       <div class="mt-4 sm:mt-6 space-y-4">
         <div class="flex flex-col sm:flex-row gap-2">
           <UButton size="sm" variant="soft" @click="downloadTemplate">Download CSV Template</UButton>
-          <UButton size="sm" variant="primary" @click="openFilePicker">Choose File</UButton>
+          <UButton size="sm" color="primary" @click="openFilePicker">Choose File</UButton>
           <input ref="fileInput" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="onFileSelected" />
         </div>
 
-        <div class="text-sm text-gray-600 space-y-2">
-          <p>Include one row per question with the following columns:</p>
-          <ul class="list-disc list-inside space-y-1">
-            <li><span class="font-medium">type</span>: mcq, multi, short, numeric, fill_blank</li>
-            <li><span class="font-medium">text</span>: main question text (HTML allowed)</li>
-            <li><span class="font-medium">option1...optionN</span>: answers for choice-based questions</li>
-            <li><span class="font-medium">answers</span>: correct answers. Use commas for multiple values. Numbers reference option positions; text is accepted for short, numeric, and fill_blank.</li>
-            <li>Optional columns: marks, difficulty (1-3), explanation, youtube_url, media</li>
-          </ul>
-        </div>
 
         <div v-if="loading" class="text-sm text-gray-600">Processing file…</div>
 
@@ -98,7 +88,13 @@ function downloadTemplate() {
     ['numeric','What is 12 divided by 3?','','','','','4','1','1','','',''],
     ['fill_blank','Photosynthesis happens in the __ of plant cells','chloroplasts','mitochondria','nucleus','vacuole','chloroplasts','1','2','','','']
   ]
-  const escapeValue = value => '"' + String(value ?? '').replace(/"/g,'""') + '"'
+  const escapeValue = value => {
+    const s = String(value ?? '')
+    if (s.includes(',') || s.includes('"')) {
+      return '"' + s.replace(/"/g,'""') + '"'
+    }
+    return s
+  }
   const lines = [headers.join(','), ...samples.map(row => row.map(escapeValue).join(','))]
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -145,18 +141,34 @@ async function onFileSelected(e) {
   }
 }
 
+function normalizeHeader(h) {
+  return String(h ?? '')
+    // strip BOM
+    .replace(/^\uFEFF/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+}
+
 function parseCsvFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        const text = String(reader.result || '')
-        const rows = csvToObjects(text)
-        resolve(rows)
-      } catch (err) { reject(err) }
-    }
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsText(file)
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Use PapaParse in the browser to robustly parse CSVs (handles quoted fields, newlines, encodings)
+      const PapaMod = await import('papaparse')
+      const Papa = PapaMod && PapaMod.default ? PapaMod.default : PapaMod
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: normalizeHeader,
+        transform: (value) => (value == null ? '' : String(value)),
+        complete: (results) => {
+          // results.data is an array of objects with normalized headers
+          const rows = Array.isArray(results.data) ? results.data.map(r => normalizeRowKeys(r)) : []
+          resolve(rows)
+        },
+        error: (err) => reject(err)
+      })
+    } catch (err) { reject(err) }
   })
 }
 
@@ -169,7 +181,9 @@ async function parseExcelFile(file, XLSX) {
         const wb = XLSX.read(data, { type: 'array' })
         const first = wb.SheetNames[0]
         const sheet = wb.Sheets[first]
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        let rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        // Normalize keys to match CSV parsing (strip BOM, lowercase, underscores)
+        if (Array.isArray(rows)) rows = rows.map(r => normalizeRowKeys(r))
         resolve(rows)
       } catch (err) { reject(err) }
     }
@@ -178,84 +192,24 @@ async function parseExcelFile(file, XLSX) {
   })
 }
 
-function csvToObjects(text) {
-  // Build lines honoring quoted newlines
-  const lines = []
-  let cur = ''
-  let inQuotes = false
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i]
-    const next = text[i + 1]
-    if (ch === '"') {
-      if (inQuotes && next === '"') { cur += '"'; i++ } else { inQuotes = !inQuotes }
-      continue
-    }
-    if (ch === '\n' && !inQuotes) { lines.push(cur); cur = ''; continue }
-    if (ch === '\r') continue
-    cur += ch
+// csv parsing is handled by PapaParse (see parseCsvFile)
+
+function normalizeRowKeys(row) {
+  if (!row || typeof row !== 'object') return row
+  const out = {}
+  for (const k in row) {
+    if (!Object.prototype.hasOwnProperty.call(row, k)) continue
+    const nk = String(k ?? '')
+      .replace(/^\uFEFF/, '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+    out[nk] = row[k]
   }
-  if (cur !== '') lines.push(cur)
-
-  // Parse each CSV line into columns
-  const rows = lines.map(l => parseCsvLine(l))
-  if (!rows.length) return []
-
-  // Normalize headers
-  const rawHeaders = rows[0].map(h => String(h ?? '').trim())
-  const headers = rawHeaders
-
-  const objs = []
-  for (let r = 1; r < rows.length; r++) {
-    let row = rows[r]
-
-    // If the row has more columns than headers, try to coalesce the extras into
-    // the `text`/`body`/question column (common case: unquoted commas inside question text).
-    if (row.length > headers.length) {
-      const extra = row.length - headers.length
-      // Find likely text field header index
-      const textIndex = headers.findIndex(h => /^text$/i.test(h) || /^body$/i.test(h) || /question/i.test(h))
-      if (textIndex >= 0) {
-        // Join the columns starting at textIndex so that the total columns match headers
-        const endIndex = textIndex + extra
-        const pieces = row.slice(textIndex, endIndex + 1)
-        const joined = pieces.join(',')
-        const newRow = row.slice(0, textIndex).concat([joined]).concat(row.slice(endIndex + 1))
-        row = newRow
-      } else {
-        // Fallback: merge any extra trailing columns into the last header
-        const last = headers.length - 1
-        const merged = row.slice(last).join(',')
-        row = row.slice(0, last).concat([merged])
-      }
-    }
-
-    const obj = {}
-    for (let c = 0; c < headers.length; c++) {
-      const key = headers[c] || `col${c}`
-      obj[String(key).trim()] = (row[c] != null) ? row[c] : ''
-    }
-    objs.push(obj)
-  }
-  return objs
-}
-
-function parseCsvLine(line) {
-  const out = []
-  let cur = ''
-  let inQuotes = false
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
-    const next = line[i + 1]
-    if (ch === '"') {
-      if (inQuotes && next === '"') { cur += '"'; i++ } else { inQuotes = !inQuotes }
-      continue
-    }
-    if (ch === ',' && !inQuotes) { out.push(cur); cur = ''; continue }
-    cur += ch
-  }
-  out.push(cur)
   return out
 }
+
+// parseCsvLine removed; PapaParse replaces custom parsing
 
 function buildQuestionFromRow(row) {
   if (!row || typeof row !== 'object') return null

@@ -70,13 +70,20 @@
               <div v-if="quizzesPending" class="space-y-2">
                 <USkeleton v-for="i in 3" :key="i" class="h-16 rounded" />
               </div>
-              <div v-else-if="quizzesError" class="text-sm text-red-600 p-3">Failed to load quizzes.</div>
+              <div v-else-if="quizzesError" class="text-sm text-red-600 p-3">
+                <div>Failed to load quizzes.</div>
+                <div class="text-xs text-gray-500 mt-1">{{ quizzesError?.message || 'Unknown error' }}</div>
+              </div>
+              <div v-else-if="!recentQuizzes || recentQuizzes.length === 0" class="text-center py-6 text-slate-500">
+                <p class="text-sm">No quizzes yet. <NuxtLink to="/quiz-master/quizzes/create" class="text-indigo-600 hover:underline">Create one</NuxtLink></p>
+              </div>
               <div v-else>
-                <UiHorizontalCard v-for="(q, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean) : [])" :key="q?.id || idx" :title="q.title" :subtitle="q.description || 'No description'" eyebrow="Quiz">
+                <UiHorizontalCard v-for="(q, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean) : [])" :key="q?.id || idx" :title="q?.title || 'Untitled'" :subtitle="q?.description || 'No description'" eyebrow="Quiz">
                   <template #actions>
                     <div class="flex gap-2">
-                      <NuxtLink :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Open</NuxtLink>
-                      <NuxtLink :to="`/quiz-master/analytics/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Analytics</NuxtLink>
+                      <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Open</NuxtLink>
+                      <NuxtLink v-if="q?.id" :to="`/quiz-master/analytics/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Analytics</NuxtLink>
+                      <span v-if="!q?.id" class="text-sm text-gray-400">Loading…</span>
                     </div>
                   </template>
                 </UiHorizontalCard>
@@ -120,8 +127,9 @@
             <div v-else-if="pendingApprovals.length === 0" class="text-sm text-gray-600">No pending approvals right now.</div>
             <ul v-else class="space-y-2">
               <li v-for="(q, idx) in (Array.isArray(pendingApprovals) ? pendingApprovals.slice(0,3).filter(Boolean) : [])" :key="q?.id || idx" class="flex items-center justify-between">
-                <div class="text-sm truncate">{{ q.title || q.name }}</div>
-                <NuxtLink :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600">Review</NuxtLink>
+                <div class="text-sm truncate">{{ q?.title || q?.name || 'Untitled' }}</div>
+                <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600">Review</NuxtLink>
+                <span v-else class="text-sm text-gray-400">Loading…</span>
               </li>
             </ul>
           </UiCard>
@@ -158,7 +166,7 @@ import PageHero from '~/components/ui/PageHero.vue'
 import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
 import { useAuthStore } from '~/stores/auth'
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import useApi from '~/composables/useApi'
 
 definePageMeta({ layout: 'quiz-master' })
@@ -168,35 +176,91 @@ const api = useApi()
 const auth = useAuthStore()
 const isQuizMaster = computed(() => auth.user?.role === 'quiz-master' || auth.role === 'quiz-master')
 
-// Fetch recent quizzes (paginated) for this quiz-master
-const { data: quizzesData, pending: quizzesPending, error: quizzesError } = await useFetch(async () => {
-  const res = await api.get('/api/quizzes?per_page=5')
-  if (res.ok) return await res.json()
-  return null
-})
-// Fetch total published quizzes (approved=1)
-const { data: publishedData } = await useFetch(async () => {
-  const res = await api.get('/api/quizzes?approved=1&per_page=1')
-  if (res.ok) return await res.json()
-  return null
-})
-// Fetch total questions in quiz-master's bank
-const { data: questionsData } = await useFetch(async () => {
-  const res = await api.get('/api/questions?per_page=1')
-  if (res.ok) return await res.json()
-  return null
+// State for recent quizzes
+const quizzesData = ref(null)
+const quizzesPending = ref(true)
+const quizzesError = ref(null)
+
+// State for published quizzes
+const publishedData = ref(null)
+
+// State for questions
+const questionsData = ref(null)
+
+// State for pending approvals
+const pendingApprovalsData = ref(null)
+const pendingApprovalsPending = ref(true)
+const pendingApprovalsError = ref(null)
+
+// Fetch data on component mount
+onMounted(async () => {
+  try {
+    // Fetch recent quizzes
+    quizzesPending.value = true
+    try {
+      const res = await api.get('/api/quizzes?per_page=5')
+      if (!res.ok) {
+        console.error('Failed to fetch quizzes:', res.status, res.statusText)
+        quizzesError.value = new Error(`HTTP ${res.status}`)
+      } else {
+        quizzesData.value = await res.json()
+      }
+    } catch (err) {
+      console.error('Error fetching quizzes:', err)
+      quizzesError.value = err
+    } finally {
+      quizzesPending.value = false
+    }
+
+    // Fetch published quizzes
+    try {
+      const res = await api.get('/api/quizzes?approved=1&per_page=1')
+      if (!res.ok) {
+        console.error('Failed to fetch published quizzes:', res.status, res.statusText)
+      } else {
+        publishedData.value = await res.json()
+      }
+    } catch (err) {
+      console.error('Error fetching published quizzes:', err)
+    }
+
+    // Fetch questions
+    try {
+      const res = await api.get('/api/questions?per_page=1')
+      if (!res.ok) {
+        console.error('Failed to fetch questions:', res.status, res.statusText)
+      } else {
+        questionsData.value = await res.json()
+      }
+    } catch (err) {
+      console.error('Error fetching questions:', err)
+    }
+
+    // Fetch pending approvals
+    pendingApprovalsPending.value = true
+    try {
+      const res = await api.get('/api/quizzes?approved=0&per_page=5')
+      if (!res.ok) {
+        console.error('Failed to fetch pending approvals:', res.status, res.statusText)
+        pendingApprovalsError.value = new Error(`HTTP ${res.status}`)
+      } else {
+        pendingApprovalsData.value = await res.json()
+      }
+    } catch (err) {
+      console.error('Error fetching pending approvals:', err)
+      pendingApprovalsError.value = err
+    } finally {
+      pendingApprovalsPending.value = false
+    }
+  } catch (err) {
+    console.error('Error in data fetch:', err)
+  }
 })
 
-const recentQuizzes = quizzesData?.value?.quizzes?.data || []
-const quizzesCount = quizzesData?.value?.quizzes?.total ?? recentQuizzes.length
-const publishedCount = publishedData?.value?.quizzes?.total ?? 0
-const questionsCount = questionsData?.value?.questions?.total ?? 0
+const recentQuizzes = computed(() => quizzesData.value?.quizzes?.data || [])
+const quizzesCount = computed(() => quizzesData.value?.quizzes?.total ?? recentQuizzes.value.length)
+const publishedCount = computed(() => publishedData.value?.quizzes?.total ?? 0)
+const questionsCount = computed(() => questionsData.value?.questions?.total ?? 0)
 
-// Fetch pending approvals (quizzes awaiting approval by admin or moderation)
-const { data: pendingApprovalsData, pending: pendingApprovalsPending, error: pendingApprovalsError } = await useFetch(async () => {
-  const res = await api.get('/api/quizzes?approved=0&per_page=5')
-  if (res.ok) return await res.json()
-  return null
-})
-const pendingApprovals = pendingApprovalsData?.value?.quizzes?.data || pendingApprovalsData?.value || []
+const pendingApprovals = computed(() => pendingApprovalsData.value?.quizzes?.data || pendingApprovalsData.value || [])
 </script>

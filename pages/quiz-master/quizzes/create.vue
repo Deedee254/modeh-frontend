@@ -242,13 +242,29 @@ onMounted(async () => {
     ]).catch(() => {});
   } catch (e) {}
 
+  // Read query parameters to preselect taxonomy
+  const incomingLevel = route.query.level_id
+  const incomingGrade = route.query.grade_id
+  const incomingSubject = route.query.subject_id
+  const incomingTopic = route.query.topic_id
+
   const incomingId = route.query.id
   if (incomingId && String(incomingId) !== 'null' && !store.quizId) {
     const coerced = isNaN(Number(incomingId)) ? incomingId : Number(incomingId);
     await store.loadQuiz(coerced);
-    // After loading quiz, fetch topics if subject is set to populate the picker
-    if (store.quiz.subject_id) {
-      try { await fetchTopicsPage({ subjectId: store.quiz.subject_id, page: 1, perPage: 50, q: '' }) } catch (e) {}
+  } else {
+    // Apply query parameter values to store. Watchers will trigger fetching taxonomies.
+    if (incomingLevel && String(incomingLevel) !== 'null') {
+      store.quiz.level_id = isNaN(Number(incomingLevel)) ? incomingLevel : Number(incomingLevel)
+    }
+    if (incomingGrade && String(incomingGrade) !== 'null') {
+      store.quiz.grade_id = isNaN(Number(incomingGrade)) ? incomingGrade : Number(incomingGrade)
+    }
+    if (incomingSubject && String(incomingSubject) !== 'null') {
+      store.quiz.subject_id = isNaN(Number(incomingSubject)) ? incomingSubject : Number(incomingSubject)
+    }
+    if (incomingTopic && String(incomingTopic) !== 'null') {
+      store.quiz.topic_id = isNaN(Number(incomingTopic)) ? incomingTopic : Number(incomingTopic)
     }
   }
 })
@@ -339,10 +355,25 @@ async function onTopicCreated(created) {
 }
 
 watch(grade_id, (nv, ov) => {
-  store.quiz.subject_id = null
-  store.quiz.topic_id = null
+  // Only reset subject/topic if the grade is actually changed from a previous value.
+  // This prevents wiping out subject/topic from query params on initial load.
+  if (ov !== undefined && ov !== null) {
+    store.quiz.subject_id = null
+    store.quiz.topic_id = null
+  }
+
   if (!nv || String(nv) === String(ov)) return
   try { fetchSubjectsPage({ gradeId: nv, page: 1, perPage: 50, q: '' }) } catch (e) {}
+})
+
+watch(subject_id, (nv, ov) => {
+  // Only reset topic if the subject is actually changed from a previous value.
+  if (ov !== undefined && ov !== null) {
+    store.quiz.topic_id = null
+  }
+
+  if (!nv || String(nv) === String(ov)) return
+  try { fetchTopicsPage({ subjectId: nv, page: 1, perPage: 50, q: '' }) } catch (e) {}
 })
 
 function onSelectSubject(item) {

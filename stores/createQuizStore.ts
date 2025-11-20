@@ -789,11 +789,24 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.subject = serverQuiz.subject || (loaded.subject_id ? { id: loaded.subject_id, name: serverQuiz.subject_name } : null);
         loaded.topic = serverQuiz.topic || (loaded.topic_id ? { id: loaded.topic_id, name: serverQuiz.topic_name } : null);
         
-        const ts = serverQuiz.timer_seconds ?? serverQuiz.timer_minutes ?? null
-        loaded.timer_minutes = ts ? Math.floor(Number(ts) / 60) : initialForm.timer_minutes
-
-        loaded.per_question_seconds = serverQuiz.per_question_seconds ?? initialForm.per_question_seconds
+        // Set timer mode first to determine which timer field to populate
         loaded.use_per_question_timer = serverQuiz.use_per_question_timer ?? initialForm.use_per_question_timer
+        
+        // Convert timer_seconds back to timer_minutes for the UI. 
+        // When editing, if use_per_question_timer is true, timer_seconds will be null and we use timer_minutes default
+        if (serverQuiz.use_per_question_timer) {
+          // Per-question mode: use per_question_seconds from server
+          loaded.per_question_seconds = serverQuiz.per_question_seconds ?? initialForm.per_question_seconds
+          loaded.timer_minutes = initialForm.timer_minutes
+        } else {
+          // Overall timer mode: convert timer_seconds to minutes
+          if (serverQuiz.timer_seconds && Number(serverQuiz.timer_seconds) > 0) {
+            loaded.timer_minutes = Math.floor(Number(serverQuiz.timer_seconds) / 60)
+          } else {
+            loaded.timer_minutes = initialForm.timer_minutes
+          }
+          loaded.per_question_seconds = initialForm.per_question_seconds
+        }
         loaded.attempts_allowed = serverQuiz.attempts_allowed ?? initialForm.attempts_allowed
         loaded.shuffle_questions = serverQuiz.shuffle_questions ?? initialForm.shuffle_questions
         loaded.shuffle_answers = serverQuiz.shuffle_answers ?? initialForm.shuffle_answers

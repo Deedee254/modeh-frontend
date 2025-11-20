@@ -126,7 +126,7 @@ function rightAction() {
   if (typeof bottomNav.rightHandler === 'function' || typeof bottomNav.rightHandler?.value === 'function') return (bottomNav.rightHandler?.value || bottomNav.rightHandler)()
   if (isQuizMaster.value) return router.push('/quiz-master/chat')
   if (isQuizee.value) return router.push('/quizee/chat')
-  return router.push('/profile') // Fallback for any other case
+  return router.push('/settings') // Fallback for any other case
 }
 </script>
 

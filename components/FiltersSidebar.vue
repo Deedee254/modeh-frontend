@@ -43,10 +43,8 @@
         <label class="block text-xs font-medium text-gray-600 mb-1">Level</label>
         <div class="relative">
           <select v-model="localLevel" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-            <option value="">All levels</option>
-            <template v-for="(l, idx) in (taxLevels.value || [])" :key="idx">
-              <option v-if="l" :key="l.id ?? idx" :value="l.id">{{ l.name || ('Level ' + (l.id ?? idx)) }}</option>
-            </template>
+            <option :value="null">All levels</option>
+            <option v-for="l in filteredLevels" :key="l.id" :value="l.id">{{ l.name || ('Level ' + l.id) }}</option>
           </select>
           <span v-if="loadingLevels" class="absolute right-2 top-1/2 -translate-y-1/2">
             <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
@@ -57,10 +55,8 @@
           <label class="block text-xs font-medium text-gray-600 mb-1">Grade</label>
           <div class="relative">
             <select v-model="localGrade" @change="() => {}" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-              <option value="">All grades</option>
-              <template v-for="(g, idx) in (gradeOptionsByLevel || [])" :key="idx">
-                <option v-if="g" :key="g.id ?? idx" :value="g.id">{{ g.display_name || g.name || ('Grade ' + (g.id ?? idx)) }}</option>
-              </template>
+              <option :value="null">All grades</option>
+              <option v-for="g in filteredGrades" :key="g.id" :value="g.id">{{ g.display_name || g.name || ('Grade ' + g.id) }}</option>
             </select>
             <span v-if="loadingGrades" class="absolute right-2 top-1/2 -translate-y-1/2">
               <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
@@ -73,10 +69,8 @@
         <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
         <div class="relative">
           <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-            <option value="">All subjects</option>
-            <template v-for="(s, idx) in (filteredSubjects || [])" :key="idx">
-              <option v-if="s" :key="s.id ?? idx" :value="s.id">{{ s.name || '' }}</option>
-            </template>
+            <option :value="null">All subjects</option>
+            <option v-for="s in filteredSubjectsClean" :key="s.id" :value="s.id">{{ s.name || '' }}</option>
           </select>
           <span v-if="loadingSubjects" class="absolute right-2 top-1/2 -translate-y-1/2">
             <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
@@ -88,10 +82,8 @@
         <label class="block text-xs font-medium text-gray-600 mb-1">Topic</label>
         <div class="relative">
           <select v-model="localTopic" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-            <option value="">All topics</option>
-            <template v-for="(t, idx) in (filteredTopics || [])" :key="idx">
-              <option v-if="t" :key="t.id ?? idx" :value="t.id">{{ t.name || '' }}</option>
-            </template>
+            <option :value="null">All topics</option>
+            <option v-for="t in filteredTopicsClean" :key="t.id" :value="t.id">{{ t.name || '' }}</option>
           </select>
           <span v-if="loadingTopics" class="absolute right-2 top-1/2 -translate-y-1/2">
             <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
@@ -138,41 +130,99 @@ const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels: tax
 
 // compute label lookups from either props.options or taxonomy composable
 const gradeLookup = computed(() => {
-  const raw = unref(props.gradeOptions)
-  const list = Array.isArray(raw) && raw.length ? raw : (taxGrades.value || [])
-  return (list || []).reduce((acc, g) => { if (g && g.id != null) acc[String(g.id)] = g; return acc }, {})
+  try {
+    const raw = unref(props.gradeOptions)
+    const list = Array.isArray(raw) && raw.length ? raw : (taxGrades.value || [])
+    return (list || []).reduce((acc, g) => {
+      if (g && g.id != null) {
+        try {
+          acc[String(g.id)] = g
+        } catch (e) {
+          // ignore invalid grade objects
+        }
+      }
+      return acc
+    }, {})
+  } catch (e) {
+    console.warn('gradeLookup computation error:', e)
+    return {}
+  }
 })
 const subjectLookup = computed(() => {
-  const raw = unref(props.subjectOptions)
-  const list = Array.isArray(raw) && raw.length ? raw : (taxSubjects.value || [])
-  return (list || []).reduce((acc, s) => { if (s && s.id != null) acc[String(s.id)] = s; return acc }, {})
+  try {
+    const raw = unref(props.subjectOptions)
+    const list = Array.isArray(raw) && raw.length ? raw : (taxSubjects.value || [])
+    return (list || []).reduce((acc, s) => {
+      if (s && s.id != null) {
+        try {
+          acc[String(s.id)] = s
+        } catch (e) {
+          // ignore invalid subject objects
+        }
+      }
+      return acc
+    }, {})
+  } catch (e) {
+    console.warn('subjectLookup computation error:', e)
+    return {}
+  }
 })
 const topicLookup = computed(() => {
-  const raw = unref(props.topicOptions)
-  const list = Array.isArray(raw) && raw.length ? raw : (taxTopics.value || [])
-  return (list || []).reduce((acc, t) => { if (t && t.id != null) acc[String(t.id)] = t; return acc }, {})
+  try {
+    const raw = unref(props.topicOptions)
+    const list = Array.isArray(raw) && raw.length ? raw : (taxTopics.value || [])
+    return (list || []).reduce((acc, t) => {
+      if (t && t.id != null) {
+        try {
+          acc[String(t.id)] = t
+        } catch (e) {
+          // ignore invalid topic objects
+        }
+      }
+      return acc
+    }, {})
+  } catch (e) {
+    console.warn('topicLookup computation error:', e)
+    return {}
+  }
 })
 
 const activeGradeLabel = computed(() => {
-  if (!localGrade.value) return ''
-  const g = gradeLookup.value[String(localGrade.value)]
-  return g ? (g.display_name || g.name || g.title || g.label || String(g.id)) : String(localGrade.value)
+  try {
+    if (!localGrade.value) return ''
+    const g = gradeLookup.value[String(localGrade.value)]
+    return g ? (g.display_name || g.name || g.title || g.label || String(g.id || localGrade.value)) : String(localGrade.value)
+  } catch (e) {
+    return String(localGrade.value || '')
+  }
 })
 const activeLevelLabel = computed(() => {
-  if (!localLevel.value) return ''
-  const list = (taxLevels.value || [])
-  const l = list.find(x => String(x.id) === String(localLevel.value))
-  return l ? l.name : String(localLevel.value)
+  try {
+    if (!localLevel.value) return ''
+    const list = (taxLevels.value || [])
+    const l = list.find(x => x && x.id != null && String(x.id) === String(localLevel.value))
+    return l && l.name ? l.name : String(localLevel.value)
+  } catch (e) {
+    return String(localLevel.value || '')
+  }
 })
 const activeSubjectLabel = computed(() => {
-  if (!localSubject.value) return ''
-  const s = subjectLookup.value[String(localSubject.value)]
-  return s ? (s.name || s.title || s.label || String(s.id)) : String(localSubject.value)
+  try {
+    if (!localSubject.value) return ''
+    const s = subjectLookup.value[String(localSubject.value)]
+    return s ? (s.name || s.title || s.label || String(s.id || localSubject.value)) : String(localSubject.value)
+  } catch (e) {
+    return String(localSubject.value || '')
+  }
 })
 const activeTopicLabel = computed(() => {
-  if (!localTopic.value) return ''
-  const t = topicLookup.value[String(localTopic.value)]
-  return t ? (t.name || t.title || t.label || String(t.id)) : String(localTopic.value)
+  try {
+    if (!localTopic.value) return ''
+    const t = topicLookup.value[String(localTopic.value)]
+    return t ? (t.name || t.title || t.label || String(t.id || localTopic.value)) : String(localTopic.value)
+  } catch (e) {
+    return String(localTopic.value || '')
+  }
 })
 
 const hasAnyActive = computed(() => {
@@ -186,32 +236,83 @@ const filteredSubjects = computed(() => {
 
 // compute filtered grades by selected level if levels are available
 const gradeOptionsByLevel = computed(() => {
-  if (localLevel.value && Array.isArray(taxLevels.value) && taxLevels.value.length) {
-    const l = taxLevels.value.find(x => String(x.id) === String(localLevel.value))
-    if (l && Array.isArray(l.grades)) {
-      // levels may include grade ids (number/string) or partial objects; resolve to full grade objects when possible
-      return l.grades.map(g => {
-        if (!g) return null
-        if (typeof g === 'object') return g
-        const resolved = gradeLookup.value[String(g)]
-        return resolved || { id: String(g), name: String(g) }
-      }).filter(Boolean)
+  try {
+    if (localLevel.value && Array.isArray(taxLevels.value) && taxLevels.value.length) {
+      const l = taxLevels.value.find(x => x && x.id != null && String(x.id) === String(localLevel.value))
+      if (l && Array.isArray(l.grades)) {
+        // levels may include grade ids (number/string) or partial objects; resolve to full grade objects when possible
+        return l.grades.map(g => {
+          try {
+            if (!g) return null
+            if (typeof g === 'object' && g.id != null) return g
+            const gStr = String(g || '')
+            const resolved = gradeLookup.value[gStr]
+            return resolved || { id: gStr, name: gStr }
+          } catch (e) {
+            return null
+          }
+        }).filter(Boolean)
+      }
+      // fallback: filter taxGrades by level_id if grades not nested in level
+      const allGrades = taxGrades.value || []
+      const filtered = allGrades.filter(g => g && g.id != null && String(g.level_id || g.level || '') === String(localLevel.value))
+      if (filtered.length) return filtered
     }
-    // fallback: filter taxGrades by level_id if grades not nested in level
-    const allGrades = taxGrades.value || []
-    const filtered = allGrades.filter(g => String(g.level_id || g.level || '') === String(localLevel.value))
-    if (filtered.length) return filtered
+    const rawGrades = unref(props.gradeOptions)
+    return (Array.isArray(rawGrades) && rawGrades.length) ? rawGrades : (taxGrades.value || [])
+  } catch (e) {
+    console.warn('gradeOptionsByLevel computation error:', e)
+    return []
   }
-  const rawGrades = unref(props.gradeOptions)
-  return (Array.isArray(rawGrades) && rawGrades.length) ? rawGrades : (taxGrades.value || [])
 })
 
 // compute topics filtered by selected subject (if topicOptions contain subject_id)
 const filteredTopics = computed(() => {
-  const raw = unref(props.topicOptions)
-  const allTopics = (taxTopics.value && taxTopics.value.length) ? taxTopics.value : (Array.isArray(raw) ? raw : [])
-  if (!localSubject.value) return allTopics
-  return (allTopics || []).filter(t => String(t.subject_id || t.subject || '') === String(localSubject.value))
+  try {
+    const raw = unref(props.topicOptions)
+    const allTopics = (taxTopics.value && taxTopics.value.length) ? taxTopics.value : (Array.isArray(raw) ? raw : [])
+    if (!localSubject.value) return allTopics || []
+    return (allTopics || []).filter(t => t && t.id != null && String(t.subject_id || t.subject || '') === String(localSubject.value))
+  } catch (e) {
+    console.warn('filteredTopics computation error:', e)
+    return []
+  }
+})
+
+const filteredLevels = computed(() => {
+  try {
+    return (taxLevels.value || []).filter(x => x && x.id != null)
+  } catch (e) {
+    console.warn('filteredLevels computation error:', e)
+    return []
+  }
+})
+
+const filteredGrades = computed(() => {
+  try {
+    return (gradeOptionsByLevel.value || []).filter(x => x && x.id != null)
+  } catch (e) {
+    console.warn('filteredGrades computation error:', e)
+    return []
+  }
+})
+
+const filteredSubjectsClean = computed(() => {
+  try {
+    return (filteredSubjects.value || []).filter(x => x && x.id != null)
+  } catch (e) {
+    console.warn('filteredSubjectsClean computation error:', e)
+    return []
+  }
+})
+
+const filteredTopicsClean = computed(() => {
+  try {
+    return (filteredTopics.value || []).filter(x => x && x.id != null)
+  } catch (e) {
+    console.warn('filteredTopicsClean computation error:', e)
+    return []
+  }
 })
 
 // restore collapsed from localStorage if storageKey provided - do this after mount to avoid hydration mismatches
@@ -250,33 +351,33 @@ watch(localGrade, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':grade', String(v)) } catch (e) {} }
   // when grade changes, clear dependent subject/topic selections
   // but do not override the user's explicit subject if it belongs to the grade
-  localSubject.value = ''
-  localTopic.value = ''
+  localSubject.value = null
+  localTopic.value = null
   emit('update:grade', v)
   // ask the taxonomy composable to fetch subjects for this grade so subject lists are server-filtered
-  try { fetchSubjectsByGrade(v) } catch (e) {}
+  try { fetchSubjectsByGrade(v).catch(() => {}) } catch (e) {}
 })
 
 watch(localSubject, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':subject', String(v)) } catch (e) {} }
   emit('update:subject', v)
   // preload topics for the selected subject via taxonomy composable
-  try { fetchTopicsBySubject(v) } catch (e) {}
+  try { fetchTopicsBySubject(v).catch(() => {}) } catch (e) {}
 })
 watch(localLevel, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':level', String(v)) } catch (e) {} }
   // when level changes, clear grade/subject/topic
-  localGrade.value = ''
-  localSubject.value = ''
-  localTopic.value = ''
-  emit('update:grade', '')
+  localGrade.value = null
+  localSubject.value = null
+  localTopic.value = null
+  emit('update:grade', null)
   emit('update:level', v)
   // ensure grades for this level are loaded
   if (v) {
     try {
       // prefer server-filtered grades when available
-      if (typeof fetchGradesByLevel === 'function') fetchGradesByLevel(v)
-      else fetchGrades()
+      if (typeof fetchGradesByLevel === 'function') fetchGradesByLevel(v).catch(() => {})
+      else fetchGrades().catch(() => {})
     } catch (e) {}
   }
 })
@@ -289,43 +390,43 @@ function onApply() {
 }
 
 function onClear() {
-  localSubject.value = ''
-  localTopic.value = ''
-  localGrade.value = ''
-  localLevel.value = ''
-  emit('update:subject', '')
-  emit('update:topic', '')
-  emit('update:grade', '')
-  emit('update:level', '')
+  localSubject.value = null
+  localTopic.value = null
+  localGrade.value = null
+  localLevel.value = null
+  emit('update:subject', null)
+  emit('update:topic', null)
+  emit('update:grade', null)
+  emit('update:level', null)
   emit('clear')
 }
 
 function removeGrade() {
   // only update local state; watchers will persist and emit update:grade
-  localGrade.value = ''
+  localGrade.value = null
   // clear dependent subject/topic locally
-  localSubject.value = ''
-  localTopic.value = ''
+  localSubject.value = null
+  localTopic.value = null
 }
 
 function removeSubject() {
   // only update local state; watchers will persist and emit update:subject
-  localSubject.value = ''
+  localSubject.value = null
   // clear dependent topic locally
-  localTopic.value = ''
+  localTopic.value = null
 }
 
 function removeTopic() {
   // only update local state; watchers will persist and emit update:topic
-  localTopic.value = ''
+  localTopic.value = null
 }
 
 function removeLevel() {
-  localLevel.value = ''
+  localLevel.value = null
   // clear dependent selections
-  localGrade.value = ''
-  localSubject.value = ''
-  localTopic.value = ''
+  localGrade.value = null
+  localSubject.value = null
+  localTopic.value = null
 }
 
 // Load levels immediately so they behave like grades/subjects/topics

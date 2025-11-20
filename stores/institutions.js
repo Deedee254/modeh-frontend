@@ -9,15 +9,36 @@ export const useInstitutionsStore = defineStore('institutions', () => {
   const loading = ref(false)
   const api = useApi()
 
+  // Keep track of the active institution slug (we prefer slugs for routing) for synchronization with the route
+  const activeInstitutionSlug = ref(null)
+
   async function fetchInstitution(id) {
     loading.value = true
     try {
       const res = await api.get(`/api/institutions/${id}`)
       if (!res.ok) throw new Error('Failed to fetch institution')
       institution.value = await res.json()
+      // prefer slug for route/query synchronization
+  activeInstitutionSlug.value = institution.value?.slug ?? institution.value?.id ?? null
     } catch (e) {
       institution.value = null
     } finally { loading.value = false }
+  }
+
+  // Set active institution by id (id may be null to clear)
+  async function setActiveInstitution(id) {
+    if (!id) {
+      institution.value = null
+      activeInstitutionSlug.value = null
+      return
+    }
+    // If the id is already loaded, do nothing
+    if (institution.value && String(institution.value.slug) === String(id)) {
+      activeInstitutionSlug.value = institution.value.slug
+      return
+    }
+    // otherwise fetch the institution
+    await fetchInstitution(id).catch(() => {})
   }
 
   async function fetchMembers(id) {
@@ -59,5 +80,5 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     return await res.json()
   }
 
-  return { institution, members, requests, loading, fetchInstitution, fetchMembers, fetchRequests, acceptMember, removeMember }
+  return { institution, members, requests, loading, activeInstitutionSlug, fetchInstitution, fetchMembers, fetchRequests, acceptMember, removeMember, setActiveInstitution }
 })

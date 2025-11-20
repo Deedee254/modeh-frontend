@@ -228,7 +228,9 @@ const sortedAll = computed(() => {
   const data = Array.isArray(allQuestions.value) ? allQuestions.value.filter(Boolean) : []
   if (!sortBy.value) return data
 
-  const [field, direction] = sortBy.value.split(':')
+  // Handle both string values and object values from USelectMenu
+  const sortValue = typeof sortBy.value === 'string' ? sortBy.value : sortBy.value?.value || 'created_at:desc'
+  const [field, direction] = sortValue.split(':')
   const dir = direction === 'desc' ? -1 : 1
 
   return [...data].sort((a, b) => {

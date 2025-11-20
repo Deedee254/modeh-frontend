@@ -107,6 +107,8 @@ const local = defineModel<Record<string, any>>({ required: true })
 const mediaUrl = ref<string | null>(null)
 const uploading = ref(false)
 const alert = useAppAlert()
+const imageInput = ref<HTMLInputElement | null>(null)
+const audioInput = ref<HTMLInputElement | null>(null)
 
 // taxonomy is determined by the parent quiz; no local selectors here
 
@@ -287,19 +289,11 @@ function onAudioSelected(e: Event) {
 }
 
 function triggerImageInput() {
-  try {
-    const inst = getCurrentInstance()
-    const el = inst?.refs?.imageInput as HTMLInputElement | undefined
-    el?.click()
-  } catch (e) {}
+  imageInput.value?.click()
 }
 
 function triggerAudioInput() {
-  try {
-    const inst = getCurrentInstance()
-    const el = inst?.refs?.audioInput as HTMLInputElement | undefined
-    el?.click()
-  } catch (e) {}
+  audioInput.value?.click()
 }
 
 </script>

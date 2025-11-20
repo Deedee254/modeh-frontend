@@ -63,6 +63,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+import { useInstitutionsStore } from '~/stores/institutions'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 
@@ -120,10 +121,19 @@ async function submit() {
       }
     }
 
+    const instStore = useInstitutionsStore()
     if (user?.role === 'quiz-master') router.push('/quiz-master/dashboard')
     else if (user?.role === 'quizee') router.push('/quizee/dashboard')
     else if (user?.role === 'admin') window.location.href = `${useRuntimeConfig().public.apiBase}/admin`
-    else router.push('/grades')
+      else if (user?.role === 'institution-manager') {
+        // Prefer an explicit institution slug from the user payload or store; fall back to route query
+        const instSlug = user?.institution_slug || (user?.institutions && user.institutions[0]?.slug) || instStore.institution?.slug || route.query?.institutionSlug
+        if (instSlug) {
+          await router.push({ path: '/institution-manager/dashboard', query: { institutionSlug: String(instSlug) } })
+        } else {
+          await router.push('/institution-manager/dashboard')
+        }
+    } else router.push('/grades')
   } catch (e) {
     console.error('Login failed', e)
     const msg = e?.response?.data?.message || e?.message || 'Login failed. Please check your credentials and try again.'

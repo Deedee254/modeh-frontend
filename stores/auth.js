@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import useApi from '~/composables/useApi';
+import { useInstitutionsStore } from '~/stores/institutions'
 
 let notificationsModule = null;
 if (import.meta.client) {
@@ -121,6 +122,22 @@ export const useAuthStore = defineStore('auth', () => {
   function setUser(newUser) {
     user.value = newUser;
     role.value = newUser?.role || null;
+
+    // If the user payload includes institution info, set the active institution in the institutions store
+    try {
+      if (import.meta.client && newUser) {
+        const instStore = useInstitutionsStore()
+        if (newUser.institutions && Array.isArray(newUser.institutions) && newUser.institutions.length) {
+          // Some API responses may include full institution objects on the user; prefer that
+          instStore.institution = newUser.institutions[0]
+        } else if (newUser.institution_id) {
+          // otherwise, fetch the institution by id
+          instStore.fetchInstitution(newUser.institution_id).catch(() => {})
+        }
+      }
+    } catch (e) {
+      // ignore errors setting the institutions store
+    }
 
     // If running in the browser and the user profile is incomplete, route to the
     // appropriate profile completion flow. We send social-registered/new users

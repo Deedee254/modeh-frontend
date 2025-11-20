@@ -34,10 +34,10 @@
               :grade="selectedGrade"
               :subject="selectedSubject"
               storageKey="filters:quiz-master-topics"
-              @update:grade="val => { selectedGrade.value = val }"
-              @update:subject="val => { selectedSubject.value = val }"
-              @apply="() => { page.value = 1; loadTopics() }"
-              @clear="() => { selectedGrade.value = ''; selectedSubject.value = ''; page.value = 1; loadTopics() }"
+              @update:grade="onGradeChange"
+              @update:subject="onSubjectChange"
+              @apply="onApplyFilters"
+              @clear="onClearFilters"
             />
             <div class="mt-4">
               <input 
@@ -62,7 +62,15 @@
               :subject="topic?.subject?.name || topic?.subject_name || ''"
               :description="topic?.description || topic?.summary || ''"
               :quizzesCount="topic?.quizzes_count || topic?.quizzesCount || 0"
-              :startLink="`/quiz-master/quizzes/create?topic_id=${topic?.id}&subject_id=${topic?.subject_id || topic?.subject?.id || ''}`"
+              :startLink="{
+                path: '/quiz-master/quizzes/create',
+                query: {
+                  level_id: topic?.grade?.level_id || topic?.level_id,
+                  grade_id: topic?.grade_id || topic?.gradeId,
+                  subject_id: topic?.subject_id || topic?.subjectId,
+                  topic_id: topic?.id,
+                }
+              }"
               :startLabel="'Create Quiz'"
               @click="topic && handleTopicClick(topic)"
             />
@@ -116,8 +124,8 @@ definePageMeta({
 const router = useRouter()
 const config = useRuntimeConfig()
 const searchQuery = ref('')
-const selectedSubject = ref('')
-const selectedGrade = ref('')
+const selectedSubject = ref(null)
+const selectedGrade = ref(null)
 const isLoading = ref(true)
 
 const page = ref(1)
@@ -192,6 +200,26 @@ async function onServerSearch(q) {
 async function onSearch() {
   page.value = 1
   await loadTopics()
+}
+
+function onGradeChange(val) {
+  selectedGrade.value = val
+}
+
+function onSubjectChange(val) {
+  selectedSubject.value = val
+}
+
+function onApplyFilters() {
+  page.value = 1
+  loadTopics()
+}
+
+function onClearFilters() {
+  selectedGrade.value = null
+  selectedSubject.value = null
+  page.value = 1
+  loadTopics()
 }
 
 function onFilterChange(type, val) {

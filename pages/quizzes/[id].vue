@@ -46,7 +46,12 @@
               <h1 class="text-3xl font-extrabold mt-1">{{ quiz.title }}</h1>
               <p class="text-sm text-gray-600 mt-2">{{ quiz.short_description || 'Practice and improve.' }}</p>
               <div class="mt-4 flex items-center gap-3">
-                <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Begin Assessment</NuxtLink>
+                <template v-if="isLoggedIn">
+                  <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Begin Assessment</NuxtLink>
+                </template>
+                <template v-else>
+                  <NuxtLink :to="`/register?next=/quizee/quizzes/take/${quiz.id}`" class="px-4 py-2 bg-indigo-600 text-white rounded">Register / Login to take</NuxtLink>
+                </template>
                 <button @click="toggleLike" :class="['px-3 py-2 border rounded', liked ? 'bg-rose-50 text-rose-600' : 'text-gray-700']">
                   <span v-if="liked">♥</span>
                   <span v-else>♡</span>
@@ -166,7 +171,12 @@
               </div>
             </div>
             <div class="mt-4">
-              <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Begin Assessment</NuxtLink>
+              <template v-if="isLoggedIn">
+                <NuxtLink :to="`/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Begin Assessment</NuxtLink>
+              </template>
+              <template v-else>
+                <NuxtLink :to="`/register?next=/quizee/quizzes/take/${quiz.id}`" class="block px-3 py-2 bg-indigo-600 text-white rounded text-center">Register / Login to take</NuxtLink>
+              </template>
             </div>
           </div>
 
@@ -186,10 +196,13 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'quizee' })
+// Make this page public: guests can view quiz details. If the user is logged in
+// the UI will still show the appropriate "Begin Assessment" action that leads
+// to the quizee take route. Guests will be prompted to register/login.
 
 import { ref, computed, onMounted, onBeforeUnmount, h, markRaw } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 import { useBottomNavStore } from '~/stores/bottomNav'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
@@ -237,6 +250,32 @@ const likesCount = ref((quiz && (quiz.likes_count ?? quiz.likes)) ?? 0)
 const likeAnimating = ref(false)
 const api = useApi()
 const alert = useAppAlert()
+const auth = useAuthStore()
+const isLoggedIn = computed(() => !!auth.user && !!auth.user.id)
+// If a logged-in user visits the public quiz page, redirect them to the
+// appropriate role-specific route so they receive the correct layout.
+onMounted(() => {
+  try {
+    const role = auth.user?.role
+    const path = String(window?.location?.pathname || '')
+    // Only redirect when on the public path (i.e., not already under /quizee or /quiz-master)
+    if (auth.user && !path.startsWith('/quizee') && !path.startsWith('/quiz-master')) {
+      if (role === 'quizee') {
+        // use replace to avoid adding an extra history entry
+        const r = useRouter()
+        r.replace(`/quizee/quizzes/${id}`)
+        return
+      }
+      if (role === 'quiz-master') {
+        const r = useRouter()
+        r.replace(`/quiz-master/quizzes/${id}`)
+        return
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+})
 async function toggleLike(){
   // optimistic
   liked.value = !liked.value
