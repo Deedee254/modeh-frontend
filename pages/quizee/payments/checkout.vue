@@ -327,9 +327,42 @@ async function openAnswerReview() {
 
       if (res?.ok) {
         const data = await res.json();
-        if (data?.attempt?.details) {
-          reviewDetails.value = data.attempt.details;
-          if (reviewDetails.value.length > 0) {
+        // Backend returns 'answers' array in attempt
+        const answers = data?.attempt?.answers || data?.attempt?.details || [];
+        if (Array.isArray(answers)) {
+          // Fetch quiz to get question details
+          try {
+            const quizRes = await api.get(`/api/quizzes/${data.attempt.quiz_id}`);
+            if (quizRes?.ok) {
+              const quizData = await quizRes.json();
+              const quiz = quizData.quiz || quizData;
+              const questionMap = {};
+              (quiz.questions || []).forEach(q => {
+                questionMap[q.id] = q;
+              });
+              
+              // Merge answers with question details
+              const enriched = answers.map(ans => ({
+                ...ans,
+                question_id: ans.question_id,
+                body: questionMap[ans.question_id]?.body || questionMap[ans.question_id]?.question || 'Question',
+                provided: ans.selected || null
+              }));
+              
+              reviewDetails.value = enriched;
+              reviewError.value = '';
+              break;
+            } else {
+              throw new Error('Could not fetch quiz');
+            }
+          } catch (quizErr) {
+            // If quiz fetch fails, still show answers without question text
+            const enriched = answers.map(ans => ({
+              ...ans,
+              body: 'Question',
+              provided: ans.selected || null
+            }));
+            reviewDetails.value = enriched;
             reviewError.value = '';
             break;
           }

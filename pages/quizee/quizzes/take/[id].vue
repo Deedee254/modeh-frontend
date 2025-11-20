@@ -20,31 +20,31 @@
             <!-- Accessible announcements -->
             <div class="sr-only" aria-live="polite">{{ lastAnnouncement }}</div>
             <div class="flex items-center gap-4" v-if="Q.questions.length > 0">
-              <!-- Quiz Timer -->
-              <div class="flex flex-col items-end">
-                <div v-if="Q.timer_seconds" class="text-sm text-gray-500">Total Time</div>
+              <!-- Quiz Timer (only show if quiz has overall time limit) -->
+              <div v-if="Q.timer_seconds" class="flex flex-col items-end">
+                <div class="text-sm text-gray-500">Total Time</div>
                 <div class="text-lg font-mono font-bold" :class="{
-                  'text-red-500': timeLeft.value < 60,
-                  'text-orange-500': timeLeft.value < 180,
-                  'text-indigo-600': timeLeft.value >= 180 || !Q.timer_seconds
+                  'text-red-500': timeLeft < 60,
+                  'text-orange-500': timeLeft < 180,
+                  'text-indigo-600': timeLeft >= 180
                 }">
                   {{ displayTime }}
                 </div>
               </div>
 
-              <!-- Question Timer -->
-              <div v-if="Q.use_per_question_timer || Q.per_question_seconds" class="flex flex-col items-end border-l pl-4">
+              <!-- Question Timer (always show, as primary way to track progress per question) -->
+              <div class="flex flex-col items-end" :class="Q.timer_seconds ? 'border-l pl-4' : ''">
                 <div class="text-sm text-gray-500">Question Time</div>
                 <div class="text-lg font-mono font-bold" :class="qTimerColorClass">
-                  {{ qDisplayTime }}
+                  {{ formatTime(Math.ceil(questionRemaining)) }}
                 </div>
               </div>
 
-              <!-- Time per Remaining -->
-              <div v-else-if="Q.timer_seconds" class="flex flex-col items-end border-l pl-4">
-                <div class="text-sm text-gray-500">Per Question</div>
+              <!-- Time per Remaining (when quiz timer but no per-question timer) -->
+              <div v-if="Q.timer_seconds && !(Q.use_per_question_timer || Q.per_question_seconds)" class="flex flex-col items-end border-l pl-4">
+                <div class="text-sm text-gray-500">Remaining</div>
                 <div class="text-sm font-mono font-medium text-gray-600">
-                  ~{{ formatTime(Math.floor(timeLeft.value / (Q.questions.length - currentQuestion))) }}
+                  ~{{ formatTime(Math.floor(timeLeft / Math.max(1, Q.questions.length - currentQuestion))) }}
                 </div>
               </div>
             </div>
@@ -61,6 +61,22 @@
           <div v-if="!loading && Q.questions.length > 0" class="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${progressPercent}%` }"></div>
           </div>
+
+          <!-- Persistent Countdown Alert -->
+          <transition name="slide-down">
+            <div v-if="countdownAlert.show" :class="[
+              'px-4 py-3 rounded-lg mb-4 font-semibold flex items-center gap-2',
+              countdownAlert.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
+              countdownAlert.type === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+              'bg-blue-100 text-blue-800 border border-blue-300'
+            ]">
+              <svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00-.293.707l-.707.707a1 1 0 101.414 1.414L9 9.414V6z" clip-rule="evenodd"></path>
+              </svg>
+              <span>{{ countdownAlert.message }}</span>
+            </div>
+          </transition>
+
           <div class="flex items-center justify-between">
             <div class="text-xs text-gray-500">
               Question {{ currentQuestion + 1 }} of {{ Q.questions.length }}
@@ -256,19 +272,37 @@ const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDispl
 const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
 import { normalizeAnswer, formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
 
-// Show countdown alerts for overall quiz timer and per-question timer when <= 10s
-watch(timeLeft, (val) => {
-  if (typeof val === 'number' && val <= 10 && val > 0) {
-    pushAlert({ message: `${val} second${val === 1 ? '' : 's'} remaining`, type: 'info' })
-  }
+// Persistent countdown alert state (shows real-time countdown instead of discrete alerts)
+const countdownAlert = ref({
+  show: false,
+  type: 'info', // 'info', 'warning', 'error'
+  message: '',
+  timeRemaining: 0
 })
 
-watch(questionRemaining, (val) => {
-  const secs = Math.ceil(Number(val || 0))
-  if (secs > 0 && secs <= 10) {
-    pushAlert({ message: `${secs} second${secs === 1 ? '' : 's'} left for this question`, type: 'info' })
+// Update countdown alert based on which timer is critical
+const updateCountdownAlert = () => {
+  // Check per-question timer first (more urgent) - show when <= 5 seconds
+  if (typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = questionRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(questionRemaining.value)
+    countdownAlert.value.message = `⏱️ Time for this question: ${formatTime(Math.ceil(questionRemaining.value))}`
   }
-})
+  // Then check overall quiz timer if per-question is not critical - show when <= 5 seconds
+  else if (typeof timeLeft.value === 'number' && timeLeft.value <= 5 && timeLeft.value > 0 && quiz.value?.timer_seconds) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = timeLeft.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = timeLeft.value
+    countdownAlert.value.message = `⏱️ Quiz time remaining: ${formatTime(timeLeft.value)}`
+  } else {
+    countdownAlert.value.show = false
+  }
+}
+
+// Watch timers to update countdown alert
+watch(timeLeft, () => updateCountdownAlert(), { immediate: false })
+watch(questionRemaining, () => updateCountdownAlert(), { immediate: false })
 
 // Progress persistence helpers (include attempt_id so restore maps to server attempt)
 // Per-question timing state (declare early so functions/watchers below can reference it)
@@ -366,54 +400,63 @@ function toggleMulti(qid, opt) {
 }
 const { currentQuestion, nextQuestion: navNextQuestion, previousQuestion: navPreviousQuestion } = useQuizNavigation(computed(() => quiz.value.questions))
 
+// Watch question change to update countdown immediately for new question
+watch(currentQuestion, () => {
+  // Force alert update when changing questions
+  updateCountdownAlert()
+}, { immediate: false })
+
 // Wrap navigation to record question time and manage per-question timers
 function nextQuestion() {
   // record time for current
   const qid = currentQuestionData.value.id
   if (qid) recordQuestionTime(qid)
-  navNextQuestion()
-  // restart per-question timer for new question using the computed per-question limit
-  const limit = currentQuestionLimit()
-  // clear any existing per-question limit (schedulePerQuestionLimit will also clear but be explicit)
+  
+  // Reset timer and clear any scheduled limits before moving
   try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
-    if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
-    const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < limit) ? questionRemaining.value : undefined
-    startQuestionTimer(limit, remainingForSchedule)
-    // schedule the expiry action (auto-next or submit)
-    schedulePerQuestionLimit(limit, () => {
-      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
-      else {
-        submissionMessage.value = 'Time is over — submitting...'
-        submitAnswers()
-      }
-    }, remainingForSchedule)
-  } else {
-    // No per-question limit for this question — ensure any running per-question timer is stopped
-    try { stopQuestionTimer() } catch (e) {}
-    try { clearPerQuestionLimit() } catch (e) {}
-  }
+  
+  // Move to next question
+  navNextQuestion()
+  
+  // Reinitialize timer for new question with 15 seconds
+  startQuestionTimer(15, undefined)
+  
+  // Schedule the expiry action (auto-next or submit)
+  schedulePerQuestionLimit(15, () => {
+    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+    else {
+      submissionMessage.value = 'Time is over — submitting...'
+      submitAnswers()
+    }
+  }, undefined)
+  
+  // Force update countdown alert for new question
+  updateCountdownAlert()
 }
 
 function previousQuestion() {
   const qid = currentQuestionData.value.id
   if (qid) recordQuestionTime(qid)
-  navPreviousQuestion()
-  const limit = currentQuestionLimit()
+  
+  // Reset timer and clear any scheduled limits before moving
   try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
-  if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
-  const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < limit) ? questionRemaining.value : undefined
-  startQuestionTimer(limit, remainingForSchedule)
-    schedulePerQuestionLimit(limit, () => {
-      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
-      else {
-        submissionMessage.value = 'Time is over — submitting...'
-        submitAnswers()
-      }
-    }, remainingForSchedule)
-  } else {
-    try { stopQuestionTimer() } catch (e) {}
-    try { clearPerQuestionLimit() } catch (e) {}
-  }
+  
+  // Move to previous question
+  navPreviousQuestion()
+  
+  // Reinitialize timer for previous question with 15 seconds
+  startQuestionTimer(15, undefined)
+  
+  schedulePerQuestionLimit(15, () => {
+    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+    else {
+      submissionMessage.value = 'Time is over — submitting...'
+      submitAnswers()
+    }
+  }, undefined)
+  
+  // Force update countdown alert for new question
+  updateCountdownAlert()
 }
 const { currentStreak, achievements, encouragementMessage, encouragementStyle, calculateAchievements, resetAchievements } = useQuizEnhancements(quiz, progressPercent, currentQuestion, answers)
 
@@ -471,12 +514,34 @@ function formatTime(seconds) {
 function onQuestionSelect(val) {
   const q = currentQuestionData.value
   if (!q || !q.id) return
+  console.log('Question selected:', { questionId: q.id, questionType: q.type, answer: val })
   answers.value[q.id] = val
   // record per-question time
   recordQuestionTime(q.id)
   if (q.type === 'mcq') {
     setTimeout(() => { if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion() }, 250)
   }
+}
+
+// Initialize the question timer with proper quiz configuration
+function initializeQuestionTimer() {
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+  
+  // Start with 15 seconds per question
+  const timerLimit = 15
+  
+  // Start the question timer explicitly
+  startQuestionTimer(timerLimit, undefined)
+  
+  // Schedule the expiry callback
+  schedulePerQuestionLimit(timerLimit, () => {
+    if (currentQuestion.value < quizQuestionsLength.value - 1) {
+      nextQuestion()
+    } else {
+      submissionMessage.value = 'Time is over — submitting...'
+      submitAnswers()
+    }
+  }, undefined)
 }
 
 onMounted(async () => {
@@ -511,24 +576,10 @@ onMounted(async () => {
 
         // Start timers after establishing started_at / attempt_id
         startTimer()
-        // start per-question timer and schedule expiry for the current question
-        const initialLimit = currentQuestionLimit()
-        try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
-        if (typeof initialLimit === 'number' && Number.isFinite(initialLimit) && initialLimit > 0) {
-          const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < initialLimit) ? questionRemaining.value : undefined
-          startQuestionTimer(initialLimit, remainingForSchedule)
-          schedulePerQuestionLimit(initialLimit, () => {
-            if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
-            else {
-              submissionMessage.value = 'Time is over — submitting...'
-              submitAnswers()
-            }
-          }, remainingForSchedule)
-        } else {
-          try { stopQuestionTimer() } catch (e) {}
-        }
-        // No onTimeout backup — we rely on schedulePerQuestionLimit as single source of truth for expiry.
-
+        
+        // Initialize question timer AFTER quiz data is loaded
+        initializeQuestionTimer()
+        
         try { restoreProgress() } catch (e) {}
 
       // fill-blank handling is handled by the FillBlankCard component via v-model/select
@@ -560,32 +611,62 @@ async function submitAnswers() {
   stopTimer()
   const totalTime = Math.floor((Date.now() - (quiz.value._started_at_ms || Date.now())) / 1000)
 
+  // Get the latest answers from memory and localStorage
+  let answersToSubmit = answers.value
+  try {
+    const saved = localStorage.getItem(progressKey())
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (parsed?.answers && Object.keys(parsed.answers).length > 0) {
+        answersToSubmit = parsed.answers
+        console.log('Using saved answers from localStorage:', answersToSubmit)
+      }
+    }
+  } catch (e) {
+    console.log('Could not retrieve saved answers, using in-memory:', e)
+  }
+
   // Build answers payload using central normalization helpers.
   // This ensures consistent formatting between different quiz flows (battles, tournaments, normal quizzes).
-  const sanitizedAnswers = formatAnswersForSubmission(answers.value, questionTimes.value)
-    // formatAnswersForSubmission may coerce invalid ids to 0; filter out those entries here
-    .filter(a => Number.isFinite(Number(a.question_id)) && Number(a.question_id) > 0)
+  const sanitizedAnswers = formatAnswersForSubmission(answersToSubmit, questionTimes.value)
+  
+  // Log for debugging
+  console.log('Raw answers object:', answersToSubmit)
+  console.log('Sanitized answers:', sanitizedAnswers)
+  
+  // Only filter out answers with question_id of 0 (completely invalid)
+  const finalAnswers = sanitizedAnswers.filter(a => {
+    const qid = Number(a.question_id)
+    return Number.isFinite(qid)
+  })
 
   const payload = {
-    answers: sanitizedAnswers,
+    answers: finalAnswers,
     defer_marking: true,
     total_time_seconds: totalTime,
     started_at: quiz.value._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : (quiz.value.started_at || null),
     attempt_id: quiz.value._attempt_id || null,
   }
 
+  console.log('Final payload being sent to server:', payload)
+  console.log('Number of answers in payload:', finalAnswers.length)
+  console.log('First few answers detail:', finalAnswers.slice(0, 3))
+  
     const res = await api.postJson(`/api/quizzes/${id}/submit`, payload)
+    console.log('Submission response status:', res.status)
     if (api.handleAuthStatus(res)) { pushAlert({ message: 'Session expired — please sign in again', type: 'warning' }); lastSubmitFailed.value = true; submissionMessage.value = ''; submitting.value = false; showConfirm.value = false; return }
     if (res.ok) {
       // stop saving message
       submissionMessage.value = ''
       const body = await res.json()
+      console.log('Submission response body:', body)
       stopTimer()
       try { clearProgress() } catch (e) {}
       clearSavedAnswers()
 
       // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
       const attemptId = body?.attempt_id ?? body?.attempt?.id
+      console.log('Extracted attemptId from response:', attemptId)
       // If backend included awarded achievements or updated user, update auth store to reflect new badges/points
       try {
         const auth = useAuthStore()
@@ -602,12 +683,13 @@ async function submitAnswers() {
       return
   } else {
       // restore optimistic to null to indicate failure
+  console.error('Submission failed with status:', res.status)
   if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
   submissionMessage.value = ''
   // ensure no inline result is shown — stay on page with answers preserved for retry
       // show error alert and keep answers saved to allow retry
   let errMsg = 'Failed to submit quiz. Please try again.'
-  try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message } catch(e) {}
+  try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message; console.error('Submission error response:', errBody) } catch(e) {}
   pushAlert({ message: errMsg, type: 'error' })
       // Keep answers in-place so user can retry; showConfirm dialog will be closed and user can press Retry
     }
@@ -641,9 +723,6 @@ function retakeQuiz() {
 
 
 <style scoped>
-</style>
-
-<style scoped>
 .fade-slide-enter-active, .fade-slide-leave-active {
   transition: opacity 240ms ease, transform 240ms ease;
 }
@@ -654,5 +733,17 @@ function retakeQuiz() {
 .fade-slide-enter-to, .fade-slide-leave-from {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.slide-down-enter-active, .slide-down-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.slide-down-enter-from, .slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.slide-down-enter-to, .slide-down-leave-from {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>
