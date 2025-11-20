@@ -76,6 +76,29 @@
             </div>
           </div>
 
+          <div v-else-if="error" class="text-center py-12">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Unable to Load Daily Challenge</h3>
+            <p class="text-gray-600 mb-4">{{ error }}</p>
+            <p class="text-sm text-gray-500 mb-4">
+              <strong>Quick troubleshooting:</strong><br />
+              • Verify you have a grade/level assigned to your profile<br />
+              • Ensure your profile has subjects selected<br />
+              • Contact support if the issue persists
+            </p>
+            <button 
+              type="button" 
+              @click="fetchDailyChallenge()" 
+              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+
           <div v-else-if="!challenge" class="text-center py-12">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,14 +321,17 @@
 // Use the quizee layout for this page
 definePageMeta({ layout: 'quizee' })
 import PageHero from '~/components/ui/PageHero.vue'
-import { ref, onMounted } from 'vue'
-const config = useRuntimeConfig()
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import useApi from '~/composables/useApi'
+
+const api = useApi()
 
 // Data
 const challenge = ref(null)
 const completion = ref(null)
 const history = ref([])
 const loading = ref(true)
+const error = ref(null) // Add error state
 
 // Badges
 const badges = ref([])
@@ -320,8 +346,11 @@ const timeRemaining = ref('--:--:--')
 
 const fetchLeaderboard = async () => {
   try {
-    const res = await $fetch(config.public.apiBase + '/api/daily-challenges/leaderboard', { credentials: 'include' })
-    leaderboard.value = res?.data || res || []
+    const res = await api.get('/api/daily-challenges/leaderboard')
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) return
+    const data = await res.json()
+    leaderboard.value = data?.data || data || []
   } catch (e) {
     // ignore leaderboard errors
   }
@@ -404,12 +433,20 @@ function formatTime(seconds) {
 // Fetch daily challenge
 const fetchDailyChallenge = async () => {
   try {
-    const res = await $fetch(config.public.apiBase + '/api/daily-challenges/today', { credentials: 'include' })
+    const res = await api.get('/api/daily-challenges/today')
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) {
+      throw new Error('Failed to fetch daily challenge')
+    }
+    const data = await res.json()
     // support multiple response shapes
-    challenge.value = res?.challenge || res?.data?.challenge || res?.data || res || null
-    completion.value = res?.completion || res?.data?.completion || null
-  } catch (error) {
-    console.error('Failed to fetch daily challenge:', error)
+    challenge.value = data?.challenge || data?.data?.challenge || data?.data || data || null
+    completion.value = data?.completion || data?.data?.completion || null
+    error.value = null
+  } catch (err) {
+    console.error('Failed to fetch daily challenge:', err)
+    error.value = err?.data?.error || err?.data?.message || err?.message || 'Unable to load daily challenge'
+    challenge.value = null
   } finally {
     loading.value = false
   }
@@ -419,8 +456,11 @@ const fetchDailyChallenge = async () => {
 const fetchHistory = async () => {
   try {
     // Assuming there's an endpoint for user's daily challenge history
-    const res = await $fetch(config.public.apiBase + '/api/user/daily-challenges', { credentials: 'include' })
-    history.value = res?.data || res || []
+    const res = await api.get('/api/user/daily-challenges')
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) return
+    const data = await res.json()
+    history.value = data?.data || data || []
   } catch (error) {
     console.error('Failed to fetch challenge history:', error)
   }
@@ -428,8 +468,21 @@ const fetchHistory = async () => {
 
 const fetchBadges = async () => {
   try {
-    const res = await $fetch(config.public.apiBase + '/api/badges?for=daily_challenge', { credentials: 'include' })
-    badges.value = res?.data || res || []
+    const res = await api.get('/api/badges?for=daily_challenge')
+    if (api.handleAuthStatus(res)) {
+      badges.value = []
+      return
+    }
+    if (!res.ok) {
+      if (res.status === 404) {
+        badges.value = []
+      } else {
+        console.error('Failed to fetch badges: status', res.status)
+      }
+      return
+    }
+    const data = await res.json()
+    badges.value = data?.data || data || []
   } catch (error) {
     // $fetch throws on non-2xx responses. A 404 here simply means the backend
     // doesn't provide daily-challenge badges — treat as empty and avoid noisy logs.

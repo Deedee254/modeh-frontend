@@ -86,8 +86,9 @@
           </transition>
         </template>
         <div v-else-if="loading" class="p-6"><UiSkeleton :count="5" /></div>
-        <div v-else class="text-center py-12 text-gray-500 dark:text-gray-400">
-          <p>No questions available for this battle.</p>
+        <div v-else class="text-center py-12">
+          <p class="text-gray-500 dark:text-gray-400 mb-4">No questions available for this battle.</p>
+          <UButton @click="$router.back()" color="gray" label="Go Back" />
         </div>
       </main>
 
@@ -389,26 +390,44 @@ function confirmFinish() {
 onMounted(async () => {
   try {
     const res = await api.get(`/api/battles/${id}`)
-    if (res.ok) {
-      const j = await res.json()
-      const data = j.battle || j
-      battle.value = data
-      questions.value = battle.value.questions || []
-      initializeAnswers()
-      
-      if (battle.value.time_per_question) {
-        timePerQuestion.value = battle.value.time_per_question
-      } else if (battle.value.settings?.time_per_question) {
-        timePerQuestion.value = battle.value.settings.time_per_question
-      } else if (battle.value.settings?.time_total_seconds && questions.value.length) {
-        const per = Math.floor(battle.value.settings.time_total_seconds / questions.value.length)
-        timePerQuestion.value = per > 0 ? per : 20
-      } else {
-        timePerQuestion.value = 20
-      }
+    if (!res.ok) {
+      pushAlert({ message: 'Failed to load battle', type: 'error' })
+      loading.value = false
+      return
+    }
+
+    const j = await res.json()
+    const data = j.battle || j
+    battle.value = data
+    questions.value = battle.value.questions || []
+    
+    // Validate questions are loaded
+    if (!questions.value || questions.value.length === 0) {
+      pushAlert({ 
+        message: 'No questions available for this battle. Please contact support.',
+        type: 'error'
+      })
+      loading.value = false
+      return
+    }
+    
+    initializeAnswers()
+    
+    if (battle.value.time_per_question) {
+      timePerQuestion.value = battle.value.time_per_question
+    } else if (battle.value.settings?.time_per_question) {
+      timePerQuestion.value = battle.value.settings.time_per_question
+    } else if (battle.value.settings?.time_total_seconds && questions.value.length) {
+      const per = Math.floor(battle.value.settings.time_total_seconds / questions.value.length)
+      timePerQuestion.value = per > 0 ? per : 20
+    } else {
+      timePerQuestion.value = 20
     }
   } catch (e) {
-    console.error(e)
+    console.error('Failed to load battle:', e)
+    pushAlert({ message: 'Error loading battle', type: 'error' })
+    loading.value = false
+    return
   } finally {
     loading.value = false
     if (questions.value.length > 0) {

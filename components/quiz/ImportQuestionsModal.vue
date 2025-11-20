@@ -153,16 +153,23 @@ function normalizeHeader(h) {
 function parseCsvFile(file) {
   return new Promise(async (resolve, reject) => {
     try {
-      // Use PapaParse in the browser to robustly parse CSVs (handles quoted fields, newlines, encodings)
+      const arrayBuffer = await file.arrayBuffer()
+      const decoder = new TextDecoder('utf-8', { fatal: false })
+      const text = decoder.decode(arrayBuffer)
+      
       const PapaMod = await import('papaparse')
       const Papa = PapaMod && PapaMod.default ? PapaMod.default : PapaMod
-      Papa.parse(file, {
+      Papa.parse(text, {
         header: true,
         skipEmptyLines: true,
         transformHeader: normalizeHeader,
-        transform: (value) => (value == null ? '' : String(value)),
+        transform: (value) => {
+          if (value == null) return ''
+          let str = String(value)
+          str = str.replace(/\ufffd/g, '~')
+          return str
+        },
         complete: (results) => {
-          // results.data is an array of objects with normalized headers
           const rows = Array.isArray(results.data) ? results.data.map(r => normalizeRowKeys(r)) : []
           resolve(rows)
         },
@@ -178,11 +185,10 @@ async function parseExcelFile(file, XLSX) {
     reader.onload = () => {
       try {
         const data = new Uint8Array(reader.result)
-        const wb = XLSX.read(data, { type: 'array' })
+        const wb = XLSX.read(data, { type: 'array', codepage: 65001 })
         const first = wb.SheetNames[0]
         const sheet = wb.Sheets[first]
         let rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
-        // Normalize keys to match CSV parsing (strip BOM, lowercase, underscores)
         if (Array.isArray(rows)) rows = rows.map(r => normalizeRowKeys(r))
         resolve(rows)
       } catch (err) { reject(err) }

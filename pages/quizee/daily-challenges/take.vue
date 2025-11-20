@@ -98,6 +98,9 @@
         <div class="bg-gray-50 rounded-lg p-4 mb-4">
           <div class="text-sm text-gray-600">Time taken: {{ formatTime(challengeAdapter.timer_seconds - timeLeft) }}</div>
           <div class="text-sm text-gray-600">Questions answered: {{ Object.keys(answers).length }}/{{ questions.length }}</div>
+          <div v-if="resultPayload?.streak !== undefined" class="text-sm text-gray-600 mt-2">
+            <span class="font-semibold text-indigo-600">🔥 Streak: {{ resultPayload.streak }} day{{ resultPayload.streak !== 1 ? 's' : '' }}</span>
+          </div>
         </div>
 
         <div v-if="earnedAchievements && earnedAchievements.length" class="mt-4">
@@ -122,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import useQuestionTimer from '~/composables/useQuestionTimer'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useDisableUserActions from '~/composables/useDisableUserActions'
@@ -131,12 +134,16 @@ import { useAnswerNormalization } from '~/composables/useAnswerNormalization'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
 import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
 import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
-const config = useRuntimeConfig()
+import useApi from '~/composables/useApi'
+import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+
 const router = useRouter()
 const auth = useAuthStore()
+const api = useApi()
 
 // Data
 const challenge = ref(null)
+const cache_id = ref(null)
 const questions = ref([])
 const questionTimes = ref({})
 // reuse shared answers composable so daily-challenge answers are same shape as quizzes/battles
@@ -170,8 +177,6 @@ const progress = computed(() => ((currentQuestionIndex.value + 1) / questions.va
 const challengeAdapter = computed(() => ({
   timer_seconds: 600 // Daily challenges have a fixed 10-minute timer
 }))
-
-import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 
 // Timer
 const { timeLeft, displayTime, startTimer, stopTimer } = useQuizTimer(challengeAdapter, () => submitChallenge())
@@ -255,42 +260,36 @@ const submitChallenge = async () => {
   stopTimer()
 
   try {
-    // Import the shared answer normalization
+    // Format answers for daily challenge submission (direct format, not quiz attempt format)
     const { normalizeAnswer } = useAnswerNormalization()
+    const payloadAnswers = {}
+    for (const [qid, answer] of Object.entries(answers.value)) {
+      payloadAnswers[parseInt(qid, 10)] = normalizeAnswer(answer)
+    }
 
-    // Calculate score (comparing normalized answers)
-    let correctCount = 0
-    questions.value.forEach(q => {
-      const normalizedAnswer = normalizeAnswer(answers.value[q.id])
-      const normalizedCorrect = normalizeAnswer(q.correct_answer)
-      const isCorrect = Array.isArray(normalizedAnswer) && Array.isArray(normalizedCorrect)
-        ? normalizedAnswer.length === normalizedCorrect.length && normalizedAnswer.every(a => normalizedCorrect.includes(a))
-        : normalizedAnswer === normalizedCorrect
-      if (isCorrect) correctCount++
-    })
-    const score = Math.round((correctCount / questions.value.length) * 100)
+    // Calculate time taken in seconds
+    const timeTaken = Math.round((challengeAdapter.value?.timer_seconds - timeLeft.value) || 0)
 
-    // Convert answers map using the shared formatter
-    const { formatAnswersForSubmission } = useAnswerNormalization()
-    const payloadAnswers = formatAnswersForSubmission(answers.value)
+    // Submit with cache_id, answers, and time taken (backend calculates score)
+    const body = { cache_id: cache_id.value, answers: payloadAnswers, time_taken: timeTaken }
 
-    // include optional client-side started_at so backend (or analytics) can use it
-    const body = { answers: payloadAnswers, score }
-    if (startedAt.value) body.started_at = startedAt.value
+    const res = await api.post('/api/daily-challenges/submit', body)
+    if (api.handleAuthStatus(res)) return
 
-    const api = useApi()
-    const res = await api.postJson(`/api/daily-challenges/${challenge.value?.id}/submit`, body)
-    if (!res.ok) throw new Error('Failed to submit challenge')
+    if (!res.ok) {
+      throw new Error('Failed to submit challenge')
+    }
+
     const data = await res.json()
 
     // Update auth store if server returned updated user or awarded achievements
     const auth = useAuthStore()
     try {
-      if (res?.user) {
-        const returnedUser = res.user || res.data?.user || null
+      if (data?.user) {
+        const returnedUser = data.user || data.data?.user || null
         if (returnedUser) auth.setUser(returnedUser)
         else await auth.fetchUser()
-      } else if (res?.awarded_achievements && res.awarded_achievements.length) {
+      } else if (data?.awarded_achievements && data.awarded_achievements.length) {
         // refresh to pick up points/badges
         await auth.fetchUser()
       } else {
@@ -302,9 +301,9 @@ const submitChallenge = async () => {
     }
 
     // Show results modal with any returned achievements/awards
-    resultPayload.value = res
+    resultPayload.value = data
     // Prefer explicit `awarded_achievements` then fallback to other shapes
-    earnedAchievements.value = res?.awarded_achievements || res?.achievements || res?.data?.achievements || res?.awards || res?.user?.achievements || []
+    earnedAchievements.value = data?.awarded_achievements || data?.achievements || data?.data?.achievements || data?.awards || data?.user?.achievements || []
     showResultsModal.value = true
   } catch (error) {
     console.error('Failed to submit challenge:', error)
@@ -317,20 +316,23 @@ const submitChallenge = async () => {
 // Fetch data
 const fetchChallengeData = async () => {
   try {
-    const api = useApi()
     // Fetch today's challenge
-    const challengeRes = await api.get('/api/daily-challenges/today')
-    if (!challengeRes.ok) {
+    const res = await api.get('/api/daily-challenges/today')
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) {
       await router.push('/quizee/daily-challenges')
       return
     }
-    const challengeData = await challengeRes.json()
+
+    const challengeData = await res.json()
     if (!challengeData || !challengeData.challenge) {
       await router.push('/quizee/daily-challenges')
       return
     }
 
     challenge.value = challengeData.challenge
+    cache_id.value = challengeData.cache_id
+    questions.value = challengeData.questions || []
 
     // If already completed, redirect
     if (challengeData.completion) {
@@ -338,51 +340,15 @@ const fetchChallengeData = async () => {
       return
     }
 
-    // Fetch questions tailored to the authenticated user's profile (grade & subjects)
-    // Prefer client-provided grade/subjects to select 5 randomized questions
-    const auth = useAuthStore()
-    const gradeId = auth.user?.grade?.id || auth.user?.grade_id || auth.user?.grade || null
-    const levelId = auth.user?.level?.id || auth.user?.level_id || auth.user?.level || null
+    // initialize answers structure to match questions
+    initializeAnswers()
 
-    if (!gradeId) {
-      console.error('User grade is not set. Redirecting to settings.')
-      // Optionally, show an alert to the user
-      // alert('Please set your grade in your profile to take the daily challenge.');
-      await router.push('/quizee/settings')
-      return
-    }
-
-    const subjectIds = Array.isArray(auth.user?.subjects) ? auth.user.subjects.map(s => (s.id || s)) : []
-
-    // Build query string for questions fetch
-    const queryParams = new URLSearchParams({
-      random: '1',
-      question_count: '5',
-      grade_id: gradeId.toString()
-    })
-    if (levelId) queryParams.set('level_id', levelId.toString())
-    if (subjectIds.length) queryParams.set('subject_id', subjectIds.join(','))
-
-    const questionsRes = await api.get(`/api/questions?${queryParams.toString()}`)
-
-  // normalize various API shapes
-  if (!questionsRes.ok) {
-    console.error('Failed to fetch questions')
-    await router.push('/quizee/daily-challenges')
-    return
-  }
-  const questionsData = await questionsRes.json()
-  questions.value = questionsData?.questions?.data || questionsData?.data || questionsData?.questions || questionsData || []
-
-  // initialize answers structure to match questions
-  initializeAnswers()
-
-  // record client-side started_at for timing/persistence purposes
-  startedAt.value = new Date().toISOString()
-  // Attempt to restore any saved progress (including per-question remaining)
-  try { restoreProgress() } catch (e) {}
-  // If restore didn't start a per-question timer, start normally
-  if (typeof questionRemaining.value !== 'number') startTimer()
+    // record client-side started_at for timing/persistence purposes
+    startedAt.value = new Date().toISOString()
+    // Attempt to restore any saved progress (including per-question remaining)
+    try { restoreProgress() } catch (e) {}
+    // If restore didn't start a per-question timer, start normally
+    if (typeof questionRemaining.value !== 'number') startTimer()
   } catch (error) {
     console.error('Failed to fetch challenge data:', error)
     await router.push('/quizee/daily-challenges')
@@ -413,13 +379,13 @@ function persistProgress() {
       answers: answers.value,
       startedAt: startedAt.value
     }
-    localStorage.setItem(`daily-challenge:progress:${challenge.value?.id || 'draft'}`, JSON.stringify(meta))
+    localStorage.setItem(`daily-challenge:progress:${cache_id.value || 'draft'}`, JSON.stringify(meta))
   } catch (e) {}
 }
 
 function restoreProgress() {
   try {
-    const raw = localStorage.getItem(`daily-challenge:progress:${challenge.value?.id || 'draft'}`)
+    const raw = localStorage.getItem(`daily-challenge:progress:${cache_id.value || 'draft'}`)
     if (!raw) return
     const parsed = JSON.parse(raw)
     if (parsed?.answers && typeof parsed.answers === 'object') {

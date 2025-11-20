@@ -77,12 +77,12 @@
             </div>
           </transition>
 
-          <div class="flex items-center justify-between">
-            <div class="text-xs text-gray-500">
+          <div class="flex items-center justify-between gap-4">
+            <div class="text-xs text-gray-500 font-medium">
               Question {{ currentQuestion + 1 }} of {{ Q.questions.length }}
             </div>
             <!-- Encouragement badge based on progress -->
-            <div v-if="encouragementMessage" class="text-sm px-3 py-1 rounded-full bg-gradient-to-r" :class="encouragementStyle">
+            <div v-if="encouragementMessage" class="text-sm px-3 py-1 rounded-full bg-gradient-to-r whitespace-nowrap" :class="encouragementStyle">
               {{ encouragementMessage }}
               <span v-if="currentStreak > 1" class="ml-1 font-semibold">🔥 {{ currentStreak }}</span>
             </div>
@@ -106,8 +106,6 @@
                   </div>
                   <!-- Question Section -->
                   <div :class="currentQuestionData.media ? 'lg:col-span-1' : 'lg:col-span-2'">
-                    <div class="font-semibold text-lg text-gray-900 mb-4">Question {{ currentQuestion + 1 }}</div>
-                    <div class="text-gray-800 mb-4" v-html="currentQuestionData.body || currentQuestionData.text || currentQuestionData.question"></div>
                     <div class="space-y-3">
                       <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
                     </div>

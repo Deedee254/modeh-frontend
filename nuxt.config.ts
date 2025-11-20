@@ -1,4 +1,6 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import type { NuxtConfig } from '@nuxt/schema'
+import '@vite-pwa/nuxt'
 
 // During development we generally don't want the PWA service worker to be
 // registered or precaching assets — it often serves stale or blocked assets
@@ -28,6 +30,7 @@ export default defineNuxtConfig({
   },
 
   // PWA configuration for @vite-pwa/nuxt
+  // @ts-ignore: pwa config from @vite-pwa/nuxt module
   pwa: {
     // ensure static assets are included in the precache
     includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
