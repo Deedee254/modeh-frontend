@@ -94,7 +94,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, PropType } from 'vue'
+import { ref, computed } from 'vue'
+import type { PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useTournamentBattle } from '~/composables/useTournamentBattle'

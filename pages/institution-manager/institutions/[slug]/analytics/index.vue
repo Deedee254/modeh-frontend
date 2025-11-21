@@ -206,7 +206,7 @@ async function loadOverview() {
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     overview.value = json?.analytics || null
-  } catch (e: any) {
+  } catch (e) {
     overviewError.value = e
   } finally {
     loadingOverview.value = false
@@ -223,7 +223,7 @@ async function loadActivity(days = 30) {
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     activityData.value = json?.analytics || null
-  } catch (e: any) {
+  } catch (e) {
     activityError.value = e
   } finally {
     loadingActivity.value = false
@@ -239,7 +239,7 @@ async function loadPerformance() {
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     performanceData.value = json?.analytics || null
-  } catch (e: any) {
+  } catch (e) {
     performanceError.value = e
   } finally {
     loadingPerformance.value = false
