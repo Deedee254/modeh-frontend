@@ -122,10 +122,13 @@ const loadingFollow = ref(false)
 const api = useApi()
 const alert = useAppAlert()
 
-// initialize following based on returned payload (if API includes) - defensive
-if (quizMasterData.value && (quizMasterData.value.data?.is_following || quizMasterData.value.is_following)) {
-  following.value = !!(quizMasterData.value.data?.is_following || quizMasterData.value.is_following)
-}
+// Initialize following state from API response when data loads
+watchEffect(() => {
+  if (quizMasterData.value) {
+    const qm = quizMasterData.value.data || quizMasterData.value
+    following.value = !!(qm?.is_following || qm?.isFollowing || qm?.is_following_by_current_user)
+  }
+})
 
 async function followHandler() {
   if (!auth.user) return router.push('/login')

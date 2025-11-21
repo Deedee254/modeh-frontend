@@ -241,6 +241,7 @@ import { useHead } from '#imports'
 import { useRouter, useRoute } from 'vue-router'
 import VideoPlayer from '~/components/media/VideoPlayer.vue'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
+import useApi from '~/composables/useApi'
 
 const router = useRouter()
 const route = useRoute()
@@ -255,7 +256,14 @@ const baseUrl = computed(() => {
 // Fetch data without blocking; useFetch returns refs (no top-level await).
 // Avoid `await` here so `definePageMeta` and computed getters can react to the
 // `quizData` ref safely without causing server-side timing/500 errors.
-const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`)
+const api = useApi()
+const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`, {
+  credentials: 'include',
+  headers: computed(() => ({
+    'X-Requested-With': 'XMLHttpRequest',
+    ...(api.getXsrfFromCookie() ? { 'X-XSRF-TOKEN': api.getXsrfFromCookie() } : {})
+  }))
+})
 
 // Make `quiz` a computed ref so its value is derived from `quizData` reactively.
 // This avoids taking a snapshot of `quizData` at setup time (which caused the

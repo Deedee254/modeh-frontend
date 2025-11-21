@@ -72,12 +72,12 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Institution / School</label>
-                <input v-model="form.institution" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                 <p v-if="fieldErrors.institution" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution }}</p>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Education Level</label>
+                <label class="block text-sm font-medium text-gray-700">Education Level <span class="text-red-600">*</span></label>
                 <TaxonomyPicker
                   resource="levels"
                   v-model="form.level_id"
@@ -85,10 +85,11 @@
                   subtitle="Select education level"
                   compact
                 />
+                <p v-if="fieldErrors.level_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.level_id }}</p>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Class / Grade</label>
+                <label class="block text-sm font-medium text-gray-700">Class / Grade <span class="text-red-600">*</span></label>
                 <TaxonomyPicker
                   resource="grades"
                   :level-id="form.level_id"
@@ -97,6 +98,21 @@
                   subtitle="Select class, course or grade"
                   compact
                 />
+                <p v-if="fieldErrors.grade_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.grade_id }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Subjects <span class="text-red-600">*</span></label>
+                <MultiTaxonomyPicker
+                  resource="subjects"
+                  :grade-id="form.grade_id"
+                  compact
+                  v-model="form.subjects"
+                  title="Subjects"
+                  subtitle="Pick subjects"
+                />
+                <p class="mt-1 text-xs text-gray-500">Select at least one subject relevant to your grade/course.</p>
+                <p v-if="fieldErrors.subjects" class="mt-1 text-sm text-red-600">{{ fieldErrors.subjects }}</p>
               </div>
 
               <div>
@@ -123,11 +139,11 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Institution</label>
-                <input v-model="form.institution" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Education Level</label>
+                <label class="block text-sm font-medium text-gray-700">Education Level <span class="text-red-600">*</span></label>
                 <TaxonomyPicker
                   resource="levels"
                   v-model="form.level_id"
@@ -135,6 +151,7 @@
                   subtitle="Select education level"
                   compact
                 />
+                <p v-if="fieldErrors.level_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.level_id }}</p>
               </div>
 
               <div>
@@ -150,16 +167,17 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Subject Specializations</label>
+                <label class="block text-sm font-medium text-gray-700">Subject Specializations <span class="text-red-600">*</span></label>
                 <MultiTaxonomyPicker
                   resource="subjects"
-                  :grade-id="null"
+                  :grade-id="form.grade_id"
                   compact
                   v-model="form.subjects"
                   title="Subjects"
                   subtitle="Pick subjects"
                 />
-                <p class="mt-1 text-xs text-gray-500">Click to toggle subjects. Selected taxonomy IDs will be saved.</p>
+                <p class="mt-1 text-xs text-gray-500">Select at least one subject you teach or specialize in.</p>
+                <p v-if="fieldErrors.subjects" class="mt-1 text-sm text-red-600">{{ fieldErrors.subjects }}</p>
               </div>
 
               <div>
@@ -170,7 +188,7 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input v-model="form.phone" type="tel" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                 <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
               </div>
             </div>
@@ -185,22 +203,26 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Institution Name</label>
-                <input v-model="form.institution" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <label class="block text-sm font-medium text-gray-700">Institution</label>
+                <p class="text-xs text-gray-600 mb-2">Select an existing institution or skip to create one later</p>
+                <select v-model="form.institution_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :disabled="loadingInstitutions">
+                  <option value="">{{ loadingInstitutions ? 'Loading institutions...' : 'Select an institution (optional)' }}</option>
+                  <option v-for="inst in institutions" :key="inst.id" :value="inst.id">
+                    {{ inst.name }}
+                  </option>
+                </select>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Institution Email</label>
-                <input v-model="form.institution_email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
-                <p v-if="fieldErrors.institution_email" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution_email }}</p>
+                <label class="block text-sm font-medium text-gray-700">Email</label>
+                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Slug (used in URLs)</label>
-                <input v-model="form.institution_slug" @input="normalizeSlug" placeholder="short-slug-for-url" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                <p v-if="slugError" class="mt-1 text-sm text-red-600">{{ slugError }}</p>
-                <p v-if="fieldErrors.institution_slug" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution_slug }}</p>
-                <p class="mt-1 text-xs text-gray-500">URL slug will be auto-formatted as you type (lowercase, dashes).</p>
+                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
               </div>
             </div>
           </template>
@@ -329,9 +351,14 @@ const error = ref(null)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
+// Institutions for manager dropdown
+const institutions = ref([])
+const loadingInstitutions = ref(false)
+
 const form = reactive({
   name: '',
   institution: '',
+  institution_id: '',
   grade_id: '',
   level_id: '',
   email: '',
@@ -350,36 +377,8 @@ const fieldErrors = reactive({
   parentEmail: '',
   phone: '',
   password: '',
-  confirmPassword: '',
-  institution_email: '',
-  institution_slug: ''
+  confirmPassword: ''
 })
-
-// institution-manager specific fields
-form.institution_slug = ''
-form.institution_email = ''
-
-const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const slugError = ref('')
-
-function normalizeSlug() {
-  if (!process.client) return
-  let s = String(form.institution_slug || '')
-  s = s.trim().toLowerCase()
-  // replace spaces and invalid chars with dash
-  s = s.replace(/[^a-z0-9]+/g, '-')
-  // collapse multiple dashes
-  s = s.replace(/-+/g, '-')
-  // trim dashes
-  s = s.replace(/^-|-$/g, '')
-  form.institution_slug = s
-  // validate live
-  if (s && (s.length < 3 || s.length > 40 || !slugRegex.test(s))) {
-    slugError.value = 'Slug must be 3-40 characters, lowercase letters, numbers and dashes only'
-  } else {
-    slugError.value = ''
-  }
-}
 
 // Preselect role from query if provided
   if (process.client) {
@@ -390,13 +389,14 @@ function normalizeSlug() {
 }
 
 const validateForm = () => {
-  // Required fields validation
-  const requiredFields = ['name', 'institution', 'email', 'password', 'confirmPassword']
-  if (role.value === 'quiz-master') {
-    requiredFields.push('phone', 'subjects')
-  }
-  if (role.value === 'institution-manager') {
-    requiredFields.push('institution_email')
+  // Required fields for all roles
+  const requiredFields = ['name', 'email', 'password', 'confirmPassword']
+  
+  // Taxonomy is required for Quizee and Quiz Master
+  if (role.value === 'quizee') {
+    requiredFields.push('level_id', 'grade_id', 'subjects')
+  } else if (role.value === 'quiz-master') {
+    requiredFields.push('level_id', 'subjects')
   }
 
   for (const field of requiredFields) {
@@ -405,7 +405,7 @@ const validateForm = () => {
         error.value = `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required`
         return false
       }
-    } else if (!form[field]?.trim()) {
+    } else if (!form[field]?.trim() && form[field] !== '') {
       error.value = `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required`
       return false
     }
@@ -418,8 +418,8 @@ const validateForm = () => {
   }
 
   // Password strength validation
-  if (form.password.length < 8) {
-    error.value = 'Password must be at least 8 characters long'
+  if (form.password.length < 6) {
+    error.value = 'Password must be at least 6 characters long'
     return false
   }
 
@@ -435,8 +435,8 @@ const validateForm = () => {
     return false
   }
 
-  // Phone number validation for quiz-masters
-  if (role.value === 'quiz-master') {
+  // Phone number validation - optional but validate if provided
+  if (form.phone) {
     const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/
     if (!phoneRegex.test(form.phone)) {
       error.value = 'Please enter a valid phone number'
@@ -450,8 +450,27 @@ const validateForm = () => {
 // taxonomy: load levels for education level select
 const { levels, fetchLevels, loadingLevels } = useTaxonomy()
 
+// Fetch institutions for institution manager registration
+const fetchInstitutions = async () => {
+  try {
+    loadingInstitutions.value = true
+    const api = useApi()
+    const response = await api.get('/api/institutions')
+    if (api.handleAuthStatus(response)) return
+    const data = await response.json().catch(() => null)
+    if (response.ok && Array.isArray(data)) {
+      institutions.value = data
+    }
+  } catch (e) {
+    console.error('Failed to load institutions:', e)
+  } finally {
+    loadingInstitutions.value = false
+  }
+}
+
 onMounted(async () => {
   try { await fetchLevels() } catch (e) {}
+  try { await fetchInstitutions() } catch (e) {}
 })
 
 async function submit() {
@@ -476,23 +495,27 @@ async function submit() {
         name: form.name,
         email: form.email,
         password: form.password,
-        phone: form.phone,
-        institution: form.institution,
       }
     
-    // Add taxonomy fields (level_id, grade_id) if present
-    if (form.level_id) payload.level_id = form.level_id
-    if (form.grade_id) payload.grade_id = form.grade_id
+    // Add optional institution field
+    if (form.institution) payload.institution = form.institution
     
-    // Add role-specific fields
+    // Add phone if provided
+    if (form.phone) payload.phone = form.phone
+    
+    // Add taxonomy fields for Quizee and Quiz Master
     if (role.value === 'quizee') {
+      payload.level_id = form.level_id
+      payload.grade_id = form.grade_id
+      payload.subjects = form.subjects
       if (form.parentEmail) payload.parentEmail = form.parentEmail
     } else if (role.value === 'quiz-master') {
-      if (form.subjects?.length) payload.subjects = form.subjects
+      payload.level_id = form.level_id
+      if (form.grade_id) payload.grade_id = form.grade_id
+      payload.subjects = form.subjects
     } else if (role.value === 'institution-manager') {
-      // include institution-level details for manager onboarding
-      payload.institution_email = form.institution_email
-      if (form.institution_slug) payload.institution_slug = form.institution_slug
+      // Send institution_id if selected
+      if (form.institution_id) payload.institution_id = form.institution_id
     }
 
     const response = await api.postJson(endpoint, payload)

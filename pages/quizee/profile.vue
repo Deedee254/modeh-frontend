@@ -14,7 +14,7 @@
         </template>
         <template #actions>
           <NuxtLink
-            to="/settings"
+            to="/quizee/settings"
             class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer inline-block"
           >
             Edit Profile
@@ -80,16 +80,6 @@
           <div>
             <label class="block text-sm font-medium text-slate-500">Bio</label>
             <p class="mt-1 text-base text-slate-900 whitespace-pre-line">{{ profile?.bio || '—' }}</p>
-          </div>
-
-          <!-- Action Button -->
-          <div class="flex justify-end pt-4 border-t">
-            <NuxtLink
-              to="/settings"
-              class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              Edit Profile
-            </NuxtLink>
           </div>
         </div>
       </UiCard>

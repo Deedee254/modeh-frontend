@@ -389,7 +389,7 @@ function confirmFinish() {
 
 onMounted(async () => {
   try {
-    const res = await api.get(`/api/battles/${id}`)
+    const res = await api.get(`/api/battles/${id}?with_questions=true`)
     if (!res.ok) {
       pushAlert({ message: 'Failed to load battle', type: 'error' })
       loading.value = false

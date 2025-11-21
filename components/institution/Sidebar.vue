@@ -6,6 +6,8 @@
 
     <nav class="space-y-2 text-sm">
   <NuxtLink :to="linkTo('/institution-manager/subscriptions')" class="block px-2 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">Subscriptions</NuxtLink>
+  <NuxtLink :to="linkTo('/institution-manager/institutions/[slug]/members')" class="block px-2 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">Members</NuxtLink>
+  <NuxtLink :to="linkTo('/institution-manager/institutions/[slug]/analytics')" class="block px-2 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">Analytics</NuxtLink>
   <NuxtLink :to="linkTo('/institution-manager/quizees')" class="block px-2 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">Quizees</NuxtLink>
   <NuxtLink :to="linkTo('/institution-manager/quiz-masters')" class="block px-2 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">Quiz Masters</NuxtLink>
     </nav>
@@ -29,6 +31,12 @@ function linkTo(path) {
   // If we have an institution slug, prefer nested routes under /institution-manager/institutions/:slug/*
   if (instSlug) {
     if (path === '/institution-manager/dashboard' || path === '/institution-manager') {
+      return { path: `/institution-manager/institutions/${String(instSlug)}/analytics` }
+    }
+    if (path === '/institution-manager/institutions/[slug]/members') {
+      return { path: `/institution-manager/institutions/${String(instSlug)}/members` }
+    }
+    if (path === '/institution-manager/institutions/[slug]/analytics') {
       return { path: `/institution-manager/institutions/${String(instSlug)}/analytics` }
     }
     if (path === '/institution-manager/quizees' || path.endsWith('/quizees')) {

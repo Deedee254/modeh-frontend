@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, watchEffect, onMounted } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
@@ -199,10 +199,14 @@ async function toggleFollow(qm) {
   }
 }
 
-watch(quizMasters, () => {
+// Initialize following state from API response (runs when data loads)
+watchEffect(() => {
   const list = quizMasters.value || []
   const map = {}
-  list.forEach(q => { map[q.id] = !!(q.is_following || q.isFollowing || q.is_following_by_current_user) })
+  list.forEach(q => { 
+    // Check for is_following field which our backend now returns
+    map[q.id] = !!(q.is_following || q.isFollowing || q.is_following_by_current_user) 
+  })
   following.value = map
 })
 </script>

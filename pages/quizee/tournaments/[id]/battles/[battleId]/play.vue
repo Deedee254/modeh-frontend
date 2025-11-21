@@ -106,10 +106,11 @@
           <button
             v-else
             @click="finishBattle"
-            :disabled="!allQuestionsAnswered"
+            :disabled="!allQuestionsAnswered || timeRemaining <= 0 || connectionStatus !== 'connected' || isSubmitting"
+            :title="timeRemaining <= 0 ? 'Battle timeout - cannot submit' : connectionStatus !== 'connected' ? 'Connection required to submit' : ''"
             class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
           >
-            Finish Battle
+            {{ isSubmitting ? 'Submitting...' : 'Finish Battle' }}
           </button>
         </div>
       </template>
@@ -209,6 +210,10 @@ const submissionMessage = ref<string>('')
 // Connection status for realtime
 const connectionStatus = ref<'connected'|'disconnected'|'reconnecting'>('connected')
 
+// Timeout warning state - triggers when time < 30 seconds
+const showTimeoutWarning = ref<boolean>(false)
+const timeoutWarningShown = ref<boolean>(false)
+
 // Per-question timer
 // use shared question timer composable for countdown UI + scheduling expiry
 const timePerQuestion = ref<number | null>(null)
@@ -248,7 +253,7 @@ const api = useApi()
 const fetchBattle = async () => {
   try {
     loading.value = true
-    const resp = await api.get(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}`)
+    const resp = await api.get(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}?with_questions=true`)
     const json = await resp.json().catch(() => null)
     const data = json?.data ?? json as Battle
     battle.value = data
@@ -328,6 +333,24 @@ watch(questionRemaining, (val) => {
 watch(timeRemaining, (val) => {
   if (typeof val !== 'number') return
   const sec = Math.ceil(val)
+  
+  // Show critical timeout warning when < 30 seconds
+  if (sec <= 30 && sec > 0 && !timeoutWarningShown.value) {
+    showTimeoutWarning.value = true
+    timeoutWarningShown.value = true
+    pushAlert({ message: `⏰ CRITICAL: Only ${sec} seconds remaining!`, type: 'warning' })
+  }
+  
+  // Disable submit and auto-submit if time expires
+  if (sec <= 0) {
+    showTimeoutWarning.value = false
+    submissionMessage.value = 'Battle timeout - auto-submitting...'
+    pushAlert({ message: 'Time expired - submitting automatically', type: 'error' })
+    submitBattle()
+    return
+  }
+  
+  // Second-by-second countdown for last 10 seconds
   if (sec <= 10 && sec > 0 && lastTotalAnnouncement.value !== sec) {
     pushAlert({ message: `${sec} seconds remaining for the battle`, type: 'info' })
     lastTotalAnnouncement.value = sec
@@ -345,6 +368,8 @@ const selectAnswer = async (optionId: string | number) => {
   answerStore.setAnswer(Number(String(currentQuestion.value.id)), optionId as any)
     selectedAnswers.value[currentQuestion.value.id] = optionId
     persistProgress()
+    // Trigger auto-save to backend after a short delay (only if connected)
+    triggerAutoSave()
   } catch (e) {
     console.warn('Failed to persist answer locally', e)
   }
@@ -358,6 +383,52 @@ const selectAnswer = async (optionId: string | number) => {
     }
     answerSubmitted.value = false
   }, 300)
+}
+
+// Auto-save state
+let autoSaveTimeoutId: NodeJS.Timeout | null = null
+let lastAutoSaveTime = 0
+
+const triggerAutoSave = () => {
+  // Clear any pending auto-save
+  if (autoSaveTimeoutId) clearTimeout(autoSaveTimeoutId)
+  
+  // Debounce: only auto-save every 5 seconds and if connected
+  const now = Date.now()
+  if (now - lastAutoSaveTime < 5000 || connectionStatus.value !== 'connected') {
+    return
+  }
+  
+  // Schedule auto-save after 2 seconds of inactivity
+  autoSaveTimeoutId = setTimeout(() => {
+    saveToBackend()
+  }, 2000)
+}
+
+const saveToBackend = async () => {
+  // Only save if connected and battle is in progress
+  if (connectionStatus.value !== 'connected' || battle.value?.status !== 'in_progress') {
+    return
+  }
+
+  try {
+    const answersStoreArray = ((answerStore.allAnswers as any)?.value ?? []) as any[]
+    const answersPayload: any[] = []
+    for (const a of answersStoreArray) {
+      answersPayload.push({ question_id: a.question_id, answer: a.answer })
+    }
+
+    await api.postJson(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}/draft`, {
+      answers: answersPayload,
+      current_question_index: currentQuestionIndex.value,
+      time_remaining: timeRemaining.value
+    })
+
+    lastAutoSaveTime = Date.now()
+  } catch (error) {
+    console.warn('Auto-save failed (will retry):', error)
+    // Fail silently - will retry on next trigger
+  }
 }
 
 const previousQuestion = () => {
@@ -428,19 +499,49 @@ const nextQuestion = () => {
 }
 
 const finishBattle = () => {
-  if (allQuestionsAnswered.value) {
-    showConfirmation.value = true
+  // Enforce timeout and connection requirements
+  if (timeRemaining.value <= 0) {
+    pushAlert({ message: 'Battle timeout - cannot submit', type: 'error' })
+    return
   }
+  
+  if (connectionStatus.value !== 'connected') {
+    pushAlert({ message: 'Connection required to submit - please reconnect', type: 'error' })
+    return
+  }
+  
+  if (!allQuestionsAnswered.value) {
+    pushAlert({ message: 'Please answer all questions before submitting', type: 'warning' })
+    return
+  }
+  
+  showConfirmation.value = true
 }
 
 const submitBattle = async () => {
   try {
+    // ENFORCE: Check timeout before submitting
+    if (timeRemaining.value <= 0) {
+      error.value = 'Battle timeout - submission rejected'
+      pushAlert({ message: 'Battle timeout - submission rejected', type: 'error' })
+      return
+    }
+    
+    // ENFORCE: Check connection status before submitting
+    if (connectionStatus.value !== 'connected') {
+      error.value = 'Connection lost - cannot submit. Please reconnect and try again.'
+      pushAlert({ message: 'Connection required for submission', type: 'error' })
+      return
+    }
+    
     // Ensure we're online before attempting final submit
     if (typeof window !== 'undefined' && !window.navigator.onLine) {
       error.value = 'You must be online to submit the battle.'
+      pushAlert({ message: 'No internet connection', type: 'error' })
       return
     }
 
+    isSubmitting.value = true
     loading.value = true
 
     // Build answers payload from persisted answers
@@ -477,6 +578,7 @@ const submitBattle = async () => {
     console.error('Error submitting battle:', error)
   } finally {
     loading.value = false
+    isSubmitting.value = false
     showConfirmation.value = false
   }
 }
@@ -587,7 +689,7 @@ function startPollingForOpponent() {
   attachEchoForJoin()
   pollTimer = setInterval(async () => {
     try {
-      const resp = await api.get(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}`)
+      const resp = await api.get(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}?with_questions=true`)
       const data: any = await resp.json().catch(() => null)
       const parts = data?.participants ?? []
       const count = Array.isArray(parts) ? parts.length : Object.keys(parts || {}).length

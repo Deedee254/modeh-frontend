@@ -10,7 +10,7 @@
         >
           <template #actions>
             <NuxtLink
-              to="/settings"
+              to="/quiz-master/settings"
               class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer inline-block"
             >
               Edit Profile
@@ -90,7 +90,7 @@
             <!-- Action Button -->
             <div class="flex justify-end pt-4 border-t">
               <NuxtLink
-                to="/settings"
+                to="/quiz-master/settings"
                 class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700"
               >
                 Edit Profile

@@ -8,14 +8,29 @@
       <h2 class="text-xl font-semibold mb-4">Institution Information</h2>
       <form @submit.prevent="submitInstitution" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Institution Name</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Institution</label>
+          <p class="text-xs text-gray-600 mb-2">Select an existing institution or enter a new one</p>
+          <select
+            v-model="institutionForm.institution_id"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md mb-3"
+            :disabled="loadingInstitutions"
+          >
+            <option value="">{{ loadingInstitutions ? 'Loading institutions...' : 'Select an institution or enter new' }}</option>
+            <option v-for="inst in institutions" :key="inst.id" :value="inst.id">
+              {{ inst.name }}
+            </option>
+          </select>
+          
+          <p class="text-xs text-gray-600 mb-2">Or enter a new institution name:</p>
           <input
             v-model="institutionForm.name"
             type="text"
-            required
+            placeholder="New institution name (if not in list)"
             class="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Enter your institution name"
           >
+          <p class="mt-2 text-xs text-gray-500">
+            If you enter a new institution, it will require approval from the institution's manager before you can create profiles.
+          </p>
         </div>
         <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
           Save Institution
@@ -149,6 +164,9 @@
         <div>
           <h3 class="font-medium text-gray-700">Institution</h3>
           <p class="text-gray-600">{{ institutionForm.name }}</p>
+          <p v-if="newInstitutionPending" class="text-sm text-yellow-600 mt-1">
+            ⏳ Approval pending from institution manager
+          </p>
         </div>
         <div>
           <h3 class="font-medium text-gray-700">Grade</h3>
@@ -201,18 +219,41 @@ const api = useApi()
 import useTaxonomy from '~/composables/useTaxonomy'
 const { fetchLevels, fetchGradesByLevel, fetchSubjectsByGrade, levels, grades: taxGrades, subjects: taxSubjects } = useTaxonomy()
 
+// Institutions state
+const institutions = ref([])
+const loadingInstitutions = ref(false)
+
+// Fetch institutions from API
+const fetchInstitutions = async () => {
+  try {
+    loadingInstitutions.value = true
+    const response = await api.get('/api/institutions')
+    if (api.handleAuthStatus(response)) return
+    const data = await response.json().catch(() => null)
+    if (response.ok && Array.isArray(data)) {
+      institutions.value = data
+    }
+  } catch (e) {
+    console.error('Failed to load institutions:', e)
+  } finally {
+    loadingInstitutions.value = false
+  }
+}
+
 // Fetch initial data
 onMounted(async () => {
   await fetchLevels()
+  await fetchInstitutions()
 })
 
 // Form states
 const institutionAdded = ref(false)
 const roleSelected = ref(false)
 const gradeAndSubjectsAdded = ref(false)
+const newInstitutionPending = ref(false)
 
 // Form data
-const institutionForm = ref({ name: '' })
+const institutionForm = ref({ name: '', institution_id: '' })
 const roleForm = ref({ role: '', password: '' })
 const gradeForm = ref({
   level_id: '',
@@ -297,13 +338,33 @@ async function submitInstitution() {
   message.value = null
   error.value = null
   try {
-    const resp = await api.postJson('/api/onboarding/step', {
+    // Build payload with institution_id if selected, or institution text if new
+    const payload = {
       step: 'institution',
-      data: { institution: institutionForm.value.name }
-    })
+      data: {}
+    }
+    
+    if (institutionForm.value.institution_id) {
+      // User selected an existing institution
+      payload.data.institution_id = institutionForm.value.institution_id
+    } else if (institutionForm.value.name?.trim()) {
+      // User entered a new institution name - will require approval
+      payload.data.institution = institutionForm.value.name
+      newInstitutionPending.value = true
+    } else {
+      error.value = 'Please select or enter an institution'
+      return
+    }
+    
+    const resp = await api.postJson('/api/onboarding/step', payload)
     if (!resp.ok) throw new Error('Failed to save institution')
     institutionAdded.value = true
-    message.value = 'Institution saved successfully.'
+    
+    if (newInstitutionPending.value) {
+      message.value = 'Institution saved. Your request is pending approval from the institution manager.'
+    } else {
+      message.value = 'Institution saved successfully.'
+    }
   } catch (err) {
     console.error(err)
     error.value = err?.message || 'Failed to save institution'
