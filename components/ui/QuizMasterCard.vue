@@ -2,7 +2,7 @@
   <UCard class="p-4 sm:p-6 transition-all duration-200 hover:shadow-lg">
     <div class="flex flex-col items-center text-center gap-3">
       <div class="h-20 w-20 overflow-hidden rounded-full sm:h-24 sm:w-24">
-        <img v-if="quizMaster.avatar" :src="quizMaster.avatar" :alt="quizMaster.name" class="h-full w-full object-cover" />
+        <img v-if="avatarSrc" :src="avatarSrc" :alt="quizMaster.name" class="h-full w-full object-cover" />
         <div v-else class="grid h-full w-full place-items-center bg-indigo-100 text-xl font-bold text-indigo-700 sm:text-3xl">
           {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
         </div>
@@ -99,5 +99,12 @@ const isCourse = computed(() => {
   const grade = props.quizMaster.grade || null
   if (!grade || typeof grade !== 'object') return false
   return String(grade.type || '').toLowerCase() === 'course'
+})
+
+import resolveAssetUrl from '~/composables/useAssets'
+
+const avatarSrc = computed(() => {
+  const v = props.quizMaster?.avatar || props.quizMaster?.avatar_url || props.quizMaster?.image || ''
+  return resolveAssetUrl(v) || (v || null)
 })
 </script>

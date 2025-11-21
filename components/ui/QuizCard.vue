@@ -2,7 +2,7 @@
   <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
     <div class="relative h-32 overflow-hidden rounded-t-2xl bg-slate-100 sm:h-40">
-      <img v-if="cover" :src="cover" :alt="displayTitle || title" class="h-full w-full object-cover" />
+  <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover" />
       <div v-else :class="['grid h-full w-full place-items-center font-bold text-white', paletteClass]">
         <span class="text-2xl">{{ (displayTitle || title || '').charAt(0).toUpperCase() }}</span>
       </div>
@@ -230,7 +230,18 @@ const avatarInitial = computed(() => {
 
 const avatarSrc = computed(() => {
   const c = computedCreatedBy.value
-  if (c && c.avatar) return c.avatar
+  if (c && c.avatar) {
+    const v = c.avatar
+    // if absolute URL or data/blob, return as-is; otherwise prefix with apiBase
+    try {
+      if (/^(?:https?:)?\/\//.test(v) || /^(?:data:|blob:)/.test(v)) return v
+    } catch (e) {}
+    const base = config.public?.apiBase || ''
+    if (!base) return v.startsWith('/') ? v : `/${v}`
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
+    const cleanPath = v.startsWith('/') ? v : `/${v}`
+    return `${cleanBase}${cleanPath}`
+  }
   return ''
 })
 
@@ -338,4 +349,21 @@ function handleEdit(e) {
   e.stopPropagation()
   emit('edit')
 }
+const resolvedCover = computed(() => {
+  const v = props.cover
+  if (!v) return ''
+  try {
+    if (/^(?:https?:)?\/\//.test(v) || /^(?:data:|blob:)/.test(v)) return v
+  } catch (e) {}
+  const base = config.public?.apiBase || ''
+  if (!base) return v.startsWith('/') ? v : `/${v}`
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
+  const cleanPath = v.startsWith('/') ? v : `/${v}`
+  return `${cleanBase}${cleanPath}`
+})
+
+// expose resolvedCover to parent if required (avoid `export` inside <script setup>)
+defineExpose({
+  resolvedCover
+})
 </script>

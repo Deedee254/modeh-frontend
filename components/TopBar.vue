@@ -201,6 +201,7 @@ import UiLevelProgress from '~/components/ui/LevelProgress.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ChatDrawer from '~/components/ChatDrawer.vue'
 import { useApi } from '~/composables/useApi'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import ProfileProgress from '~/components/ui/ProfileProgress.vue'
 
 // Standard runtime config reference
@@ -388,7 +389,7 @@ onBeforeUnmount(() => {
 })
 
 const userName = computed(() => auth.user?.name || 'User')
-const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
 
 </script>

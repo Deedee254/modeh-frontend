@@ -44,7 +44,7 @@
             <!-- My Stats -->
             <div class="bg-gray-50 rounded-xl p-6">
               <div class="flex items-center justify-center gap-3 mb-2">
-                <img :src="me?.avatar || '/images/default-avatar.png'" class="w-10 h-10 rounded-full" />
+                      <img :src="meAvatar || '/images/default-avatar.png'" class="w-10 h-10 rounded-full" />
                 <h3 class="text-lg font-semibold text-gray-800">{{ me?.name || 'You' }}</h3>
               </div>
               <div class="text-3xl font-bold text-gray-900">{{ myScore }}</div>
@@ -53,7 +53,7 @@
             <!-- Opponent Stats -->
             <div class="bg-gray-50 rounded-xl p-6">
               <div class="flex items-center justify-center gap-3 mb-2">
-                <img :src="opponent?.avatar || '/images/default-avatar.png'" class="w-10 h-10 rounded-full" />
+                  <img :src="opponentAvatar || '/images/default-avatar.png'" class="w-10 h-10 rounded-full" />
                 <h3 class="text-lg font-semibold text-gray-800">{{ opponent?.name || 'Opponent' }}</h3>
               </div>
               <div class="text-3xl font-bold text-gray-900">{{ opponentScore }}</div>
@@ -99,6 +99,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import resolveAssetUrl from '~/composables/useAssets'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useAnswerStore } from '~/stores/answerStore'
@@ -171,6 +172,14 @@ const opponentScore = computed(() => {
   if (!auth.user || !result.value?.battle) return '?'
   const battle = result.value.battle
   return battle.initiator_id === auth.user.id ? battle.opponent_points : battle.initiator_points
+})
+
+const meAvatar = computed(() => {
+  try { return resolveAssetUrl(me.value?.avatar) || me.value?.avatar || null } catch { return me.value?.avatar || null }
+})
+
+const opponentAvatar = computed(() => {
+  try { return resolveAssetUrl(opponent.value?.avatar) || opponent.value?.avatar || null } catch { return opponent.value?.avatar || null }
 })
 
 const resultLabel = computed(() => {

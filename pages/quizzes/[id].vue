@@ -28,10 +28,10 @@
         </button>
         <div class="relative h-64 md:h-80 rounded-xl overflow-hidden" :style="heroStyle">
           <!-- preload cover to detect load state -->
-          <img v-if="quiz.cover || quiz.cover_image" :src="quiz.cover || quiz.cover_image" class="hidden" @load="onCoverLoaded" @error="onCoverError" />
+          <img v-if="coverSrc" :src="coverSrc" class="hidden" @load="onCoverLoaded" @error="onCoverError" />
 
           <!-- Overlay Content (title, badges) -->
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
             <div class="flex flex-wrap gap-2 mb-3">
               <div class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-500/90 text-white border-0 capitalize">
                 {{ difficulty_level }} {{ getDifficultyEmoji(quiz.difficulty) }}
@@ -74,7 +74,7 @@
           <!-- Video player (separate from hero) -->
           <div v-if="hasVideo" class="mb-4">
             <!-- Accept youtube_url (canonical), video_url and other fallbacks -->
-            <VideoPlayer :src="quiz.youtube_url || quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="quiz.cover || quiz.cover_image" />
+            <VideoPlayer :src="quiz.youtube_url || quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="coverSrc" />
           </div>
 
           <!-- Media Caption/Description -->
@@ -239,6 +239,7 @@ import { useRouter, useRoute } from 'vue-router'
 import VideoPlayer from '~/components/media/VideoPlayer.vue'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import useApi from '~/composables/useApi'
+import { resolveAssetUrl } from '~/composables/useAssets'
 
 const router = useRouter()
 const route = useRoute()
@@ -312,11 +313,15 @@ const hasVideo = computed(() => {
 function onCoverLoaded() {}
 function onCoverError() {}
 
+const coverSrc = computed(() => {
+  const c = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
+  return typeof c === 'string' && c ? resolveAssetUrl(c) : null
+})
+
 const heroStyle = computed(() => {
-  const cover = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
-  if (!cover) return {}
+  if (!coverSrc.value) return {}
   return {
-    backgroundImage: `url(${cover})`,
+    backgroundImage: `url(${coverSrc.value})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center'
   }

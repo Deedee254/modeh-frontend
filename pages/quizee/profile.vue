@@ -114,6 +114,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 
@@ -156,7 +157,7 @@ interface User {
 }
 
 const user = computed<User>(() => auth.user || {})
-const userAvatar = computed(() => (user.value && user.value.avatar_url) ? user.value.avatar_url : '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url) || '/logo/avatar-placeholder.png')
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points
   return typeof p === 'number' ? `${p} points` : ''

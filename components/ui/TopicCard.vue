@@ -2,7 +2,7 @@
   <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
     <div class="relative h-32 overflow-hidden rounded-t-2xl bg-slate-100 sm:h-40">
-      <img v-if="image" :src="image" :alt="displayTitle" class="h-full w-full object-cover" />
+  <img v-if="imageSrc" :src="imageSrc" :alt="displayTitle" class="h-full w-full object-cover" />
       <div v-else :class="['grid h-full w-full place-items-center font-bold', paletteClass]">
         <span class="text-2xl text-white">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
       </div>
@@ -53,6 +53,13 @@ const props = defineProps({
   startLink: { type: [String, Object], default: null },
   startLabel: { type: String, default: 'View Quizzes' },
   topic: { type: Object, default: null },
+})
+
+import resolveAssetUrl from '~/composables/useAssets'
+
+const imageSrc = computed(() => {
+  const v = props.image || props.topic?.image || props.topic?.cover_image || ''
+  return resolveAssetUrl(v) || (v || null)
 })
 
 const displayTitle = computed(() => props.title || props.name || props.topic?.name || 'Topic')

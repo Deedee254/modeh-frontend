@@ -17,7 +17,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         return
       }
 
-      // Only known intent supported for now: subscribe
+      // Known intents supported: subscribe, affiliate
       if (intent.type === 'subscribe' && intent.packageId) {
         try {
           const res = await api.postJson(`/api/packages/${intent.packageId}/subscribe`, {})
@@ -31,6 +31,77 @@ export default defineNuxtPlugin((nuxtApp) => {
         } catch (err) {
           // keep intent so the user can retry; log for debugging
           console.error('Post-login subscribe failed', err)
+        }
+      } else if (intent.type === 'affiliate') {
+        try {
+          const router = useRouter()
+          // Ensure affiliate code exists for this user. If not, generate it.
+          try {
+            const affRes = await api.get('/api/affiliates/me')
+            if (api.handleAuthStatus && api.handleAuthStatus(affRes)) return
+            let hasCode = false
+            if (affRes && affRes.ok) {
+              const affData = await affRes.json().catch(() => null)
+              hasCode = Boolean(affData && (affData.referral_code || affData.referral_code === '')) && !!affData.referral_code
+            }
+            if (!hasCode) {
+              const genRes = await api.postJson('/api/affiliates/generate-code', {})
+              if (api.handleAuthStatus && api.handleAuthStatus(genRes)) return
+            }
+          } catch (e) {
+            // Non-fatal: log and continue to redirect
+            console.error('Affiliate ensure-code failed', e)
+          }
+
+          // determine where to send user: query the current user to know their role
+          let role = null
+          try {
+            const meRes = await api.get('/api/me')
+            if (api.handleAuthStatus && api.handleAuthStatus(meRes)) return
+            if (meRes && meRes.ok) {
+              const meData = await meRes.json().catch(() => null)
+              role = meData?.role || null
+            }
+          } catch (e) { /* ignore */ }
+
+          const target = role === 'quiz-master' ? '/quiz-master/affiliate' : '/quizee/affiliate'
+          localStorage.removeItem('modeh:postLoginIntent')
+          setTimeout(() => router.push(target), 50)
+        } catch (err) {
+          console.error('Post-login affiliate intent failed', err)
+          try { localStorage.removeItem('modeh:postLoginIntent') } catch (e) {}
+        }
+      } else if (intent.type === 'accept-invitation' && intent.token) {
+        try {
+          const token = intent.token
+          // Query invitation details to get institution id
+          const invRes = await api.get(`/api/institutions/invitation/${encodeURIComponent(token)}`)
+          if (api.handleAuthStatus && api.handleAuthStatus(invRes)) return
+          if (!invRes.ok) {
+            // failed to fetch invitation details; clear intent
+            localStorage.removeItem('modeh:postLoginIntent')
+            return
+          }
+          const invData = await invRes.json().catch(() => null)
+          const institutionId = invData?.invitation?.institution_id
+          if (!institutionId) {
+            localStorage.removeItem('modeh:postLoginIntent')
+            return
+          }
+          // Accept the invitation (requires authenticated user)
+          const acceptRes = await api.postJson(`/api/institutions/${institutionId}/members/accept-invitation/${encodeURIComponent(token)}`, {})
+          if (api.handleAuthStatus && api.handleAuthStatus(acceptRes)) return
+          if (acceptRes && acceptRes.ok) {
+            localStorage.removeItem('modeh:postLoginIntent')
+            const router = useRouter()
+            setTimeout(() => router.push('/institution-manager/dashboard'), 50)
+          } else {
+            // clear intent to avoid retry loops
+            localStorage.removeItem('modeh:postLoginIntent')
+          }
+        } catch (err) {
+          console.error('Post-login accept-invitation failed', err)
+          try { localStorage.removeItem('modeh:postLoginIntent') } catch (e) {}
         }
       } else {
         // Unknown intent — clear it

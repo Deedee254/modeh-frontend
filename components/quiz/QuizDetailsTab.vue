@@ -231,7 +231,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -288,7 +288,6 @@ function sameId(a, b) {
 const api = useApi()
 const alert = useAppAlert()
 const approvalRequestLoading = ref(false)
-const runtimeConfig = useRuntimeConfig()
 const suppressWatchers = ref(true)
 let suppressionRun = 0
 const loadedTopicSubjects = new Set()
@@ -319,16 +318,7 @@ nextTick(() => { suppressWatchers.value = false })
 // Cover picker related refs
 const fileInput = ref(null)
 
-function resolveAssetUrl(value) {
-  if (!value || typeof value !== 'string') return null
-  if (/^(?:https?:)?\/\//.test(value)) return value
-  if (/^(?:data:|blob:)/.test(value)) return value
-  const base = runtimeConfig?.public?.apiBase || ''
-  if (!base) return value.startsWith('/') ? value : `/${value}`
-  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
-  const cleanPath = value.startsWith('/') ? value : `/${value}`
-  return `${cleanBase}${cleanPath}`
-}
+// use shared resolveAssetUrl from composable
 
 // compute preview URL from either modelValue.cover (tmp key or File) or modelValue.cover_image (server URL)
 const previewUrl = computed(() => {

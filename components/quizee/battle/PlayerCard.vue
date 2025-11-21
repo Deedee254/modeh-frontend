@@ -2,7 +2,7 @@
   <div :class="['w-full flex flex-col items-center text-center p-2 sm:p-4 rounded-lg', isActive ? 'ring-2 ring-indigo-500 bg-indigo-50/30' : '']">
     <div class="relative">
       <img 
-        :src="player.profile?.avatar || '/avatars/default.png'"
+        :src="avatarSrc || '/avatars/default.png'"
         :alt="player.first_name"
         class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
       />
@@ -20,11 +20,18 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import resolveAssetUrl from '~/composables/useAssets'
+
 const props = defineProps({
   player: { type: Object, required: true },
   role: { type: String, default: 'Player' },
   score: { type: Number, default: null },
   isActive: { type: Boolean, default: false },
   answered: { type: Number, default: null }
+})
+
+const avatarSrc = computed(() => {
+  try { return resolveAssetUrl(props.player?.profile?.avatar) || props.player?.profile?.avatar || null } catch { return props.player?.profile?.avatar || null }
 })
 </script>

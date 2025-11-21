@@ -2,7 +2,7 @@
   <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
     <div class="relative h-32 overflow-hidden rounded-t-2xl bg-slate-100 sm:h-40">
-      <img v-if="cover" :src="cover" :alt="displayTitle" class="h-full w-full object-cover" />
+      <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle" class="h-full w-full object-cover" />
       <div v-else :class="['grid h-full w-full place-items-center font-bold', paletteClass]">
         <span class="text-2xl text-white">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
       </div>
@@ -54,6 +54,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { resolveAssetUrl } from '~/composables/useAssets'
 
 const props = defineProps({
   to: { type: [String, Object], default: null },
@@ -96,5 +97,10 @@ const hasMoreSubjects = computed(() => {
 const moreSubjectsCount = computed(() => {
   if (!hasMoreSubjects.value) return 0
   return props.grade.subjects.length - 2
+})
+
+const resolvedCover = computed(() => {
+  const v = props.cover || (props.grade && (props.grade.cover_image || props.grade.cover)) || ''
+  return resolveAssetUrl(v) || ''
 })
 </script>

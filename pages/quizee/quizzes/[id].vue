@@ -240,6 +240,7 @@ import { ref, computed, watch, watchEffect } from 'vue'
 import { useHead } from '#imports'
 import { useRouter, useRoute } from 'vue-router'
 import VideoPlayer from '~/components/media/VideoPlayer.vue'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import useApi from '~/composables/useApi'
 
@@ -322,11 +323,15 @@ const hasVideo = computed(() => {
 function onCoverLoaded() {}
 function onCoverError() {}
 
+const coverSrc = computed(() => {
+  const c = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
+  return typeof c === 'string' && c ? resolveAssetUrl(c) : null
+})
+
 const heroStyle = computed(() => {
-  const cover = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
-  if (!cover) return {}
+  if (!coverSrc.value) return {}
   return {
-    backgroundImage: `url(${cover})`,
+    backgroundImage: `url(${coverSrc.value})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center'
   }

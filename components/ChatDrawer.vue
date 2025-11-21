@@ -71,6 +71,7 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserRole } from '~/composables/useUserRole'
+import resolveAssetUrl from '~/composables/useAssets'
 
 const props = defineProps({
   isOpen: {
@@ -121,7 +122,7 @@ async function fetchRecentChats() {
         message: conv.last_message || conv.last_preview || 'No messages',
         time: formatTimeAgo(conv.last_at || conv.updated_at),
         unread: (conv.unread_count ?? conv.unread) > 0,
-        avatar: conv.avatar_url || `/logo/avatar-placeholder.png`
+        avatar: resolveAssetUrl(conv.avatar_url) || conv.avatar || `/logo/avatar-placeholder.png`
       })).slice(0, 5)
     }
   } catch (e) {

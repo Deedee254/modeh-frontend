@@ -101,7 +101,7 @@
                   <!-- Media Section -->
                   <div v-if="currentQuestionData.media" class="lg:col-span-1">
                     <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
-                      <img :src="currentQuestionData.media" alt="Question media" class="max-w-full max-h-full object-contain rounded" />
+                      <img :src="resolveAssetUrl(currentQuestionData.media)" alt="Question media" class="max-w-full max-h-full object-contain rounded" />
                     </div>
                   </div>
                   <!-- Question Section -->
@@ -197,6 +197,7 @@ import { useQuizNavigation } from '~/composables/quiz/useQuizNavigation'
 import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
 import useQuestionTimer from '~/composables/useQuestionTimer'
 import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+import resolveAssetUrl from '~/composables/useAssets'
 
 const route = useRoute()
 const router = useRouter()

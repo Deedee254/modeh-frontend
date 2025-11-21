@@ -98,6 +98,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useUserRole } from '~/composables/useUserRole'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import { useProfileForm } from '~/composables/useProfileForm'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -120,7 +121,7 @@ const form = ref(createFormState(user))
 
 // Avatar preview initialization
 onMounted(() => {
-  avatarPreview.value = user?.avatar_url || user?.avatar || null
+  avatarPreview.value = resolveAssetUrl(user?.avatar_url || user?.avatar) || null
 })
 
 /**
@@ -148,7 +149,7 @@ function triggerAvatarUpload() {
 
 function reset() {
   form.value = createFormState(user)
-  avatarPreview.value = user?.avatar_url || user?.avatar || null
+  avatarPreview.value = resolveAssetUrl(user?.avatar_url || user?.avatar) || null
   avatarFile.value = null
 }
 

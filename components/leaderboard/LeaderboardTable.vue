@@ -68,7 +68,7 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <img
-                  :src="player.avatar || placeholder"
+                  :src="resolveAssetUrl(player.avatar) || player.avatar || placeholder"
                   alt="avatar"
                   class="w-8 h-8 rounded-full object-cover"
                 />
@@ -114,6 +114,7 @@
 
 <script setup>
 import { computed } from "vue";
+import resolveAssetUrl from '~/composables/useAssets'
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   variant: { type: String, default: "global" },

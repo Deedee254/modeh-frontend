@@ -71,7 +71,8 @@ import { HomeIcon, BookOpenIcon, RectangleStackIcon, ClipboardDocumentListIcon, 
 const auth = useAuthStore()
 const ui = useUiStore()
 const user = computed(() => auth.user || {})
-const userAvatar = computed(() => auth.user?.avatar_url || '/logo/avatar-placeholder.png')
+import { resolveAssetUrl } from '~/composables/useAssets'
+const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
 
 const route = useRoute()
 

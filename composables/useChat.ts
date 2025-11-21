@@ -1,4 +1,5 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, getCurrentInstance } from 'vue'
+import resolveAssetUrl from '~/composables/useAssets'
 import { useRuntimeConfig } from '#app'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -47,8 +48,8 @@ export default function useChat() {
 
   function rebuildConversations() {
     try {
-      const convs = (threads.value || []).map(c => ({ id: String(c.other_user_id || c.otherId || c.id), type: 'direct', name: c.other_name || c.otherName || c.name, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: c.status || 'offline', avatar: c.avatar_url }))
-      const grps = (groups.value || []).map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: g.avatar_url }))
+  const convs = (threads.value || []).map(c => ({ id: String(c.other_user_id || c.otherId || c.id), type: 'direct', name: c.other_name || c.otherName || c.name, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: c.status || 'offline', avatar: resolveAssetUrl(c.avatar_url) || c.avatar || null }))
+  const grps = (groups.value || []).map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: resolveAssetUrl(g.avatar_url) || g.avatar || null }))
       conversations.value = [...convs, ...grps].sort((a,b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime())
     } catch (e) {
       // fallback: linear merge
@@ -124,12 +125,12 @@ export default function useChat() {
     if (selectedGroupId.value) {
       const g = groups.value.find(x => String(x.id) === String(selectedGroupId.value))
       if (!g) return null
-      return { id: String(g.id), name: g.name, avatar: g.avatar_url || g.avatar, status: null, type: 'group' }
+  return { id: String(g.id), name: g.name, avatar: resolveAssetUrl(g.avatar_url) || g.avatar || null, status: null, type: 'group' }
     }
     if (selectedThreadId.value) {
       const t = threads.value.find(x => String(x.other_user_id || x.otherId || x.id) === String(selectedThreadId.value))
       if (!t) return null
-      return { id: String(t.other_user_id || t.otherId || t.id), name: t.other_name || t.otherName || t.name, avatar: t.avatar_url || t.avatar, status: t.status || 'offline', type: 'direct' }
+  return { id: String(t.other_user_id || t.otherId || t.id), name: t.other_name || t.otherName || t.name, avatar: resolveAssetUrl(t.avatar_url) || t.avatar || null, status: t.status || 'offline', type: 'direct' }
     }
     return null
   })

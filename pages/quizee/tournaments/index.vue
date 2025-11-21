@@ -56,8 +56,8 @@
         class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
       >
         <div class="relative">
-          <img 
-            :src="tournament.banner || '/images/tournament-default.jpg'" 
+          <img
+            :src="resolveBannerUrl(tournament.banner)"
             alt="Tournament banner"
             class="w-full h-36 sm:h-48 object-cover"
           >
@@ -113,6 +113,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useApi } from '~/composables/useApi'
+import resolveAssetUrl from '~/composables/useAssets'
 
 // Use the `quizee` layout for tournament pages
 definePageMeta({ layout: 'quizee', title: 'Tournaments — Modeh', meta: [ { name: 'description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' }, { property: 'og:title', content: 'Tournaments — Modeh' }, { property: 'og:description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' } ] })
@@ -231,5 +232,13 @@ onMounted(() => {
 function goToPage(p: number) {
   if (!p || p < 1 || p === page.value) return
   fetchTournaments(p)
+}
+
+function resolveBannerUrl(banner: string | undefined) {
+  try {
+    return resolveAssetUrl(banner) || banner || '/images/tournament-default.jpg'
+  } catch {
+    return banner || '/images/tournament-default.jpg'
+  }
 }
 </script>

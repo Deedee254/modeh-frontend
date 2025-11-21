@@ -9,7 +9,7 @@
         <div class="flex flex-col items-center">
           <div class="relative">
             <img
-              :src="p.avatar || placeholder"
+              :src="resolvedAvatar(p.avatar)"
               :alt="p.name"
               :class="avatarClass(idx)"
             />
@@ -45,7 +45,7 @@
               />
             </svg>
             <img
-              :src="u.avatar || placeholder"
+              :src="resolvedAvatar(u.avatar)"
               class="w-20 h-20 rounded-full border-4 border-gray-300 object-cover"
             />
             <div
@@ -71,6 +71,7 @@
 
 <script setup>
 import { computed } from "vue";
+import resolveAssetUrl from '~/composables/useAssets'
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   placeholder: { type: String, default: "/logo/avatar-placeholder.png" },
@@ -103,6 +104,10 @@ function heightClass(idx) {
 
 function displayPoints(p) {
   return p[props.pointsKey] ?? p.score ?? 0;
+}
+
+function resolvedAvatar(v) {
+  try { return resolveAssetUrl(v) || v || props.placeholder } catch { return v || props.placeholder }
 }
 </script>
 

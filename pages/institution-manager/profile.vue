@@ -41,6 +41,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useInstitutionsStore } from '~/stores/institutions'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 
@@ -50,7 +51,7 @@ const auth = useAuthStore()
 const instStore = useInstitutionsStore()
 
 const user = computed(() => auth.user || {})
-const userAvatar = computed(() => (user.value && user.value.avatar_url) ? user.value.avatar_url : '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url) || '/logo/avatar-placeholder.png')
 const instId = computed(() => instStore.activeInstitutionSlug)
 const instName = computed(() => instStore.institution?.name || '')
 </script>

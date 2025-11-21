@@ -11,6 +11,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import resolveAssetUrl from '~/composables/useAssets'
 
 const props = defineProps({
   src: { type: String, required: false },
@@ -37,18 +38,22 @@ onMounted(async () => {
     return
   }
 
+  // Resolve relative backend storage paths to absolute API base URLs
+  const resolved = resolveAssetUrl(props.src)
+  const finalSrc = resolved || props.src
+
   try {
     // Use HEAD to avoid fetching full asset; if HEAD not allowed, fallback to GET attempt
-    const head = await fetch(props.src, { method: 'HEAD' })
+    const head = await fetch(finalSrc, { method: 'HEAD' })
     if (head.ok) {
-      srcToUse.value = props.src
+      srcToUse.value = finalSrc
       showImg.value = true
       return
     }
     // Some servers don't support HEAD; try GET but don't read body completely
-    const get = await fetch(props.src, { method: 'GET' })
+    const get = await fetch(finalSrc, { method: 'GET' })
     if (get.ok) {
-      srcToUse.value = props.src
+      srcToUse.value = finalSrc
       showImg.value = true
       return
     }

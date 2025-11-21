@@ -107,6 +107,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useUserRole } from '~/composables/useUserRole'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 
 definePageMeta({ layout: 'quiz-master' })
@@ -133,7 +134,7 @@ interface User {
 }
 
 const user = computed<User>(() => auth.user || {})
-const userAvatar = computed(() => user.value.avatar_url || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(user.value.avatar_url) || '/logo/avatar-placeholder.png')
 
 // Get profile based on role
 const profile = computed(() => {

@@ -101,6 +101,8 @@ if (institutionId.value) await load()
           <button class="p-4 bg-blue-600 text-white rounded" @click="goto('/institution-manager/subscriptions')">Subscriptions</button>
           <button class="p-4 bg-green-600 text-white rounded" @click="goto('/institution-manager/quizees')">Quizees</button>
           <button class="p-4 bg-indigo-600 text-white rounded" @click="goto('/institution-manager/quiz-masters')">Quiz Masters</button>
+          <button class="p-4 bg-yellow-600 text-white rounded" @click="goto('/institution-manager/invite')">Invite users</button>
+          <button class="p-4 bg-amber-600 text-white rounded" @click="goto('/institution-manager/invite-history')">Invite history</button>
         </div>
       </div>
     </div>
