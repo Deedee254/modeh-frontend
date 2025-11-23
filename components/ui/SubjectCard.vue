@@ -1,66 +1,76 @@
 <template>
-  <div class="group relative w-full overflow-hidden rounded-xl bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-slate-400/20 dark:bg-slate-900 dark:hover:shadow-slate-900/50">
+  <div class="group relative overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-lg hover:ring-slate-300 dark:bg-slate-900 dark:ring-slate-800 dark:hover:ring-slate-700">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
-    <!-- Top accent bar -->
-    <div :class="['h-2 w-full transition-all duration-300 group-hover:h-3', paletteClass]"></div>
+    <!-- Header with subtle accent -->
+    <div class="h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
 
-    <!-- Content -->
-    <div class="flex flex-col h-full p-5 sm:p-6">
-      <!-- Header with icon and badge -->
-      <div class="flex items-start justify-between gap-3 mb-3">
-        <!-- Icon -->
-        <div :class="['flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110', paletteClass]">
-          <template v-if="iconName">
-            <Icon :name="iconName" class="h-6 w-6 text-white" />
-          </template>
-          <template v-else>
-            <span class="text-lg font-bold text-white">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
-          </template>
-        </div>
+    <div class="p-4 sm:p-6">
+      <!-- Header section -->
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start gap-3 mb-3">
+            <!-- Image / Icon -->
+            <div class="flex-shrink-0">
+              <template v-if="image">
+                <img :src="image" alt="" class="h-10 w-10 rounded-lg object-cover" />
+              </template>
+              <template v-else>
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+                  <template v-if="iconName">
+                    <Icon :name="iconName" class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  </template>
+                  <template v-else>
+                    <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
+                  </template>
+                </div>
+              </template>
+            </div>
 
-        <!-- Grade badge -->
-        <div v-if="displayGrade" class="flex-shrink-0">
-          <div class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-tight text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            {{ isCourse ? 'Course' : 'Grade' }} {{ displayGrade }}
+            <!-- Grade pill -->
+            <div v-if="displayGrade" class="flex items-center">
+              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                {{ isCourse ? 'Course' : 'Grade' }} {{ displayGrade }}
+              </span>
+            </div>
           </div>
+
+          <h3 class="text-sm sm:text-lg font-semibold text-slate-900 line-clamp-2 dark:text-slate-50">
+            {{ displayTitle }}
+          </h3>
         </div>
       </div>
-
-      <!-- Title -->
-      <h4 class="text-base font-semibold text-slate-900 line-clamp-2 dark:text-slate-50">{{ displayTitle }}</h4>
 
       <!-- Description -->
-      <p v-if="displayDescription" class="mt-1.5 text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ displayDescription }}</p>
+      <p v-if="displayDescription" class="text-xs sm:text-sm text-slate-600 line-clamp-2 dark:text-slate-400 mb-4">
+        {{ displayDescription }}
+      </p>
 
-      <!-- Metadata -->
-      <div class="mt-4 flex items-center gap-4 border-t border-slate-200 pt-3 dark:border-slate-800">
-        <div class="inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+      <!-- Stats -->
+      <div class="flex items-center gap-4 mb-6">
+        <div class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
           <Icon name="heroicons:book-open" class="h-4 w-4" />
           <span class="font-medium">{{ topicsCount }}</span>
+          <span class="text-xs">topics</span>
         </div>
-        <div class="inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+        <div class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
           <Icon name="heroicons:document-text" class="h-4 w-4" />
           <span class="font-medium">{{ quizzes_count }}</span>
+          <span class="text-xs">quizzes</span>
         </div>
       </div>
 
-      <!-- Topics tags -->
-      <div v-if="displayTopics.length" class="mt-3 flex flex-wrap gap-1.5">
-        <span v-for="topic in displayTopics.slice(0, 2)" :key="topic.id" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {{ topic.name }}
-        </span>
-        <span v-if="hasMoreTopics" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-          +{{ moreTopicsCount }}
-        </span>
-      </div>
-
-      <!-- CTA -->
-      <div class="mt-5 pt-3">
-        <NuxtLink v-if="startLink" :to="startLink" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+      <!-- Action button (uniform style, stacks on mobile) -->
+      <div class="flex flex-col sm:flex-row gap-2">
+        <NuxtLink
+          v-if="startLink"
+          :to="startLink"
+          :class="primaryBtn"
+        >
           {{ startLabel }}
-          <Icon name="heroicons:arrow-right-20-solid" class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+          <Icon name="heroicons:arrow-right" class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
         </NuxtLink>
+        <slot />
       </div>
     </div>
   </div>
@@ -96,10 +106,7 @@ const iconName = computed(() => {
 const displayTitle = computed(() => props.title || props.name || props.subject?.name || 'Subject')
 const displayDescription = computed(() => props.description || props.subject?.description || '')
 
-const paletteClass = computed(() => {
-  if (props.palette && props.palette.trim()) return props.palette
-  return 'bg-indigo-500'
-})
+
 
 const displayGrade = computed(() => {
   const g = props.grade || props.subject?.grade
@@ -114,19 +121,8 @@ const isCourse = computed(() => {
   return String(g.type || '').toLowerCase() === 'course'
 })
 
-const displayTopics = computed(() => {
-  if (props.subject && Array.isArray(props.subject.topics)) {
-    return props.subject.topics
-  }
-  return []
-})
+// Uniform primary button used across cards (mobile full-width, stacks)
+const primaryBtn = 'inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 shadow-sm'
 
-const hasMoreTopics = computed(() => {
-  return props.subject && Array.isArray(props.subject.topics) && props.subject.topics.length > 2
-})
 
-const moreTopicsCount = computed(() => {
-  if (!hasMoreTopics.value) return 0
-  return props.subject.topics.length - 2
-})
 </script>

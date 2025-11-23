@@ -4,8 +4,8 @@
       <aside class="lg:col-span-1">
         <div class="sticky top-6">
           <FiltersSidebar
-            :grade-options="grades"
-            :subject-options="subjects"
+            :grade-options="store.grades"
+            :subject-options="store.subjects"
             :grade="gradeFilter"
             :subject="subjectFilter"
             storageKey="filters:quiz-masters"
@@ -77,25 +77,27 @@
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, watchEffect } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
 const config = useRuntimeConfig()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
+
+// SSR hydration: pre-fetch grades and subjects
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true
+})
 
 // --- Filtering ---
 const gradeFilter = ref('')
 const subjectFilter = ref('')
-const { grades, subjects, fetchGrades, fetchAllSubjects } = useTaxonomy()
-
-onMounted(async () => {
-  // Fetch levels first and let grades/subjects be derived from it to avoid
-  // duplicate API requests.
-  await fetchLevels()
-})
 
 const filterParams = computed(() => {
   const params = {}
@@ -163,6 +165,12 @@ watchEffect(() => {
     map[q.id] = !!(q.is_following || q.is_following_by_current_user || q.isFollowing || q.is_following === true)
   })
   following.value = map
+})
+
+onMounted(() => {
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 
 useHead({

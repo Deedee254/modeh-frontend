@@ -27,7 +27,22 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
         <aside class="lg:col-span-1 order-2 lg:order-1">
-          <div class="sticky top-4">
+          <!-- Mobile Filter Drawer -->
+          <MobileFilterDrawer
+            @apply="() => handlePageChange(1)"
+            @clear="() => { selectedGrade = null; handlePageChange(1) }"
+          >
+            <FiltersSidebar 
+              storageKey="filters:subjects" 
+              :grade-options="grades" 
+              :grade="selectedGrade"
+              @update:grade="val => selectedGrade = val" 
+              class="w-full"
+            />
+          </MobileFilterDrawer>
+
+          <!-- Desktop Filter Sidebar -->
+          <div class="sticky top-[calc(4rem+1.5rem)] md:top-4 hidden lg:block">
             <FiltersSidebar 
               storageKey="filters:subjects" 
               :grade-options="grades" 
@@ -40,7 +55,7 @@
 
         <main class="lg:col-span-3 order-1 lg:order-2">
           <div v-if="isLoading"><UiSkeleton :count="6" /></div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             <SubjectCard
               v-for="(subject, idx) in (Array.isArray(filtered) ? filtered.filter(Boolean) : [])"
               :key="subject?.id || idx"
@@ -83,12 +98,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
 import Pagination from '~/components/Pagination.vue'
 
 definePageMeta({
@@ -96,42 +113,48 @@ definePageMeta({
 })
 
 const config = useRuntimeConfig()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
+
+// SSR hydration: pre-fetch grades and subjects
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true
+})
+
 const selectedGrade = ref('')
 const isLoading = ref(true)
 
 const page = ref(1)
 const perPage = ref(12)
 
-// Use the taxonomy composable to fetch paginated subjects. We keep the
-// `subjectsResponse` shape compatible with the old `useFetch` result so the
+// Use the store to get subjects. We keep the response shape compatible so the
 // template doesn't need changes.
 const subjectsResponse = ref({ subjects: { data: [], meta: null } })
 const subjects = computed(() => subjectsResponse.value?.subjects?.data || [])
 
-const { fetchLevels, fetchGrades, fetchAllSubjects, grades: taxGrades, fetchSubjectsPage } = useTaxonomy()
-const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
+const grades = computed(() => Array.isArray(store.grades) ? store.grades : [])
 
 onMounted(async () => {
-  // Load levels first so FiltersSidebar can derive grades/subjects reliably
-  await fetchLevels()
-  await Promise.all([fetchGrades(), fetchAllSubjects()])
-
-  // Load the first page of subjects using the taxonomy composable so the
-  // shared cache and deduping are used.
+  // Load the first page of subjects using the store pagination method
   try {
-    const resp = await fetchSubjectsPage({ page: page.value, perPage: perPage.value })
+    const resp = await store.fetchSubjectsPage({ page: page.value, perPage: perPage.value })
     if (resp) {
       subjectsResponse.value = { subjects: { data: resp.items || [], meta: resp.meta || null } }
     }
   } catch (e) {
     // ignore
   }
+  
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 
 // Refresh helper to match previous API (used by Pagination)
 async function refresh() {
   try {
-    const resp = await fetchSubjectsPage({ page: page.value, perPage: perPage.value, q: query.value || '' })
+    const resp = await store.fetchSubjectsPage({ page: page.value, perPage: perPage.value, q: query.value || '' })
     subjectsResponse.value = { subjects: { data: resp.items || [], meta: resp.meta || null } }
   } catch (e) {
     // ignore
@@ -142,8 +165,6 @@ async function handlePageChange(newPage) {
   page.value = newPage
   await refresh()
 }
-
-// grades are provided from the taxonomy composable (taxGrades). No separate grades fetch required here.
 
 // Filter functionality
 const activeFilter = ref('')

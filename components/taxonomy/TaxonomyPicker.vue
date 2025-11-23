@@ -52,7 +52,7 @@
 
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import UiSelectSkeleton from '~/components/ui/UiSelectSkeleton.vue'
 
 const props = defineProps({
@@ -74,6 +74,8 @@ const meta = ref(null)
 const loading = ref(false)
 const page = ref(1)
 const searchInput = ref(null)
+
+const store = useTaxonomyStore()
 
 function extractId(val) {
   if (val === null || typeof val === 'undefined') return null
@@ -120,8 +122,6 @@ const effectivePerPage = computed(() => {
   if (!meta.value) return props.perPage
   return (meta.value.per_page ?? meta.value.perPage ?? props.perPage)
 })
-
-const { fetchSubjectsPage, fetchSubjectsByGrade, fetchTopicsPage, fetchGrades, grades, subjects, fetchLevels, levels } = useTaxonomy()
 
 watch([() => props.gradeId, () => props.subjectId], () => { 
   page.value = 1; 
@@ -180,25 +180,20 @@ async function fetchPage() {
 
   const resourceHandlers = {
     subjects: async () => {
-      // Only fetch subjects filtered by grade. If no gradeId is provided
-      // return an empty list (fetchPage() already guards against calling
-      // this handler without a grade). We DO NOT fall back to the
-      // unfiltered/paginated endpoint to avoid loading all subjects.
+      // Use store method if gradeId is provided
       if (!props.gradeId) {
         return { items: [], meta: null }
       }
-
       try {
-        await fetchSubjectsByGrade(props.gradeId)
+        await store.fetchSubjectsByGrade(props.gradeId)
       } catch (e) {
-        // ignore errors and return empty list
         return { items: [], meta: null }
       }
-      const fetched = (subjects && subjects.value) ? subjects.value.slice() : []
+      const fetched = (store.subjects) ? store.subjects.slice() : []
       return { items: fetched, meta: null }
     },
     topics: async () => {
-      const out = await fetchTopicsPage({ gradeId: props.gradeId, levelId: props.levelId, subjectId: props.subjectId, page: page.value, perPage: props.perPage, q: props.query });
+      const out = await store.fetchTopicsPage({ gradeId: props.gradeId, levelId: props.levelId, subjectId: props.subjectId, page: page.value, perPage: props.perPage, q: props.query });
       let fetched = out.items || [];
       if (props.subjectId) {
         const sKey = String(props.subjectId);
@@ -210,16 +205,16 @@ async function fetchPage() {
       return { items: fetched, meta: out.meta };
     },
     grades: async () => {
-      await fetchGrades();
-      let list = grades.value || [];
+      await store.fetchGrades();
+      let list = store.grades || [];
       if (props.levelId) {
         list = list.filter(g => String(g.level_id || g.levelId || g.level || '') === String(props.levelId));
       }
       return { items: list, meta: null };
     },
     levels: async () => {
-      await fetchLevels();
-      let list = levels.value || [];
+      await store.fetchLevels();
+      let list = store.levels || [];
       if (props.query && String(props.query).trim()) {
         const qlow = String(props.query).toLowerCase();
         list = list.filter(l => String(l.name || '').toLowerCase().includes(qlow));

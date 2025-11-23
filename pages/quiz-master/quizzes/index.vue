@@ -41,7 +41,28 @@
     <div class="max-w-7xl mx-auto px-4 py-6">
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
         <aside class="lg:col-span-1 order-2 lg:order-1">
-          <div class="sticky top-6">
+          <!-- Mobile Filter Drawer -->
+          <MobileFilterDrawer
+            @apply="() => { page.value = 1; fetchItems() }"
+            @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
+          >
+            <FiltersSidebar
+              :grade-options="grades"
+              :subject-options="subjects"
+              :topic-options="topics"
+              :grade="gradeFilter"
+              :subject="subjectFilter"
+              storageKey="filters:quiz-master-quizzes"
+              @update:grade="val => { gradeFilter.value = val }"
+              @update:subject="val => { subjectFilter.value = val }"
+              @update:topic="val => { topicId.value = val }"
+              @apply="() => { page.value = 1; fetchItems() }"
+              @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
+            />
+          </MobileFilterDrawer>
+
+          <!-- Desktop Filter Sidebar -->
+          <div class="sticky top-[calc(4rem+1.5rem)] md:top-6 hidden lg:block">
             <FiltersSidebar
               :grade-options="grades"
               :subject-options="subjects"
@@ -59,24 +80,32 @@
         </aside>
 
         <main class="lg:col-span-3 order-1 lg:order-2">
-          <div class="mt-4 flex flex-wrap gap-4 items-center">
+          <div class="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             <div class="flex-1 min-w-[200px]">
-              <input 
-                v-model="q" 
-                @keyup.enter="fetchItems" 
-                placeholder="Search quizzes..." 
-                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+              <EnhancedInput
+                v-model="q"
+                icon="heroicons:magnifying-glass"
+                placeholder="Search quizzes..."
+                @keyup.enter="fetchItems"
               />
             </div>
-            <select 
-              v-model.number="perPage" 
-              @change="fetchItems" 
-              class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
-            >
-              <option :value="5">5 per page</option>
-              <option :value="10">10 per page</option>
-              <option :value="20">20 per page</option>
-            </select>
+            <div class="flex gap-2">
+              <select 
+                v-model.number="perPage" 
+                @change="fetchItems" 
+                class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+              >
+                <option :value="5">5 per page</option>
+                <option :value="10">10 per page</option>
+                <option :value="20">20 per page</option>
+              </select>
+              <button 
+                @click="fetchItems"
+                class="px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+              >
+                Search
+              </button>
+            </div>
           </div>
 
           <div class="mt-6">
@@ -89,7 +118,7 @@
                 class="text-center py-12 text-gray-500">
                 No quizzes found. Create your first quiz to get started.
               </div>
-              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 <QuizCard
                   v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
                   :key="quiz?.id || idx"
@@ -125,29 +154,41 @@
 <script setup>
 definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Manage your quizzes, drafts and published content as a quiz-master.' } ] })
 import { ref, onMounted, computed } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
+import EnhancedInput from '~/components/ui/EnhancedInput.vue'
 import Pagination from '~/components/Pagination.vue'
 import FilterLayout from '~/components/layout/FilterLayout.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
 const router = useRouter()
 const alert = useAppAlert()
 const api = useApi()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
+
 import { useAuthStore } from '~/stores/auth'
 const auth = useAuthStore()
 const isAdmin = computed(() => !!auth.user?.is_admin)
 
+// SSR hydration: pre-fetch grades, subjects, topics
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchTopics: true
+})
+
 const paginator = ref(null)
-const topics = ref([])
-const { fetchLevels, fetchAllTopics, fetchGrades, fetchAllSubjects, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
-const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
-const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
+const subjects = computed(() => Array.isArray(store.subjects) ? store.subjects : [])
+const grades = computed(() => Array.isArray(store.grades) ? store.grades : [])
+const topics = computed(() => Array.isArray(store.topics) ? store.topics : [])
 const loading = ref(false)
 const q = ref('')
 const perPage = ref(10)
@@ -185,26 +226,14 @@ function onServerSearch(search) {
 }
 
 onMounted(async () => {
-  // load taxonomy first (levels first so grades/subjects can be derived), then items
-  await fetchLevels()
-  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
-  await fetchTopics()
-  topics.value = Array.isArray(taxTopics.value) ? taxTopics.value : topics.value
+  // Ensure levels are loaded so FiltersSidebar can derive grades/subjects reliably
+  await store.fetchLevels()
+  // Load the first page of quizzes
   await fetchItems()
-})
-
-async function fetchTopics() {
-  try {
-    const res = await api.get('/api/topics?approved=1')
-    if (res.ok) {
-      const json = await res.json()
-      const rawTopics = json.topics || json.data || []
-      topics.value = Array.isArray(rawTopics) ? rawTopics.filter(t => t) : []
-    }
-  } catch (e) {
-    alert.push({ type: 'error', message: 'Failed to load topics.', icon: 'heroicons:x-circle' })
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
   }
-}
+})
 
 async function fetchItems() {
   loading.value = true

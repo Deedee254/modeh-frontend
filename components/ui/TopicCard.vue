@@ -1,38 +1,49 @@
 <template>
-  <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
+  <div class="group relative overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-lg hover:ring-slate-300 dark:bg-slate-900 dark:ring-slate-800 dark:hover:ring-slate-700">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
-    <div class="relative h-32 overflow-hidden rounded-t-2xl bg-slate-100 sm:h-40">
-  <img v-if="imageSrc" :src="imageSrc" :alt="displayTitle" class="h-full w-full object-cover" />
-      <div v-else :class="['grid h-full w-full place-items-center font-bold', paletteClass]">
-        <span class="text-2xl text-white">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
-      </div>
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
 
-      <!-- Subject badge (top-left) -->
-      <div v-if="subject" class="absolute left-3 top-3 z-10">
-        <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
-          {{ subject }}
+    <!-- Header with subtle accent -->
+    <div class="h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+
+  <div class="p-4 sm:p-6">
+      <!-- Header section -->
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div class="flex-1 min-w-0">
+          <h3 class="text-sm sm:text-lg font-semibold text-slate-900 line-clamp-2 dark:text-slate-50">
+            {{ displayTitle }}
+          </h3>
+          <p v-if="displaySubject" class="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            {{ displaySubject }}
+          </p>
+        </div>
+
+        <!-- Quiz count pill -->
+        <div class="flex-shrink-0">
+          <div class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+            <Icon name="heroicons:document-text" class="h-4 w-4" />
+            <span>{{ quizzesCount }}</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="flex flex-1 flex-col p-4">
-      <h4 class="text-base font-semibold text-slate-800 line-clamp-2 dark:text-slate-100">{{ displayTitle }}</h4>
-      <p v-if="displayDescription" class="mt-2 text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ displayDescription }}</p>
+      <!-- Description -->
+      <p v-if="displayDescription" class="text-xs sm:text-sm text-slate-600 line-clamp-2 dark:text-slate-400 mb-6">
+        {{ displayDescription }}
+      </p>
 
-      <!-- Metadata -->
-      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
-        <div class="inline-flex items-center gap-1.5">
-          <Icon name="heroicons:document-text" class="h-4 w-4" />
-          <span>{{ quizzesCount }} {{ quizzesCount === 1 ? 'quiz' : 'quizzes' }}</span>
+      <!-- Action button -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex-1">
+          <NuxtLink v-if="startLink" :to="startLink" :class="primaryBtn">
+            {{ startLabel }}
+            <Icon name="heroicons:arrow-right" class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+          </NuxtLink>
         </div>
-      </div>
 
-      <!-- CTA -->
-      <div class="relative z-10 mt-auto flex items-center gap-2 pt-4">
-        <NuxtLink v-if="startLink" :to="startLink" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600">
-          {{ startLabel }}
-        </NuxtLink>
+        <!-- Subtle progress indicator -->
+        <div class="text-xs text-slate-500 dark:text-slate-400">
+          {{ quizzesCount }} {{ quizzesCount === 1 ? 'quiz' : 'quizzes' }}
+        </div>
       </div>
     </div>
   </div>
@@ -55,13 +66,6 @@ const props = defineProps({
   topic: { type: Object, default: null },
 })
 
-import resolveAssetUrl from '~/composables/useAssets'
-
-const imageSrc = computed(() => {
-  const v = props.image || props.topic?.image || props.topic?.cover_image || ''
-  return resolveAssetUrl(v) || (v || null)
-})
-
 const displayTitle = computed(() => props.title || props.name || props.topic?.name || 'Topic')
 const displayDescription = computed(() => props.description || props.topic?.description || '')
 const displaySubject = computed(() => {
@@ -71,8 +75,6 @@ const displaySubject = computed(() => {
   return s.name || s.title || s.label || String(s.id || '')
 })
 
-const paletteClass = computed(() => {
-  if (props.palette && props.palette.trim()) return props.palette
-  return 'bg-teal-500'
-})
+// Uniform primary button used across cards (mobile full-width, stacks)
+const primaryBtn = 'inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 shadow-sm'
 </script>

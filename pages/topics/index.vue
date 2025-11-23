@@ -104,65 +104,37 @@
 
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
-// HeroFilterBar removed — PageHero provides a single search input
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import { ref, computed, onMounted } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
-import { getHeroClass } from '~/utils/heroPalettes'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
-// Ensure runtime config is available in this setup script
 const config = useRuntimeConfig()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
 
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingTopics } = useTaxonomy()
+// SSR hydration: pre-fetch grades, subjects, topics
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchTopics: true
+})
 
-const pending = loadingTopics
-// derive a safe, reactive array from the taxonomy topics ref
-const topics = computed(() => safeArray(taxTopics.value))
+// Compute topics array with safe handling
+const topics = computed(() => {
+  const result = Array.isArray(store.topics) ? store.topics : []
+  return result
+})
+
+const pending = computed(() => !store.topics.length)
 
 // SEO: page title + description (use topics count if available)
 useHead({
   title: `${topics.value.length || 0} Topics • Find topic-aligned quizzes | Modeh`,
   meta: [{ name: 'description', content: 'Explore topics and micro-skills. Find short, focused quizzes aligned to each topic to practice and improve.' }]
 })
-
-// Helper to coerce API responses into arrays (defensive: handles HTML error pages or wrapped shapes)
-function safeArray(v) {
-  if (Array.isArray(v)) return v
-  if (v == null) return []
-  if (typeof v === 'object') {
-    if (Array.isArray(v.data)) return v.data
-    if (Array.isArray(v.items)) return v.items
-    if (Array.isArray(v.topics)) return v.topics
-    if (typeof (v.length) === 'number') return Array.from(v)
-    return []
-  }
-  if (typeof v === 'string') {
-    const raw = v.trim()
-    const s = raw.toLowerCase()
-    if (s.startsWith('<!doctype') || s.startsWith('<html')) {
-      try {
-        const isDev = typeof import.meta !== 'undefined' ? !!import.meta.env?.DEV : (process && process.env && process.env.NODE_ENV !== 'production')
-        if (isDev) {
-          const snippet = raw.replace(/\s+/g, ' ').slice(0, 800)
-          // eslint-disable-next-line no-console
-          console.warn('safeArray: received HTML string instead of JSON array — returning empty array', { snippet, endpoint: config?.public?.apiBase || 'unknown' })
-        }
-      } catch (e) {
-        // ignore logging failures
-      }
-      return []
-    }
-    try {
-      const parsed = JSON.parse(v)
-      if (Array.isArray(parsed)) return parsed
-    } catch (e) {
-      return []
-    }
-  }
-  return []
-}
 
 const query = ref('')
 const sortBy = ref('popular')
@@ -201,26 +173,27 @@ function pickPaletteClass(id) {
   return palettes[(id || 0) % palettes.length]
 }
 
-// Server-side search handler (debounced by UiSearch)
-  async function onServerSearch(q) {
-    const api = useApi()
-    try {
-      const res = await api.get(`/api/topics?query=${encodeURIComponent(q)}`)
-      if (!res.ok) return
-      const data = await res.json()
-      const items = data?.topics?.data || data?.topics || data?.data || []
-      if (Array.isArray(items)) {
-        taxTopics.value.length = 0
-        taxTopics.value.push(...items)
-      }
-    } catch (e) {
-      // ignore errors
+// Server-side search handler
+async function onServerSearch(q) {
+  const api = useApi()
+  try {
+    const res = await api.get(`/api/topics?query=${encodeURIComponent(q)}`)
+    if (!res.ok) return
+    const data = await res.json()
+    const items = data?.topics?.data || data?.topics || data?.data || []
+    if (Array.isArray(items)) {
+      // Update store topics with search results
+      store.topics.length = 0
+      store.topics.push(...items)
     }
+  } catch (e) {
+    // ignore errors
   }
+}
 
 function onServerSubmit(q) { onServerSearch(q) }
 
-// Local handler used by HeroFilterBar
+// Local handler used by PageHero
 function onSearch(q) { query.value = q; onServerSearch(q) }
 
 // Top topics to show as pills (popular by quizzes_count)
@@ -229,21 +202,13 @@ const topTopics = computed(() => {
   return all.slice().sort((a,b) => (b.quizzes_count||0) - (a.quizzes_count||0)).slice(0, 12)
 })
 
-function selectTopic(v) { query.value = '' /* keep search cleared */; /* optionally set a topic filter */ }
+function selectTopic(v) { query.value = '' }
 
 function clear() { query.value = '' }
 
-// Use taxonomy composable to provide subjects/grades for the sidebar
-const SUBJECTS = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value.map(s => ({ id: s.id, name: s.name, slug: s.slug || s.id, grade_id: s.grade_id || s.grade })) : [])
-const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice() : [])
-
-onMounted(async () => {
-  // initialize taxonomy lists
-  // Prefer fetching levels first to let useTaxonomy derive grades/subjects and
-  // avoid redundant API calls. Topics still fetched explicitly.
-  await fetchLevels()
-  await fetchAllTopics()
-})
+// Use store to provide subjects/grades for the sidebar
+const SUBJECTS = computed(() => Array.isArray(store.subjects) ? store.subjects.map(s => ({ id: s.id, name: s.name, slug: s.slug || s.id, grade_id: s.grade_id || s.grade })) : [])
+const GRADES = computed(() => Array.isArray(store.grades) ? store.grades.slice() : [])
 
 // fetch quizzes meta for totals
 let totalQuizzes = 0
@@ -255,4 +220,10 @@ try {
     totalQuizzes = data?.quizzes?.total || data?.total || 0
   }
 } catch (e) { totalQuizzes = 0 }
+
+onMounted(() => {
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
+})
 </script>

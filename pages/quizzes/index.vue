@@ -44,62 +44,87 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
       <aside class="lg:col-span-1">
         <div class="space-y-4">
-          <FiltersSidebar
-            :grade-options="GRADES"
-            :subject-options="subjectsByGrade"
-            :topic-options="topicsBySubject"
-            :showTopic="true"
-            :subject="subjectFilter"
-            :topic="filterTopic"
-            :grade="gradeFilter"
-            storageKey="filters:quizzes"
-            @update:subject="val => subjectFilter.value = val"
-            @update:topic="val => filterTopic.value = val"
-            @update:grade="val => gradeFilter.value = val"
+          <!-- Mobile Filter Drawer -->
+          <MobileFilterDrawer
             @apply="() => { /* apply handled reactively */ }"
             @clear="() => { subjectFilter.value = ''; filterTopic.value = ''; gradeFilter.value = '' }"
-          />
+          >
+            <FiltersSidebar
+              :grade-options="GRADES"
+              :subject-options="subjectsByGrade"
+              :topic-options="topicsBySubject"
+              :showTopic="true"
+              :subject="subjectFilter"
+              :topic="filterTopic"
+              :grade="gradeFilter"
+              storageKey="filters:quizzes"
+              @update:subject="val => subjectFilter.value = val"
+              @update:topic="val => filterTopic.value = val"
+              @update:grade="val => gradeFilter.value = val"
+              @apply="() => { /* apply handled reactively */ }"
+              @clear="() => { subjectFilter.value = ''; filterTopic.value = ''; gradeFilter.value = '' }"
+            />
+          </MobileFilterDrawer>
 
-          <UCard v-if="featuredQuiz">
-            <template #header>
-              <div class="text-sm text-gray-500">Featured</div>
-            </template>
-            <div class="mt-1">
-              <div class="font-semibold text-indigo-800">{{ featuredQuiz.title }}</div>
-              <div class="text-xs text-gray-500">{{ featuredQuiz.topic_name || 'General' }}</div>
-              <div class="mt-3"><NuxtLink :to="`/quizee/quizzes/${featuredQuiz.id || ''}`" class="text-indigo-700 text-sm">Open →</NuxtLink></div>
-            </div>
-          </UCard>
-          <UCard>
-            <div class="text-sm text-gray-500">Quick filters</div>
-            <div class="mt-3 flex flex-col gap-2">
-              <button
-                @click="activeTab = 'all'"
-                :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'all' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
-              >
-                All
-              </button>
-              <button
-                @click="activeTab = 'latest'"
-                :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'latest' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
-              >
-                Latest
-              </button>
-              <button
-                @click="activeTab = 'featured'"
-                :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'featured' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
-              >
-                Featured
-              </button>
-            </div>
-          </UCard>
+          <!-- Desktop Filters -->
+          <div class="hidden lg:block space-y-4">
+            <FiltersSidebar
+              :grade-options="GRADES"
+              :subject-options="subjectsByGrade"
+              :topic-options="topicsBySubject"
+              :showTopic="true"
+              :subject="subjectFilter"
+              :topic="filterTopic"
+              :grade="gradeFilter"
+              storageKey="filters:quizzes"
+              @update:subject="val => subjectFilter.value = val"
+              @update:topic="val => filterTopic.value = val"
+              @update:grade="val => gradeFilter.value = val"
+              @apply="() => { /* apply handled reactively */ }"
+              @clear="() => { subjectFilter.value = ''; filterTopic.value = ''; gradeFilter.value = '' }"
+            />
+
+            <UCard v-if="featuredQuiz">
+              <template #header>
+                <div class="text-sm text-gray-500">Featured</div>
+              </template>
+              <div class="mt-1">
+                <div class="font-semibold text-indigo-800">{{ featuredQuiz.title }}</div>
+                <div class="text-xs text-gray-500">{{ featuredQuiz.topic_name || 'General' }}</div>
+                <div class="mt-3"><NuxtLink :to="`/quizee/quizzes/${featuredQuiz.id || ''}`" class="text-indigo-700 text-sm">Open →</NuxtLink></div>
+              </div>
+            </UCard>
+            <UCard>
+              <div class="text-sm text-gray-500">Quick filters</div>
+              <div class="mt-3 flex flex-col gap-2">
+                <button
+                  @click="activeTab = 'all'"
+                  :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'all' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
+                >
+                  All
+                </button>
+                <button
+                  @click="activeTab = 'latest'"
+                  :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'latest' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
+                >
+                  Latest
+                </button>
+                <button
+                  @click="activeTab = 'featured'"
+                  :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'featured' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
+                >
+                  Featured
+                </button>
+              </div>
+            </UCard>
+          </div>
         </div>
       </aside>
       <main class="lg:col-span-2">
         <div v-if="loading"><SkeletonGrid :count="3" /></div>
         <div v-else>
           <div v-if="(!displayQuizzes || displayQuizzes.length === 0)" class="p-6 border rounded-md text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">0 results returned</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-6">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             <QuizCard
               v-for="q in paginatedQuizzes"
               :key="q.id"
@@ -167,12 +192,24 @@
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import useQuizzes from '~/composables/useQuizzes'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 import { getHeroClass } from '~/utils/heroPalettes'
 const config = useRuntimeConfig()
+
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
+
+// SSR hydration: pre-fetch grades, subjects, topics
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchTopics: true
+})
 
 useHead({
   title: 'Quizzes • Practice & Learn | Modeh',
@@ -196,10 +233,11 @@ const PAGE_SIZE = 12
 
 // on mount, fetch initial data (composable will normalize)
 onMounted(async () => {
-  // fetch quizzes/topics first, then load levels so the taxonomy composable
-  // can derive grades/subjects from levels (avoids redundant parallel calls).
+  // fetch quizzes/topics first (already hydrated store in top-level await)
   await Promise.all([fetchItems(), fetchTopics()])
-  await fetchLevels()
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 
 // Keep filters cascading: when grade changes, clear subject & topic; when subject changes, clear topic
@@ -215,12 +253,9 @@ watch(subjectFilter, (nv, ov) => {
   }
 })
 
-// taxonomy composable provides grades/subjects/topics with simple caching
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, fetchGrades, fetchSubjectsByGrade, fetchAllSubjects, fetchTopicsBySubject, fetchAllTopics, fetchLevels } = useTaxonomy()
-
 // Defensive computed wrappers used by the UI/cards
 const SUBJECTS = computed(() => {
-  const list = taxSubjects?.value || []
+  const list = store.subjects || []
   return (Array.isArray(list) ? list : []).map(s => ({
     slug: s.slug || s.id,
     id: s.id,
@@ -232,7 +267,7 @@ const SUBJECTS = computed(() => {
 })
 
 const GRADES = computed(() => {
-  const list = taxGrades?.value || []
+  const list = store.grades || []
   return Array.isArray(list) ? list.slice() : []
 })
 

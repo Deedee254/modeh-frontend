@@ -75,9 +75,26 @@
           <p class="mt-3 text-base text-slate-600">A learning workflow designed for clarity and steady progress — pick a learning path, practice with targeted quizzes, review instant feedback, and track improvement over time.</p>
         </div>
 
-        <div class="mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div v-for="step in howItWorksSteps" :key="step.number" class="text-center">
-              <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl" :class="step.badge">
+        <!-- Mobile Timeline (vertical) -->
+        <div class="mt-14 md:hidden">
+          <div class="relative space-y-8">
+            <div class="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-rose-500 to-amber-500"></div>
+            <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative pl-24 animate-fade-in" :style="{ '--animation-delay': `${index * 0.15}s` }">
+              <div class="absolute left-0 top-2 h-16 w-16 flex items-center justify-center rounded-full border-4 border-white bg-gradient-to-br" :class="step.badge">
+                <UIcon :name="step.icon" class="text-white text-xl" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-slate-900">{{ step.title }}</h3>
+                <p class="mt-2 text-sm text-slate-600">{{ step.description }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Grid (4 columns) -->
+        <div class="mt-14 hidden md:grid grid-cols-2 gap-8 lg:grid-cols-4">
+          <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="text-center animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
+            <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl transition-transform duration-300 hover:scale-110" :class="step.badge">
               <span class="absolute inset-0.5 rounded-2xl" :class="step.glow"></span>
               <UIcon :name="step.icon" class="relative text-white text-2xl" />
             </div>
@@ -217,41 +234,39 @@
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Topics & contextual quizzes</h3>
           <p class="mt-3 text-slate-600">Dive into topics with rich context — linked subjects, quiz counts, and summaries to help you pick focused practice areas.</p>
         </div>
-  <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-    <div class="w-full sm:w-auto">
-      <select v-model="homeTopicGrade" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation mb-3 sm:mb-0">
-        <option :value="null">All grades</option>
-        <option v-for="g in GRADES" :key="g.id" :value="g.id">{{ g.name || g.id }}</option>
-      </select>
-    </div>
-    <div class="w-full sm:w-auto">
-      <select v-model="homeTopicSubject" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation mb-3 sm:mb-0">
-        <option :value="null">All subjects</option>
-        <option v-for="s in SUBJECTS" :key="s.id" :value="s.id">{{ s.name || s.id }}</option>
-      </select>
-    </div>
-  </div>
+        <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div class="w-full sm:w-auto">
+            <select v-model="homeTopicGrade" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation">
+              <option :value="null">All grades</option>
+              <option v-for="g in GRADES" :key="g.id" :value="g.id">{{ g.name || g.id }}</option>
+            </select>
+          </div>
+          <div class="w-full sm:w-auto">
+            <select v-model="homeTopicSubject" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation">
+              <option :value="null">All subjects</option>
+              <option v-for="s in SUBJECTS" :key="s.id" :value="s.id">{{ s.name || s.id }}</option>
+            </select>
+          </div>
+        </div>
 
-
-
-<div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-
-          <TopicCard
-            v-for="topic in selectedHomepageTopics"
-            :key="topic.id"
-            :topic="topic"
-            :title="topic.name"
-            :image="topic.image || topic.cover_image || ''"
-            :grade="getTopicGradeLabel(topic)"
-            :subject="getTopicSubjectLabel(topic)"
-            :quizzesCount="topic.quizzes_count || topic.quizzes?.length || 0"
-            :startLink="`/topics/${topic.id}`"
-            :description="topic.description || topic.summary || ''"
-            startLabel="View Quizzes"
-          />
-
-        </div>        <div class="mt-6 text-center">
-          <NuxtLink to="/topics" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg">Show all topics</NuxtLink>
+        <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 auto-rows-max">
+          <div v-for="(topic, index) in selectedHomepageTopics" :key="topic.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
+            <TopicCard
+              :topic="topic"
+              :title="topic.name"
+              :image="topic.image || topic.cover_image || ''"
+              :grade="getTopicGradeLabel(topic)"
+              :subject="getTopicSubjectLabel(topic)"
+              :quizzesCount="topic.quizzes_count || topic.quizzes?.length || 0"
+              :startLink="`/topics/${topic.id}`"
+              :description="topic.description || topic.summary || ''"
+              startLabel="View Quizzes"
+              class="h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
+            />
+          </div>
+        </div>
+        <div class="mt-6 text-center">
+          <NuxtLink to="/topics" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">Show all topics</NuxtLink>
         </div>
       </div>
     </section>
@@ -264,7 +279,20 @@
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Creators & contributors</h3>
           <p class="mt-3 text-slate-600">Educators and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
         </div>
-  <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
+  <!-- Mobile: carousel; Desktop: grid -->
+  <client-only>
+    <div class="sm:hidden">
+      <Carousel :items="safeArray(featuredQuizMasters.slice(0,4))" :perViewSm="1" :perViewMd="2" :perViewLg="3" :auto="false">
+        <template #item="{ item }">
+          <div class="p-2">
+            <QuizMasterCard :quizMaster="item" />
+          </div>
+        </template>
+      </Carousel>
+    </div>
+  </client-only>
+
+  <div class="mt-8 hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
     <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
   </div>
         <div class="mt-6 text-center">
@@ -726,10 +754,26 @@ async function login(){
 </script>
 
 <style scoped>
-/* keep existing small utilities copied from original file */
 @keyframes blob{0%,100%{transform:translate(0,0) scale(1);}25%{transform:translate(20px,-30px) scale(1.1);}50%{transform:translate(-20px,20px) scale(0.9);}75%{transform:translate(20px,30px) scale(0.95);}}
 .animate-blob{animation:blob 10s infinite}
 .animation-delay-2000{animation-delay:2s}
 .animation-delay-4000{animation-delay:4s}
 .blur-3xl{--tw-blur: blur(64px);filter:var(--tw-blur)}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.6s ease-out forwards;
+  animation-delay: var(--animation-delay, 0s);
+  opacity: 0;
+}
 </style>

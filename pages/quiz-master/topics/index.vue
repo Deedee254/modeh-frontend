@@ -27,7 +27,26 @@
     <div class="max-w-7xl mx-auto px-4 py-6">
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
         <aside class="lg:col-span-1 order-2 lg:order-1">
-          <div class="sticky top-6">
+          <!-- Mobile Filter Drawer -->
+          <MobileFilterDrawer
+            @apply="onApplyFilters"
+            @clear="onClearFilters"
+          >
+            <FiltersSidebar
+              :grade-options="grades"
+              :subject-options="subjects"
+              :grade="selectedGrade"
+              :subject="selectedSubject"
+              storageKey="filters:quiz-master-topics"
+              @update:grade="onGradeChange"
+              @update:subject="onSubjectChange"
+              @apply="onApplyFilters"
+              @clear="onClearFilters"
+            />
+          </MobileFilterDrawer>
+
+          <!-- Desktop Filter Sidebar -->
+          <div class="sticky top-[calc(4rem+1.5rem)] md:top-6 hidden lg:block">
             <FiltersSidebar
               :grade-options="grades"
               :subject-options="subjects"
@@ -40,19 +59,18 @@
               @clear="onClearFilters"
             />
             <div class="mt-4">
-              <input 
-                v-model="searchQuery" 
-                type="text" 
-                placeholder="Search topics..." 
+              <EnhancedInput
+                v-model="searchQuery"
+                icon="heroicons:magnifying-glass"
+                placeholder="Search topics..."
                 @keyup.enter="onSearch"
-                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
               />
             </div>
           </div>
         </aside>
 
         <main class="lg:col-span-3 order-1 lg:order-2">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             <TopicCard
               v-for="(topic, idx) in (Array.isArray(filteredTopics) ? filteredTopics.filter(Boolean) : [])"
               :key="topic?.id || idx"
@@ -104,6 +122,12 @@ import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import Pagination from '~/components/Pagination.vue'
+import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
+import EnhancedInput from '~/components/ui/EnhancedInput.vue'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
+import useApi from '~/composables/useApi'
 
 definePageMeta({
   layout: 'quiz-master',
@@ -123,29 +147,38 @@ definePageMeta({
 
 const router = useRouter()
 const config = useRuntimeConfig()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
+
+// SSR hydration: pre-fetch grades, subjects, topics
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchTopics: true
+})
+
 const searchQuery = ref('')
 const selectedSubject = ref(null)
 const selectedGrade = ref(null)
-const isLoading = ref(true)
+const isLoading = ref(false)
 
 const page = ref(1)
 const perPage = ref(12)
 
-import useTaxonomy from '~/composables/useTaxonomy'
-import useApi from '~/composables/useApi'
-const { fetchLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
-
-const subjects = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
-const grades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
+const subjects = computed(() => Array.isArray(store.subjects) ? store.subjects : [])
+const grades = computed(() => Array.isArray(store.grades) ? store.grades : [])
 
 const topicsResponse = ref(null)
 const topics = computed(() => topicsResponse.value?.data || [])
 
 onMounted(async () => {
-  // Ensure levels are loaded first so FiltersSidebar can derive grades/subjects reliably
-  await fetchLevels()
-  await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+  // Ensure levels are loaded so FiltersSidebar can derive grades/subjects reliably
+  await store.fetchLevels()
+  // Load the first page of topics
   await loadTopics()
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 
 // Computed filtered topics based on search and filters
@@ -180,7 +213,6 @@ async function loadTopics() {
   }
   isLoading.value = false
 }
-
 
 const handleTopicClick = (topic) => {
   router.push(`/quiz-master/topics/${topic.id}`)
@@ -228,7 +260,4 @@ function onFilterChange(type, val) {
   page.value = 1
   loadTopics()
 }
-
-// Mark loading as finished because top-level awaited fetches have completed
-isLoading.value = false
 </script>

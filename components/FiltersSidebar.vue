@@ -102,7 +102,8 @@
 <script setup>
 import { ref, watch, toRefs, onMounted, computed, unref } from 'vue'
 import { useCookie } from '#app'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+
 const props = defineProps({
   // Accept either raw arrays or reactive refs/objects to remain flexible across callers
   subjectOptions: { type: [Array, Object], default: () => [] },
@@ -125,14 +126,20 @@ const localLevel = ref(props.level)
 const collapsed = ref(true)
 const cookieCollapsed = props.storageKey ? useCookie(props.storageKey + ':collapsed') : null
 
-// taxonomy composable (single instance)
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels: taxLevels, fetchGrades, fetchGradesByLevel, fetchAllSubjects, fetchAllTopics, fetchLevels, fetchSubjectsByGrade, fetchTopicsBySubject, loadingLevels, loadingGrades, loadingSubjects, loadingTopics } = useTaxonomy()
+// Use taxonomy store for all taxonomy data
+const store = useTaxonomyStore()
 
-// compute label lookups from either props.options or taxonomy composable
+// Computed properties for loading states (store doesn't have individual loading flags, so assume false)
+const loadingLevels = computed(() => false)
+const loadingGrades = computed(() => false)
+const loadingSubjects = computed(() => false)
+const loadingTopics = computed(() => false)
+
+// compute label lookups from either props.options or store
 const gradeLookup = computed(() => {
   try {
     const raw = unref(props.gradeOptions)
-    const list = Array.isArray(raw) && raw.length ? raw : (taxGrades.value || [])
+    const list = Array.isArray(raw) && raw.length ? raw : (store.grades || [])
     return (list || []).reduce((acc, g) => {
       if (g && g.id != null) {
         try {
@@ -151,7 +158,7 @@ const gradeLookup = computed(() => {
 const subjectLookup = computed(() => {
   try {
     const raw = unref(props.subjectOptions)
-    const list = Array.isArray(raw) && raw.length ? raw : (taxSubjects.value || [])
+    const list = Array.isArray(raw) && raw.length ? raw : (store.subjects || [])
     return (list || []).reduce((acc, s) => {
       if (s && s.id != null) {
         try {
@@ -170,7 +177,7 @@ const subjectLookup = computed(() => {
 const topicLookup = computed(() => {
   try {
     const raw = unref(props.topicOptions)
-    const list = Array.isArray(raw) && raw.length ? raw : (taxTopics.value || [])
+    const list = Array.isArray(raw) && raw.length ? raw : (store.topics || [])
     return (list || []).reduce((acc, t) => {
       if (t && t.id != null) {
         try {
@@ -199,7 +206,7 @@ const activeGradeLabel = computed(() => {
 const activeLevelLabel = computed(() => {
   try {
     if (!localLevel.value) return ''
-    const list = (taxLevels.value || [])
+    const list = (store.levels || [])
     const l = list.find(x => x && x.id != null && String(x.id) === String(localLevel.value))
     return l && l.name ? l.name : String(localLevel.value)
   } catch (e) {
@@ -229,16 +236,16 @@ const hasAnyActive = computed(() => {
   return !!(localLevel.value || localGrade.value || localSubject.value || localTopic.value)
 })
 
-// subjects are already filtered by taxonomy composable
+// subjects from store
 const filteredSubjects = computed(() => {
-  return taxSubjects.value || []
+  return store.subjects || []
 })
 
 // compute filtered grades by selected level if levels are available
 const gradeOptionsByLevel = computed(() => {
   try {
-    if (localLevel.value && Array.isArray(taxLevels.value) && taxLevels.value.length) {
-      const l = taxLevels.value.find(x => x && x.id != null && String(x.id) === String(localLevel.value))
+    if (localLevel.value && Array.isArray(store.levels) && store.levels.length) {
+      const l = store.levels.find(x => x && x.id != null && String(x.id) === String(localLevel.value))
       if (l && Array.isArray(l.grades)) {
         // levels may include grade ids (number/string) or partial objects; resolve to full grade objects when possible
         return l.grades.map(g => {
@@ -253,13 +260,13 @@ const gradeOptionsByLevel = computed(() => {
           }
         }).filter(Boolean)
       }
-      // fallback: filter taxGrades by level_id if grades not nested in level
-      const allGrades = taxGrades.value || []
+      // fallback: filter store grades by level_id if grades not nested in level
+      const allGrades = store.grades || []
       const filtered = allGrades.filter(g => g && g.id != null && String(g.level_id || g.level || '') === String(localLevel.value))
       if (filtered.length) return filtered
     }
     const rawGrades = unref(props.gradeOptions)
-    return (Array.isArray(rawGrades) && rawGrades.length) ? rawGrades : (taxGrades.value || [])
+    return (Array.isArray(rawGrades) && rawGrades.length) ? rawGrades : (store.grades || [])
   } catch (e) {
     console.warn('gradeOptionsByLevel computation error:', e)
     return []
@@ -270,7 +277,7 @@ const gradeOptionsByLevel = computed(() => {
 const filteredTopics = computed(() => {
   try {
     const raw = unref(props.topicOptions)
-    const allTopics = (taxTopics.value && taxTopics.value.length) ? taxTopics.value : (Array.isArray(raw) ? raw : [])
+    const allTopics = (store.topics && store.topics.length) ? store.topics : (Array.isArray(raw) ? raw : [])
     if (!localSubject.value) return allTopics || []
     return (allTopics || []).filter(t => t && t.id != null && String(t.subject_id || t.subject || '') === String(localSubject.value))
   } catch (e) {
@@ -281,7 +288,7 @@ const filteredTopics = computed(() => {
 
 const filteredLevels = computed(() => {
   try {
-    return (taxLevels.value || []).filter(x => x && x.id != null)
+    return (store.levels || []).filter(x => x && x.id != null)
   } catch (e) {
     console.warn('filteredLevels computation error:', e)
     return []
@@ -327,10 +334,6 @@ onMounted(() => {
       if (raw !== null) collapsed.value = raw === 'true'
     }
   } catch (e) {}
-
-  // Note: taxonomy (levels/grades/subjects/topics) is fetched on mount below, so
-  // we don't need to prefetch here when the sidebar is opened. Keeping mount-time
-  // fetch ensures levels are available even if sidebar remains collapsed.
 })
 
 watch(() => props.subject, (v) => { localSubject.value = v })
@@ -344,26 +347,22 @@ watch(collapsed, (v) => {
   }
 })
 
-// When the sidebar is opened, prefetch taxonomy data on demand
-// No-op on collapse open: taxonomy is fetched on mount, so we don't prefetch here.
-// persist local fields too so users don't lose in-flight filters
+// When grade changes, clear dependent selections and emit
 watch(localGrade, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':grade', String(v)) } catch (e) {} }
   // when grade changes, clear dependent subject/topic selections
-  // but do not override the user's explicit subject if it belongs to the grade
   localSubject.value = null
   localTopic.value = null
   emit('update:grade', v)
-  // ask the taxonomy composable to fetch subjects for this grade so subject lists are server-filtered
-  try { fetchSubjectsByGrade(v).catch(() => {}) } catch (e) {}
 })
 
+// When subject changes, clear dependent topic and emit
 watch(localSubject, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':subject', String(v)) } catch (e) {} }
   emit('update:subject', v)
-  // preload topics for the selected subject via taxonomy composable
-  try { fetchTopicsBySubject(v).catch(() => {}) } catch (e) {}
 })
+
+// When level changes, clear dependent selections and emit
 watch(localLevel, (v) => {
   if (process.client && props.storageKey) { try { localStorage.setItem(props.storageKey + ':level', String(v)) } catch (e) {} }
   // when level changes, clear grade/subject/topic
@@ -372,14 +371,6 @@ watch(localLevel, (v) => {
   localTopic.value = null
   emit('update:grade', null)
   emit('update:level', v)
-  // ensure grades for this level are loaded
-  if (v) {
-    try {
-      // prefer server-filtered grades when available
-      if (typeof fetchGradesByLevel === 'function') fetchGradesByLevel(v).catch(() => {})
-      else fetchGrades().catch(() => {})
-    } catch (e) {}
-  }
 })
 
 function onApply() {
@@ -402,39 +393,26 @@ function onClear() {
 }
 
 function removeGrade() {
-  // only update local state; watchers will persist and emit update:grade
   localGrade.value = null
-  // clear dependent subject/topic locally
   localSubject.value = null
   localTopic.value = null
 }
 
 function removeSubject() {
-  // only update local state; watchers will persist and emit update:subject
   localSubject.value = null
-  // clear dependent topic locally
   localTopic.value = null
 }
 
 function removeTopic() {
-  // only update local state; watchers will persist and emit update:topic
   localTopic.value = null
 }
 
 function removeLevel() {
   localLevel.value = null
-  // clear dependent selections
   localGrade.value = null
   localSubject.value = null
   localTopic.value = null
 }
-
-// Load levels immediately so they behave like grades/subjects/topics
-// (levels are critical for initial filtering/derivation of grades)
-onMounted(() => {
-  // Fire-and-forget: we don't need to await here; loading refs will update the UI
-  try { if ((!taxLevels.value || !taxLevels.value.length) && typeof fetchLevels === 'function') fetchLevels() } catch (e) { console.error('FiltersSidebar.fetchLevels on mount failed', e) }
-})
 </script>
 
 <style scoped>

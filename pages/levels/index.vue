@@ -34,15 +34,48 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
 
-// Use taxonomy composable; the API returns levels with nested grades so prefer the server shape
-const { levels, fetchLevels, loadingLevels } = useTaxonomy()
-const loading = loadingLevels
+// SSR hydration: pre-fetch levels and grades
+const { data } = await useTaxonomyHydration({
+  fetchLevels: true,
+  fetchGrades: true
+})
+
+// Compute nested levels with grades: group grades by level_id
+const levels = computed(() => {
+  const levelMap = new Map()
+  
+  // Initialize with all levels
+  if (Array.isArray(store.levels)) {
+    store.levels.forEach(lvl => {
+      if (!levelMap.has(lvl.id)) {
+        levelMap.set(lvl.id, { ...lvl, grades: [] })
+      }
+    })
+  }
+  
+  // Populate grades for each level
+  if (Array.isArray(store.grades)) {
+    store.grades.forEach(grade => {
+      const lvlId = grade.level_id || grade.level
+      if (lvlId && levelMap.has(lvlId)) {
+        levelMap.get(lvlId).grades.push(grade)
+      }
+    })
+  }
+  
+  return Array.from(levelMap.values())
+})
+
+const loading = computed(() => !store.levels.length || !store.grades.length)
 
 function getGradeLink(g) {
   // If the grade is a tertiary/course, link to the courses route; otherwise use grades
@@ -55,8 +88,9 @@ function getGradeLink(g) {
   return `/grades/${g.id}`
 }
 
-onMounted(async () => {
-  // Load levels from the API. The server returns nested grades for each level, so prefer that shape.
-  await fetchLevels()
+onMounted(() => {
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 </script>

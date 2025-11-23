@@ -188,49 +188,54 @@ import RuntimeImg from '~/components/RuntimeImg.vue'
 import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
 import { ref, computed, onMounted } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useMetricsDebug } from '~/composables/useTaxonomyHydration'
 import useApi from '~/composables/useApi'
 
 const config = useRuntimeConfig()
-  const auth = useAuthStore()
-  const grade = auth.user?.grade ?? 8
-  const api = useApi()
-  // fetch quiz masters via centralized api helper
-  let quizMastersData = { value: null }
-  try {
-    const res = await api.get(`/api/quiz-masters?grade=${grade}`)
-    if (api.handleAuthStatus(res)) {
-      quizMastersData = { value: null }
-    } else if (res && res.ok) {
-      const j = await res.json().catch(() => null)
-      quizMastersData = { value: j }
-    } else {
-      quizMastersData = { value: null }
-    }
-  } catch (e) {
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
+
+const auth = useAuthStore()
+const grade = auth.user?.grade ?? 8
+const api = useApi()
+// fetch quiz masters via centralized api helper
+let quizMastersData = { value: null }
+try {
+  const res = await api.get(`/api/quiz-masters?grade=${grade}`)
+  if (api.handleAuthStatus(res)) {
+    quizMastersData = { value: null }
+  } else if (res && res.ok) {
+    const j = await res.json().catch(() => null)
+    quizMastersData = { value: j }
+  } else {
     quizMastersData = { value: null }
   }
-  const { fetchSubjectsByGrade, subjects: taxSubjects } = useTaxonomy()
+} catch (e) {
+  quizMastersData = { value: null }
+}
+// Fetch subjects for the user's grade from store
+await store.fetchSubjectsByGrade(grade)
+
 // fetch rewards via centralized api helper
-  let rewardsData = { value: null }
-  try {
-    const res = await api.get('/api/rewards/my')
-    if (api.handleAuthStatus(res)) {
-      rewardsData = { value: null }
-    } else if (res && res.ok) {
-      const j = await res.json().catch(() => null)
-      rewardsData = { value: j }
-    } else {
-      rewardsData = { value: null }
-    }
-  } catch (e) {
+let rewardsData = { value: null }
+try {
+  const res = await api.get('/api/rewards/my')
+  if (api.handleAuthStatus(res)) {
+    rewardsData = { value: null }
+  } else if (res && res.ok) {
+    const j = await res.json().catch(() => null)
+    rewardsData = { value: j }
+  } else {
     rewardsData = { value: null }
   }
+} catch (e) {
+  rewardsData = { value: null }
+}
 
 // normalize paginated or direct shapes for subjects and quiz-masters
-// taxSubjects is a ref provided by useTaxonomy(); create a computed wrapper
-// that always returns a plain array so calling array methods in script is safe.
-const subjectsArr = computed(() => Array.isArray(taxSubjects?.value) ? taxSubjects.value : [])
+// store.subjects is a reactive array; create a computed wrapper
+const subjectsArr = computed(() => Array.isArray(store.subjects) ? store.subjects : [])
 
 const quizMasters = (() => {
   if (quizMastersData?.value?.['quiz-masters']?.data && Array.isArray(quizMastersData.value['quiz-masters'].data)) return quizMastersData.value['quiz-masters'].data

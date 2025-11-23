@@ -1,9 +1,9 @@
 <template>
   <section v-bind="$attrs" :class="[
     'relative isolate overflow-hidden',
-    props.flush ? '-mt-6 sm:-mt-8' : '',
-    padding,
-    'mb-12 sm:mb-16'
+      props.flush ? '-mt-6 sm:-mt-8' : '',
+      padding,
+      'mb-8 sm:mb-12'
   ]" :style="backgroundStyle">
     <!-- Decorative background image and overlay -->
     <div v-if="hasBackgroundImage" class="absolute inset-0 -z-10 bg-cover bg-center" :style="backgroundImageStyle" aria-hidden="true"></div>
@@ -11,8 +11,8 @@
 
     <!-- Glow accents -->
     <div class="absolute inset-0 -z-10 pointer-events-none">
-      <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-400/25 blur-3xl"></div>
-      <div class="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl"></div>
+  <div class="absolute -top-20 -right-20 h-48 w-48 rounded-full bg-emerald-400/25 blur-3xl"></div>
+  <div class="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-sky-400/20 blur-3xl"></div>
     </div>
 
     <!-- Content wrapper with full-bleed inner max width -->
@@ -145,7 +145,8 @@ const props = withDefaults(defineProps<Props>(), {
   description: '',
   align: 'left',
   variant: 'default',
-  padding: 'py-12 sm:py-16',
+  // reduced default vertical padding to make the hero less tall
+  padding: 'py-8 sm:py-12',
   bgClass: 'bg-gradient-to-br from-gray-900 to-blue-900',
   textClass: 'text-white',
   textMutedClass: 'text-gray-300',

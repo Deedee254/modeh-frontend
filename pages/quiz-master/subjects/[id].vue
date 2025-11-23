@@ -69,14 +69,17 @@
 definePageMeta({ layout: 'quiz-master' })
 
 import { ref, onMounted } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
 import { useRoute } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
 const route = useRoute()
 const alert = useAppAlert()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
 
 const subjectId = route.params.id
 const subject = ref(null)
@@ -85,6 +88,13 @@ const loading = ref(true)
 const error = ref(null)
 
 const config = useRuntimeConfig()
+
+// SSR hydration: pre-fetch grades, subjects, topics
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchTopics: true
+})
 
 async function fetchSubjectDetails() {
   try {
@@ -102,33 +112,31 @@ async function fetchSubjectDetails() {
 
 async function fetchTopicsForSubject() {
   try {
-    // Prefer composable cache if available
-    const { fetchTopicsBySubject, topics: taxTopics, fetchGrades, fetchLevels, fetchGradesByLevel, grades: taxGrades } = useTaxonomy()
-    // attempt to prime from composable cache
-    if (fetchTopicsBySubject) await fetchTopicsBySubject(subjectId)
-    if (Array.isArray(taxTopics.value) && taxTopics.value.length) {
-      topics.value = taxTopics.value
-      return
+    // Prefer store cache if available
+    const storeTopics = store.topics || []
+    if (Array.isArray(storeTopics) && storeTopics.length) {
+      const filtered = storeTopics.filter(t => String(t.subject_id || t.subjectId) === String(subjectId))
+      if (filtered.length) {
+        topics.value = filtered
+        return
+      }
     }
 
     // fallback to direct fetch
     const params = new URLSearchParams({ approved: 1, per_page: 100 })
-  const api = useApi()
-  const res = await api.get(`/api/subjects/${subjectId}/topics?${params.toString()}`)
-  if (api.handleAuthStatus(res)) return
-  if (!res || !res.ok) throw new Error('Failed to fetch topics for this subject.')
-  const data = await res.json()
+    const api = useApi()
+    const res = await api.get(`/api/subjects/${subjectId}/topics?${params.toString()}`)
+    if (api.handleAuthStatus(res)) return
+    if (!res || !res.ok) throw new Error('Failed to fetch topics for this subject.')
+    const data = await res.json()
     topics.value = (data.topics || data.data || []).filter(Boolean)
 
-    // warm taxonomy caches for UI consistency (levels-first)
+    // warm store cache
     try {
       if (subject.value) {
-        await fetchLevels()
+        await store.fetchLevels()
         const levelId = subject.value?.grade?.level_id || null
-        if (levelId && fetchGradesByLevel) await fetchGradesByLevel(levelId)
-        else if (fetchGrades) await fetchGrades()
-        // also ensure topics by subject are warmed
-        if (fetchTopicsBySubject) await fetchTopicsBySubject(subjectId)
+        if (levelId) await store.fetchGradesByLevel(levelId)
       }
     } catch (e) {
       // ignore warming errors
@@ -147,5 +155,8 @@ onMounted(async () => {
     fetchTopicsForSubject()
   ])
   loading.value = false
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 </script>

@@ -52,8 +52,8 @@
           <aside class="lg:col-span-1 order-2 lg:order-1">
             <div class="sticky top-6">
               <FiltersSidebar
-                :grade-options="grades"
-                :subject-options="subjects"
+                :grade-options="store.grades"
+                :subject-options="store.subjects"
                 :grade="gradeFilter"
                 :subject="subjectFilter"
                 storageKey="filters:quizee-quiz-masters"
@@ -112,7 +112,8 @@ import PageHero from '~/components/ui/PageHero.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import UPagination from '~/components/ui/UPagination.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
 definePageMeta({ layout: 'quizee' })
 
@@ -124,18 +125,20 @@ useHead({
 })
 
 const config = useRuntimeConfig()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
+
+// SSR hydration: pre-fetch grades and subjects
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true
+})
+
 const currentPage = ref(1)
 
 // --- Filtering ---
 const gradeFilter = ref('')
 const subjectFilter = ref('')
-const { grades, subjects, fetchLevels, fetchGrades, fetchAllSubjects } = useTaxonomy()
-
-onMounted(async () => {
-  // prefer loading levels first so taxonomy can derive grades/subjects from levels
-  await fetchLevels()
-  await Promise.all([fetchGrades(), fetchAllSubjects()])
-})
 
 const filterParams = computed(() => {
   const params = { page: currentPage.value }
@@ -208,5 +211,11 @@ watchEffect(() => {
     map[q.id] = !!(q.is_following || q.isFollowing || q.is_following_by_current_user) 
   })
   following.value = map
+})
+
+onMounted(() => {
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 </script>

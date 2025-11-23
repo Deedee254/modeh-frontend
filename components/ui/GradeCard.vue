@@ -5,19 +5,12 @@
     <!-- left color strip -->
     <div :class="['absolute left-0 top-0 bottom-0 w-2 rounded-l-2xl', paletteClass]" aria-hidden="true"></div>
 
-    <!-- Grade badge (top-left) -->
-    <div v-if="displayTitle" class="absolute left-6 top-3 z-10">
-      <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
-        {{ isCourse ? 'Course' : 'Grade' }}
-      </div>
-    </div>
-
-    <div class="flex flex-1 flex-col p-4 pl-6">
-      <h4 class="text-base font-semibold text-slate-800 line-clamp-2 dark:text-slate-100">{{ displayTitle }}</h4>
-      <p v-if="displayDescription" class="mt-2 text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ displayDescription }}</p>
+    <div class="flex flex-1 flex-col p-3 sm:p-4 pl-6">
+      <h4 class="text-sm sm:text-base font-semibold text-slate-800 line-clamp-2 dark:text-slate-100">{{ displayTitle }}</h4>
+      <p v-if="displayDescription" class="mt-1 text-xs sm:text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ displayDescription }}</p>
 
       <!-- Metadata -->
-      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
+      <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
         <div class="inline-flex items-center gap-1.5">
           <Icon name="heroicons:document-text" class="h-4 w-4" />
           <span>{{ quizzes_count }} {{ quizzes_count === 1 ? 'quiz' : 'quizzes' }}</span>
@@ -28,19 +21,11 @@
         </div>
       </div>
 
-      <!-- Subject tags (max 2) -->
-      <div v-if="displaySubjects.length" class="mt-3 flex flex-wrap gap-2">
-        <span v-for="subject in displaySubjects.slice(0, 2)" :key="subject.id" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {{ subject.name }}
-        </span>
-        <span v-if="hasMoreSubjects" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-          +{{ moreSubjectsCount }} more
-        </span>
-      </div>
+
 
       <!-- CTA -->
-      <div class="relative z-10 mt-auto flex items-center gap-2 pt-4">
-        <NuxtLink v-if="actionLink" :to="actionLink" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600">
+      <div class="relative z-10 mt-auto flex flex-col sm:flex-row items-center gap-2 pt-4">
+        <NuxtLink v-if="actionLink" :to="actionLink" :class="primaryBtn">
           {{ actionLabel }}
         </NuxtLink>
       </div>
@@ -79,24 +64,13 @@ const isCourse = computed(() => {
   return false
 })
 
-const displaySubjects = computed(() => {
-  if (props.grade && Array.isArray(props.grade.subjects)) {
-    return props.grade.subjects
-  }
-  return []
-})
 
-const hasMoreSubjects = computed(() => {
-  return props.grade && Array.isArray(props.grade.subjects) && props.grade.subjects.length > 2
-})
-
-const moreSubjectsCount = computed(() => {
-  if (!hasMoreSubjects.value) return 0
-  return props.grade.subjects.length - 2
-})
 
 const resolvedCover = computed(() => {
   const v = props.cover || (props.grade && (props.grade.cover_image || props.grade.cover)) || ''
   return resolveAssetUrl(v) || ''
 })
+
+// Uniform primary button used across cards (mobile full-width, stacks)
+const primaryBtn = 'inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 shadow-sm'
 </script>

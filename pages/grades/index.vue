@@ -63,7 +63,7 @@
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-10">
-      <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
+      <div v-if="!store.grades.length" class="mt-6"><UiSkeleton :count="6" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load grades.</div>
 
       <div v-else class="mt-6">
@@ -89,14 +89,22 @@ import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 import { ref, computed, onMounted } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
 const config = useRuntimeConfig()
-const grades = ref([])
-const loading = ref(true)
-const error = ref(null)
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
 
-const { fetchLevels, fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
+// SSR hydration: pre-fetch grades, subjects, topics, levels
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchTopics: true,
+  fetchLevels: true
+})
+
+const error = ref(null)
 const query = ref('')
 
 function isCourseType(t) {
@@ -105,7 +113,7 @@ function isCourseType(t) {
 
 const filteredGrades = computed(() => {
   const q = query.value.trim().toLowerCase()
-  const list = Array.isArray(grades.value) ? grades.value.slice() : []
+  const list = Array.isArray(store.grades) ? store.grades.slice() : []
   // Exclude tertiary/course items — those belong on /courses
   const onlyGrades = list.filter(g => !isCourseType(g.type))
   if (!q) return onlyGrades
@@ -116,36 +124,21 @@ function onSearch(q) {
   query.value = q
 }
 
-onMounted(async () => {
-  try {
-    // prefer levels-first so the grades list can be derived or server-filtered
-    await fetchLevels()
-    await fetchGrades()
-    // populate local grades ref for template convenience
-    grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
-    // also load totals (subjects/topics)
-    await fetchAllSubjects()
-    await fetchAllTopics()
-  } catch (e) {
-    error.value = e
-  } finally {
-    loading.value = false
-  }
-})
-
-const subjectsCount = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value.length : 0)
-const topicsCount = computed(() => Array.isArray(taxTopics.value) ? taxTopics.value.length : 0)
+const subjectsCount = computed(() => Array.isArray(store.subjects) ? store.subjects.length : 0)
+const topicsCount = computed(() => Array.isArray(store.topics) ? store.topics.length : 0)
 const totalQuizzes = ref(0)
 
-// Fetch quizzes count separately
-if (process.client) {
-  (async () => {
-    try {
-      const quizzesRes = await $fetch(`${config.public.apiBase}/api/quizzes?per_page=1`, { credentials: 'include' })
-      totalQuizzes.value = quizzesRes?.quizzes?.total || quizzesRes?.total || 0
-    } catch (e) {
-      totalQuizzes.value = 0
-    }
-  })()
+// Fetch quizzes count
+try {
+  const quizzesRes = await $fetch(`${config.public.apiBase}/api/quizzes?per_page=1`, { credentials: 'include' })
+  totalQuizzes.value = quizzesRes?.quizzes?.total || quizzesRes?.total || 0
+} catch (e) {
+  totalQuizzes.value = 0
 }
+
+onMounted(() => {
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
+})
 </script>

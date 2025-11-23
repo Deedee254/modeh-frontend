@@ -12,8 +12,8 @@
       <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <aside class="lg:col-span-1">
           <FiltersSidebar
-            :subject-options="taxSubjects.value"
-            :grade-options="taxGrades.value"
+            :subject-options="store.subjects"
+            :grade-options="store.grades"
             :showTopic="false"
             :subject="subjectFilter"
             :grade="gradeFilter"
@@ -47,48 +47,46 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 import PageHero from '~/components/ui/PageHero.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 
 const config = useRuntimeConfig()
-const courses = ref([])
-const loading = ref(true)
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
 
-// taxonomy for sidebar options
-const { subjects: taxSubjects, grades: taxGrades, levels: taxLevels, fetchAllSubjects, fetchGrades, fetchLevels } = useTaxonomy()
+// SSR hydration: pre-fetch grades, subjects, levels for sidebar and course filtering
+const { data } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchLevels: true
+})
 
 const subjectFilter = ref('')
 const gradeFilter = ref('')
 const levelFilter = ref('')
 
+// Compute courses by filtering store.grades for course type
+const courses = computed(() => {
+  return (Array.isArray(store.grades) ? store.grades : []).filter(g => 
+    String(g.type || '').toLowerCase() === 'course' || String(g.type || '').toLowerCase() === 'tertiary'
+  )
+})
+
+const loading = computed(() => !store.grades.length)
+
 const coursesFiltered = computed(() => {
-  let list = Array.isArray(courses.value) ? courses.value.slice() : []
+  let list = courses.value.slice()
   if (subjectFilter.value) list = list.filter(c => Array.isArray(c.subjects) ? c.subjects.some(s => String(s.id) === String(subjectFilter.value)) : false)
   if (gradeFilter.value) list = list.filter(c => String(c.grade_id || c.grade || '') === String(gradeFilter.value))
   if (levelFilter.value) list = list.filter(c => String(c.level_id || (c.grade && c.grade.level_id) || '') === String(levelFilter.value))
   return list
 })
 
-async function fetchCourses() {
-  loading.value = true
-  try {
-    const res = await $fetch(`${config.public.apiBase}/api/grades`)
-    const list = (res && res.grades && Array.isArray(res.grades.data)) ? res.grades.data : (Array.isArray(res?.grades) ? res.grades : (Array.isArray(res) ? res : []))
-    // Filter to items stored as courses (type === 'course' or 'tertiary')
-    courses.value = (Array.isArray(list) ? list : []).filter(g => String(g.type || '').toLowerCase() === 'course' || String(g.type || '').toLowerCase() === 'tertiary')
-  } catch (e) {
-    courses.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
 onMounted(() => {
-  fetchCourses()
-  // ensure sidebar lists are available
-  fetchAllSubjects()
-  fetchGrades()
-  fetchLevels()
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => printMetrics(), 2000)
+  }
 })
 </script>

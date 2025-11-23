@@ -13,11 +13,21 @@
           {{ badgeLabel }}
         </div>
       </div>
-
+      
       <button @click.stop="toggleLike" aria-label="Like quiz" class="absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-full bg-white/90 p-2 text-rose-500 shadow-sm transition-transform hover:scale-105 dark:bg-slate-800/80">
         <Icon :name="localLiked ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-5 w-5" />
         <span v-if="localLikes > 0" class="pr-1 text-xs font-medium text-slate-700 dark:text-slate-200">{{ localLikes }}</span>
       </button>
+
+      <!-- mobile-only questions indicator (shows on small screens) -->
+      <div v-if="questionsCount !== null && questionsCount !== undefined" class="absolute left-3 bottom-3 z-10 sm:hidden">
+        <div class="rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
+          <span class="inline-flex items-center gap-1">
+            <Icon name="heroicons:question-mark-circle" class="h-4 w-4" />
+            <span>{{ questionsCount }} {{ Number(questionsCount) === 1 ? 'question' : 'questions' }}</span>
+          </span>
+        </div>
+      </div>
     </div>
 
     <div class="flex flex-1 flex-col p-4">
@@ -39,9 +49,11 @@
         </component>
       </div>
 
-      <p v-if="description" class="mt-2 text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ description }}</p>
+  <!-- hide long description on small screens to keep cards compact -->
+  <p v-if="description" class="mt-2 text-sm text-slate-600 line-clamp-2 dark:text-slate-400 hidden sm:block">{{ description }}</p>
 
-      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
+  <!-- hide meta row on mobile; questions count shown in cover for small screens -->
+  <div class="mt-4 hidden sm:flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
         <div v-if="difficultyLabel" :class="['inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold', difficultyClass]">
           <Icon name="heroicons:chart-bar" class="h-4 w-4" />
           {{ difficultyLabel }}
@@ -56,7 +68,7 @@
         </div>
       </div>
 
-      <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-300">
+      <div class="mt-2 hidden sm:flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-300">
         <span v-if="showSubject && displaySubject" class="inline-flex items-center gap-1.5">
           <Icon name="heroicons:bookmark" class="h-4 w-4" />
           {{ displaySubject }}
@@ -66,19 +78,19 @@
           {{ displayTopic }}
         </span>
       </div>
-
-      <div class="mt-auto flex items-center gap-3 pt-4">
-        <div class="relative z-10 flex items-center gap-2">
-          <NuxtLink v-if="to || quizId" :to="to || `/quiz-master/quizzes/${quizId}`" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+      <!-- actions: stacked on mobile, inline on sm+ -->
+      <div class="mt-auto flex items-stretch gap-3 pt-4">
+        <div class="relative z-10 flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-start">
+          <NuxtLink v-if="to || quizId" :to="to || `/quiz-master/quizzes/${quizId}`" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
             View Details
           </NuxtLink>
-          <NuxtLink v-if="primaryHref" :to="primaryHref" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">
+          <NuxtLink v-if="primaryHref" :to="primaryHref" class="w-full rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 sm:w-auto">
             Take Quiz
           </NuxtLink>
-          <button @click.stop="handleEdit" v-if="showEdit && !editLink" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+          <button @click.stop="handleEdit" v-if="showEdit && !editLink" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto">
             Edit
           </button>
-          <NuxtLink v-if="showEdit && editLink" :to="editLink" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+          <NuxtLink v-if="showEdit && editLink" :to="editLink" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto">
             Edit
           </NuxtLink>
           <AffiliateShareButton 
@@ -86,7 +98,7 @@
             :itemType="'Quiz'"
             :itemId="quizId"
             :baseUrl="baseUrl"
-            class="relative z-10"
+            class="relative z-10 w-full sm:w-auto"
             @click.stop
           />
         </div>

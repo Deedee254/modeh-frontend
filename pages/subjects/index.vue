@@ -69,7 +69,7 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 mt-6">
         <aside class="lg:col-span-1">
-          <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="taxTopics.value" :grade-options="allGrades" v-model:grade="gradeFilter" />
+          <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="store.topics" :grade-options="allGrades" v-model:grade="gradeFilter" />
         </aside>
         <main class="lg:col-span-3">
           <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
@@ -120,18 +120,25 @@ import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import FiltersSidebar from '~/components/FiltersSidebar.vue'
 import { ref, computed, onMounted } from 'vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
 const config = useRuntimeConfig()
+const store = useTaxonomyStore()
+const { print: printMetrics } = useMetricsDebug()
 
-// Use taxonomy composable for subjects and grades
-const { fetchGrades, fetchAllSubjects, fetchAllTopics, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, loadingSubjects, loadingGrades, fetchLevels, loadingLevels } = useTaxonomy()
-const pending = loadingSubjects
+// SSR: Pre-fetch taxonomy data on server and client (hydrated, no refetch)
+const { data: taxonomyData } = await useTaxonomyHydration({
+  fetchGrades: true,
+  fetchSubjects: true,
+  fetchTopics: true,
+})
+
+const pending = computed(() => store.loadingSubjects || store.loadingGrades)
 const error = null
 
-// use the taxonomy composable's `subjects` ref directly to avoid SSR unwrap bugs
-const subjectsCount = computed(() => (taxSubjects.value || []).length)
-const subjectsForFilters = computed(() => (taxSubjects.value || []).map(s => ({
+const subjectsCount = computed(() => (store.subjects || []).length)
+const subjectsForFilters = computed(() => (store.subjects || []).map(s => ({
   id: s.id,
   name: s.name,
   slug: s.slug || s.id,
@@ -142,22 +149,10 @@ const query = ref('')
 const gradeFilter = ref('')
 const subjectFilter = ref('')
 
-const allGrades = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value.slice() : [])
-
-onMounted(async () => {
-  // Load levels first so grades/subjects can be derived and avoid duplicate
-  // network calls. Then fetch topics if needed.
-  await fetchLevels()
-  // populate subjects list (derive from levels when possible or fetch from API)
-  await fetchAllSubjects()
-  // then load topics
-  await fetchAllTopics()
-})
+const allGrades = computed(() => Array.isArray(store.grades) ? store.grades.slice() : [])
 
 const gradesCount = computed(() => allGrades.value.length)
-
-// topics count provided by taxonomy composable (fetchAllTopics called in onMounted)
-const topicsCount = computed(() => Array.isArray(taxSubjects.value) ? (taxSubjects.value.reduce((acc, s) => acc + (s.topics_count || 0), 0)) : 0)
+const topicsCount = computed(() => Array.isArray(store.subjects) ? (store.subjects.reduce((acc, s) => acc + (s.topics_count || 0), 0)) : 0)
 
 const api = useApi()
 let totalQuizzes = 0
@@ -171,7 +166,7 @@ try {
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
-  let list = taxSubjects.value || []
+  let list = store.subjects || []
   if (q) list = list.filter(s => (s.name || '').toLowerCase().includes(q))
   if (gradeFilter.value) list = list.filter(s => {
     if (s.grade || s.grade_id) return String(s.grade || s.grade_id) === String(gradeFilter.value)
@@ -182,22 +177,15 @@ const filtered = computed(() => {
   return list
 })
 
-// Server-side prefetch to make this page SSR-deterministic: populate
-// taxonomy (levels -> subjects -> topics) during server render so the
-// server HTML contains the subjects list and avoids client-only flashes.
-// We use `useAsyncData` with top-level await inside `<script setup>` so
-// this runs during SSR. The `useTaxonomy` composable will derive subjects
-// from levels if possible, otherwise it fetches them from the API.
-await useAsyncData('taxonomy:subjects', async () => {
-  try {
-    await fetchLevels()
-    await fetchAllSubjects()
-    await fetchAllTopics()
-  } catch (e) {
-    // ignore errors during SSR prefetch to avoid blocking render
+// Dev: Print cache metrics after a short delay
+onMounted(() => {
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => {
+      console.log('\n--- Subjects Page Cache Metrics ---')
+      printMetrics()
+    }, 2000)
   }
-  return true
-}, { server: true })
+})
 
 async function onServerSearch(q) {
   const api = useApi()

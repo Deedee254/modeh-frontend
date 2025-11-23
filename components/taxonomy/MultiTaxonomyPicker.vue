@@ -46,7 +46,7 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -61,7 +61,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue'])
 
-const { subjects, fetchAllSubjects, fetchSubjectsByGrade, fetchLevels, levels, fetchGrades, grades, fetchTopicsBySubject, topics } = useTaxonomy()
+const store = useTaxonomyStore()
 
 const selectedItems = ref([])
 const items = ref([])
@@ -81,26 +81,26 @@ function normalizeModelArray(arr) {
   return arr.map(v => (v && typeof v === 'object') ? (v.id ?? v.value ?? null) : v).filter(Boolean).map(String)
 }
 
-// Initialize selectedItems from modelValue (IDs or objects) by resolving against cached taxonomy lists
+// Initialize selectedItems from modelValue (IDs or objects) by resolving against cached store lists
 async function initSelected() {
   const ids = normalizeModelArray(props.modelValue)
   if (!ids.length) { selectedItems.value = []; return }
   // Ensure core lists are loaded
   try {
     if (props.resource === 'subjects') {
-      if (!props.gradeId) await fetchAllSubjects()
-      else await fetchSubjectsByGrade(props.gradeId)
-      const pool = (subjects.value || [])
+      if (!props.gradeId) await store.fetchAllSubjects()
+      else await store.fetchSubjectsByGrade(props.gradeId)
+      const pool = (store.subjects || [])
       selectedItems.value = ids.map(id => pool.find(p => String(p.id) === String(id)) || { id, name: id }).filter(Boolean)
     } else if (props.resource === 'levels') {
-      await fetchLevels()
-      selectedItems.value = ids.map(id => (levels.value || []).find(l => String(l.id) === String(id)) || { id, name: id }).filter(Boolean)
+      await store.fetchLevels()
+      selectedItems.value = ids.map(id => (store.levels || []).find(l => String(l.id) === String(id)) || { id, name: id }).filter(Boolean)
     } else if (props.resource === 'grades') {
-      await fetchGrades()
-      selectedItems.value = ids.map(id => (grades.value || []).find(g => String(g.id) === String(id)) || { id, name: id }).filter(Boolean)
+      await store.fetchGrades()
+      selectedItems.value = ids.map(id => (store.grades || []).find(g => String(g.id) === String(id)) || { id, name: id }).filter(Boolean)
     } else if (props.resource === 'topics') {
-      // topics require subject context to fetch; try to use topics ref if present
-      selectedItems.value = ids.map(id => (topics.value || []).find(t => String(t.id) === String(id)) || { id, name: id }).filter(Boolean)
+      // topics require subject context to fetch; try to use topics from store if present
+      selectedItems.value = ids.map(id => (store.topics || []).find(t => String(t.id) === String(id)) || { id, name: id }).filter(Boolean)
     } else {
       selectedItems.value = ids.map(id => ({ id, name: id }))
     }
@@ -155,23 +155,23 @@ async function loadItems() {
   try {
     if (props.resource === 'subjects') {
       if (props.gradeId) {
-        await fetchSubjectsByGrade(props.gradeId)
-        items.value = (subjects.value || [])
+        await store.fetchSubjectsByGrade(props.gradeId)
+        items.value = (store.subjects || [])
       } else {
-        await fetchAllSubjects()
-        items.value = (subjects.value || [])
+        await store.fetchAllSubjects()
+        items.value = (store.subjects || [])
       }
     } else if (props.resource === 'levels') {
-      await fetchLevels()
-      items.value = (levels.value || [])
+      await store.fetchLevels()
+      items.value = (store.levels || [])
     } else if (props.resource === 'grades') {
-      await fetchGrades()
-      items.value = (grades.value || [])
+      await store.fetchGrades()
+      items.value = (store.grades || [])
     } else if (props.resource === 'topics') {
       if (props.subjectId) {
-        await fetchTopicsBySubject(props.subjectId)
+        await store.fetchTopicsBySubject(props.subjectId)
       }
-      items.value = (topics.value || [])
+      items.value = (store.topics || [])
     }
   } catch (e) {
     items.value = []
