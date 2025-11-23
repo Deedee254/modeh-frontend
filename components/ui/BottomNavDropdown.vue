@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, expose } from 'vue'
+import { ref, defineProps, defineExpose } from 'vue'
 
 defineProps({
   buttonLabel: {
@@ -64,5 +64,5 @@ function toggle() {
 }
 
 // Expose isOpen for parent component to control
-expose({ isOpen })
+defineExpose({ isOpen })
 </script>
