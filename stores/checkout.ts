@@ -1,16 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import useApi from '~/composables/useApi'
+import { useRouter } from '#imports'
 
 export const useCheckoutStore = defineStore('checkout', () => {
   // const router = useRouter() // Should be called inside actions when needed.
   const cfg = useRuntimeConfig()
 
   // State
-  const processing = ref(false)
-  const pendingMessage = ref('')
-  const status = ref('idle') // idle, processing, success, error
-  let pollHandle = null
+  const processing = ref<boolean>(false)
+  const pendingMessage = ref<string>('')
+  const status = ref<'idle' | 'processing' | 'success' | 'error'>('idle') // idle, processing, success, error
+  let pollHandle: ReturnType<typeof setInterval> | null = null
 
   function reset() {
     processing.value = false
@@ -19,7 +20,8 @@ export const useCheckoutStore = defineStore('checkout', () => {
     if (pollHandle) { clearInterval(pollHandle); pollHandle = null }
   }
 
-  async function markResults({ type, id, attemptId }) {
+  async function markResults(params: { type: string; id?: string | number; attemptId?: string | number }) {
+    const { type, id, attemptId } = params
     processing.value = true
     status.value = 'processing'
     pendingMessage.value = 'Preparing to mark answers...'
@@ -27,11 +29,11 @@ export const useCheckoutStore = defineStore('checkout', () => {
     // Add a small delay to allow backend processing to complete
     await new Promise(resolve => setTimeout(resolve, 2000))
 
-    const steps = ['Marking answers...', 'Calculating results...', 'Adding points & badges...', 'Finalizing results...']
+    const steps: string[] = ['Marking answers...', 'Calculating results...', 'Adding points & badges...', 'Finalizing results...']
     let stepIndex = 0
     const interval = setInterval(() => {
       stepIndex = Math.min(stepIndex + 1, steps.length - 1)
-      pendingMessage.value = steps[stepIndex]
+      pendingMessage.value = steps[stepIndex] ?? ''
     }, 800)
 
     try {
@@ -40,7 +42,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
 
       // For tournament battles we prefer the tournament-specific mark endpoint.
       // Try tournament mark first, then fallback to the generic battle mark endpoint.
-      let endpoints = []
+    let endpoints: string[] = []
       if (type === 'battle') {
         endpoints = [
           `${cfg.public.apiBase}/api/tournaments/battles/${id}/mark`,
@@ -52,11 +54,13 @@ export const useCheckoutStore = defineStore('checkout', () => {
         endpoints = [`${cfg.public.apiBase}/api/quiz-attempts/${attemptId}/mark`]
       }
 
-      let res = null
+  let res: any = null
       for (let e of endpoints) {
         // Retry logic for marking answers
         let retries = 3
         while (retries > 0) {
+          // postJson returns a Response or similar; treat as any for now
+          // remove base prefix because api.postJson expects a path
           res = await api.postJson(e.replace(cfg.public.apiBase, ''), {}).catch(() => null)
           if (res && (res.code === 'limit_reached' || res.ok || res.status === 'success')) break
           retries--
@@ -81,8 +85,8 @@ export const useCheckoutStore = defineStore('checkout', () => {
       } else {
         throw new Error('Failed to mark results. Please try again in a few seconds.')
       }
-    } catch (e) {
-      pendingMessage.value = e.message || 'An error occurred while marking results. Please try again.'
+    } catch (err: any) {
+      pendingMessage.value = err?.message || 'An error occurred while marking results. Please try again.'
       status.value = 'error'
     } finally {
       clearInterval(interval)

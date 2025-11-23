@@ -6,10 +6,10 @@
       :avatar-url="avatarPreview || user?.avatar_url || user?.avatar"
     >
       <template #actions>
-        <UButton color="white" @click="triggerAvatarUpload">
+        <UButton color="white" @click="triggerAvatarUpload" class="w-full sm:w-auto"> 
           Change photo
         </UButton>
-        <input ref="avatarInput" type="file" class="hidden" @change="onFile" accept="image/*" />
+        <input ref="avatarInput" type="file" class="hidden" @change="onFile" accept="image/*" aria-label="Upload avatar" />
       </template>
     </ProfileHeader>
 
@@ -69,9 +69,7 @@
           <UTextarea v-model="form.bio" :rows="4" class="mt-1 block w-full" />
         </UFormGroup>
 
-        <UFormGroup label="Teaching subjects (comma separated)" name="teaching_subjects">
-          <UInput v-model="form.teaching_subjects" />
-        </UFormGroup>
+        <!-- Removed duplicate free-text subjects input; use MultiTaxonomyPicker instead -->
       </template>
 
       <!-- Quizee specific fields -->

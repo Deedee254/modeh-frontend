@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import useApi from '~/composables/useApi'
 
 export const useInstitutionsStore = defineStore('institutions', () => {
@@ -10,7 +10,21 @@ export const useInstitutionsStore = defineStore('institutions', () => {
   const api = useApi()
 
   // Keep track of the active institution slug (we prefer slugs for routing) for synchronization with the route
-  const activeInstitutionSlug = ref(null)
+  const STORAGE_KEY = 'modeh.activeInstitutionSlug'
+  const initialSlug = (typeof window !== 'undefined') ? (localStorage.getItem(STORAGE_KEY) || null) : null
+  const activeInstitutionSlug = ref(initialSlug)
+
+  // Persist any changes to the active slug to localStorage so selection survives reloads
+  try {
+    if (typeof window !== 'undefined') {
+      watch(activeInstitutionSlug, (val) => {
+        try {
+          if (val) localStorage.setItem(STORAGE_KEY, String(val))
+          else localStorage.removeItem(STORAGE_KEY)
+        } catch (e) {}
+      }, { immediate: false })
+    }
+  } catch (e) {}
 
   async function fetchInstitution(id) {
     loading.value = true
@@ -19,7 +33,13 @@ export const useInstitutionsStore = defineStore('institutions', () => {
       if (!res.ok) throw new Error('Failed to fetch institution')
       institution.value = await res.json()
       // prefer slug for route/query synchronization
-  activeInstitutionSlug.value = institution.value?.slug ?? institution.value?.id ?? null
+      activeInstitutionSlug.value = institution.value?.slug ?? institution.value?.id ?? null
+      try {
+        if (typeof window !== 'undefined') {
+          if (activeInstitutionSlug.value) localStorage.setItem(STORAGE_KEY, String(activeInstitutionSlug.value))
+          else localStorage.removeItem(STORAGE_KEY)
+        }
+      } catch (e) {}
     } catch (e) {
       institution.value = null
     } finally { loading.value = false }
@@ -30,11 +50,13 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     if (!id) {
       institution.value = null
       activeInstitutionSlug.value = null
+      try { if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY) } catch (e) {}
       return
     }
     // If the id is already loaded, do nothing
     if (institution.value && String(institution.value.slug) === String(id)) {
       activeInstitutionSlug.value = institution.value.slug
+      try { if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, String(activeInstitutionSlug.value)) } catch (e) {}
       return
     }
     // otherwise fetch the institution
@@ -75,7 +97,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
   }
 
   async function removeMember(institutionId, userId) {
-    const res = await api.delete(`/api/institutions/${institutionId}/members/${userId}`)
+    const res = await api.del(`/api/institutions/${institutionId}/members/${userId}`)
     if (!res.ok) throw new Error('Failed to remove member')
     return await res.json()
   }

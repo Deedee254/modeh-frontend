@@ -13,6 +13,7 @@ const api = useApi()
 const appAlert = useAppAlert()
 
 const institutionSlug = route.params.slug as string
+const branchSlug = route.params.branchSlug as string
 const members = ref([] as any[])
 const membersMeta = ref({ total: 0, per_page: 10, current_page: 1, last_page: 1 })
 const loading = ref(false)
@@ -40,7 +41,7 @@ async function loadMembers(page = 1) {
     params.set('per_page', String(membersMeta.value.per_page))
     if (selectedRole.value) params.set('role', selectedRole.value)
 
-    const resp = await api.get(`/api/institutions/${institutionSlug}/members?${params.toString()}`)
+    const resp = await api.get(`/api/institutions/${institutionSlug}/branches/${branchSlug}/members?${params.toString()}`)
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     members.value = json?.members || []
@@ -57,7 +58,7 @@ async function inviteMember() {
 
   inviting.value = true
   try {
-    const resp = await api.postJson(`/api/institutions/${institutionSlug}/members/invite`, {
+    const resp = await api.postJson(`/api/institutions/${institutionSlug}/branches/${branchSlug}/members/invite`, {
       email: inviteEmail.value.trim(),
       role: inviteRole.value,
       expires_in_days: inviteExpiresInDays.value
@@ -70,6 +71,7 @@ async function inviteMember() {
       inviteEmail.value = ''
       inviteRole.value = 'member'
       inviteExpiresInDays.value = 14
+      await loadMembers(1)
     } else {
       appAlert.push({ message: json?.message || 'Failed to send invitation', type: 'error' })
     }
@@ -90,7 +92,7 @@ async function removeMember() {
 
   removing.value = true
   try {
-  const resp = await api.del(`/api/institutions/${institutionSlug}/members/${memberToRemove.value.id}`)
+  const resp = await api.del(`/api/institutions/${institutionSlug}/branches/${branchSlug}/members/${memberToRemove.value.id}`)
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     if (resp.ok) {
@@ -125,7 +127,7 @@ function getStatusBadge(status: string) {
 
 function getRoleBadge(role: string) {
   const badges = {
-    'institution-manager': 'bg-purple-100 text-purple-800',
+    'branch-manager': 'bg-purple-100 text-purple-800',
     'quiz-master': 'bg-blue-100 text-blue-800',
     'quizee': 'bg-green-100 text-green-800',
     'member': 'bg-gray-100 text-gray-800'
@@ -140,10 +142,9 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-white dark:bg-slate-900">
-    <!-- Page Hero -->
     <PageHero
-      title="Institution Members"
-      description="Manage and invite members to your institution"
+      title="Branch Members"
+      description="Manage and invite members to your branch"
       theme="blue"
       :actions="[
         {
@@ -156,7 +157,6 @@ onMounted(() => {
     />
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Filters -->
       <div class="mb-6">
       <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <div>
@@ -167,7 +167,7 @@ onMounted(() => {
             class="border rounded px-3 py-2 w-full sm:w-auto"
           >
             <option value="">All Roles</option>
-            <option value="institution-manager">Institution Manager</option>
+            <option value="branch-manager">Branch Manager</option>
             <option value="quiz-master">Quiz Master</option>
             <option value="quizee">Quizee</option>
             <option value="member">Member</option>
@@ -176,7 +176,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Members Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <LoadingSpinner v-if="loading" />
       <ErrorAlert v-else-if="error" :error="error" />
@@ -221,14 +220,8 @@ onMounted(() => {
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex space-x-2">
-                  <NuxtLink
-                    :to="`/institution-manager/institutions/${institutionSlug}/members/${member.id}/analytics`"
-                    class="text-indigo-600 hover:text-indigo-900"
-                  >
-                    Analytics
-                  </NuxtLink>
                   <button
-                    v-if="member.role !== 'institution-manager'"
+                    v-if="member.role !== 'branch-manager'"
                     @click="confirmRemoveMember(member)"
                     class="text-red-600 hover:text-red-900"
                   >
@@ -241,7 +234,6 @@ onMounted(() => {
         </table>
       </div>
 
-      <!-- Pagination -->
       <div v-if="membersMeta.last_page > 1" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
         <div class="flex-1 flex justify-between sm:hidden">
           <button
@@ -288,7 +280,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Invite Member Modal -->
     <div v-if="showInviteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="showInviteModal = false">
       <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
         <div class="mt-3">
@@ -345,13 +336,12 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Remove Member Modal -->
     <div v-if="showRemoveModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="showRemoveModal = false">
       <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
         <div class="mt-3">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Remove Member</h3>
           <p class="text-sm text-gray-600 mb-4">
-            Are you sure you want to remove <strong>{{ memberToRemove?.name }}</strong> from this institution?
+            Are you sure you want to remove <strong>{{ memberToRemove?.name }}</strong> from this branch?
             This action cannot be undone.
           </p>
           <div class="flex flex-col sm:flex-row justify-end gap-3">

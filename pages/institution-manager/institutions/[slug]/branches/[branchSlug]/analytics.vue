@@ -1,23 +1,97 @@
+<script setup lang="ts">
+import { useRoute } from 'vue-router'
+definePageMeta({ layout: 'institution' as any })
+import { ref, onMounted } from 'vue'
+import { useApi } from '~/composables/useApi'
+import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
+import PageHero from '~/components/institution/PageHero.vue'
+
+const route = useRoute()
+const api = useApi()
+
+const institutionSlug = route.params.slug as string
+const branchSlug = route.params.branchSlug as string
+const overview = ref(null as any)
+const activityData = ref(null as any)
+const performanceData = ref(null as any)
+const loadingOverview = ref(false)
+const loadingActivity = ref(false)
+const loadingPerformance = ref(false)
+const overviewError = ref(null as any)
+const activityError = ref(null as any)
+const performanceError = ref(null as any)
+const activityDays = ref(7)
+
+async function loadOverview() {
+  loadingOverview.value = true
+  overviewError.value = null
+  try {
+    const resp = await api.get(`/api/institutions/${institutionSlug}/branches/${branchSlug}/analytics/overview`)
+    if (api.handleAuthStatus(resp)) return
+    const json = await api.parseResponse(resp)
+    overview.value = json
+  } catch (e: any) {
+    overviewError.value = e
+  } finally {
+    loadingOverview.value = false
+  }
+}
+
+async function loadActivity(days: number = 7) {
+  loadingActivity.value = true
+  activityError.value = null
+  activityDays.value = days
+  try {
+    const resp = await api.get(`/api/institutions/${institutionSlug}/branches/${branchSlug}/analytics/activity?days=${days}`)
+    if (api.handleAuthStatus(resp)) return
+    const json = await api.parseResponse(resp)
+    activityData.value = json
+  } catch (e: any) {
+    activityError.value = e
+  } finally {
+    loadingActivity.value = false
+  }
+}
+
+async function loadPerformance() {
+  loadingPerformance.value = true
+  performanceError.value = null
+  try {
+    const resp = await api.get(`/api/institutions/${institutionSlug}/branches/${branchSlug}/analytics/performance`)
+    if (api.handleAuthStatus(resp)) return
+    const json = await api.parseResponse(resp)
+    performanceData.value = json
+  } catch (e: any) {
+    performanceError.value = e
+  } finally {
+    loadingPerformance.value = false
+  }
+}
+
+onMounted(() => {
+  loadOverview()
+  loadActivity()
+  loadPerformance()
+})
+</script>
+
 <template>
-  <PageHero
-    title="Institution Analytics"
-    description="Comprehensive insights into your institution's performance and member activity"
-    theme="green"
-  />
+  <div>
+    <PageHero
+      title="Branch Analytics"
+      description="Comprehensive insights into your branch's performance and member activity"
+      theme="green"
+    />
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-    <div v-if="!slug" class="p-4 bg-yellow-50 border rounded">
-      <p class="text-sm">No institution selected. Select an institution to view analytics.</p>
-    </div>
-
-    <div v-else>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Overview Cards -->
-      <div v-if="loadingOverview" class="text-gray-500 mb-6">Loading overview...</div>
+      <div v-if="loadingOverview" class="text-gray-500 mb-6">
+        <LoadingSpinner />
+      </div>
       <div v-else-if="overviewError" class="p-4 bg-red-50 border border-red-200 rounded mb-6">
         <p class="text-sm text-red-600">Failed to load overview: {{ overviewError.message || overviewError }}</p>
       </div>
-  <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         <div class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div class="text-sm text-slate-500">Total Members</div>
           <div class="text-2xl font-bold text-slate-900">{{ overview?.members?.total || 0 }}</div>
@@ -46,12 +120,14 @@
         <!-- Activity Trends -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
           <h2 class="text-lg font-semibold mb-4">Activity Trends</h2>
-          <div v-if="loadingActivity" class="text-gray-500">Loading activity data...</div>
+          <div v-if="loadingActivity" class="text-gray-500">
+            <LoadingSpinner />
+          </div>
           <div v-else-if="activityError" class="p-4 bg-red-50 border border-red-200 rounded">
             <p class="text-sm text-red-600">Failed to load activity: {{ activityError.message || activityError }}</p>
           </div>
           <div v-else-if="!activityData?.activity_by_date?.length" class="text-gray-500 text-sm">
-            No activity data available for the selected period.
+            No activity data available.
           </div>
           <div v-else>
             <div class="space-y-2">
@@ -75,9 +151,11 @@
         </div>
 
         <!-- Performance Distribution -->
-        <div class="bg-white rounded-lg shadow border p-6">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
           <h2 class="text-lg font-semibold mb-4">Score Distribution</h2>
-          <div v-if="loadingPerformance" class="text-gray-500">Loading performance data...</div>
+          <div v-if="loadingPerformance" class="text-gray-500">
+            <LoadingSpinner />
+          </div>
           <div v-else-if="performanceError" class="p-4 bg-red-50 border border-red-200 rounded">
             <p class="text-sm text-red-600">Failed to load performance: {{ performanceError.message || performanceError }}</p>
           </div>
@@ -101,9 +179,11 @@
       </div>
 
       <!-- Top Performers -->
-      <div class="mt-6 bg-white rounded-lg shadow border p-6">
+      <div class="mt-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         <h2 class="text-lg font-semibold mb-4">Top Performers</h2>
-        <div v-if="loadingPerformance" class="text-gray-500">Loading top performers...</div>
+        <div v-if="loadingPerformance" class="text-gray-500">
+          <LoadingSpinner />
+        </div>
         <div v-else-if="performanceError" class="p-4 bg-red-50 border border-red-200 rounded">
           <p class="text-sm text-red-600">Failed to load performers: {{ performanceError.message || performanceError }}</p>
         </div>
@@ -119,7 +199,6 @@
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -136,129 +215,12 @@
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                     {{ performer.attempts }}
                   </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                    <NuxtLink
-                      :to="`/institution-manager/institutions/${slug}/members/${performer.user_id}/analytics`"
-                      class="text-indigo-600 hover:text-indigo-900"
-                    >
-                      View Details
-                    </NuxtLink>
-                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
-
-      <!-- Subscription Info -->
-        <div v-if="overview?.subscription" class="mt-6 bg-white rounded-lg shadow border p-6">
-        <h2 class="text-lg font-semibold mb-4">Subscription Overview</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-slate-900">{{ overview.subscription.seats_total }}</div>
-            <div class="text-sm text-slate-500">Total Seats</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-green-600">{{ overview.subscription.seats_assigned }}</div>
-            <div class="text-sm text-slate-500">Seats Assigned</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600">{{ overview.subscription.seats_available }}</div>
-            <div class="text-sm text-slate-500">Seats Available</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-purple-600">{{ overview.subscription.utilization_rate }}%</div>
-            <div class="text-sm text-slate-500">Utilization</div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-definePageMeta({ layout: 'institution' })
-import { ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { useApi } from '~/composables/useApi'
-import PageHero from '~/components/institution/PageHero.vue'
-
-const route = useRoute()
-const slug = (route.params.slug) ? String(route.params.slug) : null
-const api = useApi()
-
-// Overview data
-const loadingOverview = ref(false)
-const overview = ref<any>(null)
-const overviewError = ref<any>(null)
-
-// Activity data
-const loadingActivity = ref(false)
-const activityData = ref<any>(null)
-const activityError = ref<any>(null)
-const activityDays = ref(30)
-
-// Performance data
-const loadingPerformance = ref(false)
-const performanceData = ref<any>(null)
-const performanceError = ref<any>(null)
-
-async function loadOverview() {
-  if (!slug) return
-  loadingOverview.value = true
-  overviewError.value = null
-  try {
-    const resp = await api.get(`/api/institutions/${slug}/analytics/overview`)
-    if (api.handleAuthStatus(resp)) return
-    const json = await api.parseResponse(resp)
-    overview.value = json?.analytics || null
-  } catch (e) {
-    overviewError.value = e
-  } finally {
-    loadingOverview.value = false
-  }
-}
-
-async function loadActivity(days = 30) {
-  if (!slug) return
-  loadingActivity.value = true
-  activityError.value = null
-  activityDays.value = days
-  try {
-    const resp = await api.get(`/api/institutions/${slug}/analytics/activity?days=${days}`)
-    if (api.handleAuthStatus(resp)) return
-    const json = await api.parseResponse(resp)
-    activityData.value = json?.analytics || null
-  } catch (e) {
-    activityError.value = e
-  } finally {
-    loadingActivity.value = false
-  }
-}
-
-async function loadPerformance() {
-  if (!slug) return
-  loadingPerformance.value = true
-  performanceError.value = null
-  try {
-    const resp = await api.get(`/api/institutions/${slug}/analytics/performance`)
-    if (api.handleAuthStatus(resp)) return
-    const json = await api.parseResponse(resp)
-    performanceData.value = json?.analytics || null
-  } catch (e) {
-    performanceError.value = e
-  } finally {
-    loadingPerformance.value = false
-  }
-}
-
-// Load all data
-if (slug) {
-  await Promise.all([
-    loadOverview(),
-    loadActivity(),
-    loadPerformance()
-  ])
-}
-</script>

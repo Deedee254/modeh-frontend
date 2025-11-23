@@ -83,11 +83,34 @@
               </svg>
             </div>
             <h3 class="text-lg font-medium text-gray-900 mb-2">Unable to Load Daily Challenge</h3>
-            <p class="text-gray-600 mb-4">{{ error }}</p>
+            <p class="text-gray-600 mb-6">{{ error }}</p>
+            
+            <!-- Debug Info Badges -->
+            <div class="mb-6 flex justify-center gap-4 flex-wrap">
+              <div class="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-xs text-blue-600 font-semibold">GRADE</p>
+                <p class="text-sm text-blue-900 font-bold">{{ debugInfo.grade || '❌ Not Set' }}</p>
+              </div>
+              <div class="px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <p class="text-xs text-purple-600 font-semibold">LEVEL</p>
+                <p class="text-sm text-purple-900 font-bold">{{ debugInfo.level || '❌ Not Set' }}</p>
+              </div>
+              <div class="px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+                <p class="text-xs text-green-600 font-semibold">QUESTIONS</p>
+                <p class="text-sm text-green-900 font-bold">{{ debugInfo.questionCount > 0 ? `✅ ${debugInfo.questionCount}` : '❌ None' }}</p>
+              </div>
+              <div v-if="debugInfo.cacheId" class="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p class="text-xs text-gray-600 font-semibold">CACHE ID</p>
+                <p class="text-xs text-gray-900 font-mono">{{ debugInfo.cacheId }}</p>
+              </div>
+            </div>
+            
             <p class="text-sm text-gray-500 mb-4">
               <strong>Quick troubleshooting:</strong><br />
-              • Verify you have a grade/level assigned to your profile<br />
-              • Ensure your profile has subjects selected<br />
+              <span v-if="!debugInfo.grade || !debugInfo.level" class="text-red-600">• ❌ Grade or Level missing - Update your profile</span>
+              <span v-else class="text-green-600">• ✅ Grade and Level are set</span><br />
+              <span v-if="debugInfo.questionCount === 0" class="text-red-600">• ❌ No questions available for this grade/level</span>
+              <span v-else class="text-green-600">• ✅ {{ debugInfo.questionCount }} questions loaded</span><br />
               • Contact support if the issue persists
             </p>
             <button 
@@ -321,17 +344,36 @@
 // Use the quizee layout for this page
 definePageMeta({ layout: 'quizee' })
 import PageHero from '~/components/ui/PageHero.vue'
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import useApi from '~/composables/useApi'
+import { useAuthStore } from '~/stores/auth'
 
 const api = useApi()
+const auth = useAuthStore()
 
 // Data
 const challenge = ref(null)
 const completion = ref(null)
 const history = ref([])
 const loading = ref(true)
-const error = ref(null) // Add error state
+const error = ref(null)
+
+// Debug info - for tracking loaded grade, level, and questions
+const debugInfo = ref({
+  grade: null,
+  level: null,
+  questionCount: 0,
+  cacheId: null
+})
+
+// Get user's profile info from auth store (fallback source)
+const userProfileGrade = computed(() => {
+  return auth.user?.quizeeProfile?.grade?.name || auth.user?.grade?.name || null
+})
+
+const userProfileLevel = computed(() => {
+  return auth.user?.quizeeProfile?.level?.name || auth.user?.level?.name || null
+})
 
 // Badges
 const badges = ref([])
@@ -442,11 +484,28 @@ const fetchDailyChallenge = async () => {
     // support multiple response shapes
     challenge.value = data?.challenge || data?.data?.challenge || data?.data || data || null
     completion.value = data?.completion || data?.data?.completion || null
+    
+    // Extract debug info for display - from API response first
+    if (data?.challenge) {
+      debugInfo.value = {
+        grade: data.challenge.grade?.name || null,
+        level: data.challenge.level?.name || null,
+        questionCount: data.questions?.length || 0,
+        cacheId: data.cache_id || null
+      }
+    }
     error.value = null
   } catch (err) {
     console.error('Failed to fetch daily challenge:', err)
     error.value = err?.data?.error || err?.data?.message || err?.message || 'Unable to load daily challenge'
     challenge.value = null
+    // Set debug info from user profile as fallback (always show user's actual profile data)
+    debugInfo.value = {
+      grade: userProfileGrade.value || null,
+      level: userProfileLevel.value || null,
+      questionCount: 0,
+      cacheId: null
+    }
   } finally {
     loading.value = false
   }

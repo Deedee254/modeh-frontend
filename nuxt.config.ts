@@ -2,10 +2,7 @@ import { defineNuxtConfig } from 'nuxt/config'
 import type { NuxtConfig } from '@nuxt/schema'
 import '@vite-pwa/nuxt'
 
-// During development we generally don't want the PWA service worker to be
-// registered or precaching assets — it often serves stale or blocked assets
-// which breaks the dev experience. Only enable the PWA module in production.
-const isProd = process.env.NODE_ENV === 'production'
+
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
@@ -16,7 +13,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     ['nuxt-tiptap-editor', { prefix: 'Tiptap' }],
     '@nuxt/ui',
-    ...(isProd ? ['@vite-pwa/nuxt'] : [])
+    '@vite-pwa/nuxt'
   ],
 
   // UI configuration
@@ -53,7 +50,6 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      mode: 'production',
       // Use skipWaiting and clientsClaim for automatic updates
       skipWaiting: true,
       clientsClaim: true,
@@ -130,6 +126,13 @@ export default defineNuxtConfig({
         '#tailwind-config/theme/colors': new URL('./tailwind-config/theme/colors.js', import.meta.url).pathname,
         '#tailwind-config/theme': new URL('./tailwind-config/theme', import.meta.url).pathname
       }
+    }
+    ,
+    // Avoid bundling papaparse into the SSR bundle (it ships as a UMD file
+    // that Rollup sometimes fails to parse). Treat it as external during SSR
+    // so Node will require it at runtime instead of inlining it.
+    ssr: {
+      external: ['papaparse']
     }
   },
 

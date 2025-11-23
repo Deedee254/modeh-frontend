@@ -1,78 +1,151 @@
 <template>
-  <div class="max-w-2xl mx-auto p-6">
-    <h1 class="text-2xl font-semibold mb-4">Invite users to your institution</h1>
+  <PageHero
+    title="Invite Users"
+    description="Send invitations to join your institution"
+    theme="purple"
+  />
 
-    <form @submit.prevent="onGenerate" class="space-y-4 bg-white p-4 rounded shadow">
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Email</label>
-        <input v-model="email" type="email" required class="mt-1 block w-full border rounded p-2" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Role</label>
-        <select v-model="role" class="mt-1 block w-full border rounded p-2">
-          <option value="member">Member</option>
-          <option value="quizee">Quizee</option>
-          <option value="quiz-master">Quiz Master</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Expires (days)</label>
-        <input v-model.number="expires_in_days" type="number" min="1" max="30" class="mt-1 block w-32 border rounded p-2" />
-      </div>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-      <div class="flex gap-2">
-        <button type="submit" class="btn btn-primary" :disabled="loading">{{ loading ? 'Generating...' : 'Generate invite link' }}</button>
-        <button type="button" class="btn" @click="sendViaBackend" :disabled="sending || !inviteToken">{{ sending ? 'Sending...' : 'Send via backend email' }}</button>
+    <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden mb-8">
+      <div class="p-6 sm:p-8 border-b border-gray-200 dark:border-slate-700">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Generate Invitation</h2>
       </div>
+      <div class="p-6 sm:p-8">
+        <form @submit.prevent="onGenerate" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Email</label>
+              <input
+                v-model="email"
+                type="email"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Role</label>
+              <select
+                v-model="role"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="member">Member</option>
+                <option value="quizee">Quizee</option>
+                <option value="quiz-master">Quiz Master</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Expires (days)</label>
+              <input
+                v-model.number="expires_in_days"
+                type="number"
+                min="1"
+                max="30"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
 
-      <div v-if="inviteUrl" class="mt-4 bg-gray-50 p-3 rounded">
-        <div class="text-sm text-gray-600">Invite URL (copy & paste into your email client)</div>
-        <div class="mt-2 flex items-center gap-2">
-          <input readonly class="flex-1 p-2 border rounded" :value="inviteUrl" />
-          <button class="btn" @click="copyInvite">Copy</button>
-        </div>
-      </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button
+              type="submit"
+              :disabled="loading"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+            >
+              {{ loading ? 'Generating...' : 'Generate invite link' }}
+            </button>
+            <button
+              type="button"
+              @click="sendViaBackend"
+              :disabled="sending || !inviteToken"
+              class="px-4 py-2 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+            >
+              {{ sending ? 'Sending...' : 'Send via email' }}
+            </button>
+          </div>
 
-      <div v-if="message" class="mt-3 text-sm text-green-600">{{ message }}</div>
-      <div v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</div>
-    </form>
-    
-    <div class="mt-8 bg-white p-4 rounded shadow">
-      <h2 class="text-lg font-medium mb-3">Pending invitations</h2>
-      <div v-if="invitesLoading" class="text-gray-500">Loading invites...</div>
-      <div v-else>
-        <div v-if="invites.length === 0" class="text-sm text-gray-600">No pending invitations.</div>
-        <table v-else class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-gray-600 border-b">
-              <th class="py-2">Email</th>
-              <th class="py-2">Invited by</th>
-              <th class="py-2">Role</th>
-              <th class="py-2">Expires</th>
-              <th class="py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="inv in invites" :key="inv.id" class="border-b">
-              <td class="py-2">{{ inv.email }}</td>
-              <td class="py-2">{{ inv.invited_by_name || '-' }}</td>
-              <td class="py-2">{{ inv.role }}</td>
-              <td class="py-2">{{ inv.expires_at }}</td>
-              <td class="py-2">
-                <button class="btn" @click="revoke(inv.invitation_token)">Revoke</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <div v-if="inviteUrl" class="bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-900 dark:text-white mb-2">Invite URL</div>
+            <div class="flex items-center gap-2">
+              <input
+                readonly
+                class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+                :value="inviteUrl"
+              />
+              <button
+                type="button"
+                @click="copyInvite"
+                class="px-3 py-2 bg-gray-200 dark:bg-slate-600 hover:bg-gray-300 dark:hover:bg-slate-500 text-gray-900 dark:text-white font-medium rounded-lg transition-colors duration-200 whitespace-nowrap"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div v-if="message" class="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-200">
+            {{ message }}
+          </div>
+          <div v-if="error" class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200">
+            {{ error }}
+          </div>
+        </form>
       </div>
     </div>
+
+    <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+      <div class="p-6 sm:p-8 border-b border-gray-200 dark:border-slate-700">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Pending Invitations</h2>
+      </div>
+      <div class="p-6 sm:p-8">
+        <div v-if="invitesLoading" class="text-center text-gray-500 dark:text-gray-400">Loading invites...</div>
+        <div v-else>
+          <div v-if="invites.length === 0" class="text-center text-gray-500 dark:text-gray-400">No pending invitations.</div>
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                  <th class="px-4 py-3 font-semibold">Email</th>
+                  <th class="px-4 py-3 font-semibold">Role</th>
+                  <th class="px-4 py-3 font-semibold">Invited by</th>
+                  <th class="px-4 py-3 font-semibold">Expires</th>
+                  <th class="px-4 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="inv in invites" :key="inv.id" class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                  <td class="px-4 py-3 text-gray-900 dark:text-gray-100">{{ inv.email }}</td>
+                  <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
+                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs font-medium">
+                      {{ inv.role }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ inv.invited_by_name || '-' }}</td>
+                  <td class="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{{ inv.expires_at }}</td>
+                  <td class="px-4 py-3">
+                    <button
+                      @click="revoke(inv.invitation_token)"
+                      class="px-3 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded transition-colors duration-200"
+                    >
+                      Revoke
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
+definePageMeta({ layout: 'institution' })
 import { ref } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { useRoute } from 'vue-router'
+import PageHero from '~/components/institution/PageHero.vue'
 
 const route = useRoute()
 const cfg = useRuntimeConfig()
@@ -205,7 +278,4 @@ async function revoke(token) {
 if (institutionId) fetchInvites()
 </script>
 
-<style scoped>
-.btn { padding: .5rem 1rem; border-radius: .375rem; font-weight: 600 }
-.btn-primary { background-color: var(--primary); color: var(--primary-foreground) }
-</style>
+

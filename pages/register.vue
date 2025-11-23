@@ -117,8 +117,20 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.email" type="email" autocomplete="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                 <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Short Bio</label>
+                <textarea v-model="form.bio" rows="3" placeholder="Optional - a short bio" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                <p v-if="fieldErrors.bio" class="mt-1 text-sm text-red-600">{{ fieldErrors.bio }}</p>
               </div>
 
               <div>
@@ -229,12 +241,13 @@
 
           <!-- Common Fields (Password) -->
           <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Password</label>
-              <div class="relative">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Password</label>
+                <div class="relative">
                 <input 
                   v-model="form.password" 
                   :type="showPassword ? 'text' : 'password'" 
+                  autocomplete="new-password"
                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                   required 
                 />
@@ -261,6 +274,7 @@
                 <input 
                   v-model="form.confirmPassword" 
                   :type="showConfirmPassword ? 'text' : 'password'" 
+                  autocomplete="new-password"
                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                   required 
                 />
@@ -364,6 +378,7 @@ const form = reactive({
   email: '',
   parentEmail: '',
   phone: '',
+  bio: '',
   subjects: [],
   password: '',
   confirmPassword: ''
@@ -376,6 +391,7 @@ const fieldErrors = reactive({
   email: '',
   parentEmail: '',
   phone: '',
+  bio: '',
   password: '',
   confirmPassword: ''
 })
@@ -502,6 +518,8 @@ async function submit() {
     
     // Add phone if provided
     if (form.phone) payload.phone = form.phone
+  // Add bio if provided
+  if (form.bio) payload.bio = form.bio
     
     // Add taxonomy fields for Quizee and Quiz Master
     if (role.value === 'quizee') {
@@ -543,8 +561,19 @@ async function submit() {
       return
     }
     const body = data
-    // Set user in auth store if returned
-    auth.setUser(body.user || body)
+    // Attempt to log the user in to establish a session cookie for subsequent authenticated requests.
+    try {
+      await auth.login(form.email, form.password)
+    } catch (loginErr) {
+      // If auto-login fails, fall back to setting the user object returned by registration
+      // Merge any returned profile objects into the user payload so UI has the profile data
+      const returnedUser = body.user || body || {}
+      if (body.quizee) returnedUser.quizeeProfile = body.quizee
+      if (body.quizMaster) returnedUser.quizMasterProfile = body.quizMaster
+      // ensure institutions from response are attached when present
+      if (body.user && body.user.institutions) returnedUser.institutions = body.user.institutions
+      auth.setUser(returnedUser)
+    }
 
     // Redirect based on role
     if (role.value === 'quizee') {

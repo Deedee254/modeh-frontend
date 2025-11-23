@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white border-b shadow-sm sticky top-0 z-30" :class="{ 'z-50': ui.mobileNavOpen || ui.sidebarOpen }">
+  <div class="bg-white border-b shadow-sm sticky top-0 z-30" :class="{ 'z-40': ui.mobileNavOpen || ui.sidebarOpen }">
     <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-0 sm:gap-2">
       <div class="flex items-center gap-1 sm:gap-2 w-full">
         <!-- Bars / hamburger: hidden on md+ (desktop). Visible only on small screens -->
@@ -8,13 +8,18 @@
         </button>
 
         <!-- Logo -->
-        <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="flex items-center">
+        <NuxtLink :to="isInstitutionManager ? '/institution-manager/dashboard' : (isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard')" class="flex items-center">
           <img src="/logo/modeh-logo.png" alt="Modeh" class="h-6 sm:h-8 w-auto" />
         </NuxtLink>
 
   <!-- Navigation (hidden on mobile) -->
   <nav class="hidden md:flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6">
-          <template v-if="isquizee && auth.user">
+          <template v-if="isInstitutionManager && auth.user">
+            <NuxtLink to="/institution-manager/dashboard" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Dashboard</NuxtLink>
+            <NuxtLink :to="{ path: '/institution-manager/subscriptions', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Subscriptions</NuxtLink>
+            <NuxtLink :to="memberRoute" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Members</NuxtLink>
+          </template>
+          <template v-else-if="isquizee && auth.user">
             <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
             <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Subjects</NuxtLink>
             <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
@@ -76,7 +81,9 @@
         </template>
 
         <client-only>
-          <div id="topbar-user-menu" class="relative">
+          <!-- Hide the global user menu on institution-manager pages to avoid duplicate profile controls
+               The institution layout provides its own Topbar with an avatar/menu. -->
+          <div id="topbar-user-menu" class="relative" v-if="!route.path.startsWith('/institution-manager')">
             <template v-if="auth.user && auth.user.id">
               <ActionMenu>
                 <template #trigger>
@@ -93,9 +100,9 @@
                     <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ auth.user.email }}</p>
                   </div>
                   <div class="border-t border-gray-200 dark:border-slate-700"></div>
-                  <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Dashboard</NuxtLink>
-                  <NuxtLink :to="isquizee ? '/quizee/profile' : '/quiz-master/profile'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Profile</NuxtLink>
-                  <NuxtLink :to="isquizee ? '/quizee/settings' : '/quiz-master/settings'" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Settings</NuxtLink>
+                  <NuxtLink :to="dashboardRoute" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Dashboard</NuxtLink>
+                  <NuxtLink :to="profileRoute" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Profile</NuxtLink>
+                  <NuxtLink :to="settingsRoute" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Settings</NuxtLink>
                   <div class="border-t border-gray-200 dark:border-slate-700"></div>
                   <button @click="() => { onLogout(); close && close() }" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Sign out</button>
                 </template>
@@ -125,7 +132,7 @@
     <div v-if="ui.mobileNavOpen" class="fixed inset-0 z-40 bg-gray-500 bg-opacity-75 sm:hidden" @click="ui.mobileNavOpen = false" role="dialog" aria-modal="true">
       <div class="absolute top-0 left-0 right-0 bg-white p-4">
         <div class="flex items-center justify-between">
-          <NuxtLink :to="isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard'" class="flex items-center">
+          <NuxtLink :to="dashboardRoute" class="flex items-center">
             <img src="/logo/modeh-logo.png" alt="Modeh" class="h-6 w-auto" />
           </NuxtLink>
           <button @click="() => { ui.mobileNavOpen = false }" class="p-2 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Close menu">
@@ -134,7 +141,12 @@
         </div>
 
         <nav class="mt-3 flex flex-col gap-2">
-          <template v-if="isquizee && auth.user">
+          <template v-if="isInstitutionManager && auth.user">
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/institution-manager/dashboard" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Dashboard</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" :to="{ path: '/institution-manager/subscriptions', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Subscriptions</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" :to="memberRoute" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Members</NuxtLink>
+          </template>
+          <template v-else-if="isquizee && auth.user">
             <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/subjects" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Subjects</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/levels" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Levels</NuxtLink>
@@ -196,6 +208,7 @@ import { MagnifyingGlassIcon, ChatBubbleOvalLeftEllipsisIcon, Bars3Icon } from '
 import { useNotificationsStore } from '~/stores/notifications'
 import { useUserRole } from '~/composables/useUserRole'
 import { useUiStore } from '~/stores/ui'
+import { useInstitutionsStore } from '~/stores/institutions'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
 import UiLevelProgress from '~/components/ui/LevelProgress.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
@@ -223,6 +236,47 @@ const auth = useAuthStore()
 const router = useRouter()
 const { isquizee } = useUserRole()
 const api = useApi()
+const instStore = useInstitutionsStore()
+
+const isInstitutionManager = computed(() => {
+  if (!auth.user) return false
+  if (auth.user.role === 'institution-manager') return true
+  if (auth.user.institutions && Array.isArray(auth.user.institutions) && auth.user.institutions.length > 0) return true
+  return false
+})
+
+const dashboardRoute = computed(() => {
+  if (isInstitutionManager.value) return { path: '/institution-manager/dashboard' }
+  if (isquizee.value) return { path: '/quizee/dashboard' }
+  return { path: '/quiz-master/dashboard' }
+})
+
+const profileRoute = computed(() => {
+  if (isInstitutionManager.value) {
+    const qs = instStore.activeInstitutionSlug ? { institutionSlug: String(instStore.activeInstitutionSlug) } : {}
+    return { path: '/institution-manager/profile', query: qs }
+  }
+  if (isquizee.value) return { path: '/quizee/profile' }
+  return { path: '/quiz-master/profile' }
+})
+
+const settingsRoute = computed(() => {
+  if (isInstitutionManager.value) {
+    const qs = instStore.activeInstitutionSlug ? { institutionSlug: String(instStore.activeInstitutionSlug) } : {}
+    return { path: '/institution-manager/settings', query: qs }
+  }
+  if (isquizee.value) return { path: '/quizee/settings' }
+  return { path: '/quiz-master/settings' }
+})
+
+const memberRoute = computed(() => {
+  if (isInstitutionManager.value) {
+    const s = instStore.activeInstitutionSlug
+    if (s) return { path: `/institution-manager/institutions/${String(s)}/members`, query: { institutionSlug: String(s) } }
+    return { path: '/institution-manager/institutions' }
+  }
+  return { path: '/quizee/profile' }
+})
 
 const searchInput = ref(null)
 const mobileSearchInput = ref(null)

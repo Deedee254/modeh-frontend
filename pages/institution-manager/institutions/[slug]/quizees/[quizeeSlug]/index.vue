@@ -15,7 +15,7 @@
         <template #actions>
           <NuxtLink
             to="/settings"
-            class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer inline-block"
+            class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer w-full sm:w-auto text-center"
           >
             Edit Profile
           </NuxtLink>
@@ -124,8 +124,17 @@ const userId = route.params.quizeeSlug as string
 
 const api = useApi()
 
+interface Attempt {
+  id: string | number
+  quiz_id: string | number
+  created_at: string
+  score: number
+  points_earned: number
+  [key: string]: any
+}
+
 const user = ref<any>(null)
-const attempts = ref([])
+const attempts = ref<Attempt[]>([])
 const attemptsLoading = ref(false)
 
 onMounted(async () => {

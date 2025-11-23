@@ -1,9 +1,9 @@
 <template>
   <div>
-    <!-- Full podium for 3+ entries -->
+    <!-- Full podium for 3+ entries (tablet/desktop) -->
     <div
       v-if="entries && entries.length >= 3"
-      class="flex items-end justify-center gap-4 sm:gap-8 text-center"
+      class="hidden sm:flex items-end justify-center gap-4 sm:gap-8 text-center"
     >
       <div class="w-1/3" v-for="(p, idx) in topThree" :key="p.id">
         <div class="flex flex-col items-center">
@@ -22,7 +22,24 @@
       </div>
     </div>
 
-    <!-- Compact for 1-2 entries -->
+    <!-- Mobile stacked top-3 (for small screens) -->
+    <div v-if="entries && entries.length >= 3" class="space-y-4 sm:hidden">
+      <div v-for="(p, idx) in topThree" :key="p.id" class="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
+        <div>
+          <div class="relative">
+            <img :src="resolvedAvatar(p.avatar)" :alt="p.name" class="w-16 h-16 rounded-full object-cover" />
+            <div :class="badgeClass(idx)"></div>
+          </div>
+        </div>
+        <div class="flex-1 text-left">
+          <div class="font-semibold truncate">{{ p.name }}</div>
+          <div class="text-sm text-gray-500">{{ displayPoints(p) }} pts</div>
+        </div>
+        <div class="text-right text-sm text-gray-500">#{{ idx + 1 }}</div>
+      </div>
+    </div>
+
+    <!-- Compact for 1-2 entries or fallback on larger screens -->
     <div
       v-else-if="entries && entries.length > 0"
       class="space-y-4 text-center"

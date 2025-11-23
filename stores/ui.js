@@ -26,11 +26,20 @@ export const useUiStore = defineStore('ui', () => {
   })
 
   function toggleSidebar() {
-    // On mobile, this toggles the drawer. On desktop, it's handled by toggleSidebarCollapse.
+    // On mobile, toggle the drawer. On desktop, ensure the sidebar remains open.
+    // This makes the left hamburger open/close the mobile drawer and on larger
+    // screens it will not hide the sidebar (we keep it visible for desktop).
     if (import.meta.client && window.innerWidth < 1024) { // lg breakpoint
       sidebarOpen.value = !sidebarOpen.value
     } else {
-      sidebarCollapsed.value = !sidebarCollapsed.value
+      // Ensure desktop shows the full sidebar; do not toggle the persisted collapsed flag here.
+      try {
+        // If a consumer wants to collapse the desktop sidebar separately, they should call
+        // a dedicated method. For now we guarantee the sidebar is open on desktop.
+        sidebarCollapsed.value = false
+      } catch (e) {
+        // ignore
+      }
     }
   }
 

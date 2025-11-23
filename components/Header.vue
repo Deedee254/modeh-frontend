@@ -98,9 +98,9 @@
           <NuxtLink to="/pricing" class="hover:text-blue-600 dark:hover:text-blue-400 py-2">Pricing</NuxtLink>
         </nav>
 
-        <!-- Auth buttons and User menu -->
+        <!-- Auth buttons and User menu (hidden on institution-manager pages to avoid duplicate profile controls) -->
         <div class="flex items-center gap-3">
-                  <AccountMenu :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileLink" @logout="logout" />
+                  <AccountMenu v-if="!route.path.startsWith('/institution-manager')" :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileLink" @logout="logout" />
                 </div>
 
         <!-- Mobile menu button -->
@@ -202,8 +202,10 @@ import { ref, computed, watch, onMounted } from 'vue'
 import AccountMenu from '~/components/AccountMenu.vue'
 import { useRoute } from '#imports'
 import useTaxonomy from '~/composables/useTaxonomy'
+import { useAuthStore } from '~/stores/auth'
+import { useInstitutionsStore } from '~/stores/institutions'
 
-const auth = useAuthStore?.() || null
+const auth = useAuthStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
 const showDropdown = ref(false)
 const showMobileMenu = ref(false)
@@ -231,8 +233,15 @@ const userInitials = computed(() => {
   return name.charAt(0).toUpperCase()
 })
 
+const instStore = useInstitutionsStore()
+
 const profileLink = computed(() => {
   if (!auth?.user) return '/' 
+  // If user is an institution manager or belongs to institutions, route to institution manager profile
+  if (auth.user.role === 'institution-manager' || (auth.user.institutions && Array.isArray(auth.user.institutions) && auth.user.institutions.length > 0)) {
+    const qs = instStore.activeInstitutionSlug ? { institutionSlug: String(instStore.activeInstitutionSlug) } : {}
+    return { path: '/institution-manager/profile', query: qs }
+  }
   const role = auth.user.role || 'quizee'
   return role === 'quiz-master' ? '/quiz-master/profile' : '/quizee/profile'
 })

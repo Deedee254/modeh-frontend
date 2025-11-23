@@ -1,6 +1,7 @@
 <template>
   <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
+    <!-- Desktop/tablet table -->
+    <div class="overflow-x-auto hidden sm:block">
       <table class="w-full">
         <thead>
           <tr class="bg-gray-50">
@@ -108,6 +109,37 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile list view -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="px-4 py-6 text-center text-gray-500">
+        <div class="flex items-center justify-center space-x-3">
+          <div class="animate-spin rounded-full h-6 w-6 border-4 border-primary border-t-transparent"></div>
+          <div>Loading leaderboard…</div>
+        </div>
+      </div>
+
+      <div v-else-if="!entries || entries.length === 0" class="px-4 py-6 text-center text-gray-500">No entries yet.</div>
+
+      <div v-else class="space-y-2 px-2 py-2">
+        <div v-for="(player, index) in entries" :key="player.id" class="flex items-center justify-between bg-white rounded-lg shadow-sm p-3">
+          <div class="flex items-center gap-3">
+            <div>
+              <span :class="rankBadgeClass(index)">{{ index + 1 }}</span>
+            </div>
+            <img :src="resolveAssetUrl(player.avatar) || player.avatar || placeholder" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+            <div>
+              <div class="font-medium truncate" style="max-width: 160px">{{ player.name }}</div>
+              <div v-if="player.title" class="text-sm text-gray-500">{{ player.title }}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-medium text-gray-900">{{ player[props.pointsKey] ?? player.points ?? player.score ?? 0 }}</div>
+            <div class="text-sm text-gray-500">points</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

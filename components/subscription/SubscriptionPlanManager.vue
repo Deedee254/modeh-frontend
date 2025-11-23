@@ -39,11 +39,11 @@
           </li>
         </ul>
 
-        <div v-if="plan.features?.limits" class="mt-4 text-sm text-gray-600">
+        <div v-if="plan.features && typeof plan.features === 'object' && !Array.isArray(plan.features) && (plan.features as any).limits" class="mt-4 text-sm text-gray-600">
           <h4 class="font-medium text-gray-900">Plan limits</h4>
           <ul class="mt-2 space-y-1">
-            <li v-if="plan.features.limits && typeof plan.features.limits.quiz_results !== 'undefined'">Quiz results: {{ plan.features.limits.quiz_results === null ? 'Unlimited' : plan.features.limits.quiz_results }} per day</li>
-            <li v-if="plan.features.limits && typeof plan.features.limits.battle_results !== 'undefined'">Battle results: {{ plan.features.limits.battle_results === null ? 'Unlimited' : plan.features.limits.battle_results }} per day</li>
+            <li v-if="(plan.features as any).limits && typeof (plan.features as any).limits.quiz_results !== 'undefined'">Quiz results: {{ (plan.features as any).limits.quiz_results === null ? 'Unlimited' : (plan.features as any).limits.quiz_results }} per day</li>
+            <li v-if="(plan.features as any).limits && typeof (plan.features as any).limits.battle_results !== 'undefined'">Battle results: {{ (plan.features as any).limits.battle_results === null ? 'Unlimited' : (plan.features as any).limits.battle_results }} per day</li>
           </ul>
         </div>
 
@@ -124,52 +124,88 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useInstitutionsStore } from '~/stores/institutions'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 
 const config = useRuntimeConfig()
-defineProps({
-  ownerType: { type: String, default: null },
-  ownerId: { type: [String, Number], default: null }
-})
+
+// Strongly-typed Plan and Subscription interfaces
+interface PlanFeaturesLimits {
+  quiz_results?: number | null
+  battle_results?: number | null
+  [key: string]: any
+}
+
+interface PlanFeatures {
+  display?: Array<string>
+  limits?: PlanFeaturesLimits
+  [key: string]: any
+}
+
+interface Plan {
+  id: string | number
+  name?: string
+  description?: string
+  price?: number
+  interval?: string | null
+  popular?: boolean
+  features?: PlanFeatures | Array<string>
+  phone?: string | null
+  [key: string]: any
+}
+
+interface Subscription {
+  id: string | number
+  package_id?: string | number
+  gateway_meta?: Record<string, any>
+  [key: string]: any
+}
+// typed props so TS knows about ownerType and ownerId
+const props = defineProps<{
+  ownerType?: string | null
+  ownerId?: string | number | null
+}>()
 
 const alert = useAppAlert()
-const loading = ref(true)
-const plans = ref([])
-const currentPlan = ref(null)
-const selectedPlan = ref(null)
-const showConfirmation = ref(false)
-const processing = ref(false)
-const showPhoneModal = ref(false)
-const phoneInput = ref('')
-const phoneError = ref('')
-const pendingPackagePrice = ref(null)
+const loading = ref<boolean>(true)
+const plans = ref<Plan[]>([])
+const currentPlan = ref<Subscription | null>(null)
+const selectedPlan = ref<Plan | null>(null)
+const showConfirmation = ref<boolean>(false)
+const processing = ref<boolean>(false)
+const showPhoneModal = ref<boolean>(false)
+const phoneInput = ref<string>('')
+const phoneError = ref<string>('')
+const pendingPackagePrice = ref<number | null>(null)
 
-function formatAmount(amount) {
+function formatAmount(amount: number | string | null | undefined) {
+  // Ensure amount is a valid number before passing to format
+  const numAmount = typeof amount === 'number' ? amount : (typeof amount === 'string' ? parseFloat(amount) : 0)
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'KES'
-  }).format(amount)
+  }).format(numAmount)
 }
 
-function selectPlan(plan) {
+function selectPlan(plan: Plan) {
   selectedPlan.value = plan
   showConfirmation.value = true
 }
 
-function getFeatures(plan) {
+function getFeatures(plan: Plan | null): string[] {
   if (!plan || !plan.features) return []
-  const f = plan.features
+  const f: any = plan.features
   // Prefer an explicit display array
   if (Array.isArray(f.display)) return f.display.filter(Boolean)
   // If features is already an array
   if (Array.isArray(f)) return f.filter(Boolean)
   // If it's an object, collect string values skipping known keys like 'limits'
   if (typeof f === 'object' && f !== null) {
-    const out = []
+    const out: string[] = []
     Object.keys(f).sort().forEach((k) => {
       if (k === 'limits') return
       const v = f[k]
@@ -183,7 +219,7 @@ function getFeatures(plan) {
   return []
 }
 
-function stripHtml(input) {
+function stripHtml(input: string | null | undefined): string {
   if (!input) return ''
   try {
     // Remove HTML tags
@@ -198,13 +234,13 @@ function stripHtml(input) {
   }
 }
 
-function formatDescription(desc) {
+function formatDescription(desc: string | null | undefined): string {
   const cleaned = stripHtml(desc)
   // v-html expects safe HTML; we've stripped tags and only allow <br/>
   return cleaned
 }
 
-function descriptionLines(desc) {
+function descriptionLines(desc: string | null | undefined): string[] {
   const cleaned = stripHtml(desc)
   // split on <br/> or line breaks
   const parts = cleaned.split(/<br\/?\s*>|\n/gi).map(s => s.trim()).filter(Boolean)
@@ -213,35 +249,35 @@ function descriptionLines(desc) {
 
 const api = useApi()
 
-async function fetchPlans() {
+async function fetchPlans(): Promise<void> {
   loading.value = true
   try {
     // Request packages for the appropriate audience when ownerType is provided
     let pkgUrl = '/api/packages'
-    if (typeof ownerType !== 'undefined' && ownerType === 'institution') {
+    if (typeof props.ownerType !== 'undefined' && props.ownerType === 'institution') {
       pkgUrl += '?audience=institution'
-    } else if (typeof ownerType !== 'undefined' && ownerType === 'user') {
+    } else if (typeof props.ownerType !== 'undefined' && props.ownerType === 'user') {
       pkgUrl += '?audience=quizee'
     }
-    const packagesRes = await api.get(pkgUrl)
+  const packagesRes = await api.get(pkgUrl)
     const subsRes = await api.get('/api/subscriptions/mine')
 
     if (packagesRes && packagesRes.ok) {
       const data = await packagesRes.json().catch(() => ({}))
-      plans.value = data.packages || data.plans || []
+      plans.value = (data.packages || data.plans || []) as Plan[]
     }
 
     if (subsRes && subsRes.ok) {
       const data = await subsRes.json().catch(() => ({}))
-      currentPlan.value = data.subscription || null
+      currentPlan.value = (data.subscription || null) as Subscription | null
     }
-  } catch (e) {
+  } catch (err: any) {
     alert.push({ type: 'error', message: 'Failed to load subscription data', icon: 'heroicons:x-circle' })
   }
   loading.value = false
 }
 
-async function confirmSubscription() {
+async function confirmSubscription(): Promise<void> {
   if (!selectedPlan.value) return
 
   processing.value = true
@@ -249,17 +285,33 @@ async function confirmSubscription() {
     // Use centralized API composable which handles CSRF/session for us
     const pkgPrice = selectedPlan.value?.price ?? pendingPackagePrice.value ?? 0
     const gatewayToUse = (Number(pkgPrice) === 0) ? 'free' : 'mpesa'
-    const payload = {
+    let payload: Record<string, any> = {
       gateway: gatewayToUse,
-      phone: selectedPlan.value.phone || null
+      phone: selectedPlan.value?.phone || null
     }
-    if (typeof ownerType !== 'undefined' && ownerType && ownerId) {
-      payload.owner_type = ownerType
-      payload.owner_id = ownerId
-    }
-    const res = await api.postJson(`/api/packages/${selectedPlan.value.id}/subscribe`, payload)
 
-    if (!res.ok) {
+    // If owner is an institution and ownerId is a slug, attempt to resolve to numeric id
+    if (props.ownerType === 'institution' && props.ownerId) {
+      try {
+        const instStore = useInstitutionsStore()
+        await instStore.setActiveInstitution(String(props.ownerId))
+        const inst = (instStore as any).institution?.value || (instStore as any).institution
+        if (inst && (inst as any).id) payload.owner_id = (inst as any).id
+        else payload.owner_slug = props.ownerId
+        payload.owner_type = 'institution'
+      } catch (err: any) {
+        // fallback to sending provided ownerId as owner_id
+        payload.owner_type = props.ownerType
+        payload.owner_id = props.ownerId
+      }
+    } else if (props.ownerType && props.ownerId) {
+      payload.owner_type = props.ownerType
+      payload.owner_id = props.ownerId
+    }
+
+  const res = await api.postJson(`/api/packages/${selectedPlan.value?.id}/subscribe`, payload)
+
+  if (!res.ok) {
       // Helpful handling for CSRF/session expiration (Laravel returns 419)
       if (res.status === 419) {
         throw new Error('Session expired or invalid CSRF token. Please refresh the page and try again.')
@@ -272,7 +324,7 @@ async function confirmSubscription() {
         if (data && data.require_phone) {
           // prefill phone if backend returned one in subscription.gateway_meta
           phoneInput.value = (data.subscription && data.subscription.gateway_meta && data.subscription.gateway_meta.phone) || ''
-          pendingPackagePrice.value = data.package?.price ?? selectedPlan.value.price ?? null
+          pendingPackagePrice.value = data.package?.price ?? selectedPlan.value?.price ?? null
           showConfirmation.value = false
           showPhoneModal.value = true
           processing.value = false
@@ -281,14 +333,14 @@ async function confirmSubscription() {
       }
 
       // Try to extract a helpful message from JSON or plain text
-      let parsed = null
+      let parsed: any = null
       try {
         parsed = await res.json()
       } catch (e) {
         try { parsed = await res.text() } catch (err) { parsed = null }
       }
 
-      let message = null
+      let message: string | null = null
       if (parsed) {
         if (typeof parsed === 'string') message = parsed
         else if (parsed.message) message = parsed.message
@@ -300,14 +352,14 @@ async function confirmSubscription() {
 
     alert.push({ type: 'success', message: 'Subscription updated successfully', icon: 'heroicons:check-circle' })
     await fetchPlans() // Refresh data
-  } catch (e) {
-    alert.push({ type: 'error', message: e.message || 'Failed to update subscription', icon: 'heroicons:x-circle' })
+  } catch (err: any) {
+    alert.push({ type: 'error', message: err?.message || 'Failed to update subscription', icon: 'heroicons:x-circle' })
   }
   processing.value = false
   showConfirmation.value = false
 }
 
-async function confirmPhoneSubscription() {
+async function confirmPhoneSubscription(): Promise<void> {
   phoneError.value = ''
   if (!phoneInput.value || phoneInput.value.trim().length < 6) {
     phoneError.value = 'Please enter a valid phone number'
@@ -317,28 +369,41 @@ async function confirmPhoneSubscription() {
   try {
     const pkgPrice = selectedPlan.value?.price ?? pendingPackagePrice.value ?? 0
     const gatewayToUse = (Number(pkgPrice) === 0) ? 'free' : 'mpesa'
-    const payload = {
+    const payload: Record<string, any> = {
       gateway: gatewayToUse,
       phone: phoneInput.value.trim()
     }
-    if (typeof ownerType !== 'undefined' && ownerType && ownerId) {
-      payload.owner_type = ownerType
-      payload.owner_id = ownerId
+    // same resolution for phone-initiated path
+    if (props.ownerType === 'institution' && props.ownerId) {
+      try {
+        const instStore = useInstitutionsStore()
+        await instStore.setActiveInstitution(String(props.ownerId))
+        const inst = (instStore as any).institution?.value || (instStore as any).institution
+        if (inst && (inst as any).id) payload.owner_id = (inst as any).id
+        else payload.owner_slug = props.ownerId
+        payload.owner_type = 'institution'
+      } catch (e) {
+        payload.owner_type = props.ownerType
+        payload.owner_id = props.ownerId
+      }
+    } else if (props.ownerType && props.ownerId) {
+      payload.owner_type = props.ownerType
+      payload.owner_id = props.ownerId
     }
-    const res = await api.postJson(`/api/packages/${selectedPlan.value.id}/subscribe`, payload)
+  const res = await api.postJson(`/api/packages/${selectedPlan.value?.id}/subscribe`, payload)
 
     if (!res.ok) {
       if (res.status === 419) {
         throw new Error('Session expired or invalid CSRF token. Please refresh the page and try again.')
       }
 
-      let parsed = null
+      let parsed: any = null
       try {
         parsed = await res.json()
       } catch (e) {
         try { parsed = await res.text() } catch (err) { parsed = null }
       }
-      let message = null
+      let message: string | null = null
       if (parsed) {
         if (typeof parsed === 'string') message = parsed
         else if (parsed.message) message = parsed.message
@@ -351,19 +416,22 @@ async function confirmPhoneSubscription() {
     alert.push({ type: 'success', message: 'Subscription updated successfully', icon: 'heroicons:check-circle' })
     showPhoneModal.value = false
     await fetchPlans()
-  } catch (e) {
-    alert.push({ type: 'error', message: e.message || 'Failed to update subscription', icon: 'heroicons:x-circle' })
+  } catch (err: any) {
+    alert.push({ type: 'error', message: err?.message || 'Failed to update subscription', icon: 'heroicons:x-circle' })
   }
   processing.value = false
 }
 
 onMounted(fetchPlans)
 
-function isActive(plan) {
+type IDType = string | number | undefined
+
+function isActive(plan: Plan | null): boolean {
   try {
-    // Normalize IDs to string before comparison to avoid type mismatches
-    return String(plan.id) === String(currentPlan?.id)
-  } catch (e) {
+    if (!plan) return false
+    const currentPkgId: IDType = currentPlan.value?.package_id ?? currentPlan.value?.id
+    return String(plan.id) === String(currentPkgId ?? '')
+  } catch (err: unknown) {
     return false
   }
 }

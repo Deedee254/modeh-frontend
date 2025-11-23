@@ -1,11 +1,11 @@
 <template>
-  <div class="flex min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] bg-[#f0f2f5] px-4 py-6 md:px-6">
+  <div class="flex flex-1 min-h-0 bg-[#f0f2f5] px-4 py-6 md:px-6">
     <!-- Sidebar -->
     <div class="hidden md:flex w-80 flex-shrink-0">
       <!-- Sidebar keeps the hero gradient treatment just within the header, leaving the list area clean and white -->
   <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl">
-        <!-- Header -->
-  <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl sticky top-0 z-60">
+    <!-- Header -->
+  <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl sticky top-0 z-20">
           <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted h-9 w-9 rounded-full hover:text-foreground text-muted-foreground">
@@ -29,7 +29,7 @@
           </div>
         </div>
         <!-- Tabs -->
-  <div class="px-4 py-3 border-b border-border bg-transparent sticky top-[128px] z-50">
+  <div class="px-4 py-3 border-b border-border bg-transparent sticky top-[128px] z-20">
           <div dir="ltr" data-orientation="horizontal">
             <div role="tablist" aria-orientation="horizontal" class="h-10 items-center justify-center rounded-md p-1 text-muted-foreground grid w-full grid-cols-3 bg-muted/50">
               <button 
@@ -148,7 +148,7 @@
   <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6">
     <div class="flex flex-col h-full bg-[#efeae2]">
         <!-- Chat Header -->
-          <div class="sticky top-0 z-30 flex items-center gap-3 p-4 bg-white border-b border-border md:static md:z-auto">
+          <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white border-b border-border md:static md:z-auto">
           <button 
             v-if="isMobile && showChatWindowOnMobile" 
             class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"
@@ -226,7 +226,7 @@
         </div>
 
         <!-- Input Area -->
-        <div class="p-3 bg-white/5 border-t border-border sticky bottom-0 z-30">
+  <div class="p-3 bg-white/5 border-t border-border sticky bottom-0 z-20">
           <div class="flex items-end gap-2" style="margin-bottom:8px">
             <input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.txt" class="hidden" ref="fileInput" @change="onFileChange">
             <button 
@@ -253,7 +253,7 @@
                   <line x1="15" x2="15.01" y1="9" y2="9"></line>
                 </svg>
               </button>
-              <div v-if="showEmojiPicker" class="absolute bottom-12 left-2 z-40 bg-white border rounded shadow p-2 grid grid-cols-6 gap-2 w-56">
+              <div v-if="showEmojiPicker" class="absolute bottom-12 left-2 z-30 bg-white border rounded shadow p-2 grid grid-cols-6 gap-2 w-56">
                 <button v-for="emoji in emojis" :key="emoji" @click.prevent="insertEmoji(emoji)" class="text-lg">{{ emoji }}</button>
               </div>
               <button 

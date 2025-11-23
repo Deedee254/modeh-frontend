@@ -11,7 +11,7 @@
           <template #actions>
             <NuxtLink
               to="/quiz-master/settings"
-              class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer inline-block"
+              class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer w-full sm:w-auto text-center"
             >
               Edit Profile
             </NuxtLink>
@@ -88,10 +88,10 @@
             </div>
 
             <!-- Action Button -->
-            <div class="flex justify-end pt-4 border-t">
+            <div class="flex flex-col sm:flex-row justify-end pt-4 border-t gap-2">
               <NuxtLink
                 to="/quiz-master/settings"
-                class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto text-center"
               >
                 Edit Profile
               </NuxtLink>
@@ -133,8 +133,13 @@ interface User {
   }
 }
 
-const user = computed<User>(() => auth.user || {})
-const userAvatar = computed(() => resolveAssetUrl(user.value.avatar_url) || '/logo/avatar-placeholder.png')
+// Since auth.user is a ref from the Pinia store, unwrap it to get the raw user object
+const user = computed<User>(() => {
+  const u: any = (auth as any).user
+  // If it's a ref with a .value property, unwrap it; otherwise use it directly
+  return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
+})
+const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url) || '/logo/avatar-placeholder.png')
 
 // Get profile based on role
 const profile = computed(() => {

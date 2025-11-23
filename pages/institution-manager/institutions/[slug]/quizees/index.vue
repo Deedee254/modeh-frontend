@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
 definePageMeta({ layout: 'institution' as any })
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useApi } from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 import ErrorAlert from '~/components/ui/ErrorAlert.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import MemberList from '~/components/institution/MemberList.vue'
+import PageHero from '~/components/institution/PageHero.vue'
 
 const api = useApi()
 const route = useRoute();
-const institutionId = ref(route.query.institutionSlug || null);
+// Prefer route param slug (when using the nested route), fallback to query.institutionSlug
+const institutionId = ref(route.params.slug || route.query.institutionSlug || null);
 
 const members = ref([] as any[])
 const membersMeta = ref({ total: 0, per_page: 8, current_page: 1, last_page: 1 })
@@ -98,26 +100,42 @@ async function accept(userId: number) {
   }
 }
 
-// initial load
-// initial load
+// initial load when we have an institution slug
 if (institutionId.value) {
   await Promise.all([loadMembers(), loadRequests(), fetchLevels(), fetchGrades()])
 }
+
+// react to route changes (params or query) and reload
+watch(
+  () => route.params.slug || route.query.institutionSlug,
+  async (newVal, oldVal) => {
+    institutionId.value = newVal || null
+    if (institutionId.value) {
+      await Promise.all([loadMembers(), loadRequests(), fetchLevels(), fetchGrades()])
+    }
+  }
+)
 </script>
 
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-semibold mb-4">Quizees</h1>
+  <div class="min-h-screen bg-white dark:bg-slate-900">
+    <!-- Page Hero -->
+    <PageHero
+      title="Quizees"
+      description="Manage and view quizees in your institution"
+      theme="emerald"
+    />
 
-    <div v-if="!institutionId" class="p-4 bg-yellow-50 border rounded">
-      <p class="text-sm">No institution selected. Add ?institutionSlug=SLUG to the URL.</p>
-    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div v-if="!institutionId" class="p-4 bg-yellow-50 border rounded">
+        <p class="text-sm">No institution selected. Add ?institutionSlug=SLUG to the URL.</p>
+      </div>
 
-    <div v-else>
+      <div v-else>
         <div class="mb-6">
           <h2 class="text-lg font-medium">Pending Requests</h2>
           <div class="mt-2">
-            <div class="mb-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+            <div class="mb-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <label class="block text-xs text-gray-600">Level</label>
                 <select v-model="selectedLevel" @change="(e)=>{ if (selectedLevel) fetchGradesByLevel(selectedLevel); selectedGrade = null; selectedSubject = null; selectedTopic = null; loadMembers(1) }" class="w-full border rounded px-2 py-1">
@@ -151,13 +169,13 @@ if (institutionId.value) {
             <ErrorAlert v-else-if="errorRequests">Failed to load requests: {{ errorRequests.message || errorRequests }}</ErrorAlert>
             <div v-else>
               <ul class="mt-2 space-y-2">
-                <li v-for="r in requests" :key="r.id" class="flex items-center justify-between border p-2 rounded">
+                <li v-for="r in requests" :key="r.id" class="flex flex-col sm:flex-row items-start sm:items-center justify-between border p-2 rounded gap-2">
                   <div>
                     <div class="font-medium">{{ r.name }}</div>
                     <div class="text-sm text-gray-600">{{ r.email }} — {{ r.global_role }}</div>
                   </div>
                   <div>
-                    <button class="px-3 py-1 bg-green-600 text-white rounded" @click="accept(r.id)">Accept</button>
+                    <button class="px-3 py-1 bg-green-600 text-white rounded w-full sm:w-auto text-center" @click="accept(r.id)">Accept</button>
                   </div>
                 </li>
               </ul>
@@ -183,6 +201,7 @@ if (institutionId.value) {
             </div>
           </div>
         </div>
+      </div>
     </div>
   </div>
 </template>

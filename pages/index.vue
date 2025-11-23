@@ -580,7 +580,7 @@ const howItWorksSteps = computed(() => [
     description: 'Browse curated subjects and quizzes that fit your grade level and goals.',
     badge: 'bg-gradient-to-br from-indigo-500 to-sky-500',
     glow: 'bg-sky-400/60',
-    icon: 'i-heroicons-map-16-solid',
+    icon: 'i-heroicons-map-20-solid',
     link: { href: '/grades', label: 'Explore grades' },
   },
   {
@@ -589,7 +589,7 @@ const howItWorksSteps = computed(() => [
     description: 'Engage with adaptive questions, hints, and timers to build confidence.',
     badge: 'bg-gradient-to-br from-rose-500 to-fuchsia-500',
     glow: 'bg-rose-400/60',
-    icon: 'i-heroicons-academic-cap-16-solid',
+    icon: 'i-heroicons-academic-cap-20-solid',
     link: { href: '/quizzes', label: 'Find a quiz' },
   },
   {
@@ -598,7 +598,7 @@ const howItWorksSteps = computed(() => [
     description: 'See detailed explanations, strengths, and areas to retry instantly.',
     badge: 'bg-gradient-to-br from-emerald-500 to-lime-500',
     glow: 'bg-emerald-400/60',
-    icon: 'i-heroicons-chart-bar-16-solid',
+    icon: 'i-heroicons-chart-bar-20-solid',
     link: { href: '/quizee/dashboard', label: 'Track performance' },
   },
   {

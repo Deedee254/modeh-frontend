@@ -28,7 +28,9 @@
       <section v-for="tab in tabs" :key="tab.key" role="tabpanel"
         v-show="tab.key === active" :id="`panel-${tab.key}`" :aria-labelledby="`tab-${tab.key}`"
         class="p-4">
-        <component :is="tab.component" v-if="tab.component" @saved="onSaved" @error="onError" />
+        <ClientOnly>
+          <component :is="tab.component" v-if="tab.component" @saved="onSaved" @error="onError" />
+        </ClientOnly>
       </section>
     </div>
   </div>

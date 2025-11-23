@@ -254,7 +254,7 @@ function buildQuestionFromRow(row) {
   if (type === 'mcq') {
     if (Array.isArray(question.answers)) {
       const a = question.answers[0]
-      if (typeof a === 'number') question.correct = a
+      if (typeof a === 'number') question.correct = a - 1
       else if (typeof a === 'string' && question.options) {
         const idx = question.options.findIndex(o => String(o).trim() === String(a).trim())
         question.correct = idx >= 0 ? idx : -1
@@ -265,7 +265,7 @@ function buildQuestionFromRow(row) {
 
   if (type === 'multi' || type === 'fill_blank') {
     if (Array.isArray(question.answers)) {
-      question.corrects = question.answers.map(a => (typeof a === 'string' && /^\d+$/.test(a) ? Number(a) : a))
+      question.corrects = question.answers.map(a => (typeof a === 'number' ? a - 1 : (typeof a === 'string' && /^\d+$/.test(a) ? Number(a) - 1 : a)))
       delete question.answers
     }
   }

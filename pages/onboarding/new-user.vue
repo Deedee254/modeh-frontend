@@ -38,8 +38,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import useApi from '~/composables/useApi'
 const router = useRouter()
-const config = useRuntimeConfig()
 
 // Set default role to 'quizee'
 const role = ref('quizee')
@@ -62,15 +62,13 @@ async function submit() {
   }
   submitting.value = true
   try {
+    const api = useApi()
     const stepName = role.value === 'quiz-master' ? 'role_quiz-master' : 'role_quizee'
-    await $fetch(config.public.apiBase + '/api/onboarding/step', {
-      method: 'POST',
-      credentials: 'include',
-      body: {
-        step: stepName,
-        data: { role: role.value, password: password.value }
-      }
+    const resp = await api.postJson('/api/onboarding/step', {
+      step: stepName,
+      data: { role: role.value, password: password.value }
     })
+    if (!resp.ok) throw new Error('Failed to save role')
 
     message.value = 'Role saved. Continuing to onboarding.'
     // After role is set, go to the main onboarding page which will continue the steps

@@ -52,7 +52,8 @@ import { useAuthStore } from '~/stores/auth'
 const props = defineProps({
   isAuthed: { type: Boolean, default: false },
   userInitials: { type: String, default: 'U' },
-  profileLink: { type: String, default: '/' }
+  // Accept either a string or a route object for flexibility
+  profileLink: { type: [String, Object], default: '/' }
 })
 
 const emit = defineEmits(['logout'])

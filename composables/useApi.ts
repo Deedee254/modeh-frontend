@@ -52,7 +52,8 @@ export function useApi() {
     _ensureCsrfPromise = (async () => {
       // Use an AbortController to avoid hanging forever if the backend is unreachable.
       const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null
-      const timeoutMs = 5000
+      // Give the backend a bit more time for slow dev environments
+      const timeoutMs = 10000
       let timeoutId: any = null
       try {
         if (controller) {
@@ -82,10 +83,18 @@ export function useApi() {
           // server / SSR: mark as fetched so subsequent calls don't refetch repeatedly
           _csrfFetchedAt = Date.now()
         }
-      } catch (e) {
-        // Surface a clearer, catchable error for callers so they can show a friendly message
-        try { console.error('Failed to fetch CSRF cookie', e) } catch (err) {}
-        // Re-throw so callers (e.g. login) can catch and show an appropriate UI message.
+      } catch (e: any) {
+        // If the fetch was aborted (timeout), don't log the raw AbortError stack to the console
+        // — surface a friendlier, catchable error instead so callers can show an appropriate UI message.
+        try {
+          if (e && e.name === 'AbortError') {
+            // console.warn instead of console.error to reduce noise during dev
+            try { console.warn('CSRF fetch aborted (timeout).') } catch (_) {}
+          } else {
+            try { console.error('Failed to fetch CSRF cookie', e) } catch (err) {}
+          }
+        } catch (err) {}
+        // Re-throw a friendly error message for callers to handle.
         throw new Error('Unable to reach API to initialize CSRF token. Please check that the backend is running and reachable.');
       } finally {
         if (timeoutId) clearTimeout(timeoutId)

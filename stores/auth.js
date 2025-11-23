@@ -1,222 +1,132 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import useApi from '~/composables/useApi';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import useApi from '~/composables/useApi'
 import { useInstitutionsStore } from '~/stores/institutions'
 
-let notificationsModule = null;
-if (import.meta.client) {
-  import('~/stores/notifications').then(m => (notificationsModule = m));
+let notificationsModule = null
+if (typeof window !== 'undefined' && import.meta && import.meta.client) {
+  import('~/stores/notifications').then(m => (notificationsModule = m))
 }
-// Named references so we can remove listeners later and avoid anonymous handlers
-let _auth_storage_handler = null;
-let _auth_beforeunload = null;
+
+let _auth_storage_handler = null
+let _auth_beforeunload = null
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(null);
-  const role = ref(null);
-  const api = useApi();
+  const user = ref(null)
+  const role = ref(null)
+  const api = useApi()
 
   async function login(email, password, remember = false) {
-    const payload = { email, password, remember };
+    const payload = { email, password, remember }
     try {
-      const res = await api.postJson('/api/login', payload);
-
+      const res = await api.postJson('/api/login', payload)
       if (!res.ok) {
-        // Try to extract a helpful error message from the response body
-        let message = 'Login failed';
+        let message = 'Login failed'
         try {
-          const errBody = await res.json();
-          if (errBody) {
-            if (errBody.message) message = errBody.message;
-            else if (errBody.errors) {
-              const vals = Object.values(errBody.errors).flat();
-              if (vals.length) message = vals.join('; ');
-            } else if (typeof errBody === 'string') message = errBody;
-          }
+          const errBody = await res.json()
+          if (errBody && errBody.message) message = errBody.message
+          else if (errBody && errBody.errors) {
+            const vals = Object.values(errBody.errors).flat()
+            if (vals.length) message = vals.join('; ')
+          } else if (typeof errBody === 'string') message = errBody
         } catch (e) {
-          try {
-            const txt = await res.text();
-            if (txt) message = txt;
-          } catch (e) {}
+          try { const txt = await res.text(); if (txt) message = txt } catch (e) {}
         }
-        throw new Error(message);
+        throw new Error(message)
       }
-
-      const json = await res.json();
-      // backend returns the authenticated user directly from login; normalize
-      const returnedUser = json?.user || json?.data || json || null;
-      if (returnedUser) setUser(returnedUser);
-
-      // If we previously triggered a global auth redirect flag, clear it
-      try { if (import.meta.client) { window.__modeh_auth_redirected = false } } catch (e) {}
-
-      // After login, attempt to attach Echo listeners for realtime notifications
-      if (import.meta.client) {
-        try {
-          const notif = notificationsModule?.useNotificationsStore();
-          notif?.attachEchoListeners();
-        } catch (e) {
-          // ignore
-        }
-        // notify other tabs about login so they can refresh their auth state
-        try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })); } catch (e) {}
-        // If a post-login intent processor is provided via a client plugin, run it
-        try {
-          const nuxtApp = useNuxtApp()
-          if (nuxtApp?.$processPostLoginIntent) {
-            // fire-and-forget; plugin will handle errors
-            nuxtApp.$processPostLoginIntent().catch(() => {})
-          }
-        } catch (e) {
-          // ignore when running in contexts without useNuxtApp
-        }
+      const json = await res.json()
+      const returnedUser = json && (json.user || json.data || json)
+      if (returnedUser) setUser(returnedUser)
+      try { if (typeof window !== 'undefined') window.__modeh_auth_redirected = false } catch (e) {}
+      if (typeof window !== 'undefined' && import.meta && import.meta.client) {
+        try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) {}
+        try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })) } catch (e) {}
+        try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => {}) } catch (err) {} } } catch (e) {}
       }
-
-      return { data: json, ok: true };
+      return { data: json, ok: true }
     } catch (error) {
-      // rethrow so callers can handle
-      throw error;
+      throw error
     }
   }
 
   async function logout() {
-    // Always clear local state first for a responsive UI,
-    // then attempt to log out from the server.
-    clear();
-    if (import.meta.client) {
-      // notify other tabs about logout
-      try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })); } catch (e) {}
+    clear()
+    if (typeof window !== 'undefined' && import.meta && import.meta.client) {
+      try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) {}
     }
-    try {
-      await api.postJson('/api/logout', {});
-    } catch (error) {
-      // Silently ignore network errors on logout. The client-side state is already cleared.
-      // The server session will eventually expire.
-    }
+    try { await api.postJson('/api/logout', {}) } catch (error) {}
   }
 
   async function fetchUser() {
     try {
       const res = await api.get('/api/me')
-      if (!res.ok) throw new Error('Failed to fetch user');
-      setUser(await res.json());
-      // ensure realtime listeners attached after fetching user on page load
-      if (import.meta.client) {
-        try {
-          const notif = notificationsModule?.useNotificationsStore();
-          notif?.attachEchoListeners();
-        } catch (e) {}
-        // Process any post-login intent (e.g. subscribe intent saved before login)
-        try {
-          const nuxtApp = useNuxtApp();
-          if (nuxtApp?.$processPostLoginIntent) {
-            nuxtApp.$processPostLoginIntent().catch(() => {});
-          }
-        } catch (e) {}
+      if (!res.ok) throw new Error('Failed to fetch user')
+      setUser(await res.json())
+      if (typeof window !== 'undefined' && import.meta && import.meta.client) {
+        try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) {}
+        try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => {}) } catch (err) {} } } catch (e) {}
       }
     } catch (error) {
-      clear();
+      clear()
     }
   }
 
   function setUser(newUser) {
-    user.value = newUser;
-    role.value = newUser?.role || null;
-
-    // If the user payload includes institution info, set the active institution in the institutions store
+    user.value = newUser
+    role.value = newUser && newUser.role ? newUser.role : null
     try {
-      if (import.meta.client && newUser) {
+      if (typeof window !== 'undefined' && newUser) {
         const instStore = useInstitutionsStore()
         if (newUser.institutions && Array.isArray(newUser.institutions) && newUser.institutions.length) {
-          // Some API responses may include full institution objects on the user; prefer that
-          instStore.institution = newUser.institutions[0]
+          instStore.institution.value = newUser.institutions[0]
         } else if (newUser.institution_id) {
-          // otherwise, fetch the institution by id
           instStore.fetchInstitution(newUser.institution_id).catch(() => {})
         }
       }
-    } catch (e) {
-      // ignore errors setting the institutions store
-    }
-
-    // If running in the browser and the user profile is incomplete, route to the
-    // appropriate profile completion flow. We send social-registered/new users
-    // to `/onboarding` (used for social signups that need role selection), and
-    // non-social users to `/complete-profile` which supports skipping.
+    } catch (e) {}
     try {
-      if (import.meta.client && newUser && newUser.is_profile_completed === false) {
-        // Respect a client-side skip flag so the user can opt to go directly to the dashboard
-        const skipped = (() => { try { return localStorage.getItem('modeh:onboarding:skipped') === '1'; } catch (e) { return false; } })();
+      if (typeof window !== 'undefined' && newUser && newUser.is_profile_completed === false) {
+        const skipped = (() => { try { return localStorage.getItem('modeh:onboarding:skipped') === '1' } catch (e) { return false } })()
         if (!skipped) {
-          const router = useRouter();
-          // small timeout so other post-login navigation finishes first
+          const router = useRouter()
           setTimeout(() => {
             try {
-              const isSocial = Boolean(newUser.social_provider || newUser.social_id);
-              if (isSocial) {
-                // Social signups may need the onboarding role flow
-                router.push('/onboarding');
-              } else {
-                // Existing non-social accounts should go to the full complete-profile flow
-                router.push('/complete-profile');
-              }
-            } catch (e) { /* ignore navigation errors */ }
+              const isSocial = Boolean(newUser.social_provider || newUser.social_id)
+              if (isSocial) router.push('/onboarding')
+              else router.push('/complete-profile')
+            } catch (e) {}
           }, 50)
         }
       }
-    } catch (e) {
-      // ignore when useRouter not available
-    }
+    } catch (e) {}
   }
 
   function clear() {
-    user.value = null;
-    role.value = null;
+    user.value = null
+    role.value = null
   }
 
   // Cross-tab auth sync: listen for storage events to handle token changes or explicit auth events
-  if (import.meta.client) {
-    // Avoid registering multiple handlers if this module is imported/re-evaluated
+  if (typeof window !== 'undefined' && import.meta && import.meta.client) {
     if (!_auth_storage_handler) {
       _auth_storage_handler = (e) => {
         try {
-          // An explicit auth event was fired from another tab.
           if (e.key === 'modeh:auth:event' && e.newValue) {
-            const payload = JSON.parse(e.newValue);
-            if (payload?.type === 'logout') {
-              // Another tab logged out, so clear local auth state.
-              clear();
-            } else if (payload?.type === 'login') {
-              // Another tab logged in, so refresh the user from the server.
-              fetchUser().catch(() => {});
-            }
-            return; // Handled by explicit event, no need to check token key.
+            const payload = JSON.parse(e.newValue)
+            if (payload && payload.type === 'logout') clear()
+            else if (payload && payload.type === 'login') fetchUser().catch(() => {})
+            return
           }
-
-
-        } catch (err) {
-          // ignore malformed events
-        }
-      };
-
-      window.addEventListener('storage', _auth_storage_handler);
-
-      // Ensure we remove the handler on page unload to avoid lingering references in some environments.
+        } catch (err) {}
+      }
+      window.addEventListener('storage', _auth_storage_handler)
       _auth_beforeunload = () => {
-        try { window.removeEventListener('storage', _auth_storage_handler); } catch (e) {}
-        try { window.removeEventListener('beforeunload', _auth_beforeunload); } catch (e) {}
-      };
-      window.addEventListener('beforeunload', _auth_beforeunload);
+        try { window.removeEventListener('storage', _auth_storage_handler) } catch (e) {}
+        try { window.removeEventListener('beforeunload', _auth_beforeunload) } catch (e) {}
+      }
+      window.addEventListener('beforeunload', _auth_beforeunload)
     }
   }
 
-  return {
-    user,
-    role,
-    login,
-    logout,
-    fetchUser,
-    setUser,
-    clear,
-  };
-});
+  return { user, role, login, logout, fetchUser, setUser, clear }
+})

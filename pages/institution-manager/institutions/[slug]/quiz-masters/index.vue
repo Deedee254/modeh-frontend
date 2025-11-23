@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
 definePageMeta({ layout: 'institution' as any })
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useApi } from '~/composables/useApi'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 import ErrorAlert from '~/components/ui/ErrorAlert.vue'
 import MemberList from '~/components/institution/MemberList.vue'
+import PageHero from '~/components/institution/PageHero.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 const api = useApi()
 const route = useRoute();
-const institutionId = ref(route.query.institutionSlug || null);
+// Prefer route param slug (when using the nested route), fallback to query.institutionSlug
+const institutionId = ref(route.params.slug || route.query.institutionSlug || null);
 
 const members = ref([] as any[])
 const loading = ref(false)
@@ -44,24 +46,42 @@ async function loadMembers() {
   }
 }
 
+// initial load when we have a slug
 if (institutionId.value) {
   await Promise.all([loadMembers(), fetchLevels(), fetchGrades()])
 }
+
+// react to route changes (params or query) and reload
+watch(
+  () => route.params.slug || route.query.institutionSlug,
+  async (newVal, oldVal) => {
+    institutionId.value = newVal || null
+    if (institutionId.value) {
+      await Promise.all([loadMembers(), fetchLevels(), fetchGrades()])
+    }
+  }
+)
 
 const quizMasters = computed(() => (members.value || []).filter((m: any) => m.role === 'quiz-master'))
 </script>
 
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-semibold mb-4">Quiz Masters</h1>
+  <div class="min-h-screen bg-white dark:bg-slate-900">
+    <!-- Page Hero -->
+    <PageHero
+      title="Quiz Masters"
+      description="Manage and view quiz masters in your institution"
+      theme="purple"
+    />
 
-    <div v-if="!institutionId" class="p-4 bg-yellow-50 border rounded">
-      <p class="text-sm">No institution selected. Add ?institutionSlug=SLUG to the URL.</p>
-    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div v-if="!institutionId" class="p-4 bg-yellow-50 border rounded">
+        <p class="text-sm">No institution selected. Add ?institutionSlug=SLUG to the URL.</p>
+      </div>
 
-    <div v-else>
-      <div class="mt-2">
-        <div class="mb-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+      <div v-else>
+        <!-- Filters -->
+        <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-xs text-gray-600">Level</label>
             <select v-model="selectedLevel" @change="(e)=>{ if (selectedLevel) fetchGradesByLevel(selectedLevel); selectedGrade = null; selectedSubject = null; selectedTopic = null; loadMembers() }" class="w-full border rounded px-2 py-1">
@@ -91,6 +111,7 @@ const quizMasters = computed(() => (members.value || []).filter((m: any) => m.ro
             </select>
           </div>
         </div>
+
         <LoadingSpinner v-if="loading" />
         <ErrorAlert v-else-if="error">Failed to load members: {{ error.message || error }}</ErrorAlert>
         <div v-else>

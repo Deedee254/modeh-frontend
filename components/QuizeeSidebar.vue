@@ -1,6 +1,6 @@
 <template>
   <div>
-  <aside :class="[ui.sidebarCollapsed ? 'w-20' : 'w-64']" class="bg-white border-r h-screen sticky top-0 flex-col py-4 transition-all duration-300 hidden lg:flex">
+  <aside :class="[ui.sidebarCollapsed ? 'w-20' : 'w-64']" class="bg-white border-r h-full min-h-0 flex-col py-4 transition-all duration-300 hidden lg:flex">
     <div class="mb-6 flex items-center px-4" :class="[ui.sidebarCollapsed ? 'justify-center' : '']">
       <img src="/logo/modeh-logo.png" alt="Modeh" :class="[ui.sidebarCollapsed ? 'h-8' : 'h-10']" class="transition-all duration-300" />
     </div>

@@ -2,9 +2,11 @@
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
     <Topbar @toggle-sidebar="ui.toggleSidebar()">
       <template #actions>
-        <div class="flex items-center gap-3">
-          <NuxtLink :to="{ path: '/institution-manager/settings', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="text-sm">Profile</NuxtLink>
-        </div>
+        <ClientOnly>
+          <div class="flex items-center gap-3 hidden sm:flex">
+            <NuxtLink :to="{ path: '/institution-manager/settings', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="text-sm">Profile</NuxtLink>
+          </div>
+        </ClientOnly>
       </template>
     </Topbar>
 
@@ -18,7 +20,9 @@
       </main>
     </div>
     <!-- Mobile bottom navigation -->
-    <BottomNav />
+    <ClientOnly>
+      <BottomNav />
+    </ClientOnly>
   </div>
 </template>
 

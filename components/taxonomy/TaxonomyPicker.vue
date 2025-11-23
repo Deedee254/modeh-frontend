@@ -1,24 +1,24 @@
 <template>
-  <div class="rounded-xl border bg-white dark:border-slate-700 dark:bg-slate-800/50">
-    <div class="p-3">
-      <div class="flex items-center justify-between">
-        <div>
-          <h4 class="font-semibold text-sm">{{ title }}</h4>
+  <div class="rounded-xl border bg-white dark:border-slate-700 dark:bg-slate-800/50 w-full min-h-0">
+    <div class="p-2 sm:p-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="min-w-0">
+          <h4 class="font-semibold text-xs sm:text-sm">{{ title }}</h4>
           <div class="text-xs text-slate-500">{{ subtitle }}</div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-shrink-0">
           <slot name="actions"></slot>
         </div>
       </div>
     </div>
 
-    <div class="space-y-3 p-3">
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <UInput ref="searchInput" :model-value="query" @update:modelValue="v => emit('update:query', v)" placeholder="Search..." @input="onSearch" size="sm" icon="i-heroicons-magnifying-glass" class="flex-grow min-w-0" />
-            <UButton size="sm" variant="ghost" color="gray" @click="refresh" icon="i-heroicons-arrow-path" :loading="loading" class="w-full sm:w-auto" />
+    <div class="space-y-2 sm:space-y-3 p-2 sm:p-3">
+          <div class="flex flex-col gap-2">
+            <UInput ref="searchInput" :model-value="query" @update:modelValue="v => emit('update:query', v)" placeholder="Search..." @input="onSearch" size="sm" icon="i-heroicons-magnifying-glass" class="w-full text-xs sm:text-sm" />
+            <UButton size="sm" variant="ghost" color="gray" @click="refresh" icon="i-heroicons-arrow-path" :loading="loading" class="w-full text-xs sm:text-sm" />
           </div>
 
-  <div class="relative h-48 overflow-y-auto overflow-x-hidden rounded-md border bg-slate-50/50 p-1 dark:border-slate-700 dark:bg-slate-900/20">
+  <div class="relative min-h-48 h-48 overflow-y-auto overflow-x-hidden rounded-md border bg-slate-50/50 p-1 dark:border-slate-700 dark:bg-slate-900/20 w-full">
         <div v-show="loading" class="p-1">
           <div class="space-y-1 p-1">
             <UiSelectSkeleton v-for="n in 6" :key="n" />
@@ -28,16 +28,16 @@
           <ul class="divide-y divide-slate-200/50 dark:divide-slate-700/50">
             <li v-for="item in items" :key="item.id" class="min-w-0 flex cursor-pointer items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800" :class="[ props.compact ? 'py-1.5 px-2' : 'py-2 px-3', isSelected(item) ? 'bg-indigo-50 dark:bg-indigo-900/30' : '' ]" @click="select(item)">
               <div class="flex-1 min-w-0">
-                <div class="font-medium break-words whitespace-normal leading-tight text-slate-800 dark:text-slate-200" :class="[ props.compact ? 'text-xs' : 'text-xs sm:text-sm', isSelected(item) ? 'text-indigo-700 dark:text-indigo-300' : '' ]" :title="item.display_name || item.name">{{ item.display_name || item.name }}</div>
+                <div class="font-normal sm:font-medium break-words whitespace-normal leading-tight text-slate-800 dark:text-slate-200 text-xs sm:text-sm" :class="[ isSelected(item) ? 'text-indigo-700 dark:text-indigo-300' : '' ]" :title="item.display_name || item.name">{{ item.display_name || item.name }}</div>
               </div>
-              <UIcon v-if="isSelected(item)" name="i-heroicons-check-circle-20-solid" class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <UIcon v-if="isSelected(item)" name="i-heroicons-check-circle-20-solid" class="h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
             </li>
           </ul>
         </div>
         <div v-show="!loading && items.length === 0">
           <div class="flex h-full flex-col items-center justify-center text-center">
             <UIcon name="i-heroicons-circle-stack" class="h-10 w-10 text-slate-400" />
-            <h5 class="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">No Results Found</h5>
+            <h5 class="mt-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">No Results Found</h5>
             <p class="text-xs text-slate-500 dark:text-slate-400">Your search for "{{ query }}" did not return any results.</p>
           </div>
         </div>

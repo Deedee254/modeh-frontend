@@ -1,52 +1,108 @@
 <template>
-  <div class="p-6 max-w-2xl mx-auto">
-    <h1 class="text-2xl font-semibold mb-4">Create Institution / Branch</h1>
+  <PageHero
+    title="Create Institution"
+    description="Set up a new institution or branch organization"
+    :breadcrumbs="[
+      { text: 'Institution Manager', href: '/institution-manager/dashboard' },
+      { text: 'Institutions', href: '/institution-manager/institutions' },
+      { text: 'Create New', current: true }
+    ]"
+  >
+    <template #eyebrow>
+      Institution Setup
+    </template>
+  </PageHero>
 
-    <form @submit.prevent="submit" class="space-y-4 bg-white p-6 rounded shadow">
-      <div>
-        <label class="block text-sm font-medium text-slate-700">Name</label>
-        <input v-model="name" required class="mt-1 block w-full rounded border px-3 py-2" />
-        <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600">{{ fieldErrors.name }}</p>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+      <div class="p-6 sm:p-8 border-b border-gray-200 dark:border-slate-700">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Create Institution</h2>
       </div>
+      <div class="p-6 sm:p-8">
+        <form @submit.prevent="submit" class="space-y-6 max-w-2xl">
+          <div>
+            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Name *</label>
+            <input
+              v-model="name"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.name }}</p>
+          </div>
 
-      <div>
-        <label class="block text-sm font-medium text-slate-700">Email</label>
-        <input v-model="email" type="email" required class="mt-1 block w-full rounded border px-3 py-2" />
-        <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
+          <div>
+            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Email *</label>
+            <input
+              v-model="email"
+              type="email"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.email }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Slug (optional)</label>
+            <input
+              v-model="slug"
+              placeholder="short-slug-for-url"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p v-if="fieldErrors.slug" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.slug }}</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Lowercase letters, numbers, and hyphens (3-40 characters)</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Parent Institution (optional)</label>
+            <input
+              v-model="parent"
+              placeholder="parent-slug to create a branch"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave empty to create a top-level institution</p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200 dark:border-slate-700">
+            <NuxtLink
+              to="/institution-manager/institutions"
+              class="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors duration-200 text-center font-medium"
+            >
+              Cancel
+            </NuxtLink>
+            <button
+              type="submit"
+              :disabled="loading"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+            >
+              Create Institution
+            </button>
+          </div>
+
+          <div v-if="error" class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200">
+            {{ error }}
+          </div>
+        </form>
       </div>
+    </div>
 
-      <div>
-        <label class="block text-sm font-medium text-slate-700">Slug (optional)</label>
-        <input v-model="slug" placeholder="short-slug-for-url" class="mt-1 block w-full rounded border px-3 py-2" />
-        <p v-if="fieldErrors.slug" class="mt-1 text-sm text-red-600">{{ fieldErrors.slug }}</p>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-slate-700">Parent institution (slug, optional — create a branch)</label>
-        <input v-model="parent" placeholder="parent-slug (leave empty to create top-level institution)" class="mt-1 block w-full rounded border px-3 py-2" />
-      </div>
-
-      <div class="flex items-center justify-end">
-        <button :disabled="loading" type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Create</button>
-      </div>
-    </form>
-
-    <div v-if="error" class="mt-4 text-sm text-red-600">{{ error }}</div>
   </div>
 </template>
 
 <script setup>
+definePageMeta({ layout: 'institution' })
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
+import PageHero from '~/components/ui/PageHero.vue'
 
 const name = ref('')
 const email = ref('')
 const slug = ref('')
 const parent = ref('')
 const loading = ref(false)
-const error = ref(null)
+const error = ref<any>(null)
 const fieldErrors = ref({ name: '', email: '', slug: '' })
 
 // validation rules

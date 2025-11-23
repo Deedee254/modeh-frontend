@@ -15,7 +15,7 @@
         <template #actions>
           <NuxtLink
             to="/quizee/settings"
-            class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer inline-block"
+            class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer w-full sm:w-auto text-center"
           >
             Edit Profile
           </NuxtLink>
@@ -124,7 +124,16 @@ definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, 
 const auth = useAuthStore()
 const api = useApi()
 
-const attempts = ref([])
+interface Attempt {
+  id: string | number
+  quiz_id: string | number
+  created_at: string
+  score: number
+  points_earned: number
+  [key: string]: any
+}
+
+const attempts = ref<Attempt[]>([])
 const attemptsLoading = ref(false)
 
 onMounted(async () => {
@@ -156,7 +165,13 @@ interface User {
   }
 }
 
-const user = computed<User>(() => auth.user || {})
+// Since auth.user is a ref from the Pinia store, unwrap it to get the raw user object
+const user = computed<User>(() => {
+  const u: any = (auth as any).user
+  // If it's a ref with a .value property, unwrap it; otherwise use it directly
+  return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
+})
+
 const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url) || '/logo/avatar-placeholder.png')
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points

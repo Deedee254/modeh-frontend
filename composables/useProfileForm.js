@@ -161,6 +161,9 @@ export function useProfileForm() {
       // Update auth store
       if (mergedUser && mergedUser.id) {
         auth.setUser(mergedUser)
+        // Also refresh server-side computed user payload in background to ensure
+        // fields like `missing_profile_fields` and onboarding flags are up-to-date.
+        try { auth.fetchUser().catch(() => {}) } catch (e) { /* ignore */ }
       }
 
       alert.push({

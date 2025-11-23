@@ -28,7 +28,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-lg shadow p-6 border">
           <div class="text-sm text-slate-500">Member Since</div>
           <div class="text-2xl font-bold text-slate-900">{{ memberData.days_as_member }}</div>
@@ -57,7 +57,7 @@
 
       <div class="bg-white rounded-lg shadow border p-6">
         <h2 class="text-lg font-semibold mb-4">Member Information</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
           <div>
             <label class="text-sm text-gray-600">Email</label>
             <p class="text-lg font-medium">{{ memberData.email }}</p>

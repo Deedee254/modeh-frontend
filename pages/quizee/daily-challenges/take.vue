@@ -1,6 +1,75 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-4xl mx-auto px-4">
+    <!-- Error State -->
+    <div v-if="errorState.show" class="max-w-4xl mx-auto px-4 mb-8">
+      <div class="bg-red-50 border border-red-200 rounded-2xl p-6 shadow-lg">
+        <div class="flex items-start gap-4">
+          <svg class="h-6 w-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="flex-1">
+            <h3 class="text-lg font-medium text-red-900">Unable to Load Daily Challenge</h3>
+            <p class="mt-2 text-sm text-red-700">{{ errorState.message }}</p>
+            
+            <!-- Debug Info Badges -->
+            <div class="mt-4 flex justify-center gap-3 flex-wrap">
+              <div class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-xs text-blue-600 font-semibold">GRADE</p>
+                <p class="text-sm text-blue-900 font-bold">{{ userGrade || '❌ Not Set' }}</p>
+              </div>
+              <div class="px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <p class="text-xs text-purple-600 font-semibold">LEVEL</p>
+                <p class="text-sm text-purple-900 font-bold">{{ userLevel || '❌ Not Set' }}</p>
+              </div>
+            </div>
+            
+            <div v-if="errorState.type" class="mt-4 space-y-2 text-sm text-red-700">
+              <p><strong>Possible reasons:</strong></p>
+              <ul class="list-disc list-inside space-y-1">
+                <li v-if="errorState.type === 'profile_incomplete'">Your profile is incomplete. You need a grade and level assigned.</li>
+                <li v-else-if="errorState.type === 'no_questions'">No questions are available for your grade/level combination.</li>
+                <li v-else-if="errorState.type === 'already_completed'">You can only complete one daily challenge per day.</li>
+                <li v-else-if="errorState.type === 'server_error'">A server error occurred while loading the challenge.</li>
+              </ul>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <button 
+                @click="retryFetchChallenge"
+                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Try Again
+              </button>
+              <NuxtLink 
+                to="/quizee/profile"
+                class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+              >
+                Update Profile
+              </NuxtLink>
+              <NuxtLink 
+                to="/quizee/daily-challenges"
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Back to Daily Challenges
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-else-if="isLoading" class="max-w-4xl mx-auto px-4">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
+        <svg class="animate-spin h-12 w-12 text-indigo-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-gray-600 font-medium">Loading today's daily challenge...</p>
+      </div>
+    </div>
+
+    <!-- Content State -->
+    <div v-else class="max-w-4xl mx-auto px-4">
       <!-- Header -->
       <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -146,6 +215,21 @@ const challenge = ref(null)
 const cache_id = ref(null)
 const questions = ref([])
 const questionTimes = ref({})
+const isLoading = ref(true)
+const errorState = ref({
+  show: false,
+  message: '',
+  type: null // 'profile_incomplete', 'no_questions', 'already_completed', 'server_error'
+})
+
+// Get user's profile info from auth store (for error display)
+const userGrade = computed(() => {
+  return auth.user?.quizeeProfile?.grade?.name || auth.user?.grade?.name || null
+})
+
+const userLevel = computed(() => {
+  return auth.user?.quizeeProfile?.level?.name || auth.user?.level?.name || null
+})
 // reuse shared answers composable so daily-challenge answers are same shape as quizzes/battles
 // Pass a computed wrapper around the local `questions` ref so the composable reads
 // the actual questions when initializeAnswers() is called later (avoids initializing
@@ -315,44 +399,90 @@ const submitChallenge = async () => {
 
 // Fetch data
 const fetchChallengeData = async () => {
+  isLoading.value = true
+  errorState.value = { show: false, message: '', type: null }
+  
   try {
-    // Fetch today's challenge
     const res = await api.get('/api/daily-challenges/today')
     if (api.handleAuthStatus(res)) return
+    
     if (!res.ok) {
-      await router.push('/quizee/daily-challenges')
+      const errorData = await res.json().catch(() => ({}))
+      const statusCode = res.status
+      
+      if (statusCode === 400) {
+        errorState.value = {
+          show: true,
+          message: errorData.error || 'Your profile is incomplete. You need a grade and level assigned.',
+          type: 'profile_incomplete'
+        }
+      } else if (statusCode === 404) {
+        errorState.value = {
+          show: true,
+          message: errorData.error || 'No questions available for your grade/level combination.',
+          type: 'no_questions'
+        }
+      } else if (statusCode === 409) {
+        errorState.value = {
+          show: true,
+          message: 'You have already completed today\'s daily challenge.',
+          type: 'already_completed'
+        }
+      } else {
+        errorState.value = {
+          show: true,
+          message: errorData.error || `Error loading challenge (${statusCode})`,
+          type: 'server_error'
+        }
+      }
+      isLoading.value = false
       return
     }
 
     const challengeData = await res.json()
     if (!challengeData || !challengeData.challenge) {
-      await router.push('/quizee/daily-challenges')
+      errorState.value = {
+        show: true,
+        message: 'Invalid challenge data received from server.',
+        type: 'server_error'
+      }
+      isLoading.value = false
       return
     }
 
+    if (challengeData.completion) {
+      errorState.value = {
+        show: true,
+        message: 'You have already completed today\'s daily challenge.',
+        type: 'already_completed'
+      }
+      isLoading.value = false
+      return
+    }
+
+    // Success
     challenge.value = challengeData.challenge
     cache_id.value = challengeData.cache_id
     questions.value = challengeData.questions || []
-
-    // If already completed, redirect
-    if (challengeData.completion) {
-      await router.push('/quizee/daily-challenges')
-      return
-    }
-
-    // initialize answers structure to match questions
     initializeAnswers()
-
-    // record client-side started_at for timing/persistence purposes
     startedAt.value = new Date().toISOString()
-    // Attempt to restore any saved progress (including per-question remaining)
     try { restoreProgress() } catch (e) {}
-    // If restore didn't start a per-question timer, start normally
     if (typeof questionRemaining.value !== 'number') startTimer()
+    isLoading.value = false
   } catch (error) {
     console.error('Failed to fetch challenge data:', error)
-    await router.push('/quizee/daily-challenges')
+    errorState.value = {
+      show: true,
+      message: error?.message || 'An unexpected error occurred while loading the challenge.',
+      type: 'server_error'
+    }
+    isLoading.value = false
   }
+}
+
+// Retry function
+const retryFetchChallenge = async () => {
+  await fetchChallengeData()
 }
 
 // Lifecycle

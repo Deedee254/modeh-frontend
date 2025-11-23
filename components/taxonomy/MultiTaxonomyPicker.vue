@@ -23,11 +23,11 @@
       <div class="relative h-48 overflow-y-auto overflow-x-hidden rounded-md border bg-slate-50/50 p-1">
         <div v-if="loadingItems" class="p-3 text-sm text-slate-500">Loading subjects…</div>
         <ul v-else class="divide-y divide-slate-200/50">
-          <li v-for="item in items" :key="item.id" class="flex items-center justify-between py-2 px-3 cursor-pointer hover:bg-slate-100" @click="onPick(item)">
+          <li v-for="item in items" :key="item.id" class="flex items-center justify-between py-2 px-3 cursor-pointer hover:bg-slate-100 gap-2" @click="onPick(item)">
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-slate-800 truncate">{{ item.name }}</div>
+              <div class="font-normal sm:font-medium text-slate-800 break-words whitespace-normal leading-tight text-xs sm:text-sm">{{ item.name }}</div>
             </div>
-            <svg v-if="isSelected(item)" class="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clip-rule="evenodd"/></svg>
+            <svg v-if="isSelected(item)" class="h-5 w-5 text-indigo-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clip-rule="evenodd"/></svg>
           </li>
         </ul>
       </div>
@@ -35,9 +35,9 @@
 
     <!-- Selected chips -->
     <div class="mt-2 flex flex-wrap gap-2">
-      <span v-for="s in selectedItems" :key="s.id" class="inline-flex items-center gap-2 px-2 py-1 rounded bg-gray-100 text-sm">
-        <span>{{ s.name }}</span>
-        <button type="button" class="text-xs text-gray-600" @click="remove(s.id)">×</button>
+      <span v-for="s in selectedItems" :key="s.id" class="inline-flex items-center gap-2 px-2 py-1 rounded bg-gray-100 text-xs sm:text-sm">
+        <span class="break-words whitespace-normal leading-tight">{{ s.name }}</span>
+        <button type="button" class="text-xs text-gray-600 hover:text-gray-900 flex-shrink-0" @click="remove(s.id)">×</button>
       </span>
     </div>
   </div>

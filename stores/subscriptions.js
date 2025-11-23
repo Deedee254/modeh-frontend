@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useApi } from '~/composables/useApi'
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
   const packages = ref([])

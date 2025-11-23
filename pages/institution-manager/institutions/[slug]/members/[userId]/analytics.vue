@@ -5,6 +5,7 @@ import { ref, onMounted } from 'vue'
 import { useApi } from '~/composables/useApi'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 import ErrorAlert from '~/components/ui/ErrorAlert.vue'
+import PageHero from '~/components/ui/PageHero.vue'
 
 const route = useRoute()
 const api = useApi()
@@ -12,9 +13,9 @@ const api = useApi()
 const institutionSlug = route.params.slug as string
 const userId = route.params.userId as string
 
-const memberData = ref(null)
+const memberData = ref<any>(null)
 const loading = ref(false)
-const error = ref(null)
+const error = ref<any>(null)
 
 async function loadMemberAnalytics() {
   loading.value = true
@@ -37,26 +38,39 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="mb-6">
+  <PageHero
+    title="Member Analytics"
+    description="Detailed performance and activity insights for this member"
+    :breadcrumbs="[
+      { text: 'Institution Manager', href: '/institution-manager/dashboard' },
+      { text: 'Institutions', href: '/institution-manager/institutions' },
+      { text: 'Members', href: `/institution-manager/institutions/${institutionSlug}/members` },
+      { text: 'Analytics', current: true }
+    ]"
+  >
+    <template #eyebrow>
+      Member Insights
+    </template>
+    <template #actions>
       <NuxtLink
         :to="`/institution-manager/institutions/${institutionSlug}/members`"
-        class="text-indigo-600 hover:text-indigo-800 text-sm"
+        class="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 transition-colors"
       >
         ← Back to Members
       </NuxtLink>
-    </div>
+    </template>
+  </PageHero>
 
-    <h1 class="text-2xl font-semibold mb-6">Member Analytics</h1>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <LoadingSpinner v-if="loading" />
     <ErrorAlert v-else-if="error" :error="error" />
 
-    <div v-else-if="memberData" class="space-y-6">
+    <div v-else-if="memberData" class="space-y-8">
       <!-- Member Info Card -->
-      <div class="bg-white rounded-lg shadow border p-6">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         <h2 class="text-lg font-semibold mb-4">Member Information</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
           <div>
             <div class="text-sm text-gray-500">Name</div>
             <div class="text-lg font-medium">{{ memberData.name }}</div>
@@ -93,9 +107,9 @@ onMounted(() => {
       </div>
 
       <!-- Activity Stats -->
-      <div class="bg-white rounded-lg shadow border p-6">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         <h2 class="text-lg font-semibold mb-4">Activity Statistics</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div class="text-center p-4 bg-blue-50 rounded-lg">
             <div class="text-3xl font-bold text-blue-600">{{ memberData.activity?.total_attempts || 0 }}</div>
             <div class="text-sm text-blue-800">Total Quiz Attempts</div>
@@ -114,7 +128,7 @@ onMounted(() => {
       </div>
 
       <!-- Performance Insights -->
-      <div class="bg-white rounded-lg shadow border p-6">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         <h2 class="text-lg font-semibold mb-4">Performance Insights</h2>
         <div v-if="memberData.activity?.total_attempts === 0" class="text-gray-500 text-center py-8">
           No quiz attempts recorded yet.
