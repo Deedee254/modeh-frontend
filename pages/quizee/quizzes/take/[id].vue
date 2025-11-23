@@ -4,63 +4,40 @@
       <div class="bg-white md:rounded-lg md:shadow-sm md:border pb-24 md:pb-0">
         <div class="p-4 md:p-6 border-b">
           <div class="flex items-center justify-between mb-4">
-            <div>
+            <!-- Left: Title and Progress -->
+            <div class="flex-1">
               <div class="text-lg md:text-xl font-semibold text-gray-900">{{ Q.title || 'Loading...' }}</div>
-              <div class="text-sm text-gray-600">{{ Q.description }}</div>
-
-              <!-- Quiz rules badges -->
-              <div class="mt-2 flex flex-wrap gap-2 text-sm">
-                <div v-if="Q.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded">🔁 {{ Q.attempts_allowed === 'unlimited' ? 'Unlimited attempts' : Q.attempts_allowed + ' attempts' }}</div>
-                <div v-if="Q.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded">🔀 Questions shuffled</div>
-                <div v-if="Q.shuffle_answers" class="px-2 py-1 bg-gray-100 rounded">🔀 Answers shuffled</div>
-                <div v-if="Q.access && Q.access !== 'free'" class="px-2 py-1 bg-amber-50 text-amber-700 rounded">🔒 Paywalled</div>
+              <!-- Progress number and bar -->
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-xs font-medium text-gray-600">Q{{ currentQuestion + 1 }}/{{ Q.questions.length }}</span>
+                <div class="flex-1 max-w-xs bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-indigo-600 h-full transition-all" :style="{ width: `${progressPercent}%` }"></div>
+                </div>
               </div>
             </div>
 
-            <!-- Accessible announcements -->
-            <div class="sr-only" aria-live="polite">{{ lastAnnouncement }}</div>
-            <div class="flex items-center gap-4" v-if="Q.questions.length > 0">
-              <!-- Quiz Timer (only show if quiz has overall time limit) -->
-              <div v-if="Q.timer_seconds" class="flex flex-col items-end">
-                <div class="text-sm text-gray-500">Total Time</div>
-                <div class="text-lg font-mono font-bold" :class="{
-                  'text-red-500': timeLeft < 60,
-                  'text-orange-500': timeLeft < 180,
-                  'text-indigo-600': timeLeft >= 180
-                }">
-                  {{ displayTime }}
-                </div>
-              </div>
-
-              <!-- Question Timer (always show, as primary way to track progress per question) -->
-              <div class="flex flex-col items-end" :class="Q.timer_seconds ? 'border-l pl-4' : ''">
-                <div class="text-sm text-gray-500">Question Time</div>
-                <div class="text-lg font-mono font-bold" :class="qTimerColorClass">
-                  {{ formatTime(Math.ceil(questionRemaining)) }}
-                </div>
-              </div>
-
-              <!-- Time per Remaining (when quiz timer but no per-question timer) -->
-              <div v-if="Q.timer_seconds && !(Q.use_per_question_timer || Q.per_question_seconds)" class="flex flex-col items-end border-l pl-4">
-                <div class="text-sm text-gray-500">Remaining</div>
-                <div class="text-sm font-mono font-medium text-gray-600">
-                  ~{{ formatTime(Math.floor(timeLeft / Math.max(1, Q.questions.length - currentQuestion))) }}
-                </div>
+            <!-- Right: Timer Circle -->
+            <div class="flex-shrink-0 ml-4">
+              <div class="relative">
+                <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" class="text-gray-200" fill="none" />
+                  <circle cx="20" cy="20" r="18" stroke-width="3" stroke-linecap="round" fill="none" :stroke-dasharray="timerCircumference" :stroke-dashoffset="timerDashOffset" :class="qTimerColorClass.replace('text-', 'stroke-')" />
+                </svg>
+                <div class="absolute inset-0 grid place-items-center text-xs font-mono font-semibold" :class="qTimerColorClass">{{ formatTime(Math.ceil(questionRemaining)) }}</div>
               </div>
             </div>
           </div>
 
-          <!-- Timer progress (timed quizzes) -->
-          <div v-if="Q.timer_seconds" class="w-full mb-3">
-            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden" role="progressbar" :aria-valuenow="timeLeft" :aria-valuemax="Q.timer_seconds" :aria-valuetext="`Time remaining ${displayTime}`">
-              <div :class="timerColorClass" class="h-2 rounded-full transition-all duration-500" :style="{ width: `${timerPercent}%` }"></div>
-            </div>
+          <!-- Quiz rules badges -->
+          <div class="flex flex-wrap gap-2 text-sm mb-4">
+            <div v-if="Q.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded">🔁 {{ Q.attempts_allowed === 'unlimited' ? 'Unlimited attempts' : Q.attempts_allowed + ' attempts' }}</div>
+            <div v-if="Q.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded">🔀 Questions shuffled</div>
+            <div v-if="Q.shuffle_answers" class="px-2 py-1 bg-gray-100 rounded">🔀 Answers shuffled</div>
+            <div v-if="Q.access && Q.access !== 'free'" class="px-2 py-1 bg-amber-50 text-amber-700 rounded">🔒 Paywalled</div>
           </div>
 
-          <!-- Progress bar (questions answered) -->
-          <div v-if="!loading && Q.questions.length > 0" class="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${progressPercent}%` }"></div>
-          </div>
+          <!-- Accessible announcements -->
+          <div class="sr-only" aria-live="polite">{{ lastAnnouncement }}</div>
 
           <!-- Persistent Countdown Alert -->
           <transition name="slide-down">
@@ -270,6 +247,16 @@ const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, 
 const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, resetTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
 const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
 import { normalizeAnswer, formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
+
+// Timer circle SVG properties
+const timerCircleRadius = 18
+const timerCircumference = computed(() => 2 * Math.PI * timerCircleRadius)
+const timerDashOffset = computed(() => {
+  const remaining = Math.max(0, Math.ceil(questionRemaining.value || 20))
+  const limit = timePerQuestion.value || 20
+  const frac = limit ? (remaining / limit) : 0
+  return String(timerCircumference.value * (1 - Math.max(0, Math.min(1, frac))))
+})
 
 // Persistent countdown alert state (shows real-time countdown instead of discrete alerts)
 const countdownAlert = ref({

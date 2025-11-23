@@ -89,7 +89,7 @@
     <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl h-full min-h-0">
       <div class="flex flex-col h-full min-h-0 bg-white text-foreground">
         <!-- Header (mobile list) -->
-  <div class="p-4 border-b border-border bg-white text-foreground sticky top-0 z-50 w-full">
+  <div class="p-4 border-b border-border bg-white text-foreground sticky top-0 z-10 w-full">
           <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-foreground h-9 w-9 rounded-full hover:bg-muted text-muted-foreground">
@@ -145,43 +145,42 @@
     </div>
 
     <!-- Main Chat Area -->
-  <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6">
-    <div class="flex flex-col h-full bg-[#efeae2]">
-        <!-- Chat Header -->
-          <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white border-b border-border md:static md:z-auto">
-          <button 
-            v-if="isMobile && showChatWindowOnMobile" 
-            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"
-            @click="showChatWindowOnMobile = false"
-            aria-label="Back to chats"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left h-5 w-5">
-              <path d="m12 19-7-7 7-7"></path>
-              <path d="M19 12H5"></path>
-            </svg>
-          </button>
-          <div class="relative" v-if="activeConversation">
-            <span class="relative flex shrink-0 overflow-hidden rounded-full h-10 w-10">
-              <span class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
-                {{ activeConversation?.name ? activeConversation.name[0] : '' }}
-              </span>
-            </span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h2 class="font-semibold text-foreground truncate">{{ activeConversation?.name || 'Select a conversation' }}</h2>
-            <p class="text-xs text-muted-foreground">{{ activeConversation?.status || (activeConversation?.type === 'group' ? '' : '') }}</p>
-          </div>
-          <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-9 w-9">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-vertical h-5 w-5">
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="12" cy="5" r="1"></circle>
-              <circle cx="12" cy="19" r="1"></circle>
-            </svg>
-          </button>
-        </div>
+  <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6 bg-[#efeae2]">
+    <!-- Chat Header - Sticky -->
+    <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white border-b border-border">
+      <button 
+        v-if="isMobile && showChatWindowOnMobile" 
+        class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"
+        @click="showChatWindowOnMobile = false"
+        aria-label="Back to chats"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left h-5 w-5">
+          <path d="m12 19-7-7 7-7"></path>
+          <path d="M19 12H5"></path>
+        </svg>
+      </button>
+      <div class="relative" v-if="activeConversation">
+        <span class="relative flex shrink-0 overflow-hidden rounded-full h-10 w-10">
+          <span class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
+            {{ activeConversation?.name ? activeConversation.name[0] : '' }}
+          </span>
+        </span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h2 class="font-semibold text-foreground truncate">{{ activeConversation?.name || 'Select a conversation' }}</h2>
+        <p class="text-xs text-muted-foreground">{{ activeConversation?.status || (activeConversation?.type === 'group' ? '' : '') }}</p>
+      </div>
+      <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-9 w-9">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-vertical h-5 w-5">
+          <circle cx="12" cy="12" r="1"></circle>
+          <circle cx="12" cy="5" r="1"></circle>
+          <circle cx="12" cy="19" r="1"></circle>
+        </svg>
+      </button>
+    </div>
 
-  <!-- Messages -->
-  <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4" style="padding-bottom: 90px;">
+    <!-- Messages Container -->
+    <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4" style="padding-bottom: 90px;">
           <div v-for="message in chatMessages" :key="message.id" class="flex w-full" :class="String(message.sender_id) === String(userId) ? 'justify-end' : 'justify-start'">
             <div :class="String(message.sender_id) === String(userId) ? 'chat-bubble sent' : 'chat-bubble received'" class="rounded-lg px-4 py-2">
               <!-- attachments (if any) -->
@@ -226,7 +225,7 @@
         </div>
 
         <!-- Input Area -->
-  <div class="p-3 bg-white/5 border-t border-border sticky bottom-0 z-20">
+        <div class="p-3 bg-white/5 border-t border-border sticky bottom-0 z-20">
           <div class="flex items-end gap-2" style="margin-bottom:8px">
             <input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.txt" class="hidden" ref="fileInput" @change="onFileChange">
             <button 
@@ -270,7 +269,6 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
   <NewChatModal
     :show="showCreate"

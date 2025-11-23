@@ -4,7 +4,7 @@ import { useUserRole } from './useUserRole'
 import { useInstitutionsStore } from '~/stores/institutions'
 
 export function useBottomNavMenus() {
-  const { isQuizMaster, isQuizee } = useUserRole()
+  const { isQuizMaster, isQuizee, isInstitutionManager } = useUserRole()
   const instStoreRaw = useInstitutionsStore()
   const instStore: InstitutionStore = {
     activeInstitutionSlug: instStoreRaw.activeInstitutionSlug ?? undefined,
@@ -48,10 +48,8 @@ function resolveInstPath(path: string): string {
           { id: 'topics', label: 'Topics', icon: 'heroicons:book-open', to: '/topics' },
           { id: 'quiz-masters', label: 'Quiz Masters', icon: 'heroicons:user-group', to: '/quizee/quiz-masters' }
         ],
-        settings: [
-          { id: 'profile', label: 'Profile', icon: 'heroicons:user', to: '/profile' },
-          { id: 'preferences', label: 'Preferences', icon: 'heroicons:cog-6-tooth', to: '/preferences' },
-          { id: 'help', label: 'Help', icon: 'heroicons:question-mark-circle', to: '/help' }
+        rightMenu: [
+          { id: 'points', label: 'Points', icon: 'heroicons:star', to: '/quizee/points' }
         ]
       },
       quizMaster: {
@@ -62,23 +60,20 @@ function resolveInstPath(path: string): string {
           { id: 'topics', label: 'Topics', icon: 'heroicons:book-open', to: '/quiz-master/topics' },
           { id: 'analytics', label: 'Analytics', icon: 'heroicons:presentation-chart-bar', to: '/quiz-master/analytics' }
         ],
-        settings: [
-          { id: 'profile', label: 'Profile', icon: 'heroicons:user', to: '/profile' },
-          { id: 'preferences', label: 'Preferences', icon: 'heroicons:cog-6-tooth', to: '/preferences' },
-          { id: 'help', label: 'Help', icon: 'heroicons:question-mark-circle', to: '/help' }
+        rightMenu: [
+          { id: 'wallet', label: 'Wallet', icon: 'heroicons:wallet', to: '/quiz-master/wallet' }
         ]
       },
       institutionManager: {
         explore: [
-          { id: 'analytics', label: 'Dashboard', icon: 'heroicons:chart-pie', to: resolveInstPath('/institution-manager/institutions/[slug]/analytics') },
+          { id: 'dashboard', label: 'Dashboard', icon: 'heroicons:presentation-chart-bar', to: resolveInstPath('/institution-manager/institutions/[slug]/analytics') },
+          { id: 'institutions', label: 'Institutions', icon: 'heroicons:building-office', to: '/institution-manager/institutions' },
+          { id: 'branches', label: 'Branches', icon: 'heroicons:map-pin', to: resolveInstPath('/institution-manager/institutions/[slug]/branches') },
           { id: 'members', label: 'Members', icon: 'heroicons:user-group', to: resolveInstPath('/institution-manager/institutions/[slug]/members') },
-          { id: 'quiz-masters', label: 'Quiz Masters', icon: 'heroicons:user', to: '/institution-manager/quiz-masters' },
           { id: 'subscriptions', label: 'Subscriptions', icon: 'heroicons:credit-card', to: resolveInstPath('/institution-manager/institutions/[slug]/subscriptions') }
         ],
-        settings: [
-          { id: 'institution-settings', label: 'Institution Settings', icon: 'heroicons:cog-6-tooth', to: resolveInstPath('/institution-manager/institutions/[slug]/settings') },
-          { id: 'profile', label: 'Profile', icon: 'heroicons:user', to: '/profile' },
-          { id: 'help', label: 'Help', icon: 'heroicons:question-mark-circle', to: '/help' }
+        rightMenu: [
+          { id: 'explore', label: 'Explore', icon: 'heroicons:magnifying-glass', to: '/institution-manager/institutions/new' }
         ]
       }
     }
@@ -90,6 +85,7 @@ function resolveInstPath(path: string): string {
    * Get the appropriate menu items for the current user role
    */
   const currentRoleMenus = computed(() => {
+    if (isInstitutionManager.value) return menuItems.value.institutionManager
     if (isQuizMaster.value) return menuItems.value.quizMaster
     if (isQuizee.value) return menuItems.value.quizee
     

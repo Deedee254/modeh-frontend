@@ -7,8 +7,9 @@ import { useAuthStore } from '~/stores/auth'
  * @returns {object}
  * - `roles`: `ref<string[]>` - reactive list of user roles
  * - `isQuizMaster`: `ref<boolean>` - true if user has `quiz-master` role
- * - `isquizee`: `ref<boolean>` - true if user has `quizee` role
- * - `preferredRole`: `ref<string>` - either `quiz-master` or `quizee` based on roles
+ * - `isQuizee`: `ref<boolean>` - true if user has `quizee` role
+ * - `isInstitutionManager`: `ref<boolean>` - true if user has `institution-manager` role
+ * - `preferredRole`: `ref<string>` - either `quiz-master`, `quizee`, or `institution-manager` based on roles
  */
 export function useUserRole() {
   const auth = useAuthStore()
@@ -30,22 +31,23 @@ export function useUserRole() {
     return []
   })
 
-  const isquizee = computed(() => roles.value.includes('quizee'))
+  const isQuizee = computed(() => roles.value.includes('quizee'))
   const isQuizMaster = computed(() => roles.value.includes('quiz-master'))
+  const isInstitutionManager = computed(() => roles.value.includes('institution-manager'))
 
   // Determine a single preferred role for UI purposes
   const preferredRole = computed(() => {
-    // If user is both, let them choose, but for now, default to quizee
-    if (isquizee.value && isQuizMaster.value) return 'quizee'
-    if (isquizee.value && !isQuizMaster.value) return 'quizee'
-    if (isQuizMaster.value && !isquizee.value) return 'quiz-master'
+    // Priority: institution-manager > quiz-master > quizee
+    if (isInstitutionManager.value) return 'institution-manager'
+    if (isQuizMaster.value) return 'quiz-master'
+    if (isQuizee.value) return 'quizee'
     // Fallback for no specific role
     return 'quizee'
   })
 
   // Provide a backwards-compatible alias `isQuizee` for consumers that
   // historically referenced that spelling (avoid runtime `.value` errors).
-  return { roles, isQuizMaster, isquizee, isQuizee: isquizee, preferredRole }
+  return { roles, isQuizMaster, isQuizee, isInstitutionManager, preferredRole }
 }
 
 // Convenience alias for the composable itself (rarely needed but harmless).

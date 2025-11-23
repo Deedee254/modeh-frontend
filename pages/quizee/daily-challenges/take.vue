@@ -73,24 +73,28 @@
       <!-- Top bar: sticky -->
       <header class="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div class="mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <PlayerCard :player="auth.user" role="Today's Challenge" :answered="Object.keys(answers).length" class="h-10" />
+          <!-- Left: Title and Progress -->
+          <div class="flex items-center gap-4 flex-1">
             <div class="min-w-0">
               <h1 class="text-lg font-semibold truncate">{{ challenge?.title || 'Daily Challenge' }}</h1>
-              <div class="text-xs text-gray-500">Question {{ currentQuestionIndex + 1 }} / {{ questions.length }}</div>
+              <!-- Progress number and bar -->
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-xs font-medium text-gray-600">Q{{ currentQuestionIndex + 1 }}/{{ questions.length }}</span>
+                <div class="flex-1 max-w-xs bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-indigo-600 h-full transition-all" :style="{ width: `${progress}%` }"></div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="text-right">
-            <!-- Circular per-question timer -->
-            <div class="flex items-center justify-end space-x-3">
-              <div class="w-12 h-12 relative">
-                <svg :class="['w-12 h-12 transform -rotate-90', { 'low-time': lowTime }]" viewBox="0 0 40 40">
-                  <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" class="text-gray-200" fill="none" />
-                  <circle class="timer-ring" cx="20" cy="20" r="18" stroke-width="3" stroke-linecap="round" fill="none" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset" />
-                </svg>
-                <div class="absolute inset-0 grid place-items-center text-xs font-mono font-semibold text-indigo-700">{{ perQuestionSeconds }}</div>
-              </div>
-              <div class="text-xs text-gray-500">per question</div>
+
+          <!-- Right: Timer Circle -->
+          <div class="flex-shrink-0">
+            <div class="relative">
+              <svg :class="['w-12 h-12 transform -rotate-90', { 'low-time': lowTime }]" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" class="text-gray-200" fill="none" />
+                <circle class="timer-ring" cx="20" cy="20" r="18" stroke-width="3" stroke-linecap="round" fill="none" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset" />
+              </svg>
+              <div class="absolute inset-0 grid place-items-center text-xs font-mono font-semibold text-indigo-700">{{ perQuestionSeconds }}</div>
             </div>
           </div>
         </div>

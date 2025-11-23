@@ -30,6 +30,8 @@
             <BottomNavDropdown
               ref="exploreDropdown"
               button-label="Explore"
+              icon="heroicons:compass"
+              dropdown-align="left"
               @open="closeOtherMenus('explore')"
             >
               <BottomNavMenuItem
@@ -65,20 +67,25 @@
           <button
             @click="handleCenterAction"
             aria-label="Create new"
-            class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white shadow-[0_20px_45px_-20px] shadow-indigo-600/80 transition hover:scale-105 active:scale-95 flex-shrink-0"
+            class="group relative flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
           >
-            <Icon name="heroicons:plus" class="h-6 w-6" />
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-sky-500 text-white transition group-hover:from-indigo-600 group-hover:to-sky-600 group-hover:shadow-md dark:group-hover:shadow-indigo-500/30 shadow-sm">
+              <Icon name="heroicons:plus" class="h-5 w-5" />
+            </div>
+            Create
           </button>
 
-          <!-- Right: Settings Menu -->
+          <!-- Right: Role-Specific Menu (Points/Wallet/Explore) -->
           <div class="flex-1 flex justify-end">
             <BottomNavDropdown
-              ref="settingsDropdown"
-              button-label="Settings"
-              @open="closeOtherMenus('settings')"
+              ref="rightMenuDropdown"
+              :button-label="rightMenuLabel"
+              :icon="rightMenuIcon"
+              dropdown-align="right"
+              @open="closeOtherMenus('rightMenu')"
             >
               <BottomNavMenuItem
-                v-for="item in currentRoleMenus.settings"
+                v-for="item in currentRoleMenus.rightMenu"
                 :key="item.id"
                 :label="item.label"
                 :icon="item.icon"
@@ -115,15 +122,14 @@
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBottomNavMenus } from '~/composables/useBottomNavMenus'
+import { useUserRole } from '~/composables/useUserRole'
 import { useAuthStore } from '~/stores/auth'
-import { useNotificationsStore } from '~/stores/notifications'
 import { useUiStore } from '~/stores/ui'
 import BottomNavDropdown from './BottomNavDropdown.vue'
 import BottomNavMenuItem from './BottomNavMenuItem.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
-const notif = useNotificationsStore()
 const ui = useUiStore()
 const { currentRoleMenus } = useBottomNavMenus()
 
@@ -131,46 +137,72 @@ const width = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
 const isMobile = computed(() => width.value < 768)
 
 const exploreDropdown = ref(null)
-const settingsDropdown = ref(null)
+const rightMenuDropdown = ref(null)
 
-const unread = computed(() => notif.unreadCount || 0)
+// Message unread count (from notifications or auth user data)
+const unread = computed(() => {
+  try {
+    // Try to get from notifications store if it exists
+    return (auth.user?.notifications_count || auth.user?.unread_count || 0)
+  } catch {
+    return 0
+  }
+})
+
+// Right menu label and icon based on user role
+const rightMenuLabel = computed(() => {
+  if (isQuizMaster.value) return 'Wallet'
+  if (isInstitutionManager.value) return 'Explore'
+  // default for quizee
+  return 'Points'
+})
+
+const rightMenuIcon = computed(() => {
+  if (isQuizMaster.value) return 'heroicons:wallet'
+  if (isInstitutionManager.value) return 'heroicons:magnifying-glass'
+  // default for quizee
+  return 'heroicons:star'
+})
+
+// Add role detection
+const { isQuizMaster, isQuizee, isInstitutionManager } = useUserRole()
 
 const anyMenuOpen = computed(() => {
-  return (exploreDropdown.value?.isOpen) || (settingsDropdown.value?.isOpen)
+  return (exploreDropdown.value?.isOpen) || (rightMenuDropdown.value?.isOpen)
 })
 
 function updateWidth() {
-  if (typeof window === 'undefined') return
+  if (typeof window !== 'undefined') return
   width.value = window.innerWidth
 }
 
 function closeAllMenus() {
   if (exploreDropdown.value) exploreDropdown.value.isOpen = false
-  if (settingsDropdown.value) settingsDropdown.value.isOpen = false
+  if (rightMenuDropdown.value) rightMenuDropdown.value.isOpen = false
 }
 
 function closeOtherMenus(current) {
   if (current !== 'explore' && exploreDropdown.value) {
     exploreDropdown.value.isOpen = false
   }
-  if (current !== 'settings' && settingsDropdown.value) {
-    settingsDropdown.value.isOpen = false
+  if (current !== 'rightMenu' && rightMenuDropdown.value) {
+    rightMenuDropdown.value.isOpen = false
   }
 }
 
 function handleCenterAction() {
   if (auth.user?.role === 'institution-manager') {
-    router.push('/institution-manager/institutions/create')
+    router.push('/institution-manager/institutions/new')
   } else if (auth.user?.role === 'quiz-master') {
     router.push('/quiz-master/quizzes/create')
   } else {
-    router.push('/quizee/quizzes')
+    router.push('/quizee/battles')
   }
   closeAllMenus()
 }
 
 function goToMessages() {
-  router.push('/messages')
+  router.push('/quizee/chat')
   closeAllMenus()
 }
 
