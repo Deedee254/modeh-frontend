@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
-    <div :class="layoutClass">
+  <div class="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+  <div :class="layoutClass">
       <div v-if="hasMedia" class="media-col mb-4 sm:mb-0 sm:mr-6">
         <slot name="media">
           <img v-if="isImage" :src="mediaSrc" class="w-full h-auto rounded-lg object-cover" />
@@ -11,8 +11,8 @@
       </div>
 
       <div class="content-col">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4" v-html="question?.body"></h3>
-  <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" @toggle="$emit('toggle',$event)" />
+    <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-3" v-html="question?.body"></h3>
+  <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" :compact="isCompact" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" @toggle="$emit('toggle',$event)" />
   <div v-else class="text-sm text-red-600 dark:text-red-400">Component missing for question type: {{ question?.type || 'unknown' }}</div>
                   <div>
                     <span v-if="question.is_approved === 1 || question.is_approved === true" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Approved</span>
@@ -63,6 +63,43 @@ const componentName = computed(() => {
 // expose local computed to template
 const isImage = isImageLocal
 const isAudio = isAudioLocal
+
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+
+// compact detection: automatically enable compact layout on small screens (mobile)
+const isCompact = ref(false)
+
+function setCompactFromMedia(mq) {
+  isCompact.value = !!mq.matches
+}
+
+onMounted(() => {
+  if (typeof window === 'undefined') return
+  const mq = window.matchMedia('(max-width: 640px)')
+  // initialize
+  setCompactFromMedia(mq)
+  // listen for changes
+  if (mq.addEventListener) {
+    mq.addEventListener('change', () => setCompactFromMedia(mq))
+  } else if (mq.addListener) {
+    mq.addListener(() => setCompactFromMedia(mq))
+  }
+  // store on the element for cleanup via onBeforeUnmount closure
+  window.__modeh_question_mq = mq
+})
+
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined') return
+  const mq = window.__modeh_question_mq
+  if (!mq) return
+  if (mq.removeEventListener) {
+    mq.removeEventListener('change', () => setCompactFromMedia(mq))
+  } else if (mq.removeListener) {
+    mq.removeListener(() => setCompactFromMedia(mq))
+  }
+})
+
+// isCompact is in script setup scope and available to the template
 
 </script>
 

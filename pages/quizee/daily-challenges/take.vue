@@ -68,84 +68,58 @@
       </div>
     </div>
 
-    <!-- Content State -->
-    <div v-else class="max-w-4xl mx-auto px-4">
-      <!-- Header -->
-      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-            <PlayerCard 
-              :player="auth.user"
-              role="Today's Challenge"
-              :answered="Object.keys(answers).length"
-              :is-active="true"
-              class="w-full sm:w-auto"
-            />
-            <div class="mt-2 sm:mt-0">
-              <h1 class="text-xl sm:text-2xl font-bold text-gray-900">{{ challenge?.title || 'Daily Challenge' }}</h1>
-              <p class="text-gray-600 mt-1">Question {{ currentQuestionIndex + 1 }} of {{ questions.length }}</p>
+    <!-- Content State: simplified, sticky top and bottom for smooth quiz -->
+    <div v-else class="min-h-[70vh] flex flex-col">
+      <!-- Top bar: sticky -->
+      <header class="sticky top-0 z-30 bg-white border-b border-gray-100">
+        <div class="mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <PlayerCard :player="auth.user" role="Today's Challenge" :answered="Object.keys(answers).length" class="h-10" />
+            <div class="min-w-0">
+              <h1 class="text-lg font-semibold truncate">{{ challenge?.title || 'Daily Challenge' }}</h1>
+              <div class="text-xs text-gray-500">Question {{ currentQuestionIndex + 1 }} / {{ questions.length }}</div>
             </div>
           </div>
-          <div class="text-left sm:text-right w-full sm:w-auto bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-lg">
-            <div class="text-sm text-gray-500">Time Remaining</div>
-            <div class="text-lg font-mono font-bold text-indigo-600">{{ displayTime }}</div>
+          <div class="text-right">
+            <!-- Circular per-question timer -->
+            <div class="flex items-center justify-end space-x-3">
+              <div class="w-12 h-12 relative">
+                <svg :class="['w-12 h-12 transform -rotate-90', { 'low-time': lowTime }]" viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" class="text-gray-200" fill="none" />
+                  <circle class="timer-ring" cx="20" cy="20" r="18" stroke-width="3" stroke-linecap="round" fill="none" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset" />
+                </svg>
+                <div class="absolute inset-0 grid place-items-center text-xs font-mono font-semibold text-indigo-700">{{ perQuestionSeconds }}</div>
+              </div>
+              <div class="text-xs text-gray-500">per question</div>
+            </div>
           </div>
         </div>
-        <div class="mt-4 bg-gray-200 rounded-full h-2">
-          <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${progress}%` }"></div>
+      </header>
+
+      <!-- Main content: question area expands -->
+      <main class="flex-1 flex items-center justify-center px-4 py-6">
+        <div class="w-full max-w-3xl">
+          <QuestionCard class="question-compact" :compact="true" v-if="currentQuestion" v-model="selectedAnswer" :question="currentQuestion" @select="(val) => { if (currentQuestion && currentQuestion.id) answers[currentQuestion.id] = val }" @toggle="(opt) => { if (currentQuestion && currentQuestion.id) rawToggleMulti(currentQuestion.id, opt) }" />
         </div>
-      </div>
+      </main>
 
-      <!-- Question Card -->
-      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-8 mb-8">
-        <div v-if="currentQuestion" class="mb-6">
-          <QuestionCard v-model="selectedAnswer" :question="currentQuestion" @select="(val) => { if (currentQuestion && currentQuestion.id) answers[currentQuestion.id] = val }" @toggle="(opt) => { if (currentQuestion && currentQuestion.id) rawToggleMulti(currentQuestion.id, opt) }" />
+      <!-- Bottom nav: sticky -->
+      <nav class="sticky bottom-0 z-30 bg-white border-t border-gray-100">
+        <div class="mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div class="flex-1">
+            <div class="text-xs text-gray-500">Progress</div>
+            <div class="w-full bg-gray-100 h-2 rounded mt-1">
+              <div class="h-2 bg-indigo-600 rounded transition-all" :style="{ width: `${progress}%` }"></div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 ml-4">
+            <button @click="previousQuestion" :disabled="currentQuestionIndex === 0" class="px-4 py-2 bg-gray-100 text-gray-700 rounded disabled:opacity-50">Previous</button>
+            <button v-if="currentQuestionIndex < questions.length - 1" @click="nextQuestion" :disabled="!selectedAnswer" class="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50">Next</button>
+            <button v-else @click="submitChallenge" :disabled="!selectedAnswer || submitting" class="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50">{{ submitting ? 'Submitting...' : 'Submit' }}</button>
+          </div>
         </div>
-
-        <!-- Navigation -->
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <button
-            @click="previousQuestion"
-            :disabled="currentQuestionIndex === 0"
-            class="order-2 sm:order-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
-          >
-            <span class="flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-              Previous
-            </span>
-          </button>
-
-          <button
-            v-if="currentQuestionIndex < questions.length - 1"
-            @click="nextQuestion"
-            :disabled="!selectedAnswer"
-            class="order-1 sm:order-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
-          >
-            <span class="flex items-center justify-center gap-2">
-              Next
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-          </button>
-
-          <button
-            v-else
-            @click="submitChallenge"
-            :disabled="!selectedAnswer || submitting"
-            class="order-1 sm:order-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
-          >
-            <span class="flex items-center justify-center gap-2">
-              <span v-if="submitting">
-                <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting...
-              </span>
-              <span v-else>Submit Challenge</span>
-            </span>
-          </button>
-        </div>
-      </div>
+      </nav>
     </div>
 
     <!-- Results Modal -->
@@ -258,15 +232,31 @@ const earnedAchievements = ref([])
 // Computed
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
 const progress = computed(() => ((currentQuestionIndex.value + 1) / questions.value.length) * 100)
+// Adapt total timer from questions (each question gets 15s). Fallback to 600s if questions not loaded.
 const challengeAdapter = computed(() => ({
-  timer_seconds: 600 // Daily challenges have a fixed 10-minute timer
+  timer_seconds: questions.value && questions.value.length ? (questions.value.length * 15) : 600
 }))
 
 // Timer
 const { timeLeft, displayTime, startTimer, stopTimer } = useQuizTimer(challengeAdapter, () => submitChallenge())
 
 // per-question timer (derive per-question from challenge total when available)
-const { timePerQuestion, questionRemaining, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
+// Set per-question default to 15 seconds
+const { timePerQuestion, questionRemaining, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(15)
+
+// Circular timer helpers (for header display)
+const perQuestionTotal = computed(() => timePerQuestion.value || 15)
+const perQuestionSeconds = computed(() => {
+  const rem = typeof questionRemaining.value === 'number' ? Math.ceil(questionRemaining.value) : perQuestionTotal.value
+  return Math.max(0, rem)
+})
+const circleRadius = 18
+const circumference = 2 * Math.PI * circleRadius
+const dashOffset = computed(() => {
+  const frac = perQuestionTotal.value ? (perQuestionSeconds.value / perQuestionTotal.value) : 0
+  return String(circumference * (1 - Math.max(0, Math.min(1, frac))))
+})
+const lowTime = computed(() => perQuestionSeconds.value <= 5)
 
 const { push: pushAlert } = useAppAlert()
 
@@ -468,6 +458,21 @@ const fetchChallengeData = async () => {
     startedAt.value = new Date().toISOString()
     try { restoreProgress() } catch (e) {}
     if (typeof questionRemaining.value !== 'number') startTimer()
+    // Start per-question timer and schedule limit (enforce 15s per question)
+    try {
+      const per = 15
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < per) ? questionRemaining.value : undefined
+      startQuestionTimer(per, remainingForSchedule)
+      schedulePerQuestionLimit(per, () => {
+        if (currentQuestionIndex.value < questions.value.length - 1) {
+          pushAlert({ message: 'Time is up — moving to the next question', type: 'info' })
+          currentQuestionIndex.value++
+        } else {
+          pushAlert({ message: 'Time is over — submitting...', type: 'info' })
+          submitChallenge()
+        }
+      }, remainingForSchedule)
+    } catch (e) {}
     isLoading.value = false
   } catch (error) {
     console.error('Failed to fetch challenge data:', error)
@@ -550,3 +555,14 @@ const closeResults = async () => {
   await router.push('/quizee/daily-challenges')
 }
 </script>
+
+<style scoped>
+/* Circular timer styles and low-time pulse */
+.timer-ring { stroke: #4f46e5; transition: stroke-dashoffset 0.3s linear, stroke 0.2s ease, filter 0.2s ease; }
+.low-time .timer-ring { stroke: #dc2626; filter: drop-shadow(0 0 8px rgba(220,38,38,0.6)); animation: pulse 1s infinite; }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+/* Make QuestionCard and options tighter in this context if needed */
+.question-compact .content-col h3 { margin-bottom: 0.5rem; font-size: 1rem; }
+.question-compact { padding: 0.75rem; }
+</style>

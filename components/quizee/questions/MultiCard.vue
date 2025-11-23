@@ -1,17 +1,17 @@
 <template>
-  <div class="space-y-3">
+  <div :class="compact ? 'space-y-2' : 'space-y-3'">
     <div v-for="(opt, i) in question.options || []" :key="i">
-      <button type="button" @click="toggle(opt)" :class="buttonClass(opt)" class="w-full text-left p-3 rounded-lg border transition-colors flex items-start gap-3">
-        <input type="checkbox" class="w-4 h-4 mt-2" :checked="isSelected(opt)" readonly />
+      <button type="button" @click="toggle(opt)" :class="[buttonClass(opt), compact ? 'p-2 rounded-md gap-2 text-sm' : 'p-3 rounded-lg gap-3 text-base']" class="w-full text-left border transition-colors flex items-start">
+        <input type="checkbox" :class="compact ? 'h-3 w-3 mt-1' : 'h-4 w-4 mt-2'" :checked="isSelected(opt)" readonly />
         <div class="flex-1">
-          <div v-if="optionMedia(opt)" class="mb-2">
-            <img v-if="isImage(optionMedia(opt))" :src="optionMedia(opt)" class="max-w-full rounded" />
+          <div v-if="optionMedia(opt)" :class="compact ? 'mb-1' : 'mb-2'">
+            <img v-if="isImage(optionMedia(opt))" :src="optionMedia(opt)" :class="compact ? 'max-w-full rounded max-h-28' : 'max-w-full rounded'" />
             <audio v-else-if="isAudio(optionMedia(opt))" controls class="w-full"><source :src="optionMedia(opt)" /></audio>
             <div v-else-if="isYouTube(optionMedia(opt))" class="aspect-video rounded overflow-hidden">
               <iframe :src="formatYouTubeUrl(optionMedia(opt))" class="w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe>
             </div>
           </div>
-          <div class="leading-relaxed" v-html="display(opt)"></div>
+          <div :class="compact ? 'leading-tight text-sm' : 'leading-relaxed text-base'" v-html="display(opt)"></div>
         </div>
       </button>
     </div>
@@ -20,7 +20,7 @@
 
 <script setup>
 import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
-const props = defineProps({ question: { type: Object, required: true }, modelValue: null })
+const props = defineProps({ question: { type: Object, required: true }, modelValue: null, compact: { type: Boolean, default: false } })
 const emit = defineEmits(['toggle'])
 
 const { isImage, isAudio, isYouTube, formatYouTubeUrl } = useQuizMedia()
