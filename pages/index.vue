@@ -17,12 +17,12 @@
 
           <!-- Right: Login form or User Stats -->
           <div class="mx-auto w-full max-w-md">
-            <template v-if="!auth.user">
-              <LoginForm compact />
-            </template>
+              <template v-if="!auth.user">
+                <LoginForm compact />
+              </template>
 
-            <!-- User Stats when logged in -->
-            <div v-else class="rounded-2xl bg-white p-6 shadow-lg">
+              <!-- User Stats when logged in -->
+              <div v-else class="rounded-2xl bg-white p-6 shadow-lg">
               <div class="text-lg font-semibold text-gray-900 mb-4">Welcome back, {{ auth.user.name }}!</div>
               
               <!-- Quizee Stats -->
@@ -37,7 +37,7 @@
                 </div>
                 <NuxtLink to="/quizee/dashboard" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
                   View Full Dashboard
-                  <span class="i-heroicons-arrow-right-20-solid"></span>
+                    <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5" />
                 </NuxtLink>
               </div>
 
@@ -57,11 +57,11 @@
                 </div>
                 <NuxtLink to="/quiz-master/dashboard" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
                   View Full Dashboard
-                  <span class="i-heroicons-arrow-right-20-solid"></span>
+                    <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5" />
                 </NuxtLink>
               </div>
+              </div>
             </div>
-          </div>
         </div>
       </div>
     </section>
@@ -77,9 +77,9 @@
 
         <div class="mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div v-for="step in howItWorksSteps" :key="step.number" class="text-center">
-            <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl" :class="step.badge">
-              <span class="absolute inset-0.5 rounded-2xl" :class="step.glow" />
-              <span class="relative text-white text-2xl" :class="step.icon" />
+              <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl" :class="step.badge">
+              <span class="absolute inset-0.5 rounded-2xl" :class="step.glow"></span>
+              <UIcon :name="step.icon" class="relative text-white text-2xl" />
             </div>
             <h3 class="mt-5 text-lg font-semibold text-slate-900">{{ step.title }}</h3>
             <p class="mt-2 text-sm text-slate-600">{{ step.description }}</p>
@@ -106,7 +106,7 @@
         </div>
 
         <div class="mt-10">
-          <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <UiQuizCard v-for="quiz in safeArray(displayedQuizzesByGrade).slice(0,8)" :key="quiz.id" :to="`/quizee/quizzes/${quiz.id || ''}`" :startLink="`/quizee/quizzes/${quiz.id || ''}`" :takeLink="`/quizee/quizzes/take/${quiz.id || ''}`" :title="quiz.title" :topic="quiz.topic?.name || quiz.topic_name" :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name" :grade="quiz.grade || quiz.grade_id" :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count" :cover="quiz.cover_image || quiz.cover" :palette="pickPaletteClass(quiz.topic?.id || quiz.id)" :likes="quiz.likes_count ?? quiz.likes ?? 0" :quiz-id="quiz.id" :liked="quiz.liked" :description="quiz.description || quiz.summary || ''" @like="onQuizLike(quiz, $event)" />
           </div>
           <div v-else class="text-center text-rose-700/70 text-sm">No quizzes yet for this filter. Check back soon.</div>
@@ -118,7 +118,6 @@
       </div>
     </section>
 
-    <!-- Subjects, Grades, Topics sections share the richer hero layout used on listing pages -->
     <section class="px-6 py-10">
       <div class="mx-auto max-w-6xl">
           <header class="text-center max-w-2xl mx-auto">
@@ -135,7 +134,7 @@
           <p class="mt-3 text-slate-600">Explore subject tracks with aligned quizzes and topic roadmaps to guide learning and progression.</p>
         </header>
 
-<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+<div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SubjectCard
             v-for="subject in safeArray(filteredSubjects).slice(0,4)"
             :key="subject.id"
@@ -168,7 +167,7 @@
           <p class="mt-3 text-slate-600">Navigate content organized by learning level — Early Years, Primary, Secondary, and Tertiary — to find age-appropriate material and pathways.</p>
         </header>
 
-  <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <LevelCard
             v-for="lvl in safeArray(levels).slice(0,6)"
             :key="lvl.id"
@@ -195,7 +194,7 @@
           <p class="mt-3 text-slate-600">Find quizzes and resources organized by grade so learners and educators can match content to curriculum standards.</p>
         </header>
 
-<div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <GradeCard
             v-for="grade in safeArray(GRADES).slice(0,6)"
             :key="grade.id"
@@ -235,7 +234,7 @@
 
 
 
-<div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+<div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
 
           <TopicCard
             v-for="topic in selectedHomepageTopics"
@@ -265,9 +264,9 @@
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Creators & contributors</h3>
           <p class="mt-3 text-slate-600">Educators and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
         </div>
-  <div class="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
-          <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
-        </div>
+  <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
+    <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
+  </div>
         <div class="mt-6 text-center">
           <NuxtLink to="/quiz-masters" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg">View all quiz-masters</NuxtLink>
         </div>
@@ -338,8 +337,7 @@
         </form>
       </div>
     </section>
-
-  </div>
+</div>
 </template>
 
 <script setup>
@@ -574,13 +572,13 @@ const hasFeaturedQuiz = computed(() => {
 })
 
 const howItWorksSteps = computed(() => [
-  {
+    {
     number: '01',
     title: 'Choose your path',
     description: 'Browse curated subjects and quizzes that fit your grade level and goals.',
     badge: 'bg-gradient-to-br from-indigo-500 to-sky-500',
     glow: 'bg-sky-400/60',
-    icon: 'i-heroicons-map-20-solid',
+    icon: 'heroicons:map-20-solid',
     link: { href: '/grades', label: 'Explore grades' },
   },
   {
@@ -589,7 +587,7 @@ const howItWorksSteps = computed(() => [
     description: 'Engage with adaptive questions, hints, and timers to build confidence.',
     badge: 'bg-gradient-to-br from-rose-500 to-fuchsia-500',
     glow: 'bg-rose-400/60',
-    icon: 'i-heroicons-academic-cap-20-solid',
+    icon: 'heroicons:academic-cap-20-solid',
     link: { href: '/quizzes', label: 'Find a quiz' },
   },
   {
@@ -598,7 +596,7 @@ const howItWorksSteps = computed(() => [
     description: 'See detailed explanations, strengths, and areas to retry instantly.',
     badge: 'bg-gradient-to-br from-emerald-500 to-lime-500',
     glow: 'bg-emerald-400/60',
-    icon: 'i-heroicons-chart-bar-20-solid',
+    icon: 'heroicons:chart-bar-20-solid',
     link: { href: '/quizee/dashboard', label: 'Track performance' },
   },
   {
@@ -607,7 +605,7 @@ const howItWorksSteps = computed(() => [
     description: 'Unlock achievements, track streaks, and stay motivated as you master topics.',
     badge: 'bg-gradient-to-br from-amber-500 to-orange-500',
     glow: 'bg-amber-400/60',
-    icon: 'i-heroicons-sparkles-20-solid',
+    icon: 'heroicons:sparkles-20-solid',
     link: { href: '/quizee/badges', label: 'View achievements' },
   },
 ])

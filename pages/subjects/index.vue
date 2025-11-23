@@ -69,14 +69,14 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 mt-6">
         <aside class="lg:col-span-1">
-          <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="taxTopics.value" :grade-options="allGrades" :grade="gradeFilter" @update:grade="val => gradeFilter.value = val" />
+          <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="taxTopics.value" :grade-options="allGrades" v-model:grade="gradeFilter" />
         </aside>
         <main class="lg:col-span-3">
           <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
           <div v-else-if="error" class="mt-6 text-red-600 dark:text-red-400">Failed to load subjects.</div>
           <div v-else class="mt-6">
             <div v-if="filtered.length === 0" class="p-6 border rounded-md text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">No subjects found.</div>
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6 mt-3">
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-3">
               <SubjectCard
                 v-for="s in filtered"
                 :key="s.id"
@@ -148,6 +148,9 @@ onMounted(async () => {
   // Load levels first so grades/subjects can be derived and avoid duplicate
   // network calls. Then fetch topics if needed.
   await fetchLevels()
+  // populate subjects list (derive from levels when possible or fetch from API)
+  await fetchAllSubjects()
+  // then load topics
   await fetchAllTopics()
 })
 
@@ -178,6 +181,23 @@ const filtered = computed(() => {
   if (subjectFilter.value) list = list.filter(s => String(s.id) === String(subjectFilter.value) || String(s.slug || s.id) === String(subjectFilter.value))
   return list
 })
+
+// Server-side prefetch to make this page SSR-deterministic: populate
+// taxonomy (levels -> subjects -> topics) during server render so the
+// server HTML contains the subjects list and avoids client-only flashes.
+// We use `useAsyncData` with top-level await inside `<script setup>` so
+// this runs during SSR. The `useTaxonomy` composable will derive subjects
+// from levels if possible, otherwise it fetches them from the API.
+await useAsyncData('taxonomy:subjects', async () => {
+  try {
+    await fetchLevels()
+    await fetchAllSubjects()
+    await fetchAllTopics()
+  } catch (e) {
+    // ignore errors during SSR prefetch to avoid blocking render
+  }
+  return true
+}, { server: true })
 
 async function onServerSearch(q) {
   const api = useApi()

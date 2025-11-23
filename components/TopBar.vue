@@ -287,12 +287,12 @@ const searchPlaceholder = computed(() => isquizee.value ? 'Search quizzes, topic
 
 // Toggle sidebar / mobile bars
 function onBarsClick() {
-  if (import.meta.client) {
-    if (window.innerWidth < 768) {
-      ui.mobileNavOpen = true
-    } else {
-      try { window.dispatchEvent(new Event('toggle-sidebar')) } catch (e) {}
-    }
+  // Delegate sidebar toggling to the UI store. The store method handles
+  // mobile vs desktop semantics (open drawer on mobile, ensure sidebar open on desktop).
+  try {
+    ui.toggleSidebar()
+  } catch (e) {
+    // non-fatal
   }
 }
 

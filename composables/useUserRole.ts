@@ -12,7 +12,23 @@ import { useAuthStore } from '~/stores/auth'
  */
 export function useUserRole() {
   const auth = useAuthStore()
-  const roles = computed(() => auth.user?.roles?.map(r => r.name) || (auth.user?.role ? [auth.user.role] : []))
+  // Defensive typing: `auth.user` may be untyped in the store. Coerce to `any`
+  // and defensively extract roles to avoid TypeScript errors about `never`.
+  const roles = computed(() => {
+    try {
+      const u = auth.user as any
+      if (u && Array.isArray(u.roles)) {
+        return u.roles.map((r: any) => (r && (r.name ?? r.title ?? r) ? String(r.name ?? r.title ?? r) : null)).filter(Boolean)
+      }
+      if (u && (u.role || u.roles)) {
+        // single role as string
+        return [String(u.role || u.roles)]
+      }
+    } catch (e) {
+      // ignore and fall-through
+    }
+    return []
+  })
 
   const isquizee = computed(() => roles.value.includes('quizee'))
   const isQuizMaster = computed(() => roles.value.includes('quiz-master'))
@@ -27,5 +43,10 @@ export function useUserRole() {
     return 'quizee'
   })
 
-  return { roles, isQuizMaster, isquizee, preferredRole }
+  // Provide a backwards-compatible alias `isQuizee` for consumers that
+  // historically referenced that spelling (avoid runtime `.value` errors).
+  return { roles, isQuizMaster, isquizee, isQuizee: isquizee, preferredRole }
 }
+
+// Convenience alias for the composable itself (rarely needed but harmless).
+export const useUserRoleAlias = useUserRole

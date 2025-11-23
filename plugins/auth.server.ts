@@ -1,0 +1,44 @@
+import { useAuthStore } from '~/stores/auth'
+import { useRuntimeConfig } from '#imports'
+
+export default defineNuxtPlugin(async (nuxtApp) => {
+  // Only run on server
+  try {
+    const auth = useAuthStore()
+  // If store already has a user, skip
+  // auth.user is a plain object (or null) in our Pinia store on the server —
+  // don't access `.value` (that's for refs) which caused a TS error.
+  if (auth.user) return
+
+    const config = useRuntimeConfig()
+
+    // Grab incoming request headers so we can forward cookies to backend
+    // useRequestHeaders is available on server
+    const reqHeaders = (typeof useRequestHeaders === 'function') ? useRequestHeaders() : {}
+    const cookie = reqHeaders?.cookie || reqHeaders?.Cookie || ''
+
+    if (!config || !config.public || !config.public.apiBase) return
+
+    // Use Nitro/$fetch to call backend and forward cookie header so session is respected
+    const url = `${config.public.apiBase}/api/me`
+    try {
+      const user = await $fetch(url, {
+        headers: cookie ? { cookie } : {},
+        credentials: 'include',
+        // Do not throw on non-2xx so we can handle gracefully
+        onResponse({ response }) {
+          // noop
+        }
+      }).catch(() => null)
+
+      if (user) {
+        // Populate the auth store for SSR
+        try { auth.setUser(user) } catch (e) { /* ignore */ }
+      }
+    } catch (e) {
+      // ignore server-side fetch errors — treat as anonymous
+    }
+  } catch (e) {
+    // ensure plugin failures don't break SSR
+  }
+})

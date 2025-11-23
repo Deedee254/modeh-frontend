@@ -78,54 +78,114 @@
       <!-- Left dropdown menu (positioned absolutely) -->
       <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0 translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 translate-y-2 scale-95">
         <div v-if="showLeftMenu" id="left-menu" ref="leftMenuRef" role="menu" class="absolute bottom-full left-4 mb-2 w-56 rounded-lg bg-white dark:bg-slate-800 border shadow-lg p-1 ring-1 ring-black/5 z-50 max-h-[60vh] overflow-y-auto">
-          <template v-if="isInstitutionManager">
-            <button role="menuitem" @click="goTo('/institution-manager')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
-              <div class="flex items-center gap-3">
-                <Icon name="heroicons:chart-pie" class="h-5 w-5 text-slate-600" />
-                <span class="text-sm text-slate-700">Institution Dashboard</span>
-              </div>
-              <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
-            </button>
-            <div class="border-t border-gray-100 my-1" />
-            <button role="menuitem" @click="goTo(resolveInstPath('/institution-manager/institutions/[slug]/members'))" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
-              <div class="flex items-center gap-3">
-                <Icon name="heroicons:user-group" class="h-5 w-5 text-slate-600" />
-                <span class="text-sm text-slate-700">Members</span>
-              </div>
-              <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
-            </button>
-            <div class="border-t border-gray-100 my-1" />
-            <button role="menuitem" @click="goTo(resolveInstPath('/institution-manager/institutions/[slug]/analytics'))" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
-              <div class="flex items-center gap-3">
-                <Icon name="heroicons:presentation-chart-bar" class="h-5 w-5 text-slate-600" />
-                <span class="text-sm text-slate-700">Analytics</span>
-              </div>
-              <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
-            </button>
-            <button role="menuitem" @click="goTo('/quizee/dashboard')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
-              <div class="flex items-center gap-3">
-                <Icon name="heroicons:chart-pie" class="h-5 w-5 text-slate-600" />
-                <span class="text-sm text-slate-700">Analytics</span>
-              </div>
-              <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
-            </button>
-            <div class="border-t border-gray-100 my-1" />
-            <button role="menuitem" @click="goTo('/quizee/quizzes')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
-              <div class="flex items-center gap-3">
-                <Icon name="heroicons:clipboard-document-list" class="h-5 w-5 text-slate-600" />
-                <span class="text-sm text-slate-700">Quizzes</span>
-              </div>
-              <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
-            </button>
-            <div class="border-t border-gray-100 my-1" />
-            <button role="menuitem" @click="goTo(isQuizMaster ? '/quiz-master/chat' : '/quizee/chat')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
-              <div class="flex items-center gap-3">
-                <Icon name="heroicons:chat-bubble-left-right" class="h-5 w-5 text-slate-600" />
-                <span class="text-sm text-slate-700">Chat</span>
-              </div>
-              <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
-            </button>
-          </template>
+              <!-- Left drop-up should mirror the topbar mobile nav for each role -->
+              <template v-if="isInstitutionManager">
+                <button role="menuitem" @click="goTo(resolveInstPath('/institution-manager/institutions/[slug]/analytics'))" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:chart-pie" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Dashboard</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo({ path: '/institution-manager/subscriptions', query: instStore.activeInstitutionSlug ? { institutionSlug: String(instStore.activeInstitutionSlug) } : {} })" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:credit-card" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Subscriptions</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo(resolveInstPath('/institution-manager/institutions/[slug]/members'))" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:user-group" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Members</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+              </template>
+              <template v-else-if="isquizee">
+                <button role="menuitem" @click="goTo('/grades')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:scale" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Grades</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/subjects')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:bookmark" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Subjects</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/levels')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:chart-pie" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Levels</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/topics')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:book-open" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Topics</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/quizee/quiz-masters')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:user-group" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Quiz Masters</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+              </template>
+              <template v-else>
+                <button role="menuitem" @click="goTo('/grades')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:scale" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Grades</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/quiz-master/quizzes')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:clipboard-document-list" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Quizzes</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/quiz-master/quizees')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:user-group" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Quizees</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/levels')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:chart-pie" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Levels</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+                <div class="border-t border-gray-100 my-1" />
+                <button role="menuitem" @click="goTo('/quiz-master/analytics')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <Icon name="heroicons:presentation-chart-bar" class="h-5 w-5 text-slate-600" />
+                    <span class="text-sm text-slate-700">Analytics</span>
+                  </div>
+                  <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-400" />
+                </button>
+              </template>
         </div>
       </transition>
 
@@ -228,7 +288,7 @@ const props = defineProps({
 
 const router = useRouter()
 const route = useRoute()
-const { isQuizMaster, isQuizee } = useUserRole()
+const { isQuizMaster, isquizee } = useUserRole()
 const notif = useNotificationsStore()
 const bottomNav = useBottomNavStore()
 const ui = useUiStore()
@@ -287,10 +347,13 @@ function closeMenus() {
 }
 
 function toggleLeftMenu() {
-  // open mobile nav instead of toggling sidebar to avoid conflicts
+  // Toggle the left drop-up menu. This keeps the bottom-left control as a
+  // drop-up (matching the topbar mobile nav links) instead of opening the
+  // left sidebar drawer. The TopBar hamburger will continue to open the
+  // left sidebar via `ui.toggleSidebar()`.
   showRightMenu.value = false
   showLeftMenu.value = !showLeftMenu.value
-  // ensure mobile nav is not open at same time
+  // ensure any full-screen mobile nav overlay is closed
   ui.mobileNavOpen = false
   if (showLeftMenu.value) {
     // focus first menuitem for keyboard users
@@ -363,7 +426,7 @@ function centerAction() {
   if (typeof bottomNav.centerHandler === 'function' || typeof bottomNav.centerHandler?.value === 'function') return (bottomNav.centerHandler?.value || bottomNav.centerHandler)()
   if (isInstitutionManager.value) return router.push('/institution-manager/institutions/create')
   if (isQuizMaster.value) return router.push('/quiz-master/quizzes/create')
-  if (isQuizee.value) return router.push('/quizee/quizzes')
+  if (isquizee.value) return router.push('/quizee/quizzes')
 }
 
 // Note: left/right actions were removed in favor of in-component drop-up menus

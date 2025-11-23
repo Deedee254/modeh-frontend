@@ -1,21 +1,18 @@
 <template>
   <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
-    <div class="relative h-32 overflow-hidden rounded-t-2xl bg-slate-100 sm:h-40">
-  <img v-if="coverSrc" :src="coverSrc" :alt="displayTitle" class="h-full w-full object-cover" />
-      <div v-else :class="['grid h-full w-full place-items-center font-bold text-white', paletteClass]">
-        <span class="text-2xl">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
-      </div>
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
 
-      <div class="absolute left-3 top-3 z-10">
-        <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
-          {{ badgeLabel }}
-        </div>
+    <!-- left color strip -->
+    <div :class="['absolute left-0 top-0 bottom-0 w-2 rounded-l-2xl', paletteClass]" aria-hidden="true"></div>
+
+    <!-- badge (kept) -->
+    <div class="absolute left-6 top-3 z-10">
+      <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
+        {{ badgeLabel }}
       </div>
     </div>
 
-    <div class="flex flex-1 flex-col p-4">
+    <div class="flex flex-1 flex-col p-4 pl-6">
       <h4 class="text-base font-semibold text-slate-800 line-clamp-2 dark:text-slate-100">{{ displayTitle }}</h4>
       <p v-if="displayDescription" class="mt-2 text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ displayDescription }}</p>
 
