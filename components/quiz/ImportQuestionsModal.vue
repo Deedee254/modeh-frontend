@@ -1,43 +1,46 @@
 <template>
   <UModal v-model="isOpen" :ui="{ width: 'sm:max-w-2xl' }">
-    <div class="p-4 sm:p-6 max-h-[80vh] overflow-auto">
-      <div class="flex items-start justify-between gap-4">
+    <div class="p-5 max-h-[85vh] overflow-auto">
+      <div class="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h3 class="text-lg font-semibold">Import Questions (CSV / Excel)</h3>
-          <p class="text-sm text-gray-500">Upload a CSV or Excel file to bulk-import questions. See template download for headers.</p>
+          <h3 class="text-lg font-semibold text-gray-900">Import Questions</h3>
+          <p class="text-sm text-gray-500 mt-1">Upload a CSV or Excel file to bulk-import questions</p>
         </div>
-        <div>
-          <UButton size="sm" variant="ghost" @click="close">Close</UButton>
-        </div>
+        <UButton size="sm" variant="ghost" icon="i-heroicons-x-mark" @click="close" />
       </div>
 
-      <div class="mt-4 sm:mt-6 space-y-4">
+      <div class="space-y-4">
         <div class="flex flex-col sm:flex-row gap-2">
-          <UButton size="sm" variant="soft" @click="downloadTemplate">Download CSV Template</UButton>
-          <UButton size="sm" color="primary" @click="openFilePicker">Choose File</UButton>
+          <UButton size="sm" variant="soft" icon="i-heroicons-arrow-down-tray" @click="downloadTemplate" class="flex-1 sm:flex-none">Download Template</UButton>
+          <UButton size="sm" color="primary" icon="i-heroicons-folder-open" @click="openFilePicker" class="flex-1 sm:flex-none">Choose File</UButton>
           <input ref="fileInput" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="onFileSelected" />
         </div>
 
+        <div v-if="loading" class="flex items-center gap-2 text-sm text-gray-600 py-2">
+          <Icon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
+          <span>Processing file…</span>
+        </div>
 
-        <div v-if="loading" class="text-sm text-gray-600">Processing file…</div>
+        <div v-if="createdCount !== null && createdCount > 0" class="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
+          <Icon name="i-heroicons-check-circle" class="w-5 h-5" />
+          <span>Successfully imported {{ createdCount }} question{{ createdCount !== 1 ? 's' : '' }}</span>
+        </div>
 
-        <div v-if="createdCount !== null" class="text-sm text-green-700">Imported {{ createdCount }} question(s).</div>
-
-        <div v-if="importErrors.length" class="mt-2">
-          <h4 class="text-sm font-medium text-red-700">Errors</h4>
-          <div class="space-y-2 mt-2">
-            <div v-for="(e, idx) in importErrors" :key="idx" class="p-2 bg-red-50 border rounded">
-              <div class="text-sm font-medium text-red-700">Row {{ e.row }}</div>
-              <ul class="list-disc list-inside text-sm text-red-600 mt-1">
+        <div v-if="importErrors.length" class="border border-red-200 rounded-lg bg-red-50 p-4">
+          <h4 class="text-sm font-semibold text-red-700 mb-2">Import Errors</h4>
+          <div class="space-y-2 max-h-64 overflow-y-auto">
+            <div v-for="(e, idx) in importErrors" :key="idx" class="bg-white border border-red-200 rounded p-2.5">
+              <div class="text-sm font-medium text-red-700 mb-1">Row {{ e.row }}</div>
+              <ul class="list-disc list-inside text-sm text-red-600 space-y-0.5">
                 <li v-for="(m, i2) in e.errors" :key="i2">{{ m }}</li>
               </ul>
             </div>
           </div>
         </div>
 
-        <div class="mt-4 flex justify-end">
+        <div class="flex justify-end gap-2 pt-2 border-t border-gray-200">
           <UButton size="sm" variant="soft" @click="close">Cancel</UButton>
-          <UButton size="sm" color="primary" class="ml-2" @click="finish" :disabled="loading">Done</UButton>
+          <UButton size="sm" color="primary" @click="finish" :disabled="loading" icon="i-heroicons-check">Done</UButton>
         </div>
       </div>
     </div>
@@ -130,6 +133,15 @@ async function onFileSelected(e) {
     const result = await handleParsedRows(rows)
     createdCount.value = result.created
     if (result.errors && result.errors.length) importErrors.value = result.errors
+    
+    // Log summary for debugging
+    if (result.created > 0) {
+      console.log(`CSV Import: Successfully imported ${result.created} question(s)`)
+    }
+    if (result.errors && result.errors.length > 0) {
+      console.warn(`CSV Import: ${result.errors.length} error(s) encountered`, result.errors)
+    }
+    
     const msg = `Imported ${result.created} question(s).`
     alert.push({ type: 'success', message: msg })
   } catch (err) {
@@ -210,7 +222,13 @@ function normalizeRowKeys(row) {
       .trim()
       .toLowerCase()
       .replace(/\s+/g, '_')
-    out[nk] = row[k]
+    // Clean the value - remove surrounding quotes if present, and trim
+    let value = row[k]
+    if (typeof value === 'string') {
+      // Remove surrounding quotes (both single and double)
+      value = value.replace(/^["']|["']$/g, '').trim()
+    }
+    out[nk] = value
   }
   return out
 }
@@ -266,23 +284,124 @@ function buildQuestionFromRow(row) {
     answers: answers.length ? answers : undefined,
     open: true,
   }
+  
+  // Debug logging for CSV import
+  if (type === 'mcq' && question.options && question.answers) {
+    console.log('CSV Import - Question:', {
+      text: text.substring(0, 50) + '...',
+      options: question.options,
+      answers: question.answers,
+      answerType: typeof question.answers[0]
+    })
+  }
 
+  // Convert answers to the format expected by the UI (answers array with string indexes)
   if (type === 'mcq') {
-    if (Array.isArray(question.answers)) {
+    if (Array.isArray(question.answers) && question.answers.length > 0) {
       const a = question.answers[0]
-      if (typeof a === 'number') question.correct = a - 1
-      else if (typeof a === 'string' && question.options) {
-        const idx = question.options.findIndex(o => String(o).trim() === String(a).trim())
-        question.correct = idx >= 0 ? idx : -1
+      let correctIndex = -1
+      if (typeof a === 'number') {
+        // Numeric answer (1-based from CSV) -> convert to 0-based index
+        correctIndex = a - 1
+        if (correctIndex >= 0 && question.options && question.options[correctIndex]) {
+          question.answers = [String(correctIndex)]
+        } else {
+          question.answers = []
+        }
+      } else if (typeof a === 'string' && question.options) {
+        // Textual answer -> find matching option index
+        // Normalize both strings for comparison (trim, lowercase, normalize whitespace)
+        const normalizeText = (text: string) => {
+          return String(text || '').trim().toLowerCase().replace(/\s+/g, ' ')
+        }
+        const normalizedAnswer = normalizeText(a)
+        
+        let idx = question.options.findIndex(o => {
+          const optText = typeof o === 'string' ? o : (o?.text || '')
+          return normalizeText(optText) === normalizedAnswer
+        })
+        
+        // If exact match fails, try a more lenient match (contains check)
+        if (idx < 0 && normalizedAnswer.length > 0) {
+          idx = question.options.findIndex(o => {
+            const optText = typeof o === 'string' ? o : (o?.text || '')
+            const normalizedOpt = normalizeText(optText)
+            // Check if answer is contained in option or vice versa (for partial matches)
+            return normalizedOpt.includes(normalizedAnswer) || normalizedAnswer.includes(normalizedOpt)
+          })
+        }
+        
+        if (idx >= 0) {
+          question.answers = [String(idx)]
+        } else {
+          // If it's a numeric string like "1", "2", treat as 1-based index
+          const numMatch = /^(\d+)$/.exec(String(a).trim())
+          if (numMatch) {
+            const numIdx = Number(numMatch[1]) - 1
+            if (numIdx >= 0 && question.options && question.options[numIdx]) {
+              question.answers = [String(numIdx)]
+            } else {
+              // Log warning for debugging
+              console.warn('CSV Import: Could not match answer', a, 'to any option. Options:', question.options)
+              question.answers = []
+            }
+          } else {
+            // Log warning for debugging
+            console.warn('CSV Import: Could not match textual answer', a, 'to any option. Options:', question.options)
+            question.answers = []
+          }
+        }
+      } else {
+        question.answers = []
       }
-      delete question.answers
+    } else {
+      question.answers = []
     }
   }
 
   if (type === 'multi' || type === 'fill_blank') {
-    if (Array.isArray(question.answers)) {
-      question.corrects = question.answers.map(a => (typeof a === 'number' ? a - 1 : (typeof a === 'string' && /^\d+$/.test(a) ? Number(a) - 1 : a)))
-      delete question.answers
+    if (Array.isArray(question.answers) && question.answers.length > 0) {
+      // Convert all answers to string indexes (0-based)
+      const answerIndexes = question.answers.map(a => {
+        if (typeof a === 'number') {
+          // 1-based from CSV -> 0-based index
+          return String(a - 1)
+        } else if (typeof a === 'string') {
+          // Check if it's a numeric string
+          const numMatch = /^(\d+)$/.exec(String(a).trim())
+          if (numMatch) {
+            // 1-based from CSV -> 0-based index
+            return String(Number(numMatch[1]) - 1)
+          } else if (question.options) {
+            // Textual answer -> find matching option index
+            // Normalize both strings for comparison (trim, lowercase, normalize whitespace)
+            const normalizeText = (text: string) => {
+              return String(text || '').trim().toLowerCase().replace(/\s+/g, ' ')
+            }
+            const normalizedAnswer = normalizeText(a)
+            
+            let idx = question.options.findIndex(o => {
+              const optText = typeof o === 'string' ? o : (o?.text || '')
+              return normalizeText(optText) === normalizedAnswer
+            })
+            
+            // If exact match fails, try a more lenient match (contains check)
+            if (idx < 0 && normalizedAnswer.length > 0) {
+              idx = question.options.findIndex(o => {
+                const optText = typeof o === 'string' ? o : (o?.text || '')
+                const normalizedOpt = normalizeText(optText)
+                return normalizedOpt.includes(normalizedAnswer) || normalizedAnswer.includes(normalizedOpt)
+              })
+            }
+            
+            return idx >= 0 ? String(idx) : null
+          }
+        }
+        return null
+      }).filter(a => a !== null)
+      question.answers = answerIndexes
+    } else {
+      question.answers = []
     }
   }
 
@@ -315,12 +434,38 @@ async function handleParsedRows(rows) {
       q.topic_id = store.quiz?.topic_id ?? null
     } catch (e) {}
 
+    // Ensure answers array is properly set for validation
     const tmp = JSON.parse(JSON.stringify(q))
-    if (tmp.type === 'mcq') { if (typeof tmp.correct !== 'undefined') tmp.answers = [String(tmp.correct)] }
-    if (tmp.type === 'multi') { if (Array.isArray(tmp.corrects)) tmp.answers = tmp.corrects.map(c => String(c)) }
+    
+    // Normalize answers array for validation
+    if (tmp.type === 'mcq') {
+      if (!Array.isArray(tmp.answers) || tmp.answers.length === 0) {
+        // If no answers set, try to use correct field as fallback
+        if (typeof tmp.correct !== 'undefined' && tmp.correct >= 0) {
+          tmp.answers = [String(tmp.correct)]
+        } else {
+          tmp.answers = []
+        }
+      }
+    } else if (tmp.type === 'multi' || tmp.type === 'fill_blank') {
+      if (!Array.isArray(tmp.answers)) {
+        // If no answers set, try to use corrects field as fallback
+        if (Array.isArray(tmp.corrects) && tmp.corrects.length > 0) {
+          tmp.answers = tmp.corrects.map(c => String(c))
+        } else {
+          tmp.answers = []
+        }
+      }
+    }
 
     const verrors = getQuestionValidationErrors(tmp)
     if (verrors && verrors.length) { errors.push({ row: rowNumber, errors: verrors }); continue }
+
+    // Ensure the question has proper structure before adding
+    if (!q.answers || (Array.isArray(q.answers) && q.answers.length === 0)) {
+      // If answers weren't set properly, set them from tmp
+      q.answers = tmp.answers || []
+    }
 
     store.addQuestion(q)
     created.push(q)

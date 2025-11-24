@@ -241,6 +241,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     // Normalize options and answers for the editor
     // If options exist as array, ensure they are all objects with text and is_correct
     if (Array.isArray(question.options) && question.options.length > 0) {
+      // First, convert options to objects if they're strings
       question.options = question.options.map((opt: any) => {
         if (typeof opt === 'string') {
           return { text: opt, is_correct: false }
@@ -248,8 +249,22 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         return { text: opt.text || opt.value || '', is_correct: !!opt.is_correct }
       })
 
-      // Derive answers from is_correct flags if answers are missing
-      if (!question.answers || (Array.isArray(question.answers) && question.answers.length === 0)) {
+      // Sync is_correct flags with answers array (answers array takes precedence)
+      // This handles CSV imports where answers are set but is_correct flags aren't
+      if (Array.isArray(question.answers) && question.answers.length > 0) {
+        // Reset all is_correct flags first
+        question.options.forEach((opt: any) => {
+          opt.is_correct = false
+        })
+        // Set is_correct to true for options referenced in answers array
+        question.answers.forEach((answerIndex: any) => {
+          const idx = typeof answerIndex === 'string' ? parseInt(answerIndex, 10) : Number(answerIndex)
+          if (!isNaN(idx) && idx >= 0 && idx < question.options.length) {
+            question.options[idx].is_correct = true
+          }
+        })
+      } else {
+        // Derive answers from is_correct flags if answers are missing
         const correctIndices: number[] = []
         question.options.forEach((opt: any, idx: number) => {
           if (opt.is_correct) correctIndices.push(idx)

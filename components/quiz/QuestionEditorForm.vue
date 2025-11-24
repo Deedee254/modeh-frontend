@@ -238,16 +238,32 @@ watch(() => local.value.type, (type) => {
         local.value.answers = []
       }
     } else {
-      local.value.options = local.value.options.map((opt: any) => {
+      // Convert string options to objects, but preserve is_correct flags from answers array
+      const currentAnswers = Array.isArray(local.value.answers) ? local.value.answers : []
+      local.value.options = local.value.options.map((opt: any, idx: number) => {
         if (typeof opt === 'string') {
-          return { text: opt, is_correct: false }
+          // Check if this option index is in the answers array
+          const isCorrect = currentAnswers.includes(String(idx))
+          return { text: opt, is_correct: isCorrect }
         }
         return opt
       })
+      // Sync is_correct flags with answers array if answers exist
+      if (currentAnswers.length > 0) {
+        local.value.options.forEach((opt: any, idx: number) => {
+          opt.is_correct = currentAnswers.includes(String(idx))
+        })
+      }
     }
     if (singleChoiceTypes.includes(type)) {
       if (!Array.isArray(local.value.answers) || local.value.answers.length === 0) {
         local.value.answers = ['0']
+        // Also set first option as correct
+        if (local.value.options.length > 0) {
+          local.value.options.forEach((opt: any, idx: number) => {
+            opt.is_correct = idx === 0
+          })
+        }
       }
     } else {
       if (!Array.isArray(local.value.answers)) {

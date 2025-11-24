@@ -4,29 +4,34 @@
     <UModal
       v-model="showQuestionModal"
       :prevent-close="isSubmitting"
-      class="w-full"
-      :ui="{ base: 'mx-2 sm:mx-4 lg:mx-auto', width: 'w-full max-w-xs sm:max-w-2xl lg:max-w-4xl' }"
+      :ui="{ width: 'sm:max-w-3xl' }"
     >
-      <div class="p-3 sm:p-6">
-        <h3 class="text-lg font-medium mb-4">{{ editingIndex !== null ? 'Edit' : 'Add' }} Question</h3>
+      <div class="p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">{{ editingIndex !== null ? 'Edit' : 'Add' }} Question</h3>
+          <UButton size="sm" variant="ghost" icon="i-heroicons-x-mark" @click="closeQuestionModal" :disabled="isSubmitting" />
+        </div>
         <QuestionEditorForm
           v-model="questionForm"
           :errors="formErrors"
           @add-option="addOption"
           @remove-option="removeOption"
         />
-        <div class="mt-4 sm:mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        <div class="mt-5 flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-gray-200">
           <UButton
+            size="sm"
             variant="soft"
             @click="closeQuestionModal"
             :disabled="isSubmitting"
             class="w-full sm:w-auto"
           >Cancel</UButton>
           <UButton
+            size="sm"
             color="primary"
             @click="saveQuestion"
             :loading="isSubmitting"
             :disabled="isSubmitting || !isQuestionValid"
+            icon="i-heroicons-check"
             class="w-full sm:w-auto"
           >{{ editingIndex !== null ? 'Update' : 'Add' }} Question</UButton>
         </div>
@@ -56,39 +61,37 @@
     </draggable>
 
     <!-- Empty State -->
-    <div v-if="!localQuestions.length" class="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 py-8 sm:py-12 text-center">
-      <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">No questions yet</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first question</p>
+    <div v-if="!localQuestions.length" class="bg-white rounded-lg border-2 border-dashed border-gray-200 text-center py-12">
+      <Icon name="i-heroicons-clipboard-document-list" class="w-12 h-12 mx-auto text-gray-400 mb-3" />
+      <h3 class="text-base font-medium text-gray-900 mb-1">No questions yet</h3>
+      <p class="text-sm text-gray-500 mb-4">Get started by adding your first question</p>
       <UButton
         size="sm"
         color="primary"
+        icon="i-heroicons-plus"
         @click="openQuestionModal"
         :disabled="!canAddQuestion"
       >Add Question</UButton>
     </div>
 
     <!-- Add Question Button (Below List) -->
-    <div v-if="localQuestions.length > 0" class="flex flex-col gap-2 sm:flex-row sm:gap-3">
+    <div v-if="localQuestions.length > 0" class="flex flex-wrap gap-2">
       <UButton
         size="sm"
         variant="soft"
+        icon="i-heroicons-plus"
         @click="openQuestionModal"
         :disabled="!canAddQuestion"
-        class="w-full sm:w-auto"
-      >
-        <i class="fas fa-plus mr-1"></i>
-        Add Question
-      </UButton>
+        class="flex-1 sm:flex-none"
+      >Add Question</UButton>
       <UButton
         size="sm"
         variant="soft"
+        icon="i-heroicons-banknotes"
         @click="showQuestionBankModal = true"
         :disabled="!canAddQuestion"
-        class="w-full sm:w-auto"
-      >
-        <i class="fas fa-database mr-1"></i>
-        Question Bank
-      </UButton>
+        class="flex-1 sm:flex-none"
+      >Question Bank</UButton>
     </div>
 
     <!-- Question Bank Modal -->

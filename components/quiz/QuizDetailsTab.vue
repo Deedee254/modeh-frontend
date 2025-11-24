@@ -1,219 +1,193 @@
 <template>
-  <div>
-    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-      <h2 class="text-lg font-medium mb-4">Quiz Details</h2>
+  <div class="space-y-4">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-900 mb-1">Quiz Details</h2>
+      <p class="text-sm text-gray-500">Set up the basic information for your quiz</p>
+    </div>
 
-      <div v-if="props.errors && props.errors._raw" class="mb-4">
-        <div v-for="(m, idx) in props.errors._raw" :key="idx" class="text-sm text-red-600">{{ m }}</div>
-        <div v-if="props.errors._actions && props.errors._actions.requestTopicApproval" class="mt-2">
-          <UButton size="sm" variant="soft" @click="requestApproval" :loading="approvalRequestLoading">Request topic approval</UButton>
-        </div>
-      </div>
-
-      <!-- Basic Info Section -->
-      <div class="space-y-6 mb-8">
-        <div>
-          <label for="quiz-title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-          <input 
-            v-model="modelValue.title"
-            type="text"
-            id="quiz-title"
-            aria-describedby="title-error"
-            :class="[ 'block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm sm:text-base', displayTitleError ? 'border-red-300' : '' ]"
-          />
-          <p v-if="displayTitleError" id="title-error" class="mt-1 text-sm text-red-600">{{ displayTitleError }}</p>
-        </div>
-
-        <!-- Grade & Subject Selection (stacked: subject below grade) -->
-        <div class="space-y-4">
-                <div>
-                  <label for="quiz-level" class="block text-sm font-medium text-gray-700 mb-1">Level</label>
-                  <ClientOnly>
-                    <template #placeholder>
-                      <select id="quiz-level" class="w-full rounded-md border-gray-300 shadow-sm">
-                        <option>Loading…</option>
-                      </select>
-                    </template>
-                    <select 
-                      v-model="selectedLevel"
-                      id="quiz-level"
-                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-2"
-                    >
-                      <option value="">Select Level</option>
-                      <option v-for="lvl in levels" :key="lvl.id" :value="lvl.id">{{ lvl.name }}</option>
-                    </select>
-
-                    <label for="quiz-grade" class="block text-sm font-medium text-gray-700 mb-1">Grade / Course</label>
-                    <TaxonomyPicker
-                      resource="grades"
-                      :level-id="selectedLevel || null"
-                      :model-value="selectedGrade || null"
-                      compact
-                      title="Grades"
-                      subtitle="Pick a grade or course"
-                      @update:modelValue="onGradeModelUpdate"
-                      @selected="onGradeSelected"
-                    />
-                    <p v-if="displayGradeError" class="mt-1 text-sm text-red-600">{{ displayGradeError }}</p>
-                  </ClientOnly>
-                </div>
-
-          <div>
-            <label id="subject-label" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-            <ClientOnly>
-              <template #placeholder>
-                <div class="rounded-xl border bg-white p-3">
-                  <div class="p-3">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <h4 class="font-semibold text-sm">Subjects</h4>
-                        <div class="text-xs text-slate-500">Pick a subject</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="p-3">
-                    <div class="h-10 bg-slate-100 rounded animate-pulse"></div>
-                  </div>
-                </div>
-              </template>
-                              <TaxonomyPicker
-                                ref="subjectsPicker"
-                                resource="subjects"
-                                :grade-id="selectedGrade || null"
-                                :per-page="50"
-                                :model-value="selectedSubjectObj || null"
-                                title="Subjects"
-                                subtitle="Pick a subject"
-                                @selected="onSubjectPicked"
-                                aria-labelledby="subject-label"
-                                v-model:query="subjectQuery"
-                              />
-                            <p v-if="displaySubjectError" class="mt-1 text-sm text-red-600">{{ displaySubjectError }}</p>
-            </ClientOnly>
-          </div>
-        </div>
-
-        <!-- Topic Selection -->
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <div class="flex-1">
-            <label id="topic-label" class="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-            <ClientOnly>
-              <template #placeholder>
-                <div class="rounded-xl border bg-white p-3">
-                  <div class="p-3">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <h4 class="font-semibold text-sm">Topics</h4>
-                        <div class="text-xs text-slate-500">Pick or create a topic</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="p-3">
-                    <div class="h-10 bg-slate-100 rounded animate-pulse"></div>
-                  </div>
-                </div>
-              </template>
-              <TaxonomyPicker
-                ref="topicsPicker"
-                resource="topics"
-                :subject-id="selectedSubject || null"
-                :per-page="50"
-                :model-value="selectedTopicObj || null"
-                title="Topics"
-                subtitle="Pick or create a topic"
-                aria-labelledby="topic-label"
-                aria-describedby="topic-error"
-                @selected="onTopicPicked"
-                v-model:query="topicQuery"
-              >
-                <template #actions>
-                  <button
-                    type="button"
-                    @click="openCreateTopic"
-                    :disabled="!selectedSubject"
-                    class="w-full sm:w-auto inline-flex items-center justify-center gap-x-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium shadow-sm ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50 disabled:opacity-60"
-                  ><span>New Topic</span></button>
-                </template>
-              </TaxonomyPicker>
-            </ClientOnly>
-            <p v-if="displayTopicError" id="topic-error" class="mt-1 text-sm text-red-600">{{ displayTopicError }}</p>
-          </div>
-        </div>
-
-        <div>
-          <label for="quiz-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            v-model="modelValue.description"
-            id="quiz-description"
-            rows="3"
-            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder="Optional: Add a brief description of this quiz"
-          ></textarea>
-        </div>
-
-        <div>
-          <label for="quiz-youtube" class="block text-sm font-medium text-gray-700 mb-1">YouTube URL</label>
-          <input
-            v-model="modelValue.youtube_url"
-            id="quiz-youtube"
-            type="url"
-            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder="Optional: link to a YouTube video"
-          />
-        </div>
-
-        <!-- Cover image picker -->
-        <ClientOnly>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cover image</label>
-            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-              <div class="w-full sm:w-48 h-28 bg-gray-100 rounded overflow-hidden flex items-center justify-center border">
-                <img v-if="previewUrl" :src="previewUrl" class="object-cover w-full h-full" />
-                <div v-else class="text-xs text-gray-500">No cover</div>
-              </div>
-
-              <div class="flex-1 w-full sm:w-auto">
-                <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onCoverChange" />
-                <div class="flex flex-col sm:flex-row gap-2 mb-2 w-full">
-                  <UButton size="sm" variant="soft" @click="triggerFileInput" class="w-full sm:w-auto">Choose file</UButton>
-                  <UButton size="sm" variant="ghost" color="gray" @click="removeCover" :disabled="!hasCover" class="w-full sm:w-auto">Remove</UButton>
-                </div>
-                <p class="text-xs text-gray-500 text-center sm:text-left">Recommended: JPEG/PNG up to 5MB.</p>
-                <p v-if="modelValue.cover_image" class="text-xs text-slate-500 mt-2 text-center sm:text-left">Current uploaded cover will be used until you choose a new file.</p>
-              </div>
-            </div>
-          </div>
-        </ClientOnly>
+    <div v-if="props.errors && props.errors._raw" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+      <div v-for="(m, idx) in props.errors._raw" :key="idx" class="text-sm text-red-700 mb-1">{{ m }}</div>
+      <div v-if="props.errors._actions && props.errors._actions.requestTopicApproval" class="mt-2">
+        <UButton size="sm" variant="soft" @click="requestApproval" :loading="approvalRequestLoading">Request topic approval</UButton>
       </div>
     </div>
 
-    <!-- Selection confirmation (render on client to avoid SSR mismatch) -->
+    <!-- Basic Info Section -->
+    <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 space-y-4">
+      <div>
+        <label for="quiz-title" class="block text-sm font-medium text-gray-700 mb-1.5">Title <span class="text-red-500">*</span></label>
+        <UInput
+          v-model="modelValue.title"
+          id="quiz-title"
+          :error="displayTitleError"
+          placeholder="Enter quiz title"
+          size="md"
+        />
+        <p v-if="displayTitleError" id="title-error" class="mt-1 text-xs text-red-600">{{ displayTitleError }}</p>
+      </div>
+
+      <!-- Level & Grade Selection -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="quiz-level" class="block text-sm font-medium text-gray-700 mb-1.5">Level</label>
+          <ClientOnly>
+            <template #placeholder>
+              <USelect :options="[]" placeholder="Loading…" disabled />
+            </template>
+            <USelect
+              v-model="selectedLevel"
+              id="quiz-level"
+              :options="levels.map(l => ({ label: l.name, value: l.id }))"
+              placeholder="Select Level"
+              size="md"
+            />
+          </ClientOnly>
+        </div>
+
+        <div>
+          <label for="quiz-grade" class="block text-sm font-medium text-gray-700 mb-1.5">Grade / Course <span class="text-red-500">*</span></label>
+          <ClientOnly>
+            <TaxonomyPicker
+              resource="grades"
+              :level-id="selectedLevel || null"
+              :model-value="selectedGrade || null"
+              compact
+              title="Grades"
+              subtitle="Pick a grade or course"
+              @update:modelValue="onGradeModelUpdate"
+              @selected="onGradeSelected"
+            />
+            <p v-if="displayGradeError" class="mt-1 text-xs text-red-600">{{ displayGradeError }}</p>
+          </ClientOnly>
+        </div>
+      </div>
+
+      <div>
+        <label id="subject-label" class="block text-sm font-medium text-gray-700 mb-1.5">Subject <span class="text-red-500">*</span></label>
+        <ClientOnly>
+          <template #placeholder>
+            <div class="h-10 bg-gray-100 rounded animate-pulse"></div>
+          </template>
+          <TaxonomyPicker
+            ref="subjectsPicker"
+            resource="subjects"
+            :grade-id="selectedGrade || null"
+            :per-page="50"
+            :model-value="selectedSubjectObj || null"
+            title="Subjects"
+            subtitle="Pick a subject"
+            @selected="onSubjectPicked"
+            aria-labelledby="subject-label"
+            v-model:query="subjectQuery"
+          />
+          <p v-if="displaySubjectError" class="mt-1 text-xs text-red-600">{{ displaySubjectError }}</p>
+        </ClientOnly>
+      </div>
+
+      <!-- Topic Selection -->
+      <div>
+        <label id="topic-label" class="block text-sm font-medium text-gray-700 mb-1.5">Topic <span class="text-red-500">*</span></label>
+        <ClientOnly>
+          <template #placeholder>
+            <div class="h-10 bg-gray-100 rounded animate-pulse"></div>
+          </template>
+          <TaxonomyPicker
+            ref="topicsPicker"
+            resource="topics"
+            :subject-id="selectedSubject || null"
+            :per-page="50"
+            :model-value="selectedTopicObj || null"
+            title="Topics"
+            subtitle="Pick or create a topic"
+            aria-labelledby="topic-label"
+            aria-describedby="topic-error"
+            @selected="onTopicPicked"
+            v-model:query="topicQuery"
+          >
+            <template #actions>
+              <UButton
+                size="xs"
+                variant="soft"
+                @click="openCreateTopic"
+                :disabled="!selectedSubject"
+                icon="i-heroicons-plus"
+              >New Topic</UButton>
+            </template>
+          </TaxonomyPicker>
+        </ClientOnly>
+        <p v-if="displayTopicError" id="topic-error" class="mt-1 text-xs text-red-600">{{ displayTopicError }}</p>
+      </div>
+
+      <div>
+        <label for="quiz-description" class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+        <UTextarea
+          v-model="modelValue.description"
+          id="quiz-description"
+          :rows="3"
+          placeholder="Optional: Add a brief description of this quiz"
+          size="md"
+        />
+      </div>
+
+      <div>
+        <label for="quiz-youtube" class="block text-sm font-medium text-gray-700 mb-1.5">YouTube URL</label>
+        <UInput
+          v-model="modelValue.youtube_url"
+          id="quiz-youtube"
+          type="url"
+          placeholder="Optional: link to a YouTube video"
+          size="md"
+        />
+      </div>
+
+      <!-- Cover image picker -->
+      <ClientOnly>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Cover Image</label>
+          <div class="flex flex-col sm:flex-row items-start gap-4">
+            <div class="w-full sm:w-40 h-28 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 flex-shrink-0">
+              <img v-if="previewUrl" :src="previewUrl" class="object-cover w-full h-full" />
+              <div v-else class="text-xs text-gray-400">No cover</div>
+            </div>
+            <div class="flex-1 w-full space-y-2">
+              <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onCoverChange" />
+              <div class="flex gap-2">
+                <UButton size="sm" variant="soft" icon="i-heroicons-photo" @click="triggerFileInput" class="flex-1 sm:flex-none">Choose File</UButton>
+                <UButton size="sm" variant="ghost" color="gray" icon="i-heroicons-trash" @click="removeCover" :disabled="!hasCover" class="flex-1 sm:flex-none">Remove</UButton>
+              </div>
+              <p class="text-xs text-gray-500">Recommended: JPEG/PNG up to 5MB</p>
+              <p v-if="modelValue.cover_image" class="text-xs text-gray-500">Current uploaded cover will be used until you choose a new file.</p>
+            </div>
+          </div>
+        </div>
+      </ClientOnly>
+    </div>
+
+    <!-- Selection confirmation -->
     <ClientOnly>
-      <div class="mt-4">
-        <div class="bg-white rounded-lg border p-3 text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-500">Level:</span>
-              <span class="font-medium">{{ selectedLevelName || '—' }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-500">Grade:</span>
-              <span class="font-medium">{{ selectedGradeName || '—' }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-500">Subject:</span>
-              <span class="font-medium flex items-center gap-1">
-                {{ selectedSubjectName || '—' }}
-                <Icon v-if="selectedSubject" name="heroicons:check-circle-20-solid" class="h-4 w-4 text-emerald-500" />
-              </span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-500">Topic:</span>
-              <span class="font-medium flex items-center gap-1">
-                {{ selectedTopicName || '—' }}
-                <Icon v-if="selectedTopic" name="heroicons:check-circle-20-solid" class="h-4 w-4 text-emerald-500" />
-              </span>
-            </div>
+      <div class="bg-white rounded-lg border border-gray-200 p-3">
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-gray-500">Level:</span>
+            <span class="font-medium text-gray-900">{{ selectedLevelName || '—' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-gray-500">Grade:</span>
+            <span class="font-medium text-gray-900">{{ selectedGradeName || '—' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-gray-500">Subject:</span>
+            <span class="font-medium text-gray-900 flex items-center gap-1">
+              {{ selectedSubjectName || '—' }}
+              <Icon v-if="selectedSubject" name="i-heroicons-check-circle" class="h-4 w-4 text-green-500" />
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-gray-500">Topic:</span>
+            <span class="font-medium text-gray-900 flex items-center gap-1">
+              {{ selectedTopicName || '—' }}
+              <Icon v-if="selectedTopic" name="i-heroicons-check-circle" class="h-4 w-4 text-green-500" />
+            </span>
           </div>
         </div>
       </div>
@@ -222,9 +196,9 @@
     <!-- Approval request moved into CreateTopicModal; details tab only shows selection summary -->
 
     <!-- Bottom Actions -->
-    <div class="mt-6 flex flex-col sm:flex-row justify-end gap-3">
-      <UButton size="sm" variant="soft" @click="saveAndContinue" :loading="saving" class="w-full sm:w-auto">Save and Continue</UButton>
-      <UButton size="sm" color="primary" @click="validateAndGoNext" class="w-full sm:w-auto">Continue to Settings</UButton>
+    <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+      <UButton size="sm" variant="soft" icon="i-heroicons-document-arrow-down" @click="saveAndContinue" :loading="saving" class="w-full sm:w-auto">Save and Continue</UButton>
+      <UButton size="sm" color="primary" icon="i-heroicons-arrow-right" @click="validateAndGoNext" class="w-full sm:w-auto">Continue to Settings</UButton>
     </div>
   </div>
 </template>
