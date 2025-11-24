@@ -225,6 +225,7 @@ function buildQuestionFromRow(row) {
   const difficulty = Number(row.difficulty ?? row.Difficulty ?? 2) || 2
 
   const optionsRaw = String(row.options || row.Options || '')
+
   const answersRaw = String(row.answers || row.Answers || '')
 
   const optionKeys = Object.keys(row || {}).map(key => {
@@ -232,12 +233,27 @@ function buildQuestionFromRow(row) {
     return { key, match: /^option(\d+)$/.exec(normalized) }
   }).filter(entry => entry.match)
   optionKeys.sort((a, b) => Number(a.match[1]) - Number(b.match[1]))
-  const optionsFromColumns = optionKeys.map(entry => String(row[entry.key] ?? '').trim()).filter(val => val.length)
-  const options = optionsFromColumns.length ? optionsFromColumns : (optionsRaw ? optionsRaw.split('|').map(s => String(s || '').trim()) : [])
+  // Preserve empty option columns so numeric answer indexes remain aligned
+  // Previously we filtered out empty values which shifted indexes and caused
+  // numeric answers to point to the wrong option (often showing option one).
+  const optionsFromColumns = optionKeys.map(entry => String(row[entry.key] ?? '').trim())
+  const hasAnyOption = optionsFromColumns.some(val => val.length)
+  const options = hasAnyOption ? optionsFromColumns : (optionsRaw ? optionsRaw.split('|').map(s => String(s || '').trim()) : [])
   let answers = []
   if (answersRaw) {
-    answers = answersRaw.split(/[,|]/).map(s => s.trim()).filter(Boolean)
-    answers = answers.map(a => (/^\d+$/.test(a) ? Number(a) : a))
+    const t = String(answersRaw || '').trim()
+    // If the answers field looks like numeric indexes (e.g. "1" or "1,2" or "1|2")
+    // split on comma/pipe and convert to numbers. Otherwise treat the whole
+    // answers field as a single textual answer (it may contain commas).
+    if (/^\s*\d+(?:\s*[,|]\s*\d+)*\s*$/.test(t)) {
+      answers = t.split(/[,|]/).map(s => s.trim()).filter(Boolean).map(a => Number(a))
+    } else if (t.includes('|')) {
+      // explicit pipe-separated multiple textual answers
+      answers = t.split('|').map(s => s.trim()).filter(Boolean)
+    } else {
+      // keep the entire field as a single textual answer (don't split on commas)
+      answers = [t]
+    }
   }
 
   const question = {
