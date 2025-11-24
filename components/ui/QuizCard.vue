@@ -5,12 +5,7 @@
   <!-- Background Image if available (no overlay so image is fully visible) -->
   <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover" />
 
-      <!-- Play Button Icon (centered) -->
-      <div class="absolute inset-0 flex items-center justify-center">
-        <div class="rounded-full bg-white/30 p-4 backdrop-blur-sm">
-          <Icon name="heroicons:play-solid" class="h-12 w-12 text-white" />
-        </div>
-      </div>
+      <!-- (Play icon removed to show cover image unobstructed) -->
 
       <!-- Difficulty Badge - Top Left -->
       <div v-if="difficultyLabel" class="absolute left-4 top-4 z-10">
@@ -20,8 +15,9 @@
       </div>
 
       <!-- Heart/Like Button - Top Right -->
-      <button @click.stop="toggleLike" aria-label="Like quiz" class="absolute right-4 top-4 z-10 inline-flex items-center justify-center rounded-full bg-white/90 p-3 text-rose-500 shadow-sm transition-transform hover:scale-110 dark:bg-slate-800/80">
+      <button @click.stop="toggleLike" aria-label="Like quiz" class="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-2 text-rose-500 shadow-sm transition-transform hover:scale-110 dark:bg-slate-800/80">
         <Icon :name="localLiked ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-5 w-5" />
+        <span class="text-xs font-semibold">{{ localLikes }}</span>
       </button>
 
       <!-- Share Button - Bottom Right -->
@@ -31,7 +27,8 @@
           :itemType="'Quiz'"
           :itemId="quizId"
           :baseUrl="baseUrl"
-          class="inline-flex items-center justify-center rounded-full bg-white/90 p-3 text-slate-700 shadow-sm transition-transform hover:scale-110 dark:bg-slate-800/80 dark:text-slate-300"
+          :btnClass="'inline-flex items-center justify-center p-2 rounded-full border border-slate-200 text-slate-700 shadow-sm hover:shadow-md transition-transform hover:scale-105 dark:border-slate-800/30 dark:bg-slate-800/5 dark:text-slate-300'"
+          :iconOnly="true"
           @click.stop
         />
       </div>
@@ -41,6 +38,22 @@
     <div class="flex flex-1 flex-col p-5">
       <!-- Title -->
       <h4 class="text-lg font-semibold text-slate-900 dark:text-slate-100 line-clamp-2">{{ displayTitle }}</h4>
+
+      <!-- Level, Grade, Subject and Topic Tags -->
+      <div v-if="displayGrade || displayLevel || (showSubject && displaySubject) || (showTopic && displayTopic)" class="mt-2 flex flex-wrap gap-2">
+        <span v-if="displayLevel" class="inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+          Level: {{ displayLevel }}
+        </span>
+        <span v-if="displayGrade" class="inline-block rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+          Grade: {{ displayGrade }}
+        </span>
+        <span v-if="showSubject && displaySubject" class="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+         Subject: {{ displaySubject }}
+        </span>
+        <span v-if="showTopic && displayTopic" class="inline-block rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+          Topic: {{ displayTopic }}
+        </span>
+      </div>
 
       <!-- Description -->
       <p v-if="description" class="mt-2 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
@@ -60,16 +73,6 @@
           <Icon name="heroicons:clock" class="h-4 w-4" />
           <span class="font-medium">{{ questionsCount }}m</span>
         </div>
-      </div>
-
-      <!-- Subject/Topic Tags -->
-      <div v-if="showSubject && displaySubject || showTopic && displayTopic" class="mt-4 flex flex-wrap gap-2">
-        <span v-if="showSubject && displaySubject" class="inline-block rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {{ displaySubject }}
-        </span>
-        <span v-if="showTopic && displayTopic" class="inline-block rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {{ displayTopic }}
-        </span>
       </div>
 
       <!-- CTA Button -->
@@ -128,7 +131,7 @@ const props = defineProps({
 })
 
 const displaySubject = computed(() => {
-  const s = props.subject || (props.quiz && (props.quiz.subject || props.quiz.subject_id ? props.quiz.subject : null))
+  const s = props.subject || (props.quiz && (props.quiz.subject_name || props.quiz.topic?.subject?.name || props.quiz.subject?.name))
   if (!s && s !== 0) return ''
   if (typeof s === 'string') return s
   return s.name || s.title || s.label || s.slug || String(s.id || s || '')
@@ -156,10 +159,30 @@ const displayTitle = computed(() => {
 })
 
 const displayTopic = computed(() => {
-  const t = props.topic || (props.quiz && (props.quiz.topic || props.quiz.topic_id ? props.quiz.topic : null))
+  const t = props.topic || (props.quiz && (props.quiz.topic_name || props.quiz.topic?.name))
   if (!t && t !== 0) return ''
   if (typeof t === 'string') return t
   return t.name || t.title || t.label || t.slug || String(t.id || t || '')
+})
+
+const displayGrade = computed(() => {
+  // Check props first, then quiz object with grade_name field
+  const g = props.grade || (props.quiz && (props.quiz.grade_name || props.quiz.grade?.name))
+  if (!g && g !== 0) return ''
+  if (typeof g === 'string') return g
+  // If it's an object with name/title, extract it
+  if (typeof g === 'object') return g.name || g.title || g.label || ''
+  return ''
+})
+
+const displayLevel = computed(() => {
+  // Check quiz object with level_name field (which handles course_name for tertiary)
+  const l = props.quiz && (props.quiz.level_name || props.quiz.level?.name)
+  if (!l && l !== 0) return ''
+  if (typeof l === 'string') return l
+  // If it's an object with name/title, extract it
+  if (typeof l === 'object') return l.name || l.title || l.label || ''
+  return ''
 })
 
 const difficultyLabel = computed(() => {

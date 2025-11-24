@@ -1,5 +1,5 @@
 <template>
-  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900 border border-slate-100 dark:border-slate-800/20">
+  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-all duration-300 hover:shadow-xl dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800/20">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
     <!-- Content Section -->
@@ -62,6 +62,9 @@
         </span>
       </div>
     </div>
+
+    <!-- Bottom accent (green strip similar to GradeCard) -->
+    <div class="h-8 w-full rounded-b-2xl bg-gradient-to-br from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800"></div>
   </div>
 </template>
 

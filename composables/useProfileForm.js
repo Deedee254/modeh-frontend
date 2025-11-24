@@ -93,7 +93,7 @@ export function useProfileForm() {
    * Saves profile data to the API.
    * Handles both user data and role-specific profile data.
    */
-  async function saveProfile(form, isQuizMaster) {
+  async function saveProfile(form, isQuizMasterOrRole) {
     try {
       // Validate form
       const errors = validateForm(form)
@@ -116,17 +116,30 @@ export function useProfileForm() {
       }
 
       // Prepare profile data (goes to role-specific endpoint)
-      const profileData = {
-        institution: form.institution || null,
-        grade_id: form.grade_id || null,
-        level_id: form.level_id || null,
-        subjects: form.subjects || []
+      // Only include keys that were provided to avoid accidentally wiping
+      // existing profile data when a field is left unchanged.
+      const profileData = {}
+      if (form.institution !== undefined) profileData.institution = form.institution || null
+      if (form.grade_id !== undefined && form.grade_id !== '') profileData.grade_id = form.grade_id || null
+      if (form.level_id !== undefined && form.level_id !== '') profileData.level_id = form.level_id || null
+      if (Array.isArray(form.subjects) && form.subjects.length > 0) profileData.subjects = form.subjects
+
+      // Normalize role parameter: the caller may pass a boolean (legacy) or a role string
+      let role = null
+      if (typeof isQuizMasterOrRole === 'boolean') {
+        role = isQuizMasterOrRole ? 'quiz-master' : 'quizee'
+      } else if (typeof isQuizMasterOrRole === 'string') {
+        role = isQuizMasterOrRole
       }
 
-      // Add role-specific fields to profile data
-      if (isQuizMaster) {
-        profileData.headline = form.headline || ''
-        profileData.bio = form.bio || ''
+      // Add role-specific fields to profile data when applicable
+      if (role === 'quiz-master') {
+        if (form.headline !== undefined) profileData.headline = form.headline || ''
+        if (form.bio !== undefined) profileData.bio = form.bio || ''
+      } else if (role === 'quizee') {
+        if (form.first_name !== undefined) profileData.first_name = form.first_name || ''
+        if (form.last_name !== undefined) profileData.last_name = form.last_name || ''
+        if (form.bio !== undefined) profileData.bio = form.bio || ''
       }
 
       // Update user data first
@@ -138,15 +151,18 @@ export function useProfileForm() {
         }
       }
 
-      // Then update profile data using role-specific endpoint
-      const profileEndpoint = isQuizMaster ? '/api/profile/quiz-master' : '/api/profile/quizee'
-      const profileRes = await api.patchJson(profileEndpoint, profileData)
-
-      if (!profileRes.ok) {
-        throw new Error('Failed to update profile')
+      // Then update profile data using role-specific endpoint if applicable.
+      // For roles that don't have a separate profile endpoint (e.g. institution-manager),
+      // skip this step.
+      let profileJson = null
+      if (role === 'quiz-master' || role === 'quizee') {
+        const profileEndpoint = role === 'quiz-master' ? '/api/profile/quiz-master' : '/api/profile/quizee'
+        const profileRes = await api.patchJson(profileEndpoint, profileData)
+        if (!profileRes.ok) {
+          throw new Error('Failed to update profile')
+        }
+        profileJson = await profileRes.json()
       }
-
-      const profileJson = await profileRes.json()
 
       // Merge the returned data with user data for auth store
       let mergedUser = { ...userJson }

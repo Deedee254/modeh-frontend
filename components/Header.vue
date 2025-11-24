@@ -4,8 +4,8 @@
     <div class="bg-slate-900 text-white py-2 px-4">
       <div class="max-w-6xl mx-auto flex justify-between items-center text-xs">
         <div class="flex items-center gap-3">
-          <span>info@modeh.com</span>
-          <span>+1 234 567 890</span>
+          <span>info@modeh.co.ke</span>
+          <span>+254 703 155 693</span>
         </div>
         <div class="flex items-center gap-4">
           <a href="#" class="hover:text-slate-300">

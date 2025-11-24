@@ -1,26 +1,20 @@
 <template>
-  <div :class="['group relative flex w-full flex-col', isCompact ? 'md:flex-col' : 'md:flex-row', 'overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/20 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900']">
+  <div class="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/20 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
-    <!-- LEFT SIDE (Desktop) / TOP (Mobile) -->
-    <div :class="['flex flex-col justify-between bg-gradient-to-br from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800 text-white', isCompact ? 'w-full p-4' : 'w-full md:w-1/3 p-6']">
+  <!-- TOP SECTION (Gradient with grade/course info) -->
+  <div :class="['flex flex-col justify-between bg-gradient-to-br from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800 text-white', isCompact ? 'w-full p-4' : 'w-full p-6']">
       <!-- Badge -->
       <div>
         <p :class="['uppercase tracking-wider text-teal-200 mb-2', isCompact ? 'text-xs font-medium' : 'text-xs font-semibold mb-3']">
           {{ isCourse ? 'COURSE' : 'GRADE' }}
         </p>
-        <h3 :class="['leading-tight', isCompact ? 'text-lg font-semibold' : 'text-xl sm:text-2xl font-normal']">{{ displayTitle }}</h3>
+        <h3 :class="['leading-tight', isCompact ? 'text-lg font-semibold' : 'text-lg sm:text-xl font-semibold']">{{ displayTitle }}</h3>
       </div>
-
-      <!-- View Link -->
-      <NuxtLink :to="to" :class="['relative z-10 inline-flex items-center gap-2 text-white hover:text-teal-100 transition group', isCompact ? 'text-xs font-medium mt-3' : 'text-sm font-medium']">
-        View all subjects
-        <Icon name="heroicons:arrow-right" class="h-4 w-4 transition-transform group-hover:translate-x-1" />
-      </NuxtLink>
     </div>
 
-    <!-- RIGHT SIDE -->
-    <div :class="['flex flex-col', isCompact ? 'w-full p-4' : 'w-full md:w-2/3 p-6']">
+  <!-- BOTTOM SECTION (Content area) -->
+  <div :class="['flex flex-col', isCompact ? 'w-full p-4' : 'w-full p-6']">
       <!-- Description Title -->
       <h4 :class="['text-slate-900 dark:text-slate-50 mb-2', isCompact ? 'text-sm font-semibold' : 'text-lg font-semibold']">About this {{ isCourse ? 'course' : 'grade' }}</h4>
 
@@ -43,20 +37,33 @@
         </button>
       </div>
 
-      <!-- Quiz Count (Right Side) -->
-      <div v-if="quizzes_count" :class="['inline-flex items-center gap-2 mb-4', isCompact ? 'text-xs' : 'text-sm mb-6']">
-        <Icon name="heroicons:document-text" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
-        <span :class="[isCompact ? 'font-medium' : 'font-medium', 'text-slate-900 dark:text-slate-50']">{{ quizzes_count }} {{ quizzes_count === 1 ? 'quiz' : 'quizzes' }}</span>
+      <!-- Quiz Count and Subject Count -->
+      <div class="flex items-center gap-6 mb-6">
+        <div class="flex items-center gap-2">
+          <Icon name="heroicons:document-text" class="h-5 w-5 text-teal-600 dark:text-teal-400" />
+          <div class="flex flex-col">
+            <span :class="['text-slate-600 dark:text-slate-400', isCompact ? 'text-xs' : 'text-sm']">{{ quizzes_count }}</span>
+            <span :class="['font-semibold text-slate-900 dark:text-slate-50', isCompact ? 'text-xs' : 'text-sm']">{{ quizzes_count === 1 ? 'Quiz' : 'Quizzes' }}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <Icon name="heroicons:squares-2x2" class="h-5 w-5 text-teal-600 dark:text-teal-400" />
+          <div class="flex flex-col">
+            <span :class="['text-slate-600 dark:text-slate-400', isCompact ? 'text-xs' : 'text-sm']">{{ subjects_count }}</span>
+            <span :class="['font-semibold text-slate-900 dark:text-slate-50', isCompact ? 'text-xs' : 'text-sm']">{{ subjects_count === 1 ? 'Subject' : 'Subjects' }}</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Continue Button -->
-      <div class="mt-auto flex items-center gap-3">
+      <!-- View all subjects Button -->
+      <div class="mt-auto">
         <NuxtLink 
           v-if="to"
           :to="to"
-          :class="['relative z-10 inline-flex items-center justify-center rounded-full bg-teal-600 dark:bg-teal-700 text-white transition hover:bg-teal-700 dark:hover:bg-teal-600', isCompact ? 'px-4 py-1.5 text-xs font-semibold' : 'px-6 py-2 text-sm font-semibold']"
+          :class="['relative z-10 w-full inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 dark:bg-teal-700 text-white transition hover:bg-teal-700 dark:hover:bg-teal-600', isCompact ? 'px-4 py-2 text-xs font-semibold' : 'px-6 py-3 text-sm font-semibold']"
         >
-          Continue
+          <span>View all subjects</span>
+          <Icon name="heroicons:arrow-right" class="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </NuxtLink>
       </div>
     </div>

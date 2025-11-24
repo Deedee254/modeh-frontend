@@ -6,7 +6,7 @@
       // overlapping it.
       props.flush ? 'mt-6 sm:mt-8' : '',
       padding,
-      'mb-8 sm:mb-12'
+      'mb-4'
   ]" :style="backgroundStyle">
     <!-- Decorative background image and overlay -->
     <div v-if="hasBackgroundImage" class="absolute inset-0 -z-10 bg-cover bg-center" :style="backgroundImageStyle" aria-hidden="true"></div>

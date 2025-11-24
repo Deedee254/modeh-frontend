@@ -1,5 +1,5 @@
 <template>
-  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900 border border-slate-100 dark:border-slate-800/20">
+  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700/50 hover:border-teal-300 dark:hover:border-teal-600/50">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
     <!-- Hero Section with Icon -->
@@ -17,6 +17,11 @@
 
     <!-- Content Section -->
     <div class="flex flex-1 flex-col p-5">
+      <!-- Topic Badge -->
+      <p class="uppercase tracking-wider text-teal-600 dark:text-teal-400 text-xs font-semibold mb-2">
+        Topic
+      </p>
+
       <!-- Title in Teal -->
       <h3 class="text-lg font-bold text-teal-600 dark:text-teal-400 line-clamp-2">
         {{ displayTitle }}
@@ -25,7 +30,7 @@
       <!-- Subject Tag -->
       <div v-if="displaySubject" class="mt-2 inline-block">
         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {{ displaySubject }}
+        Subject : {{ displaySubject }}
         </span>
       </div>
 

@@ -95,12 +95,12 @@
             <QuizCard
               v-for="q in paginatedQuizzes"
               :key="q.id"
+              :quiz="q"
               :to="`/quizee/quizzes/${q.id}`"
               :startLink="`/quizee/quizzes/${q.id}`"
               :takeLink="`/quizee/quizzes/take/${q.id}`"
               :title="q.title"
               :subject="q.topic?.subject?.name || q.subject?.name || q.subject_name"
-              :grade="q.grade || q.grade_id"
               :questions-count="q.questions_count ?? q.questions ?? q.items_count"
               :topic="q.topic_name || q.topic?.name || ''"
               :marks="q.marks"

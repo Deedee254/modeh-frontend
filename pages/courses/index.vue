@@ -35,6 +35,10 @@
               v-for="c in coursesFiltered"
               :key="c.id"
               :grade="c"
+              :title="c.display_name || c.name || c.title || `Course ${c.id}`"
+              :subtitle="`${c.quizzes_count || c.count || 0} quizzes available`"
+              :quizzes_count="c.quizzes_count || c.count || 0"
+              :description="c.description || c.summary || ''"
               :actionLink="`/courses/${c.id}`"
               :actionLabel="'Open course'"
             />

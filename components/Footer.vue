@@ -37,8 +37,8 @@
         <div class="mt-3 text-sm opacity-90 space-y-1">
           <div>Modeh Ltd.</div>
           <div>Nairobi, Kenya</div>
-          <div>Email: <a href="mailto:hello@modeh.co" class="underline">hello@modeh.co</a></div>
-          <div>Phone: <a href="tel:+254700000000" class="underline">+254 700 000 000</a></div>
+          <div>Email: <a href="mailto:info@modeh.co.ke" class="underline">info@modeh.co.ke</a></div>
+          <div>Phone: <a href="tel:+254703155693" class="underline">+254 703 155 693</a></div>
         </div>
         <div class="mt-4 text-sm opacity-90">© {{ new Date().getFullYear() }} Modeh — Built with Nuxt</div>
       </div>

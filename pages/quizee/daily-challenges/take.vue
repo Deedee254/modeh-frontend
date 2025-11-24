@@ -266,7 +266,7 @@ const submitChallenge = async () => {
     // Submit with cache_id, answers, and time taken (backend calculates score)
     const body = { cache_id: cache_id.value, answers: payloadAnswers, time_taken: timeTaken }
 
-    const res = await api.post('/api/daily-challenges/submit', body)
+    const res = await api.postJson('/api/daily-challenges/submit', body)
     if (api.handleAuthStatus(res)) return
 
     if (!res.ok) {

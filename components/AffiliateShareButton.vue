@@ -5,7 +5,7 @@
       :class="btnClassComputed"
     >
       <ShareIcon class="w-4 h-4" />
-      <span class="ml-2">Share</span>
+      <span v-if="!iconOnly" class="ml-2">Share</span>
     </button>
 
     <!-- Share Modal -->
@@ -164,6 +164,10 @@ const props = defineProps({
     type: String,
     default: null
   },
+  iconOnly: {
+    type: Boolean,
+    default: false
+  },
   fullWidth: {
     type: Boolean,
     default: false
@@ -174,7 +178,9 @@ const props = defineProps({
 const btnClassComputed = computed(() => {
   if (props.btnClass) return props.btnClass + (props.fullWidth ? ' w-full justify-center' : '')
   // default fallback matches original appearance
-  return (`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`)
+  const gap = props.iconOnly ? 'gap-0' : 'gap-2'
+  const pxpy = props.iconOnly ? 'p-2' : 'px-3 py-2'
+  return (`inline-flex items-center ${gap} ${pxpy} text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`)
 })
 
 // Handle share button click

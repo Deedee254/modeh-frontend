@@ -18,7 +18,7 @@ export function useTournamentBattle(battle: TournamentBattle) {
             loading.value = true
             error.value = null
 
-            const response = await api.post(`/tournaments/battles/${battle.id}/forfeit`, {
+            const response = await api.postJson(`/tournaments/battles/${battle.id}/forfeit`, {
                 reason
             })
 
@@ -42,7 +42,7 @@ export function useTournamentBattle(battle: TournamentBattle) {
             loading.value = true
             error.value = null
 
-            const response = await api.post(`/tournaments/battles/${battle.id}/submit`, {
+            const response = await api.postJson(`/tournaments/battles/${battle.id}/submit`, {
                 answers
             })
 

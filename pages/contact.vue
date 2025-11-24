@@ -59,12 +59,12 @@
 
             <div>
               <div class="text-xs uppercase text-indigo-600 font-medium">Phone</div>
-              <div class="mt-1"><a href="tel:+15551234567" class="text-indigo-600">+1 (555) 123-4567</a></div>
+              <div class="mt-1"><a href="tel:+254703155693" class="text-indigo-600">+254 703 155 693</a></div>
             </div>
 
             <div>
               <div class="text-xs uppercase text-indigo-600 font-medium">Email</div>
-              <div class="mt-1"><a href="mailto:support@modeh.example" class="text-indigo-600">support@modeh.example</a></div>
+              <div class="mt-1"><a href="mailto:info@modeh.co.ke" class="text-indigo-600">info@modeh.co.ke</a></div>
             </div>
 
             <div>

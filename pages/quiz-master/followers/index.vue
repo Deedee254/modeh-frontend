@@ -170,7 +170,9 @@ async function loadFollowers() {
   pending.value = true
   error.value = null
   try {
-    const res = await api.get('/quiz-master/followers')
+  // backend API routes are mounted under /api (see backend routes/api.php)
+  // ensure we call the API-prefixed path so the request hits the correct controller
+  const res = await api.get('/api/quiz-master/followers')
     if (api.handleAuthStatus(res)) {
       // handleAuthStatus will redirect to login when needed
       return

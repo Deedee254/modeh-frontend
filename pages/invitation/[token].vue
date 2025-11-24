@@ -18,7 +18,7 @@ const error = ref<string | null>(null)
 const invitationData = ref<any>(null)
 
 const { $auth } = useNuxtApp()
-const user = computed(() => $auth?.user)
+const user = computed(() => ($auth as any)?.user)
 
 async function loadInvitation() {
   try {
@@ -61,7 +61,7 @@ async function acceptInvitation() {
     processing.value = true
     error.value = null
 
-    const resp = await api.post(
+    const resp = await api.postJson(
       `/api/institutions/${invitationData.value.institution.id}/members/accept-invitation/${token.value}`,
       {}
     )
@@ -72,7 +72,7 @@ async function acceptInvitation() {
       return
     }
 
-    appAlert.add({
+    appAlert.push({
       type: 'success',
       title: 'Invitation Accepted',
       message: `You have successfully joined ${invitationData.value.institution.name}!`

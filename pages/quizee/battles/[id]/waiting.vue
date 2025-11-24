@@ -428,7 +428,7 @@ function startSoloCountdown() {
 
 async function startSoloBattle() {
   try {
-    const res = await api.post(`/api/battles/${battle.value.uuid}/start-solo`)
+    const res = await api.postJson(`/api/battles/${battle.value.uuid}/start-solo`)
     if (api.handleAuthStatus(res)) return
     if (res.ok) {
       showAlert({ type: 'success', message: 'Battle started in solo mode!' })

@@ -261,7 +261,7 @@ function formatDate(dateString) {
 
 async function redeem(reward) {
   try {
-    const res = await api.post('/api/rewards/redeem', { id: reward.id })
+    const res = await api.postJson('/api/rewards/redeem', { id: reward.id })
     if (!res.ok) {
       throw new Error('Failed to redeem reward')
     }
