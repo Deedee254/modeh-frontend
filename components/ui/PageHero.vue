@@ -1,7 +1,10 @@
 <template>
   <section v-bind="$attrs" :class="[
     'relative isolate overflow-hidden',
-      props.flush ? '-mt-6 sm:-mt-8' : '',
+      // avoid pulling the hero upward (overlapping the site header). When flush is requested,
+      // add a small positive top margin instead so content sits below the header rather than
+      // overlapping it.
+      props.flush ? 'mt-6 sm:mt-8' : '',
       padding,
       'mb-8 sm:mb-12'
   ]" :style="backgroundStyle">
@@ -74,20 +77,7 @@
                 </div>
               </slot>
 
-              <div v-if="showSearch" class="w-full">
-                <div class="relative flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <UiSearch
-                    v-model="heroQuery"
-                    placeholder="Search quizzes, topics, subjects..."
-                    @search="onHeroSearch"
-                    class="w-full text-sm"
-                    icon="heroicons:magnifying-glass"
-                  />
-                  <div v-if="$slots['search-aux']" class="sm:ml-3">
-                    <slot name="search-aux"></slot>
-                  </div>
-                </div>
-              </div>
+              <!-- Page-level search removed: header already provides site search. -->
             </div>
           </div>
 
@@ -137,7 +127,7 @@ interface Props {
   imagePosition?: string
   overlayClass?: string
   breadcrumbs?: Array<{ text: string, href?: string, current?: boolean }>
-  showSearch?: boolean
+  // showSearch removed — site header provides a global search
   flush?: boolean
 }
 
@@ -154,15 +144,11 @@ const props = withDefaults(defineProps<Props>(), {
   image: undefined,
   imagePosition: 'center',
   overlayClass: 'bg-black/40',
-  showSearch: false,
+  // showSearch removed
   flush: false
 })
 
-// Emit search events when the hero search is used
-const emit = defineEmits<{ (e: 'search', query: string): void }>()
-
-// reactive query for the hero search
-const heroQuery = ref('')
+// Page-level search removed; header search is used instead.
 
 // Determine whether we have an image provided
 const hasBackgroundImage = Boolean(props.image)
@@ -191,9 +177,7 @@ const backgroundImageStyle = computed(() => {
 
 const breadcrumbs = props.breadcrumbs
 
-function onHeroSearch() {
-  emit('search', heroQuery.value)
-}
+// (search logic removed)
 </script>
 <style>
 @keyframes fade-in-down {

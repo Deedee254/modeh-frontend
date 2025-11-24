@@ -387,7 +387,7 @@ async function fetchStats() {
 
 onMounted(async () => {
   // ensure subjects for this user's grade are loaded
-  await fetchSubjectsByGrade(grade)
+  await store.fetchSubjectsByGrade(grade)
   await fetchStats()
 })
 </script>

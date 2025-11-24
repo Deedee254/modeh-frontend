@@ -141,7 +141,7 @@ onMounted(async () => {
           <div class="inline-block">
             <img
               :src="
-                leaderboard[1].avatar ||
+                leaderboard[1].avatar_url || leaderboard[1].avatar ||
                 `https://ui-avatars.com/api/?name=${leaderboard[1].name}&background=random`
               "
               class="w-20 h-20 rounded-full border-4 border-gray-200 object-cover mx-auto"
@@ -173,7 +173,7 @@ onMounted(async () => {
             </svg>
             <img
               :src="
-                leaderboard[0].avatar ||
+                leaderboard[0].avatar_url || leaderboard[0].avatar ||
                 `https://ui-avatars.com/api/?name=${leaderboard[0].name}&background=random`
               "
               class="w-28 h-28 rounded-full border-4 border-amber-400 object-cover mx-auto"
@@ -205,7 +205,7 @@ onMounted(async () => {
           <div class="inline-block">
             <img
               :src="
-                leaderboard[2].avatar ||
+                leaderboard[2].avatar_url || leaderboard[2].avatar ||
                 `https://ui-avatars.com/api/?name=${leaderboard[2].name}&background=random`
               "
               class="w-16 h-16 rounded-full border-4 border-orange-200 object-cover mx-auto"

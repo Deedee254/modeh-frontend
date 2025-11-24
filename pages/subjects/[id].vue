@@ -100,7 +100,7 @@ import PageHero from '~/components/ui/PageHero.vue'
 // HeroFilterBar removed — using PageHero search instead
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import Pagination from '~/components/Pagination.vue'
 import { ref, onMounted, computed, watch } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'

@@ -106,7 +106,8 @@ const auth = useAuthStore()
 
 // Use asset composable to resolve avatar URL
 const userAvatarUrl = computed(() => {
-  return resolveAssetUrl(auth?.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png'
+  // Prefer `avatar_url` then `avatar` and resolve relative paths
+  return resolveAssetUrl(auth?.user?.avatar_url || auth?.user?.avatar) || '/logo/avatar-placeholder.png'
 })
 
 function toggle() {

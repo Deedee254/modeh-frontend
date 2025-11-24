@@ -107,7 +107,7 @@
 import PageHero from '~/components/ui/PageHero.vue'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'

@@ -1,5 +1,5 @@
 <template>
-  <NuxtLink v-if="to" :to="to" class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
+  <NuxtLink v-if="to" :to="to" class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900 border border-slate-100 dark:border-slate-800/20">
     <!-- Header with Light Teal/Cyan Background -->
     <div class="bg-gradient-to-br from-teal-100 via-cyan-100 to-emerald-100 dark:from-teal-900/30 dark:via-cyan-900/30 dark:to-emerald-900/30 px-5 py-6">
       <div class="flex items-start justify-between">

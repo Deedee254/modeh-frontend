@@ -17,7 +17,7 @@
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-8">
           <div class="flex-shrink-0">
             <div class="w-40 h-40 rounded-full overflow-hidden ring-4 ring-indigo-100">
-              <img v-if="quizMaster.avatar" :src="quizMaster.avatar" :alt="quizMaster.name" class="w-full h-full object-cover">
+              <img v-if="resolvedAvatar" :src="resolvedAvatar" :alt="quizMaster.name" class="w-full h-full object-cover">
               <div v-else class="w-full h-full bg-indigo-100 text-indigo-700 grid place-items-center font-bold text-6xl">
                 {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
               </div>
@@ -99,6 +99,16 @@ const quizMaster = computed(() => {
     if (!quizMasterData.value) return null
     // API might return quiz-master object nested under a 'data' key
     return quizMasterData.value.data || quizMasterData.value
+})
+
+import { resolveAssetUrl } from '~/composables/useAssets'
+import { computed as _computed } from 'vue'
+
+const resolvedAvatar = _computed(() => {
+  const qm = quizMaster.value
+  if (!qm) return null
+  const v = qm.avatar_url || qm.avatar || qm.image || qm.photo || qm.profile_image
+  return resolveAssetUrl(v) || (v || null)
 })
 
 // follow state

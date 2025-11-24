@@ -153,7 +153,7 @@
 <script setup>
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import { ref, computed, watch, onMounted } from 'vue'

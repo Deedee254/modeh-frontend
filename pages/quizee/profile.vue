@@ -151,6 +151,7 @@ interface User {
   name?: string
   email?: string
   phone?: string
+  avatar?: string
   avatar_url?: string
   points?: number
   rewards?: { points?: number }
@@ -172,7 +173,8 @@ const user = computed<User>(() => {
   return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
 })
 
-const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url) || '/logo/avatar-placeholder.png')
+// Prefer `avatar_url` then fallback to `avatar`; resolve via runtime apiBase
+const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url || user.value?.avatar) || '/logo/avatar-placeholder.png')
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points
   return typeof p === 'number' ? `${p} points` : ''

@@ -120,7 +120,7 @@ import PageHero from '~/components/ui/PageHero.vue'
 // HeroFilterBar removed — using PageHero search instead
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'

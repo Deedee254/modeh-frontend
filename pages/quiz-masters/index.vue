@@ -34,7 +34,7 @@
         <UCard v-for="quizMaster in quizMasters" :key="quizMaster.id" class="hover:shadow-lg transition">
           <div class="flex flex-col items-center text-center">
             <div class="w-24 h-24 rounded-full overflow-hidden mb-4">
-              <img v-if="quizMaster.avatar" :src="quizMaster.avatar" :alt="quizMaster.name" class="w-full h-full object-cover">
+              <img v-if="quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.profile_image" :src="resolveAssetUrl(quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.profile_image) || (quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.profile_image)" :alt="quizMaster.name" class="w-full h-full object-cover">
               <div v-else class="w-full h-full bg-indigo-100 text-indigo-700 grid place-items-center font-bold text-3xl">
                 {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
               </div>
@@ -76,7 +76,7 @@
 
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import { ref, computed, watch, onMounted, watchEffect } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -172,6 +172,8 @@ onMounted(() => {
     setTimeout(() => printMetrics(), 2000)
   }
 })
+
+import { resolveAssetUrl } from '~/composables/useAssets'
 
 useHead({
   title: 'Our quiz-masters',

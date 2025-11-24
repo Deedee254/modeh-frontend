@@ -7,14 +7,14 @@
     >
       <div class="w-1/3" v-for="(p, idx) in topThree" :key="p.id">
         <div class="flex flex-col items-center">
-          <div class="relative">
-            <img
-              :src="resolvedAvatar(p.avatar)"
-              :alt="p.name"
-              :class="avatarClass(idx)"
-            />
-            <div :class="badgeClass(idx)">{{ idx + 1 }}</div>
-          </div>
+              <div class="relative">
+                <img
+                  :src="resolvedAvatar(p)"
+                  :alt="p.name"
+                  :class="avatarClass(idx)"
+                />
+                <div :class="badgeClass(idx)">{{ idx + 1 }}</div>
+              </div>
           <h3 class="font-semibold mt-2 truncate">{{ p.name }}</h3>
           <p class="text-sm text-gray-500">{{ displayPoints(p) }} pts</p>
           <div :class="heightClass(idx)"></div>
@@ -24,10 +24,10 @@
 
     <!-- Mobile stacked top-3 (for small screens) -->
     <div v-if="entries && entries.length >= 3" class="space-y-4 sm:hidden">
-      <div v-for="(p, idx) in topThree" :key="p.id" class="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
+          <div v-for="(p, idx) in topThree" :key="p.id" class="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
         <div>
           <div class="relative">
-            <img :src="resolvedAvatar(p.avatar)" :alt="p.name" class="w-16 h-16 rounded-full object-cover" />
+            <img :src="resolvedAvatar(p)" :alt="p.name" class="w-16 h-16 rounded-full object-cover" />
             <div :class="badgeClass(idx)"></div>
           </div>
         </div>
@@ -62,7 +62,7 @@
               />
             </svg>
             <img
-              :src="resolvedAvatar(u.avatar)"
+              :src="resolvedAvatar(u)"
               class="w-20 h-20 rounded-full border-4 border-gray-300 object-cover"
             />
             <div
@@ -124,7 +124,18 @@ function displayPoints(p) {
 }
 
 function resolvedAvatar(v) {
-  try { return resolveAssetUrl(v) || v || props.placeholder } catch { return v || props.placeholder }
+  try {
+    // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
+    let val = null
+    if (v && typeof v === 'object') {
+      val = v.avatar_url || v.avatar || v.photo || v.profile_image || null
+    } else {
+      val = v
+    }
+    return resolveAssetUrl(val) || val || props.placeholder
+  } catch {
+    return (typeof v === 'string' ? v : null) || props.placeholder
+  }
 }
 </script>
 

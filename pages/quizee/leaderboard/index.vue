@@ -58,6 +58,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import PageHero from "~/components/ui/PageHero.vue";
 import Podium from "~/components/leaderboard/Podium.vue";
 import LeaderboardTable from "~/components/leaderboard/LeaderboardTable.vue";
+import { resolveAssetUrl } from '~/composables/useAssets'
 
 definePageMeta({
   layout: "quizee",
@@ -84,15 +85,17 @@ async function fetchLeaderboard() {
     // support multiple response shapes used across the app
     const raw = res?.users || res?.data || res || [];
     // normalize entries to expected fields used in template
+
     leaderboard.value = (Array.isArray(raw) ? raw : [])
       .map((u, idx) => ({
+        // spread raw object first, but set canonical fields after so they override raw values
+        ...(u || {}),
         id: u?.id ?? u?.user_id ?? `u${idx}`,
         name: u?.name || u?.display_name || u?.username || "Unknown",
-        avatar: u?.avatar || u?.photo || u?.profile_image || null,
+        // normalize avatar and ensure any relative path is resolved to an absolute URL
+        avatar: resolveAssetUrl(u?.avatar_url || u?.avatar || u?.photo || u?.profile_image) || (u?.avatar_url || u?.avatar || u?.photo || u?.profile_image || null),
         points: u?.points ?? u?.score ?? u?.pts ?? 0,
         country: u?.country || u?.location || null,
-        // keep other fields available
-        ...u,
       }))
       .sort((a, b) => (b.points || 0) - (a.points || 0));
   } catch (e) {

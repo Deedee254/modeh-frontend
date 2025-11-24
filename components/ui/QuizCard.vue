@@ -1,16 +1,13 @@
 <template>
-  <div class="group relative flex w-full flex-col rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
+  <div class="group relative flex w-full flex-col rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900 border border-slate-100 dark:border-slate-800/20">
     <!-- Hero Section with Play Button -->
     <div class="relative h-48 overflow-hidden rounded-t-2xl bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700">
-      <!-- Background Image if available -->
-      <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover opacity-40" />
-      
-      <!-- Overlay gradient -->
-      <div class="absolute inset-0 bg-gradient-to-br from-teal-500/80 to-teal-600/80 dark:from-teal-600/80 dark:to-teal-700/80"></div>
+  <!-- Background Image if available (no overlay so image is fully visible) -->
+  <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover" />
 
       <!-- Play Button Icon (centered) -->
       <div class="absolute inset-0 flex items-center justify-center">
-        <div class="rounded-full bg-white/20 p-4 backdrop-blur-sm">
+        <div class="rounded-full bg-white/30 p-4 backdrop-blur-sm">
           <Icon name="heroicons:play-solid" class="h-12 w-12 text-white" />
         </div>
       </div>

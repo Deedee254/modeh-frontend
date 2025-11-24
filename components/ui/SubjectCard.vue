@@ -1,5 +1,5 @@
 <template>
-  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
+  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900 border border-slate-100 dark:border-slate-800/20">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
     <!-- Content Section -->
@@ -67,6 +67,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 
 const props = defineProps({
   to: { type: [String, Object], default: null },
@@ -93,11 +94,26 @@ const iconName = computed(() => {
 const displayTitle = computed(() => props.title || props.name || props.subject?.name || 'Subject')
 const displayDescription = computed(() => props.description || props.subject?.description || '')
 
+const store = useTaxonomyStore()
+
 const displayGrade = computed(() => {
   const g = props.grade || props.subject?.grade
   if (!g) return ''
-  if (typeof g === 'string' || typeof g === 'number') return g
-  return g.name || g.title || g.label || String(g.id || '')
+
+  // If grade is an object, prefer readable name fields
+  if (typeof g === 'object') return g.name || g.title || g.label || String(g.id || '')
+
+  // If grade is a primitive (id or slug), try to resolve from taxonomy store
+  try {
+    const idStr = String(g)
+    const found = (store.grades || []).find(x => x && (String(x.id) === idStr || String(x.slug || '') === idStr || String(x.name || '') === idStr))
+    if (found) return found.display_name || found.name || found.title || String(found.id)
+  } catch (e) {
+    // ignore
+  }
+
+  // fallback to showing the raw value
+  return String(g)
 })
 
 const isCourse = computed(() => {

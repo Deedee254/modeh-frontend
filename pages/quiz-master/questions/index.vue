@@ -141,7 +141,7 @@ import Pagination from '~/components/Pagination.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 const alert = useAppAlert()

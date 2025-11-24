@@ -119,6 +119,7 @@ interface User {
   name?: string
   email?: string
   phone?: string
+  avatar?: string
   avatar_url?: string
   wallet?: number
   quizMasterProfile?: {
@@ -139,7 +140,8 @@ const user = computed<User>(() => {
   // If it's a ref with a .value property, unwrap it; otherwise use it directly
   return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
 })
-const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url) || '/logo/avatar-placeholder.png')
+// Prefer `avatar_url` then fallback to `avatar` and resolve relative paths
+const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url || user.value?.avatar) || '/logo/avatar-placeholder.png')
 
 // Get profile based on role
 const profile = computed(() => {

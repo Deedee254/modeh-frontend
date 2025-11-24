@@ -1,5 +1,5 @@
 <template>
-  <div :class="['group relative flex w-full flex-col', isCompact ? 'md:flex-col' : 'md:flex-row', 'overflow-hidden rounded-2xl border border-teal-200 dark:border-teal-800 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900']">
+  <div :class="['group relative flex w-full flex-col', isCompact ? 'md:flex-col' : 'md:flex-row', 'overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/20 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900']">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
     <!-- LEFT SIDE (Desktop) / TOP (Mobile) -->

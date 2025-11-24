@@ -47,7 +47,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 import PageHero from '~/components/ui/PageHero.vue'

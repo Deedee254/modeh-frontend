@@ -1,101 +1,161 @@
 <template>
-  <aside class="rounded-lg p-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800 sticky overflow-y-auto" :style="{ top: 'var(--topbar-height)', height: 'calc(100vh - var(--topbar-height))' }">
-    <div class="flex items-center justify-between">
-      <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">Filters</div>
-      <button @click="collapsed = !collapsed" class="text-sm text-gray-500 px-2 py-1 rounded hover:bg-gray-100">{{ collapsed ? 'Open' : 'Collapse' }}</button>
-    </div>
-
-    <div v-if="!collapsed" class="mt-3">
-
-      <!-- Active filter chips -->
-      <div v-if="hasAnyActive" class="mb-3 flex flex-wrap gap-2">
-            <template v-if="activeLevelLabel">
-              <button @click="removeLevel" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
-                <span class="font-semibold">Level:</span>
-                <span>{{ activeLevelLabel }}</span>
-                <span class="ml-1 text-slate-400">×</span>
-              </button>
-            </template>
-        <template v-if="activeGradeLabel">
-          <button @click="removeGrade" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
-            <span class="font-semibold">Grade:</span>
-            <span>{{ activeGradeLabel }}</span>
-            <span class="ml-1 text-slate-400">×</span>
-          </button>
-        </template>
-        <template v-if="activeSubjectLabel">
-          <button @click="removeSubject" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
-            <span class="font-semibold">Subject:</span>
-            <span>{{ activeSubjectLabel }}</span>
-            <span class="ml-1 text-slate-400">×</span>
-          </button>
-        </template>
-        <template v-if="activeTopicLabel">
-          <button @click="removeTopic" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
-            <span class="font-semibold">Topic:</span>
-            <span>{{ activeTopicLabel }}</span>
-            <span class="ml-1 text-slate-400">×</span>
-          </button>
-        </template>
+  <!--
+    FiltersSidebar can be used in two contexts:
+    - as a left column sidebar (tall, sticky full-height)
+    - as an inline/top filters panel (embedded inside a sticky wrapper)
+    Provide a `sticky` prop to control whether this component should be the sticky/full-height element.
+    Default to false so embedding it inside already-sticky containers (common on index pages) doesn't cause
+    the component to expand to full viewport height and cover the page.
+  -->
+  <aside :class="[
+      'rounded-lg p-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800 overflow-y-auto',
+      props.sticky ? 'sticky' : ''
+    ]"
+    :style="props.sticky ? { top: 'var(--topbar-height)', height: 'calc(100vh - var(--topbar-height))' } : {}">
+    <template v-if="props.sticky">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">Filters</div>
+        <button @click="collapsed = !collapsed" class="text-sm text-gray-500 px-2 py-1 rounded hover:bg-gray-100">{{ collapsed ? 'Open' : 'Collapse' }}</button>
       </div>
 
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Level</label>
-        <div class="relative">
-          <select v-model="localLevel" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-            <option :value="null">All levels</option>
-            <option v-for="l in filteredLevels" :key="l.id" :value="l.id">{{ l.name || ('Level ' + l.id) }}</option>
-          </select>
-          <span v-if="loadingLevels" class="absolute right-2 top-1/2 -translate-y-1/2">
-            <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
-          </span>
+      <div v-if="!collapsed" class="mt-3">
+
+        <!-- Active filter chips -->
+        <div v-if="hasAnyActive" class="mb-3 flex flex-wrap gap-2">
+              <template v-if="activeLevelLabel">
+                <button @click="removeLevel" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                  <span class="font-semibold">Level:</span>
+                  <span>{{ activeLevelLabel }}</span>
+                  <span class="ml-1 text-slate-400">×</span>
+                </button>
+              </template>
+          <template v-if="activeGradeLabel">
+            <button @click="removeGrade" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+              <span class="font-semibold">Grade:</span>
+              <span>{{ activeGradeLabel }}</span>
+              <span class="ml-1 text-slate-400">×</span>
+            </button>
+          </template>
+          <template v-if="activeSubjectLabel">
+            <button @click="removeSubject" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+              <span class="font-semibold">Subject:</span>
+              <span>{{ activeSubjectLabel }}</span>
+              <span class="ml-1 text-slate-400">×</span>
+            </button>
+          </template>
+          <template v-if="activeTopicLabel">
+            <button @click="removeTopic" class="text-xs flex items-center gap-2 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+              <span class="font-semibold">Topic:</span>
+              <span>{{ activeTopicLabel }}</span>
+              <span class="ml-1 text-slate-400">×</span>
+            </button>
+          </template>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Level</label>
+          <div class="relative">
+            <select v-model="localLevel" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option :value="null">All levels</option>
+              <option v-for="l in filteredLevels" :key="l.id" :value="l.id">{{ l.name || ('Level ' + l.id) }}</option>
+            </select>
+            <span v-if="loadingLevels" class="absolute right-2 top-1/2 -translate-y-1/2">
+              <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
+            </span>
+          </div>
+
+          <div class="mt-3">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Grade</label>
+            <div class="relative">
+              <select v-model="localGrade" @change="() => {}" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+                <option :value="null">All grades</option>
+                <option v-for="g in filteredGrades" :key="g.id" :value="g.id">{{ g.display_name || g.name || ('Grade ' + g.id) }}</option>
+              </select>
+              <span v-if="loadingGrades" class="absolute right-2 top-1/2 -translate-y-1/2">
+                <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
+              </span>
+            </div>
+          </div>
         </div>
 
         <div class="mt-3">
-          <label class="block text-xs font-medium text-gray-600 mb-1">Grade</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
           <div class="relative">
-            <select v-model="localGrade" @change="() => {}" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-              <option :value="null">All grades</option>
-              <option v-for="g in filteredGrades" :key="g.id" :value="g.id">{{ g.display_name || g.name || ('Grade ' + g.id) }}</option>
+            <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option :value="null">All subjects</option>
+              <option v-for="s in filteredSubjectsClean" :key="s.id" :value="s.id">{{ s.name || '' }}</option>
             </select>
-            <span v-if="loadingGrades" class="absolute right-2 top-1/2 -translate-y-1/2">
+            <span v-if="loadingSubjects" class="absolute right-2 top-1/2 -translate-y-1/2">
               <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
             </span>
           </div>
         </div>
-      </div>
 
-      <div class="mt-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">Subject</label>
-        <div class="relative">
-          <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-            <option :value="null">All subjects</option>
-            <option v-for="s in filteredSubjectsClean" :key="s.id" :value="s.id">{{ s.name || '' }}</option>
-          </select>
-          <span v-if="loadingSubjects" class="absolute right-2 top-1/2 -translate-y-1/2">
-            <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
-          </span>
+        <div v-if="showTopic" class="mt-3">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Topic</label>
+          <div class="relative">
+            <select v-model="localTopic" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option :value="null">All topics</option>
+              <option v-for="t in filteredTopicsClean" :key="t.id" :value="t.id">{{ t.name || '' }}</option>
+            </select>
+            <span v-if="loadingTopics" class="absolute right-2 top-1/2 -translate-y-1/2">
+              <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button @click="onClear" class="px-3 py-2 bg-white border rounded text-sm">Clear</button>
+          <button @click="onApply" class="px-3 py-2 bg-indigo-600 text-white rounded text-sm">Apply</button>
         </div>
       </div>
+    </template>
 
-      <div v-if="showTopic" class="mt-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">Topic</label>
-        <div class="relative">
-          <select v-model="localTopic" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
-            <option :value="null">All topics</option>
-            <option v-for="t in filteredTopicsClean" :key="t.id" :value="t.id">{{ t.name || '' }}</option>
-          </select>
-          <span v-if="loadingTopics" class="absolute right-2 top-1/2 -translate-y-1/2">
-            <span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin block"></span>
-          </span>
+    <template v-else>
+      <!-- Horizontal compact/top-bar layout -->
+      <div class="w-full flex flex-wrap items-center gap-3">
+        <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">Filters</div>
+
+        <div class="flex-1 flex flex-wrap items-center gap-3">
+          <div class="min-w-[160px]">
+            <label class="sr-only">Level</label>
+            <select v-model="localLevel" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option :value="null">All levels</option>
+              <option v-for="l in filteredLevels" :key="l.id" :value="l.id">{{ l.name || ('Level ' + l.id) }}</option>
+            </select>
+          </div>
+
+          <div class="min-w-[160px]">
+            <label class="sr-only">Grade</label>
+            <select v-model="localGrade" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option :value="null">All grades</option>
+              <option v-for="g in filteredGrades" :key="g.id" :value="g.id">{{ g.display_name || g.name || ('Grade ' + g.id) }}</option>
+            </select>
+          </div>
+
+          <div class="min-w-[160px]">
+            <label class="sr-only">Subject</label>
+            <select v-model="localSubject" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option :value="null">All subjects</option>
+              <option v-for="s in filteredSubjectsClean" :key="s.id" :value="s.id">{{ s.name || '' }}</option>
+            </select>
+          </div>
+
+          <div v-if="showTopic" class="min-w-[160px]">
+            <label class="sr-only">Topic</label>
+            <select v-model="localTopic" class="w-full rounded-md py-2 pl-3 pr-8 text-sm border bg-white">
+              <option :value="null">All topics</option>
+              <option v-for="t in filteredTopicsClean" :key="t.id" :value="t.id">{{ t.name || '' }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-2 ml-auto">
+          <button @click="onClear" class="px-3 py-2 bg-white border rounded text-sm">Clear</button>
+          <button @click="onApply" class="px-3 py-2 bg-indigo-600 text-white rounded text-sm">Apply</button>
         </div>
       </div>
-
-      <div class="mt-4 flex gap-2">
-        <button @click="onClear" class="px-3 py-2 bg-white border rounded text-sm">Clear</button>
-        <button @click="onApply" class="px-3 py-2 bg-indigo-600 text-white rounded text-sm">Apply</button>
-      </div>
-    </div>
+    </template>
   </aside>
 </template>
 
@@ -114,7 +174,9 @@ const props = defineProps({
   topic: { type: [Number, String], default: null },
   grade: { type: [Number, String], default: null },
   level: { type: [Number, String], default: null },
-  storageKey: { type: String, default: '' }
+  storageKey: { type: String, default: '' },
+  // when true the sidebar will be sticky and sized to viewport height using --topbar-height
+  sticky: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:subject', 'update:topic', 'update:grade', 'update:level', 'apply', 'clear'])
 

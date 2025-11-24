@@ -465,7 +465,7 @@ onBeforeUnmount(() => {
 })
 
 const userName = computed(() => auth.user?.name || 'User')
-const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || auth.user?.avatar) || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
 
 </script>

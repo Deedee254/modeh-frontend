@@ -105,7 +105,7 @@
 import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { ref, computed, onMounted } from 'vue'
 

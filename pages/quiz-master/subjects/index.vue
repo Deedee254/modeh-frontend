@@ -104,7 +104,7 @@ import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
-import FiltersSidebar from '~/components/FiltersSidebar.vue'
+import FiltersSidebar from '~/components/FiltersBar.vue'
 import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
 import Pagination from '~/components/Pagination.vue'
 
