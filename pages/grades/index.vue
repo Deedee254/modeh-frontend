@@ -66,20 +66,34 @@
       <div v-if="!store.grades.length" class="mt-6"><UiSkeleton :count="6" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load grades.</div>
 
-      <div v-else class="mt-6">
+      <div v-else class="mt-6 space-y-10">
+        <!-- Group grades by level -->
+        <template v-for="level in gradesByLevel" :key="level.id">
+          <div v-if="level.grades.length > 0" class="space-y-4">
+            <!-- Level Header with Description -->
+            <div class="border-l-4 border-teal-500 pl-4">
+              <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50">{{ level.name }}</h2>
+              <p v-if="level.description" class="mt-2 text-sm text-slate-600 dark:text-slate-400">{{ level.description }}</p>
+            </div>
+
+            <!-- Grades for this level -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
+              <GradeCard
+                v-for="g in level.grades"
+                :key="g.id"
+                :title="g.display_name || g.name || `Grade ${g.id}`"
+                :subtitle="`${g.quizzes_count || 0} quizzes available`"
+                :badgeText="`G${g.id}`"
+                :to="`/grades/${g.id}`"
+                :actionLink="`/grades/${g.id}`"
+                actionLabel="Explore Subjects"
+              />
+            </div>
+          </div>
+        </template>
+
+        <!-- Show message if no grades match search -->
         <div v-if="filteredGrades.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No grades found.</div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
-          <GradeCard
-            v-for="g in filteredGrades"
-            :key="g.id"
-            :title="g.display_name || g.name || `Grade ${g.id}`"
-            :subtitle="`${g.quizzes_count || 0} quizzes available`"
-            :badgeText="`G${g.id}`"
-            :to="`/grades/${g.id}`"
-            :actionLink="`/grades/${g.id}`"
-            actionLabel="Explore Subjects"
-          />
-        </div>
       </div>
     </div>
   </div>
@@ -118,6 +132,29 @@ const filteredGrades = computed(() => {
   const onlyGrades = list.filter(g => !isCourseType(g.type))
   if (!q) return onlyGrades
   return onlyGrades.filter(grade => String(grade.name || grade.title || grade.id).toLowerCase().includes(q))
+})
+
+const gradesByLevel = computed(() => {
+  const grades = filteredGrades.value
+  const levels = Array.isArray(store.levels) ? store.levels : []
+  
+  // Group grades by level_id
+  const grouped = {}
+  grades.forEach(grade => {
+    const levelId = grade.level_id
+    if (!grouped[levelId]) {
+      grouped[levelId] = []
+    }
+    grouped[levelId].push(grade)
+  })
+  
+  // Map to level objects with their grades
+  return levels
+    .map(level => ({
+      ...level,
+      grades: grouped[level.id] || []
+    }))
+    .filter(level => level.grades.length > 0) // Only include levels with grades
 })
 
 function onSearch(q) {

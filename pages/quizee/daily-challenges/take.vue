@@ -1,171 +1,84 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8">
-    <!-- Error State -->
-    <div v-if="errorState.show" class="max-w-4xl mx-auto px-4 mb-8">
-      <div class="bg-red-50 border border-red-200 rounded-2xl p-6 shadow-lg">
-        <div class="flex items-start gap-4">
-          <svg class="h-6 w-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div class="flex-1">
-            <h3 class="text-lg font-medium text-red-900">Unable to Load Daily Challenge</h3>
-            <p class="mt-2 text-sm text-red-700">{{ errorState.message }}</p>
-            
-            <!-- Debug Info Badges -->
-            <div class="mt-4 flex justify-center gap-3 flex-wrap">
-              <div class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-xs text-blue-600 font-semibold">GRADE</p>
-                <p class="text-sm text-blue-900 font-bold">{{ userGrade || '❌ Not Set' }}</p>
-              </div>
-              <div class="px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <p class="text-xs text-purple-600 font-semibold">LEVEL</p>
-                <p class="text-sm text-purple-900 font-bold">{{ userLevel || '❌ Not Set' }}</p>
-              </div>
-            </div>
-            
-            <div v-if="errorState.type" class="mt-4 space-y-2 text-sm text-red-700">
-              <p><strong>Possible reasons:</strong></p>
-              <ul class="list-disc list-inside space-y-1">
-                <li v-if="errorState.type === 'profile_incomplete'">Your profile is incomplete. You need a grade and level assigned.</li>
-                <li v-else-if="errorState.type === 'no_questions'">No questions are available for your grade/level combination.</li>
-                <li v-else-if="errorState.type === 'already_completed'">You can only complete one daily challenge per day.</li>
-                <li v-else-if="errorState.type === 'server_error'">A server error occurred while loading the challenge.</li>
-              </ul>
-            </div>
-            <div class="mt-4 flex flex-wrap gap-3">
-              <button 
-                @click="retryFetchChallenge"
-                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-              >
-                Try Again
-              </button>
-              <NuxtLink 
-                to="/quizee/profile"
-                class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-              >
-                Update Profile
-              </NuxtLink>
-              <NuxtLink 
-                to="/quizee/daily-challenges"
-                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                Back to Daily Challenges
-              </NuxtLink>
-            </div>
-          </div>
+  <QuizLayoutWrapper
+    :title="challenge?.title || 'Daily Challenge'"
+    :current-question="currentQuestionIndex"
+    :total-questions="questions.length"
+    :show-timer="true"
+    :timer-display="perQuestionSeconds"
+    :timer-color-class="timerColorClass"
+    :timer-circumference="circumference"
+    :timer-dash-offset="dashOffset"
+    :encouragement="''"
+    :show-meta="false"
+    :alert-message="''"
+    :show-previous="currentQuestionIndex > 0"
+    :disable-previous="currentQuestionIndex === 0"
+    :show-next="currentQuestionIndex < questions.length - 1"
+    :disable-next="!selectedAnswer"
+    :show-submit="currentQuestionIndex === questions.length - 1"
+    :submit-label="'Submit Challenge'"
+    :disable-submit="!selectedAnswer || submitting"
+    :is-submitting="submitting"
+    :show-confirmation="false"
+    @previous="previousQuestion"
+    @next="nextQuestion"
+    @submit="submitChallenge"
+  >
+    <template #content>
+      <div v-if="errorState.show" class="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h3 class="text-lg font-medium text-red-900">Unable to Load Daily Challenge</h3>
+        <p class="mt-2 text-sm text-red-700">{{ errorState.message }}</p>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <button @click="retryFetchChallenge" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+            Try Again
+          </button>
+          <NuxtLink to="/quizee/profile" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-medium">
+            Update Profile
+          </NuxtLink>
         </div>
       </div>
-    </div>
 
-    <!-- Loading State -->
-    <div v-else-if="isLoading" class="max-w-4xl mx-auto px-4">
-      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
+      <div v-else-if="isLoading" class="text-center py-12">
         <svg class="animate-spin h-12 w-12 text-indigo-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
         <p class="text-gray-600 font-medium">Loading today's daily challenge...</p>
       </div>
-    </div>
 
-    <!-- Content State: simplified, sticky top and bottom for smooth quiz -->
-    <div v-else class="min-h-[70vh] flex flex-col">
-      <!-- Top bar: sticky -->
-      <header class="sticky top-0 z-30 bg-white border-b border-gray-100">
-        <div class="mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <!-- Left: Title and Progress -->
-          <div class="flex items-center gap-4 flex-1">
-            <div class="min-w-0">
-              <h1 class="text-lg font-semibold truncate">{{ challenge?.title || 'Daily Challenge' }}</h1>
-              <!-- Progress number and bar -->
-              <div class="flex items-center gap-2 mt-1">
-                <span class="text-xs font-medium text-gray-600">Q{{ currentQuestionIndex + 1 }}/{{ questions.length }}</span>
-                <div class="flex-1 max-w-xs bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-indigo-600 h-full transition-all" :style="{ width: `${progress}%` }"></div>
-                </div>
-              </div>
-            </div>
+      <div v-else-if="questions.length > 0">
+        <transition name="fade-slide" mode="out-in">
+          <div :key="currentQuestionIndex" class="space-y-6">
+            <QuestionCard v-if="currentQuestion" v-model="selectedAnswer" :question="currentQuestion" @select="(val) => { if (currentQuestion && currentQuestion.id) answers[currentQuestion.id] = val }" @toggle="(opt) => { if (currentQuestion && currentQuestion.id) rawToggleMulti(currentQuestion.id, opt) }" />
           </div>
+        </transition>
+      </div>
+    </template>
+  </QuizLayoutWrapper>
 
-          <!-- Right: Timer Circle -->
-          <div class="flex-shrink-0">
-            <div class="relative">
-              <svg :class="['w-12 h-12 transform -rotate-90', { 'low-time': lowTime }]" viewBox="0 0 40 40">
-                <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" class="text-gray-200" fill="none" />
-                <circle class="timer-ring" cx="20" cy="20" r="18" stroke-width="3" stroke-linecap="round" fill="none" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset" />
-              </svg>
-              <div class="absolute inset-0 grid place-items-center text-xs font-mono font-semibold text-indigo-700">{{ perQuestionSeconds }}</div>
-            </div>
+  <!-- Results Modal -->
+  <div v-if="showResultsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">Challenge Complete!</h2>
+          <p class="text-gray-600 text-sm mt-1">{{ challenge?.title || 'Daily Challenge' }}</p>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-gray-500">Score</div>
+          <div class="text-2xl font-bold" :class="resultPayload?.score >= 70 ? 'text-green-600' : resultPayload?.score >= 50 ? 'text-yellow-600' : 'text-red-600'">
+            {{ resultPayload?.score ?? '—' }}%
           </div>
         </div>
-      </header>
+      </div>
+      
+      <div class="bg-gray-50 rounded p-3 text-sm text-gray-600 space-y-1 mb-4">
+        <div>Time taken: {{ formatTime(challengeAdapter.timer_seconds - timeLeft) }}</div>
+        <div v-if="resultPayload?.streak !== undefined" class="font-semibold text-indigo-600">🔥 Streak: {{ resultPayload.streak }} day{{ resultPayload.streak !== 1 ? 's' : '' }}</div>
+      </div>
 
-      <!-- Main content: question area expands -->
-      <main class="flex-1 flex items-center justify-center px-4 py-6">
-        <div class="w-full max-w-3xl">
-          <QuestionCard class="question-compact" :compact="true" v-if="currentQuestion" v-model="selectedAnswer" :question="currentQuestion" @select="(val) => { if (currentQuestion && currentQuestion.id) answers[currentQuestion.id] = val }" @toggle="(opt) => { if (currentQuestion && currentQuestion.id) rawToggleMulti(currentQuestion.id, opt) }" />
-        </div>
-      </main>
-
-      <!-- Bottom nav: sticky -->
-      <nav class="sticky bottom-0 z-30 bg-white border-t border-gray-100">
-        <div class="mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div class="flex-1">
-            <div class="text-xs text-gray-500">Progress</div>
-            <div class="w-full bg-gray-100 h-2 rounded mt-1">
-              <div class="h-2 bg-indigo-600 rounded transition-all" :style="{ width: `${progress}%` }"></div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2 ml-4">
-            <button @click="previousQuestion" :disabled="currentQuestionIndex === 0" class="px-4 py-2 bg-gray-100 text-gray-700 rounded disabled:opacity-50">Previous</button>
-            <button v-if="currentQuestionIndex < questions.length - 1" @click="nextQuestion" :disabled="!selectedAnswer" class="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50">Next</button>
-            <button v-else @click="submitChallenge" :disabled="!selectedAnswer || submitting" class="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50">{{ submitting ? 'Submitting...' : 'Submit' }}</button>
-          </div>
-        </div>
-      </nav>
-    </div>
-
-    <!-- Results Modal -->
-    <div v-if="showResultsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-2xl p-6 max-w-xl w-full shadow-lg max-h-[90vh] overflow-y-auto">
-        <div class="flex items-start justify-between mb-4">
-          <div>
-            <h2 class="text-xl font-bold text-gray-900">Daily Challenge Complete!</h2>
-            <p class="text-gray-600 mt-1">{{ challenge?.title || 'Today\'s Challenge' }}</p>
-          </div>
-          <div class="text-right">
-            <div class="text-sm text-gray-500">Your Score</div>
-            <div class="text-3xl font-bold" :class="resultPayload?.score >= 70 ? 'text-green-600' : resultPayload?.score >= 50 ? 'text-yellow-600' : 'text-red-600'">
-              {{ resultPayload?.score ?? '—' }}%
-            </div>
-          </div>
-        </div>
-        
-        <div class="bg-gray-50 rounded-lg p-4 mb-4">
-          <div class="text-sm text-gray-600">Time taken: {{ formatTime(challengeAdapter.timer_seconds - timeLeft) }}</div>
-          <div class="text-sm text-gray-600">Questions answered: {{ Object.keys(answers).length }}/{{ questions.length }}</div>
-          <div v-if="resultPayload?.streak !== undefined" class="text-sm text-gray-600 mt-2">
-            <span class="font-semibold text-indigo-600">🔥 Streak: {{ resultPayload.streak }} day{{ resultPayload.streak !== 1 ? 's' : '' }}</span>
-          </div>
-        </div>
-
-        <div v-if="earnedAchievements && earnedAchievements.length" class="mt-4">
-          <h3 class="font-medium">Awards & Badges</h3>
-          <div class="mt-2 grid grid-cols-2 gap-2">
-            <div v-for="(a, i) in earnedAchievements" :key="i" class="p-3 border rounded-lg flex items-center gap-3">
-              <img v-if="a.icon_url || a.icon" :src="a.icon_url || a.icon" alt="badge" class="w-10 h-10 rounded" />
-              <div>
-                <div class="font-semibold">{{ a.name || a.title || 'Badge' }}</div>
-                <div class="text-sm text-gray-500">{{ a.description || a.note || '' }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-6 flex justify-end">
-          <button @click="closeResults" class="px-4 py-2 bg-indigo-600 text-white rounded">Continue</button>
-        </div>
+      <div class="flex justify-end">
+        <button @click="closeResults" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Continue</button>
       </div>
     </div>
   </div>
@@ -173,6 +86,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
 import useQuestionTimer from '~/composables/useQuestionTimer'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useDisableUserActions from '~/composables/useDisableUserActions'
@@ -183,6 +97,7 @@ import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
 import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
 import useApi from '~/composables/useApi'
 import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const auth = useAuthStore()

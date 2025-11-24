@@ -1,73 +1,109 @@
 <template>
-  <div class="min-h-screen">
-    <!-- Hero (two-column) -->
-    <section class="bg-gradient-to-br from-indigo-50 via-white to-violet-50 px-6 py-12">
-      <div class="mx-auto max-w-7xl">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          <!-- Left: Value prop -->
-          <div class="text-center lg:text-left">
-            <h1 class="bg-gradient-to-r from-indigo-600 via-sky-600 to-violet-600 bg-clip-text text-3xl sm:text-5xl font-bold text-transparent">Modeh — Practice, assess, and master curriculum skills</h1>
-            <p class="mt-4 text-lg text-slate-700 max-w-lg">Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking. Choose your grade, subject, and topic to begin focused practice.</p>
-            <div class="mt-8 flex flex-col sm:flex-row items-center lg:items-start gap-4">
-              <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-indigo-100 bg-white px-6 py-3 font-semibold text-indigo-600">Explore quizzes</NuxtLink>
-              <NuxtLink to="/grades" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-6 py-3 font-semibold text-white">Begin</NuxtLink>
-            </div>
-            <div class="mt-4 text-sm text-slate-600">Or browse by <NuxtLink to="/topics" class="text-indigo-600 underline">topics</NuxtLink> or <NuxtLink to="/subjects" class="text-indigo-600 underline">subjects</NuxtLink>.</div>
-          </div>
+  <div>
+    <!-- Hero -->
+    <section class="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-slate-900">
+      <!-- Background Image with Overlay -->
+      <div class="absolute inset-0 z-0 w-full h-full">
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-900/75 via-slate-900/65 to-slate-900/75 z-10"></div>
+        <img 
+          src="/hero-banner.jpg" 
+          alt="Learning background" 
+          class="w-full h-full object-cover"
+        />
+      </div>
 
-          <!-- Right: Login form or User Stats -->
-          <div class="mx-auto w-full max-w-md">
-              <template v-if="!auth.user">
-                <LoginForm compact />
-              </template>
-
-              <!-- User Stats when logged in -->
-              <div v-else class="rounded-2xl bg-white p-6 shadow-lg">
-              <div class="text-lg font-semibold text-gray-900 mb-4">Welcome back, {{ auth.user.name }}!</div>
+      <div class="relative z-20 w-full px-4 sm:px-6 py-20 flex items-center justify-center">
+        <div class="w-full max-w-7xl mx-auto">
+          <ClientOnly>
+            <!-- Authenticated: Welcome section -->
+            <template v-if="auth.user">
+              <div class="text-center max-w-3xl mx-auto px-4">
+                <h1 class="text-5xl sm:text-6xl font-bold text-white mb-2">Welcome back, {{ auth.user.name }}! 👋</h1>
+              <div class="h-20 flex items-center justify-center">
+                <p class="text-xl sm:text-2xl text-indigo-100 font-semibold transition-all duration-700">
+                  {{ rotatingMessages[currentMessageIndex] }}
+                </p>
+              </div>
               
-              <!-- Quizee Stats -->
-              <div v-if="auth.user.role === 'quizee'" class="space-y-4">
-                <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
-                  <div class="text-sm text-indigo-900">Quizzes Taken</div>
-                  <div class="text-lg font-semibold text-indigo-700">{{ userStats.quizzes_taken || 0 }}</div>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-violet-50 rounded-lg">
-                  <div class="text-sm text-violet-900">Total Points</div>
-                  <div class="text-lg font-semibold text-violet-700">{{ userStats.total_points || 0 }}</div>
-                </div>
-                <NuxtLink to="/quizee/dashboard" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
-                  View Full Dashboard
-                    <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5" />
-                </NuxtLink>
-              </div>
+              <div class="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <!-- Quizee Dashboard -->
+                <template v-if="auth.user.role === 'quizee'">
+                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">
+                    <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
+                    Dashboard
+                  </NuxtLink>
+                  <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
+                    <Icon name="heroicons:sparkles-20-solid" class="h-5 w-5" />
+                    Explore Quizzes
+                  </NuxtLink>
+                </template>
 
-              <!-- Quiz Master Stats -->
-              <div v-else-if="auth.user.role === 'quiz-master'" class="space-y-4">
-                <div class="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
-                  <div class="text-sm text-emerald-900">Wallet Balance</div>
-                  <div class="text-lg font-semibold text-emerald-700">{{ userStats.wallet_balance || 0 }}</div>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-sky-50 rounded-lg">
-                  <div class="text-sm text-sky-900">Quizzes Created</div>
-                  <div class="text-lg font-semibold text-sky-700">{{ userStats.quizzes_created || 0 }}</div>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <div class="text-sm text-purple-900">Questions Authored</div>
-                  <div class="text-lg font-semibold text-purple-700">{{ userStats.questions_authored || 0 }}</div>
-                </div>
-                <NuxtLink to="/quiz-master/dashboard" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
-                  View Full Dashboard
-                    <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5" />
-                </NuxtLink>
-              </div>
+                <!-- Quiz Master Dashboard -->
+                <template v-else-if="auth.user.role === 'quiz-master'">
+                  <NuxtLink to="/quiz-master/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-emerald-500/50 transition-all transform hover:scale-105">
+                    <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
+                    Dashboard
+                  </NuxtLink>
+                  <NuxtLink to="/quiz-master/create-quiz" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
+                    <Icon name="heroicons:pencil-square-20-solid" class="h-5 w-5" />
+                    Create Quiz
+                  </NuxtLink>
+                </template>
+
+                <!-- Default Dashboard for other roles -->
+                <template v-else>
+                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">
+                    <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
+                    Dashboard
+                  </NuxtLink>
+                  <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
+                    <Icon name="heroicons:sparkles-20-solid" class="h-5 w-5" />
+                    Explore
+                  </NuxtLink>
+                </template>
               </div>
             </div>
+          </template>
+
+          <!-- Not Authenticated: Featured quizzes and CTA -->
+          <template v-else>
+            <div class="text-center max-w-4xl mx-auto">
+              <div class="h-32 flex items-center justify-center">
+                <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-white transition-all duration-700">
+                  {{ heroHeadings[currentMessageIndex] }}
+                </h1>
+              </div>
+              <div class="h-24 flex items-center justify-center">
+                <p class="text-lg sm:text-xl text-indigo-100 font-medium transition-all duration-700">
+                  {{ rotatingMessages[currentMessageIndex] }}
+                </p>
+              </div>
+              
+              <div class="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
+                  <Icon name="heroicons:squares-2x2-20-solid" class="h-5 w-5" />
+                  Explore Quizzes
+                </NuxtLink>
+                <NuxtLink to="/register" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">
+                  <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5" />
+                  Create Account
+                </NuxtLink>
+              </div>
+              
+              <div class="mt-8 text-sm text-indigo-100">
+                Already have an account? Sign in using the <span class="font-semibold">Login</span> button in the header.
+              </div>
+            </div>
+          </template>
+        </ClientOnly>
         </div>
       </div>
     </section>
 
+    <!-- Page Content Wrapper -->
+    <div class="px-4 sm:px-6 lg:px-8 py-8">
     <!-- How It Works -->
-    <section class="relative mt-16 px-6">
+    <section class="relative mt-16">
       <div class="mx-auto max-w-6xl">
         <div class="text-center">
           <p class="text-sm font-semibold tracking-wide text-indigo-500 uppercase">How it works</p>
@@ -106,7 +142,7 @@
     </section>
 
     <!-- Quizzes section -->
-    <section class="px-6 py-10">
+    <section class="py-10">
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
           <h2 class="text-3xl font-bold text-slate-900">Featured Quizzes</h2>
@@ -135,25 +171,17 @@
       </div>
     </section>
 
-    <section class="px-6 py-10">
+    <section class="py-10">
       <div class="mx-auto max-w-6xl">
           <header class="text-center max-w-2xl mx-auto">
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Grades</div>
-            <div class="w-full sm:w-auto">
-              <select v-model="selectedGrade" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation">
-                <option :value="null">All grades</option>
-                <option v-for="g in GRADES" :key="g.id" :value="g.id">{{ g.name || g.id }}</option>
-              </select>
-            </div>
-          </div>
+          <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Subjects</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Subjects & learning paths</h3>
           <p class="mt-3 text-slate-600">Explore subject tracks with aligned quizzes and topic roadmaps to guide learning and progression.</p>
         </header>
 
 <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SubjectCard
-            v-for="subject in safeArray(filteredSubjects).slice(0,4)"
+            v-for="subject in randomSubjects"
             :key="subject.id"
             :subject="subject"
             :title="subject.name"
@@ -176,7 +204,7 @@
     </section>
 
     <!-- Levels section -->
-    <section class="px-6 py-10">
+    <section class="py-10">
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Levels</div>
@@ -184,26 +212,34 @@
           <p class="mt-3 text-slate-600">Navigate content organized by learning level — Early Years, Primary, Secondary, and Tertiary — to find age-appropriate material and pathways.</p>
         </header>
 
-  <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <LevelCard
-            v-for="lvl in safeArray(levels).slice(0,6)"
-            :key="lvl.id"
-            :to="`/levels/${lvl.id}`"
-            :title="lvl.name"
-            :level="lvl"
-            :subtitle="lvl.description || ''"
-            :grades_count="(Array.isArray(lvl.grades) ? lvl.grades.length : 0)"
-            :actionLink="`/levels/${lvl.id}`"
-            actionLabel="Explore level"
-          />
-        </div>
+        <!-- Carousel for all screen sizes -->
+        <ClientOnly>
+          <div class="mt-10">
+            <Carousel :items="safeArray(levels)" :perViewSm="3" :perViewMd="4" :perViewLg="5" :perView="6" :auto="false">
+              <template #item="{ item }">
+                <div class="px-1 sm:px-2">
+                  <LevelCard
+                    :to="`/levels/${item.id}`"
+                    :title="item.name"
+                    :level="item"
+                    :subtitle="item.description || ''"
+                    :grades_count="(Array.isArray(item.grades) ? item.grades.length : 0)"
+                    :actionLink="`/levels/${item.id}`"
+                    actionLabel="Explore level"
+                  />
+                </div>
+              </template>
+            </Carousel>
+          </div>
+        </ClientOnly>
+
         <div class="mt-6 text-center">
           <NuxtLink to="/levels" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg">View all levels</NuxtLink>
         </div>
       </div>
     </section>
 
-    <section class="px-6 py-12 bg-gradient-to-br from-white to-indigo-50">
+    <section class="py-12 bg-gradient-to-br from-white to-indigo-50">
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Grades</div>
@@ -227,30 +263,16 @@
       </div>
     </section>
 
-    <section class="px-6 py-10">
+    <section class="py-10">
       <div class="mx-auto max-w-6xl">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-rose-500 font-semibold">Topics</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Topics & contextual quizzes</h3>
           <p class="mt-3 text-slate-600">Dive into topics with rich context — linked subjects, quiz counts, and summaries to help you pick focused practice areas.</p>
         </div>
-        <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <div class="w-full sm:w-auto">
-            <select v-model="homeTopicGrade" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation">
-              <option :value="null">All grades</option>
-              <option v-for="g in GRADES" :key="g.id" :value="g.id">{{ g.name || g.id }}</option>
-            </select>
-          </div>
-          <div class="w-full sm:w-auto">
-            <select v-model="homeTopicSubject" class="rounded-md border px-3 py-2 text-sm w-full sm:w-auto sm:max-w-xs touch-manipulation">
-              <option :value="null">All subjects</option>
-              <option v-for="s in SUBJECTS" :key="s.id" :value="s.id">{{ s.name || s.id }}</option>
-            </select>
-          </div>
-        </div>
 
-        <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 auto-rows-max">
-          <div v-for="(topic, index) in selectedHomepageTopics" :key="topic.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
+        <div class="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4 auto-rows-max">
+          <div v-for="(topic, index) in randomTopics" :key="topic.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
             <TopicCard
               :topic="topic"
               :title="topic.name"
@@ -271,8 +293,37 @@
       </div>
     </section>
 
+    <!-- Tertiary Courses Section -->
+    <section class="py-10 bg-gradient-to-br from-violet-50 to-purple-50">
+      <div class="mx-auto max-w-6xl">
+        <div class="text-center max-w-2xl mx-auto">
+          <div class="text-sm uppercase tracking-wide text-purple-500 font-semibold">Tertiary Level</div>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Courses & higher education</h3>
+          <p class="mt-3 text-slate-600">Explore university and tertiary-level courses with specialized content, advanced topics, and professional assessments.</p>
+        </div>
+
+        <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 auto-rows-max">
+          <div v-for="(course, index) in randomCourses" :key="course.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
+            <GradeCard
+              :grade="course"
+              :to="`/courses/${course.id}`"
+              :title="course.name"
+              :description="course.description || course.summary || ''"
+              :quizzes_count="course.quizzes_count || 0"
+              :actionLink="`/courses/${course.id}`"
+              :actionLabel="'Explore Course'"
+              class="h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02] compact-view"
+            />
+          </div>
+        </div>
+        <div class="mt-6 text-center">
+          <NuxtLink to="/courses" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">Show all courses</NuxtLink>
+        </div>
+      </div>
+    </section>
+
     <!-- Quiz Masters -->
-    <section class="px-6 py-10">
+    <section class="py-10">
       <div class="mx-auto max-w-6xl">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Creators</div>
@@ -301,12 +352,26 @@
       </div>
     </section>
 
-    <!-- Secondary parallax banner -->
-    <ParallaxBanner image="/banner-2.jpg" title="Short daily quizzes to build momentum" subtitle="5-10 minute quizzes designed for weekly practice" cta-text="Try a quick quiz" cta-link="/quizzes" height="h-40" class="my-8" />
+    <!-- Redesigned Call to Action Section -->
+    <section class="my-12">
+      <div class="mx-auto max-w-6xl">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-16 sm:px-12 sm:py-20">
+          <div class="relative text-center">
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+              Ready to Start Your Learning Journey?
+            </h2>
+            <p class="mx-auto mt-4 max-w-2xl text-lg text-indigo-100">
+              Join thousands of learners and creators. Sign up for free to access quizzes, track your progress, and achieve your goals.
+            </p>
+            <NuxtLink to="/register" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50 sm:w-auto">Get Started for Free</NuxtLink>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Testimonials -->
-    <section class="px-6 py-8 bg-gradient-to-br from-indigo-50 to-white">
-      <div class="mx-auto max-w-7xl">
+    <section class="py-8 bg-gradient-to-br from-indigo-50 to-white">
+      <div class="mx-auto max-w-6xl">
   <h3 class="text-2xl font-bold text-indigo-900 mb-4 text-center">Success Stories</h3>
         <client-only>
         <Carousel :items="safeArray(testimonials)" :perViewLg="3" :perViewMd="2" :perViewSm="1" auto>
@@ -335,8 +400,8 @@
     </section>
 
     <!-- Sponsors -->
-    <section class="px-6 py-8">
-      <div class="mx-auto max-w-7xl">
+    <section class="py-8">
+      <div class="mx-auto max-w-6xl">
         <client-only>
         <Carousel :items="safeArray(sponsors)" :perView="5" :perViewSm="3" :perViewXs="2" auto>
           <template #item="{ item }">
@@ -352,7 +417,7 @@
     </section>
 
     <!-- Newsletter CTA -->
-    <section class="px-6 py-12 bg-gradient-to-br from-white via-indigo-50 to-white">
+    <section class="py-12 bg-gradient-to-br from-white via-indigo-50 to-white">
       <div class="mx-auto max-w-4xl text-center">
   <h3 class="text-2xl font-bold text-indigo-900">Get weekly learning insights</h3>
   <p class="mt-2 text-slate-600">Receive curated quizzes, practical tips, and insights to keep your practice focused and effective.</p>
@@ -365,6 +430,7 @@
         </form>
       </div>
     </section>
+    </div>
 </div>
 </template>
 
@@ -379,14 +445,11 @@ import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
 import LevelCard from '~/components/ui/LevelCard.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
-import LoginForm from '~/components/Auth/LoginForm.vue'
 
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
 
 const config = useRuntimeConfig()
-
-// ensure CSRF cookie/presence is requested early on pages that contain login forms
 const api = useApi()
 
 // Page SEO: title, description and social preview tags
@@ -404,6 +467,27 @@ definePageMeta({
     { name: 'twitter:description', content: 'Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' }
   ]
 })
+
+// Rotating messages for hero section
+const currentMessageIndex = ref(0)
+const rotatingMessages = [
+  '🎓 Quizees: Practice, get instant feedback, and master skills at your pace.',
+  '✍️ Quiz Masters: Create impactful quizzes, earn rewards, and build your teaching legacy.',
+  '🏫 Institutions: Track student progress, align curriculum, and transform learning outcomes.'
+]
+const heroHeadings = [
+  'Master Skills with Focused Practice',
+  'Create & Earn as a Quiz Master',
+  'Transform Education for Your Institution'
+]
+
+// Auto-rotate messages every 8 seconds
+onMounted(() => {
+  setInterval(() => {
+    currentMessageIndex.value = (currentMessageIndex.value + 1) % rotatingMessages.length
+  }, 8000)
+})
+
 // helpers
 function safeArray(input) {
   const value = unref(input)
@@ -489,37 +573,6 @@ const displayedQuizzes = computed(() => {
   return latestQuizzes
 })
 
-// Homepage topic filters (dropdowns)
-const homeTopicGrade = ref(null)
-const homeTopicSubject = ref(null)
-
-const homeFilteredTopics = computed(() => {
-  let list = safeArray(topicsList)
-  if (homeTopicGrade && homeTopicGrade.value) {
-    list = list.filter(t => {
-      // try topic.grade, topic.grades, topic.subject.grade_id
-      if (t.grade) return String(t.grade.id || t.grade) === String(homeTopicGrade.value)
-      if (Array.isArray(t.grades) && t.grades.length) return t.grades.some(g => String(g.id || g) === String(homeTopicGrade.value))
-      if (t.subject_id) {
-        const subj = SUBJECTS.find(s => String(s.id) === String(t.subject_id))
-        if (subj) {
-          if (subj.grade_id) return String(subj.grade_id) === String(homeTopicGrade.value)
-          if (subj.grade) return String(subj.grade.id || subj.grade) === String(homeTopicGrade.value)
-        }
-      }
-      return false
-    })
-  }
-  if (homeTopicSubject && homeTopicSubject.value) {
-    list = list.filter(t => String(t.subject_id || t.subject?.id || t.subject) === String(homeTopicSubject.value))
-  }
-  return list
-})
-
-const selectedHomepageTopics = computed(() => {
-  return safeArray(homeFilteredTopics.value).slice(0, 4)
-})
-
 function pickPaletteClass(id){
   const palettes = ['bg-gradient-to-br from-indigo-200 via-indigo-100 to-sky-100 text-indigo-800','bg-gradient-to-br from-rose-200 via-rose-100 to-pink-100 text-rose-800','bg-gradient-to-br from-emerald-200 via-emerald-100 to-lime-100 text-emerald-800','bg-gradient-to-br from-yellow-200 via-amber-100 to-amber-50 text-amber-800','bg-gradient-to-br from-fuchsia-200 via-fuchsia-100 to-pink-50 text-fuchsia-800','bg-gradient-to-br from-sky-200 via-sky-100 to-indigo-50 text-sky-800']
   return palettes[(id||0)%palettes.length]
@@ -581,16 +634,35 @@ function getTopicSubjectLabel(topic) {
 // Homepage should show quizzes across grades by default. Keep grade selector available but start unfiltered.
 const selectedGrade = ref(null)
 
-const filteredSubjects = computed(()=>{
-  const subjectsArr = safeArray(SUBJECTS)
-  if (!selectedGrade || !selectedGrade.value) return subjectsArr
-  return subjectsArr.filter(s => {
-    if (!s) return false
-    if (s.grade_id) return String(s.grade_id) === String(selectedGrade.value)
-    if (s.grade) return String(s.grade.id || s.grade) === String(selectedGrade.value)
-    if (s.grades && Array.isArray(s.grades)) return s.grades.some(g => String(g.id || g) === String(selectedGrade.value))
-    return false
-  })
+// Helper function to shuffle and pick random items
+function getRandomItems(arr, count = 4) {
+  const items = safeArray(arr).filter(item => item && item.id)
+  if (items.length === 0) return []
+  
+  // Shuffle using Fisher-Yates algorithm
+  const shuffled = [...items]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  
+  return shuffled.slice(0, Math.min(count, shuffled.length))
+}
+
+// Random subjects (different for every user/visit)
+const randomSubjects = computed(() => {
+  return getRandomItems(SUBJECTS, 4)
+})
+
+// Random topics (different for every user/visit)
+const randomTopics = computed(() => {
+  return getRandomItems(topicsList, 4)
+})
+
+// Random courses (tertiary level grades with type='course')
+const randomCourses = computed(() => {
+  const courses = safeArray(GRADES).filter(g => g && String(g.type || '').toLowerCase() === 'course')
+  return getRandomItems(courses, 4)
 })
 
 const hasFeaturedQuiz = computed(() => {
@@ -692,64 +764,61 @@ function onQuizLike(quiz, payload) {
   }
 }
 
-// Login state and handler
+// Auth store for template checks
 import { useAuthStore } from '~/stores/auth'
 
 const auth = useAuthStore()
-const userStats = ref({})
 
-// Fetch user stats when authenticated
-watch(() => auth.user, async (newUser) => {
-  if (!newUser) {
-    userStats.value = {}
-    return
-  }
-  
-  try {
-    const res = await api.get('/api/user/stats')
-    if (res.ok) {
-      const data = await res.json()
-      userStats.value = data
-    }
-  } catch (e) {
-    console.error('Failed to fetch user stats:', e)
-  }
-}, { immediate: true })
+// SEO: Structured Data (Schema.org)
+const siteUrl = config.public.siteUrl || 'https://modeh.com'
+const siteName = 'Modeh'
+const logoUrl = `${siteUrl}/logo.png`
 
-async function login(){
-  if (loading.value) return
-  loading.value = true
-  try{
-    const res = await auth.login(email.value, password.value)
-    const user = res.data?.user || res.data || null
-
-    // Honor a `next` query param where present, but only if it's a local path
-    // and matches the user's role area (same logic as pages/login.vue).
-    const route = useRoute()
-    const nextParam = route.query?.next
-    const isLocalPath = typeof nextParam === 'string' && nextParam.startsWith('/') && !nextParam.startsWith('//')
-    if (isLocalPath) {
-      if (nextParam === '/') { router.push(nextParam); return }
-
-      const role = user?.role
-      if (role === 'quiz-master' && nextParam.startsWith('/quiz-master')) { router.push(nextParam); return }
-      if (role === 'quizee' && nextParam.startsWith('/quizee')) { router.push(nextParam); return }
-      // don't honor `next` for other roles (admin etc.)
-    }
-
-    if (user?.role === 'quiz-master') router.push('/quiz-master/dashboard')
-    else if (user?.role === 'quizee') router.push('/quizee/dashboard')
-    else if (user?.role === 'admin') window.location.href = `${config.public.apiBase}/admin`
-    else router.push('/grades')
-  }catch(e){
-    console.error('Login failed', e)
-    const msg = e?.response?.data?.message || e?.message || 'Login failed. Please check your credentials and try again.'
-    try { alert.push({ message: msg, type: 'error', icon: 'heroicons:exclamation-circle' }) } catch (err) {}
-    // keep inline error null since we show toasts
-    error.value = null
-  }
-  finally{ loading.value = false }
-}
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebSite',
+            'url': siteUrl,
+            'name': siteName,
+            'potentialAction': {
+              '@type': 'SearchAction',
+              'target': `${siteUrl}/quizzes?q={search_term_string}`,
+              'query-input': 'required name=search_term_string',
+            },
+          },
+          {
+            '@type': 'Organization',
+            'url': siteUrl,
+            'name': siteName,
+            'logo': logoUrl,
+          },
+          {
+            '@type': 'FAQPage',
+            'mainEntity': howItWorksSteps.value.map(step => ({
+              '@type': 'Question',
+              'name': step.title,
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': step.description,
+              },
+            })),
+          },
+        ],
+      }),
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: siteUrl,
+    },
+  ],
+})
 
 </script>
 

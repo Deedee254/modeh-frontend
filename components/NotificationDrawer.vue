@@ -21,24 +21,24 @@
         <!-- Loading State -->
         <div v-if="loading" class="p-2 space-y-4">
           <div v-for="i in 5" :key="i" class="flex items-start gap-3 p-3 animate-pulse">
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700"></div>
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-300 dark:bg-slate-600"></div>
             <div class="flex-1 space-y-2">
               <div class="flex items-center justify-between">
-                <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
-                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16"></div>
+                <div class="h-4 bg-slate-300 dark:bg-slate-600 rounded w-32"></div>
+                <div class="h-3 bg-slate-300 dark:bg-slate-600 rounded w-16"></div>
               </div>
-              <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-              <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+              <div class="h-3 bg-slate-300 dark:bg-slate-600 rounded w-full"></div>
+              <div class="h-3 bg-slate-300 dark:bg-slate-600 rounded w-2/3"></div>
             </div>
           </div>
         </div>
 
   <!-- Empty State -->
-  <div v-else-if="(store.items || []).length === 0" class="p-4 text-center text-slate-500 dark:text-slate-400">
+  <div v-else-if="(store.items || []).length === 0" class="p-4 text-center text-slate-600 dark:text-slate-300">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell h-8 w-8 text-slate-400 dark:text-slate-600"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell h-8 w-8 text-slate-600 dark:text-slate-400"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
           </div>
-          <p>No notifications yet</p>
+          <p class="text-slate-700 dark:text-slate-200">No notifications yet</p>
         </div>
 
         <!-- Notification List -->
@@ -50,13 +50,13 @@
             </div>
             <div class="space-y-3">
               <div v-for="item in newItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors border-l-2 border-indigo-600">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" v-html="item.icon"></div>
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" v-html="item.icon"></div>
                 <div class="flex-1 space-y-1 overflow-hidden">
                   <div class="flex items-center justify-between">
-                    <p class="font-medium text-slate-900 dark:text-white">{{ item.title }}</p>
-                    <div class="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-slate-700 dark:text-slate-300 text-xs font-normal bg-slate-50 dark:bg-slate-800">{{ item.time_ago }}</div>
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ item.title }}</p>
+                    <div class="inline-flex items-center rounded-full border border-slate-300 dark:border-slate-600 px-2.5 py-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-slate-700 dark:text-slate-300 text-xs font-medium bg-slate-100 dark:bg-slate-800">{{ item.time_ago }}</div>
                   </div>
-                  <p class="text-sm text-slate-600 dark:text-slate-400">{{ item.message }}</p>
+                  <p class="text-sm text-slate-700 dark:text-slate-300">{{ item.message }}</p>
                 </div>
               </div>
             </div>
@@ -69,13 +69,13 @@
             </div>
             <div class="space-y-3">
               <div v-for="item in earlierItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors opacity-70">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" v-html="item.icon"></div>
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" v-html="item.icon"></div>
                 <div class="flex-1 space-y-1 overflow-hidden">
                   <div class="flex items-center justify-between">
-                    <p class="font-medium text-slate-900 dark:text-white">{{ item.title }}</p>
-                    <div class="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-slate-700 dark:text-slate-300 text-xs font-normal bg-slate-50 dark:bg-slate-800">{{ item.time_ago }}</div>
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ item.title }}</p>
+                    <div class="inline-flex items-center rounded-full border border-slate-300 dark:border-slate-600 px-2.5 py-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-slate-700 dark:text-slate-300 text-xs font-medium bg-slate-100 dark:bg-slate-800">{{ item.time_ago }}</div>
                   </div>
-                  <p class="text-sm text-slate-600 dark:text-slate-400">{{ item.message }}</p>
+                  <p class="text-sm text-slate-700 dark:text-slate-300">{{ item.message }}</p>
                 </div>
               </div>
             </div>

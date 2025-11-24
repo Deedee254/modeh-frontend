@@ -1,31 +1,35 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-gray-50">
     <PageHero
       title="Available Assessments"
       description="Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration to select an appropriate exercise."
       :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Quizzes', current: true }]"
+      padding="py-8 sm:py-12"
     />
 
     <!-- Filters -->
-    <div class="p-6 max-w-7xl mx-auto">
-      <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-        <div class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1 relative">
-          <svg class="absolute left-3 top-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-          <input v-model="q" @keyup.enter="fetchItems" placeholder="Search quizzes..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5 mb-8">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
+          <!-- Search Input -->
+          <div class="flex-1 relative group">
+            <Icon name="heroicons:magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition" />
+            <input v-model="q" @keyup.enter="fetchItems" placeholder="Search assessments..." class="w-full pl-9 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:focus:ring-indigo-400" />
+          </div>
+
+          <!-- Per Page Selector -->
+          <select v-model.number="perPage" class="px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:focus:ring-indigo-400">
+            <option value="5">5 per page</option>
+            <option value="12">12 per page</option>
+            <option value="20">20 per page</option>
+          </select>
+
+          <!-- Topic Filter -->
+          <select v-model.number="topicId" class="px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:focus:ring-indigo-400">
+            <option :value="0">All topics</option>
+            <option v-for="t in (topics || [])" :key="t?.id ?? t" :value="t?.id">{{ t?.name }}</option>
+          </select>
         </div>
-        <select v-model.number="perPage" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-          <option :value="5">5 per page</option>
-          <option :value="12">12 per page</option>
-          <option :value="20">20 per page</option>
-        </select>
-        <select v-model.number="topicId" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-          <option :value="0">All topics</option>
-          <option v-for="t in (topics || [])" :key="t?.id ?? t" :value="t?.id">{{ t?.name }}</option>
-        </select>
-      </div>
       </div>
 
       <!-- Loading -->

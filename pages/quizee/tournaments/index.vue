@@ -1,6 +1,7 @@
 <template>
-  <div class="p-6">
-  <PageHero title="Tournaments" description="Compete with other learners in structured tournaments to benchmark skills and earn recognition." variant="gradient" padding="py-6">
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <PageHero title="Tournaments" description="Compete with other learners in structured tournaments to benchmark skills and earn recognition." variant="gradient" padding="py-8 sm:py-12">
       <template #stats>
         <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
           <p class="text-xs uppercase tracking-wide text-white/70">Total</p>
@@ -105,6 +106,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>

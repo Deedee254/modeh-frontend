@@ -1,44 +1,35 @@
 <template>
-  <div class="group relative flex w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 hover:scale-[1.02]">
-    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
-
-    <!-- left color strip -->
-    <div :class="['absolute left-0 top-0 bottom-0 w-2 rounded-l-2xl', paletteClass]" aria-hidden="true"></div>
-
-    <!-- badge (kept) -->
-    <div class="absolute left-6 top-3 z-10">
-      <div class="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur-sm dark:bg-slate-800/70 dark:text-slate-100">
-        {{ badgeLabel }}
-      </div>
-    </div>
-
-    <div class="flex flex-1 flex-col p-3 sm:p-4 pl-6">
-      <h4 class="text-sm sm:text-base font-semibold text-slate-800 line-clamp-2 dark:text-slate-100">{{ displayTitle }}</h4>
-      <p v-if="displayDescription" class="mt-1 text-xs sm:text-sm text-slate-600 line-clamp-2 dark:text-slate-400">{{ displayDescription }}</p>
-
-      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-500 dark:border-slate-800">
-        <div class="inline-flex items-center gap-1.5">
-          <Icon name="heroicons:squares-2x2" class="h-4 w-4" />
-          <span>{{ gradesCountNumber }} {{ gradesCountNumber === 1 ? 'grade' : 'grades' }}</span>
+  <NuxtLink v-if="to" :to="to" class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
+    <!-- Header with Light Teal/Cyan Background -->
+    <div class="bg-gradient-to-br from-teal-100 via-cyan-100 to-emerald-100 dark:from-teal-900/30 dark:via-cyan-900/30 dark:to-emerald-900/30 px-5 py-6">
+      <div class="flex items-start justify-between">
+        <!-- Icon -->
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-200/50 dark:bg-teal-800/50">
+          <Icon name="heroicons:chart-bar" class="h-5 w-5 text-teal-600 dark:text-teal-400" />
         </div>
-      </div>
 
-      <div v-if="displayGrades.length" class="mt-2 flex flex-wrap gap-2">
-        <span v-for="(grade, index) in displayGrades.slice(0, 2)" :key="gradeKey(grade, index)" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {{ gradeLabel(grade) }}
-        </span>
-        <span v-if="hasMoreGrades" class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-          +{{ moreGradesCount }} more
-        </span>
-      </div>
-
-      <div class="relative z-10 mt-auto flex flex-col sm:flex-row items-center gap-2 pt-4">
-        <NuxtLink v-if="actionLink" :to="actionLink" :class="primaryBtn">
-          {{ actionLabel }}
-        </NuxtLink>
+        <!-- Title -->
+        <h3 class="flex-1 ml-3 text-xl font-bold text-slate-900 dark:text-slate-50">
+          {{ displayTitle }}
+        </h3>
       </div>
     </div>
-  </div>
+
+    <!-- Content Section -->
+    <div class="flex flex-1 flex-col p-5">
+      <!-- Description -->
+      <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+        {{ displayDescription }}
+      </p>
+
+      <!-- Grades Count -->
+      <div class="mt-auto pt-4">
+        <p class="text-base font-semibold text-slate-900 dark:text-slate-100">
+          <span class="text-teal-600 dark:text-teal-400">{{ gradesCountNumber }}</span> grades/courses
+        </p>
+      </div>
+    </div>
+  </NuxtLink>
 </template>
 
 <script setup>
@@ -57,55 +48,12 @@ const props = defineProps({
   level: { type: Object, default: null }
 })
 
-import resolveAssetUrl from '~/composables/useAssets'
-
-const coverSrc = computed(() => {
-  const v = props.cover || props.level?.cover_image || props.level?.image || ''
-  return resolveAssetUrl(v) || (v || null)
-})
-
-const paletteClass = computed(() => {
-  if (props.palette && props.palette.trim()) return props.palette
-  return 'bg-violet-500'
-})
-
 const displayTitle = computed(() => props.title || props.level?.name || 'Level')
 const displayDescription = computed(() => props.description || props.subtitle || props.level?.description || '')
-const badgeLabel = computed(() => {
-  if (props.subtitle && props.subtitle.trim()) return props.subtitle
-  if (props.level?.stage) return props.level.stage
-  return 'Level'
-})
-
-const displayGrades = computed(() => {
-  if (props.level && Array.isArray(props.level.grades)) return props.level.grades
-  return []
-})
-
-const hasMoreGrades = computed(() => displayGrades.value.length > 2)
-const moreGradesCount = computed(() => {
-  if (!hasMoreGrades.value) return 0
-  return displayGrades.value.length - 2
-})
 
 const gradesCountNumber = computed(() => {
   const value = Number(props.grades_count)
-  if (Number.isNaN(value)) return displayGrades.value.length
+  if (Number.isNaN(value)) return 0
   return value
 })
-
-const gradeLabel = grade => {
-  if (!grade) return ''
-  if (typeof grade === 'string' || typeof grade === 'number') return grade
-  return grade.name || grade.title || grade.label || grade.code || grade.slug || 'Grade'
-}
-
-const gradeKey = (grade, index) => {
-  if (!grade) return `grade-${index}`
-  if (typeof grade === 'string' || typeof grade === 'number') return `grade-${grade}`
-  return grade.id || grade.uuid || grade.name || grade.title || grade.label || `grade-${index}`
-}
-
-// Uniform primary button used across cards (mobile full-width, stacks)
-const primaryBtn = 'inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 shadow-sm'
 </script>

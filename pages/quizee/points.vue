@@ -1,12 +1,13 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-gray-50">
     <PageHero
       title="My Points & Rewards"
       description="Track your points, see your rank, view your badges, and redeem your points for awesome rewards!"
       :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Points', current: true }]"
+      padding="py-8 sm:py-12"
     />
 
-    <div class="p-6 max-w-7xl mx-auto">
+    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <!-- Level Progress -->
       <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">

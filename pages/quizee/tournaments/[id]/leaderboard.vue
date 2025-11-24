@@ -1,19 +1,25 @@
 <template>
-  <div class="p-6">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">Tournament Leaderboard</h1>
-      <p class="text-gray-600">{{ tournament?.name }}</p>
-    </div>
+  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <button @click="$router.back()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+          Back
+        </button>
+        <h1 class="text-3xl font-bold mb-2">Tournament Leaderboard</h1>
+        <p class="text-gray-600">{{ tournament?.name }}</p>
+      </div>
 
-    <Podium :entries="leaderboard" />
+      <Podium :entries="leaderboard" />
 
-    <div class="mb-6">
-      <LeaderboardTable
-        :entries="leaderboard"
-        variant="tournament"
-        :loading="loading"
-      />
+      <div class="mt-8">
+        <LeaderboardTable
+          :entries="leaderboard"
+          variant="tournament"
+          :loading="loading"
+        />
+      </div>
     </div>
   </div>
 </template>

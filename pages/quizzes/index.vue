@@ -41,8 +41,8 @@
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-8">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
-      <aside class="lg:col-span-1">
+      <!-- Sticky Filters at Top -->
+      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
         <div class="space-y-4">
           <!-- Mobile Filter Drawer -->
           <MobileFilterDrawer
@@ -67,7 +67,7 @@
           </MobileFilterDrawer>
 
           <!-- Desktop Filters -->
-          <div class="hidden lg:block space-y-4">
+          <div class="hidden lg:block">
             <FiltersSidebar
               :grade-options="GRADES"
               :subject-options="subjectsByGrade"
@@ -83,44 +83,11 @@
               @apply="() => { /* apply handled reactively */ }"
               @clear="() => { subjectFilter.value = ''; filterTopic.value = ''; gradeFilter.value = '' }"
             />
-
-            <UCard v-if="featuredQuiz">
-              <template #header>
-                <div class="text-sm text-gray-500">Featured</div>
-              </template>
-              <div class="mt-1">
-                <div class="font-semibold text-indigo-800">{{ featuredQuiz.title }}</div>
-                <div class="text-xs text-gray-500">{{ featuredQuiz.topic_name || 'General' }}</div>
-                <div class="mt-3"><NuxtLink :to="`/quizee/quizzes/${featuredQuiz.id || ''}`" class="text-indigo-700 text-sm">Open →</NuxtLink></div>
-              </div>
-            </UCard>
-            <UCard>
-              <div class="text-sm text-gray-500">Quick filters</div>
-              <div class="mt-3 flex flex-col gap-2">
-                <button
-                  @click="activeTab = 'all'"
-                  :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'all' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
-                >
-                  All
-                </button>
-                <button
-                  @click="activeTab = 'latest'"
-                  :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'latest' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
-                >
-                  Latest
-                </button>
-                <button
-                  @click="activeTab = 'featured'"
-                  :class="[ 'px-3 py-2 text-sm rounded', activeTab === 'featured' ? 'bg-indigo-600 text-white' : 'bg-white border' ]"
-                >
-                  Featured
-                </button>
-              </div>
-            </UCard>
           </div>
         </div>
-      </aside>
-      <main class="lg:col-span-2">
+      </div>
+
+      <main class="w-full">
         <div v-if="loading"><SkeletonGrid :count="3" /></div>
         <div v-else>
           <div v-if="(!displayQuizzes || displayQuizzes.length === 0)" class="p-6 border rounded-md text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">0 results returned</div>
@@ -165,11 +132,6 @@
           </div>
         </div>
       </main>
-
-  <!-- Right Sidebar -->
-  <!-- Right Sidebar placeholder (kept empty for now) -->
-  <aside class="lg:col-span-1" />
-    </div>
 
     <!-- Bottom CTA banner -->
     <div class="mt-10">

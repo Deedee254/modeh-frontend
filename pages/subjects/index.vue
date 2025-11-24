@@ -55,6 +55,11 @@
 
     <!-- Compact filters (replaces subject pills) -->
     <div class="max-w-7xl mx-auto px-4 py-12">
+      <!-- Sticky Filters at Top -->
+      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
+        <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="store.topics" :grade-options="allGrades" v-model:grade="gradeFilter" />
+      </div>
+
       <div class="mt-6">
       <div class="flex items-center gap-3">
   <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="subject-filters">
@@ -67,11 +72,8 @@
       </div>
     </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 mt-6">
-        <aside class="lg:col-span-1">
-          <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="store.topics" :grade-options="allGrades" v-model:grade="gradeFilter" />
-        </aside>
-        <main class="lg:col-span-3">
+  <div class="grid grid-cols-1 gap-3 sm:gap-6 mt-6">
+        <main class="w-full">
           <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
           <div v-else-if="error" class="mt-6 text-red-600 dark:text-red-400">Failed to load subjects.</div>
           <div v-else class="mt-6">

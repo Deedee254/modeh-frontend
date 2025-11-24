@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
     <PageHero
       :title="`Edit Question`"
       description="Modify the question details, options, and correct answers."
@@ -8,6 +8,7 @@
         { text: 'Questions', href: '/quiz-master/questions' },
         { text: 'Edit', current: true }
       ]"
+      padding="py-8 sm:py-12"
     >
       <template #eyebrow>
         <Icon name="heroicons:pencil-square" class="h-4 w-4 mr-1" />
@@ -15,21 +16,21 @@
       </template>
     </PageHero>
 
-    <div class="max-w-4xl mx-auto py-10">
-      <div v-if="loading" class="text-center">
-        <p>Loading question...</p>
+    <div class="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div v-if="loading" class="text-center py-12">
+        <p class="text-slate-600">Loading question...</p>
       </div>
-      <div v-else-if="error" class="text-center text-red-500">
+      <div v-else-if="error" class="text-center py-12 text-red-500">
         <p>{{ error }}</p>
         <UButton to="/quiz-master/questions" class="mt-4">Back to Questions</UButton>
       </div>
-      <div v-else class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md">
+      <div v-else class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm">
         <!-- Reuse the QuestionBuilder component to edit the question in-place -->
         <QuestionBuilder ref="builder" :questions="builderQuestions" @update:questions="onBuilderUpdate" @saved="onBuilderSaved" />
 
-        <div class="flex justify-end gap-4 mt-6">
-          <UButton type="button" color="gray" variant="ghost" @click="router.back()">Back</UButton>
-          <UButton type="button" :loading="saving" @click="saveQuestion">Save Changes</UButton>
+        <div class="flex flex-col sm:flex-row justify-end gap-3 mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <UButton type="button" color="gray" variant="ghost" @click="router.back()" class="w-full sm:w-auto">Back</UButton>
+          <UButton type="button" :loading="saving" @click="saveQuestion" class="w-full sm:w-auto">Save Changes</UButton>
         </div>
       </div>
     </div>

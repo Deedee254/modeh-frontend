@@ -237,8 +237,23 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
 
       const res = await api.postJson('/api/battles', payload)
       if (!res.ok) {
-        const txt = await res.text()
-        throw new Error('Failed to create battle: ' + txt)
+        let errorMsg = 'Failed to create battle'
+        try {
+          const errorData = await res.json()
+          if (res.status === 422 && errorData.message) {
+            // Handle validation/filter errors (e.g., no questions found)
+            errorMsg = errorData.message
+          } else if (errorData.message) {
+            errorMsg = errorData.message
+          }
+        } catch (e) {
+          // Fallback to text if JSON parse fails
+          try {
+            const txt = await res.text()
+            if (txt) errorMsg = txt.substring(0, 200)
+          } catch (ee) {}
+        }
+        throw new Error(errorMsg)
       }
       const data = await res.json().catch(() => null)
       // only clear the draft after the server returns a battle object

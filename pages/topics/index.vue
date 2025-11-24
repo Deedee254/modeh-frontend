@@ -54,15 +54,8 @@
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-12">
-      <!-- Quick action tabs: New / Top / Featured -->
-      <div class="mt-6 flex gap-2 items-center">
-      <button @click="sortBy = 'popular'" :class="sortBy === 'popular' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">New</button>
-      <button @click="sortBy = 'az'" :class="sortBy === 'az' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Top</button>
-      <button @click="sortBy = 'za'" :class="sortBy === 'za' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Featured</button>
-    </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6">
-      <aside class="lg:col-span-1">
+      <!-- Sticky Filters at Top -->
+      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
         <FiltersSidebar
           :subject-options="SUBJECTS"
           :topic-options="topics"
@@ -74,9 +67,17 @@
           @update:subject="val => subjectFilter.value = val"
           @update:grade="val => gradeFilter.value = val"
         />
-      </aside>
+      </div>
 
-      <main class="lg:col-span-3">
+      <!-- Quick action tabs: New / Top / Featured -->
+      <div class="mt-6 flex gap-2 items-center">
+      <button @click="sortBy = 'popular'" :class="sortBy === 'popular' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">New</button>
+      <button @click="sortBy = 'az'" :class="sortBy === 'az' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Top</button>
+      <button @click="sortBy = 'za'" :class="sortBy === 'za' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Featured</button>
+    </div>
+
+  <div class="grid grid-cols-1 gap-3 sm:gap-6">
+      <main class="w-full">
         <div v-if="pending" class="mt-6"><SkeletonGrid :count="3" /></div>
         <div v-else>
           <div v-if="(!filtered || filtered.length === 0)" class="p-6 border rounded-md text-sm text-gray-600 bg-white border-gray-200">0 results returned</div>

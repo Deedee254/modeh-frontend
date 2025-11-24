@@ -1,49 +1,44 @@
 <template>
-  <div class="group relative overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-lg hover:ring-slate-300 dark:bg-slate-900 dark:ring-slate-800 dark:hover:ring-slate-700">
+  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
-    <!-- Header with subtle accent -->
-    <div class="h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+    <!-- Hero Section with Icon -->
+    <div class="relative h-32 bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20">
+      <!-- Decorative icon -->
+      <div class="absolute inset-0 flex items-center justify-center opacity-50 dark:opacity-30">
+        <Icon name="heroicons:document-text" class="h-16 w-16 text-teal-400 dark:text-teal-500" />
+      </div>
 
-  <div class="p-4 sm:p-6">
-      <!-- Header section -->
-      <div class="flex items-start justify-between gap-3 mb-4">
-        <div class="flex-1 min-w-0">
-          <h3 class="text-sm sm:text-lg font-semibold text-slate-900 line-clamp-2 dark:text-slate-50">
-            {{ displayTitle }}
-          </h3>
-          <p v-if="displaySubject" class="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            {{ displaySubject }}
-          </p>
-        </div>
+      <!-- Check mark - Top Right -->
+      <div class="absolute right-4 top-4 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-teal-500 dark:bg-teal-600">
+        <Icon name="heroicons:check-solid" class="h-4 w-4 text-white" />
+      </div>
+    </div>
 
-        <!-- Quiz count pill -->
-        <div class="flex-shrink-0">
-          <div class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
-            <Icon name="heroicons:document-text" class="h-4 w-4" />
-            <span>{{ quizzesCount }}</span>
-          </div>
-        </div>
+    <!-- Content Section -->
+    <div class="flex flex-1 flex-col p-5">
+      <!-- Title in Teal -->
+      <h3 class="text-lg font-bold text-teal-600 dark:text-teal-400 line-clamp-2">
+        {{ displayTitle }}
+      </h3>
+
+      <!-- Subject Tag -->
+      <div v-if="displaySubject" class="mt-2 inline-block">
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          {{ displaySubject }}
+        </span>
       </div>
 
       <!-- Description -->
-      <p v-if="displayDescription" class="text-xs sm:text-sm text-slate-600 line-clamp-2 dark:text-slate-400 mb-6">
+      <p v-if="displayDescription" class="mt-3 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
         {{ displayDescription }}
       </p>
 
-      <!-- Action button -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div class="flex-1">
-          <NuxtLink v-if="startLink" :to="startLink" :class="primaryBtn">
-            {{ startLabel }}
-            <Icon name="heroicons:arrow-right" class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </NuxtLink>
-        </div>
-
-        <!-- Subtle progress indicator -->
-        <div class="text-xs text-slate-500 dark:text-slate-400">
-          {{ quizzesCount }} {{ quizzesCount === 1 ? 'quiz' : 'quizzes' }}
-        </div>
+      <!-- Quiz Count - Bottom -->
+      <div class="mt-auto pt-4">
+        <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <span class="text-teal-600 dark:text-teal-400">{{ quizzesCount }}</span> {{ quizzesCount === 1 ? 'quiz' : 'quizzes' }}
+        </p>
       </div>
     </div>
   </div>
@@ -74,7 +69,4 @@ const displaySubject = computed(() => {
   if (typeof s === 'string') return s
   return s.name || s.title || s.label || String(s.id || '')
 })
-
-// Uniform primary button used across cards (mobile full-width, stacks)
-const primaryBtn = 'inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 shadow-sm'
 </script>

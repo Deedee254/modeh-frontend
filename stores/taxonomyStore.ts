@@ -32,6 +32,10 @@ function normalizeList(maybe: any) {
     if (Array.isArray(maybe.topics)) return maybe.topics.filter(Boolean).map(normalizeItem)
     if (maybe.topics.data && Array.isArray(maybe.topics.data)) return maybe.topics.data.filter(Boolean).map(normalizeItem)
   }
+  if (maybe.levels) {
+    if (Array.isArray(maybe.levels)) return maybe.levels.filter(Boolean).map(normalizeItem)
+    if (maybe.levels.data && Array.isArray(maybe.levels.data)) return maybe.levels.data.filter(Boolean).map(normalizeItem)
+  }
   return []
 }
 

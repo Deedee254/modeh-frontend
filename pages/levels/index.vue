@@ -18,13 +18,14 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <GradeCard
               v-for="g in lvl.grades"
               :key="g.id"
               :grade="g"
               :actionLink="getGradeLink(g)"
               :actionLabel="g.type === 'course' ? 'Open course' : 'Explore grade'"
+              class="compact-view"
             />
           </div>
         </section>

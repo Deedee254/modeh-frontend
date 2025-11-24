@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineExpose } from 'vue'
+import { ref } from 'vue'
 
 defineProps({
   buttonLabel: {

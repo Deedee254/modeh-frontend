@@ -284,6 +284,46 @@ const pageDescription = computed(() => {
   try { return quizData?.value?.quiz?.description || quiz?.description || 'Practice and assess with Modeh quizzes.' } catch (e) { return 'Practice and assess with Modeh quizzes.' }
 })
 
+const structuredData = computed(() => {
+  if (!quiz.value || !quiz.value.id || pending.value) {
+    return null;
+  }
+
+  const quizUrl = `${baseUrl.value}/${quiz.value.id}`;
+  const orgUrl = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Quiz', // Using pending schema type
+    name: quiz.value.title,
+    description: quiz.value.description,
+    url: quizUrl,
+    image: coverSrc.value,
+    learningResourceType: 'Quiz',
+    educationalLevel: level_name.value || grade_name.value || undefined,
+    author: {
+      '@type': 'Organization',
+      name: 'Modeh',
+      url: orgUrl
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Modeh',
+      url: orgUrl
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': quizUrl
+    }
+  };
+
+  if (quiz.value.time_limit) {
+    data.timeRequired = `PT${quiz.value.time_limit}M`;
+  }
+
+  return data;
+});
+
 // Computed properties for nested taxonomy data
 const topic_name = computed(() => quiz.value.topic?.name)
 const subject_name = computed(() => quiz.value.topic?.subject?.name || quiz.value.subject?.name)
@@ -422,7 +462,13 @@ watchEffect(() => {
         { property: 'og:description', content: pageDescription.value },
         { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz.value.cover || '/social-share.png') },
         { name: 'twitter:card', content: 'summary_large_image' }
-      ]
+      ],
+      script: structuredData.value ? [
+        {
+          type: 'application/ld+json',
+          children: JSON.stringify(structuredData.value)
+        }
+      ] : []
     })
   } catch (e) {
     // swallow errors from head updates to avoid breaking the page

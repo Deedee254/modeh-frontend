@@ -1,9 +1,9 @@
 <template>
   <div>
-  <PageHero :title="topic.name || 'Topic'" :description="`Assessments for ${topic.name || ''}`" padding="py-12" :showSearch="true">
-    <template #actions>
-  <!-- Search is handled by PageHero's built-in search input -->
-    </template>
+    <PageHero :title="topic.name || 'Topic'" :description="`Assessments for ${topic.name || ''}`" padding="py-8 sm:py-12" :showSearch="true">
+      <template #actions>
+        <!-- Search is handled by PageHero's built-in search input -->
+      </template>
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-10">

@@ -60,7 +60,7 @@ import GlobalAlert from '~/components/GlobalAlert.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'
 
-const auth = useAuthStore?.() || null
+const auth = useAuthStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
 const isquizee = computed(() => !!auth.user && (auth.user.role === 'quizee' || (auth.user.roles && auth.user.roles.includes('quizee'))))
 const isQuizMaster = computed(() => !!auth.user && (auth.user.role === 'quiz-master' || (auth.user.roles && auth.user.roles.includes('quiz-master'))))

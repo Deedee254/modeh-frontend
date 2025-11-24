@@ -21,7 +21,7 @@
         title="Our quiz-masters"
           description="Meet our experienced educators and content creators who design curriculum-aligned assessments and learning resources."
         align="center"
-        padding="py-12"
+        padding="py-8 sm:py-12"
       />
 
       <div v-if="pending" class="text-center text-gray-500">

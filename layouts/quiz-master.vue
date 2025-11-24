@@ -51,7 +51,7 @@ import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
 
-const auth = useAuthStore?.() || null
+const auth = useAuthStore()
 const route = useRoute()
 const ui = useUiStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))

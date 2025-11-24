@@ -9,8 +9,9 @@
     <div class="max-w-6xl mx-auto px-4 py-12">
       <div v-if="loading" class="text-center py-12">Loading courses…</div>
 
-      <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <aside class="lg:col-span-1">
+      <div v-else>
+        <!-- Sticky Filters at Top -->
+        <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
           <FiltersSidebar
             :subject-options="store.subjects"
             :grade-options="store.grades"
@@ -24,12 +25,12 @@
             @update:level="val => levelFilter.value = val"
             @apply="() => {}"
           />
-        </aside>
+        </div>
 
-        <main class="lg:col-span-3">
+        <main class="w-full">
           <div v-if="coursesFiltered.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No courses found.</div>
 
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
             <GradeCard
               v-for="c in coursesFiltered"
               :key="c.id"

@@ -7,7 +7,7 @@
         description="Test your knowledge with today's daily quiz challenge. Complete it to earn points and climb the leaderboard!"
         variant="gradient"
         align="center"
-        padding="py-8"
+        padding="py-8 sm:py-12"
       >
         <template #stats>
           <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">

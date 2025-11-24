@@ -7,8 +7,8 @@ export default defineNuxtRouteMiddleware((to) => {
   const path = to.path
   if (path !== '/settings' && path !== '/profile') return
 
-  const auth = useAuthStore?.() || null
-  const instStore = useInstitutionsStore?.() || null
+  const auth = useAuthStore()
+  const instStore = useInstitutionsStore()
 
   // If user is not signed in or no institution selected, do nothing
   if (!auth || !auth.user) return

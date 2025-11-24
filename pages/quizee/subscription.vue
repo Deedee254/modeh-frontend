@@ -1,12 +1,13 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-gray-50">
     <PageHero
       title="Subscription Plans"
       description="Unlock your full potential with unlimited access to quiz results, detailed analytics, and more. Choose a plan that works for you."
       :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Subscription', current: true }]"
+      padding="py-8 sm:py-12"
     />
 
-    <div class="p-6 max-w-7xl mx-auto">
+    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <!-- Current Subscription Status -->
       <div v-if="loading" class="mb-8 p-6 bg-white rounded-lg shadow-sm border text-center">
         <p>Loading subscription status...</p>

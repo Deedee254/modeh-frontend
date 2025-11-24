@@ -1,159 +1,69 @@
 <template>
-  <div class="min-h-screen bg-gray-50 md:p-6">
-    <div class="max-w-4xl mx-auto">
-      <div class="bg-white md:rounded-lg md:shadow-sm md:border pb-24 md:pb-0">
-        <div class="p-4 md:p-6 border-b">
-          <div class="flex items-center justify-between mb-4">
-            <!-- Left: Title and Progress -->
-            <div class="flex-1">
-              <div class="text-lg md:text-xl font-semibold text-gray-900">{{ Q.title || 'Loading...' }}</div>
-              <!-- Progress number and bar -->
-              <div class="flex items-center gap-2 mt-2">
-                <span class="text-xs font-medium text-gray-600">Q{{ currentQuestion + 1 }}/{{ Q.questions.length }}</span>
-                <div class="flex-1 max-w-xs bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-indigo-600 h-full transition-all" :style="{ width: `${progressPercent}%` }"></div>
-                </div>
+  <QuizLayoutWrapper
+    :title="Q.title || 'Quiz'"
+    :current-question="currentQuestion"
+    :total-questions="Q.questions.length"
+    :show-timer="true"
+    :timer-display="formatTime(Math.ceil(questionRemaining))"
+    :timer-color-class="qTimerColorClass"
+    :timer-circumference="timerCircumference"
+    :timer-dash-offset="timerDashOffset"
+    :encouragement="encouragementMessage"
+    :encouragement-class="encouragementStyle"
+    :show-meta="true"
+    :alert-message="countdownAlert.show ? countdownAlert.message : ''"
+    :alert-class="countdownAlert.show ? (countdownAlert.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' : countdownAlert.type === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-blue-100 text-blue-800 border border-blue-300') : ''"
+    :show-previous="currentQuestion > 0"
+    :disable-previous="currentQuestion === 0"
+    :show-next="currentQuestion < Q.questions.length - 1"
+    :disable-next="false"
+    :show-submit="currentQuestion === Q.questions.length - 1"
+    :submit-label="lastSubmitFailed ? 'Retry' : 'Submit Quiz'"
+    :disable-submit="submitting.value"
+    :is-submitting="submitting.value"
+    :show-confirmation="showConfirm"
+    :confirm-title="'Submit Quiz?'"
+    :confirm-message="'Are you sure you want to submit? You won\'t be able to change your answers.'"
+    :confirm-button-label="'Submit Quiz'"
+    @previous="previousQuestion"
+    @next="nextQuestion"
+    @submit="confirmSubmit"
+    @cancel-confirm="showConfirm = false"
+    @confirm-submit="submitAnswers"
+  >
+    <template #meta-badges>
+      <div v-if="Q.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded text-xs">🔁 {{ Q.attempts_allowed === 'unlimited' ? 'Unlimited' : Q.attempts_allowed + ' attempts' }}</div>
+      <div v-if="Q.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded text-xs">🔀 Shuffled</div>
+    </template>
+
+    <template #content>
+      <div v-if="loading"><UiSkeleton :count="5" /></div>
+      <div v-else-if="quiz.questions.length > 0">
+        <transition name="fade-slide" mode="out-in">
+          <div :key="currentQuestion" class="space-y-6">
+            <!-- Media + Question -->
+            <div v-if="currentQuestionData.media" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
+                <img :src="resolveAssetUrl(currentQuestionData.media)" alt="Question media" class="max-w-full max-h-full object-contain rounded" />
+              </div>
+              <div>
+                <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
               </div>
             </div>
-
-            <!-- Right: Timer Circle -->
-            <div class="flex-shrink-0 ml-4">
-              <div class="relative">
-                <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 40 40">
-                  <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" class="text-gray-200" fill="none" />
-                  <circle cx="20" cy="20" r="18" stroke-width="3" stroke-linecap="round" fill="none" :stroke-dasharray="timerCircumference" :stroke-dashoffset="timerDashOffset" :class="qTimerColorClass.replace('text-', 'stroke-')" />
-                </svg>
-                <div class="absolute inset-0 grid place-items-center text-xs font-mono font-semibold" :class="qTimerColorClass">{{ formatTime(Math.ceil(questionRemaining)) }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quiz rules badges -->
-          <div class="flex flex-wrap gap-2 text-sm mb-4">
-            <div v-if="Q.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded">🔁 {{ Q.attempts_allowed === 'unlimited' ? 'Unlimited attempts' : Q.attempts_allowed + ' attempts' }}</div>
-            <div v-if="Q.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded">🔀 Questions shuffled</div>
-            <div v-if="Q.shuffle_answers" class="px-2 py-1 bg-gray-100 rounded">🔀 Answers shuffled</div>
-            <div v-if="Q.access && Q.access !== 'free'" class="px-2 py-1 bg-amber-50 text-amber-700 rounded">🔒 Paywalled</div>
-          </div>
-
-          <!-- Accessible announcements -->
-          <div class="sr-only" aria-live="polite">{{ lastAnnouncement }}</div>
-
-          <!-- Persistent Countdown Alert -->
-          <transition name="slide-down">
-            <div v-if="countdownAlert.show" :class="[
-              'px-4 py-3 rounded-lg mb-4 font-semibold flex items-center gap-2',
-              countdownAlert.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
-              countdownAlert.type === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-              'bg-blue-100 text-blue-800 border border-blue-300'
-            ]">
-              <svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00-.293.707l-.707.707a1 1 0 101.414 1.414L9 9.414V6z" clip-rule="evenodd"></path>
-              </svg>
-              <span>{{ countdownAlert.message }}</span>
-            </div>
-          </transition>
-
-          <div class="flex items-center justify-between gap-4">
-            <div class="text-xs text-gray-500 font-medium">
-              Question {{ currentQuestion + 1 }} of {{ Q.questions.length }}
-            </div>
-            <!-- Encouragement badge based on progress -->
-            <div v-if="encouragementMessage" class="text-sm px-3 py-1 rounded-full bg-gradient-to-r whitespace-nowrap" :class="encouragementStyle">
-              {{ encouragementMessage }}
-              <span v-if="currentStreak > 1" class="ml-1 font-semibold">🔥 {{ currentStreak }}</span>
+            <!-- Question Only -->
+            <div v-else>
+              <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
             </div>
           </div>
-        </div>
-
-        <div v-if="loading" class="p-6"><UiSkeleton :count="5" /></div>
-
-        <div v-else-if="quiz.questions.length > 0" class="p-4 md:p-6">
-          <div class="max-w-4xl mx-auto">
-            <!-- Question Card -->
-            <transition name="fade-slide" mode="out-in">
-              <div :key="currentQuestion" class="bg-white rounded-lg shadow-sm border mb-6">
-                <div class="p-6">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <!-- Media Section -->
-                  <div v-if="currentQuestionData.media" class="lg:col-span-1">
-                    <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
-                      <img :src="resolveAssetUrl(currentQuestionData.media)" alt="Question media" class="max-w-full max-h-full object-contain rounded" />
-                    </div>
-                  </div>
-                  <!-- Question Section -->
-                  <div :class="currentQuestionData.media ? 'lg:col-span-1' : 'lg:col-span-2'">
-                    <div class="space-y-3">
-                      <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
-                    </div>
-                    <div class="text-xs text-gray-500 mt-3 flex items-center gap-1">
-                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-
-                    </div>
-                  </div>
-                </div>
-              </div>
-              </div>
-            </transition>
-
-            <!-- Navigation -->
-            <div class="fixed bottom-0 left-0 right-0 md:relative bg-white/80 backdrop-blur-sm md:bg-transparent border-t md:border-0 p-4 md:p-0">
-              <div class="max-w-4xl mx-auto flex items-center justify-between">
-                <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" :disabled="currentQuestion === 0" @click="previousQuestion">
-                  Previous
-                </button>
-                <div class="flex gap-2">
-                  <button v-if="currentQuestion < Q.questions.length - 1" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="nextQuestion">
-                    Next
-                  </button>
-                  <button v-else type="button" :disabled="submitting.value" :class="['px-6 py-2 rounded-lg transition-colors', submitting.value ? 'bg-green-500 text-white opacity-60 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700']" @click="confirmSubmit">
-                    <svg v-if="submitting.value" class="w-4 h-4 inline-block mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-                    <span>{{ submitting.value ? 'Submitting…' : 'Submit Quiz' }}</span>
-                  </button>
-                  <button v-if="lastSubmitFailed" type="button" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors" @click="submitAnswers" :disabled="submitting.value">
-                    Retry
-                  </button>
-                </div>
-                <div v-if="submissionMessage" class="mt-3 text-sm text-slate-600">{{ submissionMessage }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- confirmation modal -->
-        <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
-            <div class="p-6">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-900">Submit Quiz</h3>
-                  <p class="text-sm text-gray-600">Are you sure you want to submit? You won't be able to change your answers.</p>
-                </div>
-              </div>
-              <div class="flex gap-3 justify-end">
-                <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" @click="showConfirm = false" :disabled="submitting.value">Cancel</button>
-                <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="submitAnswers" :disabled="submitting.value">
-                  <svg v-if="submitting.value" class="w-4 h-4 inline-block mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-                  Submit Quiz
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Results are shown on a dedicated results page. After submit the user is redirected there. -->
+        </transition>
       </div>
-    </div>
-  </div>
+    </template>
+  </QuizLayoutWrapper>
 </template>
 
 <script setup>
 import UiTextarea from '~/components/ui/UiTextarea.vue'
+import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
 // set page layout meta for quizee. This is an in-progress assessment page — do not index.
 definePageMeta({
   layout: 'quizee',

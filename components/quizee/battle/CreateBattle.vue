@@ -8,6 +8,11 @@
       v-model:topic="topic"
     />
 
+    <!-- Error Alert -->
+    <div v-if="errorMessage" class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <p class="text-sm text-red-700 dark:text-red-200">{{ errorMessage }}</p>
+    </div>
+
     <div class="space-y-4">
       <div>
         <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Difficulty</label>
@@ -48,10 +53,20 @@ const emit = defineEmits(['battleCreated'])
 
 const { level, grade, subject, topic, difficulty, totalQuestions, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: '1v1' })
 const totalTimeMinutes = ref(null)
+const errorMessage = ref(null)
 
 async function startBattle() {
-  const totalTimeSeconds = totalTimeMinutes && totalTimeMinutes.value ? Math.max(0, Math.floor(totalTimeMinutes.value * 60)) : null
-  const { battle, error } = await createBattle({ totalTimeSeconds })
-  emit('battleCreated', battle || { error })
+  errorMessage.value = null
+  try {
+    const totalTimeSeconds = totalTimeMinutes && totalTimeMinutes.value ? Math.max(0, Math.floor(totalTimeMinutes.value * 60)) : null
+    const result = await createBattle({ totalTimeSeconds })
+    if (result && result.battle) {
+      emit('battleCreated', result.battle)
+    } else if (result && result.error) {
+      errorMessage.value = result.error
+    }
+  } catch (err) {
+    errorMessage.value = err.message || 'Failed to create battle'
+  }
 }
 </script>

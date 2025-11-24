@@ -1,14 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16">
-    <div class="mx-auto max-w-[320px] sm:max-w-2xl lg:max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div class="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
+  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+    <div class="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div class="flex flex-col items-start justify-between gap-2 mb-6 md:flex-row md:items-center">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">Create a new quiz</h1>
           <p class="text-sm text-slate-500">Quick multi-step wizard for quiz-masters</p>
         </div>
       </div>
 
-      <nav class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+      <nav class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm mb-6">
         <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <button
             v-for="tab in tabConfig"
@@ -86,8 +86,8 @@
         />
       </div>
 
-      <div v-if="showBuilder" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-  <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" @saved="onQuestionSaved" @cancel="onCancel" />
+      <div v-if="showBuilder" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" @saved="onQuestionSaved" @cancel="onCancel" />
       </div>
 
       <CreateTopicModal

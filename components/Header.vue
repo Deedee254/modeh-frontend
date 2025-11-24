@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white dark:bg-slate-800 border-b dark:border-slate-700 relative shadow-md">
+  <header class="bg-white dark:bg-slate-800 border-b-0 dark:border-slate-700 relative shadow-md">
     <!-- Top bar -->
     <div class="bg-slate-900 text-white py-2 px-4">
       <div class="max-w-6xl mx-auto flex justify-between items-center text-xs">

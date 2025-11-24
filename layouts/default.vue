@@ -8,7 +8,7 @@
         <PwaInstallButton />
       </ClientOnly>
       <Header />
-      <main class="flex-1 py-8 w-full px-4 md:px-6 lg:px-8">
+      <main class="flex-1 w-full">
         <slot />
       </main>
     </template>
@@ -78,7 +78,7 @@ import BottomNav from '~/components/ui/BottomNav.vue'
 
 const chatOpen = ref(false)
 const router = useRouter()
-const auth = useAuthStore?.() || null
+const auth = useAuthStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
 
 onMounted(() => {
