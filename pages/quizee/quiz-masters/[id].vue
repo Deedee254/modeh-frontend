@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto p-6 max-w-4xl">
+  <div class="bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div class="my-8">
         <NuxtLink to="/quizee/quiz-masters" class="text-indigo-600 hover:underline">
           &larr; Back to all quiz-masters

@@ -1,5 +1,5 @@
 <template>
-  <aside class="rounded-lg p-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800">
+  <aside class="rounded-lg p-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800 sticky overflow-y-auto" :style="{ top: 'var(--topbar-height)', height: 'calc(100vh - var(--topbar-height))' }">
     <div class="flex items-center justify-between">
       <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">Filters</div>
       <button @click="collapsed = !collapsed" class="text-sm text-gray-500 px-2 py-1 rounded hover:bg-gray-100">{{ collapsed ? 'Open' : 'Collapse' }}</button>

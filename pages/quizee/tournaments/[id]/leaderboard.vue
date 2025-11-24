@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
-    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <div class="bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- Header -->
       <div class="mb-8">
         <button @click="$router.back()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-4">

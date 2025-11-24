@@ -1,6 +1,7 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-    <div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700">
+  <div class="bg-slate-50 dark:bg-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700">
       <h2 class="text-2xl font-bold mb-3 text-slate-900 dark:text-slate-100">Unlock Your Results</h2>
       <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">You need an active subscription to view detailed results. Choose a package or pay only for this quiz/battle.</p>
 
@@ -115,9 +116,10 @@
       </div>
     </div>
     
-    <ReviewAnswers :open="showReview" :loading="reviewLoading" :error="reviewError" :details="reviewDetails" @close="showReview = false" />
+  <ReviewAnswers :open="showReview" :loading="reviewLoading" :error="reviewError" :details="reviewDetails" @close="showReview = false"></ReviewAnswers>
 
-    <PaymentAwaitingModal :tx="checkout.tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed" />
+  <PaymentAwaitingModal :tx="checkout.tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed"></PaymentAwaitingModal>
+  </div>
   </div>
 </template>
 

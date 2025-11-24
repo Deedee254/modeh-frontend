@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <PageHero title="Tournaments" description="Compete with other learners in structured tournaments to benchmark skills and earn recognition." variant="gradient" padding="py-8 sm:py-12">
       <template #stats>
         <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">

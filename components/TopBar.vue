@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white border-b shadow-sm sticky top-0 z-30" :class="{ 'z-40': ui.mobileNavOpen || ui.sidebarOpen }">
+  <div ref="topbarRef" class="bg-white border-b shadow-sm sticky top-0 z-40" :class="{ 'z-50': ui.mobileNavOpen || ui.sidebarOpen }">
     <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-0 sm:gap-2">
       <div class="flex items-center gap-1 sm:gap-2 w-full">
         <!-- Bars / hamburger: hidden on md+ (desktop). Visible only on small screens -->
@@ -230,6 +230,22 @@ const onlineCount = ref(0)
 let privateChannel = null
 let presenceChannel = null
 
+// topbar ref & measurement: export --topbar-height on :root so sidebars can size themselves
+const topbarRef = ref(null)
+
+function setTopbarHeight() {
+  try {
+    nextTick(() => {
+      const el = topbarRef?.value
+      if (!el || typeof document === 'undefined') return
+      const h = el.offsetHeight || 0
+      document.documentElement.style.setProperty('--topbar-height', `${h}px`)
+    })
+  } catch (e) {
+    // ignore measurement errors
+  }
+}
+
 const notifications = useNotificationsStore()
 const notificationsCount = computed(() => unreadChatCount.value || notifications.unreadCount || 0)
 const auth = useAuthStore()
@@ -433,10 +449,16 @@ onMounted(() => {
       })
     }
   })
+  // measure and export topbar height for sidebars/layouts
+  try {
+    setTopbarHeight()
+    window.addEventListener('resize', setTopbarHeight)
+  } catch (e) {}
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
+  try { window.removeEventListener('resize', setTopbarHeight) } catch (e) {}
   notifications.detachEchoListeners()
   try { if (privateChannel && privateChannel.unsubscribe) privateChannel.unsubscribe() } catch (e) {}
   try { if (presenceChannel && presenceChannel.leave) presenceChannel.leave() } catch (e) {}

@@ -40,21 +40,7 @@
       <div v-if="loading"><UiSkeleton :count="5" /></div>
       <div v-else-if="quiz.questions.length > 0">
         <transition name="fade-slide" mode="out-in">
-          <div :key="currentQuestion" class="space-y-6">
-            <!-- Media + Question -->
-            <div v-if="currentQuestionData.media" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
-                <img :src="resolveAssetUrl(currentQuestionData.media)" alt="Question media" class="max-w-full max-h-full object-contain rounded" />
-              </div>
-              <div>
-                <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
-              </div>
-            </div>
-            <!-- Question Only -->
-            <div v-else>
-              <QuestionCard :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
-            </div>
-          </div>
+          <QuestionCard :key="currentQuestion" :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
         </transition>
       </div>
     </template>

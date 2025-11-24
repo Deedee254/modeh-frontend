@@ -17,13 +17,13 @@
       >
         <div
           v-if="anyMenuOpen"
-          class="fixed inset-0 z-40 bg-black/10"
+          class="fixed inset-0 z-30 bg-black/10"
           @click="closeAllMenus"
         />
       </Transition>
 
       <!-- Bottom nav bar -->
-      <div class="relative w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-700/60 shadow-lg">
+      <div class="relative w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-700/60 shadow-lg z-40">
       <div class="max-w-7xl mx-auto px-4 py-4">
         <div class="flex items-center justify-between gap-2">
           <!-- Left: Explore Menu -->
@@ -168,12 +168,12 @@ function updateWidth() {
 }
 
 function closeAllMenus() {
-  if (exploreDropdown.value) exploreDropdown.value.isOpen = false
+  if (exploreDropdown.value) exploreDropdown.value.close()
 }
 
 function closeOtherMenus(current) {
   if (current !== 'explore' && exploreDropdown.value) {
-    exploreDropdown.value.isOpen = false
+    exploreDropdown.value.close()
   }
 }
 
@@ -239,9 +239,5 @@ function onGlobalKeydown(e) {
 
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-:global(body) {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
 }
 </style>

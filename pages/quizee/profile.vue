@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen">
-    <div class="max-w-4xl mx-auto space-y-6">
+  <div class="bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-6">
       <ProfileHeader
         :title="user?.name || 'Profile'"
         :subtitle="user?.email"

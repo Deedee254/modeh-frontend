@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="bg-gray-50">
     <PageHero
       title="Available Assessments"
       description="Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration to select an appropriate exercise."
@@ -8,7 +8,7 @@
     />
 
     <!-- Filters -->
-    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5 mb-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
           <!-- Search Input -->

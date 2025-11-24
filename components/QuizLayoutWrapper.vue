@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="flex flex-col min-h-screen bg-gray-50" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem)">
     <!-- Header: Title, Progress, Timer -->
-    <header class="sticky top-0 z-30 bg-white border-b border-gray-200">
+    <header class="sticky top-0 z-30 bg-white border-b border-gray-200 flex-shrink-0">
       <div class="max-w-4xl mx-auto px-4 py-4 sm:px-6">
         <div class="flex items-center justify-between gap-4 mb-3">
           <!-- Left: Title and Progress -->
@@ -50,12 +50,12 @@
     </transition>
 
     <!-- Main Content: Question Area -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full">
       <slot name="content" />
     </main>
 
     <!-- Footer: Navigation -->
-    <footer class="sticky bottom-0 z-30 bg-white border-t border-gray-200">
+    <footer class="z-30 bg-white border-t border-gray-200 flex-shrink-0">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3 sm:gap-4">
         <button 
           v-if="showPrevious" 

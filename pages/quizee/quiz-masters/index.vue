@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="bg-gray-50">
     <PageHero
       :breadcrumbs="[{ text: 'Home', href: '/quizee' }, { text: 'Quiz Masters', current: true }]"
       title="Find Your Quiz Masters"
@@ -46,7 +46,7 @@
       </template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <!-- Filters Sidebar -->
           <aside class="lg:col-span-1 order-2 lg:order-1">

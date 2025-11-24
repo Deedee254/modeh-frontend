@@ -47,7 +47,10 @@ export function useUserRole() {
 
   // Provide a backwards-compatible alias `isQuizee` for consumers that
   // historically referenced that spelling (avoid runtime `.value` errors).
-  return { roles, isQuizMaster, isQuizee, isInstitutionManager, preferredRole }
+  // Backwards-compat: some consumers expect the lowercase `isquizee` name.
+  // Export both spellings so older components that destructure `{ isquizee }`
+  // continue to work without changes.
+  return { roles, isQuizMaster, isQuizee, isInstitutionManager, preferredRole, isquizee: isQuizee }
 }
 
 // Convenience alias for the composable itself (rarely needed but harmless).

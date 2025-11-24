@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+  <div class="bg-gray-50">
     <!-- Skeleton Loading State -->
-    <div v-if="pending" class="max-w-7xl mx-auto px-4 py-6 animate-pulse">
+    <div v-if="pending" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 animate-pulse">
       <!-- New Integrated Hero Section -->
       <div class="mb-6">
         <div class="h-6 w-24 bg-gray-200 rounded-md mb-4"></div>
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Main Content - Responsive Grid -->
-    <div v-else class="max-w-7xl mx-auto px-4 py-6">
+    <div v-else class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- New Integrated Hero Section -->
       <div class="mb-6">
         <button @click="router.back()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-4">
@@ -28,7 +28,7 @@
         </button>
         <div class="relative h-64 md:h-80 rounded-xl overflow-hidden" :style="heroStyle">
           <!-- preload cover to detect load state -->
-          <img v-if="quiz.cover || quiz.cover_image" :src="quiz.cover || quiz.cover_image" class="hidden" @load="onCoverLoaded" @error="onCoverError" />
+          <img v-if="coverSrc" :src="coverSrc || undefined" class="hidden" @load="onCoverLoaded" @error="onCoverError" />
 
           <!-- Overlay Content (title, badges) -->
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
@@ -74,7 +74,7 @@
           <!-- Video player (separate from hero) -->
           <div v-if="hasVideo" class="mb-4">
             <!-- Accept youtube_url (canonical), video_url and other fallbacks -->
-            <VideoPlayer :src="quiz.youtube_url || quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="quiz.cover || quiz.cover_image" />
+            <VideoPlayer :src="quiz.youtube_url || quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="posterSrc || undefined"></VideoPlayer>
           </div>
 
           <!-- Media Caption/Description -->
@@ -166,7 +166,7 @@
                     :itemType="'Quiz'"
                     :itemId="quiz.id"
                     :baseUrl="baseUrl"
-                  />
+                  ></AffiliateShareButton>
                 </div>
               </div>
 
@@ -213,7 +213,7 @@
               <div v-for="r in related" :key="r.id" 
                    class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="w-16 h-12 bg-gray-100 rounded overflow-hidden">
-                  <img :src="r.cover" alt="" class="w-full h-full object-cover" />
+                  <img :src="r.cover || undefined" alt="" class="w-full h-full object-cover" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <h4 class="font-medium text-sm truncate">{{ r.title }}</h4>
@@ -226,13 +226,11 @@
       </div>
     </div>
 
-  
+
   </div>
 </template>
 
-<script setup>
-definePageMeta({ layout: 'quizee' })
-
+<script setup lang="ts">
 // page meta will be defined after we fetch the quiz data (so computed values
 // referencing the fetched `quizData` are available at runtime). See below.
 
@@ -244,55 +242,120 @@ import { resolveAssetUrl } from '~/composables/useAssets'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import useApi from '~/composables/useApi'
 
+// --- Type Definitions ---
+
+interface Taxonomy {
+  name: string;
+}
+
+interface Level extends Taxonomy {}
+
+interface Grade extends Taxonomy {
+  level?: Level;
+}
+
+interface Subject extends Taxonomy {
+  grade?: Grade;
+}
+
+interface Topic extends Taxonomy {
+  subject?: Subject;
+}
+
+interface Quiz {
+  id: string | number;
+  title: string;
+  description: string;
+  cover?: string | null;
+  cover_image?: string | null;
+  cover_image_url?: string | null;
+  difficulty?: number | null;
+  questions_count?: number;
+  time_limit?: number;
+  points?: number;
+  marks?: number;
+  youtube_url?: string | null;
+  video_url?: string | null;
+  media?: string | null;
+  cover_video?: string | null;
+  video?: string | null;
+  media_caption?: string | null;
+  video_description?: string | null;
+  topic?: Topic;
+  subject?: Subject;
+  grade?: Grade;
+  level?: Level;
+  questions?: any[];
+  timer_seconds?: number;
+  attempts_allowed?: number;
+}
+
+interface RelatedQuiz {
+  id: number;
+  title: string;
+  cover: string | null;
+  questions_count: number;
+}
+
+interface LastAttempt {
+  score: number;
+  correct: number;
+  incorrect: number;
+}
+
+// --- Component Logic ---
+
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
 
 const baseUrl = computed(() => {
-  const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  const baseRaw = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  const base = String(baseRaw || '')
   if (!base) return ''
   return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`
 })
 
-// Fetch data without blocking; useFetch returns refs (no top-level await).
-// Avoid `await` here so `definePageMeta` and computed getters can react to the
-// `quizData` ref safely without causing server-side timing/500 errors.
 const api = useApi()
-const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`, {
-  credentials: 'include',
-  headers: computed(() => ({
-    'X-Requested-With': 'XMLHttpRequest',
-    ...(api.getXsrfFromCookie() ? { 'X-XSRF-TOKEN': api.getXsrfFromCookie() } : {})
-  }))
+
+const fetchHeaders = computed(() => {
+  const h: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
+  try {
+    const xsrf = api.getXsrfFromCookie()
+    if (xsrf) h['X-XSRF-TOKEN'] = String(xsrf)
+  } catch (e) {
+    console.error('Failed to get XSRF token:', e)
+  }
+  return h
 })
 
-// Make `quiz` a computed ref so its value is derived from `quizData` reactively.
-// This avoids taking a snapshot of `quizData` at setup time (which caused the
-// server to render placeholders while the client immediately had data,
-// producing hydration mismatches).
-const quiz = computed(() => (
-  quizData?.value?.quiz || quizData?.value || {
-    id: route.params.id,
+const { data: quizData, pending } = useFetch<{ quiz: Quiz } | { data: Quiz } | Quiz>(config.public.apiBase + `/api/quizzes/${route.params.id}`, {
+  credentials: 'include',
+  headers: fetchHeaders
+})
+
+const quiz = computed<Quiz>(() => {
+  const data = quizData.value
+  const defaultQuiz: Quiz = {
+    id: route.params.id as string,
     title: 'Loading...',
     description: '',
-    questions: []
   }
-))
 
-// Dynamic page meta for quiz detail (uses server-fetched data when available)
-const pageTitle = computed(() => {
-  try { return (quizData?.value?.quiz?.title || quiz?.title) ? `${quizData?.value?.quiz?.title || quiz?.title} — Modeh` : 'Quiz — Modeh' } catch (e) { return 'Quiz — Modeh' }
-})
-const pageDescription = computed(() => {
-  try { return quizData?.value?.quiz?.description || quiz?.description || 'Practice and assess with Modeh quizzes.' } catch (e) { return 'Practice and assess with Modeh quizzes.' }
+  if (!data) return defaultQuiz
+
+  // Handles { quiz: Quiz }
+  if ('quiz' in data && data.quiz) return data.quiz
+  // Handles { data: Quiz }
+  if ('data' in data && data.data) return data.data as Quiz
+  // Handles Quiz
+  if ('id' in data) return data as Quiz
+
+  return defaultQuiz
 })
 
-// Use definePageMeta reactively so meta updates when `quizData` resolves.
-// Passing a function defers evaluation and avoids reading awaited values too early.
-// We avoid using `definePageMeta` with top-level await or complex awaits inside
-// its callback because the Nuxt macro runs at build-time and can error if it
-// encounters `await` in the module. Instead, update document head reactively
-// when `quizData` resolves using `useHead` inside a `watchEffect` below.
+const pageTitle = computed(() => (quiz.value.title && quiz.value.title !== 'Loading...') ? `${quiz.value.title} — Modeh` : 'Quiz — Modeh')
+const pageDescription = computed(() => quiz.value.description || 'Practice and assess with Modeh quizzes.')
 
 // Computed properties for nested taxonomy data
 const topic_name = computed(() => quiz.value.topic?.name)
@@ -319,13 +382,17 @@ const hasVideo = computed(() => {
   return Boolean(quiz.value.youtube_url || quiz.value.video_url || quiz.value.media || quiz.value.cover_video || quiz.value.video)
 })
 
-// Safe no-op handlers for the hidden preload image above
 function onCoverLoaded() {}
 function onCoverError() {}
 
 const coverSrc = computed(() => {
   const c = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
   return typeof c === 'string' && c ? resolveAssetUrl(c) : null
+})
+
+const posterSrc = computed(() => {
+  const p = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
+  return typeof p === 'string' && p ? resolveAssetUrl(p) : null
 })
 
 const heroStyle = computed(() => {
@@ -337,51 +404,52 @@ const heroStyle = computed(() => {
   }
 })
 
-// Related quizzes (mock data - replace with actual API call)
-const related = ref([
+const related = ref<RelatedQuiz[]>([
   { id: 1, title: 'Similar Quiz 1', cover: null, questions_count: 10 },
   { id: 2, title: 'Similar Quiz 2', cover: null, questions_count: 15 }
 ])
 
-// Mock last attempt (replace with actual API call)
-const lastAttempt = ref(null)
-
+const lastAttempt = ref<LastAttempt | null>(null)
 
 // Media utility functions
-const isYouTube = (url) => typeof url === 'string' && (url.includes('youtube.com') || url.includes('youtu.be'))
-const isVimeo = (url) => typeof url === 'string' && url.includes('vimeo.com')
-const isVideo = (url) => typeof url === 'string' && /\.(mp4|webm|ogg)$/i.test(url)
+const isYouTube = (url: string | null | undefined): boolean => typeof url === 'string' && (url.includes('youtube.com') || url.includes('youtu.be'))
+const isVimeo = (url: string | null | undefined): boolean => typeof url === 'string' && url.includes('vimeo.com')
+const isVideo = (url: string | null | undefined): boolean => typeof url === 'string' && /\.(mp4|webm|ogg)$/i.test(url)
 
-function getVideoType(url) {
-  const ext = url.split('.').pop().toLowerCase()
+function getVideoType(url: string): string {
+  const ext = url.split('.').pop()?.toLowerCase() || ''
   return `video/${ext}`
 }
 
-function formatYouTubeUrl(url) {
-  // Handle both youtube.com and youtu.be URLs
+function formatYouTubeUrl(url: string): string {
   let videoId = ''
-  if (url.includes('youtube.com')) {
-    videoId = url.split('v=')[1]
-    const ampersandPosition = videoId?.indexOf('&')
-    if (ampersandPosition !== -1) {
-      videoId = videoId.substring(0, ampersandPosition)
+  try {
+    if (url.includes('youtube.com')) {
+      const query = url.split('?')[1] ?? ''
+      const params = new URLSearchParams(query)
+      videoId = params.get('v') ?? ''
+    } else if (url.includes('youtu.be')) {
+      videoId = url.split('youtu.be/')[1] ?? ''
     }
-  } else if (url.includes('youtu.be')) {
-    videoId = url.split('youtu.be/')[1]
+
+    if (typeof videoId === 'string' && videoId.includes('&')) {
+      videoId = (videoId.split('&')[0]) ?? ''
+    }
+  } catch (e) {
+    // if parsing fails, fallback to empty id
+    videoId = ''
   }
-  
-  // Return embed URL with additional parameters for better UX
+
   return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`
 }
 
-function formatVimeoUrl(url) {
-  // Extract Vimeo ID and format the embed URL
+function formatVimeoUrl(url: string): string {
   const vimeoId = url.split('vimeo.com/')[1]
   return `https://player.vimeo.com/video/${vimeoId}?dnt=1&title=0&byline=0&portrait=0`
 }
 
 // Format time limit for display
-function formatTimeLimit(limit) {
+function formatTimeLimit(limit: number | null | undefined): string {
   if (!limit) return '∞'
   if (limit < 60) return `${limit}m`
   const hours = Math.floor(limit / 60)
@@ -390,7 +458,7 @@ function formatTimeLimit(limit) {
 }
 
 // Get difficulty level text
-function getDifficultyLevel(level) {
+function getDifficultyLevel(level: number | null | undefined): string {
   if (!level) return 'Medium'
   switch (level) {
     case 1: return 'Easy'
@@ -402,7 +470,7 @@ function getDifficultyLevel(level) {
 }
 
 // Get emoji for difficulty level
-function getDifficultyEmoji(level) {
+function getDifficultyEmoji(level: number | null | undefined): string {
   if (!level) return '📚'
   switch (level) {
     case 1: return '🌟'
@@ -425,13 +493,36 @@ function showPreview() {
 // Update head reactively when quizData becomes available
 watchEffect(() => {
   try {
+    // Resolve og:image safely across the possible shapes returned by useFetch:
+    // - { quiz: Quiz }
+    // - { data: Quiz }
+    // - Quiz
+    // fall back to computed quiz cover or a default image.
+    let ogImg = '/social-share.png'
+    const v = quizData?.value
+
+    if (v && typeof v === 'object') {
+      if ('quiz' in v && v.quiz?.cover_image) {
+        ogImg = v.quiz.cover_image
+      } else if ('data' in v && v.data?.cover_image) {
+        ogImg = v.data.cover_image
+      } else if ('cover_image' in v && (v as any).cover_image) {
+        // v might already be a Quiz object
+        ogImg = (v as any).cover_image
+      } else if (quiz.value.cover) {
+        ogImg = quiz.value.cover
+      }
+    } else if (quiz.value.cover) {
+      ogImg = quiz.value.cover
+    }
+
     useHead({
       title: pageTitle.value,
       meta: [
         { name: 'description', content: pageDescription.value },
         { property: 'og:title', content: pageTitle.value },
         { property: 'og:description', content: pageDescription.value },
-  { property: 'og:image', content: (quizData?.value?.quiz?.cover_image || quiz.value.cover || '/social-share.png') },
+        { property: 'og:image', content: ogImg },
         { name: 'twitter:card', content: 'summary_large_image' }
       ]
     })

@@ -7,7 +7,7 @@
       padding="py-8 sm:py-12"
     />
 
-    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- Level Progress -->
       <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">

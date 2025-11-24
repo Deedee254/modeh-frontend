@@ -12,9 +12,9 @@
       <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
 
       <!-- Main content area -->
-  <div class="flex-1 flex flex-col h-screen transition-all duration-300 lg:ml-0">
+  <div class="flex-1 flex flex-col transition-all duration-300 lg:ml-0">
         <TopBar v-if="!route.meta.hideTopBar" />
-        <main class="flex-1 overflow-y-auto pb-20 md:pb-6">
+        <main class="flex-1 overflow-y-auto pb-20 md:pb-6 min-h-0">
         <slot></slot>
         </main>
       </div>

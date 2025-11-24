@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="bg-gray-50">
     <!-- Battle Header -->
     <div class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
@@ -186,6 +186,7 @@ interface Battle {
   id: number | string
   questions: Question[]
   duration: number
+  status?: string
 }
 
 type SelectedAnswers = Record<string | number, string | number>

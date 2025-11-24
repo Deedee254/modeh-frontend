@@ -3,9 +3,9 @@
     <!-- Sidebar -->
     <div class="hidden md:flex w-80 flex-shrink-0">
       <!-- Sidebar keeps the hero gradient treatment just within the header, leaving the list area clean and white -->
-  <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl">
+  <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl min-h-0">
     <!-- Header -->
-  <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl sticky top-0 z-20">
+  <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl flex-shrink-0">
           <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted h-9 w-9 rounded-full hover:text-foreground text-muted-foreground">
@@ -29,7 +29,7 @@
           </div>
         </div>
         <!-- Tabs -->
-  <div class="px-4 py-3 border-b border-border bg-transparent sticky top-[128px] z-20">
+  <div class="px-4 py-3 border-b border-border bg-transparent flex-shrink-0">
           <div dir="ltr" data-orientation="horizontal">
             <div role="tablist" aria-orientation="horizontal" class="h-10 items-center justify-center rounded-md p-1 text-muted-foreground grid w-full grid-cols-3 bg-muted/50">
               <button 
@@ -49,7 +49,7 @@
         </div>
         
         <!-- Chat List -->
-        <div class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
+        <div class="flex-1 overflow-y-auto min-h-0" style="-webkit-overflow-scrolling: touch;">
           <transition-group name="list" tag="div">
           <button 
             v-for="chat in filteredConversations" 
@@ -89,7 +89,7 @@
     <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl h-full min-h-0">
       <div class="flex flex-col h-full min-h-0 bg-white text-foreground">
         <!-- Header (mobile list) -->
-  <div class="p-4 border-b border-border bg-white text-foreground sticky top-0 z-10 w-full">
+  <div class="p-4 border-b border-border bg-white text-foreground flex-shrink-0 w-full">
           <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-foreground h-9 w-9 rounded-full hover:bg-muted text-muted-foreground">
@@ -112,7 +112,7 @@
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
+        <div class="flex-1 overflow-y-auto min-h-0" style="-webkit-overflow-scrolling: touch;">
           <transition-group name="list" tag="div">
             <button
               v-for="chat in filteredConversations"
@@ -145,9 +145,9 @@
     </div>
 
     <!-- Main Chat Area -->
-  <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6 bg-[#efeae2]">
-    <!-- Chat Header - Sticky -->
-    <div class="sticky top-0 z-20 flex items-center gap-3 p-4 bg-white border-b border-border">
+  <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6 bg-[#efeae2] min-h-0">
+    <!-- Chat Header -->
+    <div class="flex items-center gap-3 p-4 bg-white border-b border-border flex-shrink-0">
       <button 
         v-if="isMobile && showChatWindowOnMobile" 
         class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"
@@ -180,7 +180,7 @@
     </div>
 
     <!-- Messages Container -->
-    <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4" style="padding-bottom: 90px;">
+    <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style="padding-bottom: 90px;">
           <div v-for="message in chatMessages" :key="message.id" class="flex w-full" :class="String(message.sender_id) === String(userId) ? 'justify-end' : 'justify-start'">
             <div :class="String(message.sender_id) === String(userId) ? 'chat-bubble sent' : 'chat-bubble received'" class="rounded-lg px-4 py-2">
               <!-- attachments (if any) -->
@@ -225,7 +225,7 @@
         </div>
 
         <!-- Input Area -->
-        <div class="p-3 bg-white/5 border-t border-border sticky bottom-0 z-20">
+        <div class="p-3 bg-white/5 border-t border-border flex-shrink-0">
           <div class="flex items-end gap-2" style="margin-bottom:8px">
             <input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.txt" class="hidden" ref="fileInput" @change="onFileChange">
             <button 

@@ -416,16 +416,16 @@
       </div>
     </section>
 
-    <!-- Newsletter CTA -->
-    <section class="py-12 bg-gradient-to-br from-white via-indigo-50 to-white">
-      <div class="mx-auto max-w-4xl text-center">
-  <h3 class="text-2xl font-bold text-indigo-900">Get weekly learning insights</h3>
-  <p class="mt-2 text-slate-600">Receive curated quizzes, practical tips, and insights to keep your practice focused and effective.</p>
+    <!-- Newsletter CTA (solid color background) -->
+    <section class="py-12 bg-indigo-700 text-white">
+      <div class="mx-auto max-w-4xl text-center px-4">
+        <h3 class="text-2xl font-bold">Get weekly learning insights</h3>
+        <p class="mt-2 text-indigo-100">Receive curated quizzes, practical tips, and insights to keep your practice focused and effective.</p>
         <form @submit.prevent class="mt-6">
           <label for="homepage-newsletter" class="sr-only">Email address</label>
-          <div class="mx-auto max-w-xl grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
-            <input id="homepage-newsletter" type="email" placeholder="Your email" class="w-full rounded-xl border px-4 py-2" />
-            <button class="w-full sm:w-auto rounded-xl bg-indigo-600 px-4 py-2 text-white">Subscribe</button>
+          <div class="mx-auto max-w-xl grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+            <input id="homepage-newsletter" type="email" placeholder="Your email" class="w-full rounded-xl border border-transparent px-4 py-3 bg-white text-slate-900 placeholder-slate-400" />
+            <button class="w-full sm:w-auto rounded-xl bg-amber-400 text-slate-900 px-6 py-3 font-semibold hover:bg-amber-300 transition">Subscribe</button>
           </div>
         </form>
       </div>

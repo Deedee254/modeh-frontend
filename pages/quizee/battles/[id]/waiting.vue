@@ -7,7 +7,7 @@
     </div>
 
     <!-- Main Content -->
-    <div v-else class="max-w-7xl mx-auto px-4 py-6">
+  <div v-else class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- New Integrated Hero Section -->
       <div class="mb-6">
         <button @click="router.back()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-4">

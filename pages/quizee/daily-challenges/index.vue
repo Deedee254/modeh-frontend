@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- Hero (using shared PageHero for consistent styling) -->
       <PageHero
         title="Daily Challenge"
@@ -132,7 +132,7 @@
             <p class="text-gray-600">Check back tomorrow for a new challenge!</p>
           </div>
 
-          <div v-else class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-all duration-300">
+          <div v-else class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
             <div class="text-center mb-8">
               <div class="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@
           </div>
 
           <!-- Previous Challenges Section -->
-          <div class="mt-12 bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div class="mt-12 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
             <h3 class="text-xl font-bold text-gray-900 mb-6">Your Challenge History</h3>
             <div v-if="!history || history.length === 0" class="text-center py-8">
               <p class="text-gray-600">No completed challenges yet. Start your first daily challenge!</p>

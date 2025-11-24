@@ -71,14 +71,7 @@
 
         <!-- Question -->
         <transition name="fade-slide" mode="out-in">
-          <div :key="currentIndex" class="bg-white rounded-lg shadow-sm border p-6">
-            <QuestionCard 
-              :question="currentQuestion" 
-              v-model="answers[currentQuestion.id]" 
-              @select="onQuestionSelect" 
-              @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)" 
-            />
-          </div>
+          <QuestionCard :key="currentIndex" :question="currentQuestion" v-model="answers[currentQuestion.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)" />
         </transition>
       </div>
     </template>

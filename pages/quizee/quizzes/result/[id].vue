@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
-    <div class="max-w-4xl mx-auto">
+  <div class="bg-slate-50 dark:bg-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div v-if="loading" class="text-center p-10 bg-white dark:bg-slate-800 rounded-xl shadow-md">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
         <p class="mt-4 text-slate-500 dark:text-slate-400">Calculating your results...</p>
