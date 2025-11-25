@@ -311,7 +311,7 @@ function buildQuestionFromRow(row) {
       } else if (typeof a === 'string' && question.options) {
         // Textual answer -> find matching option index
         // Normalize both strings for comparison (trim, lowercase, normalize whitespace)
-        const normalizeText = (text: string) => {
+        const normalizeText = (text) => {
           return String(text || '').trim().toLowerCase().replace(/\s+/g, ' ')
         }
         const normalizedAnswer = normalizeText(a)
@@ -375,7 +375,7 @@ function buildQuestionFromRow(row) {
           } else if (question.options) {
             // Textual answer -> find matching option index
             // Normalize both strings for comparison (trim, lowercase, normalize whitespace)
-            const normalizeText = (text: string) => {
+            const normalizeText = (text) => {
               return String(text || '').trim().toLowerCase().replace(/\s+/g, ' ')
             }
             const normalizedAnswer = normalizeText(a)
