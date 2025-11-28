@@ -29,7 +29,7 @@
           <template v-else>
             <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
             <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Quizzes</NuxtLink>
-            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Quizees</NuxtLink>
+            <NuxtLink to="/quiz-master/followers" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Quizees</NuxtLink>
             <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
             <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Analytics</NuxtLink>
           </template>
@@ -156,7 +156,7 @@
           <template v-else>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizzes" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizzes</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/quizees" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizees</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/followers" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quizees</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/levels" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Levels</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quiz-master/analytics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Analytics</NuxtLink>
           </template>

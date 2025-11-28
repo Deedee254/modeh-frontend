@@ -1,5 +1,5 @@
 <script setup>
-definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Quiz-master chat — internal messages for quiz-masters.' } ] })
+definePageMeta({ layout: 'quiz-master', hideBottomNav: true, meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Quiz-master chat — internal messages for quiz-masters.' } ] })
 import ChatWidget from '~/components/chat/ChatWidget.vue'
 </script>
 

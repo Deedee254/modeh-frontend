@@ -1,11 +1,10 @@
 <template>
-  <div class="flex flex-1 min-h-0 bg-[#f0f2f5] px-4 py-6 md:px-6">
-    <!-- Sidebar -->
-    <div class="hidden md:flex w-80 flex-shrink-0">
-      <!-- Sidebar keeps the hero gradient treatment just within the header, leaving the list area clean and white -->
-  <div class="flex h-full w-full flex-col rounded-3xl border border-border/50 bg-white text-foreground shadow-xl min-h-0">
-    <!-- Header -->
-  <div class="p-4 border-b border-border bg-white text-foreground rounded-t-3xl flex-shrink-0">
+  <main class="flex-1 overflow-auto p-3 md:p-4">
+    <div class="md:flex h-[calc(100vh-6rem)] overflow-hidden bg-background">
+      <!-- Sidebar: hidden on mobile when chat is open, visible on desktop or when chat is closed on mobile -->
+      <div class="w-72 duration-300 xl:w-80 border-r flex flex-col max-md:absolute max-md:top-20 max-md:border-t max-md:left-0 max-md:h-full max-md:z-10 max-md:bg-background max-md:w-full min-h-0" :class="isMobile && showChatWindowOnMobile ? 'max-md:-translate-x-full' : 'max-md:translate-x-0'">
+        <!-- Header - Sticky -->
+        <div class="p-4 border-b border-border bg-white text-foreground sticky top-0 z-10 flex-shrink-0">
           <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Chats</h1>
             <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted h-9 w-9 rounded-full hover:text-foreground text-muted-foreground">
@@ -28,8 +27,8 @@
             >
           </div>
         </div>
-        <!-- Tabs -->
-  <div class="px-4 py-3 border-b border-border bg-transparent flex-shrink-0">
+        <!-- Tabs - Sticky -->
+        <div class="px-4 py-3 border-b border-border bg-white sticky top-[88px] z-10 flex-shrink-0">
           <div dir="ltr" data-orientation="horizontal">
             <div role="tablist" aria-orientation="horizontal" class="h-10 items-center justify-center rounded-md p-1 text-muted-foreground grid w-full grid-cols-3 bg-muted/50">
               <button 
@@ -56,15 +55,12 @@
             :key="chat.id" 
             class="w-full p-4 flex items-start gap-3 hover:bg-muted/20 transition-colors border-b border-border/60"
             :class="String(chat.id) === String(activeConversation?.id) ? 'bg-muted/10' : ''"
-            @click="selectConversation(chat)"
+            @click="handleSelectConversation(chat)"
           >
             <div class="relative flex-shrink-0">
               <span class="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12">
-                <!-- show real avatar when available, otherwise fallback to initial -->
-                <img v-if="chat.avatar" :src="chat.avatar" :alt="chat.name" class="h-full w-full object-cover rounded-full" loading="lazy" decoding="async" />
-                <span v-else class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  {{ chat.name[0] }}
-                </span>
+                <!-- show avatar with fallback to placeholder image -->
+                <img :src="chat._resolvedAvatar" :alt="chat.name" class="h-full w-full object-cover rounded-full" loading="lazy" decoding="async" />
               </span>
               <div v-if="chat.status === 'online'" class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-white"></div>
             </div>
@@ -83,71 +79,11 @@
           </transition-group>
         </div>
       </div>
-    </div>
 
-    <!-- Mobile: show list when not viewing a chat -->
-    <div v-if="isMobile && !showChatWindowOnMobile" class="md:hidden flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl h-full min-h-0">
-      <div class="flex flex-col h-full min-h-0 bg-white text-foreground">
-        <!-- Header (mobile list) -->
-  <div class="p-4 border-b border-border bg-white text-foreground flex-shrink-0 w-full">
-          <div class="flex items-center justify-between mb-4">
-            <h1 class="text-xl font-semibold">Chats</h1>
-            <button @click="openNewChat" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-foreground h-9 w-9 rounded-full hover:bg-muted text-muted-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-5 w-5">
-                <path d="M5 12h14"></path>
-                <path d="M12 5v14"></path>
-              </svg>
-            </button>
-          </div>
-          <div class="relative">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-            <input 
-              class="flex h-10 w-full rounded-md border border-border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-gray-100 text-foreground placeholder:text-muted-foreground" 
-              placeholder="Search conversations..."
-              v-model="searchQuery"
-            >
-          </div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto min-h-0" style="-webkit-overflow-scrolling: touch;">
-          <transition-group name="list" tag="div">
-            <button
-              v-for="chat in filteredConversations"
-              :key="chat.id"
-              class="w-full p-4 flex items-start gap-3 hover:bg-muted/20 transition-colors border-b border-border/60"
-              :class="String(chat.id) === String(activeConversation?.id) ? 'bg-muted/10' : ''"
-              @click="selectConversation(chat)"
-            >
-            <div class="relative flex-shrink-0">
-              <span class="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12">
-                <img v-if="chat.avatar" :src="chat.avatar" :alt="chat.name" class="h-full w-full object-cover rounded-full" loading="lazy" decoding="async" />
-                <span v-else class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  {{ chat.name[0] }}
-                </span>
-              </span>
-              <div v-if="chat.status === 'online'" class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-white"></div>
-            </div>
-            <div class="flex-1 min-w-0 text-left">
-              <div class="flex items-baseline justify-between mb-1">
-                <h3 class="font-semibold text-foreground truncate">{{ chat.name }}</h3>
-                <span class="text-xs text-muted-foreground ml-2 flex-shrink-0">{{ formatTimeLocal(chat.last_at) }}</span>
-                <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="inline-flex items-center justify-center bg-primary text-white text-xs rounded-full px-2 py-0.5">{{ chat.unread_count ?? chat.unread }}</span>
-              </div>
-              <p class="text-sm text-muted-foreground whitespace-normal break-words overflow-hidden">{{ chat.last_preview || '' }}</p>
-            </div>
-            </button>
-          </transition-group>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Chat Area -->
-  <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden rounded-3xl md:rounded-none md:pl-6 bg-[#efeae2] min-h-0">
-    <!-- Chat Header -->
-    <div class="flex items-center gap-3 p-4 bg-white border-b border-border flex-shrink-0">
+      <!-- Main Chat Area -->
+      <div v-if="!isMobile || showChatWindowOnMobile" class="flex flex-1 flex-col min-w-0 overflow-hidden bg-gradient-to-b from-muted/30 to-background min-h-0 max-md:absolute max-md:inset-0 max-md:top-20">
+      <!-- Chat Header - Sticky -->
+      <div class="flex items-center gap-3 p-4 bg-white border-b border-border sticky top-0 z-10 flex-shrink-0">
       <button 
         v-if="isMobile && showChatWindowOnMobile" 
         class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground md:hidden h-9 w-9"
@@ -159,11 +95,9 @@
           <path d="M19 12H5"></path>
         </svg>
       </button>
-      <div class="relative" v-if="activeConversation">
+      <div class="relative" v-if="activeConversationWithAvatar">
         <span class="relative flex shrink-0 overflow-hidden rounded-full h-10 w-10">
-          <span class="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground">
-            {{ activeConversation?.name ? activeConversation.name[0] : '' }}
-          </span>
+          <img :src="activeConversationWithAvatar._resolvedAvatar" :alt="activeConversationWithAvatar.name" class="h-full w-full object-cover rounded-full" />
         </span>
       </div>
       <div class="flex-1 min-w-0">
@@ -180,7 +114,7 @@
     </div>
 
     <!-- Messages Container -->
-    <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style="padding-bottom: 90px;">
+    <div ref="messagesPaneRef" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           <div v-for="message in chatMessages" :key="message.id" class="flex w-full" :class="String(message.sender_id) === String(userId) ? 'justify-end' : 'justify-start'">
             <div :class="String(message.sender_id) === String(userId) ? 'chat-bubble sent' : 'chat-bubble received'" class="rounded-lg px-4 py-2">
               <!-- attachments (if any) -->
@@ -225,7 +159,7 @@
         </div>
 
         <!-- Input Area -->
-        <div class="p-3 bg-white/5 border-t border-border flex-shrink-0">
+        <div class="p-4 bg-white border-t border-border sticky bottom-0 z-10 flex-shrink-0">
           <div class="flex items-end gap-2" style="margin-bottom:8px">
             <input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.txt" class="hidden" ref="fileInput" @change="onFileChange">
             <button 
@@ -269,7 +203,8 @@
           </div>
         </div>
       </div>
-  </div>
+    </div>
+  </main>
   <NewChatModal
     :show="showCreate"
     :searchResults="searchResults"
@@ -285,6 +220,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { format } from 'date-fns'
 import { type Ref } from 'vue';
 import useChat from '~/composables/useChat'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import NewChatModal from '~/components/chat/NewChatModal.vue'
 
 const {
@@ -354,6 +290,24 @@ const messageInputRef = ref<HTMLInputElement | null>(null)
 
 const emojis = ['😀','😂','😍','👍','🙏','🎉','😅','🙌','😉','🔥','😢','🤔']
 
+// Helper function to resolve avatar with proper fallback logic
+const avatarPlaceholder = '/logo/avatar-placeholder.png'
+
+function resolveAvatar(chat: any) {
+  try {
+    // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
+    let val = null
+    if (chat && typeof chat === 'object') {
+      val = chat.avatar_url || chat.avatar || chat.photo || chat.profile_image || null
+    } else {
+      val = chat
+    }
+    return resolveAssetUrl(val) || val || avatarPlaceholder
+  } catch {
+    return (typeof chat === 'string' ? chat : null) || avatarPlaceholder
+  }
+}
+
 const filteredConversations = computed(() => {
   const q = (searchQuery.value || '').toString().toLowerCase().trim()
   const list = (allConversations.value || []).slice()
@@ -377,7 +331,20 @@ const filteredConversations = computed(() => {
     const B = new Date(b.last_at || b.updated_at || 0).getTime()
     return B - A
   })
-  return filtered
+  // Compute resolved avatars for each conversation
+  return filtered.map((c: any) => ({
+    ...c,
+    _resolvedAvatar: resolveAvatar(c)
+  }))
+})
+
+// Wrap activeConversation to include resolved avatar
+const activeConversationWithAvatar = computed(() => {
+  if (!activeConversation.value) return null
+  return {
+    ...activeConversation.value,
+    _resolvedAvatar: resolveAvatar(activeConversation.value)
+  }
 })
 
 function toggleEmojiPicker() {
@@ -463,6 +430,14 @@ function handleResize() {
   isMobile.value = window.innerWidth < 768
   if (!isMobile.value) {
     showChatWindowOnMobile.value = false
+  }
+}
+
+function handleSelectConversation(chat: any) {
+  selectConversation(chat)
+  // On mobile, automatically show the chat window when a conversation is selected
+  if (isMobile.value) {
+    showChatWindowOnMobile.value = true
   }
 }
 

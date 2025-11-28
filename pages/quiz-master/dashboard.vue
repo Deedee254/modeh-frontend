@@ -2,7 +2,7 @@
   <div class="bg-gray-50 dark:bg-slate-900 pb-16 md:pb-0">
     <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <!-- Hero -->
-      <div class="rounded-lg bg-gradient-to-r from-purple-600 to-brand-600 text-white p-6 shadow-lg mb-6">
+      <div class="rounded-lg bg-gradient-to-r from-brand-600 to-brand-900 text-white p-6 shadow-lg mb-6">
         <div class="flex items-center justify-between gap-6">
           <div class="flex-1">
             <h1 class="text-3xl font-extrabold">quiz-master Dashboard</h1>

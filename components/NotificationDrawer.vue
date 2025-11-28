@@ -33,8 +33,8 @@
           </div>
         </div>
 
-  <!-- Empty State -->
-  <div v-else-if="(store.items || []).length === 0" class="p-4 text-center text-slate-600 dark:text-slate-300">
+        <!-- Empty State -->
+        <div v-else-if="(store.items || []).length === 0" class="p-4 text-center text-slate-600 dark:text-slate-300">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell h-8 w-8 text-slate-600 dark:text-slate-400"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
           </div>

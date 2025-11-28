@@ -56,7 +56,7 @@
             >
               <div class="flex items-start gap-4">
                 <div class="relative h-16 w-16 overflow-hidden rounded-2xl border border-emerald-100">
-                  <img v-if="quizee.avatar" :src="quizee.avatar" :alt="quizee.name" class="h-full w-full object-cover">
+                  <img v-if="quizee.avatar_url || quizee.avatar" :src="resolveAssetUrl(quizee.avatar_url || quizee.avatar) || quizee.avatar_url || quizee.avatar" :alt="quizee.name" class="h-full w-full object-cover">
                   <div v-else class="grid h-full w-full place-items-center bg-emerald-50 text-2xl font-bold text-emerald-700">
                     {{ (quizee.name || '').charAt(0).toUpperCase() }}
                   </div>
@@ -137,6 +137,7 @@ import { formatDistanceToNowStrict } from 'date-fns'
 import PageHero from '~/components/ui/PageHero.vue'
 import USelectMenuTeleport from '~/components/ui/USelectMenuTeleport.vue'
 import useApi from '~/composables/useApi'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import { useRouter } from 'vue-router'
 
 definePageMeta({

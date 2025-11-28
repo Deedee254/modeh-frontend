@@ -11,6 +11,7 @@ import { useApi } from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 export interface Quiz {
+  id?: number | string | null;
   title: string;
   description: string;
   youtube_url: string | null;
@@ -138,6 +139,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     const questionsErrors = ref<Record<string, string[]>>({})
   const detailsErrors = ref<Record<string, string[]>>({})
   const settingsErrors = ref<Record<string, string[]>>({})
+  const publishError = ref<{ message: string; details?: string[] } | null>(null)
   const quizId = ref(null)
   const lastCreated = ref<any>(null)
   const detailsSaved = ref(false)
@@ -162,20 +164,28 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     if (result.subject_id === '') result.subject_id = null
     if (result.level_id === '') result.level_id = null
     if (result.topic_id === '') result.topic_id = null
-    if (result.attempts_allowed === '') result.attempts_allowed = null
-    if (result.per_question_seconds === '') result.per_question_seconds = null
     
     result.topic_id = result.topic_id ? (Number(result.topic_id) || null) : null
     result.subject_id = result.subject_id ? (Number(result.subject_id) || null) : null
     result.grade_id = result.grade_id ? (Number(result.grade_id) || null) : null
     result.level_id = result.level_id ? (Number(result.level_id) || null) : null
     
+    // Force timer values to be numbers
+    result.per_question_seconds = result.per_question_seconds ? Number(result.per_question_seconds) : null
+    result.timer_minutes = result.timer_minutes ? Number(result.timer_minutes) : null
+    
+    // Handle attempts_allowed: empty string means unlimited (null), otherwise convert to number
     result.attempts_allowed = (() => {
       const raw = result.attempts_allowed
       if (raw === '' || raw === null || typeof raw === 'undefined') return null
       const n = Number(raw)
       return Number.isFinite(n) ? n : null
     })()
+    
+    // Ensure boolean fields
+    result.use_per_question_timer = Boolean(result.use_per_question_timer)
+    result.shuffle_questions = Boolean(result.shuffle_questions)
+    result.shuffle_answers = Boolean(result.shuffle_answers)
     
     return result
   }
@@ -198,9 +208,17 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
     
     if (includeTimers) {
-      payload.timer_seconds = normalized.use_per_question_timer ? null : (normalized.timer_minutes ? Number(normalized.timer_minutes) * 60 : null)
-      payload.per_question_seconds = normalized.use_per_question_timer ? Number(normalized.per_question_seconds || 0) : null
-      payload.use_per_question_timer = Boolean(normalized.use_per_question_timer)
+      // If using per-question timer, set per_question_seconds and leave timer_seconds as null
+      if (normalized.use_per_question_timer) {
+        payload.use_per_question_timer = true
+        payload.per_question_seconds = normalized.per_question_seconds || 30
+        payload.timer_seconds = null
+      } else {
+        // If using total timer, set timer_seconds (convert minutes to seconds)
+        payload.use_per_question_timer = false
+        payload.per_question_seconds = null
+        payload.timer_seconds = normalized.timer_minutes ? Number(normalized.timer_minutes) * 60 : null
+      }
     }
     
     if (includeSettings) {
@@ -210,7 +228,22 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       payload.access = normalized.access
       payload.visibility = normalized.visibility
       payload.one_off_price = normalized.access === 'paywall' && normalized.one_off_price ? Number(normalized.one_off_price) : null
+      
+      // DEBUG: Log settings being added
+      try {
+        console.debug('buildQuizPayload: added settings', {
+          shuffle_questions: payload.shuffle_questions,
+          shuffle_answers: payload.shuffle_answers,
+          attempts_allowed: payload.attempts_allowed,
+          access: payload.access,
+          visibility: payload.visibility,
+        })
+      } catch (e) {}
     }
+    
+    try {
+      console.debug('buildQuizPayload: complete payload', { payload, includeTimers, includeSettings })
+    } catch (e) {}
     
     return payload
   }
@@ -574,6 +607,19 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       const payload = buildQuizPayload(true, true);
 
+      // DEBUG: Log the complete payload being built
+      try {
+        console.debug('saveQuiz: buildQuizPayload result', {
+          payload,
+          payloadKeys: Object.keys(payload),
+          hasShuffleQuestions: 'shuffle_questions' in payload,
+          hasShuffleAnswers: 'shuffle_answers' in payload,
+          hasAttemptsAllowed: 'attempts_allowed' in payload,
+          hasVisibility: 'visibility' in payload,
+          hasAccess: 'access' in payload,
+        })
+      } catch (e) {}
+
       const sanitizedQuestions = questions.value.map(q => sanitizeQuestionForPayload(q));
       
       const method = quizId.value ? 'PATCH' : 'POST';
@@ -588,6 +634,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       } catch (e) {}
 
       if (coverFile instanceof File || hasQuestionFiles) {
+        try { console.debug('saveQuiz: using FormData path (has files)') } catch (e) {}
         const formData = new FormData();
         if (method === 'PATCH') formData.append('_method', 'PATCH');
         
@@ -599,8 +646,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         appendQuizDataToForm(formData, quizData, sanitizedQuestions);
         res = await api.postFormData(url, formData);
       } else {
+        try { console.debug('saveQuiz: using JSON path (no files)') } catch (e) {}
         const finalPayload = { ...payload, questions: sanitizedQuestions };
-        try { console.debug('saveQuiz: final JSON payload keys', Object.keys(finalPayload || {})) } catch (e) {}
+        try { console.debug('saveQuiz: final JSON payload', { finalPayload, payloadKeys: Object.keys(finalPayload) }) } catch (e) {}
         if (method === 'PATCH') {
           res = await api.patchJson(url, finalPayload);
         } else {
@@ -785,9 +833,11 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         alert.push({ type: 'success', message: 'Quiz published successfully!' });
         clearProgress();
       }
+      return success;
     } catch (err: unknown) {
       const e = err as Error;
       alert.push({ type: 'error', message: e.message });
+      return false;
     } finally {
       isSubmitting.value = false;
     }
@@ -975,12 +1025,196 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     questions.value.push(newQuestion);
   }
 
+  /**
+   * Validates the complete quiz before final submission.
+   * Checks all three sections: details, settings, and questions.
+   * @returns Object with validation result and error messages
+   */
+  function validateBeforeSubmit(): { isValid: boolean; errors: Record<string, string[]> } {
+    const errors: Record<string, string[]> = {}
+
+    // Validate details
+    if (!quiz.value.title || !quiz.value.title.trim()) {
+      errors._title = ['Title is required']
+    }
+    if (!quiz.value.grade_id) {
+      errors._grade = ['Grade is required']
+    }
+    if (!quiz.value.subject_id) {
+      errors._subject = ['Subject is required']
+    }
+    if (!quiz.value.topic_id) {
+      errors._topic = ['Topic is required']
+    }
+
+    // Validate settings
+    // Check timer is properly configured (either total timer or per-question timer)
+    const hasTotalTimer = Number(quiz.value.timer_minutes) > 0
+    const hasPerQuestionTimer = quiz.value.use_per_question_timer && Number(quiz.value.per_question_seconds) > 0
+    
+    if (!hasTotalTimer && !hasPerQuestionTimer) {
+      errors._timer = ['Please set a time limit or enable per-question timer']
+    }
+
+    // Debug: log validation state
+    try {
+      console.debug('validateBeforeSubmit: timer validation', {
+        use_per_question_timer: quiz.value.use_per_question_timer,
+        timer_minutes: quiz.value.timer_minutes,
+        per_question_seconds: quiz.value.per_question_seconds,
+        hasTotalTimer,
+        hasPerQuestionTimer,
+        hasTimerError: !!errors._timer
+      })
+    } catch (e) {}
+
+    // Validate questions
+    if (!Array.isArray(questions.value) || questions.value.length === 0) {
+      errors._questions = ['At least one question is required']
+    } else {
+      // Validate individual questions
+      const invalidQuestions: string[] = []
+      for (let i = 0; i < questions.value.length; i++) {
+        const q = questions.value[i]
+        if (!q || !q.text || !q.text.trim()) {
+          invalidQuestions.push(`Question ${i + 1}: Missing question text`)
+        }
+        if (q && (!q.options || q.options.length < 2) && ['mcq', 'multi'].includes(q.type)) {
+          invalidQuestions.push(`Question ${i + 1}: Multiple choice needs at least 2 options`)
+        }
+        if (q && (!q.answers || q.answers.length === 0)) {
+          invalidQuestions.push(`Question ${i + 1}: Missing correct answer(s)`)
+        }
+      }
+      if (invalidQuestions.length > 0) {
+        errors._questions = invalidQuestions
+      }
+    }
+
+    const isValid = Object.keys(errors).length === 0
+
+    if (!isValid) {
+      try { console.debug('validateBeforeSubmit: validation failed', errors) } catch (e) {}
+    }
+
+    return { isValid, errors }
+  }
+
+  /**
+   * Gets complete preview data for the review modal.
+   * Consolidates all quiz information into a single object.
+   * @returns Preview data object with quiz, questions, and stats
+   */
+  function getPreviewData() {
+    const stats = {
+      totalQuestions: questions.value.length,
+      totalMarks: questions.value.reduce((sum, q) => sum + (Number(q.marks) || 0), 0),
+      avgDifficulty: questions.value.length 
+        ? (questions.value.reduce((sum, q) => sum + (Number(q.difficulty) || 0), 0) / questions.value.length).toFixed(1)
+        : 0
+    }
+
+    return {
+      quiz: { ...quiz.value },
+      questions: questions.value.map(q => ({
+        uid: q.uid,
+        type: q.type,
+        text: q.text,
+        marks: q.marks,
+        difficulty: q.difficulty,
+        options: q.options?.slice(0, 3) // Include first 3 options for preview
+      })),
+      stats
+    }
+  }
+
+  /**
+   * Final submission flow - validates completely then submits quiz.
+   * This is the ultimate publish action after user confirms in preview modal.
+   * @returns Promise resolving to success/failure
+   */
+  async function submitFinalPayload(): Promise<boolean> {
+    // Clear any previous error
+    publishError.value = null
+    isSubmitting.value = true
+
+    try {
+      // Step 1: Validate everything
+      const validation = validateBeforeSubmit()
+      try { console.debug('submitFinalPayload: validation result', { isValid: validation.isValid, errors: validation.errors }) } catch (e) {}
+      
+      if (!validation.isValid) {
+        // Set errors on appropriate error objects
+        detailsErrors.value = { ...validation.errors }
+        
+        // Collect error messages for the user
+        const errorMessages: string[] = []
+        Object.entries(validation.errors).forEach(([key, msgs]) => {
+          if (Array.isArray(msgs)) {
+            errorMessages.push(...msgs)
+          }
+        })
+        
+        // Set publish error for modal display
+        publishError.value = {
+          message: 'Please fix the highlighted errors before publishing',
+          details: errorMessages
+        }
+        
+        alert.push({
+          type: 'warning',
+          message: 'Please fix the highlighted errors before publishing'
+        })
+        try { console.debug('submitFinalPayload: validation failed', { errors: validation.errors, errorMessages }) } catch (e) {}
+        return false
+      }
+
+      // Step 2: Clear any previous errors
+      detailsErrors.value = {}
+      settingsErrors.value = {}
+      questionsErrors.value = {}
+
+      // Step 3: Attempt final submission
+      try {
+        const success = await submitQuiz()
+        if (success) {
+          try { console.debug('submitFinalPayload: quiz published successfully', { quizId: quizId.value }) } catch (e) {}
+          alert.push({
+            type: 'success',
+            message: 'Quiz published successfully!'
+          })
+          publishError.value = null
+        } else {
+          // submitQuiz failed - set a generic error
+          publishError.value = {
+            message: 'Failed to publish quiz. Please try again.'
+          }
+        }
+        return success
+      } catch (err: unknown) {
+        const e = err as Error
+        publishError.value = {
+          message: e.message || 'Failed to publish quiz'
+        }
+        alert.push({
+          type: 'error',
+          message: e.message || 'Failed to publish quiz'
+        })
+        try { console.debug('submitFinalPayload: error', e) } catch (err2) {}
+        return false
+      }
+    } finally {
+      isSubmitting.value = false
+    }
+  }
+
   return {
     quiz,
     questions,
     questionsErrors,
     detailsErrors,
     settingsErrors,
+    publishError,
     quizId,
     lastCreated,
     detailsSaved,
@@ -999,6 +1233,9 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     loadQuiz,
     clearProgress,
     setupCleanup,
-    addQuestion
+    addQuestion,
+    validateBeforeSubmit,
+    getPreviewData,
+    submitFinalPayload
   }
 })

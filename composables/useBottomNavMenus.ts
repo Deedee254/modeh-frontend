@@ -56,7 +56,7 @@ function resolveInstPath(path: string): string {
         explore: [
           { id: 'grades', label: 'Grades', icon: 'heroicons:scale', to: '/grades' },
           { id: 'quizzes', label: 'My Quizzes', icon: 'heroicons:clipboard-document-list', to: '/quiz-master/quizzes' },
-          { id: 'quizees', label: 'Quizees', icon: 'heroicons:user-group', to: '/quiz-master/quizees' },
+          { id: 'quizees', label: 'Quizees', icon: 'heroicons:user-group', to: '/quiz-master/followers' },
           { id: 'topics', label: 'Topics', icon: 'heroicons:book-open', to: '/quiz-master/topics' },
           { id: 'analytics', label: 'Analytics', icon: 'heroicons:presentation-chart-bar', to: '/quiz-master/analytics' }
         ],

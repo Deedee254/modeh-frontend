@@ -123,23 +123,7 @@
             size="md"
             @update:modelValue="(v) => emitUpdate({ access: v })"
           />
-          <p class="mt-1 text-xs text-gray-500">Choose whether users need to pay to access this quiz</p>
-        </div>
-
-        <div v-if="access === 'paywall'" class="space-y-2">
-          <label for="one-off-price" class="block text-sm font-medium text-gray-700 mb-1.5">One-time Price ($)</label>
-          <UInput
-            v-model.number="oneOffPrice"
-            id="one-off-price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="e.g. 9.99"
-            size="md"
-            @update:modelValue="(v) => emitUpdate({ one_off_price: v })"
-          />
-          <p v-if="errors && errors.one_off_price" class="text-xs text-red-600">{{ errors.one_off_price[0] }}</p>
-          <p class="text-xs text-gray-500">Set the price users must pay to access this quiz (one-time purchase)</p>
+          <p class="mt-1 text-xs text-gray-500">Choose whether users need to pay to access this quiz. Pricing is managed by the admin.</p>
         </div>
       </div>
     </div>
@@ -206,7 +190,6 @@ const visibility = ref('draft')
 const shuffleQuestions = ref(true)
 const shuffleAnswers = ref(true)
 const access = ref('free')
-const oneOffPrice = ref(null)
 
 // Sync internal state with parent props on mount and when parent changes
 watch(() => props.modelValue, (nv) => {
@@ -219,7 +202,6 @@ watch(() => props.modelValue, (nv) => {
   shuffleQuestions.value = nv.shuffle_questions ?? true
   shuffleAnswers.value = nv.shuffle_answers ?? true
   access.value = nv.access ?? 'free'
-  oneOffPrice.value = nv.one_off_price ?? null
 }, { deep: true, immediate: true })
 
 function emitUpdate(updates) {

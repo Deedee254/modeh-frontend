@@ -62,82 +62,88 @@
         </div>
       </div>
 
-      <div>
-        <label id="subject-label" class="block text-sm font-medium text-gray-700 mb-1.5">Subject <span class="text-red-500">*</span></label>
-        <ClientOnly>
-          <template #placeholder>
-            <div class="h-10 bg-gray-100 rounded animate-pulse"></div>
-          </template>
-          <TaxonomyPicker
-            ref="subjectsPicker"
-            resource="subjects"
-            :grade-id="selectedGrade || null"
-            :per-page="50"
-            :model-value="selectedSubjectObj || null"
-            title="Subjects"
-            subtitle="Pick a subject"
-            @selected="onSubjectPicked"
-            aria-labelledby="subject-label"
-            v-model:query="subjectQuery"
-          />
-          <p v-if="displaySubjectError" class="mt-1 text-xs text-red-600">{{ displaySubjectError }}</p>
-        </ClientOnly>
-      </div>
-
-      <!-- Topic Selection -->
-      <div>
-        <label id="topic-label" class="block text-sm font-medium text-gray-700 mb-1.5">Topic <span class="text-red-500">*</span></label>
-        <ClientOnly>
-          <template #placeholder>
-            <div class="h-10 bg-gray-100 rounded animate-pulse"></div>
-          </template>
-          <TaxonomyPicker
-            ref="topicsPicker"
-            resource="topics"
-            :subject-id="selectedSubject || null"
-            :per-page="50"
-            :model-value="selectedTopicObj || null"
-            title="Topics"
-            subtitle="Pick or create a topic"
-            aria-labelledby="topic-label"
-            aria-describedby="topic-error"
-            @selected="onTopicPicked"
-            v-model:query="topicQuery"
-          >
-            <template #actions>
-              <UButton
-                size="xs"
-                variant="soft"
-                @click="openCreateTopic"
-                :disabled="!selectedSubject"
-                icon="i-heroicons-plus"
-              >New Topic</UButton>
+      <!-- Subject and Topic Selection (2 columns on desktop) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <label id="subject-label" class="block text-sm font-medium text-gray-700 mb-1.5">Subject <span class="text-red-500">*</span></label>
+          <ClientOnly>
+            <template #placeholder>
+              <div class="h-10 bg-gray-100 rounded animate-pulse"></div>
             </template>
-          </TaxonomyPicker>
-        </ClientOnly>
-        <p v-if="displayTopicError" id="topic-error" class="mt-1 text-xs text-red-600">{{ displayTopicError }}</p>
+            <TaxonomyPicker
+              ref="subjectsPicker"
+              resource="subjects"
+              :grade-id="selectedGrade || null"
+              :per-page="50"
+              :model-value="selectedSubjectObj || null"
+              title="Subjects"
+              subtitle="Pick a subject"
+              @selected="onSubjectPicked"
+              aria-labelledby="subject-label"
+              v-model:query="subjectQuery"
+            />
+            <p v-if="displaySubjectError" class="mt-1 text-xs text-red-600">{{ displaySubjectError }}</p>
+          </ClientOnly>
+        </div>
+
+        <div>
+          <label id="topic-label" class="block text-sm font-medium text-gray-700 mb-1.5">Topic <span class="text-red-500">*</span></label>
+          <ClientOnly>
+            <template #placeholder>
+              <div class="h-10 bg-gray-100 rounded animate-pulse"></div>
+            </template>
+            <TaxonomyPicker
+              ref="topicsPicker"
+              resource="topics"
+              :subject-id="selectedSubject || null"
+              :per-page="50"
+              :model-value="selectedTopicObj || null"
+              title="Topics"
+              subtitle="Pick or create a topic"
+              aria-labelledby="topic-label"
+              aria-describedby="topic-error"
+              @selected="onTopicPicked"
+              v-model:query="topicQuery"
+            >
+              <template #actions>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  @click="openCreateTopic"
+                  :disabled="!selectedSubject"
+                  icon="i-heroicons-plus"
+                >New Topic</UButton>
+              </template>
+            </TaxonomyPicker>
+          </ClientOnly>
+          <p v-if="displayTopicError" id="topic-error" class="mt-1 text-xs text-red-600">{{ displayTopicError }}</p>
+        </div>
       </div>
 
-      <div>
-        <label for="quiz-description" class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-        <UTextarea
-          v-model="modelValue.description"
-          id="quiz-description"
-          :rows="3"
-          placeholder="Optional: Add a brief description of this quiz"
-          size="md"
-        />
-      </div>
+      <!-- Description and YouTube URL (2 columns on desktop) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <label for="quiz-description" class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+          <UTextarea
+            v-model="modelValue.description"
+            id="quiz-description"
+            :rows="3"
+            placeholder="Optional: Add a brief description of this quiz"
+            size="md"
+          />
+        </div>
 
-      <div>
-        <label for="quiz-youtube" class="block text-sm font-medium text-gray-700 mb-1.5">YouTube URL</label>
-        <UInput
-          v-model="modelValue.youtube_url"
-          id="quiz-youtube"
-          type="url"
-          placeholder="Optional: link to a YouTube video"
-          size="md"
-        />
+        <div>
+          <label for="quiz-youtube" class="block text-sm font-medium text-gray-700 mb-1.5">YouTube URL</label>
+          <UInput
+            v-model="modelValue.youtube_url"
+            id="quiz-youtube"
+            type="url"
+            placeholder="Optional: link to a YouTube video"
+            size="md"
+            class="h-full"
+          />
+        </div>
       </div>
 
       <!-- Cover image picker -->

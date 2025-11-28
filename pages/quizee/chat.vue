@@ -1,5 +1,5 @@
 <script setup>
-definePageMeta({ layout: 'quizee' })
+definePageMeta({ layout: 'quizee', hideBottomNav: true })
 import ChatWidget from '~/components/chat/ChatWidget.vue'
 </script>
 

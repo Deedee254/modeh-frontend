@@ -40,7 +40,7 @@
 
         <div class="flex justify-end gap-2 pt-2 border-t border-gray-200">
           <UButton size="sm" variant="soft" @click="close">Cancel</UButton>
-          <UButton size="sm" color="primary" @click="finish" :disabled="loading" icon="i-heroicons-check" class="!bg-brand-600 hover:!bg-brand-700">Done</UButton>
+          <UButton size="sm" color="primary" @click="finish" :disabled="loading" icon="i-heroicons-check" class="!bg-brand-600 hover:!bg-brand-700" @keydown.enter="!loading && finish">Done</UButton>
         </div>
       </div>
     </div>

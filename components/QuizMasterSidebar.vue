@@ -1,10 +1,6 @@
 <template>
   <div>
-  <aside :class="[ui.sidebarCollapsed ? 'w-20' : 'w-64', 'bg-white border-r flex flex-col py-4 transition-all duration-300 hidden lg:flex sticky']" :style="{ top: 'var(--topbar-height)', height: 'calc(100vh - var(--topbar-height))' }">
-    <div class="mb-6 flex items-center px-4" :class="[ui.sidebarCollapsed ? 'justify-center' : '']">
-      <img src="/logo/modeh-logo.png" alt="Modeh" :class="[ui.sidebarCollapsed ? 'h-8' : 'h-10']" class="transition-all duration-300" />
-    </div>
-
+  <aside :class="[ui.sidebarCollapsed ? 'w-20' : 'w-64', 'bg-white border-r flex flex-col py-4 transition-all duration-300 hidden lg:flex fixed']" :style="{ top: 'var(--topbar-height)', height: 'calc(100vh - var(--topbar-height))', zIndex: '40', left: '0' }">
   <nav class="flex-1 w-full overflow-y-auto px-2">
       <ul class="flex flex-col gap-1">
         <li v-for="item in navItems" :key="item.to">
@@ -61,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
@@ -75,6 +71,15 @@ import { resolveAssetUrl } from '~/composables/useAssets'
 const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
 
 const route = useRoute()
+
+const sidebarWidth = computed(() => {
+  return ui.sidebarCollapsed ? '80px' : '256px'
+})
+
+// Update CSS variable when sidebar width changes
+watch(sidebarWidth, (newWidth) => {
+  document.documentElement.style.setProperty('--sidebar-width', newWidth)
+}, { immediate: true })
 
 const navItems = [
   { to: '/quiz-master/dashboard', label: 'Dashboard', icon: HomeIcon },

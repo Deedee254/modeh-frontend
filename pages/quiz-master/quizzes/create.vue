@@ -1,6 +1,7 @@
 <template>
   <div class="bg-gray-50 pb-16 md:pb-0">
     <div class="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <!-- Header -->
       <div class="flex flex-col items-start justify-between gap-2 mb-4 md:flex-row md:items-center">
         <div>
           <h1 class="text-2xl font-semibold text-gray-900">Create Quiz</h1>
@@ -8,12 +9,13 @@
         </div>
       </div>
 
+      <!-- Tab Navigation -->
       <nav class="rounded-lg border border-gray-200 bg-white p-1.5 shadow-sm mb-4">
         <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
           <button
             v-for="tab in tabConfig"
             :key="tab.key"
-            @click="trySetTab(tab.key)"
+            @click="store.setTab(tab.key)"
             :class="[
               'flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-all',
               store.activeTab === tab.key 
@@ -22,373 +24,342 @@
             ]"
           >
             <span>{{ tab.label }}</span>
-            <Icon v-if="store[tab.savedFlag]" name="i-heroicons-check-circle" class="h-4 w-4" />
+            <ClientOnly>
+              <Icon 
+                v-if="(tab.key === 'details' && store.detailsSaved) || (tab.key === 'settings' && store.settingsSaved) || (tab.key === 'questions' && store.questionsSaved)" 
+                name="i-heroicons-check-circle" 
+                class="h-4 w-4" 
+              />
+            </ClientOnly>
           </button>
         </div>
       </nav>
 
+      <!-- Content Container -->
       <div class="rounded-lg border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
-        <div v-if="store.activeTab === 'questions'" class="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
-          <span class="font-medium text-gray-500">Filters:</span>
-          <UBadge v-if="store.quiz?.level_id" color="indigo" variant="subtle" size="xs">
-            Level: {{ (levels || []).find(l => String(l.id) === String(store.quiz?.level_id))?.name || store.quiz?.level_id }}
-          </UBadge>
-          <UBadge v-if="store.quiz?.grade_id" color="indigo" variant="subtle" size="xs">
-            Grade: {{ (grades || []).find(g => String(g.id) === String(store.quiz?.grade_id))?.name || store.quiz?.grade_id }}
-          </UBadge>
-          <UBadge v-if="store.quiz?.subject_id" color="indigo" variant="subtle" size="xs">
-            Subject: {{ (subjects || []).find(s => String(s.id) === String(store.quiz?.subject_id))?.name || store.quiz?.subject_id }}
-          </UBadge>
-          <UBadge v-if="store.quiz?.topic_id" color="indigo" variant="subtle" size="xs">
-            Topic: {{ (topics || []).find(t => String(t.id) === String(store.quiz?.topic_id))?.name || store.quiz?.topic_id }}
-          </UBadge>
-        </div>
+        <!-- Details Tab -->
+        <ClientOnly>
+          <QuizDetailsStepForm
+            v-if="store.activeTab === 'details'"
+            :model-value="store.quiz"
+            :levels="levels"
+            :grades="grades"
+            :subjects="subjects"
+            :topics="topics"
+            :errors="store.detailsErrors"
+            :saving="store.isSubmitting"
+            @update:modelValue="(v: any) => (store.quiz = v)"
+            @create-topic="showTopicModal = true"
+            @save="onSaveDetails"
+            @next="onDetailsNext"
+          />
 
-        <QuizDetailsTab
-          v-if="store.activeTab === 'details'"
-          :model-value="store.quiz"
+          <!-- Settings Tab -->
+          <QuizSettingsStepForm
+            v-else-if="store.activeTab === 'settings'"
+            :model-value="store.quiz"
+            :errors="store.settingsErrors"
+            :saving="store.isSubmitting"
+            @update:modelValue="(v: any) => (store.quiz = v)"
+            @save="onSaveSettings"
+            @prev="() => store.setTab('details')"
+            @next="() => store.setTab('questions')"
+          />
+
+          <!-- Questions Tab -->
+          <QuizQuestionsSimplified
+            v-else
+            :subject-id="(store.quiz?.subject_id as any) ?? undefined"
+            :topic-id="(store.quiz?.topic_id as any) ?? undefined"
+            :grade-id="(store.quiz?.grade_id as any) ?? undefined"
+            :level-id="(store.quiz?.level_id as any) ?? undefined"
+            :publishing="store.isSubmitting"
+            @preview="showPreviewModal = true"
+            @open-bank="showQuestionBank = true"
+            @open-import="showImportModal = true"
+            @prev="() => store.setTab('settings')"
+            @publish="onPublish"
+          />
+        </ClientOnly>
+      </div>
+
+      <!-- Modals -->
+      <ClientOnly>
+        <CreateTopicModal
+          :model-value="showTopicModal"
           :grades="grades"
-          :levels="levels"
           :subjects="subjects"
-          :topics="topics"
-          :loading-subjects="loadingSubjects"
-          :errors="store.detailsErrors"
-          :saving="store.isSubmitting"
-          @update:modelValue="(v) => (store.quiz = v)"
-          @create-topic="() => { showTopicModal = true }"
-          @subject-search="onSubjectSearch"
-          @topic-search="onTopicSearch"
-          @save="async () => { const ok = await saveDetails(); if (ok) { try { await fetchTopicsPage({ subjectId: store.quiz?.subject_id ?? null, page: 1, perPage: 50, q: '' }); const topic = topics.value.find(t => String(t.id) === String(store.quiz.topic_id)); if (topic) store.quiz.topic = topic; } catch (e) {}; trySetTab('settings'); } }"
-          @next="() => trySetTab('settings')"
-          @approval-requested="async (id) => { try { await fetchTopicsPage({ subjectId: store.quiz?.subject_id ?? null, page: 1, perPage: 50, q: '' }) } catch (e) {} }"
+          :defaultLevelId="(store.quiz?.level_id as any) ?? undefined"
+          :defaultGradeId="(store.quiz?.grade_id as any) ?? undefined"
+          :defaultSubjectId="(store.quiz?.subject_id as any) ?? undefined"
+          @update:modelValue="(v: any) => (showTopicModal = v)"
+          @created="onTopicCreated"
         />
 
-        <QuizSettingsTab
-          v-else-if="store.activeTab === 'settings'"
-          :model-value="store.quiz"
-          :saving="store.isSubmitting"
-          :errors="store.settingsErrors"
-          @update:modelValue="(v) => (store.quiz = v)"
-          @save="async () => { const ok = await saveSettings(); if (ok) trySetTab('questions'); }"
-          @next="() => trySetTab('questions')"
-          @prev="() => trySetTab('details')"
-          @error="(e) => alert.push(e)"
+        <QuestionBankModal
+          :model-value="showQuestionBank"
+          :gradeOptions="grades"
+          :subjectOptions="subjects"
+          :topicOptions="topics"
+          :levelOptions="levels"
+          :initialFilters="{
+            level: store.quiz?.level_id ?? null,
+            grade: store.quiz?.grade_id ?? null,
+            subject: store.quiz?.subject_id ?? null,
+            topic: store.quiz?.topic_id ?? null
+          }"
+          @update:modelValue="(v: any) => (showQuestionBank = v)"
+          @add="onAddFromBank"
         />
 
-        <QuizQuestionsTab
-          v-else
-          :errors="store.questionsErrors"
-          :saving="store.isSubmitting"
+        <ImportQuestionsModal
+          :model-value="showImportModal"
+          :quiz-id="(store.quiz?.id as any) ?? null"
+          :topic-id="(store.quiz?.topic_id as any) ?? null"
+          @update:modelValue="(v: any) => (showImportModal = v)"
+          @imported="onQuestionsImported"
+        />
+
+        <QuizPayloadPreviewModal
+          :model-value="showPreviewModal"
+          :quiz="store.quiz"
+          :questions="store.questions"
           :publishing="store.isSubmitting"
-          @open-builder="openBuilder"
-          @open-bank="onOpenBank"
-          @edit="(q) => edit(q)"
-          @preview="onPreview"
-          @prev="() => store.setTab('settings')"
-          @publish="onPublish"
+          :publish-error="store.publishError ?? undefined"
+          @update:modelValue="(v: any) => (showPreviewModal = v)"
+          @edit-section="(section: any) => store.setTab(section)"
+          @publish="onPublishConfirmed"
         />
-      </div>
 
-      <div v-if="showBuilder" class="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-        <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" :gradeId="grade_id" :levelId="level_id" @saved="onQuestionSaved" @cancel="onCancel" />
-      </div>
-
-      <CreateTopicModal
-        :model-value="showTopicModal"
-        :grades="grades"
-        :subjects="subjects"
-        :defaultLevelId="store.quiz?.level_id ?? null"
-        :defaultGradeId="store.quiz?.grade_id ?? null"
-        :defaultSubjectId="store.quiz?.subject_id ?? null"
-        @update:modelValue="(v) => (showTopicModal = v)"
-        @created="onTopicCreated"
-      />
-
-      <QuestionBankModal
-        :model-value="showQuestionBank"
-        :gradeOptions="grades"
-        :subjectOptions="subjects"
-        :topicOptions="topics"
-        :levelOptions="levels"
-        :initialFilters="{ level: store.quiz?.level_id ?? null, grade: store.quiz?.grade_id ?? null, subject: store.quiz?.subject_id ?? null, topic: store.quiz?.topic_id ?? null }"
-        @update:modelValue="(v) => (showQuestionBank = v)"
-        @add="onAddFromBank"
-      />
-
-      <QuizPreviewModal :model-value="showPreview" :quiz="{ ...(store.quiz || {}), questions: store.questions }" />
-
-      <UModal v-model="showCreatedModal" :ui="{ width: 'sm:max-w-xl' }">
-        <div class="p-4 sm:p-6">
-          <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">Quiz created</h3>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <div class="text-xl font-bold">{{ createdPayload?.title || store.quiz?.title || '' }}</div>
-              <div class="text-sm text-gray-600">{{ createdPayload?.description || store.quiz?.description || '' }}</div>
-              <div class="text-sm text-gray-500">Topic: {{ createdPayload?.topic?.name || createdPayload?.topic_name || store.quiz?.topic?.name || store.quiz?.topic_name || store.quiz?.topic_id || '—' }}</div>
-              <div class="text-sm text-gray-500">Questions: {{ store.questions.length }}</div>
+        <!-- Success Modal -->
+        <UModal v-model="showCreatedModal" :ui="{ width: 'sm:max-w-xl' }">
+          <div class="p-4 sm:p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Quiz created</h3>
             </div>
-            <div class="flex justify-end gap-2">
-              <UButton variant="soft" @click="showCreatedModal = false">Continue editing</UButton>
-              <UButton color="primary" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}`) }" class="!bg-brand-600 hover:!bg-brand-700">View</UButton>
-              <UButton color="gray" variant="ghost" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}/edit`) }">Edit</UButton>
+            <div class="space-y-4">
+              <div>
+                <div class="text-xl font-bold">{{ (createdPayload as any)?.title || store.quiz?.title || '' }}</div>
+                <div class="text-sm text-gray-600">{{ (createdPayload as any)?.description || store.quiz?.description || '' }}</div>
+                <div class="text-sm text-gray-500">Topic: {{ (createdPayload as any)?.topic?.name || store.quiz?.topic?.name || store.quiz?.topic_id || '—' }}</div>
+                <div class="text-sm text-gray-500">Questions: {{ store.questions.length }}</div>
+              </div>
+              <div class="flex justify-end gap-2">
+                <UButton variant="soft" @click="showCreatedModal = false">Continue editing</UButton>
+                <UButton color="primary" @click="onViewQuiz" class="!bg-brand-600 hover:!bg-brand-700">View</UButton>
+                <UButton color="gray" variant="ghost" @click="onEditQuiz">Edit</UButton>
+              </div>
             </div>
           </div>
-        </div>
-      </UModal>
+        </UModal>
+      </ClientOnly>
     </div>
   </div>
 </template>
 
-<script setup>
-import { computed, ref, watch, onBeforeUnmount } from 'vue'
-import { useRuntimeConfig } from '#imports'
+<script setup lang="ts">
 import { useCreateQuizStore } from '~/stores/createQuizStore'
-import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
-import QuestionBuilder from '~/components/quiz/QuestionBuilder.vue'
-import CreateTopicModal from '~/components/modals/CreateTopicModal.vue'
-import UiCard from '~/components/ui/UiCard.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
-import useApi from '~/composables/useApi'
-import RichTextEditor from '~/components/editor/RichTextEditor.vue'
-import QuizDetailsTab from '~/components/quiz/QuizDetailsTab.vue'
-import QuizSettingsTab from '~/components/quiz/QuizSettingsTab.vue'
-import QuizQuestionsTab from '~/components/quiz/QuizQuestionsTab.vue'
-import QuizPreviewModal from '~/components/preview/QuizPreviewModal.vue'
-import QuestionBankModal from '~/components/bank/QuestionBankModal.vue'
-import { onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import QuizDetailsStepForm from '~/components/quiz/QuizDetailsStepForm.vue'
+import QuizSettingsStepForm from '~/components/quiz/QuizSettingsStepForm.vue'
+import QuizQuestionsSimplified from '~/components/quiz/QuizQuestionsSimplified.vue'
+import QuizPayloadPreviewModal from '~/components/quiz/QuizPayloadPreviewModal.vue'
+import CreateTopicModal from '~/components/modals/CreateTopicModal.vue'
+import QuestionBankModal from '~/components/bank/QuestionBankModal.vue'
+import ImportQuestionsModal from '~/components/quiz/ImportQuestionsModal.vue'
 
-definePageMeta({ layout: 'quiz-master', title: 'Create quiz', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Create a new quiz as a quiz-master — add questions, settings and publish options.' } ] })
+// Page meta
+definePageMeta({
+  layout: 'quiz-master',
+  title: 'Create quiz',
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+    { name: 'description', content: 'Create a new quiz as a quiz-master — add questions, settings and publish options.' },
+  ],
+})
 
+// Store and composition functions
+const store = useCreateQuizStore()
+const route = useRoute()
+const router = useRouter()
+const alert = useAppAlert()
+
+// Taxonomy data
+const {
+  levels,
+  grades,
+  subjects,
+  topics,
+  fetchLevels,
+  fetchGrades,
+  fetchSubjectsPage,
+  fetchTopicsPage,
+} = useTaxonomy()
+
+// UI state
+const showTopicModal = ref(false)
+const showQuestionBank = ref(false)
+const showImportModal = ref(false)
+const showPreviewModal = ref(false)
+const showCreatedModal = ref(false)
+const createdPayload = ref(null)
+
+// Tab configuration
 const tabConfig = [
   { key: 'details', label: 'Details', savedFlag: 'detailsSaved' },
   { key: 'settings', label: 'Settings', savedFlag: 'settingsSaved' },
   { key: 'questions', label: 'Questions', savedFlag: 'questionsSaved' },
 ]
 
-const store = useCreateQuizStore()
-if (!store.quiz || typeof store.quiz !== 'object') store.quiz = {}
-const route = useRoute()
-const router = useRouter()
-const cfg = useRuntimeConfig()
-
-function trySetTab(tab) {
-  // Allow free navigation between tabs. Previously navigation to settings/questions
-  // was blocked until details were valid; we remove that restriction so users
-  // can switch tabs (e.g. to import questions) even if details aren't fully set.
-  store.setTab(tab)
-}
-
-async function onPublish() {
-  // Prevent publishing when no questions exist in the quiz
-  if (!Array.isArray(store.questions) || store.questions.length === 0) {
-    alert.push({ type: 'warning', message: 'Please add at least one question before publishing.' })
-    store.setTab('questions')
-    return
-  }
-
-  await store.submitQuiz()
-}
-
-async function saveDetails() {
-  await store.saveDetails();
-}
-
-async function saveSettings() {
-  await store.saveSettings();
-}
-
-const { fetchGrades, fetchGradesByLevel, grades, subjects, topics, fetchSubjectsPage, fetchTopicsPage, addTopic, loadingSubjects, loadingTopics, levels, fetchLevels, loadingLevels } = useTaxonomy()
-const alert = useAppAlert()
-
-function debounce(fn, wait = 300) {
-  let t = null
-  return (...args) => {
-    clearTimeout(t)
-    t = setTimeout(() => fn(...args), wait)
+// Save details handler
+const onSaveDetails = async () => {
+  try {
+    const ok = await store.saveDetails()
+    if (ok) {
+      alert.push({ type: 'success', message: 'Quiz details saved' })
+      store.setTab('settings')
+    } else {
+      alert.push({
+        type: 'error',
+        message: 'Failed to save details. Please check for errors and try again.',
+      })
+    }
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Error: ${e?.message || 'Unknown error'}` })
   }
 }
 
-const _doSubjectSearch = async (q) => {
-  const g = store.quiz?.grade_id ?? null
-  try { await fetchSubjectsPage({ gradeId: g, page: 1, perPage: 50, q: q || '' }) } catch (e) {}
+// Details step - move to settings
+const onDetailsNext = async () => {
+  try {
+    const ok = await store.saveDetails()
+    if (ok) {
+      store.setTab('settings')
+    } else {
+      alert.push({
+        type: 'warning',
+        message: 'Please complete all required fields',
+      })
+    }
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Error: ${e?.message || 'Unknown error'}` })
+  }
 }
-const _doTopicSearch = async (q) => {
-  const s = store.quiz?.subject_id ?? null
-  if (!s) return
-  try { await fetchTopicsPage({ subjectId: s, page: 1, perPage: 50, q: q || '' }) } catch (e) {}
+
+// Save settings handler
+const onSaveSettings = async () => {
+  try {
+    const ok = await store.saveSettings()
+    if (ok) {
+      alert.push({ type: 'success', message: 'Quiz settings saved' })
+      store.setTab('questions')
+    } else {
+      alert.push({
+        type: 'error',
+        message: 'Failed to save settings. Please check for errors and try again.',
+      })
+    }
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Error: ${e?.message || 'Unknown error'}` })
+  }
 }
 
-const onSubjectSearch = debounce((q) => _doSubjectSearch(q), 350)
-const onTopicSearch = debounce((q) => _doTopicSearch(q), 350)
+// Topic creation handler
+const onTopicCreated = async (topic: any) => {
+  try {
+    await fetchTopicsPage({
+      subjectId: store.quiz?.subject_id ?? null,
+      page: 1,
+      perPage: 50,
+      q: '',
+    })
+    store.quiz.topic_id = topic.id
+    showTopicModal.value = false
+    alert.push({ type: 'success', message: 'Topic created' })
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Failed to refresh topics: ${e?.message || 'Unknown error'}` })
+  }
+}
 
-// Prepare a slot for the cleanup function that will be set on client mount.
-let _cleanup = null
+// Add questions from bank
+const onAddFromBank = async (questions: any[]) => {
+  try {
+    for (const q of questions) {
+      await store.addQuestion(q)
+    }
+    showQuestionBank.value = false
+    alert.push({ type: 'success', message: `${questions.length} question(s) added` })
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Error adding questions: ${e?.message || 'Unknown error'}` })
+  }
+}
 
-// Register onBeforeUnmount during setup so Vue can associate the hook with this component.
-onBeforeUnmount(() => {
-  try { if (typeof _cleanup === 'function') _cleanup() } catch (e) {}
-})
+// Handle imported questions from CSV
+const onQuestionsImported = async (questions: any) => {
+  try {
+    const qArray = Array.isArray(questions) ? questions : [questions]
+    for (const q of qArray) {
+      if (q) {
+        await store.addQuestion(q)
+      }
+    }
+    showImportModal.value = false
+    alert.push({ type: 'success', message: `${qArray.length} question(s) imported` })
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Error importing questions: ${e?.message || 'Unknown error'}` })
+  }
+}
 
+// Publish with preview confirmation
+const onPublish = async () => {
+  showPreviewModal.value = true
+}
+
+// Final publish after preview confirmation
+const onPublishConfirmed = async () => {
+  try {
+    const ok = await store.submitFinalPayload()
+    if (ok) {
+      const result = store.lastCreated || { id: store.quizId }
+      createdPayload.value = result
+      showPreviewModal.value = false
+      showCreatedModal.value = true
+    }
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Error publishing quiz: ${e?.message || 'Unknown error'}` })
+  }
+}
+
+// Navigate to view quiz
+const onViewQuiz = () => {
+  showCreatedModal.value = false
+  const quizId = (createdPayload.value as any)?.id || store.quizId
+  router.push(`/quiz-master/quizzes/${quizId}`)
+}
+
+// Navigate to edit quiz
+const onEditQuiz = () => {
+  showCreatedModal.value = false
+  const quizId = (createdPayload.value as any)?.id || store.quizId
+  router.push(`/quiz-master/quizzes/${quizId}/edit`)
+}
+
+// Lifecycle
 onMounted(async () => {
-  // Set up cleanup handlers (client-only) and store the returned cleanup function.
-  _cleanup = store.setupCleanup()
-
-  // Fetch essential taxonomies on mount.
-  // Subjects and Topics will be fetched reactively based on user selections.
   try {
-    await Promise.all([
-      fetchLevels(),
-      fetchGrades() // Fetch all grades initially for the picker
-    ]).catch(() => {});
-  } catch (e) {}
+    // Load taxonomy data
+    await Promise.all([fetchLevels(), fetchGrades()])
 
-  // Read query parameters to preselect taxonomy
-  const incomingLevel = route.query.level_id
-  const incomingGrade = route.query.grade_id
-  const incomingSubject = route.query.subject_id
-  const incomingTopic = route.query.topic_id
-
-  const incomingId = route.query.id
-  if (incomingId && String(incomingId) !== 'null' && !store.quizId) {
-    const coerced = isNaN(Number(incomingId)) ? incomingId : Number(incomingId);
-    await store.loadQuiz(coerced);
-  } else {
-    // Apply query parameter values to store. Watchers will trigger fetching taxonomies.
-    if (incomingLevel && String(incomingLevel) !== 'null') {
-      store.quiz.level_id = isNaN(Number(incomingLevel)) ? incomingLevel : Number(incomingLevel)
+    // Handle editing existing quiz
+    const quizId = route.query.id
+    if (quizId) {
+      await store.loadQuiz(quizId)
+    } else {
+      store.reset()
     }
-    if (incomingGrade && String(incomingGrade) !== 'null') {
-      store.quiz.grade_id = isNaN(Number(incomingGrade)) ? incomingGrade : Number(incomingGrade)
-    }
-    if (incomingSubject && String(incomingSubject) !== 'null') {
-      store.quiz.subject_id = isNaN(Number(incomingSubject)) ? incomingSubject : Number(incomingSubject)
-    }
-    if (incomingTopic && String(incomingTopic) !== 'null') {
-      store.quiz.topic_id = isNaN(Number(incomingTopic)) ? incomingTopic : Number(incomingTopic)
-    }
+  } catch (e: any) {
+    alert.push({ type: 'error', message: `Failed to load page: ${e?.message || 'Unknown error'}` })
   }
 })
-
-const title = computed({ get: () => store.quiz.title, set: (v) => (store.quiz.title = v) })
-const description = computed({ get: () => store.quiz.description, set: (v) => (store.quiz.description = v) })
-const grade_id = computed({ get: () => store.quiz.grade_id, set: (v) => (store.quiz.grade_id = v) })
-const level_id = computed({ get: () => store.quiz.level_id, set: (v) => (store.quiz.level_id = v) })
-const subject_id = computed({ get: () => store.quiz.subject_id, set: (v) => (store.quiz.subject_id = v) })
-const topic_id = computed({ get: () => store.quiz.topic_id, set: (v) => (store.quiz.topic_id = v) })
-const youtube_url = computed({ get: () => store.quiz.youtube_url, set: (v) => (store.quiz.youtube_url = v) })
-const attempts_allowed = computed({ get: () => store.quiz.attempts_allowed, set: (v) => (store.quiz.attempts_allowed = v) })
-const timer_minutes = computed({ get: () => store.quiz.timer_minutes, set: (v) => (store.quiz.timer_minutes = v) })
-const use_per_question_timer = computed({ get: () => store.quiz.use_per_question_timer, set: (v) => (store.quiz.use_per_question_timer = v) })
-
-const showBuilder = ref(false)
-const showTopicModal = ref(false)
-const showCreatedModal = ref(false)
-const createdPayload = ref(null)
-const showPreview = ref(false)
-const showQuestionBank = ref(false)
-
-function openBuilder() { showBuilder.value = true }
-function onCancel() { showBuilder.value = false }
-// Use the store action which ensures normalization/uid assignment when a question
-// is returned from the QuestionBuilder. This avoids missing uid/shape issues.
-function onQuestionSaved(saved) { store.addQuestion(saved) }
-function edit(q) {}
-function onPreview() { showPreview.value = true }
-function onOpenBank() { showQuestionBank.value = true }
-
-function onAddFromBank(itemOrArray) {
-  if (!itemOrArray) return
-  if (Array.isArray(itemOrArray)) {
-    for (const it of itemOrArray) {
-      store.addQuestion(it)
-    }
-  } else {
-    store.addQuestion(itemOrArray)
-  }
-  showQuestionBank.value = false
-}
-
-function openTopicModal() {
-  showTopicModal.value = true
-}
-
-watch(() => store.lastCreated, (v) => {
-  if (v) {
-    createdPayload.value = v
-    showCreatedModal.value = true
-  }
-})
-
-async function onTopicCreated(created) {
-  if (!created) { showTopicModal.value = false; return }
-  try {
-    if (Array.isArray(topics.value)) topics.value.unshift(created)
-    try { addTopic(created) } catch (e) {}
-    store.quiz.topic_id = created.id
-    try {
-      await fetchTopicsPage({ subjectId: created.subject_id || created.subjectId || created.subject || store.quiz.subject_id, page: 1, perPage: 50, q: '' })
-    } catch (e) {}
-
-    // Persist selection if details are valid (title/grade/subject/topic present)
-    try {
-      if (store.isDetailsValid) {
-        try { await store.saveDetails() } catch (e) {}
-      }
-    } catch (e) {}
-
-    try { alert.push({ type: 'success', message: `Topic "${created.name || 'Topic'}" created` }) } catch (e) {}
-    if (created.is_approved) {
-      store.detailsSaved = true
-    }
-
-    // After ensuring topics list is refreshed, focus the topics picker input so the user
-    // can see/select the newly created topic immediately.
-    try {
-      await nextTick()
-      const input = document.querySelector('[aria-labelledby="topic-label"] input')
-      if (input && typeof input.focus === 'function') {
-        input.focus()
-        if (typeof input.scrollIntoView === 'function') input.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-    } catch (e) {}
-  } catch (e) {}
-  showTopicModal.value = false
-}
-
-watch(grade_id, (nv, ov) => {
-  // Only reset subject/topic if the grade is actually changed from a previous value.
-  // This prevents wiping out subject/topic from query params on initial load.
-  if (ov !== undefined && ov !== null) {
-    store.quiz.subject_id = null
-    store.quiz.topic_id = null
-  }
-
-  if (!nv || String(nv) === String(ov)) return
-  try { fetchSubjectsPage({ gradeId: nv, page: 1, perPage: 50, q: '' }) } catch (e) {}
-})
-
-watch(subject_id, (nv, ov) => {
-  // Only reset topic if the subject is actually changed from a previous value.
-  if (ov !== undefined && ov !== null) {
-    store.quiz.topic_id = null
-  }
-
-  if (!nv || String(nv) === String(ov)) return
-  try { fetchTopicsPage({ subjectId: nv, page: 1, perPage: 50, q: '' }) } catch (e) {}
-})
-
-function onSelectSubject(item) {
-  store.quiz.subject_id = item?.id ? (Number(item.id) || null) : null
-  store.quiz.topic_id = null
-  try { fetchTopicsPage({ subjectId: item?.id, page: 1, perPage: 50, q: '' }) } catch (e) {}
-}
-
-function onSelectTopic(item) {
-  store.quiz.topic_id = item?.id ? (Number(item.id) || null) : null
-}
-
-
 </script>

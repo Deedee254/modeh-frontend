@@ -9,27 +9,27 @@
       class="bubble-menu"
   >
       <button @click="ed && ed.chain().focus().toggleBold().run()" :class="{ 'is-active': ed && ed.isActive('bold') }" title="Bold">
-        <Icon name="heroicons:bold-20-solid" />
+        <strong>B</strong>
       </button>
       <button @click="ed && ed.chain().focus().toggleItalic().run()" :class="{ 'is-active': ed && ed.isActive('italic') }" title="Italic">
-        <Icon name="heroicons:italic-20-solid" />
+        <em>I</em>
       </button>
       <button @click="ed && ed.chain().focus().toggleStrike().run()" :class="{ 'is-active': ed && ed.isActive('strike') }" title="Strikethrough">
-        <Icon name="heroicons:bars-3-bottom-left-20-solid" />
+        <s>S</s>
       </button>
       <button @click="ed && ed.chain().focus().toggleCode().run()" :class="{ 'is-active': ed && ed.isActive('code') }" title="Inline Code">
-        <Icon name="heroicons:code-bracket-20-solid" />
+        <code>&lt;&gt;</code>
       </button>
     </component>
 
     <!-- Toolbar for block elements -->
     <div class="toolbar mb-2 flex flex-wrap gap-1 border-b pb-2">
       <button @click="addCodeBlock" title="Add Code Block" :class="{ 'is-active': ed && ed.isActive('codeBlock') }">
-        <Icon name="heroicons:code-bracket-square-20-solid" />
+        <span class="text-lg">{ }</span>
         <span class="text-xs ml-1">Code</span>
       </button>
       <button v-if="features?.math" @click="addMathBlock" title="Add Math Block" :class="{ 'is-active': ed && ed.isActive('math-block') }">
-        <Icon name="heroicons:calculator-20-solid" />
+        <span class="text-lg">∑</span>
         <span class="text-xs ml-1">Math</span>
       </button>
     </div>
@@ -48,7 +48,6 @@ import { useEditor, EditorContent as TiptapEditorContent } from '@tiptap/vue-3'
 // Import the package as a namespace so we can access runtime exports that
 // may not be present on the static TypeScript definitions (BubbleMenu etc.)
 import * as TiptapVue from '@tiptap/vue-3'
-import { Icon } from '#components'
 
 // Import Tiptap extensions individually to have full control
 import Document from '@tiptap/extension-document'

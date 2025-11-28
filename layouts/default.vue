@@ -13,7 +13,7 @@
       </main>
     </template>
     <template v-else>
-  <slot></slot>
+      <slot></slot>
     </template>
 
     <Footer />
