@@ -23,7 +23,7 @@
 
       <div v-else>
         <header class="text-center mb-6">
-          <p class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">{{ level.type || 'Level' }}</p>
+          <p class="text-sm uppercase tracking-wide text-brand-500 font-semibold">{{ level.type || 'Level' }}</p>
           <h2 class="mt-2 text-3xl font-bold text-slate-900">{{ level.name }}</h2>
           <p class="mt-2 text-slate-600">{{ level.description || level.summary || '' }}</p>
         </header>

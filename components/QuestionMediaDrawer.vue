@@ -14,7 +14,7 @@
             <input type="file" @change="onFile" />
             <div v-if="preview" class="mt-2">
               <p class="text-xs text-slate-200">Selected: {{ preview }}</p>
-              <button class="mt-2 inline-block text-xs text-indigo-200" @click="remove">Remove</button>
+              <button class="mt-2 inline-block text-xs text-brand-100" @click="remove">Remove</button>
             </div>
           </div>
         </div>
@@ -53,3 +53,4 @@ function remove() {
 <style scoped>
 /* small visual niceties to make the drawer usable during development */
 </style>
+

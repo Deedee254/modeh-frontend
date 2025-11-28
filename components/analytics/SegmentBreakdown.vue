@@ -13,3 +13,4 @@
 <script setup>
 const props = defineProps({ segments: { type: Array, default: () => [] } })
 </script>
+

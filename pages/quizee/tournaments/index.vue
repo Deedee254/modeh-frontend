@@ -44,7 +44,7 @@
     <div class="mt-6 flex items-center justify-center">
       <nav class="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
         <button @click="goToPage(page - 1)" :disabled="page <= 1" class="px-3 py-2 bg-white border text-sm rounded-l-md disabled:opacity-50">Prev</button>
-        <button v-for="p in Math.max(1, meta.last_page)" :key="p" @click="goToPage(p)" :class="['px-3 py-2 border text-sm', p === page ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700']">{{ p }}</button>
+        <button v-for="p in Math.max(1, meta.last_page)" :key="p" @click="goToPage(p)" :class="['px-3 py-2 border text-sm', p === page ? 'bg-brand-600 text-white' : 'bg-white text-gray-700']">{{ p }}</button>
         <button @click="goToPage(page + 1)" :disabled="page >= meta.last_page" class="px-3 py-2 bg-white border text-sm rounded-r-md disabled:opacity-50">Next</button>
       </nav>
     </div>
@@ -65,10 +65,11 @@
           <div 
             :class="[
               'absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-medium',
-              tournament.status === 'upcoming' ? 'bg-blue-500 text-white' :
-              tournament.status === 'ongoing' ? 'bg-green-500 text-white' :
+              tournament.status === 'upcoming' ? 'bg-brand-500 text-white' :
+              tournament.status === 'ongoing' ? 'text-white' :
               'bg-gray-500 text-white'
             ]"
+            :style="tournament.status === 'ongoing' ? { backgroundColor: '#891f21' } : {}"
           >
             {{ tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1) }}
           </div>

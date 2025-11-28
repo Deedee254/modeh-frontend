@@ -26,11 +26,11 @@
         </div>
         <div v-show="!loading && items.length > 0">
           <ul class="divide-y divide-slate-200/50 dark:divide-slate-700/50">
-            <li v-for="item in items" :key="item.id" class="min-w-0 flex cursor-pointer items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800" :class="[ props.compact ? 'py-1.5 px-2' : 'py-2 px-3', isSelected(item) ? 'bg-indigo-50 dark:bg-indigo-900/30' : '' ]" @click="select(item)">
+            <li v-for="item in items" :key="item.id" class="min-w-0 flex cursor-pointer items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800" :class="[ props.compact ? 'py-1.5 px-2' : 'py-2 px-3', isSelected(item) ? 'bg-brand-50 dark:bg-brand-900/30' : '' ]" @click="select(item)">
               <div class="flex-1 min-w-0">
-                <div class="font-normal sm:font-medium break-words whitespace-normal leading-tight text-slate-800 dark:text-slate-200 text-xs sm:text-sm" :class="[ isSelected(item) ? 'text-indigo-700 dark:text-indigo-300' : '' ]" :title="item.display_name || item.name">{{ item.display_name || item.name }}</div>
+                <div class="font-normal sm:font-medium break-words whitespace-normal leading-tight text-slate-800 dark:text-slate-200 text-xs sm:text-sm" :class="[ isSelected(item) ? 'text-brand-700 dark:text-brand-300' : '' ]" :title="item.display_name || item.name">{{ item.display_name || item.name }}</div>
               </div>
-              <UIcon v-if="isSelected(item)" name="i-heroicons-check-circle-20-solid" class="h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+              <UIcon v-if="isSelected(item)" name="i-heroicons-check-circle-20-solid" class="h-5 w-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
             </li>
           </ul>
         </div>
@@ -286,3 +286,4 @@ function focusSearch() {
 
 defineExpose({ focusSearch })
 </script>
+

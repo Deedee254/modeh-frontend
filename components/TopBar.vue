@@ -15,23 +15,23 @@
   <!-- Navigation (hidden on mobile) -->
   <nav class="hidden md:flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6">
           <template v-if="isInstitutionManager && auth.user">
-            <NuxtLink to="/institution-manager/dashboard" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Dashboard</NuxtLink>
-            <NuxtLink :to="{ path: '/institution-manager/subscriptions', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Subscriptions</NuxtLink>
-            <NuxtLink :to="memberRoute" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Members</NuxtLink>
+            <NuxtLink to="/institution-manager/dashboard" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Dashboard</NuxtLink>
+            <NuxtLink :to="{ path: '/institution-manager/subscriptions', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Subscriptions</NuxtLink>
+            <NuxtLink :to="memberRoute" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Members</NuxtLink>
           </template>
           <template v-else-if="isquizee && auth.user">
-            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
-            <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Subjects</NuxtLink>
-            <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
-            <NuxtLink to="/topics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Topics</NuxtLink>
-            <NuxtLink to="/quizee/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quiz Masters</NuxtLink>
+            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
+            <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Subjects</NuxtLink>
+            <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
+            <NuxtLink to="/topics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Topics</NuxtLink>
+            <NuxtLink to="/quizee/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Quiz Masters</NuxtLink>
           </template>
           <template v-else>
-            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
-            <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quizzes</NuxtLink>
-            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Quizees</NuxtLink>
-            <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
-            <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-indigo-600 router-link-exact-active:font-semibold">Analytics</NuxtLink>
+            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
+            <NuxtLink to="/quiz-master/quizzes" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Quizzes</NuxtLink>
+            <NuxtLink to="/quiz-master/quizees" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Quizees</NuxtLink>
+            <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
+            <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Analytics</NuxtLink>
           </template>
         </nav>
       </div>
@@ -112,7 +112,7 @@
             <template v-else>
               <div class="flex items-center gap-2">
                 <NuxtLink to="/login" class="text-sm text-gray-700 hover:text-gray-900">Sign in</NuxtLink>
-                <NuxtLink to="/register" class="hidden sm:block text-sm text-indigo-600 hover:text-indigo-700">Register</NuxtLink>
+                <NuxtLink to="/register" class="hidden sm:block text-sm text-brand-600 hover:text-brand-700">Register</NuxtLink>
               </div>
             </template>
           </div>
@@ -166,7 +166,7 @@
           <!-- Mobile overlay only contains navigation; profile/settings/sign out available from the avatar ActionMenu -->
           <div v-if="!auth.user || !auth.user.id" class="flex flex-col gap-2">
             <NuxtLink @click="ui.mobileNavOpen = false" to="/login" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Sign in</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/register" class="block px-3 py-2 text-sm text-indigo-600 hover:bg-gray-50 rounded">Register</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/register" class="block px-3 py-2 text-sm text-brand-600 hover:bg-gray-50 rounded">Register</NuxtLink>
           </div>
         </nav>
       </div>

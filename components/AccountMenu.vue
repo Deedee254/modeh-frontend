@@ -5,7 +5,7 @@
       <template v-if="!isAuthed">
         <button
           @click="showLoginModal = true"
-          class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+          class="px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
         >
           Login
         </button>
@@ -186,3 +186,4 @@ function handleLogout() {
   transform: translateY(0) scale(1);
 }
 </style>
+

@@ -15,7 +15,7 @@
         <div class="flex items-center gap-3">
           <button 
             @click="router.push('/quiz-master/grades/create')"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
+            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-700 shadow-lg shadow-brand-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
             <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
             Add Grade
@@ -32,12 +32,12 @@
             v-model="searchQuery" 
             type="text" 
             placeholder="Search grades..." 
-            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-100"
           />
         </div>
         <select 
           v-model="selectedLevel" 
-          class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-100"
         >
           <option value="">All Levels</option>
           <option value="primary">Primary</option>

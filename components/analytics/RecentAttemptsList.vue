@@ -16,3 +16,4 @@
 <script setup>
 const props = defineProps({ attempts: { type: Array, default: () => [] } })
 </script>
+

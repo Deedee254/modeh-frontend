@@ -17,3 +17,4 @@
 import UiCard from '~/components/ui/UiCard.vue'
 defineProps(['variant','noPadding'])
 </script>
+

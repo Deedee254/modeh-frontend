@@ -519,3 +519,4 @@ export default function useTaxonomy() {
 
 // named export for utility/helper usage in tests
 export { normalizeList }
+

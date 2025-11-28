@@ -17,7 +17,7 @@
         </div>
         <div class="flex justify-end gap-2">
           <button @click="$emit('close')" class="px-3 py-2 rounded border">Cancel</button>
-          <button @click="$emit('start-dm', localEmail)" class="px-3 py-2 rounded bg-indigo-600 text-white">Start</button>
+          <button @click="$emit('start-dm', localEmail)" class="px-3 py-2 rounded bg-brand-600 text-white">Start</button>
         </div>
       </div>
     </div>
@@ -34,3 +34,4 @@ const searchResultsLocal = ref(props.searchResults || [])
 watch(() => props.searchResults, (v) => { searchResultsLocal.value = v || [] })
 function onSearch() { emit('search', userSearchLocal.value) }
 </script>
+

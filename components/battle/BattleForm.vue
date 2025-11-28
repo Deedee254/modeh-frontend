@@ -76,7 +76,7 @@
     <div class="flex items-center p-4 xl:p-6 xl:pt-0">
       <UButton
         color="primary"
-        class="w-full"
+        class="w-full !bg-brand-600 hover:!bg-brand-700"
         @click="startBattle"
       >
         Start {{ title }}

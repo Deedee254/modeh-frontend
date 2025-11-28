@@ -28,3 +28,4 @@ declare module '~/composables/useProfileForm' {
     saveProfile: (form: ProfileFormState, isQuizMaster: boolean) => Promise<boolean>
   }
 }
+

@@ -44,3 +44,4 @@ function formatNumber(val) {
   return Intl.NumberFormat().format(n)
 }
 </script>
+

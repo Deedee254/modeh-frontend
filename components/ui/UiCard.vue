@@ -49,13 +49,13 @@ const baseClass = computed(() => 'rounded-2xl overflow-hidden transition-transfo
 
 const interactive = 'group hover:-translate-y-0.5 transition-transform duration-200'
 const shadowMobile = 'shadow-sm sm:shadow'
-const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2'
+const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2'
 
 const cardClass = computed(() => {
   switch (props.variant) {
     case 'elevated': return `bg-white ${shadowMobile} hover:shadow-lg ${interactive} ${focusRing}`
     case 'muted': return `bg-gray-50 ${interactive} ${focusRing}`
-    case 'accent': return `bg-gradient-to-r from-indigo-600 to-indigo-500 text-white ${shadowMobile} ${interactive} ${focusRing}`
+    case 'accent': return `bg-gradient-to-r from-brand-600 to-brand-600 text-white ${shadowMobile} ${interactive} ${focusRing}`
     default: return `bg-white ${shadowMobile} border border-gray-100 ${interactive} ${focusRing}`
   }
 })
@@ -66,3 +66,4 @@ const inst = getCurrentInstance()
 const hasNuxtCard = !!(inst && inst.appContext && inst.appContext.components && (inst.appContext.components['NUXCard'] || inst.appContext.components['NuxtCard']))
 const compName = hasNuxtCard ? (inst.appContext.components['NUXCard'] ? 'NUXCard' : 'NuxtCard') : 'div'
 </script>
+

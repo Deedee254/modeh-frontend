@@ -149,7 +149,7 @@ onMounted(() => {
                       v-if="report.status === 'completed' && report.file_url"
                       :href="report.file_url"
                       target="_blank"
-                      class="text-indigo-600 hover:text-indigo-900"
+                      class="text-brand-600 hover:text-brand-900"
                     >
                       Download
                     </a>
@@ -217,7 +217,7 @@ onMounted(() => {
               <label class="block text-sm font-medium text-gray-700">Report Type</label>
               <select
                 v-model="reportType"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500"
               >
                 <option value="performance">Performance Report</option>
                 <option value="attendance">Attendance Report</option>
@@ -229,7 +229,7 @@ onMounted(() => {
               <label class="block text-sm font-medium text-gray-700">Date Range</label>
               <select
                 v-model="dateRange"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500"
               >
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
@@ -248,7 +248,7 @@ onMounted(() => {
             <button
               @click="generateReport"
               :disabled="generating"
-              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 w-full sm:w-auto"
+              class="px-4 py-2 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-md hover:bg-brand-700 disabled:opacity-50 w-full sm:w-auto"
             >
               <span v-if="generating">Generating...</span>
               <span v-else>Generate Report</span>

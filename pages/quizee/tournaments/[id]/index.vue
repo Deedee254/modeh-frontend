@@ -57,7 +57,7 @@
             <div v-if="tournament.winner" class="ml-4 flex items-center gap-3">
               <Icon name="mdi:trophy-outline" class="text-yellow-300" />
               <img
-                :src="tournament.winner.avatar"
+                :src="resolveAssetUrl(tournament.winner.avatar_url || tournament.winner.avatar) || tournament.winner.avatar_url || tournament.winner.avatar || '/logo/avatar-placeholder.png'"
                 alt="winner avatar"
                 class="w-10 h-10 rounded-full object-cover"
               />
@@ -234,7 +234,7 @@
                 </button>
               </template>
               <template v-else>
-                <div class="text-green-600 font-medium mb-4">
+                <div style="color: #891f21" class="font-medium mb-4">
                   <Icon name="mdi:check-circle" class="inline-block mr-2" />
                   You're registered!
                 </div>
@@ -294,7 +294,7 @@
                       {{ index + 1 }}
                     </div>
                     <img
-                      :src="player.avatar"
+                      :src="resolveAssetUrl(player.avatar_url || player.avatar) || player.avatar_url || player.avatar || '/logo/avatar-placeholder.png'"
                       alt="Player avatar"
                       class="w-8 h-8 rounded-full object-cover"
                     />
@@ -321,6 +321,7 @@ import TournamentBracket from "~/components/TournamentBracket.vue";
 import MatchResultCard from "~/components/quizee/tournaments/MatchResultCard.vue";
 import useApi from "~/composables/useApi";
 import AffiliateShareButton from "~/components/AffiliateShareButton.vue";
+import { resolveAssetUrl } from "~/composables/useAssets";
 const api = useApi();
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
@@ -346,13 +347,14 @@ type Tournament = {
   registration_end_date: string;
   status: string;
   // optional winner object may be attached by the API envelope
-  winner?: { avatar?: string; name?: string } | null;
+  winner?: { avatar?: string; avatar_url?: string; name?: string } | null;
   sponsor?: { name?: string; logo?: string } | null;
 };
 
 type Player = {
   id: number;
   avatar: string;
+  avatar_url?: string;
   name: string;
   points: number;
 };

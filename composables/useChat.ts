@@ -48,7 +48,11 @@ export default function useChat() {
 
   function rebuildConversations() {
     try {
-  const convs = (threads.value || []).map(c => ({ id: String(c.other_user_id || c.otherId || c.id), type: 'direct', name: c.other_name || c.otherName || c.name, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: c.status || 'offline', avatar: resolveAssetUrl(c.avatar_url) || c.avatar || null }))
+  const convs = (threads.value || []).map(c => {
+    const cId = String(c.other_user_id || c.otherId || c.id)
+    const cName = cId === '-1' ? 'Support' : (c.other_name || c.otherName || c.name)
+    return { id: cId, type: 'direct', name: cName, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: cId === '-1' ? null : (c.status || 'offline'), avatar: resolveAssetUrl(c.avatar_url) || c.avatar || null }
+  })
   const grps = (groups.value || []).map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: resolveAssetUrl(g.avatar_url) || g.avatar || null }))
       conversations.value = [...convs, ...grps].sort((a,b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime())
     } catch (e) {
@@ -240,13 +244,23 @@ export default function useChat() {
     if (email.toLowerCase() === 'support' || email.toLowerCase() === 'help') {
       try {
         const res = await fetch(apiBase + '/api/messages/support-chat', { credentials: 'include' })
-        if (!res.ok) { alert.push({ message: 'Support chat unavailable', type: 'error' }); return }
-        const json = await res.json(); const admin = json.contact
-        const threadRes = await api.postJson('/api/chat/threads', { recipient_id: admin.id, type: 'support' })
-        if (api.handleAuthStatus(threadRes)) return
+        if (!res.ok) { 
+          const error = await res.json().catch(() => ({}))
+          alert.push({ message: error.message || 'Support chat unavailable', type: 'error' }); 
+          return 
+        }
+        const json = await res.json(); 
+        const admin = json.contact
+        if (!admin || admin.id === undefined) { alert.push({ message: 'Support contact not found', type: 'error' }); return }
+        
+        // Use recipient_id = -1 for support chat (multi-admin routing)
         dmEmail.value = ''
-        await loadThreads(); selectConversation({ id: admin.id, type: 'direct' })
-      } catch (e) { alert.push({ message: 'Could not start support chat', type: 'error' }) }
+        await loadThreads(); 
+        selectConversation({ id: admin.id, type: 'direct', name: 'Support' })
+      } catch (e) { 
+        console.error('Support chat error:', e)
+        alert.push({ message: 'Could not start support chat: ' + (e instanceof Error ? e.message : 'Unknown error'), type: 'error' }) 
+      }
       return
     }
     try {
@@ -254,7 +268,7 @@ export default function useChat() {
       if (r.status === 404) { alert.push({ message: 'User not found', type: 'error' }); return }
       if (!r.ok) { alert.push({ message: 'Lookup failed', type: 'error' }); return }
       const j = await r.json(); const user = j.user
-      const threadRes = await api.postJson('/api/chat/threads', { recipient_id: user.id, type: 'direct' })
+      const threadRes = await api.postJson('/api/chat/threads', { recipient_id: user.id })
       if (api.handleAuthStatus(threadRes)) return
       if (!threadRes.ok) { alert.push({ message: 'Could not create thread', type: 'error' }); return }
       dmEmail.value = ''
@@ -385,6 +399,19 @@ export default function useChat() {
           markThreadRead(otherId)
         }
         nextTick(() => scrollToBottom())
+      })
+
+      // Listen for MessageRead events so we can update tick colors
+      _channel.listen('.MessageRead', (payload: any) => {
+        const { sender_id, recipient_id } = payload
+        // When we (sender) receive a MessageRead event from recipient, mark all our messages to that recipient as read
+        if (sender_id === userId.value && recipient_id) {
+          messages.value.forEach(m => {
+            if (m.sender_id === userId.value && m.recipient_id === recipient_id) {
+              m.is_read = true
+            }
+          })
+        }
       })
     } catch (e) { console.error('attachEcho error', e) }
   }
@@ -605,3 +632,4 @@ export default function useChat() {
   }
 
 }
+

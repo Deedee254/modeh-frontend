@@ -106,7 +106,7 @@ onMounted(() => {
         </div>
         <div class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div class="text-sm text-slate-500">Active This Week</div>
-          <div class="text-2xl font-bold text-blue-600">{{ overview?.members?.active_this_week || 0 }}</div>
+          <div class="text-2xl font-bold text-brand-600">{{ overview?.members?.active_this_week || 0 }}</div>
           <div class="text-xs text-slate-400 mt-1">Members active this week</div>
         </div>
         <div class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
@@ -134,7 +134,7 @@ onMounted(() => {
               <div v-for="day in activityData.activity_by_date.slice(-14)" :key="day.date" class="flex justify-between items-center py-1">
                 <span class="text-sm text-gray-600">{{ new Date(day.date).toLocaleDateString() }}</span>
                 <div class="flex items-center space-x-4">
-                  <span class="text-sm text-blue-600">{{ day.attempts }} attempts</span>
+                  <span class="text-sm text-brand-600">{{ day.attempts }} attempts</span>
                   <span class="text-sm text-green-600">{{ Math.round(day.avg_score || 0) }}% avg</span>
                 </div>
               </div>
@@ -142,7 +142,7 @@ onMounted(() => {
             <div class="mt-4 pt-4 border-t">
               <button
                 @click="loadActivity(activityDays === 30 ? 7 : 30)"
-                class="text-sm text-indigo-600 hover:text-indigo-800"
+                class="text-sm text-brand-600 hover:text-brand-800"
               >
                 Show {{ activityDays === 30 ? '7' : '30' }} days
               </button>
@@ -166,7 +166,7 @@ onMounted(() => {
                 <div class="flex items-center space-x-2">
                   <div class="w-20 bg-gray-200 rounded-full h-2">
                     <div
-                      class="bg-indigo-600 h-2 rounded-full"
+                      class="bg-brand-600 h-2 rounded-full"
                       :style="{ width: `${Math.min((range.count / Math.max(...(performanceData?.score_distribution?.map((r: any) => r.count) || [1]))) * 100, 100)}%` }"
                     ></div>
                   </div>

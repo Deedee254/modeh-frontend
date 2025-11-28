@@ -71,9 +71,9 @@
 
       <!-- Quick action tabs: New / Top / Featured -->
       <div class="mt-6 flex gap-2 items-center">
-      <button @click="sortBy = 'popular'" :class="sortBy === 'popular' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">New</button>
-      <button @click="sortBy = 'az'" :class="sortBy === 'az' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Top</button>
-      <button @click="sortBy = 'za'" :class="sortBy === 'za' ? 'px-3 py-2 rounded bg-indigo-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Featured</button>
+      <button @click="sortBy = 'popular'" :class="sortBy === 'popular' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">New</button>
+      <button @click="sortBy = 'az'" :class="sortBy === 'az' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Top</button>
+      <button @click="sortBy = 'za'" :class="sortBy === 'za' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Featured</button>
     </div>
 
   <div class="grid grid-cols-1 gap-3 sm:gap-6">
@@ -164,12 +164,12 @@ const filtered = computed(() => {
 // Small helper to pick a pastel gradient class by id (used for fallback avatars)
 function pickPaletteClass(id) {
   const palettes = [
-    'bg-gradient-to-br from-indigo-200 via-indigo-100 to-sky-100 text-indigo-800',
+    'bg-gradient-to-br from-brand-600/30 via-brand-600/20 to-brand-950/10 text-brand-600',
     'bg-gradient-to-br from-rose-200 via-rose-100 to-pink-100 text-rose-800',
     'bg-gradient-to-br from-emerald-200 via-emerald-100 to-lime-100 text-emerald-800',
     'bg-gradient-to-br from-yellow-200 via-amber-100 to-amber-50 text-amber-800',
     'bg-gradient-to-br from-fuchsia-200 via-fuchsia-100 to-pink-50 text-fuchsia-800',
-    'bg-gradient-to-br from-sky-200 via-sky-100 to-indigo-50 text-sky-800'
+    'bg-gradient-to-br from-brand-600/20 via-brand-600/15 to-brand-950/10 text-brand-600'
   ]
   return palettes[(id || 0) % palettes.length]
 }

@@ -12,3 +12,4 @@ const props = defineProps({ questions: { type: Array, default: () => [] } })
 </script>
 
 <style scoped></style>
+

@@ -39,7 +39,7 @@ async function save() {
       <UTextarea v-model="billing.address" class="mt-1 block w-full" :rows="3" />
       </div>
       <div class="flex justify-end">
-        <button :disabled="submitting" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded" type="submit">
+        <button :disabled="submitting" class="w-full sm:w-auto px-4 py-2 bg-brand-600 text-white rounded" type="submit">
           <span v-if="!submitting">Save</span>
           <span v-else>Saving…</span>
         </button>
@@ -48,3 +48,4 @@ async function save() {
     <div class="mt-4 text-sm text-gray-500">Note: billing endpoints may be handled by the server or a payments provider. If saving fails, please contact support.</div>
   </div>
 </template>
+

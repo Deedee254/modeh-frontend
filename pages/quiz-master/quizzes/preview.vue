@@ -57,8 +57,8 @@
             class="p-6"
           >
             <div class="flex items-start gap-4">
-              <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                <span class="text-sm font-medium text-indigo-700">{{ index + 1 }}</span>
+              <div class="flex-shrink-0 w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-medium text-brand-700">{{ index + 1 }}</span>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="prose prose-sm max-w-none">

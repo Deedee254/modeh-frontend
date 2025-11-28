@@ -78,10 +78,20 @@
                 >
                   <div class="match-content">
                     <div :class="['player', 'player1', match?.winner_id === match?.player1_id ? 'winner' : '']">
+                      <img 
+                        :src="getPlayerAvatar(match?.player1)" 
+                        :alt="match?.player1?.name"
+                        class="w-8 h-8 rounded-full object-cover"
+                      />
                       <span class="player-name">{{ match?.player1?.name || 'TBD' }}</span>
                       <span class="player-score">{{ match?.player1_score ?? '-' }}</span>
                     </div>
                     <div :class="['player', 'player2', match?.winner_id === match?.player2_id ? 'winner' : '']">
+                      <img 
+                        :src="getPlayerAvatar(match?.player2)" 
+                        :alt="match?.player2?.name"
+                        class="w-8 h-8 rounded-full object-cover"
+                      />
                       <span class="player-name">{{ match?.player2?.name || 'TBD' }}</span>
                       <span class="player-score">{{ match?.player2_score ?? '-' }}</span>
                     </div>
@@ -177,7 +187,21 @@
                 class="flex items-center justify-between p-2 border rounded"
               >
                 <div class="flex-1">
-                    <div :class="['text-sm font-medium', match?.winner_id === match?.player1_id ? 'text-yellow-700' : '']">{{ match?.player1?.name || 'TBD' }} <span class="text-gray-400">vs</span> {{ match?.player2?.name || 'TBD' }}</div>
+                    <div :class="['text-sm font-medium flex items-center gap-2', match?.winner_id === match?.player1_id ? 'text-yellow-700' : '']">
+                      <img 
+                        :src="getPlayerAvatar(match?.player1)" 
+                        :alt="match?.player1?.name"
+                        class="w-5 h-5 rounded-full object-cover"
+                      />
+                      {{ match?.player1?.name || 'TBD' }} 
+                      <span class="text-gray-400">vs</span> 
+                      <img 
+                        :src="getPlayerAvatar(match?.player2)" 
+                        :alt="match?.player2?.name"
+                        class="w-5 h-5 rounded-full object-cover"
+                      />
+                      {{ match?.player2?.name || 'TBD' }}
+                    </div>
                     <div class="text-xs text-gray-500">{{ match?.player1_score ?? '-' }} - {{ match?.player2_score ?? '-' }}</div>
                   </div>
                   <div class="ml-3 relative">
@@ -201,6 +225,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import useApi from "~/composables/useApi";
+import resolveAssetUrl from "~/composables/useAssets";
 const props = defineProps({
   tournamentId: { type: [String, Number], required: true },
   // optional initial rounds (array of arrays of matches) provided by parent to avoid extra API requests
@@ -310,6 +335,12 @@ const formatMatchInfo = (m: any) => {
   if (m.id) parts.push(`#${m.id}`)
   return parts.join(' • ')
 }
+
+const getPlayerAvatar = (player: any) => {
+  if (!player) return '/avatars/default.png'
+  const avatar = player.avatar_url || player.avatar || player.profile?.avatar
+  return resolveAssetUrl(avatar) || '/avatars/default.png'
+}
 </script>
 
 <style scoped>
@@ -376,6 +407,7 @@ const formatMatchInfo = (m: any) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 6px;
   padding: 4px 0;
 }
 
@@ -393,7 +425,7 @@ const formatMatchInfo = (m: any) => {
   font-size: 12px;
   color: #6b7280;
   font-weight: 600;
-  margin-left: 8px;
+  margin-left: 4px;
   min-width: 20px;
   text-align: right;
 }
@@ -470,3 +502,4 @@ const formatMatchInfo = (m: any) => {
   }
 }
 </style>
+

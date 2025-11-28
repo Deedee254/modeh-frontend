@@ -12,7 +12,7 @@
         <!-- sent/delivered/read ticks -->
         <svg v-if="status === 'sent'" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5" /></svg>
         <svg v-else-if="status === 'delivered'" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5" /><path d="M22 10L12 20l-5-5" /></svg>
-        <svg v-else-if="status === 'read'" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5" /><path d="M22 10L12 20l-5-5" /></svg>
+        <svg v-else-if="status === 'read'" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5" /><path d="M22 10L12 20l-5-5" /></svg>
       </template>
     </template>
   </div>
@@ -21,3 +21,4 @@
 <script setup>
 defineProps({ time: { type: String, default: '' }, isOwn: { type: Boolean, default: false }, status: { type: String, default: 'sent' } })
 </script>
+

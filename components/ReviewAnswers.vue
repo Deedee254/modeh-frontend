@@ -39,7 +39,7 @@
 
       <div class="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 p-4">
         <div class="max-w-4xl mx-auto flex justify-end">
-          <button class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" @click="$emit('close')">Confirm & Continue</button>
+          <button class="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors" @click="$emit('close')">Confirm & Continue</button>
         </div>
       </div>
     </div>
@@ -58,3 +58,4 @@ const props = defineProps({
 
 defineEmits(['close'])
 </script>
+

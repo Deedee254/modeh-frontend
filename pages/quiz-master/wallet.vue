@@ -15,7 +15,7 @@
           <button
             @click.prevent="scrollToWithdraw"
             :disabled="!canWithdraw"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Withdraw
           </button>
@@ -64,7 +64,7 @@
               color="primary"
               @click="showWithdrawModal = true"
               icon="i-heroicons-arrow-down-tray"
-              class="shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105"
+              class="shadow-lg shadow-brand-600/30 transition-transform hover:scale-105 !bg-brand-600 hover:!bg-brand-700"
             >
               Request Withdrawal
             </UButton>
@@ -156,7 +156,7 @@
                     <button
                       @click="requestWithdrawal"
                       :disabled="!amount || Number(amount) <= 0 || Number(amount) > Number(wallet.available)"
-                      class="w-full bg-indigo-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
+                      class="w-full bg-brand-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       Request Withdrawal
                     </button>

@@ -177,8 +177,8 @@ watch(() => route.query.institutionSlug, (q) => {
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div class="flex-1">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                  <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+                    <span class="text-sm font-semibold text-brand-600 dark:text-brand-400">
                       {{ (assignment.user_name || assignment.user_email || 'U').charAt(0).toUpperCase() }}
                     </span>
                   </div>

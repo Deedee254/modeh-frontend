@@ -42,10 +42,11 @@ function optionMedia(opt) {
 }
 
 function buttonClass(opt) {
-  return Array.isArray(props.modelValue) && props.modelValue.includes(opt) ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 hover:bg-gray-50'
+  return Array.isArray(props.modelValue) && props.modelValue.includes(opt) ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 hover:bg-gray-50'
 }
 </script>
 
 <style scoped>
 .w-full { width: 100% }
 </style>
+

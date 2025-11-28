@@ -177,3 +177,4 @@ function linkTo(path) {
 <style scoped>
 /* minimal — responsive behavior handled by layout */
 </style>
+

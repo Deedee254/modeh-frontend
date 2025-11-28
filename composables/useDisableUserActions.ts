@@ -60,3 +60,4 @@ export default function useDisableUserActions(opts: Options = {}) {
     } catch (e) {}
   })
 }
+

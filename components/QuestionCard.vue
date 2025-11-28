@@ -6,7 +6,7 @@
         <div class="text-xs text-slate-400">Type: {{ question?.type || '—' }}</div>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-        <button @click="$emit('toggle')" class="text-xs text-indigo-200">Toggle</button>
+        <button @click="$emit('toggle')" class="text-xs text-brand-100">Toggle</button>
         <button @click="$emit('duplicate')" class="text-xs text-slate-200">Clone</button>
         <button @click="$emit('remove')" class="text-xs text-rose-400">Remove</button>
         <button @click="$emit('manage-media', { uid: question.uid })" class="text-xs text-slate-200">Media</button>
@@ -24,3 +24,4 @@ function stripHtml(s) { try { return String(s).replace(/<[^>]+>/g, '').slice(0,8
 </script>
 
 <style scoped></style>
+

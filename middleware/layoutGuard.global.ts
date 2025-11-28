@@ -74,3 +74,4 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo(`/login?next=${next}`)
   }
 })
+

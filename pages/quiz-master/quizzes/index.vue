@@ -15,7 +15,7 @@
         <div class="flex items-center gap-3">
           <button 
             @click="router.push('/quiz-master/quizzes/create')"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
+            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-700 shadow-lg shadow-brand-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
             <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
             Create Quiz
@@ -81,30 +81,16 @@
 
         <main class="lg:col-span-3 order-1 lg:order-2">
           <div class="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
-            <div class="flex-1 min-w-[200px]">
-              <EnhancedInput
-                v-model="q"
-                icon="heroicons:magnifying-glass"
-                placeholder="Search quizzes..."
-                @keyup.enter="fetchItems"
-              />
-            </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 ml-auto">
               <select 
                 v-model.number="perPage" 
                 @change="fetchItems" 
-                class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+                class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white focus-visible:outline-2 focus-visible:outline-brand-600 focus-visible:outline-offset-2"
               >
                 <option :value="5">5 per page</option>
                 <option :value="10">10 per page</option>
                 <option :value="20">20 per page</option>
               </select>
-              <button 
-                @click="fetchItems"
-                class="px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
-              >
-                Search
-              </button>
             </div>
           </div>
 

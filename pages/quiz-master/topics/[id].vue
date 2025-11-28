@@ -22,7 +22,7 @@
               topic_id: topicTaxonomy.topic_id,
             }
           }"
-          class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
+          class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-700 shadow-lg shadow-brand-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
         >
           <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
           Create Quiz in this Topic
@@ -49,7 +49,7 @@
             topic_id: topicTaxonomy.topic_id,
           }
         }"
-        class="text-indigo-600 hover:underline"
+        class="text-brand-600 hover:underline"
       >
         Create the first one!
       </NuxtLink>
@@ -94,7 +94,7 @@
                 topic_id: topicTaxonomy.topic_id,
               }
             }"
-            class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
+            class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition"
           >
             <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
             Create Quiz
@@ -131,7 +131,7 @@
       <!-- Empty State for Filtered Results -->
       <div v-if="filteredQuizzes.length === 0 && normalizedQuizzes.length > 0" class="text-center py-12 text-gray-500">
         No quizzes match your current filters.
-        <button @click="resetFilters" class="text-indigo-600 hover:underline">Reset filters</button>
+        <button @click="resetFilters" class="text-brand-600 hover:underline">Reset filters</button>
       </div>
     </div>
   </div>

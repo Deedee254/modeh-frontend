@@ -12,7 +12,7 @@
       <div class="space-y-4">
         <div class="flex flex-col sm:flex-row gap-2">
           <UButton size="sm" variant="soft" icon="i-heroicons-arrow-down-tray" @click="downloadTemplate" class="flex-1 sm:flex-none">Download Template</UButton>
-          <UButton size="sm" color="primary" icon="i-heroicons-folder-open" @click="openFilePicker" class="flex-1 sm:flex-none">Choose File</UButton>
+          <UButton size="sm" color="primary" icon="i-heroicons-folder-open" @click="openFilePicker" class="flex-1 sm:flex-none !bg-brand-600 hover:!bg-brand-700">Choose File</UButton>
           <input ref="fileInput" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" @change="onFileSelected" />
         </div>
 
@@ -40,7 +40,7 @@
 
         <div class="flex justify-end gap-2 pt-2 border-t border-gray-200">
           <UButton size="sm" variant="soft" @click="close">Cancel</UButton>
-          <UButton size="sm" color="primary" @click="finish" :disabled="loading" icon="i-heroicons-check">Done</UButton>
+          <UButton size="sm" color="primary" @click="finish" :disabled="loading" icon="i-heroicons-check" class="!bg-brand-600 hover:!bg-brand-700">Done</UButton>
         </div>
       </div>
     </div>
@@ -473,3 +473,4 @@ async function handleParsedRows(rows) {
   return { created: created.length, errors }
 }
 </script>
+

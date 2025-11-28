@@ -99,7 +99,7 @@
     <div class="flex items-center pt-4">
       <UButton
         color="primary"
-        class="w-full"
+        class="w-full !bg-brand-600 hover:!bg-brand-700"
         :disabled="loading || !canStart"
         @click="!loading && canStart && $emit('start')"
       >

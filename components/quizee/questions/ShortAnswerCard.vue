@@ -31,3 +31,4 @@ watch(() => props.modelValue, (v) => { if (v !== localValue.value) localValue.va
 <style scoped>
 .ql-editor { min-height: 48px }
 </style>
+

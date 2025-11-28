@@ -69,7 +69,7 @@
           <UFormGroup label="Grade" name="grade_id">
             <USelect
               v-model="form.grade_id"
-              :options="[{ name: 'Select a grade', id: '' }, ...grades]"
+              :options="[{ name: 'Select a grade', id: '' }, ...filteredGrades]"
               option-attribute="name"
               value-attribute="id"
             />
@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useUserRole } from '~/composables/useUserRole'
 import { resolveAssetUrl } from '~/composables/useAssets'
@@ -124,39 +124,99 @@ const auth = useAuthStore()
 const { isQuizMaster, isInstitutionManager, preferredRole } = useUserRole()
 const { createFormState, onFile, saveProfile, avatarPreview, avatarFile } = useProfileForm()
 
-const user = auth.user
 const avatarInput = ref(null)
 
 // Data lists
 const grades = ref([])
 const levels = ref([])
-const { fetchGrades, fetchLevels, grades: taxGrades, levels: taxLevels } = useTaxonomy()
+const { fetchGrades, fetchLevels, fetchGradesByLevel, grades: taxGrades, levels: taxLevels } = useTaxonomy()
 
-// Initialize form from user data
-const form = ref(createFormState(user))
+// Make user reactive and form depend on it
+const user = computed(() => auth.user)
 
-// Avatar preview initialization
-onMounted(() => {
-  avatarPreview.value = resolveAssetUrl(user?.avatar_url || user?.avatar) || null
+// Get the current profile object based on role
+const currentProfile = computed(() => {
+  return isQuizMaster.value ? user.value?.quizMasterProfile : user.value?.quizeeProfile
 })
 
-/**
- * Fetches grades and levels from the API
- */
-async function fetchGradesAndLevels() {
+// Initialize form from user data - will react to user changes
+const form = ref(createFormState(user.value))
+
+// Watch for user data updates and refresh form when profile data loads or changes
+// Use the currentProfile computed as the source for better reactivity
+watch(
+  currentProfile,
+  () => {
+    form.value = createFormState(user.value)
+  },
+  { deep: true, immediate: true }
+)
+
+// Filtered grades based on selected level
+const filteredGrades = computed(() => {
+  if (!form.value.level_id) return grades.value
+  return grades.value.filter(g => String(g.level_id) === String(form.value.level_id))
+})
+
+// When level changes, fetch grades for that level and reset grade if it doesn't belong to the new level
+watch(
+  () => form.value.level_id,
+  async (newLevelId) => {
+    if (!newLevelId) {
+      // No level selected, fetch all grades
+      try {
+        await fetchGrades()
+        grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
+      } catch (err) {
+        console.error('Failed to fetch grades:', err)
+      }
+    } else {
+      // Fetch grades for the selected level
+      try {
+        if (typeof fetchGradesByLevel === 'function') {
+          await fetchGradesByLevel(newLevelId)
+        } else {
+          await fetchGrades()
+        }
+        grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
+      } catch (err) {
+        console.error('Failed to fetch grades for level:', err)
+      }
+    }
+    
+    // Reset grade if it doesn't belong to the new level
+    if (form.value.grade_id) {
+      const gradeExists = grades.value.some(g => String(g.id) === String(form.value.grade_id))
+      if (!gradeExists) {
+        form.value.grade_id = ''
+      }
+    }
+  }
+)
+
+// Avatar preview initialization and fetch grades/levels
+onMounted(async () => {
+  avatarPreview.value = resolveAssetUrl(user?.avatar_url || user?.avatar) || null
+  
+  // Fetch grades and levels
   try {
     await Promise.all([fetchGrades(), fetchLevels()])
     grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
     levels.value = Array.isArray(taxLevels.value) ? taxLevels.value : []
+    
+    // Force grade update to trigger MultiTaxonomyPicker's watcher
+    // This ensures subjects load with proper grade context after mounting
+    if (form.value.grade_id) {
+      const currentGradeId = form.value.grade_id
+      form.value.grade_id = ''
+      await nextTick()
+      form.value.grade_id = currentGradeId
+    }
   } catch (err) {
     console.error('Failed to fetch form data:', err)
     grades.value = []
     levels.value = []
   }
-}
-
-onMounted(async () => {
-  await fetchGradesAndLevels()
 })
 
 function triggerAvatarUpload() {
@@ -164,8 +224,8 @@ function triggerAvatarUpload() {
 }
 
 function reset() {
-  form.value = createFormState(user)
-  avatarPreview.value = resolveAssetUrl(user?.avatar_url || user?.avatar) || null
+  form.value = createFormState(user.value)
+  avatarPreview.value = resolveAssetUrl(user.value?.avatar_url || user.value?.avatar) || null
   avatarFile.value = null
 }
 
@@ -174,11 +234,23 @@ async function save() {
   // preferredRole is one of: 'institution-manager' | 'quiz-master' | 'quizee'
   const success = await saveProfile(form.value, preferredRole.value)
   if (success) {
-    // Reset form with updated user data
-    form.value = createFormState(auth.user)
-    avatarPreview.value = auth.user?.avatar_url || auth.user?.avatar || null
+    // Form will auto-update via the watcher when auth.user changes
+    // But ensure it updates immediately
+    await nextTick()
+    form.value = createFormState(user.value)
+    
+    avatarPreview.value = user.value?.avatar_url || user.value?.avatar || null
     avatarFile.value = null
+    
+    // Trigger grade change to re-initialize MultiTaxonomyPicker with latest subjects
+    if (form.value.grade_id) {
+      const currentGradeId = form.value.grade_id
+      form.value.grade_id = ''
+      await nextTick()
+      form.value.grade_id = currentGradeId
+    }
   }
 }
 </script>
+
 

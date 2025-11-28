@@ -10,12 +10,12 @@
   ]" :style="backgroundStyle">
     <!-- Decorative background image and overlay -->
     <div v-if="hasBackgroundImage" class="absolute inset-0 -z-10 bg-cover bg-center" :style="backgroundImageStyle" aria-hidden="true"></div>
-    <div v-else class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.28),_transparent_55%),_radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.25),_transparent_60%)] bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-900 opacity-95"></div>
+    <div v-else class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(137,31,33,0.28),_transparent_55%),_radial-gradient(circle_at_bottom_right,_rgba(247,185,50,0.25),_transparent_60%)] bg-gradient-to-br from-red-900 via-red-800 to-slate-900 opacity-95"></div>
 
     <!-- Glow accents -->
     <div class="absolute inset-0 -z-10 pointer-events-none">
-  <div class="absolute -top-20 -right-20 h-48 w-48 rounded-full bg-emerald-400/25 blur-3xl"></div>
-  <div class="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-sky-400/20 blur-3xl"></div>
+  <div class="absolute -top-20 -right-20 h-48 w-48 rounded-full blur-3xl" style="background-color: rgba(247, 185, 50, 0.25)"></div>
+  <div class="absolute -bottom-24 -left-16 h-72 w-72 rounded-full blur-3xl" style="background-color: rgba(137, 31, 33, 0.2)"></div>
     </div>
 
     <!-- Content wrapper with full-bleed inner max width -->
@@ -61,7 +61,7 @@
                     size="lg"
                     color="primary"
                     variant="solid"
-                    class="min-w-[180px] shadow-lg hover:-translate-y-0.5 transition-transform"
+                    class="min-w-[180px] shadow-lg hover:-translate-y-0.5 transition-transform !bg-brand-600 hover:!bg-brand-700"
                     to="/quizzes"
                   >
                     Start a quiz
@@ -83,7 +83,7 @@
 
           <div class="relative">
             <div class="absolute -top-12 -right-0 hidden h-48 w-48 rotate-6 rounded-3xl border border-white/20 bg-gradient-to-br from-white/20 to-white/5 opacity-70 blur-sm lg:block"></div>
-            <div class="relative rounded-3xl border border-white/15 bg-black/20 p-6 shadow-2xl shadow-indigo-950/40 backdrop-blur">
+            <div class="relative rounded-3xl border border-white/15 bg-black/20 p-6 shadow-2xl shadow-brand-950/40 backdrop-blur">
               <div class="flex items-center justify-between text-white/80">
                 <slot name="highlight">
                   <div>
@@ -137,7 +137,7 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'default',
   // reduced default vertical padding to make the hero less tall
   padding: 'py-8 sm:py-12',
-  bgClass: 'bg-gradient-to-br from-gray-900 to-blue-900',
+  bgClass: 'bg-gradient-to-br from-gray-900 to-brand-900',
   textClass: 'text-white',
   textMutedClass: 'text-gray-300',
   breadcrumbs: undefined,

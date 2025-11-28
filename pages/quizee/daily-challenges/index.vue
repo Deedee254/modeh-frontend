@@ -87,17 +87,17 @@
             
             <!-- Debug Info Badges -->
             <div class="mb-6 flex justify-center gap-4 flex-wrap">
-              <div class="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-xs text-blue-600 font-semibold">GRADE</p>
-                <p class="text-sm text-blue-900 font-bold">{{ debugInfo.grade || '❌ Not Set' }}</p>
+              <div class="px-4 py-3 bg-brand-50 border border-brand-100 rounded-lg">
+                <p class="text-xs text-brand-600 font-semibold">GRADE</p>
+                <p class="text-sm text-brand-900 font-bold">{{ debugInfo.grade || '❌ Not Set' }}</p>
               </div>
               <div class="px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg">
                 <p class="text-xs text-purple-600 font-semibold">LEVEL</p>
                 <p class="text-sm text-purple-900 font-bold">{{ debugInfo.level || '❌ Not Set' }}</p>
               </div>
-              <div class="px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
-                <p class="text-xs text-green-600 font-semibold">QUESTIONS</p>
-                <p class="text-sm text-green-900 font-bold">{{ debugInfo.questionCount > 0 ? `✅ ${debugInfo.questionCount}` : '❌ None' }}</p>
+              <div class="px-4 py-3 border border-gray-200 rounded-lg" style="background-color: rgba(137, 31, 33, 0.05); border-color: rgba(137, 31, 33, 0.2)">
+                <p class="text-xs font-semibold" style="color: #891f21">QUESTIONS</p>
+                <p class="text-sm font-bold" style="color: #891f21">{{ debugInfo.questionCount > 0 ? `✅ ${debugInfo.questionCount}` : '❌ None' }}</p>
               </div>
               <div v-if="debugInfo.cacheId" class="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <p class="text-xs text-gray-600 font-semibold">CACHE ID</p>
@@ -108,15 +108,15 @@
             <p class="text-sm text-gray-500 mb-4">
               <strong>Quick troubleshooting:</strong><br />
               <span v-if="!debugInfo.grade || !debugInfo.level" class="text-red-600">• ❌ Grade or Level missing - Update your profile</span>
-              <span v-else class="text-green-600">• ✅ Grade and Level are set</span><br />
+              <span v-else style="color: #891f21">• ✅ Grade and Level are set</span><br />
               <span v-if="debugInfo.questionCount === 0" class="text-red-600">• ❌ No questions available for this grade/level</span>
-              <span v-else class="text-green-600">• ✅ {{ debugInfo.questionCount }} questions loaded</span><br />
+              <span v-else style="color: #891f21">• ✅ {{ debugInfo.questionCount }} questions loaded</span><br />
               • Contact support if the issue persists
             </p>
             <button 
               type="button" 
               @click="fetchDailyChallenge()" 
-              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
             >
               Try Again
             </button>
@@ -134,7 +134,7 @@
 
           <div v-else class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
             <div class="text-center mb-8">
-              <div class="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div class="w-20 h-20 bg-gradient-to-r from-brand-600 to-brand-950 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
@@ -169,7 +169,7 @@
                   <svg class="w-full h-full" viewBox="0 0 100 100">
                     <circle class="text-gray-200" stroke-width="10" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
                     <circle
-                      class="text-indigo-600"
+                      class="text-brand-600"
                       stroke-width="10"
                       :stroke-dasharray="283"
                       :stroke-dashoffset="283 - (completion.score / 100) * 283"
@@ -196,12 +196,12 @@
                   <span class="text-xl font-bold">#{{ completion.rank || 'N/A' }}</span>
                 </div>
                 <div class="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                  <Icon name="heroicons:clock" class="h-5 w-5 text-blue-500 mb-1" />
+                  <Icon name="heroicons:clock" class="h-5 w-5 text-brand-500 mb-1" />
                   <span class="text-sm text-gray-500">Time</span>
                   <span class="text-xl font-bold">{{ formatTime(completion.time_taken) }}</span>
                 </div>
                 <div class="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                  <Icon name="heroicons:check-circle" class="h-5 w-5 text-green-500 mb-1" />
+                  <Icon name="heroicons:check-circle" class="h-5 w-5 mb-1" :style="{ color: '#891f21' }" />
                   <span class="text-sm text-gray-500">Correct</span>
                   <span class="text-xl font-bold">{{ completion.correct_answers || 'N/A' }}/{{ challenge.questions_count || 'N/A' }}</span>
                 </div>
@@ -218,7 +218,7 @@
             <div v-else class="text-center">
               <NuxtLink
                 to="/quizee/daily-challenges/take"
-                class="inline-block bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-4 px-8 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 text-center"
+                class="inline-block bg-gradient-to-r from-brand-600 to-brand-950 text-white font-semibold py-4 px-8 rounded-xl hover:from-brand-700 hover:to-brand-900 transition-all duration-300 transform hover:scale-105 text-center"
               >
                 Start Daily Challenge
               </NuxtLink>
@@ -255,9 +255,9 @@
             <div class="xl:p-6 xl:pt-0 p-4">
               <div class="space-y-4">
                 <div class="space-y-2">
-                  <h3 class="text-sm font-medium flex items-center"><Icon name="heroicons:calendar" class="h-4 w-4 mr-2 text-blue-500" />Daily Streak</h3>
+                  <h3 class="text-sm font-medium flex items-center"><Icon name="heroicons:calendar" class="h-4 w-4 mr-2 text-brand-500" />Daily Streak</h3>
                   <div class="flex space-x-1">
-                    <div v-for="day in 7" :key="day" :class="['relative flex items-center justify-center h-8 w-8 rounded-full border', day <= streak ? 'bg-blue-100 border-blue-300 dark:bg-blue-900 dark:border-blue-700' : 'bg-muted/30 border-muted']">
+                    <div v-for="day in 7" :key="day" :class="['relative flex items-center justify-center h-8 w-8 rounded-full border', day <= streak ? 'bg-brand-100 border-brand-300 dark:bg-brand-900 dark:border-brand-700' : 'bg-muted/30 border-muted']">
                       <span class="text-xs font-medium">{{ day }}</span>
                       <div v-if="day === 7" class="absolute -top-1 -right-1">
                         <Icon name="heroicons:trophy" class="h-3 w-3 text-amber-500" />
@@ -280,8 +280,8 @@
                 <div class="space-y-2">
                   <h3 class="text-sm font-medium flex items-center"><Icon name="heroicons:trophy" class="h-4 w-4 mr-2 text-purple-500" />Daily Challenge Badges</h3>
                   <div class="grid grid-cols-3 gap-2">
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-green-100 dark:bg-green-900 rounded-full mb-1"><Icon name="heroicons:sparkles" class="h-3 w-3 text-green-600 dark:text-green-400" /></div><span class="text-xs">First Try</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-blue-100 dark:bg-blue-900 rounded-full mb-1"><Icon name="heroicons:clock" class="h-3 w-3 text-blue-600 dark:text-blue-400" /></div><span class="text-xs">Speedster</span></div>
+                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 rounded-full mb-1" style="background-color: rgba(137, 31, 33, 0.1)"><Icon name="heroicons:sparkles" class="h-3 w-3" :style="{ color: '#891f21' }" /></div><span class="text-xs">First Try</span></div>
+                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-brand-100 dark:bg-brand-900 rounded-full mb-1"><Icon name="heroicons:clock" class="h-3 w-3 text-brand-600 dark:text-brand-400" /></div><span class="text-xs">Speedster</span></div>
                     <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-purple-100 dark:bg-purple-900 rounded-full mb-1"><Icon name="heroicons:star" class="h-3 w-3 text-purple-600 dark:text-purple-400" /></div><span class="text-xs">Perfect</span></div>
                     <div class="border rounded-lg p-2 flex flex-col items-center text-center opacity-50"><div class="p-1 bg-amber-100 dark:bg-amber-900 rounded-full mb-1"><Icon name="heroicons:trophy" class="h-3 w-3 text-amber-600 dark:text-amber-400" /></div><span class="text-xs">Top 3</span></div>
                     <div class="border rounded-lg p-2 flex flex-col items-center text-center opacity-50"><div class="p-1 bg-red-100 dark:bg-red-900 rounded-full mb-1"><Icon name="heroicons:gift" class="h-3 w-3 text-red-600 dark:text-red-400" /></div><span class="text-xs">Generous</span></div>
@@ -295,7 +295,7 @@
           <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
             <div class="flex items-center justify-between mb-4">
               <h4 class="text-lg font-semibold text-gray-900">Leaderboard</h4>
-              <NuxtLink to="/quizee/daily-challenges/leaderboard" class="text-sm text-indigo-600">View all</NuxtLink>
+              <NuxtLink to="/quizee/daily-challenges/leaderboard" class="text-sm text-brand-600">View all</NuxtLink>
             </div>
             <div v-if="!leaderboard || leaderboard.length === 0" class="text-sm text-gray-500">No leaderboard entries yet.</div>
             <div v-else class="space-y-3">

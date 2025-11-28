@@ -5,7 +5,7 @@
       <img src="/logo/modeh-logo.png" alt="Modeh" :class="[ui.sidebarCollapsed ? 'h-8' : 'h-10']" class="transition-all duration-300" />
     </div>
 
-  <nav class="flex-1 w-full min-h-0 overflow-y-auto px-2">
+  <nav class="flex-1 w-full overflow-y-auto px-2">
       <ul class="flex flex-col gap-1">
         <li v-for="item in navItems" :key="item.to">
           <NuxtLink :to="item.to" :class="linkClass(item.to)" :title="item.label">
@@ -52,7 +52,7 @@
           </NuxtLink>
         </template>
         <template v-else>
-          <NuxtLink to="/login" class="block w-full text-center px-3 py-2 bg-indigo-600 text-white rounded">Login</NuxtLink>
+          <NuxtLink to="/login" class="block w-full text-center px-3 py-2 bg-brand-600 text-white rounded">Login</NuxtLink>
         </template>
       </div>
     </aside>
@@ -94,7 +94,7 @@ function linkClass(path) {
   const active = route.path.startsWith(path)
   return [
     'p-3 rounded flex items-center text-gray-700 transition-colors w-full',
-    active ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100',
+    active ? 'bg-brand-100 text-brand-700' : 'hover:bg-gray-100',
     ui.sidebarCollapsed ? 'justify-center' : ''
   ]
 }
@@ -103,3 +103,4 @@ function onMobileNavClick() {
   ui.sidebarOpen = false
 }
 </script>
+

@@ -7,7 +7,7 @@
 
       <div v-if="attemptId" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg flex items-center justify-between">
         <p class="text-sm text-slate-600 dark:text-slate-300">Double-check your answers before paying.</p>
-        <button @click="openAnswerReview" class="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Review Answers</button>
+        <button @click="openAnswerReview" class="px-4 py-2 text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">Review Answers</button>
       </div>
 
       <div v-if="loading" class="p-4 text-sm text-slate-600 dark:text-slate-300">Checking subscription status...</div>
@@ -26,7 +26,7 @@
         </div>
 
         <div v-if="canSeeResults" class="mt-6 flex justify-center">
-          <button @click="seeResults" class="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">View My Results</button>
+          <button @click="seeResults" class="px-8 py-3 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors">View My Results</button>
         </div>
 
         <div v-if="!isActive" class="space-y-6">
@@ -39,11 +39,11 @@
           <div class="mb-4">
             <label for="phone-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Phone number for M-Pesa</label>
             <div class="flex flex-col sm:flex-row gap-2">
-              <select v-if="phones.length" v-model="selectedPhonePreset" class="border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full sm:w-auto focus:ring-indigo-500 focus:border-indigo-500">
+              <select v-if="phones.length" v-model="selectedPhonePreset" class="border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full sm:w-auto focus:ring-brand-600 focus:border-brand-600">
                 <option value="">Enter a new number</option>
                 <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
               </select>
-              <input id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-indigo-500 focus:border-indigo-500" />
+              <input id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-brand-600 focus:border-brand-600" />
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">We'll use this phone to initiate an STK push. Make sure it's in international format.</p>
           </div>
@@ -69,11 +69,11 @@
             <!-- Subscription Packages -->
             <div class="space-y-3">
               <h4 class="font-medium text-slate-800 dark:text-slate-200">Or, Subscribe for Unlimited Access</h4>
-              <div v-for="pkg in packages" :key="pkg.id" @click="selectPackage(pkg)" :class="['p-4 rounded-lg border cursor-pointer transition-all', selectedPackage && selectedPackage.id === pkg.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600']">
+              <div v-for="pkg in packages" :key="pkg.id" @click="selectPackage(pkg)" :class="['p-4 rounded-lg border cursor-pointer transition-all', selectedPackage && selectedPackage.id === pkg.id ? 'border-brand-600 bg-brand-600/10 dark:bg-brand-600/20 ring-2 ring-brand-600' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600']">
                 <div class="flex justify-between items-center">
                   <div class="flex items-center gap-3">
-                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="selectedPackage && selectedPackage.id === pkg.id ? 'border-indigo-600' : 'border-slate-400'">
-                      <div v-if="selectedPackage && selectedPackage.id === pkg.id" class="w-2.5 h-2.5 rounded-full bg-indigo-600"></div>
+                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="selectedPackage && selectedPackage.id === pkg.id ? 'border-brand-600' : 'border-slate-400'">
+                      <div v-if="selectedPackage && selectedPackage.id === pkg.id" class="w-2.5 h-2.5 rounded-full bg-brand-600"></div>
                     </div>
                     <div>
                       <div class="font-semibold text-slate-900 dark:text-slate-100">{{ pkg.title || pkg.name }}</div>
@@ -89,7 +89,7 @@
             </div>
 
             <div class="mt-6 flex justify-end">
-              <button @click="openPayment" :disabled="!phoneForPayment || !selectedPackage || checkout.processing" class="w-full sm:w-auto px-6 py-3 font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+              <button @click="openPayment" :disabled="!phoneForPayment || !selectedPackage || checkout.processing" class="w-full sm:w-auto px-6 py-3 font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-950 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
                 Subscribe with {{ selectedPackage?.name }}
               </button>
             </div>
@@ -99,7 +99,7 @@
         <!-- General Actions & Status -->
         <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6">
           <div v-if="checkout.processing" class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-            <svg class="w-5 h-5 animate-spin text-indigo-600" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <svg class="w-5 h-5 animate-spin text-brand-600" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
             <span>Processing payment... please wait. A prompt should appear on your phone.</span>
           </div>
 

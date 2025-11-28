@@ -105,7 +105,7 @@
                       size="sm"
                       color="primary"
                       variant="ghost"
-                      class="rounded-full text-sm"
+                      class="rounded-full text-sm !bg-brand-600 hover:!bg-brand-700 !text-white"
                       @click="() => openChat(quizee)"
                     >
                       Message

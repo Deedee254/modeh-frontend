@@ -26,7 +26,7 @@
               </NuxtLink>
               <NuxtLink
                 to="/register?role=quiz-master"
-                class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
+                class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
               >
                 Create a subject
               </NuxtLink>
@@ -92,7 +92,7 @@
                 :grade="s.grade?.name || s.grade_id || ''"
                 startLabel="Explore Topics"
               >
-                <div class="text-sm text-indigo-600">
+                <div class="text-sm text-brand-600">
                   <span>Grades {{ Array.isArray(s.grades) ? s.grades.map(g => g.name || g.id).join(', ') : s.grade?.name || s.grade_id || 'All' }}</span>
                 </div>
               </SubjectCard>
@@ -103,12 +103,12 @@
 
     <!-- CTA -->
     <div class="mt-10">
-      <div class="bg-indigo-50 rounded-lg p-6 flex items-center justify-between">
+      <div class="bg-brand-50 rounded-lg p-6 flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-semibold text-indigo-800">Want to help build content?</h3>
-          <p class="text-sm text-indigo-700/90">Create subjects and topics to organize your quizzes for learners worldwide.</p>
+          <h3 class="text-lg font-semibold text-brand-800">Want to help build content?</h3>
+          <p class="text-sm text-brand-600/90">Create subjects and topics to organize your quizzes for learners worldwide.</p>
         </div>
-        <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-indigo-600 text-white rounded">Become a quiz-master</NuxtLink>
+        <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-brand-600 text-white rounded">Become a quiz-master</NuxtLink>
       </div>
     </div>
     </div>
@@ -208,7 +208,7 @@ async function onServerSearch(q) {
 function filterBtnClass(v) {
   const active = activeFilter.value === v
   const base = 'px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md border'
-  return `${base} ${active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200'}`
+  return `${base} ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-700 border-gray-200'}`
 }
 
 const activeFilter = ref('')

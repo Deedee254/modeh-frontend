@@ -25,6 +25,7 @@ export interface Quiz {
   shuffle_questions: boolean;
   shuffle_answers: boolean;
   access: 'free' | 'paywall';
+  one_off_price: number | null;
   visibility: 'draft' | 'published' | 'scheduled';
   cover?: any; // Can be a string (URL or tmp key) or File
   cover_image?: string;
@@ -125,6 +126,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     shuffle_questions: true,
     shuffle_answers: true,
     access: 'free' as 'free' | 'paywall',
+    one_off_price: null,
     visibility: 'draft' as 'draft' | 'published' | 'scheduled',
     cover_image: undefined,
       cover: undefined,
@@ -207,6 +209,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       payload.shuffle_answers = Boolean(normalized.shuffle_answers)
       payload.access = normalized.access
       payload.visibility = normalized.visibility
+      payload.one_off_price = normalized.access === 'paywall' && normalized.one_off_price ? Number(normalized.one_off_price) : null
     }
     
     return payload
@@ -228,6 +231,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     if (typeof question.is_banked === 'undefined') question.is_banked = false
     if (typeof question.difficulty === 'undefined') question.difficulty = 2
     if (typeof question.marks === 'undefined') question.marks = 1
+
+    // Ensure taxonomy fields are populated (inherit from quiz if not set on question)
+    if (!question.grade_id && quiz.value?.grade_id) question.grade_id = quiz.value.grade_id
+    if (!question.level_id && quiz.value?.level_id) question.level_id = quiz.value.level_id
+    if (!question.subject_id && quiz.value?.subject_id) question.subject_id = quiz.value.subject_id
+    if (!question.topic_id && quiz.value?.topic_id) question.topic_id = quiz.value.topic_id
 
     // Map server body/question keys to editor's expected 'text' key
     if (!question.text && question.body) question.text = question.body
@@ -826,6 +835,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.shuffle_questions = serverQuiz.shuffle_questions ?? initialForm.shuffle_questions
         loaded.shuffle_answers = serverQuiz.shuffle_answers ?? initialForm.shuffle_answers
         loaded.access = serverQuiz.access ?? (serverQuiz.is_paid ? 'paywall' : initialForm.access)
+        loaded.one_off_price = serverQuiz.one_off_price ?? initialForm.one_off_price
         loaded.visibility = serverQuiz.visibility ?? initialForm.visibility
 
         if (serverQuiz.cover_image) {

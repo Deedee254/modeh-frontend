@@ -44,7 +44,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
           <p class="text-sm text-gray-500">Total Points</p>
-          <p class="text-4xl font-bold text-indigo-600 mt-2">{{ userStats.total_points || 0 }}</p>
+          <p class="text-4xl font-bold text-brand-600 mt-2">{{ userStats.total_points || 0 }}</p>
           <p class="text-xs text-gray-500 mt-2">Lifetime earnings</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
@@ -65,7 +65,7 @@
       <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-gray-900">My Achievements</h2>
-          <NuxtLink to="/quizee/badges" class="text-sm text-indigo-600 hover:text-indigo-800">View All Achievements →</NuxtLink>
+          <NuxtLink to="/quizee/badges" class="text-sm text-brand-600 hover:text-brand-700">View All Achievements →</NuxtLink>
         </div>
 
         <div v-if="loading" class="space-y-4">
@@ -83,14 +83,14 @@
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Recently Unlocked 🎉</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div v-for="achievement in recentAchievements" :key="achievement.id" 
-                   class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl text-white">
+                   class="bg-gradient-to-br from-brand-600/10 to-brand-950/10 rounded-lg p-4 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-600 to-brand-950 flex items-center justify-center text-xl text-white">
                   {{ achievement.icon }}
                 </div>
                 <div class="flex-1">
                   <h4 class="font-medium text-gray-900">{{ achievement.name }}</h4>
                   <p class="text-sm text-gray-600">{{ achievement.description }}</p>
-                  <p class="text-xs text-indigo-600 mt-1">Earned {{ formatDate(achievement.completed_at) }}</p>
+                  <p class="text-xs text-brand-600 mt-1">Earned {{ formatDate(achievement.completed_at) }}</p>
                 </div>
               </div>
             </div>
@@ -117,7 +117,7 @@
                     <span class="font-medium">{{ achievement.progress }}%</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-indigo-600 h-2 rounded-full transition-all" 
+                    <div class="bg-brand-600 h-2 rounded-full transition-all" 
                          :style="{ width: `${achievement.progress}%` }"></div>
                   </div>
                 </div>
@@ -135,11 +135,11 @@
             <div class="text-4xl mb-2">{{ reward.icon }}</div>
             <h3 class="font-semibold text-lg">{{ reward.name }}</h3>
             <p class="text-sm text-gray-500 mb-3">{{ reward.description }}</p>
-            <div class="text-indigo-600 font-bold text-xl mb-4">{{ reward.points }} Points</div>
+            <div class="text-brand-600 font-bold text-xl mb-4">{{ reward.points }} Points</div>
             <button 
               @click="redeem(reward)"
               :disabled="(userStats.total_points || 0) < reward.points"
-              class="w-full mt-auto px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              class="w-full mt-auto px-4 py-2 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               Redeem
             </button>
@@ -163,7 +163,7 @@
               <p class="font-medium text-gray-800">{{ item.description }}</p>
               <p class="text-sm text-gray-500">{{ new Date(item.created_at).toLocaleString() }}</p>
             </div>
-            <div class="text-lg font-semibold" :class="item.points > 0 ? 'text-green-600' : 'text-red-600'">
+            <div class="text-lg font-semibold" :class="item.points > 0 ? '' : 'text-red-600'" :style="item.points > 0 ? { color: '#891f21' } : {}">
               {{ item.points > 0 ? '+' : '' }}{{ item.points }}
             </div>
           </li>

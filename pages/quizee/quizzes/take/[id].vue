@@ -12,7 +12,7 @@
     :encouragement-class="encouragementStyle"
     :show-meta="true"
     :alert-message="countdownAlert.show ? countdownAlert.message : ''"
-    :alert-class="countdownAlert.show ? (countdownAlert.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' : countdownAlert.type === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-blue-100 text-blue-800 border border-blue-300') : ''"
+    :alert-class="countdownAlert.show ? (countdownAlert.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' : countdownAlert.type === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-brand-100 text-brand-800 border border-brand-300') : ''"
     :show-previous="currentQuestion > 0"
     :disable-previous="currentQuestion === 0"
     :show-next="currentQuestion < Q.questions.length - 1"

@@ -12,7 +12,7 @@
     <section>
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Popular Topics</h2>
-        <button @click="router.push('/quiz-master/topics')" class="text-sm text-blue-600 hover:text-blue-800">View All →</button>
+        <button @click="router.push('/quiz-master/topics')" class="text-sm text-brand-600 hover:text-brand-800">View All →</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <TopicCard
@@ -28,7 +28,7 @@
     <section>
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Active Grades</h2>
-        <button @click="router.push('/quiz-master/grades')" class="text-sm text-blue-600 hover:text-blue-800">View All →</button>
+        <button @click="router.push('/quiz-master/grades')" class="text-sm text-brand-600 hover:text-brand-800">View All →</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <GradeCard
@@ -44,7 +44,7 @@
     <section>
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Top Subjects</h2>
-        <button @click="router.push('/quiz-master/subjects')" class="text-sm text-blue-600 hover:text-blue-800">View All →</button>
+        <button @click="router.push('/quiz-master/subjects')" class="text-sm text-brand-600 hover:text-brand-800">View All →</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <SubjectCard
@@ -60,7 +60,7 @@
     <section>
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Recent Quizzes</h2>
-        <button @click="router.push('/quiz-master/quizzes')" class="text-sm text-blue-600 hover:text-blue-800">View All →</button>
+        <button @click="router.push('/quiz-master/quizzes')" class="text-sm text-brand-600 hover:text-brand-800">View All →</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <QuizCard

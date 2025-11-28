@@ -1,16 +1,16 @@
 <template>
-  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700/50 hover:border-teal-300 dark:hover:border-teal-600/50">
+  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700/50" :style="{ 'border-color': 'rgba(137, 31, 33, 0.2)' }">
     <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
 
     <!-- Hero Section with Icon -->
-    <div class="relative h-32 bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20">
+    <div class="relative h-32" :style="{ background: 'linear-gradient(to bottom right, rgba(137, 31, 33, 0.05), rgba(247, 185, 50, 0.05))' }">
       <!-- Decorative icon -->
       <div class="absolute inset-0 flex items-center justify-center opacity-50 dark:opacity-30">
-        <Icon name="heroicons:document-text" class="h-16 w-16 text-teal-400 dark:text-teal-500" />
+        <Icon name="heroicons:document-text" class="h-16 w-16" :style="{ color: '#891f21' }" />
       </div>
 
       <!-- Check mark - Top Right -->
-      <div class="absolute right-4 top-4 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-teal-500 dark:bg-teal-600">
+      <div class="absolute right-4 top-4 z-10 flex h-7 w-7 items-center justify-center rounded-full" :style="{ backgroundColor: '#891f21' }">
         <Icon name="heroicons:check-solid" class="h-4 w-4 text-white" />
       </div>
     </div>
@@ -18,12 +18,12 @@
     <!-- Content Section -->
     <div class="flex flex-1 flex-col p-5">
       <!-- Topic Badge -->
-      <p class="uppercase tracking-wider text-teal-600 dark:text-teal-400 text-xs font-semibold mb-2">
+      <p class="uppercase tracking-wider text-xs font-semibold mb-2" :style="{ color: '#891f21' }">
         Topic
       </p>
 
-      <!-- Title in Teal -->
-      <h3 class="text-lg font-bold text-teal-600 dark:text-teal-400 line-clamp-2">
+      <!-- Title in Burgundy -->
+      <h3 class="text-base sm:text-base font-semibold" :style="{ color: '#891f21' }">
         {{ displayTitle }}
       </h3>
 
@@ -42,7 +42,7 @@
       <!-- Quiz Count - Bottom -->
       <div class="mt-auto pt-4">
         <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          <span class="text-teal-600 dark:text-teal-400">{{ quizzesCount }}</span> {{ quizzesCount === 1 ? 'quiz' : 'quizzes' }}
+          <span :style="{ color: '#891f21' }">{{ quizzesCount }}</span> {{ quizzesCount === 1 ? 'quiz' : 'quizzes' }}
         </p>
       </div>
     </div>

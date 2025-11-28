@@ -3,7 +3,7 @@
     <!-- Mobile dropdown -->
     <div class="sm:hidden mb-4">
       <label for="settings-tabs" class="sr-only">Select a tab</label>
-      <select id="settings-tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" @change="selectTab($event.target.value)">
+      <select id="settings-tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-brand-500 focus:ring-brand-600" @change="selectTab($event.target.value)">
         <option v-for="tab in tabs" :key="tab.key" :value="tab.key" :selected="tab.key === active">{{ tab.label }}</option>
       </select>
     </div>
@@ -14,7 +14,7 @@
         :aria-selected="tab.key === active" :aria-controls="`panel-${tab.key}`"
         :class="[
           'px-4 py-2 rounded-lg text-sm font-medium border inline-flex items-center gap-2 w-full sm:w-auto',
-          tab.key === active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700'
+          tab.key === active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-700'
         ]"
         @click="selectTab(tab.key)">
         <span v-if="tab.icon" :class="['w-4 h-4 inline-block', tab.key === active ? 'text-white' : 'text-slate-600']" aria-hidden="true">

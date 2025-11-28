@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="bg-gray-50">
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
       <div class="max-w-4xl mx-auto space-y-6">
         <ProfileHeader
@@ -11,7 +11,7 @@
           <template #actions>
             <NuxtLink
               to="/quiz-master/settings"
-              class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer w-full sm:w-auto text-center"
+              class="px-3 py-2 border rounded-md text-sm bg-brand-600 text-white hover:bg-brand-700 cursor-pointer w-full sm:w-auto text-center"
             >
               Edit Profile
             </NuxtLink>
@@ -68,7 +68,7 @@
                 <span
                   v-for="subject in subjectLabels"
                   :key="subject"
-                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-brand-100 text-brand-800"
                 >
                   {{ subject }}
                 </span>
@@ -91,7 +91,7 @@
             <div class="flex flex-col sm:flex-row justify-end pt-4 border-t gap-2">
               <NuxtLink
                 to="/quiz-master/settings"
-                class="px-4 py-2 rounded-md text-sm text-white bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto text-center"
+                class="px-4 py-2 rounded-md text-sm text-white bg-brand-600 hover:bg-brand-700 w-full sm:w-auto text-center"
               >
                 Edit Profile
               </NuxtLink>

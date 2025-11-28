@@ -13,19 +13,19 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
           <!-- Search Input -->
           <div class="flex-1 relative group">
-            <Icon name="heroicons:magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition" />
-            <input v-model="q" @keyup.enter="fetchItems" placeholder="Search assessments..." class="w-full pl-9 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:focus:ring-indigo-400" />
+            <Icon name="heroicons:magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-brand-600 transition" />
+            <input v-model="q" @keyup.enter="fetchItems" placeholder="Search assessments..." class="w-full pl-9 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-600 focus:border-transparent transition dark:focus:ring-brand-600" />
           </div>
 
           <!-- Per Page Selector -->
-          <select v-model.number="perPage" class="px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:focus:ring-indigo-400">
+          <select v-model.number="perPage" class="px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-600 focus:border-transparent transition dark:focus:ring-brand-600">
             <option value="5">5 per page</option>
             <option value="12">12 per page</option>
             <option value="20">20 per page</option>
           </select>
 
           <!-- Topic Filter -->
-          <select v-model.number="topicId" class="px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:focus:ring-indigo-400">
+          <select v-model.number="topicId" class="px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-600 focus:border-transparent transition dark:focus:ring-brand-600">
             <option :value="0">All topics</option>
             <option v-for="t in (topics || [])" :key="t?.id ?? t" :value="t?.id">{{ t?.name }}</option>
           </select>
@@ -99,12 +99,12 @@ const alert = useAppAlert()
 
 function pickPaletteClass(id) {
   const palettes = [
-    'bg-gradient-to-br from-indigo-200 via-indigo-100 to-sky-100 text-indigo-800',
+    'bg-gradient-to-br from-brand-600/30 via-brand-600/20 to-brand-950/10 text-brand-600',
     'bg-gradient-to-br from-rose-200 via-rose-100 to-pink-100 text-rose-800',
     'bg-gradient-to-br from-emerald-200 via-emerald-100 to-lime-100 text-emerald-800',
     'bg-gradient-to-br from-yellow-200 via-amber-100 to-amber-50 text-amber-800',
     'bg-gradient-to-br from-fuchsia-200 via-fuchsia-100 to-pink-50 text-fuchsia-800',
-    'bg-gradient-to-br from-sky-200 via-sky-100 to-indigo-50 text-sky-800'
+    'bg-gradient-to-br from-brand-600/20 via-brand-600/15 to-brand-950/10 text-brand-600'
   ]
   return palettes[(id || 0) % palettes.length]
 }

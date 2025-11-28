@@ -14,7 +14,7 @@
         <h3 class="text-2xl font-bold">{{ title }}</h3>
         <p class="mt-2 max-w-xl">{{ subtitle }}</p>
         <div class="mt-4" v-if="ctaText">
-          <NuxtLink :to="ctaLink" class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-indigo-600">{{ ctaText }}</NuxtLink>
+          <NuxtLink :to="ctaLink" class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-brand-600">{{ ctaText }}</NuxtLink>
         </div>
       </div>
     </div>
@@ -106,3 +106,4 @@ watch(loaded, (v)=>{ if (v) setTimeout(onScroll, 50) })
 .parallax-banner { position: relative; }
 .parallax-banner .bg-center { background-position: center; background-size: cover; }
 </style>
+

@@ -7,7 +7,7 @@
       <div class="mt-4">
         <div class="text-sm">Transaction ID: <span class="font-mono">{{ tx }}</span></div>
         <div class="mt-3">
-          <div v-if="status === 'pending'" class="text-blue-600">Waiting for payment confirmation...</div>
+          <div v-if="status === 'pending'" class="text-brand-600">Waiting for payment confirmation...</div>
           <div v-else-if="status === 'active'" class="text-green-600">Payment confirmed — subscription active.</div>
           <div v-else-if="status === 'cancelled' || status === 'failed'" class="text-red-600">Payment failed or cancelled.</div>
         </div>
@@ -128,3 +128,4 @@ function onClose() {
 .text-muted-foreground { color: var(--muted-foreground); }
 .btn { padding: 0.5rem 1rem; border-radius: 0.375rem; }
 </style>
+

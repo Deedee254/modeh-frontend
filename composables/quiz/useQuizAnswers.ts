@@ -49,3 +49,4 @@ export function useQuizAnswers(quiz: { value: Quiz }, quizId: string) {
 
   return { answers, initializeAnswers, selectMcq, toggleMulti, updateBlank, clearSavedAnswers }
 }
+

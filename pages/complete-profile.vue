@@ -27,7 +27,7 @@
             :key="step.key"
             :class="[
               'px-2 py-1 text-sm rounded-full',
-              currentStep === step.key ? 'bg-blue-600 text-white' : 
+              currentStep === step.key ? 'bg-brand-600 text-white' : 
               completedSteps.includes(step.key) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
             ]"
           >
@@ -43,7 +43,7 @@
           <input 
             v-model="formData.institution"
             type="text" 
-            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required 
           />
         </div>
@@ -55,7 +55,7 @@
           <label class="block text-sm font-medium text-gray-700">Select Your Education Level</label>
           <select
             v-model="formData.level_id"
-            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           >
             <option value="">Select Level (optional)</option>
             <option v-for="lvl in levels" :key="lvl.id" :value="lvl.id">{{ lvl.name }}</option>
@@ -66,7 +66,7 @@
           <label class="block text-sm font-medium text-gray-700">Select Your Grade</label>
           <select 
             v-model="formData.grade"
-            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           >
             <option value="">Select Grade</option>
             <option v-for="grade in grades" :key="grade" :value="grade">
@@ -103,14 +103,14 @@
         <button
           v-if="!isFirstStep"
           @click="previousStep"
-          class="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          class="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
         >
           Previous
         </button>
         <div class="flex-1 flex space-x-3">
           <button
             type="button"
-            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
             @click="showSkipConfirmation(currentStep)"
           >
             Skip
@@ -119,7 +119,7 @@
           <button
             @click="nextStep"
             :disabled="!canProceed || isLoading"
-            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
           >
             <svg 
               v-if="isLoading" 

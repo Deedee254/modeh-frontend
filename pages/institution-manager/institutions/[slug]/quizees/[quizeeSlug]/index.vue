@@ -8,14 +8,14 @@
       >
         <template #meta>
           <span v-if="pointsDisplay" class="inline-flex items-center gap-1 text-slate-700">
-            <span class="inline-flex w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            <span class="inline-flex w-2.5 h-2.5 rounded-full bg-brand-500"></span>
             <span class="font-medium">{{ pointsDisplay }}</span>
           </span>
         </template>
         <template #actions>
           <NuxtLink
             to="/settings"
-            class="px-3 py-2 border rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer w-full sm:w-auto text-center"
+            class="px-3 py-2 border rounded-md text-sm bg-brand-600 text-white hover:bg-brand-700 cursor-pointer w-full sm:w-auto text-center"
           >
             Edit Profile
           </NuxtLink>
@@ -68,7 +68,7 @@
               <span
                 v-for="subject in subjectLabels"
                 :key="subject"
-                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-brand-100 text-brand-800"
               >
                 {{ subject }}
               </span>

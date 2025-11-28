@@ -1,6 +1,6 @@
 <template>
   <div class="relative">
-    <button @click="open = !open" class="fixed right-6 bottom-6 z-50 bg-blue-600 text-white p-3 rounded-full shadow-lg flex items-center justify-center" title="Open Chat">
+    <button @click="open = !open" class="fixed right-6 bottom-6 z-50 bg-brand-600 text-white p-3 rounded-full shadow-lg flex items-center justify-center" title="Open Chat">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8-1.18 0-2.312-.174-3.334-.5L3 20l1.5-4.5A7.966 7.966 0 014 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
     </button>
 
@@ -29,7 +29,7 @@
         </div>
       </div>
       <div class="p-3 border-t">
-        <NuxtLink to="/quizee/chat" class="block text-center px-3 py-2 bg-blue-600 text-white rounded">Open full chat</NuxtLink>
+        <NuxtLink to="/quizee/chat" class="block text-center px-3 py-2 bg-brand-600 text-white rounded">Open full chat</NuxtLink>
       </div>
     </div>
   </div>
@@ -109,3 +109,4 @@ onBeforeUnmount(() => {
 <style scoped>
 /* small responsive tweak: hide the fixed bubble on very small screens if necessary */
 </style>
+

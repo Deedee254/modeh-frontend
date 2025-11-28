@@ -6,7 +6,7 @@
           <img v-if="isImage" :src="mediaSrc" class="w-full h-auto rounded-lg object-cover" />
           <audio v-else-if="isAudio" controls class="w-full rounded-lg"><source :src="mediaSrc" /></audio>
           <div v-else-if="isEmbed" class="aspect-video rounded-lg overflow-hidden"><iframe :src="embedUrl" class="w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>
-          <a v-else-if="mediaSrc" :href="mediaSrc" target="_blank" rel="noopener" class="text-indigo-600 underline">Open media</a>
+          <a v-else-if="mediaSrc" :href="mediaSrc" target="_blank" rel="noopener" class="text-brand-600 underline">Open media</a>
         </slot>
       </div>
 
@@ -110,3 +110,4 @@ onBeforeUnmount(() => {
   .media-col { width: 100%; flex: none }
 }
 </style>
+

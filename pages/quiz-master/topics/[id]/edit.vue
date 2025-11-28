@@ -16,7 +16,7 @@
         </div>
         <input ref="fileRef" type="file" accept="image/*" @change="onFileChange" />
         <div class="mt-3">
-          <button @click="upload" class="px-4 py-2 bg-indigo-600 text-white rounded">Upload Image</button>
+          <button @click="upload" class="px-4 py-2 bg-brand-600 text-white rounded">Upload Image</button>
         </div>
       </div>
 

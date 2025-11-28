@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col min-h-screen bg-gray-50" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem)">
+  <div class="flex flex-col bg-gray-50" style="min-height: calc(100vh - 6rem); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem)">
     <!-- Header: Title, Progress, Timer -->
     <header class="sticky top-0 z-30 bg-white border-b border-gray-200 flex-shrink-0">
       <div class="max-w-4xl mx-auto px-4 py-4 sm:px-6">
@@ -10,7 +10,7 @@
             <div class="flex items-center gap-2 mt-2">
               <span class="text-xs font-medium text-gray-600 whitespace-nowrap">Q{{ currentQuestion + 1 }}/{{ totalQuestions }}</span>
               <div class="flex-1 bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-indigo-600 h-full transition-all" :style="{ width: `${progressPercent}%` }"></div>
+                <div class="bg-brand-600 h-full transition-all" :style="{ width: `${progressPercent}%` }"></div>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@
             v-if="showNext" 
             @click="$emit('next')" 
             :disabled="disableNext"
-            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
+            class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
           >
             Next →
           </button>
@@ -119,7 +119,7 @@
             <button 
               @click="$emit('confirm-submit')" 
               :disabled="isSubmitting"
-              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               <svg v-if="isSubmitting" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25" />
@@ -146,20 +146,20 @@ const props = defineProps({
   // Timer
   showTimer: { type: Boolean, default: true },
   timerDisplay: { type: String, default: '00:00' },
-  timerColorClass: { type: String, default: 'text-indigo-600' },
+  timerColorClass: { type: String, default: 'text-brand-600' },
   timerCircumference: { type: Number, default: 113 },
   timerDashOffset: { type: Number, default: 0 },
   
   // Encouragement
   encouragement: { type: String, default: '' },
-  encouragementClass: { type: String, default: 'from-indigo-100 to-indigo-50 text-indigo-700' },
+  encouragementClass: { type: String, default: 'from-brand-100 to-brand-50 text-brand-700' },
   
   // Meta
   showMeta: { type: Boolean, default: true },
   
   // Alert/Status
   alertMessage: { type: String, default: '' },
-  alertClass: { type: String, default: 'bg-blue-100 text-blue-800 border border-blue-300' },
+  alertClass: { type: String, default: 'bg-brand-100 text-brand-800 border border-brand-300' },
   
   // Navigation
   showPrevious: { type: Boolean, default: true },
@@ -204,3 +204,4 @@ const progressPercent = computed(() => {
   opacity: 0;
 }
 </style>
+

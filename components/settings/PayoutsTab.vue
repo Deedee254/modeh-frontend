@@ -29,7 +29,7 @@
     </div>
 
     <div class="flex justify-end">
-      <button :disabled="submitting" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded" type="submit">
+      <button :disabled="submitting" class="w-full sm:w-auto px-4 py-2 bg-brand-600 text-white rounded" type="submit">
         <span v-if="!submitting">Request withdrawal</span>
         <span v-else>Requesting...</span>
       </button>
@@ -114,3 +114,4 @@ async function save() {
   }
 }
 </script>
+

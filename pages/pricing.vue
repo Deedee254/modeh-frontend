@@ -11,7 +11,7 @@
 
       <template #actions>
         <div class="flex flex-col sm:flex-row items-center gap-3 justify-center">
-          <NuxtLink to="/register" class="px-4 py-2 bg-white text-indigo-700 rounded">Start free trial</NuxtLink>
+          <NuxtLink to="/register" class="px-4 py-2 bg-white text-brand-600 rounded">Start free trial</NuxtLink>
           <NuxtLink to="/contact" class="px-4 py-2 border rounded text-white/90">Contact sales</NuxtLink>
         </div>
       </template>
@@ -50,116 +50,271 @@
       </template>
     </PageHero>
 
-  <!-- Features section (reused style from About) - full width background -->
+  <!-- Pricing Tabs Section -->
   <section class="w-full bg-white">
-    <div class="mx-auto max-w-7xl px-6 py-16">
-      <h2 class="text-center mb-8 text-3xl font-bold text-indigo-900">Powerful Features</h2>
-      <p class="text-center text-slate-600 max-w-2xl mx-auto mb-10">Everything you need to create, deliver and analyse quizzes — built for educators and learners.</p>
-
-  <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        <div v-for="(f, i) in [
-          { title: 'Quiz Creation', text: 'Create engaging quizzes with multiple question types and reusable banks.', icon: 'M12 6v6m0 0v6m0-6h6m-6 0H6' },
-          { title: 'Real-time Analytics', text: 'Track learner performance with real-time analytics and reports.', icon: 'M9 19v-6a2 2 0 00-2-2H5' },
-          { title: 'Instant Feedback', text: 'Provide immediate feedback and adaptive retry to improve learning.', icon: 'M13 10V3L4 14h7v7l9-11h-7z' }
-        ]" :key="i" class="group relative overflow-hidden rounded-2xl bg-white p-6 transition-all duration-300 hover:shadow-xl">
-          <div class="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-indigo-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-          <div class="relative">
-            <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path :d="f.icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /></svg>
-            </div>
-            <h3 class="mb-2 text-xl font-semibold text-gray-900">{{ f.title }}</h3>
-            <p class="text-slate-600">{{ f.text }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    </section>
-
-    <!-- Packages / Pricing cards (modernized) - full width background with centered content -->
-    <section class="w-full bg-gradient-to-br from-white to-indigo-50">
-      <div class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center mb-3 text-3xl font-bold text-indigo-900">Plans & pricing</h2>
-        <p class="text-center text-slate-600 max-w-2xl mx-auto mb-8">Choose a plan that fits your teaching or learning needs. Start with a free trial and upgrade anytime for more features and team management.</p>
-
-        <div class="grid gap-8 md:grid-cols-3">
-        <div v-for="pkg in packages" :key="pkg.id" class="relative rounded-2xl p-6 shadow-md hover:shadow-xl transition bg-white">
-          <div :class="['absolute -inset-px rounded-2xl', pkg.popular ? 'bg-gradient-to-br from-indigo-500 to-violet-500 opacity-10' : 'bg-transparent']"></div>
-          <div class="relative z-10 flex items-start justify-between gap-4">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900">{{ pkg.name }}</h3>
-              <p class="text-sm text-slate-500 mt-1">{{ pkg.short_description || pkg.description }}</p>
-            </div>
-            <div class="text-right">
-              <div class="text-3xl font-extrabold text-gray-900">{{ pkg.price_display || (pkg.price ? pkg.currency + ' ' + pkg.price : 'Free') }}</div>
-              <div class="text-sm text-slate-500">/ month</div>
-            </div>
-          </div>
-
-          <div class="mt-6 border-t pt-6">
-            <ul class="space-y-3 text-sm text-slate-700">
-              <li v-for="(feat, idx) in (pkg.features?.display || pkg.features || [])" :key="idx" class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-green-500 mt-1 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l7.879-7.879a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                <span>{{ feat }}</span>
-              </li>
-            </ul>
-          </div>
-
-          <div class="mt-6 flex items-center justify-between">
-            <button class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-white font-semibold shadow" @click="onSubscribe(pkg)">
-              {{ pkg.popular ? 'Choose plan' : 'Subscribe' }}
+    <div class="mx-auto max-w-7xl px-6 py-20">
+      <!-- Toggle/Tab Section -->
+      <div class="mb-16">
+        <div class="flex justify-center mb-12">
+          <div class="inline-flex items-center gap-1 rounded-full bg-slate-100 p-1">
+            <button 
+              @click="pricingTab = 'quizee'"
+              :class="[
+                'px-6 py-2 rounded-full font-semibold transition-all duration-300',
+                pricingTab === 'quizee' 
+                  ? 'bg-white text-brand-700 shadow-md' 
+                  : 'text-slate-600 hover:text-slate-900'
+              ]"
+            >
+              <svg class="inline-block w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.5 1.5H5.75A2.25 2.25 0 003.5 3.75v12.5A2.25 2.25 0 005.75 18.5h8.5a2.25 2.25 0 002.25-2.25V10M10.5 1.5v4m0-4L16 7m-2 1.5h-8"/>
+              </svg>
+              For Learners
             </button>
-            <div class="text-sm text-slate-500">
-              <template v-if="pkg.more_link">
-                <button @click="navigateToLink(pkg.more_link)" class="underline">Learn more</button>
-              </template>
+            <button 
+              @click="pricingTab = 'institution'"
+              :class="[
+                'px-6 py-2 rounded-full font-semibold transition-all duration-300',
+                pricingTab === 'institution' 
+                  ? 'bg-white text-brand-700 shadow-md' 
+                  : 'text-slate-600 hover:text-slate-900'
+              ]"
+            >
+              <svg class="inline-block w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.5 2.5h-7A1.5 1.5 0 002 4v12a1.5 1.5 0 001.5 1.5h7m0-14h7a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5h-7m0-14v14m0-14H10v14h.5"/>
+              </svg>
+              For Institutions
+            </button>
+          </div>
+        </div>
+
+        <!-- Quizee Packages Section -->
+        <div v-if="pricingTab === 'quizee'" class="animate-in fade-in duration-300">
+          <div class="text-center mb-12">
+            <h3 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Designed for Learners</h3>
+            <p class="text-lg text-slate-600">Choose your learning journey. Start free or upgrade for premium features.</p>
+          </div>
+
+          <div class="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
+            <div v-for="pkg in filterPackages('quizee')" :key="pkg.id" class="group relative">
+              <!-- Card Background with Popular highlight -->
+              <div :class="[
+                'absolute -inset-0.5 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-300 -z-10',
+                pkg.popular ? 'bg-gradient-to-br from-brand-600 to-brand-700' : 'bg-gradient-to-br from-slate-200 to-slate-300'
+              ]"></div>
+              
+              <div class="relative rounded-2xl bg-white p-8 shadow-lg hover:shadow-2xl transition duration-300 flex flex-col h-full">
+                <!-- Popular Badge -->
+                <div v-if="pkg.popular" class="absolute -top-4 right-6">
+                  <span class="inline-flex items-center gap-1 rounded-full bg-brand-600 text-white px-3 py-1 text-xs font-semibold shadow-md">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    Most Popular
+                  </span>
+                </div>
+
+                <!-- Header -->
+                <div class="mb-6">
+                  <h4 class="text-2xl font-bold text-gray-900">{{ pkg.name }}</h4>
+                  <p class="text-sm text-slate-500 mt-2">{{ pkg.short_description }}</p>
+                </div>
+
+                <!-- Price -->
+                <div class="mb-6">
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-4xl font-extrabold text-brand-600">{{ pkg.price ? pkg.currency + pkg.price : 'Free' }}</span>
+                    <span v-if="pkg.price" class="text-slate-600">/month</span>
+                  </div>
+                  <p v-if="!pkg.price" class="text-sm text-slate-500 mt-2">Perfect to get started</p>
+                </div>
+
+                <!-- CTA Button -->
+                <button 
+                  @click="onSubscribe(pkg)"
+                  :class="[
+                    'w-full py-3 px-4 rounded-lg font-semibold transition-all mb-6',
+                    pkg.popular 
+                      ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white hover:shadow-lg hover:-translate-y-0.5' 
+                      : 'border-2 border-brand-600 text-brand-600 hover:bg-brand-50'
+                  ]"
+                >
+                  {{ pkg.price ? 'Start Free Trial' : 'Get Started' }}
+                </button>
+
+                <!-- Features List -->
+                <div class="flex-grow">
+                  <p class="text-xs uppercase font-semibold text-slate-500 mb-4">What's included</p>
+                  <ul class="space-y-3">
+                    <li v-for="(feat, idx) in (pkg.features?.display || pkg.features || []).slice(0, 5)" :key="idx" class="flex items-start gap-3">
+                      <svg class="w-5 h-5 text-brand-600 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l7.879-7.879a1 1 0 011.414 0z"/>
+                      </svg>
+                      <span class="text-sm text-slate-700">{{ feat }}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Limits Info -->
+                <div v-if="pkg.features?.limits" class="mt-6 pt-6 border-t border-slate-200">
+                  <p class="text-xs font-semibold text-slate-500 uppercase mb-3">Daily Limits</p>
+                  <div class="space-y-2 text-sm">
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-600">Quiz Results</span>
+                      <span class="font-semibold text-slate-900">{{ pkg.features.limits.quiz_results === null ? 'Unlimited' : pkg.features.limits.quiz_results }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-600">Battles</span>
+                      <span class="font-semibold text-slate-900">{{ pkg.features.limits.battle_results === null ? 'Unlimited' : pkg.features.limits.battle_results }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Institution Packages Section -->
+        <div v-if="pricingTab === 'institution'" class="animate-in fade-in duration-300">
+          <div class="text-center mb-12">
+            <h3 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Scalable for Teams & Schools</h3>
+            <p class="text-lg text-slate-600">From small teams to enterprise. Get dedicated support and custom solutions.</p>
+          </div>
+
+          <div class="grid gap-8 md:grid-cols-2 max-w-5xl mx-auto">
+            <div v-for="pkg in filterPackages('institution')" :key="pkg.id" class="group relative">
+              <!-- Card Background with Popular highlight -->
+              <div :class="[
+                'absolute -inset-0.5 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-300 -z-10',
+                pkg.popular ? 'bg-gradient-to-br from-brand-600 to-brand-700' : 'bg-gradient-to-br from-slate-200 to-slate-300'
+              ]"></div>
+              
+              <div class="relative rounded-2xl bg-white p-8 shadow-lg hover:shadow-2xl transition duration-300 flex flex-col h-full">
+                <!-- Popular Badge -->
+                <div v-if="pkg.popular" class="absolute -top-4 right-6">
+                  <span class="inline-flex items-center gap-1 rounded-full bg-brand-600 text-white px-3 py-1 text-xs font-semibold shadow-md">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    Recommended
+                  </span>
+                </div>
+
+                <!-- Header -->
+                <div class="mb-6">
+                  <h4 class="text-2xl font-bold text-gray-900">{{ pkg.name }}</h4>
+                  <p class="text-sm text-slate-500 mt-2">{{ pkg.short_description }}</p>
+                </div>
+
+                <!-- Price -->
+                <div class="mb-6">
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-4xl font-extrabold text-brand-600">{{ pkg.price ? pkg.currency + pkg.price : 'Custom' }}</span>
+                    <span v-if="pkg.price" class="text-slate-600">/month</span>
+                  </div>
+                  <p class="text-sm text-slate-500 mt-2">{{ pkg.price ? 'for up to 100 users' : 'Contact for pricing' }}</p>
+                </div>
+
+                <!-- CTA Button -->
+                <button 
+                  @click="pricingTab === 'institution' && pkg.price ? onSubscribe(pkg) : router.push('/contact')"
+                  :class="[
+                    'w-full py-3 px-4 rounded-lg font-semibold transition-all mb-6',
+                    pkg.popular 
+                      ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white hover:shadow-lg hover:-translate-y-0.5' 
+                      : 'border-2 border-brand-600 text-brand-600 hover:bg-brand-50'
+                  ]"
+                >
+                  {{ pkg.price ? 'Start Free Trial' : 'Contact Sales' }}
+                </button>
+
+                <!-- Features List -->
+                <div class="flex-grow">
+                  <p class="text-xs uppercase font-semibold text-slate-500 mb-4">Everything included</p>
+                  <ul class="space-y-3">
+                    <li v-for="(feat, idx) in (pkg.features?.display || pkg.features || []).slice(0, 6)" :key="idx" class="flex items-start gap-3">
+                      <svg class="w-5 h-5 text-brand-600 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l7.879-7.879a1 1 0 011.414 0z"/>
+                      </svg>
+                      <span class="text-sm text-slate-700">{{ feat }}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Support Info -->
+                <div class="mt-6 pt-6 border-t border-slate-200">
+                  <p class="text-xs font-semibold text-slate-500 uppercase mb-3">Support & Management</p>
+                  <div class="space-y-2 text-sm text-slate-700">
+                    <div class="flex items-center gap-2">
+                      <svg class="w-4 h-4 text-brand-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l7.879-7.879a1 1 0 011.414 0z"/></svg>
+                      <span>Priority email & chat support</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <svg class="w-4 h-4 text-brand-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l7.879-7.879a1 1 0 011.414 0z"/></svg>
+                      <span>User management & analytics</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div v-if="pkg.popular" class="absolute top-4 right-4 z-20">
-            <span class="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Popular</span>
+          <!-- Enterprise CTA -->
+          <div class="mt-16 text-center">
+            <div class="inline-block rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100/50 border border-brand-200 p-8">
+              <h4 class="text-2xl font-bold text-gray-900 mb-2">Need a custom solution?</h4>
+              <p class="text-slate-600 mb-6">Our team can create a tailored package for your institution's specific needs.</p>
+              <button 
+                @click="router.push('/contact')"
+                class="inline-flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 transition"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                Talk to our team
+              </button>
+            </div>
           </div>
-          <div v-if="pkg.features?.limits" class="mt-4 text-sm text-slate-600">
-            <strong>Limits:</strong>
-            <div>Quiz results: {{ pkg.features.limits.quiz_results === null ? 'Unlimited' : pkg.features.limits.quiz_results }} / day</div>
-            <div>Battle results: {{ pkg.features.limits.battle_results === null ? 'Unlimited' : pkg.features.limits.battle_results }} / day</div>
-          </div>
-        </div>
         </div>
 
         <PaymentAwaitingModal :tx="currentTx" :open="modalOpen" @update:open="val => modalOpen = val" @close="() => modalOpen = false" />
       </div>
-    </section>
+    </div>
+  </section>
 
     <!-- CTA banner (full width) -->
-    <section class="w-full bg-indigo-700">
-      <div class="mx-auto max-w-7xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
-        <div class="text-center sm:text-left">
-          <h3 class="text-xl font-bold">Ready to get started?</h3>
-          <p class="mt-1 text-sm text-indigo-100/90">Take a quiz to experience Modeh or contact our team to discuss plans and pricing for your institution.</p>
+    <section class="w-full bg-gradient-to-r from-brand-600 to-brand-700">
+      <div class="mx-auto max-w-7xl px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8 text-white">
+        <div>
+          <h3 class="text-3xl font-bold mb-2">Ready to transform learning?</h3>
+          <p class="text-lg text-brand-100">Join thousands of educators and learners already using Modeh.</p>
         </div>
-
-        <div class="flex items-center gap-3 justify-center">
-          <NuxtLink to="/quiz" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-indigo-700 font-semibold shadow">Take a quiz</NuxtLink>
-          <NuxtLink to="/contact" class="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-white/95">Contact us</NuxtLink>
+        <div class="flex flex-col sm:flex-row items-center gap-4 shrink-0">
+          <NuxtLink to="/register" class="inline-flex items-center gap-2 bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition">
+            Get Started Free
+          </NuxtLink>
+          <NuxtLink to="/contact" class="inline-flex items-center gap-2 border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/10 transition">
+            Talk to Sales
+          </NuxtLink>
         </div>
       </div>
     </section>
 
   <!-- Testimonials (reuse homepage carousel) -->
-  <section class="px-6 py-12 bg-gradient-to-br from-indigo-100 to-white">
+  <section class="px-6 py-20 bg-white">
       <div class="mx-auto max-w-7xl">
-        <h3 class="text-2xl font-bold text-indigo-900 mb-6 text-center">What our users say</h3>
+        <div class="text-center mb-12">
+          <h3 class="text-3xl font-bold text-gray-900 mb-3">Loved by educators and learners</h3>
+          <p class="text-lg text-slate-600">See what our community has to say about Modeh</p>
+        </div>
         <client-only>
           <Carousel :items="safeArray(testimonials)" :perViewLg="3" :perViewMd="2" :perViewSm="1" auto>
             <template #item="{ item }">
               <div class="p-3">
-                <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm hover:shadow-xl">
-                  <blockquote class="text-lg text-gray-700 mb-4">"{{ item.quote || 'Great experience with Modeh!' }}"</blockquote>
-                  <div class="flex items-center gap-3">
-                    <div class="h-12 w-12 rounded-full bg-indigo-100 grid place-items-center text-indigo-700 font-semibold">{{ (item.name || 'A').charAt(0) }}</div>
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-50 to-slate-50 p-6 shadow-sm hover:shadow-xl transition border border-brand-100">
+                  <div class="flex items-start gap-1 mb-3">
+                    <svg v-for="i in 5" :key="i" class="w-4 h-4 text-brand-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                  </div>
+                  <blockquote class="text-gray-900 mb-4 font-medium">"{{ item.quote || 'Great experience with Modeh!' }}"</blockquote>
+                  <div class="flex items-center gap-3 pt-4 border-t border-brand-200">
+                    <div class="h-10 w-10 rounded-full bg-brand-600 text-white grid place-items-center font-semibold text-sm">{{ (item.name || 'A').charAt(0) }}</div>
                     <div>
                       <div class="font-semibold text-gray-900">{{ item.name || 'Anonymous' }}</div>
-                      <div class="text-sm text-indigo-600">{{ item.role || 'User' }}</div>
+                      <div class="text-xs text-slate-500">{{ item.role || 'User' }}</div>
                     </div>
                   </div>
                 </div>
@@ -167,6 +322,39 @@
             </template>
           </Carousel>
         </client-only>
+      </div>
+    </section>
+
+    <!-- FAQ Section (optional but helpful) -->
+    <section class="w-full bg-slate-50 px-6 py-20">
+      <div class="mx-auto max-w-3xl">
+        <div class="text-center mb-12">
+          <h3 class="text-3xl font-bold text-gray-900 mb-3">Frequently Asked Questions</h3>
+          <p class="text-lg text-slate-600">Can't find what you're looking for?</p>
+        </div>
+        <div class="space-y-4">
+          <details class="group rounded-lg border border-slate-200 bg-white p-6 hover:border-brand-300 transition cursor-pointer">
+            <summary class="flex items-center justify-between font-semibold text-gray-900 select-none">
+              Can I switch between plans?
+              <svg class="w-5 h-5 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            </summary>
+            <p class="mt-4 text-slate-600">Yes! You can upgrade or downgrade your plan anytime. Changes take effect at the start of your next billing cycle.</p>
+          </details>
+          <details class="group rounded-lg border border-slate-200 bg-white p-6 hover:border-brand-300 transition cursor-pointer">
+            <summary class="flex items-center justify-between font-semibold text-gray-900 select-none">
+              Do you offer discounts for annual billing?
+              <svg class="w-5 h-5 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            </summary>
+            <p class="mt-4 text-slate-600">Absolutely! Contact our sales team to learn about annual billing discounts and enterprise pricing options.</p>
+          </details>
+          <details class="group rounded-lg border border-slate-200 bg-white p-6 hover:border-brand-300 transition cursor-pointer">
+            <summary class="flex items-center justify-between font-semibold text-gray-900 select-none">
+              What payment methods do you accept?
+              <svg class="w-5 h-5 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            </summary>
+            <p class="mt-4 text-slate-600">We accept all major credit cards, PayPal, and bank transfers for enterprise accounts.</p>
+          </details>
+        </div>
       </div>
     </section>
   </div>
@@ -195,6 +383,7 @@ import Carousel from '~/components/ui/Carousel.vue'
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const pricingTab = ref('quizee')
 
 const config = useRuntimeConfig()
 // Fetch packages server-side so pricing is public and SEO-friendly
@@ -207,6 +396,14 @@ const packages = ref(data.value?.packages || [])
 // Fetch testimonials (reuse homepage testimonials)
 const { data: testimonialsData } = await useFetch(config.public.apiBase + '/api/testimonials', { credentials: 'include' })
 const testimonials = testimonialsData?.value?.testimonials?.data || testimonialsData?.value?.testimonials || testimonialsData?.value || []
+
+// Filter packages by type
+function filterPackages(type) {
+  return packages.value.filter(pkg => {
+    const pkgType = pkg.type || pkg.category || (pkg.name?.toLowerCase().includes('institution') ? 'institution' : 'quizee')
+    return pkgType.includes(type)
+  })
+}
 
 // local safeArray helper (same logic as homepage helper)
 function safeArray(input) {

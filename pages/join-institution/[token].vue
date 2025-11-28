@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 px-4">
     <div class="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full">
       <!-- Loading State -->
       <div v-if="loadingInvitation" class="text-center">
@@ -18,7 +18,7 @@
         </div>
         <h2 class="text-xl font-bold text-gray-900 mb-2">Invitation Error</h2>
         <p class="text-gray-600 mb-6">{{ invitationError }}</p>
-        <NuxtLink to="/" class="inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+        <NuxtLink to="/" class="inline-block px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">
           Back to Home
         </NuxtLink>
       </div>
@@ -34,10 +34,10 @@
           <h1 class="text-2xl font-bold text-gray-900 text-center">You're Invited!</h1>
         </div>
 
-        <div class="mb-6 p-4 bg-indigo-50 rounded-lg">
+        <div class="mb-6 p-4 bg-brand-50 rounded-lg">
           <p class="text-gray-700">
             <strong>{{ invitation.institution_name }}</strong> has invited you to join as a
-            <strong class="text-indigo-600">{{ invitation.role }}</strong>
+            <strong class="text-brand-600">{{ invitation.role }}</strong>
           </p>
         </div>
 
@@ -48,13 +48,13 @@
           </p>
           <NuxtLink
             :to="{ path: '/login', query: { redirect: route.fullPath } }"
-            class="block w-full text-center bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 font-medium"
+            class="block w-full text-center bg-brand-600 text-white py-3 rounded-lg hover:bg-brand-700 font-medium"
           >
             Sign In
           </NuxtLink>
           <div class="text-center text-sm">
             <p class="text-gray-600">Don't have an account?</p>
-            <NuxtLink to="/register" class="text-indigo-600 hover:text-indigo-800 font-medium">
+            <NuxtLink to="/register" class="text-brand-600 hover:text-brand-800 font-medium">
               Create one now
             </NuxtLink>
           </div>
@@ -62,8 +62,8 @@
 
         <!-- Signed In -->
         <div v-else class="space-y-4">
-          <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p class="text-sm text-blue-800">
+          <div class="p-3 bg-brand-50 border border-brand-100 rounded-lg">
+            <p class="text-sm text-brand-800">
               Signing in as <strong>{{ auth.user.name }}</strong> ({{ auth.user.email }})
             </p>
           </div>

@@ -21,7 +21,7 @@ const props = defineProps({
   imgClass: { type: String, default: 'w-full h-full object-contain' },
   wrapperClass: { type: String, default: '' },
   wrapperStyle: { type: Object, default: () => ({}) },
-  placeholderClass: { type: String, default: 'text-indigo-600 text-sm font-semibold' }
+  placeholderClass: { type: String, default: 'text-brand-600 text-sm font-semibold' }
 })
 
 const showImg = ref(false)
@@ -68,3 +68,4 @@ onMounted(async () => {
 .w-full { width: 100%; }
 .h-full { height: 100%; }
 </style>
+

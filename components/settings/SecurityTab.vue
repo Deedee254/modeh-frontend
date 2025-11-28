@@ -18,7 +18,7 @@
     </div>
 
     <div class="flex justify-end gap-2">
-      <button :disabled="submitting" type="submit" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded text-sm">
+      <button :disabled="submitting" type="submit" class="w-full sm:w-auto px-4 py-2 bg-brand-600 text-white rounded text-sm">
         <span v-if="!submitting">Change password</span>
         <span v-else>Updating…</span>
       </button>
@@ -71,3 +71,4 @@ async function save() {
   }
 }
 </script>
+

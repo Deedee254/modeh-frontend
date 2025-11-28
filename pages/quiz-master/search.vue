@@ -39,7 +39,7 @@ function openItem(type, id) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+  <div class="bg-gray-50 pb-16 md:pb-0">
     <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <h1 class="text-2xl font-semibold mb-4">Search results for "{{ q }}"</h1>
 

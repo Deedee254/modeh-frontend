@@ -13,7 +13,7 @@
       <template #actions>
         <div class="flex items-center gap-4">
           <UButton size="sm" color="white" variant="soft" @click="fetchItems" icon="i-heroicons-arrow-path">Refresh</UButton>
-          <UButton size="sm" color="primary" @click="goToCreate" icon="i-heroicons-plus">Create question</UButton>
+          <UButton size="sm" color="primary" @click="goToCreate" icon="i-heroicons-plus" class="!bg-brand-600 hover:!bg-brand-700">Create question</UButton>
         </div>
       </template>
       <template #stats>
@@ -50,9 +50,6 @@
               @apply="() => { page.value = 1; fetchItems() }"
               @clear="() => { selectedGrade.value = ''; selectedSubject.value = ''; page.value = 1; fetchItems() }"
             />
-            <div class="mt-4">
-              <UInput v-model="q" @keyup.enter="fetchItems" placeholder="Search questions..." icon="i-heroicons-magnifying-glass" class="w-full" />
-            </div>
             <div class="mt-3">
               <USelect v-model.number="perPage" @change="fetchItems" :options="[{label: '5 per page', value: 5}, {label: '10 per page', value: 10}, {label: '20 per page', value: 20}]" class="w-full" />
             </div>
@@ -60,12 +57,9 @@
         </aside>
 
         <main class="lg:col-span-3 order-1 lg:order-2 min-w-0">
-          <!-- Controls: Search, Sort, Per Page -->
+          <!-- Controls: Sort, Per Page -->
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div class="flex-1">
-              <UInput v-model="q" @keyup.enter="fetchItems" placeholder="Search questions..." icon="i-heroicons-magnifying-glass" />
-            </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 ml-auto">
               <USelectMenu v-model="sortBy" :options="sortOptions" class="w-40" />
               <USelect v-model.number="perPage" @change="fetchItems" :options="[{label: '5/page', value: 5}, {label: '10/page', value: 10}, {label: '20/page', value: 20}]" class="w-28" />
             </div>

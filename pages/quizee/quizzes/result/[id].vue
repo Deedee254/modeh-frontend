@@ -2,20 +2,20 @@
   <div class="bg-slate-50 dark:bg-slate-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div v-if="loading" class="text-center p-10 bg-white dark:bg-slate-800 rounded-xl shadow-md">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto"></div>
         <p class="mt-4 text-slate-500 dark:text-slate-400">Calculating your results...</p>
       </div>
 
       <div v-else-if="error" class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md text-center">
         <h3 class="text-lg font-semibold text-red-600 dark:text-red-400">Could not load results</h3>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">{{ error }}</p>
-        <button @click="fetchResults" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg">Retry</button>
+        <button @click="fetchResults" class="mt-4 bg-brand-600 text-white px-4 py-2 rounded-lg">Retry</button>
       </div>
 
       <div v-else-if="!attempt.id" class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md text-center">
         <h3 class="text-lg font-semibold">Unlock Your Results!</h3>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">An active subscription is needed to view your detailed quiz results.</p>
-        <NuxtLink to="/quizee/payments/checkout" class="mt-4 inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold">
+        <NuxtLink to="/quizee/payments/checkout" class="mt-4 inline-block bg-brand-600 text-white px-6 py-2 rounded-lg font-semibold">
           Go to Checkout
         </NuxtLink>
       </div>
@@ -39,7 +39,7 @@
         <!-- Score & Rank Summary -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-center flex flex-col justify-center">
-            <div class="text-5xl font-extrabold text-indigo-600 dark:text-indigo-400">{{ attempt.score || 0 }}<span class="text-3xl text-slate-400 dark:text-slate-500">%</span></div>
+            <div class="text-5xl font-extrabold text-brand-600 dark:text-brand-400">{{ attempt.score || 0 }}<span class="text-3xl text-slate-400 dark:text-slate-500">%</span></div>
             <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Your Score</div>
           </div>
           <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-center flex flex-col justify-center">
@@ -61,11 +61,11 @@
         <div v-if="badges.length" class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700">
           <h3 class="font-semibold text-slate-900 dark:text-slate-100 flex items-center justify-between">
             <span>New Badges Earned ✨</span>
-            <NuxtLink to="/quizee/badges" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">View all</NuxtLink>
+            <NuxtLink to="/quizee/badges" class="text-sm text-brand-600 dark:text-brand-400 hover:underline">View all</NuxtLink>
           </h3>
           <div class="mt-4 grid grid-cols-2 gap-3">
             <div v-for="b in badges" :key="b.id" class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg flex items-center gap-3 transform transition-transform hover:-translate-y-1">
-              <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-300 text-2xl font-bold">
+              <div class="w-12 h-12 rounded-full bg-brand-600/10 dark:bg-brand-600/50 flex items-center justify-center text-brand-600 dark:text-accent-500 text-2xl font-bold">
                 {{ (b.title || '').charAt(0) }}
               </div>
               <div>
@@ -103,14 +103,14 @@
             <div>
               <h4 class="font-semibold text-slate-900 dark:text-slate-100">Share Your Success!</h4>
               <div class="mt-2 flex gap-2">
-                <button class="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700" @click="share('twitter')">Share on Twitter</button>
-                <button class="px-3 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-900" @click="share('facebook')">Share on Facebook</button>
+                <button class="px-3 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700" @click="share('twitter')">Share on Twitter</button>
+                <button class="px-3 py-2 text-sm bg-brand-900 text-white rounded-lg hover:bg-brand-900" @click="share('facebook')">Share on Facebook</button>
                 <button class="px-3 py-2 text-sm bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600" @click="copyLink">Copy Link</button>
               </div>
             </div>
             <div class="flex gap-2">
               <NuxtLink to="/quizee/quizzes" class="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">Back to Quizzes</NuxtLink>
-              <NuxtLink v-if="quizId" :to="`/quizee/quizzes/take/${quizId}`" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Retake Assessment</NuxtLink>
+              <NuxtLink v-if="quizId" :to="`/quizee/quizzes/take/${quizId}`" class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700">Retake Assessment</NuxtLink>
             </div>
           </div>
         </div>

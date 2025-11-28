@@ -111,3 +111,4 @@ export default function useQuestionTimer(defaultSeconds = 20) {
     clearPerQuestionLimit
   }
 }
+

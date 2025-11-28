@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-white to-indigo-50/30">
+  <div class="min-h-screen bg-gradient-to-b from-white to-brand-50/30">
     <!-- Hero with animated background -->
-    <section class="relative isolate overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-sky-50 px-6 py-24 sm:py-32">
+    <section class="relative isolate overflow-hidden bg-gradient-to-br from-brand-50 via-white to-sky-50 px-6 py-24 sm:py-32">
       <!-- Animated background elements -->
       <div class="absolute inset-0 -z-10">
         <div class="absolute -left-1/4 top-0 h-96 w-96 animate-blob rounded-full bg-gradient-to-br from-violet-400/20 to-violet-400/10 mix-blend-multiply blur-3xl"></div>
@@ -10,7 +10,7 @@
 
       <!-- Hero content -->
       <div class="mx-auto max-w-3xl text-center">
-        <h1 class="bg-gradient-to-r from-indigo-600 via-sky-600 to-violet-600 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-6xl">
+        <h1 class="bg-gradient-to-r from-brand-600 via-sky-600 to-violet-600 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-6xl">
           Empowering Education Through Innovation
         </h1>
         <p class="mt-6 text-lg leading-8 text-slate-600">
@@ -19,15 +19,15 @@
         <div class="mt-10 flex items-center justify-center gap-4">
           <NuxtLink 
             to="/register?role=quiz-master" 
-            class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 p-[2px] font-semibold text-white transition hover:shadow-lg hover:shadow-indigo-500/25"
+            class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-brand-600 via-sky-500 to-violet-500 p-[2px] font-semibold text-white transition hover:shadow-lg hover:shadow-brand-600/25"
           >
-            <span class="inline-flex h-full items-center gap-2 rounded-[10px] bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 px-8 py-3 transition group-hover:bg-none">
+            <span class="inline-flex h-full items-center gap-2 rounded-[10px] bg-gradient-to-r from-brand-600 via-sky-500 to-violet-500 px-8 py-3 transition group-hover:bg-none">
               Start Your Journey
             </span>
           </NuxtLink>
           <a 
             href="#contact" 
-            class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl border-2 border-indigo-500/20 bg-white px-8 py-3 font-semibold text-indigo-600 transition hover:border-indigo-500/40 hover:shadow-lg hover:shadow-indigo-500/10"
+            class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl border-2 border-brand-500/20 bg-white px-8 py-3 font-semibold text-brand-600 transition hover:border-brand-500/40 hover:shadow-lg hover:shadow-brand-600/10"
           >
             Contact Us
           </a>
@@ -39,20 +39,20 @@
     <section class="mx-auto max-w-7xl px-6 py-16">
       <div class="grid gap-8 md:grid-cols-2">
         <!-- Mission Card -->
-        <div class="group relative rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-indigo-50 p-8 transition-all duration-300 hover:shadow-xl">
-          <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-500/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-2xl"></div>
+        <div class="group relative rounded-2xl bg-gradient-to-br from-brand-50 via-white to-brand-50 p-8 transition-all duration-300 hover:shadow-xl">
+          <div class="absolute inset-0 bg-gradient-to-br from-brand-600/5 to-brand-600/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-2xl"></div>
           <div class="relative">
-            <div class="mb-6 inline-flex rounded-xl bg-indigo-100 p-3 text-indigo-600">
+            <div class="mb-6 inline-flex rounded-xl bg-brand-100 p-3 text-brand-600">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h2 class="mb-4 text-2xl font-bold text-indigo-900">Our Mission</h2>
+            <h2 class="mb-4 text-2xl font-bold text-brand-900">Our Mission</h2>
             <p class="text-slate-600">We exist to make practice and assessment delightful, fast, and actionable. quiz-masters should spend time teaching — not wrestling with tools. quizees should get immediate feedback that helps them improve.</p>
             <div class="mt-6 flex flex-wrap gap-2">
-              <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">Accessibility</span>
-              <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">Speed</span>
-              <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">Learning Outcomes</span>
+              <span class="rounded-full bg-brand-100 px-3 py-1 text-sm text-brand-700">Accessibility</span>
+              <span class="rounded-full bg-brand-100 px-3 py-1 text-sm text-brand-700">Speed</span>
+              <span class="rounded-full bg-brand-100 px-3 py-1 text-sm text-brand-700">Learning Outcomes</span>
             </div>
           </div>
         </div>
@@ -80,15 +80,15 @@
 
     <!-- Features Grid -->
     <section class="mx-auto max-w-7xl px-6 py-16">
-      <h2 class="text-center mb-12 text-3xl font-bold text-indigo-900">
+      <h2 class="text-center mb-12 text-3xl font-bold text-brand-900">
         Powerful Features
-        <span class="mt-2 block text-base font-normal text-indigo-600">Everything you need to succeed</span>
+        <span class="mt-2 block text-base font-normal text-brand-600">Everything you need to succeed</span>
       </h2>
 
       <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         <!-- Quiz Creation -->
         <div class="group relative overflow-hidden rounded-2xl bg-white p-6 transition-all duration-300 hover:shadow-xl">
-          <div class="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-indigo-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+          <div class="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-brand-600/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
           <div class="relative">
             <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -158,9 +158,9 @@
 
         <!-- Mobile Access -->
         <div class="group relative overflow-hidden rounded-2xl bg-white p-6 transition-all duration-300 hover:shadow-xl">
-          <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+          <div class="absolute inset-0 bg-gradient-to-br from-brand-600/5 to-brand-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
           <div class="relative">
-            <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+            <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
@@ -173,19 +173,19 @@
     </section>
 
     <!-- Full-width CTA Banner -->
-    <section class="bg-gradient-to-r from-indigo-600 to-violet-600 py-16">
+    <section class="bg-gradient-to-r from-brand-600 to-violet-600 py-16">
       <div class="mx-auto max-w-7xl px-6">
         <div class="relative overflow-hidden rounded-2xl bg-white/10 p-8 backdrop-blur-sm">
           <div class="absolute inset-0 bg-gradient-to-br from-white/20 to-white/0"></div>
           <div class="relative flex flex-col items-center text-center md:flex-row md:justify-between md:text-left">
             <div class="mb-6 md:mb-0">
               <h2 class="text-2xl font-bold text-white sm:text-3xl">Ready to transform your teaching?</h2>
-              <p class="mt-2 text-indigo-100">Join thousands of quiz-masters already using Modeh to improve learning outcomes.</p>
+              <p class="mt-2 text-brand-100">Join thousands of quiz-masters already using Modeh to improve learning outcomes.</p>
             </div>
             <div class="flex flex-wrap justify-center gap-4">
               <NuxtLink 
                 to="/register?role=quiz-master" 
-                class="inline-flex items-center rounded-xl bg-white px-6 py-3 font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50"
+                class="inline-flex items-center rounded-xl bg-white px-6 py-3 font-semibold text-brand-600 shadow-sm transition hover:bg-brand-50"
               >
                 Start Free Trial
               </NuxtLink>
@@ -206,12 +206,12 @@
       <div class="grid gap-8 lg:grid-cols-2">
         <!-- Contact Info -->
         <div>
-          <h2 class="text-3xl font-bold text-indigo-900">Get in Touch</h2>
+          <h2 class="text-3xl font-bold text-brand-900">Get in Touch</h2>
           <p class="mt-4 text-lg text-slate-600">Have questions about our platform? We'd love to help you get started.</p>
           
           <div class="mt-8 space-y-6">
             <div class="flex items-start gap-4">
-              <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+              <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
@@ -224,7 +224,7 @@
             </div>
 
             <div class="flex items-start gap-4">
-              <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+              <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -238,7 +238,7 @@
             </div>
 
             <div class="flex items-start gap-4">
-              <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+              <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -260,7 +260,7 @@
               <input 
                 type="text" 
                 id="name" 
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-600"
               >
             </div>
 
@@ -269,7 +269,7 @@
               <input 
                 type="email" 
                 id="email" 
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-600"
               >
             </div>
 
@@ -277,7 +277,7 @@
               <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
               <select 
                 id="subject" 
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-600"
               >
                 <option>General Inquiry</option>
                 <option>Technical Support</option>
@@ -293,7 +293,7 @@
 
             <button 
               type="submit" 
-              class="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 text-white shadow-sm hover:from-indigo-700 hover:to-violet-700"
+              class="w-full rounded-xl bg-gradient-to-r from-brand-600 to-violet-600 px-6 py-3 text-white shadow-sm hover:from-brand-700 hover:to-violet-700"
             >
               Send Message
             </button>

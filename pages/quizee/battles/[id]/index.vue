@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Loading Overlay -->
     <div v-if="loading" class="fixed inset-0 bg-white/80 dark:bg-gray-900/80 z-50 flex flex-col items-center justify-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-brand-600 border-t-transparent"></div>
       <p class="mt-4 text-gray-600 dark:text-gray-300">Loading battle details...</p>
     </div>
 
@@ -20,7 +20,7 @@
         <!-- Left Column - Battle Info -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Hero Section -->
-          <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600">
+          <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gradient-to-br from-brand-600 to-brand-700">
             <!-- Overlay Content -->
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
               <div class="flex flex-wrap gap-2 mb-3">
@@ -46,7 +46,7 @@
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                   <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Questions</div>
-                  <div class="text-2xl font-bold text-indigo-600">{{ battle.settings?.question_count || 10 }}</div>
+                  <div class="text-2xl font-bold text-brand-600">{{ battle.settings?.question_count || 10 }}</div>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                   <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Difficulty</div>
@@ -54,7 +54,7 @@
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                   <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Grade</div>
-                  <div class="text-lg font-bold text-blue-600">{{ getGradeName(battle.settings?.grade_id) }}</div>
+                  <div class="text-lg font-bold text-brand-600">{{ getGradeName(battle.settings?.grade_id) }}</div>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                   <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Subject</div>
@@ -107,11 +107,11 @@
                 <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Players</h3>
                 <div class="space-y-3">
                   <!-- Initiator Card -->
-                  <div v-if="battle.initiator" class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg p-4 border border-indigo-100 dark:border-indigo-800">
+                  <div v-if="battle.initiator" class="bg-gradient-to-br from-brand-50 to-brand-50 dark:from-brand-900/20 dark:to-brand-900/20 rounded-lg p-4 border border-brand-100 dark:border-brand-800">
                     <div class="flex items-center gap-3">
                       <img :src="battle.initiator.profile?.avatar || '/avatars/default.png'"
                            :alt="battle.initiator.first_name"
-                           class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500" />
+                           class="w-10 h-10 rounded-full object-cover border-2 border-brand-500" />
                       <div>
                         <div class="font-semibold text-gray-900 dark:text-gray-100 text-sm">{{ battle.initiator.first_name }}</div>
                         <div class="text-xs text-gray-600 dark:text-gray-400">Creator</div>
@@ -144,7 +144,7 @@
                 <!-- Join Battle Button -->
                 <NuxtLink 
                   :to="`/quizee/battles/${battle.uuid}/waiting`"
-                  class="block w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors text-center"
+                  class="block w-full px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-colors text-center"
                 >
                   Join Battle
                 </NuxtLink>
@@ -216,7 +216,7 @@ const statusIndicatorClass = computed(() => {
   if (s === 'waiting') return 'bg-yellow-500 animate-pulse'
   if (s === 'in-progress') return 'bg-green-500 animate-pulse'
   if (s === 'completed') return 'bg-gray-500'
-  return 'bg-blue-500'
+  return 'bg-brand-500'
 })
 
 const statusTextClass = computed(() => {
@@ -224,7 +224,7 @@ const statusTextClass = computed(() => {
   if (s === 'waiting') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200'
   if (s === 'in-progress') return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
   if (s === 'completed') return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200'
-  return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
+  return 'bg-brand-100 text-brand-800 dark:bg-brand-900/50 dark:text-brand-200'
 })
 
 // Helper methods for getting names from IDs

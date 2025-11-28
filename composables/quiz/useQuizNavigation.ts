@@ -18,3 +18,4 @@ export function useQuizNavigation(questions: any) {
 
   return { currentQuestion, nextQuestion, previousQuestion }
 }
+

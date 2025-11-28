@@ -1,6 +1,6 @@
 export const heroPalettes: Record<string, string> = {
   subjects: 'bg-emerald-600 text-white',
-  topics: 'bg-indigo-600 text-white',
+  topics: 'bg-brand-600 text-white',
   grades: 'bg-yellow-600 text-white',
   quizzes: 'bg-sky-600 text-white',
   pricing: 'bg-purple-600 text-white',
@@ -11,6 +11,6 @@ export const heroPalettes: Record<string, string> = {
 }
 
 export function getHeroClass(key?: string) {
-  if (!key) return 'bg-indigo-600 text-white'
-  return heroPalettes[key] || 'bg-indigo-600 text-white'
+  if (!key) return 'bg-brand-600 text-white'
+  return heroPalettes[key] || 'bg-brand-600 text-white'
 }

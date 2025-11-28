@@ -10,3 +10,4 @@ const props = defineProps({ label: { type: String, default: '' }, labelClass: { 
 </script>
 
 <style scoped></style>
+

@@ -179,7 +179,7 @@ function winRateClass(rate) {
   if (v >= 70)
     return "px-3 py-1 rounded-full text-sm font-medium inline-block bg-green-100 text-green-700";
   if (v >= 40)
-    return "px-3 py-1 rounded-full text-sm font-medium inline-block bg-blue-100 text-blue-700";
+    return "px-3 py-1 rounded-full text-sm font-medium inline-block bg-brand-100 text-brand-700";
   return "px-3 py-1 rounded-full text-sm font-medium inline-block bg-gray-100 text-gray-700";
 }
 </script>
@@ -187,3 +187,4 @@ function winRateClass(rate) {
 <style scoped>
 /* small scope */
 </style>
+

@@ -77,7 +77,7 @@ const navigationItems = computed(() => [
     label: 'Members',
     description: 'Manage team members',
     icon: '👥',
-    colorBadge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    colorBadge: 'bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300',
     href: `/institution-manager/institutions/${slug}/members`,
     badge: membersCount.value
   },
@@ -101,7 +101,7 @@ const navigationItems = computed(() => [
     label: 'Analytics',
     description: 'View performance data',
     icon: '📊',
-    colorBadge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+    colorBadge: 'bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300',
     href: `/institution-manager/institutions/${slug}/analytics`,
     badge: null
   },
@@ -174,7 +174,7 @@ onMounted(loadData)
             v-for="item in navigationItems"
             :key="item.label"
             :to="item.href"
-            class="group relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 sm:p-6 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200"
+            class="group relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 sm:p-6 hover:shadow-md hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200"
           >
             <div class="flex items-start justify-between mb-3">
               <div class="text-2xl">{{ item.icon }}</div>
@@ -195,7 +195,7 @@ onMounted(loadData)
           <NuxtLink
             to="/institution-manager/subscriptions"
             :query="{ institutionSlug: slug }"
-            class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto"
+            class="inline-flex items-center justify-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto"
           >
             💳 Manage Subscriptions
           </NuxtLink>

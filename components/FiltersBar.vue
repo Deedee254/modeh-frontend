@@ -31,7 +31,7 @@
           <p class="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">Applied filters</p>
           <div class="flex flex-wrap gap-2">
             <template v-if="activeLevelLabel">
-              <button @click="removeLevel" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors duration-200 group">
+              <button @click="removeLevel" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600/10 dark:bg-brand-600/30 text-brand-600 dark:text-accent-500 text-xs font-medium rounded-full hover:bg-brand-600/20 dark:hover:bg-brand-600/50 transition-colors duration-200 group">
                 <span>{{ activeLevelLabel }}</span>
                 <svg class="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -72,7 +72,7 @@
             <div class="space-y-2.5">
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Level</label>
               <div class="relative">
-                <select v-model="localLevel" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer">
+                <select v-model="localLevel" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer">
                   <option :value="null" class="text-slate-600">All levels</option>
                   <option v-for="l in filteredLevels" :key="l.id" :value="l.id" class="text-slate-900">{{ l.name || ('Level ' + l.id) }}</option>
                 </select>
@@ -80,7 +80,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
                 <span v-else class="absolute right-3 top-1/2 -translate-y-1/2">
-                  <span class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin block"></span>
+                  <span class="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin block"></span>
                 </span>
               </div>
             </div>
@@ -143,7 +143,7 @@
           <button @click="onClear" class="flex-1 px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200">
             Reset
           </button>
-          <button @click="onApply" class="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 text-white text-sm font-semibold hover:from-indigo-700 hover:to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all duration-200">
+          <button @click="onApply" class="flex-1 px-4 py-2.5 rounded-lg text-white text-sm font-semibold shadow-lg transition-all duration-200" style="background: linear-gradient(to right, #891f21, #a83435); box-shadow: 0 10px 15px -3px rgba(137, 31, 33, 0.3)">
             Apply
           </button>
         </div>
@@ -165,7 +165,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
                 <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">Filters</span>
-                <span v-if="hasAnyActive" class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold">{{ activeFilterCount }}</span>
+                <span v-if="hasAnyActive" class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-brand-600/10 dark:bg-brand-600/30 text-brand-600 dark:text-accent-500 text-xs font-bold">{{ activeFilterCount }}</span>
               </div>
               <svg class="w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform duration-300" :style="{ transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -178,7 +178,7 @@
                 <div class="grid grid-cols-2 gap-3">
                   <div class="space-y-1.5">
                     <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Level</label>
-                    <select v-model="localLevel" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <select v-model="localLevel" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-brand-600 focus:border-transparent">
                       <option :value="null">All</option>
                       <option v-for="l in filteredLevels" :key="l.id" :value="l.id">{{ l.name }}</option>
                     </select>
@@ -209,7 +209,7 @@
                 </div>
                 <div class="flex gap-2 pt-2">
                   <button @click="onClear" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Reset</button>
-                  <button @click="onApply" class="flex-1 px-3 py-2 rounded-lg bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors">Apply</button>
+                  <button @click="onApply" class="flex-1 px-3 py-2 rounded-lg text-xs font-semibold text-white transition-colors" style="background-color: #891f21">Apply</button>
                 </div>
               </div>
             </transition>
@@ -226,7 +226,7 @@
 
             <div class="flex-1 flex items-center gap-3">
               <div class="min-w-[140px]">
-                <select v-model="localLevel" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-50 font-medium focus:ring-2 focus:ring-indigo-500">
+                <select v-model="localLevel" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-50 font-medium focus:ring-2 focus:ring-brand-600">
                   <option :value="null">All levels</option>
                   <option v-for="l in filteredLevels" :key="l.id" :value="l.id">{{ l.name }}</option>
                 </select>
@@ -255,7 +255,7 @@
               <button @click="onClear" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 Reset
               </button>
-              <button @click="onApply" class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 text-sm font-semibold text-white hover:from-indigo-700 hover:to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all">
+              <button @click="onApply" class="px-4 py-2 rounded-lg text-sm font-semibold text-white shadow-lg transition-all" style="background: linear-gradient(to right, #891f21, #a83435); box-shadow: 0 10px 15px -3px rgba(137, 31, 33, 0.3)">
                 Apply
               </button>
             </div>
@@ -624,3 +624,4 @@ button {
   transition: all 0.2s ease;
 }
 </style>
+

@@ -14,13 +14,12 @@
 
       <div class="relative z-20 w-full px-4 sm:px-6 py-20 flex items-center justify-center">
         <div class="w-full max-w-7xl mx-auto">
-          <ClientOnly>
-            <!-- Authenticated: Welcome section -->
-            <template v-if="auth.user">
+          <!-- Authenticated: Welcome section -->
+          <template v-if="auth.user">
               <div class="text-center max-w-3xl mx-auto px-4">
                 <h1 class="text-5xl sm:text-6xl font-bold text-white mb-2">Welcome back, {{ auth.user.name }}! 👋</h1>
               <div class="h-20 flex items-center justify-center">
-                <p class="text-xl sm:text-2xl text-indigo-100 font-semibold transition-all duration-700">
+                <p class="text-xl sm:text-2xl text-brand-100 font-semibold transition-all duration-700">
                   {{ rotatingMessages[currentMessageIndex] }}
                 </p>
               </div>
@@ -28,7 +27,7 @@
               <div class="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <!-- Quizee Dashboard -->
                 <template v-if="auth.user.role === 'quizee'">
-                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">
+                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
                     <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
                     Dashboard
                   </NuxtLink>
@@ -40,7 +39,7 @@
 
                 <!-- Quiz Master Dashboard -->
                 <template v-else-if="auth.user.role === 'quiz-master'">
-                  <NuxtLink to="/quiz-master/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-emerald-500/50 transition-all transform hover:scale-105">
+                  <NuxtLink to="/quiz-master/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
                     <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
                     Dashboard
                   </NuxtLink>
@@ -52,7 +51,7 @@
 
                 <!-- Default Dashboard for other roles -->
                 <template v-else>
-                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">
+                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
                     <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
                     Dashboard
                   </NuxtLink>
@@ -74,7 +73,7 @@
                 </h1>
               </div>
               <div class="h-24 flex items-center justify-center">
-                <p class="text-lg sm:text-xl text-indigo-100 font-medium transition-all duration-700">
+                <p class="text-lg sm:text-xl text-brand-100 font-medium transition-all duration-700">
                   {{ rotatingMessages[currentMessageIndex] }}
                 </p>
               </div>
@@ -84,18 +83,17 @@
                   <Icon name="heroicons:squares-2x2-20-solid" class="h-5 w-5" />
                   Explore Quizzes
                 </NuxtLink>
-                <NuxtLink to="/register" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:scale-105">
+                <NuxtLink to="/register" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
                   <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5" />
                   Create Account
                 </NuxtLink>
               </div>
               
-              <div class="mt-8 text-sm text-indigo-100">
+              <div class="mt-8 text-sm text-brand-100">
                 Already have an account? Sign in using the <span class="font-semibold">Login</span> button in the header.
               </div>
             </div>
           </template>
-        </ClientOnly>
         </div>
       </div>
     </section>
@@ -106,7 +104,7 @@
     <section class="relative mt-16">
       <div class="mx-auto max-w-6xl">
         <div class="text-center">
-          <p class="text-sm font-semibold tracking-wide text-indigo-500 uppercase">How it works</p>
+          <p class="text-sm font-semibold tracking-wide text-brand-600 uppercase">How it works</p>
           <h2 class="mt-3 text-3xl font-bold text-slate-900">Start learning in four simple steps</h2>
           <p class="mt-3 text-base text-slate-600">A learning workflow designed for clarity and steady progress — pick a learning path, practice with targeted quizzes, review instant feedback, and track improvement over time.</p>
         </div>
@@ -114,7 +112,7 @@
         <!-- Mobile Timeline (vertical) -->
         <div class="mt-14 md:hidden">
           <div class="relative space-y-8">
-            <div class="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-rose-500 to-amber-500"></div>
+            <div class="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-600 via-accent-500 to-brand-950"></div>
             <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative pl-24 animate-fade-in" :style="{ '--animation-delay': `${index * 0.15}s` }">
               <div class="absolute left-0 top-2 h-16 w-16 flex items-center justify-center rounded-full border-4 border-white bg-gradient-to-br" :class="step.badge">
                 <UIcon :name="step.icon" class="text-white text-xl" />
@@ -151,10 +149,10 @@
 
         <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <div class="flex items-center gap-2 rounded-full border p-1">
-            <button @click="selectedTab = 'all'" :class="selectedTab === 'all' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">All</button>
-            <button @click="selectedTab = 'new'" :class="selectedTab === 'new' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">New</button>
-            <button @click="selectedTab = 'top'" :class="selectedTab === 'top' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Top</button>
-            <button @click="selectedTab = 'featured'" :class="selectedTab === 'featured' ? 'bg-indigo-500 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Featured</button>
+            <button @click="selectedTab = 'all'" :class="selectedTab === 'all' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">All</button>
+            <button @click="selectedTab = 'new'" :class="selectedTab === 'new' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">New</button>
+            <button @click="selectedTab = 'top'" :class="selectedTab === 'top' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Top</button>
+            <button @click="selectedTab = 'featured'" :class="selectedTab === 'featured' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Featured</button>
           </div>
         </div>
 
@@ -166,7 +164,7 @@
         </div>
 
         <div class="mt-8 text-center">
-          <NuxtLink to="/quizzes" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 rounded-lg">Show all quizzes</NuxtLink>
+          <NuxtLink to="/quizzes" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all quizzes</NuxtLink>
         </div>
       </div>
     </section>
@@ -174,7 +172,7 @@
     <section class="py-10">
       <div class="mx-auto max-w-6xl">
           <header class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Subjects</div>
+          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Subjects</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Subjects & learning paths</h3>
           <p class="mt-3 text-slate-600">Explore subject tracks with aligned quizzes and topic roadmaps to guide learning and progression.</p>
         </header>
@@ -184,13 +182,13 @@
             v-for="subject in randomSubjects"
             :key="subject.id"
             :subject="subject"
+            :to="`/subjects/${subject.slug || subject.id}`"
             :title="subject.name"
             :subtitle="`Grades ${ Array.isArray(subject.grades) ? subject.grades.map(g => g.name || g.id).join(', ') : subject.grade?.name || subject.grade_id || 'All' }`"
             :image="subject.image"
             :badgeText="(subject.name || '').charAt(0).toUpperCase()"
             :topicsCount="subject.topics_count || subject.topics?.length || 0"
             :quizzes_count="subject.quizzes_count || subject.count || 0"
-            :startLink="`/subjects/${subject.slug || subject.id}`"
             :description="subject.description || subject.summary || ''"
             :grade="subject.grade?.name || subject.grade_id || ''"
             startLabel="Explore Topics"
@@ -198,7 +196,7 @@
           />
         </div>
         <div class="mt-6 text-center">
-          <NuxtLink to="/subjects" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg">Show all subjects</NuxtLink>
+          <NuxtLink to="/subjects" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all subjects</NuxtLink>
         </div>
       </div>
     </section>
@@ -207,7 +205,7 @@
     <section class="py-10">
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Levels</div>
+          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Levels</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Learning levels</h3>
           <p class="mt-3 text-slate-600">Navigate content organized by learning level — Early Years, Primary, Secondary, and Tertiary — to find age-appropriate material and pathways.</p>
         </header>
@@ -215,7 +213,7 @@
         <!-- Carousel for all screen sizes -->
         <ClientOnly>
           <div class="mt-10">
-            <Carousel :items="safeArray(levels)" :perViewSm="3" :perViewMd="4" :perViewLg="5" :perView="6" :auto="false">
+            <Carousel :items="safeArray(levels)" :perViewXs="2" :perViewSm="2" :perViewMd="4" :perViewLg="5" :perView="6" :auto="false">
               <template #item="{ item }">
                 <div class="px-1 sm:px-2">
                   <LevelCard
@@ -234,15 +232,15 @@
         </ClientOnly>
 
         <div class="mt-6 text-center">
-          <NuxtLink to="/levels" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg">View all levels</NuxtLink>
+          <NuxtLink to="/levels" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">View all levels</NuxtLink>
         </div>
       </div>
     </section>
 
-    <section class="py-12 bg-gradient-to-br from-white to-indigo-50">
+    <section class="py-12 bg-gradient-to-br from-white to-brand-600/10">
       <div class="mx-auto max-w-6xl">
         <header class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Grades</div>
+          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Grades</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Grades</h3>
           <p class="mt-3 text-slate-600">Find quizzes and resources organized by grade so learners and educators can match content to curriculum standards.</p>
         </header>
@@ -275,12 +273,12 @@
           <div v-for="(topic, index) in randomTopics" :key="topic.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
             <TopicCard
               :topic="topic"
+              :to="`/topics/${topic.id}`"
               :title="topic.name"
               :image="topic.image || topic.cover_image || ''"
               :grade="getTopicGradeLabel(topic)"
               :subject="getTopicSubjectLabel(topic)"
               :quizzesCount="topic.quizzes_count || topic.quizzes?.length || 0"
-              :startLink="`/topics/${topic.id}`"
               :description="topic.description || topic.summary || ''"
               startLabel="View Quizzes"
               class="h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
@@ -288,13 +286,13 @@
           </div>
         </div>
         <div class="mt-6 text-center">
-          <NuxtLink to="/topics" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">Show all topics</NuxtLink>
+          <NuxtLink to="/topics" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all topics</NuxtLink>
         </div>
       </div>
     </section>
 
     <!-- Tertiary Courses Section -->
-    <section class="py-10 bg-gradient-to-br from-violet-50 to-purple-50">
+    <section class="py-10 bg-gradient-to-br from-brand-600/10 to-brand-950/10">
       <div class="mx-auto max-w-6xl">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-purple-500 font-semibold">Tertiary Level</div>
@@ -317,7 +315,7 @@
           </div>
         </div>
         <div class="mt-6 text-center">
-          <NuxtLink to="/courses" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">Show all courses</NuxtLink>
+          <NuxtLink to="/courses" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all courses</NuxtLink>
         </div>
       </div>
     </section>
@@ -326,7 +324,7 @@
     <section class="py-10">
       <div class="mx-auto max-w-6xl">
         <div class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-indigo-500 font-semibold">Creators</div>
+          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Creators</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Creators & contributors</h3>
           <p class="mt-3 text-slate-600">Educators and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
         </div>
@@ -347,7 +345,7 @@
     <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
   </div>
         <div class="mt-6 text-center">
-          <NuxtLink to="/quiz-masters" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg">View all quiz-masters</NuxtLink>
+          <NuxtLink to="/quiz-masters" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">View all quiz-masters</NuxtLink>
         </div>
       </div>
     </section>
@@ -355,24 +353,24 @@
     <!-- Redesigned Call to Action Section -->
     <section class="my-12">
       <div class="mx-auto max-w-6xl">
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-16 sm:px-12 sm:py-20">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 to-brand-950 px-6 py-16 sm:px-12 sm:py-20">
           <div class="relative text-center">
             <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
               Ready to Start Your Learning Journey?
             </h2>
-            <p class="mx-auto mt-4 max-w-2xl text-lg text-indigo-100">
+            <p class="mx-auto mt-4 max-w-2xl text-lg text-white/90">
               Join thousands of learners and creators. Sign up for free to access quizzes, track your progress, and achieve your goals.
             </p>
-            <NuxtLink to="/register" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50 sm:w-auto">Get Started for Free</NuxtLink>
+            <NuxtLink to="/register" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90 sm:w-auto">Get Started for Free</NuxtLink>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Testimonials -->
-    <section class="py-8 bg-gradient-to-br from-indigo-50 to-white">
+    <section class="py-8 bg-gradient-to-br from-brand-600/10 to-white">
       <div class="mx-auto max-w-6xl">
-  <h3 class="text-2xl font-bold text-indigo-900 mb-4 text-center">Success Stories</h3>
+  <h3 class="text-2xl font-bold text-brand-900 mb-4 text-center">Success Stories</h3>
         <client-only>
         <Carousel :items="safeArray(testimonials)" :perViewLg="3" :perViewMd="2" :perViewSm="1" auto>
           <template #item="{ item }">
@@ -385,10 +383,10 @@
                 </div>
                 <blockquote class="text-lg text-gray-700 mb-4">"{{ item.quote || 'Great experience with Modeh!' }}"</blockquote>
                 <div class="flex items-center gap-3">
-                  <div class="h-12 w-12 rounded-full bg-indigo-100 grid place-items-center text-indigo-700 font-semibold">{{ (item.name || 'A').charAt(0) }}</div>
+                  <div class="h-12 w-12 rounded-full bg-brand-600/10 grid place-items-center text-brand-600 font-semibold">{{ (item.name || 'A').charAt(0) }}</div>
                   <div>
                     <div class="font-semibold text-gray-900">{{ item.name || 'Anonymous' }}</div>
-                    <div class="text-sm text-indigo-600">{{ item.role || 'User' }}</div>
+                    <div class="text-sm text-brand-600">{{ item.role || 'User' }}</div>
                   </div>
                 </div>
               </div>
@@ -406,8 +404,8 @@
         <Carousel :items="safeArray(sponsors)" :perView="5" :perViewSm="3" :perViewXs="2" auto>
           <template #item="{ item }">
             <div class="px-6 py-4">
-              <div class="relative h-20 flex items-center justify-center">
-                <img :src="item.logo || '/default-logo.png'" :alt="item.name || 'Sponsor'" class="h-12 sm:h-10 md:h-12 object-contain grayscale max-w-full" />
+              <div class="relative h-40 flex items-center justify-center">
+                <img :src="item.logo || '/default-logo.png'" :alt="item.name || 'Sponsor'" class="h-28 sm:h-24 md:h-28 object-contain grayscale max-w-full" />
               </div>
             </div>
           </template>
@@ -417,15 +415,15 @@
     </section>
 
     <!-- Newsletter CTA (solid color background) -->
-    <section class="py-12 bg-indigo-700 text-white">
+    <section class="py-12 bg-brand-600 text-white">
       <div class="mx-auto max-w-4xl text-center px-4">
         <h3 class="text-2xl font-bold">Get weekly learning insights</h3>
-        <p class="mt-2 text-indigo-100">Receive curated quizzes, practical tips, and insights to keep your practice focused and effective.</p>
+        <p class="mt-2 text-white/90">Receive curated quizzes, practical tips, and insights to keep your practice focused and effective.</p>
         <form @submit.prevent class="mt-6">
           <label for="homepage-newsletter" class="sr-only">Email address</label>
           <div class="mx-auto max-w-xl grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
             <input id="homepage-newsletter" type="email" placeholder="Your email" class="w-full rounded-xl border border-transparent px-4 py-3 bg-white text-slate-900 placeholder-slate-400" />
-            <button class="w-full sm:w-auto rounded-xl bg-amber-400 text-slate-900 px-6 py-3 font-semibold hover:bg-amber-300 transition">Subscribe</button>
+            <button class="w-full sm:w-auto rounded-xl bg-accent-500 text-slate-900 px-6 py-3 font-semibold hover:bg-accent-600 transition">Subscribe</button>
           </div>
         </form>
       </div>
@@ -508,35 +506,68 @@ function safeArray(input) {
 // tabs
 const selectedTab = ref('all')
 
-// data fetches
-// Fetch latest quizzes
-const quizzesRes = await api.get('/api/quizzes?latest=1')
-const quizzesData = quizzesRes.ok ? await quizzesRes.json() : null
-const latestQuizzes = safeArray(quizzesData?.quizzes?.data || quizzesData?.quizzes || quizzesData).slice(0, 12)
-const featuredQuiz = latestQuizzes.length ? latestQuizzes[0] : null
+// data fetches - non-blocking
+// All data fetching is now async and won't block hero section rendering
+let quizzesData = null
+let quizMastersData = null
+let testimonialsData = null
+let sponsorsData = null
 
+// Initialize with empty arrays - will be populated by async fetches
+const latestQuizzes = ref([])
+const featuredQuiz = ref(null)
+const featuredQuizMasters = ref([])
+const testimonials = ref([])
+const sponsors = ref([])
+
+// Fetch data asynchronously without blocking
+const loadDynamicData = async () => {
+  try {
+    // Fetch in parallel for better performance
+    const [quizzesRes, quizMastersRes, testimonialsRes, sponsorsRes] = await Promise.all([
+      api.get('/api/quizzes?latest=1'),
+      api.get('/api/quiz-masters'),
+      api.get('/api/testimonials'),
+      api.get('/api/sponsors')
+    ])
+
+    // Process quizzes
+    if (quizzesRes.ok) {
+      quizzesData = await quizzesRes.json()
+      latestQuizzes.value = safeArray(quizzesData?.quizzes?.data || quizzesData?.quizzes || quizzesData).slice(0, 12)
+      featuredQuiz.value = latestQuizzes.value.length ? latestQuizzes.value[0] : null
+    }
+
+    // Process quiz masters
+    if (quizMastersRes.ok) {
+      quizMastersData = await quizMastersRes.json()
+      featuredQuizMasters.value = safeArray(
+        quizMastersData?.['quiz-masters']?.data ||
+        quizMastersData?.['quiz-masters'] ||
+        quizMastersData?.data ||
+        quizMastersData
+      ).slice(0, 4)
+    }
+
+    // Process testimonials
+    if (testimonialsRes.ok) {
+      testimonialsData = await testimonialsRes.json()
+      testimonials.value = testimonialsData?.testimonials?.data || testimonialsData?.testimonials || testimonialsData || []
+    }
+
+    // Process sponsors
+    if (sponsorsRes.ok) {
+      sponsorsData = await sponsorsRes.json()
+      sponsors.value = sponsorsData?.sponsors?.data || sponsorsData?.sponsors || sponsorsData || []
+    }
+  } catch (error) {
+    console.error('Error loading dynamic data:', error)
+  }
+}
+
+// data fetches - blocking only for critical SEO data
 const { fetchGrades, fetchAllSubjects, fetchAllTopics, fetchLevels, grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels } = useTaxonomy()
 const topicsList = taxTopics
-
-// Fetch quiz masters
-const quizMastersRes = await api.get('/api/quiz-masters')
-const quizMastersData = quizMastersRes.ok ? await quizMastersRes.json() : null
-const featuredQuizMasters = safeArray(
-  quizMastersData?.['quiz-masters']?.data ||
-  quizMastersData?.['quiz-masters'] ||
-  quizMastersData?.data ||
-  quizMastersData
-).slice(0, 4)
-
-// Fetch testimonials
-const testimonialsRes = await api.get('/api/testimonials')
-const testimonialsData = testimonialsRes.ok ? await testimonialsRes.json() : null
-const testimonials = testimonialsData?.testimonials?.data || testimonialsData?.testimonials || testimonialsData || []
-
-// Fetch sponsors
-const sponsorsRes = await api.get('/api/sponsors')
-const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : null
-const sponsors = sponsorsData?.sponsors?.data || sponsorsData?.sponsors || sponsorsData || []
 
 const SUBJECTS = computed(() => Array.isArray(taxSubjects.value) ? taxSubjects.value : [])
 const GRADES = computed(() => Array.isArray(taxGrades.value) ? taxGrades.value : [])
@@ -574,7 +605,7 @@ const displayedQuizzes = computed(() => {
 })
 
 function pickPaletteClass(id){
-  const palettes = ['bg-gradient-to-br from-indigo-200 via-indigo-100 to-sky-100 text-indigo-800','bg-gradient-to-br from-rose-200 via-rose-100 to-pink-100 text-rose-800','bg-gradient-to-br from-emerald-200 via-emerald-100 to-lime-100 text-emerald-800','bg-gradient-to-br from-yellow-200 via-amber-100 to-amber-50 text-amber-800','bg-gradient-to-br from-fuchsia-200 via-fuchsia-100 to-pink-50 text-fuchsia-800','bg-gradient-to-br from-sky-200 via-sky-100 to-indigo-50 text-sky-800']
+  const palettes = ['bg-gradient-to-br from-brand-600/30 via-brand-600/20 to-brand-950/10 text-brand-600','bg-gradient-to-br from-rose-200 via-rose-100 to-pink-100 text-rose-800','bg-gradient-to-br from-emerald-200 via-emerald-100 to-lime-100 text-emerald-800','bg-gradient-to-br from-yellow-200 via-amber-100 to-amber-50 text-amber-800','bg-gradient-to-br from-fuchsia-200 via-fuchsia-100 to-pink-50 text-fuchsia-800','bg-gradient-to-br from-brand-600/20 via-brand-600/15 to-brand-950/10 text-brand-600']
   return palettes[(id||0)%palettes.length]
 }
 
@@ -584,8 +615,11 @@ onMounted(() => {
 
   // Then fetch other data in parallel
   Promise.all([
+    fetchGrades(),
+    fetchAllSubjects(),
+    fetchAllTopics(),
     fetchLevels(),
-    fetchAllTopics()
+    loadDynamicData()  // Load quizzes, quiz masters, testimonials, sponsors asynchronously
   ]).catch(() => {})
 })
 
@@ -676,7 +710,7 @@ const howItWorksSteps = computed(() => [
     number: '01',
     title: 'Choose your path',
     description: 'Browse curated subjects and quizzes that fit your grade level and goals.',
-    badge: 'bg-gradient-to-br from-indigo-500 to-sky-500',
+    badge: 'bg-gradient-to-br from-brand-600 to-brand-950',
     glow: 'bg-sky-400/60',
     icon: 'heroicons:map-20-solid',
     link: { href: '/grades', label: 'Explore grades' },

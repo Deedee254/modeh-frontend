@@ -67,3 +67,4 @@ onMounted(() => { void load() })
 <style scoped>
 .absolute { position: absolute }
 </style>
+

@@ -41,10 +41,11 @@ function optionMedia(opt) {
 
 function btnClass(opt){
   const isSelected = props.modelValue === opt
-  return isSelected ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-500' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+  return isSelected ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:border-brand-500' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50'
 }
 </script>
 
 <style scoped>
 .w-full { width: 100% }
 </style>
+

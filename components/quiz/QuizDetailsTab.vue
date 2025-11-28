@@ -179,14 +179,14 @@
             <span class="text-xs text-gray-500">Subject:</span>
             <span class="font-medium text-gray-900 flex items-center gap-1">
               {{ selectedSubjectName || '—' }}
-              <Icon v-if="selectedSubject" name="i-heroicons-check-circle" class="h-4 w-4 text-green-500" />
+              <Icon v-if="selectedSubject" name="i-heroicons-check-circle" class="h-4 w-4" :style="{ color: '#891f21' }" />
             </span>
           </div>
           <div class="flex items-center gap-1.5">
             <span class="text-xs text-gray-500">Topic:</span>
             <span class="font-medium text-gray-900 flex items-center gap-1">
               {{ selectedTopicName || '—' }}
-              <Icon v-if="selectedTopic" name="i-heroicons-check-circle" class="h-4 w-4 text-green-500" />
+              <Icon v-if="selectedTopic" name="i-heroicons-check-circle" class="h-4 w-4" :style="{ color: '#891f21' }" />
             </span>
           </div>
         </div>
@@ -198,7 +198,7 @@
     <!-- Bottom Actions -->
     <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
       <UButton size="sm" variant="soft" icon="i-heroicons-document-arrow-down" @click="saveAndContinue" :loading="saving" class="w-full sm:w-auto">Save and Continue</UButton>
-      <UButton size="sm" color="primary" icon="i-heroicons-arrow-right" @click="validateAndGoNext" class="w-full sm:w-auto">Continue to Settings</UButton>
+      <UButton size="sm" color="primary" icon="i-heroicons-arrow-right" @click="validateAndGoNext" class="w-full sm:w-auto !bg-brand-600 hover:!bg-brand-700">Continue to Settings</UButton>
     </div>
   </div>
 </template>
@@ -706,14 +706,33 @@ function onGradeSelected(item) {
     lastSelectedGrade.value = item || null
     selectedGrade.value = item?.id || ''
     try { console.debug('QuizDetailsTab: onGradeSelected item', item, 'selectedGrade', selectedGrade.value) } catch (e) {}
+    
+    // Directly emit update to parent (same pattern as onTopicPicked) to ensure grade_id reaches store
+    // This bypasses the suppressWatchers check that was preventing grade from being saved
+    const currentId = item?.id || ''
+    const gradePayload = item || null
+    const nextModel = {
+      ...props.modelValue,
+      grade_id: currentId ? currentId : null,
+      grade: gradePayload,
+      grade_name: item?.name || item?.label || null,
+      subject_id: null,  // Clear dependent selections when grade changes
+      subject: null,
+      topic_id: null,
+      topic: null
+    }
+    emit('update:modelValue', nextModel)
+    
     // Auto focus subjects picker after grade selection
-    nextTick(() => {
+    nextTick(async () => {
       if (subjectsPicker.value) {
         subjectsPicker.value.focusSearch()
         if (subjectsPicker.value.$el && typeof subjectsPicker.value.$el.scrollIntoView === 'function') {
           subjectsPicker.value.$el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
       }
+      // Fetch subjects for the selected grade
+      try { await fetchSubjectsByGrade(currentId) } catch (e) {}
     })
   } catch (e) {}
 }

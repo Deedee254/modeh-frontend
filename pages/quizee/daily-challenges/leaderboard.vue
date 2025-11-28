@@ -238,7 +238,7 @@ onMounted(async () => {
               type="date"
               id="date-filter"
               v-model="filters.date"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600 sm:text-sm"
             />
           </div>
           <div>
@@ -250,7 +250,7 @@ onMounted(async () => {
             <select
               id="level-filter"
               v-model="filters.level_id"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600 sm:text-sm"
             >
               <option value="">All Levels</option>
               <option v-for="level in levels" :key="level.id" :value="level.id">
@@ -267,7 +267,7 @@ onMounted(async () => {
             <select
               id="grade-filter"
               v-model="filters.grade_id"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600 sm:text-sm"
               :disabled="!grades.length"
             >
               <option value="">All Grades</option>
@@ -292,7 +292,7 @@ onMounted(async () => {
         </div>
         <div v-if="loading" class="p-8 text-center text-gray-500">
           <svg
-            class="animate-spin h-8 w-8 text-indigo-600 mx-auto"
+            class="animate-spin h-8 w-8 text-brand-600 mx-auto"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"

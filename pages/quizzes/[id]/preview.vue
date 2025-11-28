@@ -32,20 +32,20 @@
             <div class="space-y-8 grid grid-cols-1 md:grid-cols-3 md:gap-12">
               <div class="md:col-span-2 space-y-6">
                 <div class="flex flex-col gap-6 sm:flex-row sm:items-center">
-                  <div class="w-full h-40 rounded-2xl border border-indigo-200 bg-indigo-50 overflow-hidden flex items-center justify-center sm:w-48 sm:h-48 flex-shrink-0">
+                  <div class="w-full h-40 rounded-2xl border border-brand-200 bg-brand-50 overflow-hidden flex items-center justify-center sm:w-48 sm:h-48 flex-shrink-0">
                     <img v-if="quiz.cover" :src="quiz.cover" class="h-full w-full object-cover" onerror="this.style.display='none'" />
-                    <svg v-else class="h-16 w-16 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg v-else class="h-16 w-16 text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
                     </svg>
                   </div>
                   <div class="flex-1 space-y-4">
                     <div>
-                      <p class="text-sm font-semibold uppercase tracking-wide text-indigo-600">Quiz Preview</p>
+                      <p class="text-sm font-semibold uppercase tracking-wide text-brand-600">Quiz Preview</p>
                       <h1 class="mt-2 text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{{ quiz.title || 'Untitled Quiz' }}</h1>
                     </div>
                     <p class="text-sm md:text-base leading-relaxed text-gray-700">{{ quiz.short_description || quiz.description || 'This is a sample preview of the quiz content. Dive in to see what awaits you!' }}</p>
                     <div class="flex flex-wrap gap-4 pt-2">
-                      <div class="inline-flex items-center rounded-full bg-indigo-100 px-4 py-1.5 text-sm font-semibold text-indigo-700">
+                      <div class="inline-flex items-center rounded-full bg-brand-100 px-4 py-1.5 text-sm font-semibold text-brand-700">
                         <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         {{ questionCount }} questions
                       </div>
@@ -55,7 +55,7 @@
                       </div>
                     </div>
                     <div class="pt-4">
-                      <NuxtLink :to="`/quizzes/${quiz.id}`" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                      <NuxtLink :to="`/quizzes/${quiz.id}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                         View Full Quiz
                         <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                       </NuxtLink>
@@ -72,7 +72,7 @@
                     <div class="text-sm md:text-base font-medium text-gray-600">Question:</div>
                     <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed" v-html="sampleQuestion.text || sampleQuestion.body || sampleQuestion.question"></div>
                     <div class="space-y-3">
-                      <div v-for="(opt, i) in (sampleQuestion.options || [])" :key="i" class="rounded-xl border border-gray-300 bg-gray-50 px-5 py-3 text-sm md:text-base font-medium text-gray-800 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer">
+                      <div v-for="(opt, i) in (sampleQuestion.options || [])" :key="i" class="rounded-xl border border-gray-300 bg-gray-50 px-5 py-3 text-sm md:text-base font-medium text-gray-800 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 cursor-pointer">
                         <span v-html="opt?.text || opt"></span>
                       </div>
                     </div>
@@ -100,23 +100,23 @@
                   </div>
                 </div>
 
-                <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 text-indigo-800 shadow-md">
+                <div class="rounded-2xl border border-brand-200 bg-brand-50 p-6 text-brand-800 shadow-md">
                   <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-indigo-600 flex-shrink-0">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-brand-600 flex-shrink-0">
                       <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2" /></svg>
                     </div>
                     <div>
                       <p class="text-base md:text-lg font-semibold">Ready to take the quiz?</p>
-                      <p class="text-sm text-indigo-700/90 mt-1">Jump back to the full experience to attempt all questions and track your progress.</p>
+                      <p class="text-sm text-brand-700/90 mt-1">Jump back to the full experience to attempt all questions and track your progress.</p>
                     </div>
                   </div>
                   <div class="mt-6 flex flex-col gap-4">
-                    <NuxtLink :to="`/quizzes/${quiz.id}`" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <NuxtLink :to="`/quizzes/${quiz.id}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                       Start Quiz
                       <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                     </NuxtLink>
                     <div class="flex gap-4">
-                      <button @click="reportIssue" class="flex-1 inline-flex items-center justify-center rounded-xl border border-indigo-300 px-6 py-3 text-sm md:text-base font-semibold text-indigo-700 transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                      <button @click="reportIssue" class="flex-1 inline-flex items-center justify-center rounded-xl border border-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-brand-600 transition hover:bg-brand-600/10 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                         Report an Issue
                       </button>
                       <AffiliateShareButton 
@@ -136,7 +136,7 @@
           <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl">
             <div class="p-6 sm:p-8 lg:p-10">
               <div class="flex flex-col gap-6 sm:flex-row sm:items-center">
-                <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 flex-shrink-0">
+                <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 text-brand-600 flex-shrink-0">
                   <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
                   </svg>
@@ -144,19 +144,19 @@
 
                 <div class="flex-1 space-y-4">
                   <div>
-                    <p class="text-sm font-semibold uppercase tracking-wide text-indigo-600">Preview Unavailable</p>
+                    <p class="text-sm font-semibold uppercase tracking-wide text-brand-600">Preview Unavailable</p>
                     <h1 class="mt-2 text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">We couldn’t find this quiz preview</h1>
                   </div>
                   <p class="text-sm md:text-base leading-relaxed text-gray-700">This quiz might not have public preview content enabled yet, or it might have been removed. You can return to the quiz details or explore other quizzes instead.</p>
 
                   <div class="flex flex-col gap-4 pt-4 sm:flex-row">
-                    <NuxtLink :to="`/quizzes/${id}`" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <NuxtLink :to="`/quizzes/${id}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                       Back to Quiz
                     </NuxtLink>
-                    <NuxtLink to="/quizzes" class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-6 py-3 text-sm md:text-base font-semibold text-gray-700 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <NuxtLink to="/quizzes" class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-6 py-3 text-sm md:text-base font-semibold text-gray-700 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                       Browse Quizzes
                     </NuxtLink>
-                    <button @click="reportIssue" class="inline-flex items-center justify-center rounded-xl border border-transparent px-6 py-3 text-sm md:text-base font-semibold text-gray-600 transition hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <button @click="reportIssue" class="inline-flex items-center justify-center rounded-xl border border-transparent px-6 py-3 text-sm md:text-base font-semibold text-gray-600 transition hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                       Report a Problem
                     </button>
                   </div>

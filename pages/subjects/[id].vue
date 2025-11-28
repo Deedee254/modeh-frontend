@@ -21,7 +21,7 @@
           </NuxtLink>
           <NuxtLink
             :to="`/quizzes?subject=${encodeURIComponent(subject.slug || subject.id)}`"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
+            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
             Explore assessments
           </NuxtLink>

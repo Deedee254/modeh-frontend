@@ -100,13 +100,13 @@ if (institutionId.value) await load()
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">{{ institution?.email }}</p>
             
             <div class="grid grid-cols-2 sm:grid-cols-2 gap-4">
-              <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div class="text-xs font-medium text-blue-900 dark:text-blue-300 uppercase tracking-wide">Quizees</div>
-                <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ quizeesCount ?? '—' }}</div>
+              <div class="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-950/30 dark:to-brand-900/20 border border-brand-100 dark:border-brand-800 rounded-lg p-4">
+                <div class="text-xs font-medium text-brand-900 dark:text-brand-300 uppercase tracking-wide">Quizees</div>
+                <div class="text-3xl font-bold text-brand-600 dark:text-brand-400 mt-2">{{ quizeesCount ?? '—' }}</div>
               </div>
-              <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
-                <div class="text-xs font-medium text-indigo-900 dark:text-indigo-300 uppercase tracking-wide">Quiz Masters</div>
-                <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">{{ quizMastersCount ?? '—' }}</div>
+              <div class="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-950/30 dark:to-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4">
+                <div class="text-xs font-medium text-brand-900 dark:text-brand-300 uppercase tracking-wide">Quiz Masters</div>
+                <div class="text-3xl font-bold text-brand-600 dark:text-brand-400 mt-2">{{ quizMastersCount ?? '—' }}</div>
               </div>
             </div>
           </div>
@@ -117,9 +117,9 @@ if (institutionId.value) await load()
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <button
               @click="goto('/institution-manager/subscriptions')"
-              class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 text-left"
+              class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 text-left"
             >
-              <div class="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">Subscriptions</div>
+              <div class="text-sm font-medium text-brand-600 dark:text-brand-400 mb-1">Subscriptions</div>
               <div class="text-sm text-gray-600 dark:text-gray-400">Manage billing and plans</div>
             </button>
             <button

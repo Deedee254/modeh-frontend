@@ -30,3 +30,4 @@ export function getQuestionValidationErrors(question: any): string[] {
 export default function useQuestionValidation() {
   return { getQuestionValidationErrors }
 }
+

@@ -19,3 +19,4 @@ function update(v) { emit('update:modelValue', v) }
 <style scoped>
 /* Intentionally minimal — styling comes from UiTextarea */
 </style>
+

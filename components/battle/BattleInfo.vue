@@ -35,8 +35,8 @@ const infoCards = [
   {
     title: 'Battle Rules',
     icon: 'i-lucide-clock',
-    iconClass: 'text-blue-500',
-    bulletClass: 'bg-blue-500',
+    iconClass: 'text-brand-500',
+    bulletClass: 'bg-brand-500',
     items: [
       'No back navigation',
       'Auto-submit when time\'s up',
@@ -56,4 +56,5 @@ const infoCards = [
   }
 ]
 </script>
+
 

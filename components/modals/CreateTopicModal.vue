@@ -67,13 +67,13 @@
         <div v-if="!createdTopic.is_approved" class="space-y-2">
           <p class="text-sm text-gray-600">This topic is not approved yet. You can request approval now so an admin can review it.</p>
           <div class="flex gap-2">
-            <UButton :loading="approvalRequestLoading" color="primary" @click="requestApproval" class="justify-center">Request approval</UButton>
+            <UButton :loading="approvalRequestLoading" color="primary" @click="requestApproval" class="justify-center !bg-brand-600 hover:!bg-brand-700">Request approval</UButton>
             <UButton variant="outline" @click="closeAfterCreated" class="justify-center">Done</UButton>
           </div>
         </div>
 
         <div v-else class="flex justify-end">
-          <UButton color="primary" @click="closeAfterCreated">Done</UButton>
+          <UButton color="primary" @click="closeAfterCreated" class="!bg-brand-600 hover:!bg-brand-700">Done</UButton>
         </div>
       </div>
 
@@ -299,3 +299,4 @@ function closeAfterCreated() {
 </script>
 
 <style scoped></style>
+

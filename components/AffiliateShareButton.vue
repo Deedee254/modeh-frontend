@@ -64,7 +64,7 @@
                       </div>
                       <button
                         @click="goToAffiliateDashboard"
-                        class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                        class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-600 hover:bg-brand-700"
                       >
                         Get Started
                       </button>
@@ -92,11 +92,11 @@
                           type="text"
                           readonly
                           :value="affiliateLink"
-                          class="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          class="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-600 sm:text-sm"
                         />
                         <button
                           @click="copyToClipboard(affiliateLink)"
-                          class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600"
                         >
                           <ClipboardIcon v-if="!copied" class="w-4 h-4" />
                           <CheckIcon v-else class="w-4 h-4 text-green-500" />
@@ -180,7 +180,7 @@ const btnClassComputed = computed(() => {
   // default fallback matches original appearance
   const gap = props.iconOnly ? 'gap-0' : 'gap-2'
   const pxpy = props.iconOnly ? 'p-2' : 'px-3 py-2'
-  return (`inline-flex items-center ${gap} ${pxpy} text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`)
+  return (`inline-flex items-center ${gap} ${pxpy} text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2`)
 })
 
 // Handle share button click

@@ -98,6 +98,10 @@ import { useAppAlert } from '~/composables/useAppAlert'
 
 interface Props {
   modelValue: Record<string, any>
+  gradeId?: number
+  levelId?: number
+  subjectId?: number
+  topicId?: number
   errors?: any[]
 }
 const props = defineProps<Props>()
@@ -317,3 +321,4 @@ function triggerAudioInput() {
 <style scoped>
 .drag-handle { cursor: grab; }
 </style>
+

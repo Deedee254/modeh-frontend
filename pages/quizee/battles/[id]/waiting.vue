@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Loading Overlay -->
     <div v-if="loading" class="fixed inset-0 bg-white/80 dark:bg-gray-900/80 z-50 flex flex-col items-center justify-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-brand-600 border-t-transparent"></div>
       <p class="mt-4 text-gray-600 dark:text-gray-300">Preparing the arena...</p>
     </div>
 
@@ -14,7 +14,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
           Back
         </button>
-        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600">
+        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gradient-to-br from-brand-600 to-brand-700">
           <!-- Overlay Content -->
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
             <div class="flex flex-wrap gap-2 mb-3">
@@ -61,8 +61,8 @@
                   @click="activeTab = tab.id"
                   role="tab"
                   :aria-selected="activeTab === tab.id"
-                  class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                  :class="activeTab === tab.id ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-white/50'"
+                  class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                  :class="activeTab === tab.id ? 'bg-white text-brand-700 shadow-sm' : 'hover:bg-white/50'"
                 >
                   {{ tab.name }}
                 </button>
@@ -267,7 +267,7 @@ const statusIndicatorClass = computed(() => {
   if (s === 'waiting') return 'bg-yellow-500 animate-pulse'
   if (s === 'in-progress') return 'bg-green-500 animate-pulse'
   if (s === 'completed') return 'bg-gray-500'
-  return 'bg-blue-500'
+  return 'bg-brand-500'
 })
 
 const statusTextClass = computed(() => {
@@ -275,7 +275,7 @@ const statusTextClass = computed(() => {
   if (s === 'waiting') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200'
   if (s === 'in-progress') return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
   if (s === 'completed') return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200'
-  return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
+  return 'bg-brand-100 text-brand-800 dark:bg-brand-900/50 dark:text-brand-200'
 })
 
 // Helper methods for getting names from IDs

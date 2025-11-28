@@ -10,7 +10,7 @@
         <!-- Institution selector: default to first institution when available. -->
         <div class="relative hidden sm:block">
           <template v-if="isInstitutionManager && institutions && institutions.length > 0">
-            <select @change="onSelectInstitution" :value="_instSlug" class="text-sm text-slate-600 bg-transparent border border-transparent focus:border-indigo-300 rounded px-2 py-1">
+            <select @change="onSelectInstitution" :value="_instSlug" class="text-sm text-slate-600 bg-transparent border border-transparent focus:border-brand-300 rounded px-2 py-1">
               <option v-for="inst in institutions" :key="inst.slug || inst.id" :value="inst.slug || inst.id">{{ inst.name || inst.slug || inst.id }}</option>
             </select>
           </template>
@@ -159,3 +159,4 @@ function logout() {
 <style scoped>
 /* keep minimal — layout controlled by Tailwind */
 </style>
+

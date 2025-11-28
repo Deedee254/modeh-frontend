@@ -2,7 +2,7 @@
   <div class="p-4">
     <div class="mb-4 flex items-center justify-between">
       <h3 class="text-lg font-medium">Notifications</h3>
-      <button @click="load" class="text-sm text-indigo-600">Refresh</button>
+      <button @click="load" class="text-sm text-brand-600">Refresh</button>
     </div>
 
       <!-- Preferences editor -->
@@ -30,7 +30,7 @@
           </label>
         </div>
         <div class="mt-3 flex items-center gap-3">
-          <button @click="savePrefs" :disabled="prefsSaving" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Save preferences</button>
+          <button @click="savePrefs" :disabled="prefsSaving" class="px-3 py-1 bg-brand-600 text-white rounded text-sm">Save preferences</button>
           <button @click="loadPrefs" type="button" class="text-sm text-gray-600">Reload</button>
           <span v-if="prefsSaving" class="text-sm text-gray-500">Saving…</span>
         </div>
@@ -49,7 +49,7 @@
             <div class="text-xs text-gray-500 mt-2">{{ formatDate(n.created_at) }}</div>
           </div>
           <div class="ml-4 flex-shrink-0">
-            <button v-if="!n.read" @click="markRead(n)" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Mark read</button>
+            <button v-if="!n.read" @click="markRead(n)" class="px-3 py-1 bg-brand-600 text-white rounded text-sm">Mark read</button>
             <span v-else class="text-sm text-green-600">Read</span>
           </div>
         </li>
@@ -151,3 +151,4 @@ load()
 loadPrefs()
 </script>
  
+

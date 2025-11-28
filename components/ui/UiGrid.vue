@@ -11,3 +11,4 @@ const inst = getCurrentInstance()
 const hasNuxtGrid = !!(inst && inst.appContext && inst.appContext.components && (inst.appContext.components['NUXGrid'] || inst.appContext.components['NuxtGrid']))
 const compName = hasNuxtGrid ? (inst.appContext.components['NUXGrid'] ? 'NUXGrid' : 'NuxtGrid') : 'div'
 </script>
+

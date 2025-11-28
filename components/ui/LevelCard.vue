@@ -1,15 +1,15 @@
 <template>
   <NuxtLink v-if="to" :to="to" class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900 border border-slate-100 dark:border-slate-800/20">
-    <!-- Header with Light Teal/Cyan Background -->
-    <div class="bg-gradient-to-br from-teal-100 via-cyan-100 to-emerald-100 dark:from-teal-900/30 dark:via-cyan-900/30 dark:to-emerald-900/30 px-5 py-6">
+    <!-- Header with Light Burgundy/Yellow Background -->
+    <div class="px-5 py-6" style="background: linear-gradient(to bottom right, rgba(137, 31, 33, 0.08), rgba(247, 185, 50, 0.08))">
       <div class="flex items-start justify-between">
         <!-- Icon -->
-        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-200/50 dark:bg-teal-800/50">
-          <Icon name="heroicons:chart-bar" class="h-5 w-5 text-teal-600 dark:text-teal-400" />
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg" :style="{ backgroundColor: 'rgba(137, 31, 33, 0.15)' }">
+          <Icon name="heroicons:chart-bar" class="h-5 w-5" :style="{ color: '#891f21' }" />
         </div>
 
         <!-- Title -->
-        <h3 class="flex-1 ml-3 text-xl font-bold text-slate-900 dark:text-slate-50">
+        <h3 class="flex-1 ml-3 text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-50">
           {{ displayTitle }}
         </h3>
       </div>
@@ -25,7 +25,7 @@
       <!-- Grades Count -->
       <div class="mt-auto pt-4">
         <p class="text-base font-semibold text-slate-900 dark:text-slate-100">
-          <span class="text-teal-600 dark:text-teal-400">{{ gradesCountNumber }}</span> grades/courses
+          <span :style="{ color: '#891f21' }">{{ gradesCountNumber }}</span> {{ gradesOrCoursesLabel }}
         </p>
       </div>
     </div>
@@ -56,4 +56,14 @@ const gradesCountNumber = computed(() => {
   if (Number.isNaN(value)) return 0
   return value
 })
+
+const gradesOrCoursesLabel = computed(() => {
+  // Check if level type is 'course' (tertiary level)
+  const levelType = String(props.level?.type || '').toLowerCase()
+  if (levelType === 'course') {
+    return 'courses'
+  }
+  return 'grades'
+})
 </script>
+

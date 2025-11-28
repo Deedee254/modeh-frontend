@@ -89,7 +89,7 @@ onMounted(() => {
               'inline-flex px-2 py-1 text-sm font-semibold rounded-full',
               memberData.status === 'active' ? 'bg-green-100 text-green-800' :
               memberData.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-              memberData.status === 'invited' ? 'bg-blue-100 text-blue-800' :
+              memberData.status === 'invited' ? 'bg-brand-100 text-brand-800' :
               'bg-gray-100 text-gray-800'
             ]">
               {{ memberData.status }}
@@ -110,9 +110,9 @@ onMounted(() => {
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         <h2 class="text-lg font-semibold mb-4">Activity Statistics</h2>
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div class="text-center p-4 bg-blue-50 rounded-lg">
-            <div class="text-3xl font-bold text-blue-600">{{ memberData.activity?.total_attempts || 0 }}</div>
-            <div class="text-sm text-blue-800">Total Quiz Attempts</div>
+          <div class="text-center p-4 bg-brand-50 rounded-lg">
+            <div class="text-3xl font-bold text-brand-600">{{ memberData.activity?.total_attempts || 0 }}</div>
+            <div class="text-sm text-brand-800">Total Quiz Attempts</div>
           </div>
           <div class="text-center p-4 bg-green-50 rounded-lg">
             <div class="text-3xl font-bold text-green-600">{{ memberData.activity?.avg_score ? Math.round(memberData.activity.avg_score) : 0 }}%</div>
@@ -148,7 +148,7 @@ onMounted(() => {
                 <div class="flex justify-between items-center">
                   <span class="text-sm">Good (70-89%)</span>
                   <div class="w-24 bg-gray-200 rounded-full h-2">
-                    <div class="bg-blue-500 h-2 rounded-full" :style="{ width: '25%' }"></div>
+                    <div class="bg-brand-500 h-2 rounded-full" :style="{ width: '25%' }"></div>
                   </div>
                   <span class="text-sm font-medium w-8 text-right">5</span>
                 </div>
@@ -183,15 +183,15 @@ onMounted(() => {
 
           <div class="mt-6">
             <h3 class="text-md font-medium mb-3">Recommendations</h3>
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="bg-brand-50 border border-brand-100 rounded-lg p-4">
               <div class="flex">
                 <div class="flex-shrink-0">
-                  <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <svg class="h-5 w-5 text-brand-400" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                   </svg>
                 </div>
                 <div class="ml-3">
-                  <p class="text-sm text-blue-700">
+                  <p class="text-sm text-brand-700">
                     <span v-if="(memberData.activity?.avg_score || 0) >= 80">
                       Excellent performance! This member is consistently achieving high scores.
                     </span>

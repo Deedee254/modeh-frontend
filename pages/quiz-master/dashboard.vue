@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-slate-900 pb-16 md:pb-0">
+  <div class="bg-gray-50 dark:bg-slate-900 pb-16 md:pb-0">
     <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <!-- Hero -->
-      <div class="rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 shadow-lg mb-6">
+      <div class="rounded-lg bg-gradient-to-r from-purple-600 to-brand-600 text-white p-6 shadow-lg mb-6">
         <div class="flex items-center justify-between gap-6">
           <div class="flex-1">
             <h1 class="text-3xl font-extrabold">quiz-master Dashboard</h1>
@@ -62,7 +62,7 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="text-lg font-semibold">Recent Activity</div>
-                <NuxtLink to="/quiz-master/quizzes" class="text-sm text-indigo-600 hover:underline">View all</NuxtLink>
+                <NuxtLink to="/quiz-master/quizzes" class="text-sm text-brand-600 hover:underline">View all</NuxtLink>
               </div>
             </template>
 
@@ -75,14 +75,14 @@
                 <div class="text-xs text-gray-500 mt-1">{{ quizzesError?.message || 'Unknown error' }}</div>
               </div>
               <div v-else-if="!recentQuizzes || recentQuizzes.length === 0" class="text-center py-6 text-slate-500">
-                <p class="text-sm">No quizzes yet. <NuxtLink to="/quiz-master/quizzes/create" class="text-indigo-600 hover:underline">Create one</NuxtLink></p>
+                <p class="text-sm">No quizzes yet. <NuxtLink to="/quiz-master/quizzes/create" class="text-brand-600 hover:underline">Create one</NuxtLink></p>
               </div>
               <div v-else>
                 <UiHorizontalCard v-for="(q, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean) : [])" :key="q?.id || idx" :title="q?.title || 'Untitled'" :subtitle="q?.description || 'No description'" eyebrow="Quiz">
                   <template #actions>
                     <div class="flex gap-2">
-                      <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Open</NuxtLink>
-                      <NuxtLink v-if="q?.id" :to="`/quiz-master/analytics/quizzes/${q.id}`" class="text-sm text-indigo-600 hover:underline">Analytics</NuxtLink>
+                      <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-brand-600 hover:underline">Open</NuxtLink>
+                      <NuxtLink v-if="q?.id" :to="`/quiz-master/analytics/quizzes/${q.id}`" class="text-sm text-brand-600 hover:underline">Analytics</NuxtLink>
                       <span v-if="!q?.id" class="text-sm text-gray-400">Loading…</span>
                     </div>
                   </template>
@@ -108,7 +108,7 @@
                 <NuxtLink to="/quiz-master/profile" class="px-3 py-2 border rounded text-sm hover:bg-gray-50">Profile</NuxtLink>
               </template>
               <template v-else>
-                <div class="col-span-full text-sm text-gray-500">Quick actions are available to quiz-masters only. <NuxtLink to="/login" class="text-indigo-600">Sign in as quiz-master</NuxtLink></div>
+                <div class="col-span-full text-sm text-gray-500">Quick actions are available to quiz-masters only. <NuxtLink to="/login" class="text-brand-600">Sign in as quiz-master</NuxtLink></div>
               </template>
             </div>
           </UiCard>
@@ -120,7 +120,7 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="font-medium">Pending Approvals</div>
-                <NuxtLink to="/quiz-master/quizzes" class="text-sm text-indigo-600">Manage</NuxtLink>
+                <NuxtLink to="/quiz-master/quizzes" class="text-sm text-brand-600">Manage</NuxtLink>
               </div>
             </template>
             <div v-if="pendingApprovalsPending" class="text-sm text-gray-500">Loading…</div>
@@ -128,7 +128,7 @@
             <ul v-else class="space-y-2">
               <li v-for="(q, idx) in (Array.isArray(pendingApprovals) ? pendingApprovals.slice(0,3).filter(Boolean) : [])" :key="q?.id || idx" class="flex items-center justify-between">
                 <div class="text-sm truncate">{{ q?.title || q?.name || 'Untitled' }}</div>
-                <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-indigo-600">Review</NuxtLink>
+                <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="text-sm text-brand-600">Review</NuxtLink>
                 <span v-else class="text-sm text-gray-400">Loading…</span>
               </li>
             </ul>

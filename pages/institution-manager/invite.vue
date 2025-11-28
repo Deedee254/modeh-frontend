@@ -20,14 +20,14 @@
                 v-model="email"
                 type="email"
                 required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-600"
               />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Role</label>
               <select
                 v-model="role"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-600"
               >
                 <option value="member">Member</option>
                 <option value="quizee">Quizee</option>
@@ -41,7 +41,7 @@
                 type="number"
                 min="1"
                 max="30"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-600"
               />
             </div>
           </div>
@@ -50,7 +50,7 @@
             <button
               type="submit"
               :disabled="loading"
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+              class="px-4 py-2 bg-brand-600 hover:bg-brand-700 dark:hover:bg-brand-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
             >
               {{ loading ? 'Generating...' : 'Generate invite link' }}
             </button>
@@ -115,7 +115,7 @@
                 <tr v-for="inv in invites" :key="inv.id" class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                   <td class="px-4 py-3 text-gray-900 dark:text-gray-100">{{ inv.email }}</td>
                   <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs font-medium">
+                    <span class="px-2 py-1 bg-brand-100 dark:bg-brand-900/30 text-brand-800 dark:text-brand-300 rounded text-xs font-medium">
                       {{ inv.role }}
                     </span>
                   </td>

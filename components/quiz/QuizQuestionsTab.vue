@@ -30,6 +30,7 @@
           color="primary"
           icon="i-heroicons-plus"
           @click="addQuestion"
+          class="!bg-brand-600 hover:!bg-brand-700"
         >Add Question</UButton>
       </div>
     </div>
@@ -50,7 +51,7 @@
         >
           <!-- Question Header -->
           <div class="flex items-center gap-3 p-3 border-b border-gray-100">
-            <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-indigo-50 text-indigo-700 font-semibold text-sm">
+            <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-brand-600/10 text-brand-600 font-semibold text-sm">
               {{ idx + 1 }}
             </div>
             <div class="flex-1 min-w-0">
@@ -122,6 +123,7 @@
         color="primary"
         icon="i-heroicons-plus"
         @click="addQuestion"
+        class="!bg-brand-600 hover:!bg-brand-700"
       >Add Question</UButton>
     </div>
 
@@ -167,7 +169,7 @@
     <!-- Bottom Actions -->
     <div class="flex flex-col sm:flex-row sm:justify-between gap-3 pt-2">
       <UButton size="sm" variant="soft" icon="i-heroicons-arrow-left" @click="$emit('prev')" class="w-full sm:w-auto">Back to Settings</UButton>
-      <UButton size="sm" color="primary" icon="i-heroicons-check" @click="handlePublish" :loading="publishing" class="w-full sm:w-auto">Publish Quiz</UButton>
+      <UButton size="sm" color="primary" icon="i-heroicons-check" @click="handlePublish" :loading="publishing" class="w-full sm:w-auto !bg-brand-600 hover:!bg-brand-700">Publish Quiz</UButton>
     </div>
   </div>
 </template>

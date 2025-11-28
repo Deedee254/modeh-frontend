@@ -31,15 +31,15 @@
           v-for="(topic, idx) in (Array.isArray(topics) ? topics.filter(Boolean) : [])"
           :key="topic?.id || idx"
           :to="`/quiz-master/topics/${topic?.id}`"
-          class="group relative block p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-200"
+          class="group relative block p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-100 transition-all duration-200"
         >
           <!-- Topic Icon -->
-          <div class="mb-4 inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+          <div class="mb-4 inline-flex p-3 bg-brand-50 text-brand-600 rounded-lg group-hover:bg-brand-100 transition-colors">
             <Icon name="heroicons:book-open" class="w-6 h-6" />
           </div>
 
           <!-- Topic Details -->
-          <h5 class="mb-2 text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+          <h5 class="mb-2 text-lg font-semibold text-gray-900 group-hover:text-brand-600 transition-colors">
             {{ topic.name }}
           </h5>
           
@@ -57,7 +57,7 @@
 
           <!-- Hover State Arrow -->
           <div class="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Icon name="heroicons:arrow-right" class="w-5 h-5 text-indigo-600" />
+            <Icon name="heroicons:arrow-right" class="w-5 h-5 text-brand-600" />
           </div>
         </NuxtLink>
       </div>

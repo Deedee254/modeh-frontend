@@ -44,3 +44,4 @@ onBeforeUnmount(() => { if (chart) chart.destroy() })
 <style scoped>
 canvas { width: 100%; height: 220px; }
 </style>
+

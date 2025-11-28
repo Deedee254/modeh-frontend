@@ -142,3 +142,4 @@ function resolvedAvatar(v) {
 <style scoped>
 /* scoped minimal tweaks if needed */
 </style>
+

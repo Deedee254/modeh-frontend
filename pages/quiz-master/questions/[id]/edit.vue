@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+  <div class="bg-gray-50 pb-16 md:pb-0">
     <PageHero
       :title="`Edit Question`"
       description="Modify the question details, options, and correct answers."

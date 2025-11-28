@@ -34,7 +34,7 @@
         :class="[
           'min-w-[32px] sm:min-w-[40px] h-8 sm:h-10 rounded-lg text-sm font-medium transition',
           p === (paginator?.current_page || 1) 
-            ? 'bg-indigo-600 text-white border border-indigo-600' 
+            ? 'bg-brand-600 text-white border border-brand-600' 
             : 'border border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
         ]"
       >
@@ -113,3 +113,4 @@ button {
   }
 }
 </style>
+

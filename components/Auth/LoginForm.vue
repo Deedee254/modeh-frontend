@@ -3,12 +3,12 @@
     <div :class="cardClass">
       <h3 class="text-lg font-semibold text-gray-900" v-if="!compact">Sign in to Modeh</h3>
       <h3 class="text-lg font-semibold text-gray-900" v-else>Log in to continue</h3>
-      <p class="text-sm text-slate-600 mb-4" v-if="!compact">Quick access for quizees — or <NuxtLink to="/register" class="text-indigo-600 underline">create an account</NuxtLink></p>
+      <p class="text-sm text-slate-600 mb-4" v-if="!compact">Quick access for quizees — or <NuxtLink to="/register" class="text-brand-600 underline">create an account</NuxtLink></p>
 
       <form @submit.prevent="submit" class="space-y-3">
         <div>
           <label class="block text-sm text-gray-700">Email</label>
-          <input v-model="email" type="email" required autocomplete="email" placeholder="you@example.com" class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500" />
+          <input v-model="email" type="email" required autocomplete="email" placeholder="you@example.com" class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:border-brand-500 focus:ring-brand-600" />
         </div>
         <div>
           <label class="block text-sm text-gray-700">Password</label>
@@ -19,7 +19,7 @@
               required
               autocomplete="current-password"
               placeholder="Your password"
-              class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 pr-10 focus:border-indigo-500 focus:ring-indigo-500"
+              class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 pr-10 focus:border-brand-500 focus:ring-brand-600"
             />
             <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 mt-1 pr-3 flex items-center text-gray-600 hover:text-gray-800">
               <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395"/></svg>
@@ -30,11 +30,11 @@
 
         <div class="flex items-center justify-between">
           <label class="inline-flex items-center text-sm text-gray-600"><input type="checkbox" v-model="remember" class="mr-2" /> Remember me</label>
-          <NuxtLink to="/register" class="text-sm text-indigo-600 underline">Register</NuxtLink>
+          <NuxtLink to="/register" class="text-sm text-brand-600 underline">Register</NuxtLink>
         </div>
 
         <div>
-          <button type="submit" :disabled="isLoading" class="w-full px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-75 flex items-center justify-center">
+          <button type="submit" :disabled="isLoading" class="w-full px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700 disabled:opacity-75 flex items-center justify-center">
             <svg v-if="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             <span>{{ isLoading ? 'Logging in...' : 'Log in' }}</span>
           </button>
@@ -158,3 +158,4 @@ defineExpose({ isLoading, error })
 <style scoped>
 /* minimal local styles kept to match project */
 </style>
+

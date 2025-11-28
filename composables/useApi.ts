@@ -275,7 +275,18 @@ export function useApi() {
     return resp
   }
 
-  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus, parseResponse }
+  // Reset all cached auth state (called on logout)
+  function clearAuthCache() {
+    _lastXsrf = null
+    _lastXsrfAt = 0
+    _csrfFetchedAt = 0
+    _ensureCsrfPromise = null
+    _lastSessionRenewal = 0
+    _sessionRenewalPromise = null
+  }
+
+  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi
+

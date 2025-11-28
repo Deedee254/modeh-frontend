@@ -1,7 +1,7 @@
 <template>
   <div class="group relative flex w-full flex-col rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900 border border-slate-100 dark:border-slate-800/20">
     <!-- Hero Section with Play Button -->
-    <div class="relative h-48 overflow-hidden rounded-t-2xl bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700">
+    <div class="relative h-48 overflow-hidden rounded-t-2xl" :style="{ background: 'linear-gradient(to bottom right, #891f21, #a83435)' }">
   <!-- Background Image if available (no overlay so image is fully visible) -->
   <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover" />
 
@@ -44,7 +44,7 @@
         <span v-if="displayLevel" class="inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
           Level: {{ displayLevel }}
         </span>
-        <span v-if="displayGrade" class="inline-block rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+        <span v-if="displayGrade" class="inline-block rounded-full bg-brand-600/10 px-3 py-1 text-xs font-medium text-brand-600 dark:bg-brand-600/30 dark:text-accent-500">
           Grade: {{ displayGrade }}
         </span>
         <span v-if="showSubject && displaySubject" class="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
@@ -78,7 +78,8 @@
       <!-- CTA Button -->
       <NuxtLink 
         :to="to || (quizId ? `/quiz-master/quizzes/${quizId}` : '#')" 
-        class="mt-auto pt-4 inline-flex w-full items-center justify-center rounded-lg bg-teal-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-600 active:scale-95 dark:bg-teal-600 dark:hover:bg-teal-700"
+        class="mt-auto pt-4 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white transition active:scale-95"
+        :style="{ backgroundColor: '#891f21' }"
       >
         Start Quiz
       </NuxtLink>
@@ -282,3 +283,4 @@ defineExpose({
   resolvedCover
 })
 </script>
+

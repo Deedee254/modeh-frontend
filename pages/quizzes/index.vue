@@ -125,7 +125,7 @@
             <div class="flex items-center gap-2">
               <button class="px-3 py-1 border rounded" :disabled="currentPage === 1" @click="currentPage = Math.max(1, currentPage - 1)">Prev</button>
               <template v-for="p in totalPages" :key="p">
-                <button @click="currentPage = p" :class="['px-3 py-1 rounded', currentPage === p ? 'bg-indigo-600 text-white' : 'border']">{{ p }}</button>
+                <button @click="currentPage = p" :class="['px-3 py-1 rounded', currentPage === p ? 'bg-brand-600 text-white' : 'border']">{{ p }}</button>
               </template>
               <button class="px-3 py-1 border rounded" :disabled="currentPage === totalPages" @click="currentPage = Math.min(totalPages, currentPage + 1)">Next</button>
             </div>
@@ -135,13 +135,13 @@
 
     <!-- Bottom CTA banner -->
     <div class="mt-10">
-      <div class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg p-6 flex items-center justify-between">
+      <div class="bg-gradient-to-r from-brand-600 to-brand-950 text-white rounded-lg p-6 flex items-center justify-between">
         <div>
           <h3 class="text-xl font-semibold">Ready to assess your skills?</h3>
           <p class="opacity-90">Begin a curated assessment to evaluate your understanding or create assessments to measure others' progress.</p>
         </div>
         <div class="flex flex-col sm:flex-row gap-3">
-          <NuxtLink to="/quizzes" class="px-4 py-2 bg-white text-indigo-700 rounded w-full sm:w-auto text-center">Browse all</NuxtLink>
+          <NuxtLink to="/quizzes" class="px-4 py-2 bg-white text-brand-600 rounded w-full sm:w-auto text-center">Browse all</NuxtLink>
           <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 border rounded w-full sm:w-auto text-center">Create quiz</NuxtLink>
         </div>
       </div>
@@ -331,12 +331,12 @@ watch([displayQuizzes, activeTab, subjectFilter, gradeFilter, query], () => {
 
 function pickPaletteClass(id) {
   const palettes = [
-    'bg-gradient-to-br from-indigo-200 via-indigo-100 to-sky-100 text-indigo-800',
+    'bg-gradient-to-br from-brand-600/30 via-brand-600/20 to-brand-950/10 text-brand-600',
     'bg-gradient-to-br from-rose-200 via-rose-100 to-pink-100 text-rose-800',
     'bg-gradient-to-br from-emerald-200 via-emerald-100 to-lime-100 text-emerald-800',
     'bg-gradient-to-br from-yellow-200 via-amber-100 to-amber-50 text-amber-800',
     'bg-gradient-to-br from-fuchsia-200 via-fuchsia-100 to-pink-50 text-fuchsia-800',
-    'bg-gradient-to-br from-sky-200 via-sky-100 to-indigo-50 text-sky-800'
+    'bg-gradient-to-br from-brand-600/20 via-brand-600/15 to-brand-950/10 text-brand-600'
   ]
   return palettes[(id || 0) % palettes.length]
 }
@@ -366,6 +366,6 @@ const featuredQuiz = computed(() => {
 
 function selectSubject(v) { subjectFilter.value = v }
 // pillClass is no longer used; keep for backward compatibility
-function pillClass(v) { return `px-3 py-1.5 text-sm rounded-full border ${subjectFilter.value === v ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200'}` }
-function tabClass(t) { return `px-3 py-2 text-sm rounded ${activeTab.value === t ? 'bg-indigo-600 text-white' : 'bg-white border'}` }
+function pillClass(v) { return `px-3 py-1.5 text-sm rounded-full border ${subjectFilter.value === v ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-700 border-gray-200'}` }
+function tabClass(t) { return `px-3 py-2 text-sm rounded ${activeTab.value === t ? 'bg-brand-600 text-white' : 'bg-white border'}` }
 </script>

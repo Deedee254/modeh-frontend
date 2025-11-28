@@ -26,7 +26,7 @@
             <input
               v-model="name"
               required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
             <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.name }}</p>
           </div>
@@ -37,7 +37,7 @@
               v-model="email"
               type="email"
               required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
             <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.email }}</p>
           </div>
@@ -47,7 +47,7 @@
             <input
               v-model="slug"
               placeholder="short-slug-for-url"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
             <p v-if="fieldErrors.slug" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.slug }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Lowercase letters, numbers, and hyphens (3-40 characters)</p>
@@ -58,7 +58,7 @@
             <input
               v-model="parent"
               placeholder="parent-slug to create a branch"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave empty to create a top-level institution</p>
           </div>
@@ -73,7 +73,7 @@
             <button
               type="submit"
               :disabled="loading"
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+              class="px-4 py-2 bg-brand-600 hover:bg-brand-700 dark:hover:bg-brand-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
             >
               Create Institution
             </button>

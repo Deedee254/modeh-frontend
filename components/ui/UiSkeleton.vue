@@ -12,3 +12,4 @@ const { count, variant } = props
 const useGrid = ['grid','list','avatar','single-row'].includes(variant)
 const gridVariant = variant === 'avatar' ? 'single-row' : (variant === 'list' ? 'single-row' : variant)
 </script>
+

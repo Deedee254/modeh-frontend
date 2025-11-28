@@ -30,12 +30,12 @@ const themeConfig = {
     darkGradient: 'dark:from-green-400 dark:via-emerald-400 dark:to-teal-400'
   },
   blue: {
-    bg: 'from-blue-50 via-indigo-50 to-purple-50',
-    darkBg: 'dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20',
-    border: 'border-blue-200',
-    darkBorder: 'dark:border-blue-800/50',
-    gradient: 'from-blue-600 via-indigo-600 to-purple-600',
-    darkGradient: 'dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400'
+    bg: 'from-brand-50 via-brand-50 to-brand-50',
+    darkBg: 'dark:from-brand-950/20 dark:via-brand-950/20 dark:to-brand-950/20',
+    border: 'border-brand-100',
+    darkBorder: 'dark:border-brand-800/50',
+    gradient: 'from-brand-600 via-brand-600 to-brand-700',
+    darkGradient: 'dark:from-brand-400 dark:via-brand-400 dark:to-brand-400'
   },
   purple: {
     bg: 'from-purple-50 via-pink-50 to-rose-50',
@@ -133,3 +133,4 @@ const config = themeConfig[props.theme as keyof typeof themeConfig]
     </div>
   </div>
 </template>
+

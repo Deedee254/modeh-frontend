@@ -37,9 +37,9 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <img 
-            :src="player1Avatar || '/images/default-avatar.png'"
+            :src="player1Avatar || '/avatars/default.png'"
             :alt="battle.player1?.name || 'Player 1'"
-            class="w-12 h-12 rounded-full"
+            class="w-12 h-12 rounded-full object-cover"
           >
           <div>
             <div class="font-medium">{{ battle.player1?.name || 'TBD' }}</div>
@@ -52,9 +52,9 @@
             <div class="text-sm text-gray-600">{{ battle.player2_score || '-' }} points</div>
           </div>
           <img 
-            :src="player2Avatar || '/images/default-avatar.png'"
+            :src="player2Avatar || '/avatars/default.png'"
             :alt="battle.player2?.name || 'Player 2'"
-            class="w-12 h-12 rounded-full"
+            class="w-12 h-12 rounded-full object-cover"
           >
         </div>
       </div>
@@ -121,7 +121,7 @@ const loading = ref(false)
 const statusClass = computed(() => {
     switch (props.battle.status) {
         case 'scheduled':
-            return 'bg-blue-100 text-blue-700'
+            return 'bg-brand-100 text-brand-700'
         case 'in_progress':
             return 'bg-green-100 text-green-700'
         case 'completed':
@@ -161,11 +161,13 @@ const totalPoints = computed(() =>
 )
 
 const player1Avatar = computed(() => {
-  try { return resolveAssetUrl(props.battle?.player1?.avatar) || props.battle?.player1?.avatar || null } catch { return props.battle?.player1?.avatar || null }
+  const avatar = props.battle?.player1?.avatar_url || props.battle?.player1?.avatar || props.battle?.player1?.profile?.avatar
+  return resolveAssetUrl(avatar) || null
 })
 
 const player2Avatar = computed(() => {
-  try { return resolveAssetUrl(props.battle?.player2?.avatar) || props.battle?.player2?.avatar || null } catch { return props.battle?.player2?.avatar || null }
+  const avatar = props.battle?.player2?.avatar_url || props.battle?.player2?.avatar || props.battle?.player2?.profile?.avatar
+  return resolveAssetUrl(avatar) || null
 })
 
 const handleForfeit = async () => {
@@ -186,3 +188,4 @@ const formatDuration = (seconds: number) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 </script>
+

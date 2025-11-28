@@ -7,14 +7,14 @@
 			</div>
 			<button
 				@click="showCreateModal = true"
-				class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+				class="w-full sm:w-auto px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors duration-200"
 			>
 				+ Create Branch
 			</button>
 		</div>
 
 		<div v-if="loading" class="flex justify-center py-12">
-			<div class="animate-spin h-8 w-8 text-blue-600"></div>
+			<div class="animate-spin h-8 w-8 text-brand-600"></div>
 		</div>
 		<div v-else>
 			<div v-if="!children || children.length === 0" class="p-4 sm:p-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-center">
@@ -29,7 +29,7 @@
 							<div class="text-xs text-gray-500 dark:text-gray-500 mt-2 font-mono">{{ b.slug }}</div>
 						</div>
 						<div class="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
-							<NuxtLink :to="`/institution-manager/institutions/${parentSlug}/branches/${b.slug}`" class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+							<NuxtLink :to="`/institution-manager/institutions/${parentSlug}/branches/${b.slug}`" class="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
 								View Branch →
 							</NuxtLink>
 						</div>
@@ -69,7 +69,7 @@
 								required
 								type="text"
 								placeholder="e.g., Main Office, Downtown Branch"
-								class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
 							/>
 							<p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.name }}</p>
 						</div>
@@ -81,7 +81,7 @@
 								required
 								type="email"
 								placeholder="branch@example.com"
-								class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
 							/>
 							<p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.email }}</p>
 						</div>
@@ -92,7 +92,7 @@
 								v-model="branchSlug"
 								type="text"
 								placeholder="branch-slug"
-								class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
 							/>
 							<p v-if="fieldErrors.slug" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ fieldErrors.slug }}</p>
 							<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Lowercase letters, numbers, and hyphens (3-40 characters)</p>
@@ -113,7 +113,7 @@
 							<button
 								type="submit"
 								:disabled="creatingBranch"
-								class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+								class="px-4 py-2 bg-brand-600 hover:bg-brand-700 dark:hover:bg-brand-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
 							>
 								{{ creatingBranch ? 'Creating...' : 'Create Branch' }}
 							</button>

@@ -22,8 +22,8 @@ export function useQuizEnhancements(quiz: any, progressPercent: any, currentQues
     if (currentStreak.value >= 3) return 'from-orange-500 to-red-500 text-white'
     const progress = progressPercent.value
     if (progress >= 90) return 'from-green-500 to-emerald-500 text-white'
-    if (progress >= 75) return 'from-blue-500 to-indigo-500 text-white'
-    if (progress >= 50) return 'from-indigo-500 to-violet-500 text-white'
+    if (progress >= 75) return 'from-brand-500 to-brand-500 text-white'
+    if (progress >= 50) return 'from-brand-500 to-brand-500 text-white'
     return 'from-violet-500 to-fuchsia-500 text-white'
   })
 
@@ -82,3 +82,4 @@ export function useQuizEnhancements(quiz: any, progressPercent: any, currentQues
 
   return { currentStreak, achievements, encouragementMessage, encouragementStyle, updateStreak, calculateAchievements, resetAchievements }
 }
+

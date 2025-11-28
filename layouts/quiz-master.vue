@@ -66,3 +66,4 @@ onMounted(() => {
 <style scoped>
 /* minimal layout styles; project likely uses Tailwind */
 </style>
+

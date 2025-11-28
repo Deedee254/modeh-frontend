@@ -99,7 +99,7 @@ onMounted(() => {
               <input
                 v-model="branch.name"
                 type="text"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-100"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500 dark:bg-slate-700 dark:text-gray-100"
                 placeholder="Enter branch name"
               />
             </div>
@@ -109,7 +109,7 @@ onMounted(() => {
               <input
                 v-model="branch.email"
                 type="email"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-100"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500 dark:bg-slate-700 dark:text-gray-100"
                 placeholder="branch@example.com"
               />
             </div>
@@ -119,7 +119,7 @@ onMounted(() => {
               <input
                 v-model="branch.phone"
                 type="tel"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-100"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500 dark:bg-slate-700 dark:text-gray-100"
                 placeholder="+1 (555) 000-0000"
               />
             </div>
@@ -129,7 +129,7 @@ onMounted(() => {
               <input
                 v-model="branch.address"
                 type="text"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-100"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500 dark:bg-slate-700 dark:text-gray-100"
                 placeholder="Street address"
               />
             </div>
@@ -139,7 +139,7 @@ onMounted(() => {
               <textarea
                 v-model="branch.description"
                 rows="4"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-100"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500 dark:bg-slate-700 dark:text-gray-100"
                 placeholder="Branch description"
               ></textarea>
             </div>
@@ -155,7 +155,7 @@ onMounted(() => {
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timezone</label>
               <select
                 v-model="branch.timezone"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-100"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500 dark:bg-slate-700 dark:text-gray-100"
               >
                 <option value="UTC">UTC</option>
                 <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
@@ -181,7 +181,7 @@ onMounted(() => {
             <input
               v-model="branch.is_active"
               type="checkbox"
-              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              class="h-4 w-4 text-brand-600 focus:ring-brand-600 border-gray-300 rounded"
             />
             <label class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
               Branch is active
@@ -195,7 +195,7 @@ onMounted(() => {
           <button
             @click="saveBranch"
             :disabled="saving"
-            class="px-6 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 font-medium"
+            class="px-6 py-2 text-white bg-brand-600 rounded-md hover:bg-brand-700 disabled:opacity-50 font-medium"
           >
             <span v-if="saving">Saving...</span>
             <span v-else>Save Changes</span>

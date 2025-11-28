@@ -17,3 +17,4 @@ const isAuthed = computed(() => !!auth.user && Object.keys(auth.user).length > 0
 const isquizee = computed(() => !!auth.user && (auth.user.role === 'quizee' || (auth.user.roles && auth.user.roles.includes('quizee'))))
 const isQuizMaster = computed(() => !!auth.user && (auth.user.role === 'quiz-master' || (auth.user.roles && auth.user.roles.includes('quiz-master'))))
 </script>
+

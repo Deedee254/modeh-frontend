@@ -2,7 +2,7 @@
   <div class="bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div class="my-8">
-        <NuxtLink to="/quizee/quiz-masters" class="text-indigo-600 hover:underline">
+        <NuxtLink to="/quizee/quiz-masters" class="text-brand-600 hover:underline">
           &larr; Back to all quiz-masters
         </NuxtLink>
       </div>
@@ -16,9 +16,9 @@
       <div v-else-if="quizMaster" class="bg-white rounded-2xl shadow-lg p-8">
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-8">
           <div class="flex-shrink-0">
-            <div class="w-40 h-40 rounded-full overflow-hidden ring-4 ring-indigo-100">
+            <div class="w-40 h-40 rounded-full overflow-hidden ring-4 ring-brand-600/10">
               <img v-if="resolvedAvatar" :src="resolvedAvatar" :alt="quizMaster.name" class="w-full h-full object-cover">
-              <div v-else class="w-full h-full bg-indigo-100 text-indigo-700 grid place-items-center font-bold text-6xl">
+              <div v-else class="w-full h-full bg-brand-600/10 text-brand-600 grid place-items-center font-bold text-6xl">
                 {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
               </div>
             </div>
@@ -29,12 +29,12 @@
 
             <div class="mt-4 flex items-center gap-3">
               <div v-if="quizMaster.subjects && quizMaster.subjects.length" class="flex flex-wrap gap-2">
-                <span v-for="subject in quizMaster.subjects" :key="subject.id" class="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full">
+                <span v-for="subject in quizMaster.subjects" :key="subject.id" class="bg-brand-600/10 text-brand-600 text-xs font-medium px-3 py-1 rounded-full">
                   {{ subject.name }}
                 </span>
               </div>
               <div>
-                <button @click="followHandler" :disabled="loadingFollow" class="ml-3 px-4 py-2 rounded-lg border text-sm" :class="following ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'">
+                <button @click="followHandler" :disabled="loadingFollow" class="ml-3 px-4 py-2 rounded-lg border text-sm" :class="following ? 'bg-brand-600/10 text-brand-600' : 'text-gray-700'">
                   <span v-if="following">Following</span>
                   <span v-else>Follow</span>
                 </button>
@@ -58,7 +58,7 @@
                 <h3 class="font-semibold text-gray-800">{{ quiz.title }}</h3>
                 <p class="text-sm text-gray-500 mt-1">{{ quiz.topic_name || 'General' }}</p>
                 <div class="mt-3">
-                  <NuxtLink :to="`/quizee/quizzes/${quiz.id}`" class="text-indigo-600 font-medium text-sm hover:underline">
+                  <NuxtLink :to="`/quizee/quizzes/${quiz.id}`" class="text-brand-600 font-medium text-sm hover:underline">
                     View Quiz
                   </NuxtLink>
                 </div>

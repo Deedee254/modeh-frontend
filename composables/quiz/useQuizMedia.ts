@@ -31,3 +31,4 @@ export function useQuizMedia() {
 
   return { isImage, isAudio, isYouTube, getAudioType, formatYouTubeUrl }
 }
+

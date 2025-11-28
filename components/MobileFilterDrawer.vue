@@ -4,7 +4,7 @@
     <button
       v-if="!hideToggle"
       @click="isOpen = !isOpen"
-      class="lg:hidden w-full mb-4 px-4 py-3 bg-indigo-600 text-white rounded-lg flex items-center justify-between font-semibold hover:bg-indigo-700 transition"
+      class="lg:hidden w-full mb-4 px-4 py-3 bg-brand-600 text-white rounded-lg flex items-center justify-between font-semibold hover:bg-brand-700 transition"
     >
       <span class="flex items-center gap-2">
         <Icon name="heroicons:funnel" class="w-5 h-5" />
@@ -50,7 +50,7 @@
             </button>
             <button
               @click="$emit('apply'); isOpen = false"
-              class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+              class="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition"
             >
               Apply
             </button>
@@ -84,3 +84,4 @@ const isOpen = ref(false)
   }
 }
 </style>
+

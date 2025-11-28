@@ -11,7 +11,7 @@
       Institution Management
     </template>
     <template #actions>
-      <NuxtLink to="/institution-manager/institutions/new" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">Create Institution</NuxtLink>
+      <NuxtLink to="/institution-manager/institutions/new" class="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700 transition-colors">Create Institution</NuxtLink>
     </template>
   </PageHero>
 
@@ -40,7 +40,7 @@
             <div class="space-y-2 flex-1">
               <NuxtLink
                 :to="`/institution-manager/institutions/${inst.slug}/analytics`"
-                class="block px-3 py-2 text-sm font-medium text-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors duration-200"
+                class="block px-3 py-2 text-sm font-medium text-center bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/50 rounded-lg transition-colors duration-200"
               >
                 Analytics
               </NuxtLink>

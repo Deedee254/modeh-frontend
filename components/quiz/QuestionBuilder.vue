@@ -13,6 +13,10 @@
         </div>
         <QuestionEditorForm
           v-model="questionForm"
+          :gradeId="props.gradeId"
+          :levelId="props.levelId"
+          :subjectId="props.subjectId"
+          :topicId="props.topicId"
           :errors="formErrors"
           @add-option="addOption"
           @remove-option="removeOption"
@@ -32,7 +36,7 @@
             :loading="isSubmitting"
             :disabled="isSubmitting || !isQuestionValid"
             icon="i-heroicons-check"
-            class="w-full sm:w-auto"
+            class="w-full sm:w-auto !bg-brand-600 hover:!bg-brand-700"
           >{{ editingIndex !== null ? 'Update' : 'Add' }} Question</UButton>
         </div>
       </div>
@@ -71,6 +75,7 @@
         icon="i-heroicons-plus"
         @click="openQuestionModal"
         :disabled="!canAddQuestion"
+        class="!bg-brand-600 hover:!bg-brand-700"
       >Add Question</UButton>
     </div>
 
@@ -120,6 +125,7 @@ const QuestionBankModal = QuestionBankModalComp
 interface Props {
   questions: any[]
   gradeId?: number
+  levelId?: number
   subjectId?: number
   topicId?: number
   disabled?: boolean
@@ -130,6 +136,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   questions: () => [],
   gradeId: undefined,
+  levelId: undefined,
   subjectId: undefined,
   topicId: undefined,
   disabled: false,
@@ -202,7 +209,11 @@ function getDefaultForm(type = 'mcq') {
     difficulty: 2,
     marks: 1,
     correct: -1,
-    corrects: []
+    corrects: [],
+    grade_id: props.gradeId ?? null,
+    level_id: props.levelId ?? null,
+    subject_id: props.subjectId ?? null,
+    topic_id: props.topicId ?? null
   }
 }
 

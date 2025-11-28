@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+  <div class="bg-gray-50 pb-16 md:pb-0">
     <div class="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
       <div class="flex flex-col items-start justify-between gap-2 mb-4 md:flex-row md:items-center">
         <div>
@@ -17,7 +17,7 @@
             :class="[
               'flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-all',
               store.activeTab === tab.key 
-                ? 'bg-indigo-600 text-white shadow-sm' 
+                ? 'bg-brand-600 text-white shadow-sm' 
                 : 'text-gray-600 hover:bg-gray-50'
             ]"
           >
@@ -79,6 +79,7 @@
           v-else
           :errors="store.questionsErrors"
           :saving="store.isSubmitting"
+          :publishing="store.isSubmitting"
           @open-builder="openBuilder"
           @open-bank="onOpenBank"
           @edit="(q) => edit(q)"
@@ -89,7 +90,7 @@
       </div>
 
       <div v-if="showBuilder" class="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-        <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" @saved="onQuestionSaved" @cancel="onCancel" />
+        <QuestionBuilder :subjectId="subject_id" :topicId="topic_id" :gradeId="grade_id" :levelId="level_id" @saved="onQuestionSaved" @cancel="onCancel" />
       </div>
 
       <CreateTopicModal
@@ -130,7 +131,7 @@
             </div>
             <div class="flex justify-end gap-2">
               <UButton variant="soft" @click="showCreatedModal = false">Continue editing</UButton>
-              <UButton color="primary" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}`) }">View</UButton>
+              <UButton color="primary" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}`) }" class="!bg-brand-600 hover:!bg-brand-700">View</UButton>
               <UButton color="gray" variant="ghost" @click="() => { showCreatedModal = false; router.push(`/quiz-master/quizzes/${createdPayload?.id || store.quizId}/edit`) }">Edit</UButton>
             </div>
           </div>
@@ -274,6 +275,7 @@ onMounted(async () => {
 const title = computed({ get: () => store.quiz.title, set: (v) => (store.quiz.title = v) })
 const description = computed({ get: () => store.quiz.description, set: (v) => (store.quiz.description = v) })
 const grade_id = computed({ get: () => store.quiz.grade_id, set: (v) => (store.quiz.grade_id = v) })
+const level_id = computed({ get: () => store.quiz.level_id, set: (v) => (store.quiz.level_id = v) })
 const subject_id = computed({ get: () => store.quiz.subject_id, set: (v) => (store.quiz.subject_id = v) })
 const topic_id = computed({ get: () => store.quiz.topic_id, set: (v) => (store.quiz.topic_id = v) })
 const youtube_url = computed({ get: () => store.quiz.youtube_url, set: (v) => (store.quiz.youtube_url = v) })

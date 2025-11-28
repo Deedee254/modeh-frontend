@@ -6,7 +6,7 @@
         <img class="mx-auto h-16 w-auto" src="/logo/modeh-logo.png" alt="Modeh" />
         <h2 class="mt-6 text-3xl font-bold tracking-tight text-gray-900">Create Your Account</h2>
         <p class="mt-2 text-lg text-gray-600">Join Modeh to practice, compete, and improve</p>
-        <p class="mt-2 text-sm text-gray-500">Already have an account? <NuxtLink to="/login" class="text-blue-600">Login</NuxtLink></p>
+        <p class="mt-2 text-sm text-gray-500">Already have an account? <NuxtLink to="/login" class="text-brand-600">Login</NuxtLink></p>
       </div>
 
       <UModal v-model="showSignedInModal">
@@ -15,7 +15,7 @@
             <h3 class="text-lg font-semibold text-gray-900">You're already signed in</h3>
             <p class="mt-2 text-sm text-slate-600">You are signed in as <strong>{{ auth.user?.name || auth.user?.email || 'User' }}</strong> ({{ auth.user?.role || 'user' }}).</p>
             <div class="mt-4 flex flex-col sm:flex-row gap-3">
-              <button @click="goToDashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Go to dashboard</button>
+              <button @click="goToDashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Go to dashboard</button>
               <button @click="handleLogout" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Log out</button>
             </div>
           </div>
@@ -30,8 +30,8 @@
             :class="[
               'px-6 py-3 text-sm font-medium rounded-lg flex items-center justify-center',
               role === 'quizee' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-200'
+                ? 'bg-brand-600 text-white' 
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-brand-100'
             ]"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,8 +44,8 @@
             :class="[
               'px-6 py-3 text-sm font-medium rounded-lg flex items-center justify-center',
               role === 'quiz-master' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-200'
+                ? 'bg-brand-600 text-white' 
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-brand-100'
             ]"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -58,8 +58,8 @@
             :class="[
               'px-6 py-3 text-sm font-medium rounded-lg flex items-center justify-center',
               role === 'institution-manager'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-200'
+                ? 'bg-brand-600 text-white'
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-brand-100'
             ]"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -79,13 +79,13 @@
             <div class="grid grid-cols-1 gap-3">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
                 <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600">{{ fieldErrors.name }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Institution / School</label>
-                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
                 <p v-if="fieldErrors.institution" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution }}</p>
               </div>
 
@@ -130,25 +130,25 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input v-model="form.email" type="email" autocomplete="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.email" type="email" autocomplete="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
                 <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
                 <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Short Bio</label>
-                <textarea v-model="form.bio" rows="3" placeholder="Optional - a short bio" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                <textarea v-model="form.bio" rows="3" placeholder="Optional - a short bio" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"></textarea>
                 <p v-if="fieldErrors.bio" class="mt-1 text-sm text-red-600">{{ fieldErrors.bio }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Parent/Guardian Email</label>
-                <input v-model="form.parentEmail" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional but recommended for minors" />
+                <input v-model="form.parentEmail" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" placeholder="Optional but recommended for minors" />
                 <p v-if="fieldErrors.parentEmail" class="mt-1 text-sm text-red-600">{{ fieldErrors.parentEmail }}</p>
               </div>
             </div>
@@ -159,12 +159,12 @@
             <div class="grid grid-cols-1 gap-3">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Institution</label>
-                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
               </div>
 
               <div>
@@ -207,13 +207,13 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
                 <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
                 <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
               </div>
             </div>
@@ -224,13 +224,13 @@
             <div class="grid grid-cols-1 gap-3">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Institution</label>
                 <p class="text-xs text-gray-600 mb-2">Select an existing institution or skip to create one later</p>
-                <select v-model="form.institution_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :disabled="loadingInstitutions">
+                <select v-model="form.institution_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" :disabled="loadingInstitutions">
                   <option value="">{{ loadingInstitutions ? 'Loading institutions...' : 'Select an institution (optional)' }}</option>
                   <option v-for="inst in institutions" :key="inst.id" :value="inst.id">
                     {{ inst.name }}
@@ -240,13 +240,13 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
                 <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
                 <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
               </div>
             </div>
@@ -261,7 +261,7 @@
                   v-model="form.password" 
                   :type="showPassword ? 'text' : 'password'" 
                   autocomplete="new-password"
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" 
                   required 
                 />
                 <button 
@@ -288,7 +288,7 @@
                   v-model="form.confirmPassword" 
                   :type="showConfirmPassword ? 'text' : 'password'" 
                   autocomplete="new-password"
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" 
                   required 
                 />
                 <button 
@@ -312,7 +312,7 @@
           <div>
             <button 
               type="submit" 
-              class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75"
+              class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 disabled:opacity-75"
               :disabled="isLoading"
             >
               <svg 

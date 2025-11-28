@@ -24,7 +24,7 @@
       </div>
 
       <div class="mt-6">
-        <button :disabled="!role || submitting" class="w-full px-4 py-2 bg-indigo-600 text-white rounded">
+        <button :disabled="!role || submitting" class="w-full px-4 py-2 bg-brand-600 text-white rounded">
           Continue
         </button>
       </div>

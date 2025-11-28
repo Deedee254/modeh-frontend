@@ -27,6 +27,10 @@ export function useProfileForm() {
     // Determine the profile object based on role
     const profile = u?.role === 'quiz-master' ? u?.quizMasterProfile : u?.quizeeProfile
 
+    // For Quizees, 'bio' in the API maps to the 'profile' database field
+    // But we expose it as 'bio' in the API response for consistency
+    let bioValue = profile?.bio || u?.bio || ''
+
     return {
       display_name: u?.name || '',
       name: u?.name || '', // Alias for compatibility
@@ -41,7 +45,7 @@ export function useProfileForm() {
           ? u.subjects.map((s) => (s && s.id) ? s.id : s).filter(Boolean)
           : [],
       headline: profile?.headline || u?.headline || '',
-      bio: profile?.bio || u?.bio || '',
+      bio: bioValue,
       teaching_subjects: Array.isArray(profile?.teaching_subjects)
         ? profile.teaching_subjects.join(', ')
         : profile?.teaching_subjects || u?.teaching_subjects || '',
@@ -106,31 +110,36 @@ export function useProfileForm() {
         return false
       }
 
-      // Prepare user data (goes to /api/me)
-      const userData = new FormData()
-      const displayName = form.display_name || form.name
-      userData.append('name', displayName)
-      if (form.phone) userData.append('phone', form.phone)
-      if (avatarFile.value) {
-        userData.append('avatar', avatarFile.value)
-      }
-
-      // Prepare profile data (goes to role-specific endpoint)
-      // Only include keys that were provided to avoid accidentally wiping
-      // existing profile data when a field is left unchanged.
-      const profileData = {}
-      if (form.institution !== undefined) profileData.institution = form.institution || null
-      if (form.grade_id !== undefined && form.grade_id !== '') profileData.grade_id = form.grade_id || null
-      if (form.level_id !== undefined && form.level_id !== '') profileData.level_id = form.level_id || null
-      if (Array.isArray(form.subjects) && form.subjects.length > 0) profileData.subjects = form.subjects
-
-      // Normalize role parameter: the caller may pass a boolean (legacy) or a role string
+      // Normalize role parameter first: the caller may pass a boolean (legacy) or a role string
       let role = null
       if (typeof isQuizMasterOrRole === 'boolean') {
         role = isQuizMasterOrRole ? 'quiz-master' : 'quizee'
       } else if (typeof isQuizMasterOrRole === 'string') {
         role = isQuizMasterOrRole
       }
+
+      // Prepare user data (goes to /api/me)
+      const userData = new FormData()
+      const displayName = form.display_name || form.name
+      userData.append('name', displayName)
+      // Always include phone if it's defined (can be empty string to clear it)
+      if (form.phone !== undefined) userData.append('phone', form.phone)
+      if (avatarFile.value) {
+        userData.append('avatar', avatarFile.value)
+      }
+      // For institution managers, also save bio and institution to user record
+      if (role === 'institution-manager') {
+        if (form.bio !== undefined) userData.append('bio', form.bio)
+        if (form.institution !== undefined) userData.append('institution', form.institution)
+      }
+
+      // Prepare profile data (goes to role-specific endpoint)
+      // Always include fields to properly update/clear them
+      const profileData = {}
+      if (form.institution !== undefined) profileData.institution = form.institution || null
+      if (form.grade_id !== undefined) profileData.grade_id = form.grade_id || null
+      if (form.level_id !== undefined) profileData.level_id = form.level_id || null
+      if (Array.isArray(form.subjects)) profileData.subjects = form.subjects
 
       // Add role-specific fields to profile data when applicable
       if (role === 'quiz-master') {
@@ -167,7 +176,7 @@ export function useProfileForm() {
       // Merge the returned data with user data for auth store
       let mergedUser = { ...userJson }
       if (profileJson && profileJson.profile) {
-        if (isQuizMaster) {
+        if (role === 'quiz-master') {
           mergedUser.quizMasterProfile = profileJson.profile
         } else {
           mergedUser.quizeeProfile = profileJson.profile
@@ -177,9 +186,13 @@ export function useProfileForm() {
       // Update auth store
       if (mergedUser && mergedUser.id) {
         auth.setUser(mergedUser)
-        // Also refresh server-side computed user payload in background to ensure
+        // Refresh server-side computed user payload to ensure
         // fields like `missing_profile_fields` and onboarding flags are up-to-date.
-        try { auth.fetchUser().catch(() => {}) } catch (e) { /* ignore */ }
+        try { 
+          await auth.fetchUser()
+        } catch (e) { 
+          console.error('Failed to refresh user after save:', e)
+        }
       }
 
       alert.push({
@@ -210,3 +223,4 @@ export function useProfileForm() {
     saveProfile
   }
 }
+

@@ -7,6 +7,7 @@
         color="primary"
         @click="installPWA"
         icon="i-heroicons-arrow-down-tray"
+        class="!bg-brand-600 hover:!bg-brand-700"
       >
         Install
       </UButton>

@@ -117,7 +117,7 @@ function getStatusBadge(status: string) {
   const badges = {
     active: 'bg-green-100 text-green-800',
     pending: 'bg-yellow-100 text-yellow-800',
-    invited: 'bg-blue-100 text-blue-800',
+    invited: 'bg-brand-100 text-brand-800',
     removed: 'bg-red-100 text-red-800'
   }
   return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800'
@@ -126,7 +126,7 @@ function getStatusBadge(status: string) {
 function getRoleBadge(role: string) {
   const badges = {
     'institution-manager': 'bg-purple-100 text-purple-800',
-    'quiz-master': 'bg-blue-100 text-blue-800',
+    'quiz-master': 'bg-brand-100 text-brand-800',
     'quizee': 'bg-green-100 text-green-800',
     'member': 'bg-gray-100 text-gray-800'
   }
@@ -223,7 +223,7 @@ onMounted(() => {
                 <div class="flex space-x-2">
                   <NuxtLink
                     :to="`/institution-manager/institutions/${institutionSlug}/members/${member.id}/analytics`"
-                    class="text-indigo-600 hover:text-indigo-900"
+                    class="text-brand-600 hover:text-brand-900"
                   >
                     Analytics
                   </NuxtLink>
@@ -299,7 +299,7 @@ onMounted(() => {
               <input
                 v-model="inviteEmail"
                 type="email"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500"
                 placeholder="user@example.com"
               />
             </div>
@@ -307,7 +307,7 @@ onMounted(() => {
               <label class="block text-sm font-medium text-gray-700">Role</label>
               <select
                 v-model="inviteRole"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500"
               >
                 <option value="member">Member</option>
                 <option value="quizee">Quizee</option>
@@ -321,7 +321,7 @@ onMounted(() => {
                 type="number"
                 min="1"
                 max="30"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-600 focus:border-brand-500"
               />
             </div>
           </div>
@@ -335,7 +335,7 @@ onMounted(() => {
             <button
               @click="inviteMember"
               :disabled="inviting || !inviteEmail.trim()"
-              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 w-full sm:w-auto"
+              class="px-4 py-2 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-md hover:bg-brand-700 disabled:opacity-50 w-full sm:w-auto"
             >
               <span v-if="inviting">Sending...</span>
               <span v-else>Send Invitation</span>

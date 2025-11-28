@@ -22,13 +22,13 @@
               <div class="text-xs text-gray-400 mt-1">{{ formatDate(n.created_at) }}</div>
             </div>
             <div class="flex items-center gap-2">
-              <button v-if="!n.read" @click="markRead(n)" class="text-xs px-2 py-1 bg-indigo-600 text-white rounded">Mark read</button>
+              <button v-if="!n.read" @click="markRead(n)" class="text-xs px-2 py-1 bg-brand-600 text-white rounded">Mark read</button>
             </div>
           </li>
         </ul>
       </div>
       <div class="p-2 text-center text-xs text-gray-500 border-t">
-        <NuxtLink to="/quizee/notifications" class="text-indigo-600">View all</NuxtLink>
+        <NuxtLink to="/quizee/notifications" class="text-brand-600">View all</NuxtLink>
       </div>
     </div>
   </div>
@@ -113,3 +113,4 @@ watch(open, (v) => { if (v) load() })
 <style scoped>
 .w-80 { width: 20rem; }
 </style>
+

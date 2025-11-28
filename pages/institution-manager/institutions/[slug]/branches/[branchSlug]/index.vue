@@ -7,12 +7,12 @@
 
     <div v-else-if="branch" class="space-y-6">
       <!-- Branch Header -->
-      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white">
+      <div class="bg-gradient-to-r from-brand-600 to-brand-700 rounded-2xl p-6 text-white">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 class="text-3xl font-bold">{{ branch.name }}</h1>
-            <p class="text-indigo-100 mt-1">{{ branch.email }}</p>
-            <p class="text-sm text-indigo-200 mt-2">Branch ID: {{ branch.slug }}</p>
+            <p class="text-brand-100 mt-1">{{ branch.email }}</p>
+            <p class="text-sm text-brand-100 mt-2">Branch ID: {{ branch.slug }}</p>
           </div>
           <div class="flex gap-3">
             <NuxtLink
@@ -68,50 +68,50 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <NuxtLink
             :to="`/institution-manager/institutions/${parentSlug}/branches/${branchSlug}/members`"
-            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50 transition-colors group"
+            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-950/50 transition-colors group"
           >
-            <Icon name="heroicons:user-group" class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mb-2" />
-            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">Members</span>
+            <Icon name="heroicons:user-group" class="w-8 h-8 text-slate-400 group-hover:text-brand-500 mb-2" />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand-700 dark:group-hover:text-brand-300">Members</span>
           </NuxtLink>
 
           <NuxtLink
             :to="`/institution-manager/institutions/${parentSlug}/branches/${branchSlug}/quizzes`"
-            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50 transition-colors group"
+            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-950/50 transition-colors group"
           >
-            <Icon name="heroicons:document-text" class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mb-2" />
-            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">Quizzes</span>
+            <Icon name="heroicons:document-text" class="w-8 h-8 text-slate-400 group-hover:text-brand-500 mb-2" />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand-700 dark:group-hover:text-brand-300">Quizzes</span>
           </NuxtLink>
 
           <NuxtLink
             :to="`/institution-manager/institutions/${parentSlug}/branches/${branchSlug}/analytics`"
-            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50 transition-colors group"
+            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-950/50 transition-colors group"
           >
-            <Icon name="heroicons:chart-bar" class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mb-2" />
-            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">Analytics</span>
+            <Icon name="heroicons:chart-bar" class="w-8 h-8 text-slate-400 group-hover:text-brand-500 mb-2" />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand-700 dark:group-hover:text-brand-300">Analytics</span>
           </NuxtLink>
 
           <NuxtLink
             :to="`/institution-manager/institutions/${parentSlug}/branches/${branchSlug}/reports`"
-            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50 transition-colors group"
+            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-950/50 transition-colors group"
           >
-            <Icon name="heroicons:document-chart-bar" class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mb-2" />
-            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">Reports</span>
+            <Icon name="heroicons:document-chart-bar" class="w-8 h-8 text-slate-400 group-hover:text-brand-500 mb-2" />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand-700 dark:group-hover:text-brand-300">Reports</span>
           </NuxtLink>
 
           <NuxtLink
             :to="`/institution-manager/institutions/${parentSlug}/branches/${branchSlug}/settings`"
-            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50 transition-colors group"
+            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-950/50 transition-colors group"
           >
-            <Icon name="heroicons:cog-6-tooth" class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mb-2" />
-            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">Settings</span>
+            <Icon name="heroicons:cog-6-tooth" class="w-8 h-8 text-slate-400 group-hover:text-brand-500 mb-2" />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand-700 dark:group-hover:text-brand-300">Settings</span>
           </NuxtLink>
 
           <NuxtLink
             :to="`/institution-manager/institutions/${parentSlug}/branches/${branchSlug}/notifications`"
-            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50 transition-colors group"
+            class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-brand-950/50 transition-colors group"
           >
-            <Icon name="heroicons:bell" class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mb-2" />
-            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">Notifications</span>
+            <Icon name="heroicons:bell" class="w-8 h-8 text-slate-400 group-hover:text-brand-500 mb-2" />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand-700 dark:group-hover:text-brand-300">Notifications</span>
           </NuxtLink>
         </div>
       </UiCard>
@@ -130,7 +130,7 @@
               :key="activity.id"
               class="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50"
             >
-              <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+              <div class="w-2 h-2 rounded-full bg-brand-500"></div>
               <div class="flex-1">
                 <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ activity.description }}</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ formatDate(activity.timestamp) }}</p>

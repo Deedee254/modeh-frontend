@@ -82,7 +82,7 @@ function getTypeIcon(type: string) {
 
 function getTypeBadge(type: string) {
   const badges = {
-    member_joined: 'bg-blue-100 text-blue-800',
+    member_joined: 'bg-brand-100 text-brand-800',
     quiz_completed: 'bg-green-100 text-green-800',
     member_invited: 'bg-purple-100 text-purple-800',
     milestone_reached: 'bg-yellow-100 text-yellow-800',
@@ -137,19 +137,19 @@ onMounted(() => {
         <div class="flex gap-2">
           <button
             @click="selectedFilter = 'all'; loadNotifications(1)"
-            :class="[selectedFilter === 'all' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800', 'px-4 py-2 rounded-full text-sm font-medium']"
+            :class="[selectedFilter === 'all' ? 'bg-brand-100 text-brand-800' : 'bg-gray-100 text-gray-800', 'px-4 py-2 rounded-full text-sm font-medium']"
           >
             All
           </button>
           <button
             @click="selectedFilter = 'unread'; loadNotifications(1)"
-            :class="[selectedFilter === 'unread' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800', 'px-4 py-2 rounded-full text-sm font-medium']"
+            :class="[selectedFilter === 'unread' ? 'bg-brand-100 text-brand-800' : 'bg-gray-100 text-gray-800', 'px-4 py-2 rounded-full text-sm font-medium']"
           >
             Unread
           </button>
           <button
             @click="selectedFilter = 'read'; loadNotifications(1)"
-            :class="[selectedFilter === 'read' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800', 'px-4 py-2 rounded-full text-sm font-medium']"
+            :class="[selectedFilter === 'read' ? 'bg-brand-100 text-brand-800' : 'bg-gray-100 text-gray-800', 'px-4 py-2 rounded-full text-sm font-medium']"
           >
             Read
           </button>
@@ -173,7 +173,7 @@ onMounted(() => {
             'p-4 rounded-lg border-2 transition-colors',
             notification.read
               ? 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700'
-              : 'bg-blue-50 dark:bg-slate-800/50 border-blue-200 dark:border-blue-600'
+              : 'bg-brand-50 dark:bg-slate-800/50 border-brand-100 dark:border-brand-600'
           ]"
         >
           <div class="flex gap-4">
@@ -194,7 +194,7 @@ onMounted(() => {
                   <button
                     v-if="!notification.read"
                     @click="markAsRead(notification.id)"
-                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    class="text-xs text-brand-600 hover:text-brand-800 font-medium"
                   >
                     Mark read
                   </button>

@@ -12,3 +12,4 @@ import SkeletonCard from './SkeletonCard.vue'
 const props = defineProps({ count: { type: Number, default: 6 }, variant: { type: String, default: 'grid' } })
 const { count, variant } = props
 </script>
+

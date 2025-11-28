@@ -20,7 +20,7 @@
           type="text" 
           required
           placeholder="Enter topic name"
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-100"
           :class="{ 'border-red-300': errors.name }"
         />
         <p v-if="errors.name" class="text-sm text-red-600">{{ errors.name }}</p>
@@ -33,7 +33,7 @@
           v-model="form.description" 
           rows="4" 
           placeholder="Describe the topic"
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-100"
           :class="{ 'border-red-300': errors.description }"
         ></textarea>
         <p v-if="errors.description" class="text-sm text-red-600">{{ errors.description }}</p>
@@ -45,7 +45,7 @@
         <select 
           v-model="form.gradeId"
           required
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-100"
           :class="{ 'border-red-300': errors.gradeId }"
         >
           <option value="">Select a grade</option>
@@ -62,7 +62,7 @@
         <select 
           v-model="form.subjectId"
           required
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-100"
           :class="{ 'border-red-300': errors.subjectId }"
         >
           <option value="">Select a subject</option>
@@ -107,7 +107,7 @@
       <div class="flex justify-end pt-4">
         <button 
           type="submit" 
-          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-75 flex items-center gap-2"
+          class="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-75 flex items-center gap-2"
           :disabled="isSubmitting"
         >
           <Icon v-if="isSubmitting" name="heroicons:arrow-path" class="w-5 h-5 animate-spin" />

@@ -32,7 +32,7 @@
   <div class="flex-1 flex justify-center px-6 hidden md:flex">
         <div class="w-full max-w-md">
           <div class="relative">
-            <input type="search" placeholder="Search for quizzes, topics..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+            <input type="search" placeholder="Search for quizzes, topics..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" />
             <div class="absolute left-3 top-1/2 -translate-y-1/2">
               <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
@@ -45,7 +45,7 @@
         <!-- Desktop Navigation -->
           <nav class="hidden md:flex gap-3 text-sm font-medium text-slate-700 dark:text-slate-300 items-center">
                   <div class="relative" @mouseenter="showQuizzesDropdown = true" @mouseleave="showQuizzesDropdown = false">
-                    <NuxtLink to="/levels" class="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 py-2 px-2 rounded-md transition">
+                    <NuxtLink to="/levels" class="flex items-center gap-2 hover:text-brand-600 dark:hover:text-brand-400 py-2 px-2 rounded-md transition">
                       <span>Levels</span>
                       <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </NuxtLink>
@@ -69,7 +69,7 @@
 
                       <!-- Categories dropdown -->
                       <div class="relative" @mouseenter="showCategoriesDropdown = true" @mouseleave="showCategoriesDropdown = false">
-                        <button class="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 py-2 px-2 rounded-md transition">
+                        <button class="flex items-center gap-2 hover:text-brand-600 dark:hover:text-brand-400 py-2 px-2 rounded-md transition">
                           <span>Categories</span>
                           <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -94,8 +94,8 @@
                         </transition>
                       </div>
 
-          <NuxtLink to="/quiz-masters" class="hover:text-blue-600 dark:hover:text-blue-400 py-2">Quiz Masters</NuxtLink>
-          <NuxtLink to="/pricing" class="hover:text-blue-600 dark:hover:text-blue-400 py-2">Pricing</NuxtLink>
+          <NuxtLink to="/quiz-masters" class="hover:text-brand-600 dark:hover:text-brand-400 py-2">Quiz Masters</NuxtLink>
+          <NuxtLink to="/pricing" class="hover:text-brand-600 dark:hover:text-brand-400 py-2">Pricing</NuxtLink>
         </nav>
 
         <!-- Auth buttons and User menu (hidden on institution-manager pages to avoid duplicate profile controls) -->
@@ -118,7 +118,7 @@
     <!-- Mobile Search -->
     <div v-if="showSearch" class="md:hidden px-4 pb-4">
         <div class="relative">
-            <input type="search" placeholder="Search..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+            <input type="search" placeholder="Search..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" />
             <div class="absolute left-3 top-1/2 -translate-y-1/2">
                 <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
@@ -188,7 +188,7 @@
           <div class="mt-8 pt-8 border-t border-slate-200 dark:border-slate-700">
             <div class="flex gap-3">
               <NuxtLink to="/login" class="flex-1 text-center px-4 py-3 border rounded text-sm">Login</NuxtLink>
-              <NuxtLink to="/register?role=quizee" class="flex-1 text-center px-4 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700">Register</NuxtLink>
+              <NuxtLink to="/register?role=quizee" class="flex-1 text-center px-4 py-3 bg-brand-600 text-white rounded-full font-medium hover:bg-brand-700">Register</NuxtLink>
             </div>
           </div>
         </div>
@@ -267,3 +267,4 @@ function logout() {
   navigateTo('/')
 }
 </script>
+

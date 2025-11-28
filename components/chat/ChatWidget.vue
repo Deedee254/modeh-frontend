@@ -210,7 +210,7 @@
                       <!-- determine tick state: single/double/read -->
                       <svg v-if="getTickState(message) === 'single'" class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                       <svg v-else-if="getTickState(message) === 'double'" class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path><path d="M22 6 11 17l-5-5"></path></svg>
-                      <svg v-else-if="getTickState(message) === 'read'" class="tick tick-read" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#39B3FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path><path d="M22 6 11 17l-5-5"></path></svg>
+                      <svg v-else-if="getTickState(message) === 'read'" class="tick tick-read" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path><path d="M22 6 11 17l-5-5"></path></svg>
                     </template>
                   </span>
                 </template>
@@ -275,6 +275,7 @@
     :searchResults="searchResults"
     @close="closeNewChat"
     @start-dm="handleStartDM"
+    @start-support="handleStartSupport"
     @add-user="addUserToInvite"
     @search="onUserSearch"
   />
@@ -434,6 +435,19 @@ function triggerFileInput() { fileInput.value?.click() }
 
 function openNewChat() { showCreate.value = true }
 function closeNewChat() { showCreate.value = false }
+
+async function handleStartSupport() {
+  try {
+    // Set email to 'support' to trigger support chat in startDMByEmail
+    dmEmail.value = 'support'
+    await startDMByEmail()
+    closeNewChat()
+  } catch (e) {
+    console.error('Support chat error:', e)
+    closeNewChat()
+  }
+}
+
 async function handleStartDM(email: string) {
   if (!email) return
   try {
@@ -507,13 +521,13 @@ onUnmounted(() => {
 }
 
 .chat-bubble.sent {
-  background: #d9fdd3;
-  color: #111827;
+  background: #891f21;
+  color: #ffffff;
   border-radius: 18px 18px 4px 18px;
 }
 
 .chat-bubble.received {
-  background: #ffffff;
+  background: #f5f5f5;
   color: #111827;
   border-radius: 18px 18px 18px 4px;
   box-shadow: 0 1px 0 rgba(0,0,0,0.05);
@@ -524,7 +538,7 @@ onUnmounted(() => {
 
 /* tick icon styles */
 .tick { display: inline-block; vertical-align: middle; stroke: #8696a0; color: #8696a0; }
-.tick-read { stroke: #0b93f6; color: #0b93f6; }
+.tick-read { stroke: #f7b932; color: #f7b932; }
 .chat-bubble.received .tick { stroke: rgba(0,0,0,0.45); color: rgba(0,0,0,0.45); }
 .chat-bubble.sent .tick { stroke: #8696a0; color: #8696a0; }
 .tick { width: 14px; height: 14px; margin-left: 6px }
@@ -533,3 +547,4 @@ onUnmounted(() => {
 .chat-bubble .meta { font-size: 11px; opacity: 0.8 }
 
 </style>
+

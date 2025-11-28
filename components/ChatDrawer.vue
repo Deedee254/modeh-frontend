@@ -51,7 +51,7 @@
               <span class="size-10">
                 <img class="size-10 rounded-full object-cover object-center" :alt="chat.name" :src="chat.avatar" />
               </span>
-              <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-indigo-600 border-2 border-white dark:border-slate-900"></span>
+              <span v-if="((chat.unread_count ?? chat.unread) || 0) > 0" class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-brand-600 border-2 border-white dark:border-slate-900"></span>
             </div>
             <div class="flex-1 space-y-1 overflow-hidden">
               <div class="flex items-center justify-between">

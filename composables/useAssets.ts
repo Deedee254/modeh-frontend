@@ -15,3 +15,4 @@ export function resolveAssetUrl(value: string | null | undefined): string | null
 }
 
 export default resolveAssetUrl
+

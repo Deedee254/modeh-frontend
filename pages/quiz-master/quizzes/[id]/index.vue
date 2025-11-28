@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-gray-800">{{ quiz.title || 'Quiz Details' }}</h1>
         <div class="space-x-2">
-          <NuxtLink :to="`/quiz-master/quizzes/${quiz.id}/edit`" class="px-3 py-2 bg-blue-600 text-white rounded text-sm">Edit Quiz</NuxtLink>
+          <NuxtLink :to="`/quiz-master/quizzes/${quiz.id}/edit`" class="px-3 py-2 bg-brand-600 text-white rounded text-sm">Edit Quiz</NuxtLink>
         </div>
       </div>
 
@@ -14,21 +14,21 @@
           <a
             href="#"
             @click.prevent="activeTab = 'details'"
-            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'details' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
+            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'details' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
           >
             Details
           </a>
           <a
             href="#"
             @click.prevent="activeTab = 'settings'"
-            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
+            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'settings' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
           >
             Settings
           </a>
           <a
             href="#"
             @click.prevent="activeTab = 'questions'"
-            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'questions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
+            :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === 'questions' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ]"
           >
             Questions
           </a>
@@ -222,7 +222,7 @@
                 <span v-html="opt.option"></span>
               </div>
             </div>
-            <div v-if="q.explanation" class="mt-3 p-2 bg-blue-50 rounded text-sm">
+            <div v-if="q.explanation" class="mt-3 p-2 bg-brand-50 rounded text-sm">
               <strong>Explanation:</strong> <span v-html="q.explanation"></span>
             </div>
           </div>
@@ -304,7 +304,7 @@ const coverImageUrl = computed(() => {
 
 function tabClass(tab) {
   return activeTab.value === tab
-    ? 'border-blue-500 text-blue-600'
+    ? 'border-brand-500 text-brand-600'
     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
 }
 

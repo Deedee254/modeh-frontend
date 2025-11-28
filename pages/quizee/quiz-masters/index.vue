@@ -13,7 +13,7 @@
             size="lg"
             color="primary"
             variant="solid"
-            class="min-w-[200px] shadow-lg hover:-translate-y-0.5 transition-transform"
+            class="min-w-[200px] shadow-lg hover:-translate-y-0.5 transition-transform !bg-brand-600 hover:!bg-brand-700"
             to="/quizzes"
           >
             Browse All Quizzes
@@ -47,24 +47,8 @@
     </PageHero>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <!-- Filters Sidebar -->
-          <aside class="lg:col-span-1 order-2 lg:order-1">
-            <div class="sticky top-6">
-              <FiltersSidebar
-                :grade-options="store.grades"
-                :subject-options="store.subjects"
-                :grade="gradeFilter"
-                :subject="subjectFilter"
-                storageKey="filters:quizee-quiz-masters"
-                @update:grade="val => gradeFilter.value = val"
-                @update:subject="val => subjectFilter.value = val"
-              />
-            </div>
-          </aside>
-
           <!-- Main Content -->
-          <main class="lg:col-span-3 order-1 lg:order-2">
+          <main>
             <!-- Loading State -->
             <div v-if="pending" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <SkeletonCard v-for="i in 9" :key="i" />
@@ -105,7 +89,6 @@
               />
             </div>
           </main>
-        </div>
       </div>
   </div>
 </template>
@@ -118,7 +101,6 @@ import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
-import FiltersSidebar from '~/components/FiltersBar.vue'
 import UPagination from '~/components/ui/UPagination.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
@@ -145,15 +127,8 @@ const { data } = await useTaxonomyHydration({
 
 const currentPage = ref(1)
 
-// --- Filtering ---
-const gradeFilter = ref('')
-const subjectFilter = ref('')
-
 const filterParams = computed(() => {
-  const params = { page: currentPage.value }
-  if (gradeFilter.value) params.grade_id = gradeFilter.value
-  if (subjectFilter.value) params.subject_id = subjectFilter.value
-  return params
+  return { page: currentPage.value }
 })
 
 // Fetch quiz masters with pagination

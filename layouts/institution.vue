@@ -98,3 +98,4 @@ watch(() => instStore.activeInstitutionSlug, (newSlug) => {
   opacity: 0;
 }
 </style>
+

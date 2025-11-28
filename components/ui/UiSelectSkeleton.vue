@@ -16,3 +16,4 @@
 <style scoped>
 /* keep minimal; rely on Tailwind for quick styling */
 </style>
+

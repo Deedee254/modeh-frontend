@@ -9,10 +9,10 @@
     <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div v-for="plan in plans" :key="plan.id" 
         class="relative border rounded-lg p-6 flex flex-col"
-        :class="{'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50': isActive(plan)}">
+        :class="{'border-brand-500 ring-2 ring-brand-600 ring-opacity-50': isActive(plan)}">
         <!-- Popular badge -->
         <div v-if="plan.popular" class="absolute top-0 right-0 -mr-1 -mt-1">
-          <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+          <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-brand-100 text-brand-800">
             Popular
           </span>
         </div>
@@ -55,7 +55,7 @@
           </button>
           <button v-else
                   @click="selectPlan(plan)"
-                  class="w-full bg-indigo-600 border border-transparent rounded-md py-3 px-5 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  class="w-full bg-brand-600 border border-transparent rounded-md py-3 px-5 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600">
             {{ currentPlan ? 'Switch Plan' : 'Subscribe' }}
           </button>
         </div>
@@ -75,7 +75,7 @@
         <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3">
           <button
             type="button"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 sm:text-sm"
             @click="confirmSubscription"
             :disabled="processing"
           >
@@ -83,7 +83,7 @@
           </button>
           <button
             type="button"
-            class="mt-3 sm:mt-0 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm"
+            class="mt-3 sm:mt-0 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 sm:text-sm"
             @click="showConfirmation = false"
             :disabled="processing"
           >
@@ -104,7 +104,7 @@
       <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3">
         <button
           type="button"
-          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm"
+          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 sm:text-sm"
           @click="confirmPhoneSubscription"
           :disabled="processing"
         >
@@ -112,7 +112,7 @@
         </button>
         <button
           type="button"
-          class="mt-3 sm:mt-0 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm"
+          class="mt-3 sm:mt-0 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 sm:text-sm"
           @click="showPhoneModal = false"
           :disabled="processing"
         >

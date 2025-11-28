@@ -38,7 +38,7 @@
         @click="goTo(i)"
         :aria-label="`Go to slide ${i + 1}`"
         class="w-2.5 h-2.5 rounded-full transition"
-        :class="i === pageIndex ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-gray-300 dark:bg-slate-600'"
+        :class="i === pageIndex ? 'bg-brand-600 dark:bg-brand-400' : 'bg-gray-300 dark:bg-slate-600'"
       />
     </div>
   </div>

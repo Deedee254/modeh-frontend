@@ -27,7 +27,7 @@
             <div class="flex-1 min-w-0">
               <div class="font-normal sm:font-medium text-slate-800 break-words whitespace-normal leading-tight text-xs sm:text-sm">{{ item.name }}</div>
             </div>
-            <svg v-if="isSelected(item)" class="h-5 w-5 text-indigo-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clip-rule="evenodd"/></svg>
+            <svg v-if="isSelected(item)" class="h-5 w-5 text-brand-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clip-rule="evenodd"/></svg>
           </li>
         </ul>
       </div>
@@ -147,6 +147,10 @@ watch(() => props.gradeId, async (nv) => {
   if (!usePicker.value && props.resource === 'subjects') {
     await loadItems()
     initSelected()
+  } else if (props.resource === 'subjects' && nv) {
+    // Also reload when using the picker, as grade changed
+    await loadItems()
+    initSelected()
   }
 })
 
@@ -189,3 +193,4 @@ onMounted(async () => {
 <style scoped>
 /* minimal styling kept to wrapper only */
 </style>
+

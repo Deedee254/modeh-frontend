@@ -19,7 +19,7 @@
         'py-2.5 text-sm',
         'bg-gray-50 border border-gray-200 rounded-lg',
         'placeholder:text-gray-400',
-        'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2',
+        'focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white focus-visible:outline-2 focus-visible:outline-brand-600 focus-visible:outline-offset-2',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         'dark:bg-slate-900 dark:border-slate-700 dark:placeholder:text-slate-500 dark:focus:bg-slate-800',
         inputClass
@@ -29,7 +29,7 @@
       v-if="clearable && modelValue"
       @click="$emit('update:modelValue', '')"
       type="button"
-      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2 rounded p-1"
+      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus-visible:outline-2 focus-visible:outline-brand-600 focus-visible:outline-offset-2 rounded p-1"
     >
       <Icon name="heroicons:x-mark" class="w-5 h-5" />
     </button>
@@ -78,3 +78,4 @@ defineProps({
 
 defineEmits(['update:modelValue'])
 </script>
+

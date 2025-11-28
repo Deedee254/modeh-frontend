@@ -5,8 +5,8 @@
     <!-- Content Section -->
     <div class="flex flex-1 flex-col p-5">
       <!-- Header: Icon and Title with Check Mark -->
-      <div class="flex items-start justify-between gap-3 mb-3">
-        <div class="flex items-start gap-3">
+      <div class="flex flex-col sm:flex-row items-start justify-between gap-3 mb-3">
+        <div class="flex flex-col sm:flex-row items-start gap-3 flex-1">
           <!-- Icon/Image -->
           <div class="flex-shrink-0">
             <template v-if="image">
@@ -25,8 +25,8 @@
           </div>
 
           <!-- Title -->
-          <div>
-            <h3 class="text-base sm:text-lg font-bold text-slate-900 line-clamp-1 dark:text-slate-50">
+          <div class="flex-1">
+            <h3 class="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-50">
               {{ displayTitle }}
             </h3>
             <!-- Grade pill below title -->
@@ -38,9 +38,9 @@
           </div>
         </div>
 
-        <!-- Check Mark - Top Right -->
-        <div class="flex-shrink-0">
-          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-teal-500 dark:bg-teal-600">
+        <!-- Check Mark - Top Right (hidden on mobile) -->
+        <div class="hidden sm:flex flex-shrink-0">
+          <div class="flex h-7 w-7 items-center justify-center rounded-full" style="background-color: #891f21">
             <Icon name="heroicons:check-solid" class="h-4 w-4 text-white" />
           </div>
         </div>
@@ -63,8 +63,8 @@
       </div>
     </div>
 
-    <!-- Bottom accent (green strip similar to GradeCard) -->
-    <div class="h-8 w-full rounded-b-2xl bg-gradient-to-br from-teal-600 to-teal-700 dark:from-teal-700 dark:to-teal-800"></div>
+    <!-- Bottom accent (burgundy strip similar to GradeCard) -->
+    <div class="h-8 w-full rounded-b-2xl" style="background: linear-gradient(to bottom right, #891f21, #a83435)"></div>
   </div>
 </template>
 

@@ -1,7 +1,7 @@
 <template>
   <div :class="['absolute inset-y-0 left-0 z-20 w-full md:static md:w-96 border-r border-border transition-transform duration-300 ease-in-out', showChatWindowOnMobile ? '-translate-x-full' : 'translate-x-0 md:translate-x-0']">
     <!-- Use gradient on mobile/compact list to match hero -->
-    <div class="flex flex-col w-full h-full bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400 text-white">
+    <div class="flex flex-col w-full h-full bg-gradient-to-br from-brand-600 via-sky-500 to-cyan-400 text-white">
       <div class="p-4 border-b border-border bg-transparent sticky top-0 z-40">
         <div class="flex items-center justify-between mb-3">
           <h1 class="text-lg font-semibold tracking-tight text-primary-foreground md:text-xl">Chats</h1>
@@ -67,3 +67,4 @@ function formatTime(dateString) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 </script>
+

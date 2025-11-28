@@ -55,3 +55,4 @@ export function useUserRole() {
 
 // Convenience alias for the composable itself (rarely needed but harmless).
 export const useUserRoleAlias = useUserRole
+

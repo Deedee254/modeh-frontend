@@ -10,3 +10,4 @@
 <script setup>
 const props = defineProps({ count: { type: Number, default: 6 } })
 </script>
+

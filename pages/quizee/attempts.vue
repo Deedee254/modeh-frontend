@@ -32,7 +32,7 @@ onMounted(async () => {
     <div v-if="loading" class="text-gray-600">Loading attempts...</div>
     
     <div v-else-if="!attempts.length" class="text-gray-600">
-      No attempts yet. <NuxtLink to="/quizzes" class="text-indigo-600 hover:underline">Start a quiz</NuxtLink>
+      No attempts yet. <NuxtLink to="/quizzes" class="text-brand-600 hover:underline">Start a quiz</NuxtLink>
     </div>
     
     <div v-else class="space-y-4">
@@ -57,12 +57,12 @@ onMounted(async () => {
         <div class="mt-4 flex gap-4">
           <NuxtLink 
             :to="`/quizee/quizzes/${attempt.quiz_id}/attempts/${attempt.id}`"
-            class="text-sm text-indigo-600 hover:text-indigo-500">
+            class="text-sm text-brand-600 hover:text-brand-500">
             View Details
           </NuxtLink>
           <NuxtLink 
             :to="`/quizee/quizzes/${attempt.quiz_id}`"
-            class="text-sm text-indigo-600 hover:text-indigo-500">
+            class="text-sm text-brand-600 hover:text-brand-500">
             Retry Quiz
           </NuxtLink>
         </div>

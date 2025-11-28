@@ -70,7 +70,7 @@
               startLabel="View Details"
             >
               <div class="flex flex-col gap-2">
-                <div class="text-sm text-indigo-600">
+                <div class="text-sm text-brand-600">
                   <span>{{ subject.is_approved ? 'Approved' : 'Pending Approval' }}</span>
                 </div>
                 <div>
@@ -203,7 +203,7 @@ function setFilter(v) {
 function filterBtnClass(v) {
   const active = activeFilter.value === v
   const base = 'px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md border'
-  return `${base} ${active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200'}`
+  return `${base} ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-700 border-gray-200'}`
 }
 
 async function onServerSearch(q) {

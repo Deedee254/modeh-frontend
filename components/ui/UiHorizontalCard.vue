@@ -20,7 +20,7 @@
             </div>
             <p v-else-if="subtitle" class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ subtitle }}</p>
           </div>
-          <div v-if="badge" class="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ badge }}</div>
+          <div v-if="badge" class="px-2 py-1 text-xs rounded bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">{{ badge }}</div>
         </div>
         <div class="mt-3">
           <slot></slot>
@@ -30,7 +30,7 @@
         </div>
         <!-- Optional unified CTA if detailsLink prop provided -->
         <div v-if="detailsLink" class="mt-3">
-          <NuxtLink :to="detailsLink" class="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm">Details</NuxtLink>
+          <NuxtLink :to="detailsLink" class="inline-flex items-center gap-2 px-3 py-2 bg-brand-600 text-white rounded-md text-sm">Details</NuxtLink>
         </div>
       </div>
     </div>

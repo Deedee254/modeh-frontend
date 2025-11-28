@@ -14,7 +14,7 @@
       </div>
       <div v-else class="text-sm text-gray-500">No recent conversations</div>
     </div>
-    <NuxtLink to="/chat" class="mt-3 inline-block text-sm text-indigo-600">Open chat</NuxtLink>
+    <NuxtLink to="/chat" class="mt-3 inline-block text-sm text-brand-600">Open chat</NuxtLink>
   </div>
 </template>
 
@@ -39,3 +39,4 @@ async function load() {
 
 onMounted(load)
 </script>
+

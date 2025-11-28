@@ -1,7 +1,7 @@
 <template>
   <div class="p-6">
     <div class="mb-6">
-      <NuxtLink :to="`/institution-manager/institutions/${institutionSlug}/members`" class="text-indigo-600 hover:text-indigo-800">
+      <NuxtLink :to="`/institution-manager/institutions/${institutionSlug}/members`" class="text-brand-600 hover:text-brand-800">
         ← Back to Members
       </NuxtLink>
     </div>
@@ -36,7 +36,7 @@
         </div>
         <div class="bg-white rounded-lg shadow p-6 border">
           <div class="text-sm text-slate-500">Total Attempts</div>
-          <div class="text-2xl font-bold text-blue-600">{{ memberData.activity?.total_attempts || 0 }}</div>
+          <div class="text-2xl font-bold text-brand-600">{{ memberData.activity?.total_attempts || 0 }}</div>
           <div class="text-xs text-slate-400 mt-1">quiz attempts</div>
         </div>
         <div class="bg-white rounded-lg shadow p-6 border">
@@ -123,7 +123,7 @@ const getTimeAgo = (date: string) => {
 const getRoleBadge = (role: string) => {
   const badges = {
     'institution-manager': 'bg-purple-100 text-purple-800',
-    'quiz-master': 'bg-blue-100 text-blue-800',
+    'quiz-master': 'bg-brand-100 text-brand-800',
     'quizee': 'bg-green-100 text-green-800',
     'member': 'bg-gray-100 text-gray-800'
   }
@@ -134,7 +134,7 @@ const getStatusBadge = (status: string) => {
   const badges = {
     active: 'bg-green-100 text-green-800',
     pending: 'bg-yellow-100 text-yellow-800',
-    invited: 'bg-blue-100 text-blue-800',
+    invited: 'bg-brand-100 text-brand-800',
     removed: 'bg-red-100 text-red-800'
   }
   return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800'

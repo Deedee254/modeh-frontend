@@ -74,3 +74,4 @@ function onInput(index, value) {
 <style scoped>
 .fill-blank-card input { min-width: 8rem }
 </style>
+

@@ -51,6 +51,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     clear()
+    // Clear cached CSRF and session state
+    if (typeof api.clearAuthCache === 'function') {
+      api.clearAuthCache()
+    }
     if (typeof window !== 'undefined' && import.meta && import.meta.client) {
       try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) {}
     }

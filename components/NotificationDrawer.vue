@@ -49,7 +49,7 @@
               <h3 class="text-sm font-medium text-slate-600 dark:text-slate-400">New</h3>
             </div>
             <div class="space-y-3">
-              <div v-for="item in newItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors border-l-2 border-indigo-600">
+              <div v-for="item in newItems" :key="item.id" @click="store.onNotificationClick(item)" class="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors border-l-2 border-brand-600">
                 <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" v-html="item.icon"></div>
                 <div class="flex-1 space-y-1 overflow-hidden">
                   <div class="flex items-center justify-between">
@@ -123,3 +123,4 @@ defineExpose({
 <style scoped>
 /* small drawer styles can be tuned by Tailwind in template */
 </style>
+

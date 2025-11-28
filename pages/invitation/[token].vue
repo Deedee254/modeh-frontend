@@ -97,7 +97,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+  <div class="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center p-4">
     <div class="w-full max-w-md">
       <!-- Loading State -->
       <div v-if="loading" class="bg-white rounded-lg shadow-lg p-8 text-center">
@@ -127,7 +127,7 @@ onMounted(() => {
         <ErrorAlert :message="error" />
         <NuxtLink
           to="/"
-          class="mt-6 inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          class="mt-6 inline-block bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700"
         >
           Back to Home
         </NuxtLink>
@@ -202,7 +202,7 @@ onMounted(() => {
           <button
             :disabled="processing"
             @click="acceptInvitation"
-            class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
+            class="w-full bg-brand-600 text-white py-2 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
           >
             <span v-if="!processing">Accept Invitation</span>
             <span v-else class="flex items-center justify-center gap-2">
@@ -226,13 +226,13 @@ onMounted(() => {
           </p>
           <NuxtLink
             :to="`/auth/login?redirect=/invitation/${token}`"
-            class="block w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-center font-medium transition"
+            class="block w-full bg-brand-600 text-white py-2 rounded-lg hover:bg-brand-700 text-center font-medium transition"
           >
             Log In
           </NuxtLink>
           <p class="text-center text-sm text-gray-600">
             Don't have an account?
-            <NuxtLink to="/auth/register" class="text-blue-600 hover:underline">
+            <NuxtLink to="/auth/register" class="text-brand-600 hover:underline">
               Sign up
             </NuxtLink>
           </p>

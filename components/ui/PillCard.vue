@@ -20,7 +20,7 @@
   <div class="p-3 sm:p-5 relative z-10">
   <div class="min-w-0">
   <div class="text-[11px] sm:text-xs text-gray-500">{{ eyebrow }}</div>
-  <h3 v-if="!image" class="font-semibold truncate text-sm sm:text-base text-indigo-900 dark:text-indigo-200">{{ title }}</h3>
+  <h3 v-if="!image" class="font-semibold truncate text-sm sm:text-base text-brand-900 dark:text-brand-100">{{ title }}</h3>
         <!-- show subtitle only if no meta chips (we keep chips which have background) -->
         <div v-if="subtitle && !hasMeta" class="text-[11px] sm:text-xs text-gray-500 mt-1">{{ subtitle }}</div>
       </div>
@@ -37,7 +37,7 @@
       <div class="mt-4 pt-3 border-t border-gray-100 dark:border-slate-800">
         <div class="p-3 sm:p-4 flex items-center gap-3">
           <div class="flex-1">
-            <NuxtLink v-if="detailsLink" :to="detailsLink" class="inline-flex items-center gap-2 px-3 py-2 bg-white/5 border border-transparent rounded-md text-sm text-indigo-700 dark:text-indigo-200">Details</NuxtLink>
+            <NuxtLink v-if="detailsLink" :to="detailsLink" class="inline-flex items-center gap-2 px-3 py-2 bg-white/5 border border-transparent rounded-md text-sm text-brand-700 dark:text-brand-100">Details</NuxtLink>
           </div>
           <div class="w-36 sm:w-40">
             <NuxtLink v-if="startLink" :to="startLink" @click.stop class="inline-flex justify-center items-center w-full px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-sm font-semibold">Start</NuxtLink>
@@ -78,7 +78,7 @@ const props = defineProps({
 })
 
 const palettes = {
-  indigo: 'bg-gradient-to-br from-indigo-400 to-indigo-600',
+  indigo: 'bg-gradient-to-br from-brand-400 to-brand-600',
   emerald: 'bg-gradient-to-br from-emerald-400 to-emerald-600',
   violet: 'bg-gradient-to-br from-violet-400 to-violet-600',
   sky: 'bg-gradient-to-br from-sky-300 to-sky-500',

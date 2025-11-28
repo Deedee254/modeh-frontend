@@ -5,7 +5,7 @@
         <!-- Main column -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Hero card -->
-          <div class="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 shadow-lg overflow-hidden">
+          <div class="rounded-lg bg-gradient-to-r from-brand-600 to-brand-950 text-white p-6 shadow-lg overflow-hidden">
             <div class="flex items-center gap-6">
               <div class="flex-1">
                 <div class="text-sm opacity-90">Welcome back</div>
@@ -95,7 +95,7 @@
                     <div class="text-xs text-gray-500 mt-1">{{ q.description || '' }}</div>
                   </div>
                   <div class="flex flex-col items-end gap-2">
-                    <NuxtLink :to="`/quizee/quizzes/${q.id}`" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-sm rounded">Take</NuxtLink>
+                    <NuxtLink :to="`/quizee/quizzes/${q.id}`" class="inline-flex items-center px-3 py-1.5 bg-brand-600 text-white text-sm rounded">Take</NuxtLink>
                   </div>
                 </div>
               </div>
@@ -108,14 +108,14 @@
               <template #header>
                 <div class="flex items-center justify-between">
                   <div class="font-medium">Recent Attempts</div>
-                  <NuxtLink to="/quizee/attempts" class="text-sm text-indigo-600">See all</NuxtLink>
+                  <NuxtLink to="/quizee/attempts" class="text-sm text-brand-600">See all</NuxtLink>
                 </div>
               </template>
               <div class="mt-2 text-sm text-gray-600">
                 <ul class="space-y-3">
                   <li v-for="a in recentAttempts" :key="a.id" class="flex items-center justify-between">
                     <div class="truncate">{{ a.quiz_title || 'Quiz #' + a.quiz_id }} <span class="text-xs text-gray-400">• {{ a.score }}%</span></div>
-                    <NuxtLink :to="`/quizee/quizzes/result/${a.id}`" class="text-xs text-indigo-600">View</NuxtLink>
+                    <NuxtLink :to="`/quizee/quizzes/result/${a.id}`" class="text-xs text-brand-600">View</NuxtLink>
                   </li>
                   <li v-if="!recentAttempts.length" class="text-xs text-gray-500">No attempts yet</li>
                 </ul>
@@ -126,12 +126,12 @@
               <template #header>
                 <div class="flex items-center justify-between">
                   <div class="font-medium">Recent Badges</div>
-                  <NuxtLink to="/quizee/badges" class="text-sm text-indigo-600">All badges</NuxtLink>
+                  <NuxtLink to="/quizee/badges" class="text-sm text-brand-600">All badges</NuxtLink>
                 </div>
               </template>
               <div class="mt-2 text-sm text-gray-600">
                 <div class="flex gap-2 flex-wrap">
-                  <div v-for="b in recentBadges" :key="b.id" class="p-2 bg-indigo-50 rounded text-xs">{{ b.title }}</div>
+                  <div v-for="b in recentBadges" :key="b.id" class="p-2 bg-brand-50 rounded text-xs">{{ b.title }}</div>
                   <div v-if="!recentBadges.length" class="text-xs text-gray-500">No badges yet</div>
                 </div>
               </div>
@@ -146,7 +146,7 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="font-medium">Account</div>
-                <NuxtLink to="/settings" class="text-sm text-indigo-600">Settings</NuxtLink>
+                <NuxtLink to="/settings" class="text-sm text-brand-600">Settings</NuxtLink>
               </div>
             </template>
             <div class="mt-3 text-sm text-gray-600">Manage profile and security settings.</div>
@@ -157,7 +157,7 @@
               <div class="font-medium">Quizzes</div>
             </template>
             <template #footer>
-              <NuxtLink to="/quizee/quizzes" class="text-sm text-indigo-600">My quizzes</NuxtLink>
+              <NuxtLink to="/quizee/quizzes" class="text-sm text-brand-600">My quizzes</NuxtLink>
             </template>
           </UiCard>
 
@@ -165,7 +165,7 @@
             <template #header>
               <div class="flex items-center justify-between">
                 <div class="font-medium">Subscription</div>
-                <NuxtLink to="/quizee/subscription" class="text-sm text-indigo-600">Manage</NuxtLink>
+                <NuxtLink to="/quizee/subscription" class="text-sm text-brand-600">Manage</NuxtLink>
               </div>
             </template>
             <div class="mt-3 text-sm text-gray-600">View and manage your subscription packages.</div>

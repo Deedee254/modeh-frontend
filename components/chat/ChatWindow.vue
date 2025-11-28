@@ -94,7 +94,7 @@ defineExpose({ messagesPane, messagesEnd })
 
 function statusColor(status) {
   switch (status) {
-    case 'online': return 'bg-indigo-500';
+    case 'online': return 'bg-brand-500';
     case 'away': return 'bg-yellow-500';
     default: return 'bg-gray-400';
   }

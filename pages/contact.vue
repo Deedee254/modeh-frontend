@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-10">
+  <div>
     <PageHero
       title="Contact Us"
       description="Questions, feedback, or partnership ideas? We’d love to hear from you."
@@ -43,7 +43,8 @@
       </template>
     </PageHero>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+    <div class="max-w-7xl mx-auto px-4 py-10">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Left: Contact details and map -->
       <div class="lg:col-span-1 space-y-6">
         <UCard>
@@ -52,23 +53,23 @@
           </template>
           <div class="space-y-3 text-sm text-slate-700">
             <div>
-              <div class="text-xs uppercase text-indigo-600 font-medium">Address</div>
+              <div class="text-xs uppercase text-brand-600 font-medium">Address</div>
               <div class="mt-1 font-medium text-gray-800">123 Education Street</div>
               <div class="text-sm text-gray-500">San Francisco, CA 94105</div>
             </div>
 
             <div>
-              <div class="text-xs uppercase text-indigo-600 font-medium">Phone</div>
-              <div class="mt-1"><a href="tel:+254703155693" class="text-indigo-600">+254 703 155 693</a></div>
+              <div class="text-xs uppercase text-brand-600 font-medium">Phone</div>
+              <div class="mt-1"><a href="tel:+254703155693" class="text-brand-600">+254 703 155 693</a></div>
             </div>
 
             <div>
-              <div class="text-xs uppercase text-indigo-600 font-medium">Email</div>
-              <div class="mt-1"><a href="mailto:info@modeh.co.ke" class="text-indigo-600">info@modeh.co.ke</a></div>
+              <div class="text-xs uppercase text-brand-600 font-medium">Email</div>
+              <div class="mt-1"><a href="mailto:info@modeh.co.ke" class="text-brand-600">info@modeh.co.ke</a></div>
             </div>
 
             <div>
-              <div class="text-xs uppercase text-indigo-600 font-medium">Office hours</div>
+              <div class="text-xs uppercase text-brand-600 font-medium">Office hours</div>
               <div class="mt-1 text-sm text-gray-600">Mon–Fri: 9:00 AM — 6:00 PM PST<br/>Sat: 10:00 AM — 2:00 PM PST</div>
             </div>
           </div>
@@ -119,13 +120,14 @@
             </UFormGroup>
 
             <div class="flex items-center gap-3">
-              <UButton type="submit" color="primary" :loading="loading">Send message</UButton>
-              <span v-if="success" class="text-green-600 text-sm">Thanks! We’ll get back to you soon.</span>
+              <UButton type="submit" color="primary" :loading="loading" class="!bg-brand-600 hover:!bg-brand-700">Send message</UButton>
+              <span v-if="success" class="text-green-600 text-sm">Thanks! We'll get back to you soon.</span>
               <span v-if="error" class="text-red-600 text-sm">{{ error }}</span>
             </div>
           </form>
         </UCard>
       </div>
+    </div>
     </div>
   </div>
 </template>

@@ -33,7 +33,7 @@
         </div>
         <div class="mt-3 flex items-center justify-between">
           <div>
-            <UButton size="sm" color="primary" :disabled="!selectedIds.length" @click="addSelected">Add selected ({{ selectedIds.length }})</UButton>
+            <UButton size="sm" color="primary" :disabled="!selectedIds.length" @click="addSelected" class="!bg-brand-600 hover:!bg-brand-700">Add selected ({{ selectedIds.length }})</UButton>
           </div>
           <div class="text-sm text-gray-600">Tip: use filters to narrow results</div>
         </div>
@@ -84,7 +84,7 @@
           </div>
           <div class="mt-3 flex items-center justify-between">
             <div>
-              <UButton size="sm" color="primary" :disabled="!selectedIds.length" @click="addSelected">Add selected ({{ selectedIds.length }})</UButton>
+              <UButton size="sm" color="primary" :disabled="!selectedIds.length" @click="addSelected" class="!bg-brand-600 hover:!bg-brand-700">Add selected ({{ selectedIds.length }})</UButton>
             </div>
             <div class="text-sm text-gray-600">Tip: use filters to narrow results</div>
           </div>

@@ -65,3 +65,4 @@ export function useQuizTimer(quiz: any, onTimerEnd: () => void) {
 
   return { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, startTimer, stopTimer }
 }
+

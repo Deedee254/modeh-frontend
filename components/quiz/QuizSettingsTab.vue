@@ -16,22 +16,24 @@
           <div class="flex items-center justify-between mb-3">
             <label class="block text-sm font-medium text-gray-700">Timer Settings</label>
             <UCheckbox 
-              v-model="modelValue.use_per_question_timer" 
+              v-model="usePerQuestionTimer" 
               label="Use per-question timer"
               size="sm"
+              @update:modelValue="(v) => emitUpdate({ use_per_question_timer: v })"
             />
           </div>
 
           <!-- When per-question timer is enabled show seconds input -->
-          <div v-if="modelValue.use_per_question_timer" class="space-y-2">
+          <div v-if="usePerQuestionTimer" class="space-y-2">
             <label for="per-question-seconds" class="block text-sm font-medium text-gray-700 mb-1.5">Per-question time limit (seconds)</label>
             <UInput
               id="per-question-seconds"
-              v-model.number="modelValue.per_question_seconds"
+              v-model.number="perQuestionSeconds"
               type="number"
               min="0"
               placeholder="e.g. 30"
               size="md"
+              @update:modelValue="(v) => emitUpdate({ per_question_seconds: v })"
             />
             <p v-if="errors && errors.per_question_seconds" class="text-xs text-red-600">{{ errors.per_question_seconds[0] }}</p>
             <p class="text-xs text-gray-500">When enabled, each question will use this time limit. The overall quiz time will be ignored.</p>
@@ -41,12 +43,13 @@
           <div v-else class="space-y-2">
             <label for="quiz-time-limit" class="block text-sm font-medium text-gray-700 mb-1.5">Time Limit (minutes)</label>
             <UInput
-              v-model.number="modelValue.timer_minutes"
+              v-model.number="timerMinutes"
               id="quiz-time-limit"
               type="number"
               min="0"
               placeholder="Optional"
               size="md"
+              @update:modelValue="(v) => emitUpdate({ timer_minutes: v })"
             />
             <p v-if="errors && (errors.timer_seconds || errors.timer_minutes)" class="text-xs text-red-600">{{ (errors.timer_seconds || errors.timer_minutes)[0] }}</p>
             <p class="text-xs text-gray-500">When disabled, the quiz will use this total time for the entire quiz.</p>
@@ -59,7 +62,7 @@
         <div>
           <label for="quiz-attempts" class="block text-sm font-medium text-gray-700 mb-1.5">Attempts Allowed</label>
           <USelect
-            v-model="modelValue.attempts_allowed"
+            v-model="attemptsAllowed"
             id="quiz-attempts"
             :options="[
               { label: '1 attempt', value: '1' },
@@ -68,6 +71,7 @@
               { label: 'Unlimited', value: '' }
             ]"
             size="md"
+            @update:modelValue="(v) => emitUpdate({ attempts_allowed: v })"
           />
           <p v-if="errors && errors.attempts_allowed" class="mt-1 text-xs text-red-600">{{ errors.attempts_allowed[0] }}</p>
         </div>
@@ -75,7 +79,7 @@
         <div>
           <label for="quiz-visibility" class="block text-sm font-medium text-gray-700 mb-1.5">Visibility</label>
           <USelect
-            v-model="modelValue.visibility"
+            v-model="visibility"
             id="quiz-visibility"
             :options="[
               { label: 'Draft', value: 'draft' },
@@ -83,6 +87,7 @@
               { label: 'Scheduled', value: 'scheduled' }
             ]"
             size="md"
+            @update:modelValue="(v) => emitUpdate({ visibility: v })"
           />
           <p v-if="errors && errors.visibility" class="mt-1 text-xs text-red-600">{{ errors.visibility[0] }}</p>
         </div>
@@ -91,15 +96,51 @@
       <!-- Shuffle Options -->
       <div class="space-y-3 pt-2 border-t border-gray-200">
         <UCheckbox 
-          v-model="modelValue.shuffle_questions" 
+          v-model="shuffleQuestions" 
           label="Shuffle questions for each attempt"
           size="sm"
+          @update:modelValue="(v) => emitUpdate({ shuffle_questions: v })"
         />
         <UCheckbox 
-          v-model="modelValue.shuffle_answers" 
+          v-model="shuffleAnswers" 
           label="Shuffle answer options"
           size="sm"
+          @update:modelValue="(v) => emitUpdate({ shuffle_answers: v })"
         />
+      </div>
+
+      <!-- Pricing Options -->
+      <div class="space-y-4 pt-2 border-t border-gray-200">
+        <div>
+          <label for="quiz-access" class="block text-sm font-medium text-gray-700 mb-1.5">Access Type</label>
+          <USelect
+            v-model="access"
+            id="quiz-access"
+            :options="[
+              { label: 'Free', value: 'free' },
+              { label: 'Paid (One-time purchase)', value: 'paywall' }
+            ]"
+            size="md"
+            @update:modelValue="(v) => emitUpdate({ access: v })"
+          />
+          <p class="mt-1 text-xs text-gray-500">Choose whether users need to pay to access this quiz</p>
+        </div>
+
+        <div v-if="access === 'paywall'" class="space-y-2">
+          <label for="one-off-price" class="block text-sm font-medium text-gray-700 mb-1.5">One-time Price ($)</label>
+          <UInput
+            v-model.number="oneOffPrice"
+            id="one-off-price"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="e.g. 9.99"
+            size="md"
+            @update:modelValue="(v) => emitUpdate({ one_off_price: v })"
+          />
+          <p v-if="errors && errors.one_off_price" class="text-xs text-red-600">{{ errors.one_off_price[0] }}</p>
+          <p class="text-xs text-gray-500">Set the price users must pay to access this quiz (one-time purchase)</p>
+        </div>
       </div>
     </div>
 
@@ -129,7 +170,7 @@
           icon="i-heroicons-arrow-right"
           @click="validate"
           :disabled="saving || !isValid"
-          class="w-full sm:w-auto"
+          class="w-full sm:w-auto !bg-brand-600 hover:!bg-brand-700"
         >Continue to Questions</UButton>
       </div>
     </div>
@@ -137,7 +178,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -156,15 +197,43 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'save', 'prev', 'next', 'error'])
 
+// Internal state synced with parent
+const usePerQuestionTimer = ref(false)
+const perQuestionSeconds = ref(30)
+const timerMinutes = ref(10)
+const attemptsAllowed = ref('1')
+const visibility = ref('draft')
+const shuffleQuestions = ref(true)
+const shuffleAnswers = ref(true)
+const access = ref('free')
+const oneOffPrice = ref(null)
+
+// Sync internal state with parent props on mount and when parent changes
+watch(() => props.modelValue, (nv) => {
+  if (!nv) return
+  usePerQuestionTimer.value = nv.use_per_question_timer ?? false
+  perQuestionSeconds.value = nv.per_question_seconds ?? 30
+  timerMinutes.value = nv.timer_minutes ?? 10
+  attemptsAllowed.value = String(nv.attempts_allowed ?? '1')
+  visibility.value = nv.visibility ?? 'draft'
+  shuffleQuestions.value = nv.shuffle_questions ?? true
+  shuffleAnswers.value = nv.shuffle_answers ?? true
+  access.value = nv.access ?? 'free'
+  oneOffPrice.value = nv.one_off_price ?? null
+}, { deep: true, immediate: true })
+
+function emitUpdate(updates) {
+  emit('update:modelValue', { ...props.modelValue, ...updates })
+}
+
 function validate() {
   const errors = []
-  if (!props.modelValue.timer_minutes && !props.modelValue.use_per_question_timer) {
+  if (!timerMinutes.value && !usePerQuestionTimer.value) {
     errors.push('Please set either a total time limit or enable per-question timer')
   }
-  if (props.modelValue.use_per_question_timer && !props.modelValue.per_question_seconds) {
+  if (usePerQuestionTimer.value && !perQuestionSeconds.value) {
     errors.push('Per-question time limit is required when using per-question timer')
   }
-  // Access validation removed as it's not needed
 
   if (errors.length > 0) {
     errors.forEach(error => {
@@ -183,16 +252,13 @@ function saveAndContinue() {
   }
 }
 
-// expose errors locally for template convenience
-const errors = props.errors || {}
-
 // Computed property to check if the form is valid
 const isValid = computed(() => {
   if (!props.modelValue) return false
   
   // Basic validation rules
-  if (props.modelValue.use_per_question_timer && !props.modelValue.per_question_seconds) return false
-  if (!props.modelValue.use_per_question_timer && !props.modelValue.timer_minutes) return false
+  if (usePerQuestionTimer.value && !perQuestionSeconds.value) return false
+  if (!usePerQuestionTimer.value && !timerMinutes.value) return false
   
   return true
 })

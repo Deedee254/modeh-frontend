@@ -21,7 +21,7 @@
           <input type="password" id="confirm-password" v-model="passwordForm.password_confirmation" class="mt-1 block w-full border rounded-md px-3 py-2" required />
         </div>
         <div class="flex justify-end">
-          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Update Password</button>
+          <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700">Update Password</button>
         </div>
       </form>
     </div>

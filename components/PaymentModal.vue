@@ -31,11 +31,11 @@
           <div class="mb-2">
             <label for="phone-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Phone number for M-Pesa</label>
             <div class="flex flex-col sm:flex-row gap-2">
-              <select v-if="phones.length" v-model="selectedPhonePreset" class="border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full sm:w-auto focus:ring-indigo-500 focus:border-indigo-500">
+              <select v-if="phones.length" v-model="selectedPhonePreset" class="border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full sm:w-auto focus:ring-brand-600 focus:border-brand-500">
                 <option value="">Enter a new number</option>
                 <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
               </select>
-              <input id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-indigo-500 focus:border-indigo-500" />
+              <input id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-brand-600 focus:border-brand-500" />
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">An STK push will be sent to this number. Please use international format (e.g., 254...)</p>
           </div>
@@ -50,7 +50,7 @@
               :disabled="!phoneForPayment" 
               icon="i-heroicons-lock-closed" 
               :label="`Pay ${paymentDetails.priceDisplay}`"
-              class="bg-indigo-600 hover:bg-indigo-700"
+              class="bg-brand-600 hover:bg-brand-700"
             >
             </UButton>
           </div>

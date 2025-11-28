@@ -14,3 +14,4 @@ import { useAppTheme } from '~/composables/useAppTheme'
 import { SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
 const { isDark, toggleTheme } = useAppTheme()
 </script>
+

@@ -12,7 +12,7 @@
       </div>
       <div class="w-28 text-right">
         <div class="text-xs text-gray-500">Total marks</div>
-        <div class="text-2xl font-bold text-indigo-600">{{ totalMarks }}</div>
+        <div class="text-2xl font-bold text-brand-600">{{ totalMarks }}</div>
       </div>
     </div>
 
@@ -115,3 +115,4 @@ function partLabel(i) {
 <style scoped>
 /* minimal styling; layout handled by utility classes */
 </style>
+

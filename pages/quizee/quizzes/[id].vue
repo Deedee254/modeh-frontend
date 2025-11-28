@@ -42,7 +42,7 @@
               <span v-if="grade_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/80 text-white">
                 {{ grade_name }}
               </span>
-              <span v-if="topic_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/80 text-white">
+              <span v-if="topic_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-600/80 text-white">
                 {{ topic_name }}
               </span>
               <span v-if="subject_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/80 text-white">
@@ -57,7 +57,7 @@
               </div>
               <div class="flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span>{{ formatTimeLimit(quiz.time_limit) }}</span>
+                <span>{{ quiz.timer_seconds ? formatTimeLimit(Math.floor(quiz.timer_seconds / 60)) : 'No time limit' }}</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -94,8 +94,8 @@
                     @click="activeTab = tab.id"
                     role="tab"
                     :aria-selected="activeTab === tab.id"
-                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                    :class="activeTab === tab.id ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-white/50'"
+                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                    :class="activeTab === tab.id ? 'bg-white text-brand-600 shadow-sm' : 'hover:bg-white/50'"
                   >
                     {{ tab.name }}
                   </button>
@@ -115,7 +115,7 @@
                   <h3 class="text-lg font-medium">Before you start</h3>
                   <ul>
                     <li>Make sure you have a stable internet connection</li>
-                    <li>You'll need {{ quiz.time_limit || 'sufficient time' }} to complete this quiz</li>
+                    <li>You'll need {{ quiz.timer_seconds ? formatTimeLimit(Math.floor(quiz.timer_seconds / 60)) : 'sufficient time' }} to complete this quiz</li>
                     <li>Have paper and pen ready for calculations if needed</li>
                   </ul>
                 </div>
@@ -147,7 +147,7 @@
                 <div class="text-sm text-gray-500">Last attempt</div>
                 <div class="mt-1 font-medium">Score: {{ lastAttempt.score }}%</div>
                 <div class="mt-2 text-sm">
-                  <span class="text-green-600">{{ lastAttempt.correct || 0 }} correct</span>
+                  <span style="color: #891f21">{{ lastAttempt.correct || 0 }} correct</span>
                   <span class="mx-2">•</span>
                   <span class="text-red-600">{{ lastAttempt.incorrect || 0 }} incorrect</span>
                 </div>
@@ -155,7 +155,7 @@
 
               <!-- Action buttons - Full width on mobile -->
               <div class="flex flex-col gap-3">
-                <button @click="startQuiz" class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-colors">
+                <button @click="startQuiz" class="w-full px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-950 text-white rounded-lg hover:from-brand-700 hover:to-brand-900 transition-colors">
                   Begin Assessment
                 </button>
                 <div class="flex gap-3">
@@ -271,7 +271,6 @@ interface Quiz {
   cover_image_url?: string | null;
   difficulty?: number | null;
   questions_count?: number;
-  time_limit?: number;
   points?: number;
   marks?: number;
   youtube_url?: string | null;
@@ -286,7 +285,9 @@ interface Quiz {
   grade?: Grade;
   level?: Level;
   questions?: any[];
-  timer_seconds?: number;
+  timer_seconds?: number | null;
+  per_question_seconds?: number | null;
+  use_per_question_timer?: boolean;
   attempts_allowed?: number;
 }
 

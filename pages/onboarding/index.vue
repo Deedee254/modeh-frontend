@@ -32,7 +32,7 @@
             If you enter a new institution, it will require approval from the institution's manager before you can create profiles.
           </p>
         </div>
-        <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+        <button type="submit" class="w-full px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">
           Save Institution
         </button>
       </form>
@@ -71,7 +71,7 @@
           </div>
 
           <div>
-            <button type="submit" class="w-full px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+            <button type="submit" class="w-full px-6 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">
               Save Role and Password
             </button>
           </div>
@@ -132,7 +132,7 @@
                   type="checkbox"
                   :value="subject.id"
                   v-model="gradeForm.subjects"
-                  class="rounded border-gray-300 text-indigo-600"
+                  class="rounded border-gray-300 text-brand-600"
                 >
                 <span>{{ subject.name }}</span>
               </label>
@@ -145,7 +145,7 @@
         <div class="space-y-3">
           <button 
             type="submit"
-            class="w-full px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            class="w-full px-6 py-2 bg-brand-600 text-white rounded hover:bg-brand-700"
           >
             {{ gradeForm.level_id ? 'Save and Continue' : 'Skip for now' }}
           </button>
@@ -178,7 +178,7 @@
             <span 
               v-for="subjectId in gradeForm.subjects" 
               :key="subjectId"
-              class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm"
+              class="px-2 py-1 bg-brand-50 text-brand-700 rounded-full text-sm"
             >
               {{ getSubjectName(subjectId) }}
             </span>
@@ -186,7 +186,7 @@
         </div>
       </div>
 
-      <button @click="finalize" class="w-full px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+      <button @click="finalize" class="w-full px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">
         Complete Profile Setup
       </button>
     </div>

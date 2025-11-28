@@ -11,8 +11,8 @@
         <div class="p-6">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <div class="p-2 bg-indigo-50 rounded-lg">
-                <component :is="stat.icon" class="h-6 w-6 text-indigo-600" aria-hidden="true" />
+              <div class="p-2 bg-brand-50 rounded-lg">
+                <component :is="stat.icon" class="h-6 w-6 text-brand-600" aria-hidden="true" />
               </div>
             </div>
             <div class="ml-4 w-0 flex-1">
@@ -63,7 +63,7 @@
           <button
             @click="generateAffiliateCode"
             :disabled="isGenerating"
-            class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <SparklesIcon v-if="!isGenerating" class="h-4 w-4 mr-2" />
             <ArrowPathIcon v-else class="h-4 w-4 mr-2 animate-spin" />
@@ -84,12 +84,12 @@
                 type="text"
                 :value="affiliateCode"
                 readonly
-                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3 bg-gray-50"
+                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-600 text-sm px-4 py-3 bg-gray-50"
               />
             </div>
             <button
               @click="copyToClipboard(affiliateCode)"
-              class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+              class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 transition-colors duration-200"
             >
               <ClipboardIcon v-if="!copied" class="h-4 w-4 mr-2" />
               <CheckIcon v-else class="h-4 w-4 mr-2" />
@@ -101,15 +101,15 @@
             <h5 class="text-sm font-semibold text-gray-900 mb-3">How to Share Quizzes</h5>
             <ol class="space-y-2 text-sm text-gray-600">
               <li class="flex items-start">
-                <span class="font-medium text-indigo-600 mr-2">1.</span>
+                <span class="font-medium text-brand-600 mr-2">1.</span>
                 <span>Navigate to any quiz you want to share</span>
               </li>
               <li class="flex items-start">
-                <span class="font-medium text-indigo-600 mr-2">2.</span>
+                <span class="font-medium text-brand-600 mr-2">2.</span>
                 <span>Click the share button on the quiz card or page</span>
               </li>
               <li class="flex items-start">
-                <span class="font-medium text-indigo-600 mr-2">3.</span>
+                <span class="font-medium text-brand-600 mr-2">3.</span>
                 <span>Your affiliate code will be automatically added to the share link</span>
               </li>
             </ol>
@@ -122,8 +122,8 @@
     <div class="bg-white shadow-sm border border-gray-200 sm:rounded-xl">
       <div class="px-6 py-6 sm:px-8">
         <div class="flex items-center mb-6">
-          <div class="p-2 bg-blue-50 rounded-lg mr-3">
-            <UsersIcon class="h-5 w-5 text-blue-600" />
+          <div class="p-2 bg-brand-50 rounded-lg mr-3">
+            <UsersIcon class="h-5 w-5 text-brand-600" />
           </div>
           <h3 class="text-lg font-semibold text-gray-900">Recent Referrals</h3>
         </div>
