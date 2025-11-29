@@ -1,7 +1,15 @@
 <template>
-  <div class="bg-gray-50">
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-      <div class="max-w-4xl mx-auto space-y-6">
+  <div>
+    <PageHero
+      title="My Profile"
+      description="View and manage your profile information"
+      :breadcrumbs="[{ text: 'Dashboard', href: '/quiz-master/dashboard' }, { text: 'Profile', current: true }]"
+    >
+      <template #eyebrow>Quiz-master tools</template>
+    </PageHero>
+
+    <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <ProfileHeader
           :title="user?.name || 'Profile'"
           :subtitle="user?.email"
@@ -11,7 +19,7 @@
           <template #actions>
             <NuxtLink
               to="/quiz-master/settings"
-              class="px-3 py-2 border rounded-md text-sm bg-brand-600 text-white hover:bg-brand-700 cursor-pointer w-full sm:w-auto text-center"
+              class="px-4 py-2 rounded-lg text-sm bg-brand-600 text-white hover:bg-brand-700 cursor-pointer w-full sm:w-auto text-center transition"
             >
               Edit Profile
             </NuxtLink>
@@ -25,28 +33,18 @@
         </ProfileHeader>
 
         <!-- Profile Display Card -->
-        <div class="rounded-xl border bg-white shadow-sm p-6">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
           <div class="space-y-6">
             <!-- Basic Info -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-500">Display Name</label>
-                <p class="mt-1 text-lg text-slate-900">{{ user?.name || '—' }}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-500">Email</label>
-                <p class="mt-1 text-lg text-slate-900">{{ user?.email || '—' }}</p>
-              </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-500">Display Name</label>
+              <p class="mt-1 text-lg text-slate-900">{{ user?.name || '—' }}</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-slate-500">Institution</label>
                 <p class="mt-1 text-lg text-slate-900">{{ profile?.institution || '—' }}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-500">Phone</label>
-                <p class="mt-1 text-lg text-slate-900">{{ user?.phone || '—' }}</p>
               </div>
             </div>
 
@@ -68,7 +66,7 @@
                 <span
                   v-for="subject in subjectLabels"
                   :key="subject"
-                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-brand-100 text-brand-800"
+                  class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-brand-100 text-brand-800 border border-brand-200"
                 >
                   {{ subject }}
                 </span>
@@ -91,7 +89,7 @@
             <div class="flex flex-col sm:flex-row justify-end pt-4 border-t gap-2">
               <NuxtLink
                 to="/quiz-master/settings"
-                class="px-4 py-2 rounded-md text-sm text-white bg-brand-600 hover:bg-brand-700 w-full sm:w-auto text-center"
+                class="px-4 py-2 rounded-lg text-sm text-white bg-brand-600 hover:bg-brand-700 w-full sm:w-auto text-center transition"
               >
                 Edit Profile
               </NuxtLink>
@@ -109,8 +107,13 @@ import { useAuthStore } from '~/stores/auth'
 import { useUserRole } from '~/composables/useUserRole'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
+import PageHero from '~/components/ui/PageHero.vue'
 
 definePageMeta({ layout: 'quiz-master' })
+
+useHead({
+  title: 'My Profile'
+})
 
 const auth = useAuthStore()
 const { isQuizMaster } = useUserRole()

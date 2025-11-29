@@ -28,14 +28,19 @@
         </template>
         <div class="space-y-6">
           <!-- Basic Info -->
+          <div>
+            <label class="block text-sm font-medium text-slate-500">Display Name</label>
+            <p class="mt-1 text-lg text-slate-900">{{ user?.name || '—' }}</p>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-500">Name</label>
-              <p class="mt-1 text-lg text-slate-900">{{ user?.name || '—' }}</p>
+              <label class="block text-sm font-medium text-slate-500">First Name</label>
+              <p class="mt-1 text-lg text-slate-900">{{ profile?.first_name || '—' }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-500">Email</label>
-              <p class="mt-1 text-lg text-slate-900">{{ user?.email || '—' }}</p>
+              <label class="block text-sm font-medium text-slate-500">Last Name</label>
+              <p class="mt-1 text-lg text-slate-900">{{ profile?.last_name || '—' }}</p>
             </div>
           </div>
 
@@ -43,10 +48,6 @@
             <div>
               <label class="block text-sm font-medium text-slate-500">Institution</label>
               <p class="mt-1 text-lg text-slate-900">{{ profile?.institution || '—' }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-500">Phone</label>
-              <p class="mt-1 text-lg text-slate-900">{{ user?.phone || '—' }}</p>
             </div>
           </div>
 
@@ -156,6 +157,8 @@ interface User {
   points?: number
   rewards?: { points?: number }
   quizeeProfile?: {
+    first_name?: string
+    last_name?: string
     institution?: string
     grade?: { id: number; name: string }
     grade_id?: number

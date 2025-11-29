@@ -24,7 +24,7 @@
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center gap-2">
           <!-- slightly smaller logo for compact header -->
-          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-12 w-auto" />
+          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-10 md:h-14 w-auto" />
         </NuxtLink>
       </div>
 

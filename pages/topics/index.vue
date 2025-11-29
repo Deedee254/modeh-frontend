@@ -53,52 +53,53 @@
 
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-12">
-      <!-- Sticky Filters at Top -->
-      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
-        <FiltersSidebar
-          :subject-options="SUBJECTS"
-          :topic-options="topics"
-          :showTopic="false"
-          :grade-options="GRADES"
-          :subject="subjectFilter"
-          :grade="gradeFilter"
-          storageKey="filters:topics"
-          @update:subject="val => subjectFilter.value = val"
-          @update:grade="val => gradeFilter.value = val"
-        />
-      </div>
-
-      <!-- Quick action tabs: New / Top / Featured -->
-      <div class="mt-6 flex gap-2 items-center">
-      <button @click="sortBy = 'popular'" :class="sortBy === 'popular' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">New</button>
-      <button @click="sortBy = 'az'" :class="sortBy === 'az' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Top</button>
-      <button @click="sortBy = 'za'" :class="sortBy === 'za' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Featured</button>
-    </div>
-
-  <div class="grid grid-cols-1 gap-3 sm:gap-6">
-      <main class="w-full">
-        <div v-if="pending" class="mt-6"><SkeletonGrid :count="3" /></div>
-        <div v-else>
-          <div v-if="(!filtered || filtered.length === 0)" class="p-6 border rounded-md text-sm text-gray-600 bg-white border-gray-200">0 results returned</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mt-3">
-              <TopicCard
-                v-for="t in filtered"
-                :key="t.id"
-                :title="t.name"
-                :image="t.image || t.cover_image || ''"
-                :grade="t.grade?.name || t.grade_name || ''"
-                :subject="t.subject?.name || t.subject_name || ''"
-                :description="t.description || t.summary || ''"
-                :quizzesCount="t.quizzes_count || 0"
-                :startLink="`/topics/${t.id}`"
-                startLabel="View Assessments"
-              >
-              </TopicCard>
-          </div>
+    <div class="bg-gray-50 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Sticky Filters at Top -->
+        <div class="sticky top-0 z-40 bg-gray-50 -mx-4 px-4 sm:px-6 lg:px-8 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
+          <FiltersSidebar
+            :subject-options="SUBJECTS"
+            :topic-options="topics"
+            :showTopic="false"
+            :grade-options="GRADES"
+            :subject="subjectFilter"
+            :grade="gradeFilter"
+            storageKey="filters:topics"
+            @update:subject="val => subjectFilter.value = val"
+            @update:grade="val => gradeFilter.value = val"
+          />
         </div>
-      </main>
-    </div>
+
+        <!-- Quick action tabs: New / Top / Featured -->
+        <div class="mt-6 flex gap-2 items-center">
+          <button @click="sortBy = 'popular'" :class="sortBy === 'popular' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">New</button>
+          <button @click="sortBy = 'az'" :class="sortBy === 'az' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Top</button>
+          <button @click="sortBy = 'za'" :class="sortBy === 'za' ? 'px-3 py-2 rounded bg-brand-600 text-white text-sm' : 'px-3 py-2 rounded bg-white border text-sm'">Featured</button>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:gap-6">
+          <main class="w-full">
+            <div v-if="pending" class="mt-6"><SkeletonGrid :count="3" /></div>
+            <div v-else>
+              <div v-if="(!filtered || filtered.length === 0)" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">0 results returned</div>
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-3">
+                <TopicCard
+                  v-for="t in filtered"
+                  :key="t.id"
+                  :title="t.name"
+                  :image="t.image || t.cover_image || ''"
+                  :grade="t.grade?.name || t.grade_name || ''"
+                  :subject="t.subject?.name || t.subject_name || ''"
+                  :description="t.description || t.summary || ''"
+                  :quizzesCount="t.quizzes_count || 0"
+                  :startLink="`/topics/${t.id}`"
+                  startLabel="View Assessments"
+                />
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
     </div>
   </div>
 </template>

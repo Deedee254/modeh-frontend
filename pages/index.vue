@@ -43,7 +43,7 @@
                     <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
                     Dashboard
                   </NuxtLink>
-                  <NuxtLink to="/quiz-master/create-quiz" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
+                  <NuxtLink to="/quiz-master/quizzes/create" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
                     <Icon name="heroicons:pencil-square-20-solid" class="h-5 w-5" />
                     Create Quiz
                   </NuxtLink>
@@ -99,10 +99,10 @@
     </section>
 
     <!-- Page Content Wrapper -->
-    <div class="px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-gray-50">
     <!-- How It Works -->
-    <section class="relative mt-16">
-      <div class="mx-auto max-w-6xl">
+    <section class="relative py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="text-sm font-semibold tracking-wide text-brand-600 uppercase">How it works</p>
           <h2 class="mt-3 text-3xl font-bold text-slate-900">Start learning in four simple steps</h2>
@@ -140,24 +140,15 @@
     </section>
 
     <!-- Quizzes section -->
-    <section class="py-10">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <header class="text-center max-w-2xl mx-auto">
           <h2 class="text-3xl font-bold text-slate-900">Featured Quizzes</h2>
           <p class="mt-3 text-slate-600">Explore quizzes curated by our community. Find new challenges, top-rated content, and featured picks to test your knowledge.</p>
         </header>
 
-        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <div class="flex items-center gap-2 rounded-full border p-1">
-            <button @click="selectedTab = 'all'" :class="selectedTab === 'all' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">All</button>
-            <button @click="selectedTab = 'new'" :class="selectedTab === 'new' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">New</button>
-            <button @click="selectedTab = 'top'" :class="selectedTab === 'top' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Top</button>
-            <button @click="selectedTab = 'featured'" :class="selectedTab === 'featured' ? 'bg-brand-600 text-white' : 'text-slate-600'" class="px-4 py-1.5 text-sm font-semibold rounded-full">Featured</button>
-          </div>
-        </div>
-
         <div class="mt-10">
-          <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <UiQuizCard v-for="quiz in safeArray(displayedQuizzesByGrade).slice(0,8)" :key="quiz.id" :to="`/quizee/quizzes/${quiz.id || ''}`" :startLink="`/quizee/quizzes/${quiz.id || ''}`" :takeLink="`/quizee/quizzes/take/${quiz.id || ''}`" :title="quiz.title" :topic="quiz.topic?.name || quiz.topic_name" :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name" :grade="quiz.grade || quiz.grade_id" :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count" :cover="quiz.cover_image || quiz.cover" :palette="pickPaletteClass(quiz.topic?.id || quiz.id)" :likes="quiz.likes_count ?? quiz.likes ?? 0" :quiz-id="quiz.id" :liked="quiz.liked" :description="quiz.description || quiz.summary || ''" @like="onQuizLike(quiz, $event)" />
           </div>
           <div v-else class="text-center text-rose-700/70 text-sm">No quizzes yet for this filter. Check back soon.</div>
@@ -169,8 +160,8 @@
       </div>
     </section>
 
-    <section class="py-10">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <header class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Subjects</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Subjects & learning paths</h3>
@@ -202,8 +193,8 @@
     </section>
 
     <!-- Levels section -->
-    <section class="py-10">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <header class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Levels</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Learning levels</h3>
@@ -238,7 +229,7 @@
     </section>
 
     <section class="py-12 bg-gradient-to-br from-white to-brand-600/10">
-      <div class="mx-auto max-w-6xl">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <header class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Grades</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Grades</h3>
@@ -261,8 +252,8 @@
       </div>
     </section>
 
-    <section class="py-10">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-rose-500 font-semibold">Topics</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Topics & contextual quizzes</h3>
@@ -292,8 +283,8 @@
     </section>
 
     <!-- Tertiary Courses Section -->
-    <section class="py-10 bg-gradient-to-br from-brand-600/10 to-brand-950/10">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12 bg-gradient-to-br from-brand-600/10 to-brand-950/10">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-purple-500 font-semibold">Tertiary Level</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Courses & higher education</h3>
@@ -321,15 +312,15 @@
     </section>
 
     <!-- Quiz Masters -->
-    <section class="py-10">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Creators</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Creators & contributors</h3>
           <p class="mt-3 text-slate-600">Educators and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
         </div>
   <!-- Mobile: carousel; Desktop: grid -->
-  <client-only>
+  <ClientOnly>
     <div class="sm:hidden">
       <Carousel :items="safeArray(featuredQuizMasters.slice(0,4))" :perViewSm="1" :perViewMd="2" :perViewLg="3" :auto="false">
         <template #item="{ item }">
@@ -339,11 +330,11 @@
         </template>
       </Carousel>
     </div>
-  </client-only>
 
-  <div class="mt-8 hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
-    <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
-  </div>
+    <div class="mt-8 hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
+      <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
+    </div>
+  </ClientOnly>
         <div class="mt-6 text-center">
           <NuxtLink to="/quiz-masters" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">View all quiz-masters</NuxtLink>
         </div>
@@ -351,8 +342,8 @@
     </section>
 
     <!-- Redesigned Call to Action Section -->
-    <section class="my-12">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 to-brand-950 px-6 py-16 sm:px-12 sm:py-20">
           <div class="relative text-center">
             <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
@@ -368,10 +359,10 @@
     </section>
 
     <!-- Testimonials -->
-    <section class="py-8 bg-gradient-to-br from-brand-600/10 to-white">
-      <div class="mx-auto max-w-6xl">
+    <section class="py-12 bg-gradient-to-br from-brand-600/10 to-white">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
   <h3 class="text-2xl font-bold text-brand-900 mb-4 text-center">Success Stories</h3>
-        <client-only>
+        <ClientOnly>
         <Carousel :items="safeArray(testimonials)" :perViewLg="3" :perViewMd="2" :perViewSm="1" auto>
           <template #item="{ item }">
             <div class="p-3">
@@ -393,14 +384,14 @@
             </div>
           </template>
   </Carousel>
-  </client-only>
+  </ClientOnly>
       </div>
     </section>
 
     <!-- Sponsors -->
-    <section class="py-8">
-      <div class="mx-auto max-w-6xl">
-        <client-only>
+    <section class="py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <ClientOnly>
         <Carousel :items="safeArray(sponsors)" :perView="5" :perViewSm="3" :perViewXs="2" auto>
           <template #item="{ item }">
             <div class="px-6 py-4">
@@ -410,7 +401,7 @@
             </div>
           </template>
   </Carousel>
-  </client-only>
+  </ClientOnly>
       </div>
     </section>
 

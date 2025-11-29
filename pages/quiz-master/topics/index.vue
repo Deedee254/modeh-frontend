@@ -24,85 +24,93 @@
       </template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
-        <aside class="lg:col-span-1 order-2 lg:order-1">
-          <!-- Mobile Filter Drawer -->
-          <MobileFilterDrawer
-            @apply="onApplyFilters"
-            @clear="onClearFilters"
-          >
-            <FiltersSidebar
-              :grade-options="grades"
-              :subject-options="subjects"
-              :grade="selectedGrade"
-              :subject="selectedSubject"
-              storageKey="filters:quiz-master-topics"
-              @update:grade="onGradeChange"
-              @update:subject="onSubjectChange"
+    <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <!-- Sticky Filter Bar -->
+      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-4 px-4 sm:px-6 lg:px-8 mb-6">
+        <div class="max-w-7xl mx-auto">
+          <div class="space-y-4">
+            <!-- Mobile Filter Drawer -->
+            <MobileFilterDrawer
               @apply="onApplyFilters"
               @clear="onClearFilters"
-            />
-          </MobileFilterDrawer>
+            >
+              <FiltersSidebar
+                :grade-options="grades"
+                :subject-options="subjects"
+                :grade="selectedGrade"
+                :subject="selectedSubject"
+                storageKey="filters:quiz-master-topics"
+                @update:grade="onGradeChange"
+                @update:subject="onSubjectChange"
+                @apply="onApplyFilters"
+                @clear="onClearFilters"
+              />
+            </MobileFilterDrawer>
 
-          <!-- Desktop Filter Sidebar -->
-          <div class="sticky top-[calc(4rem+1.5rem)] md:top-6 hidden lg:block">
-            <FiltersSidebar
-              :grade-options="grades"
-              :subject-options="subjects"
-              :grade="selectedGrade"
-              :subject="selectedSubject"
-              storageKey="filters:quiz-master-topics"
-              @update:grade="onGradeChange"
-              @update:subject="onSubjectChange"
-              @apply="onApplyFilters"
-              @clear="onClearFilters"
-            />
-          </div>
-        </aside>
-
-        <main class="lg:col-span-3 order-1 lg:order-2">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            <TopicCard
-              v-for="(topic, idx) in (Array.isArray(filteredTopics) ? filteredTopics.filter(Boolean) : [])"
-              :key="topic?.id || idx"
-              :title="topic?.name"
-              :image="topic?.image || topic?.cover_image || ''"
-              :grade="topic?.grade?.name || topic?.grade_name || topic?.grade || ''"
-              :subject="topic?.subject?.name || topic?.subject_name || ''"
-              :description="topic?.description || topic?.summary || ''"
-              :quizzesCount="topic?.quizzes_count || topic?.quizzesCount || 0"
-              :startLink="{
-                path: '/quiz-master/quizzes/create',
-                query: {
-                  level_id: topic?.grade?.level_id || topic?.level_id,
-                  grade_id: topic?.grade_id || topic?.gradeId,
-                  subject_id: topic?.subject_id || topic?.subjectId,
-                  topic_id: topic?.id,
-                }
-              }"
-              :startLabel="'Create Quiz'"
-              @click="topic && handleTopicClick(topic)"
-            />
-
-            <div v-if="filteredTopics.length === 0" class="col-span-full text-center py-12 text-gray-500">
-              No topics found. Try adjusting your filters or create a new topic.
+            <!-- Desktop Filters -->
+            <div class="hidden lg:block">
+              <FiltersSidebar
+                :grade-options="grades"
+                :subject-options="subjects"
+                :grade="selectedGrade"
+                :subject="selectedSubject"
+                storageKey="filters:quiz-master-topics"
+                @update:grade="onGradeChange"
+                @update:subject="onSubjectChange"
+                @apply="onApplyFilters"
+                @clear="onClearFilters"
+              />
             </div>
           </div>
+        </div>
+      </div>
 
-          <div v-if="topicsResponse?.topics?.meta" class="mt-6">
-            <Pagination 
-              :paginator="topicsResponse.topics" 
-              @change-page="handlePageChange"
-            />
-          </div>
+      <!-- Main Content -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main>
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                <TopicCard
+                  v-for="(topic, idx) in (Array.isArray(filteredTopics) ? filteredTopics.filter(Boolean) : [])"
+                  :key="topic?.id || idx"
+                  :title="topic?.name"
+                  :image="topic?.image || topic?.cover_image || ''"
+                  :grade="topic?.grade?.name || topic?.grade_name || topic?.grade || ''"
+                  :subject="topic?.subject?.name || topic?.subject_name || ''"
+                  :description="topic?.description || topic?.summary || ''"
+                  :quizzesCount="topic?.quizzes_count || topic?.quizzesCount || 0"
+                  :startLink="{
+                    path: '/quiz-master/quizzes/create',
+                    query: {
+                      level_id: topic?.grade?.level_id || topic?.level_id,
+                      grade_id: topic?.grade_id || topic?.gradeId,
+                      subject_id: topic?.subject_id || topic?.subjectId,
+                      topic_id: topic?.id,
+                    }
+                  }"
+                  :startLabel="'Create Quiz'"
+                  @click="topic && handleTopicClick(topic)"
+                />
+
+                <div v-if="filteredTopics.length === 0" class="col-span-full text-center py-16">
+                  <div class="text-gray-400 mb-2">
+                    <Icon name="heroicons:inbox-20-solid" class="w-12 h-12 mx-auto opacity-50" />
+                  </div>
+                  <p class="text-gray-600 font-medium">No topics found</p>
+                  <p class="text-gray-500 text-sm mt-1">Try adjusting your filters or create a new topic.</p>
+                </div>
+              </div>
+
+              <!-- Pagination -->
+              <div v-if="topicsResponse?.topics?.meta && filteredTopics.length > 0" class="mt-8 pt-6 border-t border-slate-200">
+                <Pagination 
+                  :paginator="topicsResponse.topics" 
+                  @change-page="handlePageChange"
+                />
+              </div>
+            </div>
         </main>
       </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      <div v-for="n in 8" :key="n" class="h-48 bg-gray-100 rounded-lg animate-pulse"></div>
     </div>
   </div>
 </template>

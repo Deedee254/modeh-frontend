@@ -45,51 +45,53 @@
       <!-- stats slot intentionally removed for /subjects pages -->
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-10">
-      <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
-      <div v-else-if="error" class="mt-6 text-red-600">Failed to load topic for this subject.</div>
+    <div class="bg-gray-50 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
+        <div v-else-if="error" class="mt-6 text-red-600">Failed to load topic for this subject.</div>
 
-      <div v-else>
-        <!-- Sticky Filters at Top -->
-        <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
-          <FiltersSidebar
-            :grade-options="taxGrades.value"
-            :subject-options="subjectOptionsForSidebar"
-            :topic-options="paginator?.data || topics"
-            :showTopic="false"
-            :subject="subjectFilter"
-            :topic="filterTopic"
-            :grade="gradeFilter"
-            storageKey="filters:subjects"
-            @update:subject="val => subjectFilter.value = val"
-            @update:topic="val => filterTopic.value = val"
-            @update:grade="val => gradeFilter.value = val"
-            @apply="() => { fetchTopics() }"
-            @clear="() => { subjectFilter.value = ''; filterTopic.value = ''; gradeFilter.value = '' }"
-          />
-        </div>
-
-        <main class="w-full">
-          <div v-if="paginator?.data?.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No topics found for this subject.</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
-            <TopicCard
-              v-for="t in displayTopics"
-              :key="t.id"
-              :title="t.name"
-              :image="resolveIcon(t)"
-              :grade="t.grade?.name || t.grade_name || ''"
-              :subject="t.subject?.name || t.subject_name || ''"
-              :description="t.description || t.summary || ''"
-              :quizzesCount="t.quizzes_count || 0"
-              :startLink="`/topics/${t.id}`"
-              startLabel="View Assessments"
+        <div v-else>
+          <!-- Sticky Filters at Top -->
+          <div class="sticky top-0 z-40 bg-gray-50 -mx-4 px-4 sm:px-6 lg:px-8 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
+            <FiltersSidebar
+              :grade-options="taxGrades.value"
+              :subject-options="subjectOptionsForSidebar"
+              :topic-options="paginator?.data || topics"
+              :showTopic="false"
+              :subject="subjectFilter"
+              :topic="filterTopic"
+              :grade="gradeFilter"
+              storageKey="filters:subjects"
+              @update:subject="val => subjectFilter.value = val"
+              @update:topic="val => filterTopic.value = val"
+              @update:grade="val => gradeFilter.value = val"
+              @apply="() => { fetchTopics() }"
+              @clear="() => { subjectFilter.value = ''; filterTopic.value = ''; gradeFilter.value = '' }"
             />
           </div>
 
-          <div class="mt-8">
-            <Pagination :paginator="paginator" @change-page="onPageChange" />
-          </div>
-        </main>
+          <main class="w-full">
+            <div v-if="paginator?.data?.length === 0" class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">No topics found for this subject.</div>
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <TopicCard
+                v-for="t in displayTopics"
+                :key="t.id"
+                :title="t.name"
+                :image="resolveIcon(t)"
+                :grade="t.grade?.name || t.grade_name || ''"
+                :subject="t.subject?.name || t.subject_name || ''"
+                :description="t.description || t.summary || ''"
+                :quizzesCount="t.quizzes_count || 0"
+                :startLink="`/topics/${t.id}`"
+                startLabel="View Assessments"
+              />
+            </div>
+
+            <div class="mt-8">
+              <Pagination :paginator="paginator" @change-page="onPageChange" />
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   </div>

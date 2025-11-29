@@ -38,73 +38,81 @@
       </template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
-        <aside class="lg:col-span-1 order-2 lg:order-1">
-          <!-- Mobile Filter Drawer -->
-          <MobileFilterDrawer
-            @apply="() => { page.value = 1; fetchItems() }"
-            @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
-          >
-            <FiltersSidebar
-              :grade-options="grades"
-              :subject-options="subjects"
-              :topic-options="topics"
-              :grade="gradeFilter"
-              :subject="subjectFilter"
-              storageKey="filters:quiz-master-quizzes"
-              @update:grade="val => { gradeFilter.value = val }"
-              @update:subject="val => { subjectFilter.value = val }"
-              @update:topic="val => { topicId.value = val }"
+    <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <!-- Sticky Filter Bar -->
+      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-4 px-4 sm:px-6 lg:px-8 mb-6">
+        <div class="max-w-7xl mx-auto">
+          <div class="space-y-4">
+            <!-- Mobile Filter Drawer -->
+            <MobileFilterDrawer
               @apply="() => { page.value = 1; fetchItems() }"
               @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
-            />
-          </MobileFilterDrawer>
+            >
+              <FiltersSidebar
+                :grade-options="grades"
+                :subject-options="subjects"
+                :topic-options="topics"
+                :grade="gradeFilter"
+                :subject="subjectFilter"
+                storageKey="filters:quiz-master-quizzes"
+                @update:grade="val => { gradeFilter.value = val }"
+                @update:subject="val => { subjectFilter.value = val }"
+                @update:topic="val => { topicId.value = val }"
+                @apply="() => { page.value = 1; fetchItems() }"
+                @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
+              />
+            </MobileFilterDrawer>
 
-          <!-- Desktop Filter Sidebar -->
-          <div class="sticky top-[calc(4rem+1.5rem)] md:top-6 hidden lg:block">
-            <FiltersSidebar
-              :grade-options="grades"
-              :subject-options="subjects"
-              :topic-options="topics"
-              :grade="gradeFilter"
-              :subject="subjectFilter"
-              storageKey="filters:quiz-master-quizzes"
-              @update:grade="val => { gradeFilter.value = val }"
-              @update:subject="val => { subjectFilter.value = val }"
-              @update:topic="val => { topicId.value = val }"
-              @apply="() => { page.value = 1; fetchItems() }"
-              @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
-            />
+            <!-- Desktop Filters -->
+            <div class="hidden lg:block">
+              <FiltersSidebar
+                :grade-options="grades"
+                :subject-options="subjects"
+                :topic-options="topics"
+                :grade="gradeFilter"
+                :subject="subjectFilter"
+                storageKey="filters:quiz-master-quizzes"
+                @update:grade="val => { gradeFilter.value = val }"
+                @update:subject="val => { subjectFilter.value = val }"
+                @update:topic="val => { topicId.value = val }"
+                @apply="() => { page.value = 1; fetchItems() }"
+                @clear="() => { gradeFilter.value = ''; subjectFilter.value = ''; topicId.value = ''; page.value = 1; fetchItems() }"
+              />
+            </div>
           </div>
-        </aside>
+        </div>
+      </div>
 
-        <main class="lg:col-span-3 order-1 lg:order-2">
-          <div class="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
-            <div class="flex gap-2 ml-auto">
+      <!-- Main Content -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main>
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
+            <div class="mb-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-end">
               <select 
                 v-model.number="perPage" 
                 @change="fetchItems" 
-                class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white focus-visible:outline-2 focus-visible:outline-brand-600 focus-visible:outline-offset-2"
+                class="px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white focus-visible:outline-2 focus-visible:outline-brand-600 focus-visible:outline-offset-2"
               >
                 <option :value="5">5 per page</option>
                 <option :value="10">10 per page</option>
                 <option :value="20">20 per page</option>
               </select>
             </div>
-          </div>
 
-          <div class="mt-6">
-            <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <UiSkeleton :count="perPage" />
             </div>
 
             <div v-else>
               <div v-if="!paginator?.data || paginator.data.length === 0" 
-                class="text-center py-12 text-gray-500">
-                No quizzes found. Create your first quiz to get started.
+                class="text-center py-16">
+                <div class="text-gray-400 mb-2">
+                  <Icon name="heroicons:inbox-20-solid" class="w-12 h-12 mx-auto opacity-50" />
+                </div>
+                <p class="text-gray-600 font-medium">No quizzes found</p>
+                <p class="text-gray-500 text-sm mt-1">Create your first quiz to get started.</p>
               </div>
-              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <QuizCard
                   v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
                   :key="quiz?.id || idx"
@@ -128,7 +136,9 @@
                 />
               </div>
 
-              <div class="mt-4"><Pagination :paginator="paginator" @change-page="onPageChange" /></div>
+              <div v-if="paginator?.data?.length > 0" class="mt-8 pt-6 border-t border-slate-200">
+                <Pagination :paginator="paginator" @change-page="onPageChange" />
+              </div>
             </div>
           </div>
         </main>

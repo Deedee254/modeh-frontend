@@ -11,15 +11,21 @@ export function useAccountApi() {
     error.value = null
     try {
       const isForm = typeof FormData !== 'undefined' && body instanceof FormData
-      // The backend seems to expect PATCH, but our useApi only has POST.
-      // Since PATCH with FormData can be tricky, Laravel supports faking it.
-      const payload = isForm ? body as FormData : new FormData()
-      if (isForm) {
-        payload.append('_method', 'PATCH')
-      } else {
-        Object.entries(body).forEach(([key, value]) => payload.append(key, value))
-        payload.append('_method', 'PATCH')
+      
+      // Convert to FormData if needed
+      let payload = isForm ? body : new FormData()
+      
+      if (!isForm) {
+        // Convert object to FormData
+        Object.entries(body).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            payload.append(key, value)
+          }
+        })
       }
+      
+      // Add Laravel's _method=PATCH to support faking PATCH with POST
+      payload.append('_method', 'PATCH')
 
       const res = await api.postFormData('/api/me', payload)
 
@@ -40,8 +46,6 @@ export function useAccountApi() {
   }
 
   async function changePassword(payload: { current_password: string; password: string; password_confirmation: string }) {
-    // This can be a simple wrapper around postJson now.
-    // We'll let the caller handle loading/error state for more flexibility.
     const res = await api.postJson('/api/me/password', payload)
     if (!res.ok) throw new Error('Failed to change password')
     return true

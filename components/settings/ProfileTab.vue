@@ -14,16 +14,12 @@
     </ProfileHeader>
 
     <form @submit.prevent="save" class="space-y-4 p-4 rounded-xl border bg-white shadow-sm">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormGroup label="Display name" name="display_name" required>
-          <UInput v-model="form.display_name" />
-        </UFormGroup>
-        <UFormGroup label="Email" name="email">
-          <UInput :model-value="user?.email" readonly disabled />
-        </UFormGroup>
-      </div>
+      <!-- Display name (from User.name) - only editable field from user table -->
+      <UFormGroup label="Display name" name="display_name" required>
+        <UInput v-model="form.display_name" placeholder="Your public display name" />
+      </UFormGroup>
 
-      <!-- If user is a quizee, surface First/Last near the top so they don't need to re-enter -->
+      <!-- Quizee-specific fields -->
       <template v-if="!isQuizMaster && !isInstitutionManager">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <UFormGroup label="First Name" name="first_name">
@@ -33,35 +29,13 @@
             <UInput v-model="form.last_name" />
           </UFormGroup>
         </div>
-      </template>
 
-      <!-- Institution managers only need core user fields handled by /api/me -->
-      <template v-if="isInstitutionManager">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <UFormGroup label="Phone" name="phone">
-            <UInput v-model="form.phone" />
+            <UInput v-model="form.phone" type="tel" placeholder="+254..." />
           </UFormGroup>
-          <div />
-        </div>
-
-        <UFormGroup label="Bio" name="bio">
-          <UTextarea v-model="form.bio" :rows="4" class="mt-1 block w-full" />
-        </UFormGroup>
-      </template>
-
-      <!-- Non-institution users (quizee or quiz-master) keep the extended profile fields -->
-      <template v-else>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <UFormGroup label="Institution" name="institution">
-            <UInput v-model="form.institution" />
-          </UFormGroup>
-          <UFormGroup label="Level" name="level_id">
-            <USelect
-              v-model="form.level_id"
-              :options="[{ name: 'Select a level', id: '' }, ...levels]"
-              option-attribute="name"
-              value-attribute="id"
-            />
+            <UInput v-model="form.institution" placeholder="e.g., University Name" />
           </UFormGroup>
         </div>
 
@@ -74,31 +48,80 @@
               value-attribute="id"
             />
           </UFormGroup>
-          <UFormGroup label="Phone" name="phone">
-            <UInput v-model="form.phone" />
+          <UFormGroup label="Level" name="level_id">
+            <USelect
+              v-model="form.level_id"
+              :options="[{ name: 'Select a level', id: '' }, ...levels]"
+              option-attribute="name"
+              value-attribute="id"
+            />
           </UFormGroup>
         </div>
 
-        <!-- Subject Selection (after level and grade) -->
+        <!-- Subject Selection -->
         <fieldset>
           <legend class="block text-sm font-medium mb-2">Subjects</legend>
           <div class="border rounded-lg p-2">
             <MultiTaxonomyPicker resource="subjects" :grade-id="form.grade_id" v-model="form.subjects" compact />
           </div>
         </fieldset>
+
+        <!-- Bio -->
+        <UFormGroup label="Bio" name="bio">
+          <UTextarea v-model="form.bio" :rows="3" placeholder="Tell others about yourself..." />
+        </UFormGroup>
       </template>
 
       <!-- Quiz Master specific fields -->
       <template v-if="isQuizMaster">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormGroup label="Phone" name="phone">
+            <UInput v-model="form.phone" type="tel" placeholder="+254..." />
+          </UFormGroup>
+          <UFormGroup label="Institution" name="institution">
+            <UInput v-model="form.institution" placeholder="e.g., University Name" />
+          </UFormGroup>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormGroup label="Grade" name="grade_id">
+            <USelect
+              v-model="form.grade_id"
+              :options="[{ name: 'Select a grade', id: '' }, ...filteredGrades]"
+              option-attribute="name"
+              value-attribute="id"
+            />
+          </UFormGroup>
+          <UFormGroup label="Level" name="level_id">
+            <USelect
+              v-model="form.level_id"
+              :options="[{ name: 'Select a level', id: '' }, ...levels]"
+              option-attribute="name"
+              value-attribute="id"
+            />
+          </UFormGroup>
+        </div>
+
+        <!-- Subject Selection -->
+        <fieldset>
+          <legend class="block text-sm font-medium mb-2">Teaching Subjects</legend>
+          <div class="border rounded-lg p-2">
+            <MultiTaxonomyPicker resource="subjects" :grade-id="form.grade_id" v-model="form.subjects" compact />
+          </div>
+        </fieldset>
+
         <UFormGroup label="Headline" name="headline">
-          <UInput v-model="form.headline" />
+          <UInput v-model="form.headline" placeholder="e.g., Mathematics Expert" />
         </UFormGroup>
 
         <UFormGroup label="Bio" name="bio">
-          <UTextarea v-model="form.bio" :rows="4" class="mt-1 block w-full" />
+          <UTextarea v-model="form.bio" :rows="3" placeholder="Tell students about your expertise..." />
         </UFormGroup>
+      </template>
 
-        <!-- Removed duplicate free-text subjects input; use MultiTaxonomyPicker instead -->
+      <!-- Institution Manager - minimal fields -->
+      <template v-if="isInstitutionManager">
+        <div class="text-sm text-slate-600">Institution manager profile information is managed separately.</div>
       </template>
 
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-gray-50">
+  <div class="bg-gray-50 min-h-screen">
     <PageHero
       title="Available Assessments"
       description="Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration to select an appropriate exercise."
@@ -8,7 +8,7 @@
     />
 
     <!-- Filters -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5 mb-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
           <!-- Search Input -->
@@ -39,40 +39,40 @@
 
       <!-- Results -->
       <div v-else>
-      <div v-if="!paginator?.data || paginator.data.length === 0" class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">No quizzes found</h3>
-        <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
-      </div>
+        <div v-if="!paginator?.data || paginator.data.length === 0" class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No quizzes found</h3>
+          <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
+        </div>
 
-  <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
-        <QuizCard
-          v-for="qitem in (paginator?.data || [])"
-          :key="qitem.id"
-          :to="`/quizee/quizzes/${qitem.id}`"
-          :startLink="`/quizee/quizzes/${qitem.id}`"
-          :takeLink="`/quizee/quizzes/take/${qitem.id}`"
-          :title="qitem.title"
-          :topic="qitem.topic?.name"
-          :cover="qitem.cover_image || ''"
-          :description="qitem.description"
-          :marks="qitem.questions_count"
-          :difficulty="qitem.difficulty"
-          :created-by="qitem['quiz-master'] || qitem.user || (qitem.user_id ? { id: qitem.user_id } : null)"
-          :palette="pickPaletteClass(qitem.topic_id)"
-          :quiz-id="qitem.id"
-          :liked="qitem.liked || false"
-          :likes="qitem.likes_count || 0"
-          @like="onQuizLike(qitem, $event)"
-        />
-      </div>
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <QuizCard
+            v-for="qitem in (paginator?.data || [])"
+            :key="qitem.id"
+            :to="`/quizee/quizzes/${qitem.id}`"
+            :startLink="`/quizee/quizzes/${qitem.id}`"
+            :takeLink="`/quizee/quizzes/take/${qitem.id}`"
+            :title="qitem.title"
+            :topic="qitem.topic?.name"
+            :cover="qitem.cover_image || ''"
+            :description="qitem.description"
+            :marks="qitem.questions_count"
+            :difficulty="qitem.difficulty"
+            :created-by="qitem['quiz-master'] || qitem.user || (qitem.user_id ? { id: qitem.user_id } : null)"
+            :palette="pickPaletteClass(qitem.topic_id)"
+            :quiz-id="qitem.id"
+            :liked="qitem.liked || false"
+            :likes="qitem.likes_count || 0"
+            @like="onQuizLike(qitem, $event)"
+          />
+        </div>
 
-      <!-- Pagination -->
-      <div class="mt-8" v-if="paginator?.data?.length > 0">
-        <Pagination :paginator="paginator" @change-page="onPageChange" />
-      </div>
+        <!-- Pagination -->
+        <div class="mt-8" v-if="paginator?.data?.length > 0">
+          <Pagination :paginator="paginator" @change-page="onPageChange" />
+        </div>
       </div>
     </div>
   </div>
@@ -95,7 +95,10 @@ import Pagination from '~/components/Pagination.vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useQuizzes from '~/composables/useQuizzes'
+import { useAuthStore } from '~/stores/auth'
+
 const alert = useAppAlert()
+const auth = useAuthStore()
 
 function pickPaletteClass(id) {
   const palettes = [
@@ -114,16 +117,54 @@ const perPage = ref(12)
 const page = ref(1)
 const topicId = ref(0)
 
+// Get user's level and grade from profile
+const userProfile = computed(() => {
+  const u = auth.user
+  return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
+})
+const userLevelId = computed(() => userProfile.value?.quizeeProfile?.level?.id || userProfile.value?.level_id)
+const userGradeId = computed(() => userProfile.value?.quizeeProfile?.grade?.id || userProfile.value?.grade_id)
+
 // composable that encapsulates fetching and normalization
 const { paginator, topics, loading, normalizedQuizzes, fetchItems, fetchTopics } = useQuizzes()
 
 // keep local params reactive and trigger composable fetches
 watch([q, perPage, page, topicId], () => {
-  // on filter change, call fetchItems with current params
-  fetchItems({ q: q.value, per_page: perPage.value, page: page.value, topic_id: topicId.value })
+  // on filter change, call fetchItems with current params, including level/grade filter
+  const params = { 
+    q: q.value, 
+    per_page: perPage.value, 
+    page: page.value, 
+    topic_id: topicId.value 
+  }
+  
+  // Add level or grade filter if available
+  if (userLevelId.value) {
+    params.level_id = userLevelId.value
+  } else if (userGradeId.value) {
+    params.grade_id = userGradeId.value
+  }
+  
+  fetchItems(params)
 })
 
-onMounted(async () => { await Promise.all([fetchItems({ q: q.value, per_page: perPage.value, page: page.value, topic_id: topicId.value }), fetchTopics()]) })
+onMounted(async () => { 
+  const params = { 
+    q: q.value, 
+    per_page: perPage.value, 
+    page: page.value, 
+    topic_id: topicId.value 
+  }
+  
+  // Add level or grade filter if available
+  if (userLevelId.value) {
+    params.level_id = userLevelId.value
+  } else if (userGradeId.value) {
+    params.grade_id = userGradeId.value
+  }
+  
+  await Promise.all([fetchItems(params), fetchTopics()]) 
+})
 
 // fetchItems & fetchTopics provided by composable
 

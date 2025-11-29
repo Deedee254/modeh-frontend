@@ -2,10 +2,12 @@ import { useRouter } from 'vue-router'
 import { computed } from 'vue'
 import { useUserRole } from './useUserRole'
 import { useInstitutionsStore } from '~/stores/institutions'
+import { useAuthStore } from '~/stores/auth'
 
 export function useBottomNavMenus() {
   const { isQuizMaster, isQuizee, isInstitutionManager } = useUserRole()
   const instStoreRaw = useInstitutionsStore()
+  const auth = useAuthStore()
   const instStore: InstitutionStore = {
     activeInstitutionSlug: instStoreRaw.activeInstitutionSlug ?? undefined,
     institution: instStoreRaw.institution ?? undefined
@@ -39,13 +41,17 @@ function resolveInstPath(path: string): string {
    * Common menu items structure: { id, label, icon, to }
    */
   const menuItems = computed(() => {
+    // Check if user's level is tertiary
+    const userProfile = (auth.user as any)?.quizeeProfile || auth.user
+    const userLevel = userProfile?.level?.name || userProfile?.level_name || ''
+    const isTertiary = userLevel.toLowerCase().includes('tertiary')
+
     const base = {
       quizee: {
         explore: [
-          { id: 'grades', label: 'Grades', icon: 'heroicons:scale', to: '/grades' },
-          { id: 'subjects', label: 'Subjects', icon: 'heroicons:bookmark', to: '/subjects' },
-          { id: 'levels', label: 'Levels', icon: 'heroicons:chart-pie', to: '/levels' },
-          { id: 'topics', label: 'Topics', icon: 'heroicons:book-open', to: '/topics' },
+          { id: 'grades', label: isTertiary ? 'Courses' : 'Grades', icon: 'heroicons:scale', to: isTertiary ? '/quizee/courses' : '/quizee/grades' },
+          { id: 'subjects', label: 'Subjects', icon: 'heroicons:bookmark', to: '/quizee/subjects' },
+          { id: 'topics', label: 'Topics', icon: 'heroicons:book-open', to: '/quizee/topics' },
           { id: 'quiz-masters', label: 'Quiz Masters', icon: 'heroicons:user-group', to: '/quizee/quiz-masters' }
         ],
         rightMenu: [

@@ -6,32 +6,34 @@
       </template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-10">
-      <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
-      <div v-else-if="error" class="mt-6 text-red-600">Failed to load quizzes for this topic.</div>
+    <div class="bg-gray-50 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
+        <div v-else-if="error" class="mt-6 text-red-600">Failed to load quizzes for this topic.</div>
 
-      <div v-else>
-  <div v-if="quizzes.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No assessments found for this topic.</div>
-  <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
-          <UiQuizCard
-          v-for="qz in displayQuizzes"
-          :key="qz.id"
-          :to="`/quizee/quizzes/${qz.id}`"
-          :quiz-id="qz.id"
-          :liked="qz.liked"
-          :likes="qz.likes_count ?? qz.likes ?? 0"
-          :title="qz.title"
-          :startLink="`/quizee/quizzes/${qz.id}`"
-          :grade="qz.grade"
-          :subject="qz.subject"
-          :topic="qz.topic"
-          :description="qz.description || qz.summary || ''"
-          :show-grade="true"
-          :show-subject="true"
-          :show-topic="true"
-          @like="onQuizLike(qz, $event)"
-        />
-      </div>
+        <div v-else>
+          <div v-if="quizzes.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">No assessments found for this topic.</div>
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <UiQuizCard
+              v-for="qz in displayQuizzes"
+              :key="qz.id"
+              :to="`/quizee/quizzes/${qz.id}`"
+              :quiz-id="qz.id"
+              :liked="qz.liked"
+              :likes="qz.likes_count ?? qz.likes ?? 0"
+              :title="qz.title"
+              :startLink="`/quizee/quizzes/${qz.id}`"
+              :grade="qz.grade"
+              :subject="qz.subject"
+              :topic="qz.topic"
+              :description="qz.description || qz.summary || ''"
+              :show-grade="true"
+              :show-subject="true"
+              :show-topic="true"
+              @like="onQuizLike(qz, $event)"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>

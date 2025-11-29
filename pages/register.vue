@@ -216,6 +216,12 @@
                 <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
                 <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
               </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Bio / Headline</label>
+                <textarea v-model="form.bio" rows="3" placeholder="Optional - tell students about your expertise" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"></textarea>
+                <p v-if="fieldErrors.bio" class="mt-1 text-sm text-red-600">{{ fieldErrors.bio }}</p>
+              </div>
             </div>
           </template>
 
@@ -550,8 +556,9 @@ async function submit() {
     
     // Add phone if provided
     if (form.phone) payload.phone = form.phone
-  // Add bio if provided
-  if (form.bio) payload.bio = form.bio
+    
+    // Add bio if provided (quizee and quiz-master)
+    if (form.bio) payload.bio = form.bio
     
     // Add taxonomy fields for Quizee and Quiz Master
     if (role.value === 'quizee') {

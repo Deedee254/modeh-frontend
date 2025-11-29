@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-100 pb-16 md:pb-0">
-    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+  <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div v-if="pending" class="grid place-items-center py-24">
         <div class="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-200 w-full max-w-4xl animate-pulse">
           <div class="p-6 sm:p-8 lg:p-10">

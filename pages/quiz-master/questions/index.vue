@@ -34,88 +34,121 @@
       </template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
-        <aside class="lg:col-span-1 order-2 lg:order-1">
-          <div class="sticky top-6">
-            <FiltersSidebar
-              :grade-options="grades"
-              :subject-options="subjects"
-              :grade="selectedGrade"
-              :subject="selectedSubject"
-              storageKey="filters:quiz-master-questions"
-              @update:grade="val => onFilterChange('grade', val)"
-              @update:subject="val => onFilterChange('subject', val)"
-              @update:topic="val => onFilterChange('topic', val)"
-              @apply="() => { page.value = 1; fetchItems() }"
-              @clear="() => { selectedGrade.value = ''; selectedSubject.value = ''; page.value = 1; fetchItems() }"
-            />
-            <div class="mt-3">
-              <USelect v-model.number="perPage" @change="fetchItems" :options="[{label: '5 per page', value: 5}, {label: '10 per page', value: 10}, {label: '20 per page', value: 20}]" class="w-full" />
+    <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <!-- Sticky Filter Bar -->
+      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-4 px-4 sm:px-6 lg:px-8 mb-6">
+        <div class="max-w-7xl mx-auto">
+          <div class="space-y-4">
+            <!-- Mobile Filter Drawer -->
+            <MobileFilterDrawer
+              @apply="() => { page = 1; fetchItems() }"
+              @clear="() => { selectedGrade = ''; selectedSubject = ''; selectedTopic = ''; page = 1; fetchItems() }"
+            >
+              <FiltersSidebar
+                :grade-options="grades"
+                :subject-options="subjects"
+                :topic-options="topics"
+                :grade="selectedGrade"
+                :subject="selectedSubject"
+                storageKey="filters:quiz-master-questions"
+                @update:grade="val => onFilterChange('grade', val)"
+                @update:subject="val => onFilterChange('subject', val)"
+                @update:topic="val => onFilterChange('topic', val)"
+                @apply="() => { page = 1; fetchItems() }"
+                @clear="() => { selectedGrade = ''; selectedSubject = ''; selectedTopic = ''; page = 1; fetchItems() }"
+              />
+            </MobileFilterDrawer>
+
+            <!-- Desktop Filters -->
+            <div class="hidden lg:block">
+              <FiltersSidebar
+                :grade-options="grades"
+                :subject-options="subjects"
+                :topic-options="topics"
+                :grade="selectedGrade"
+                :subject="selectedSubject"
+                storageKey="filters:quiz-master-questions"
+                @update:grade="val => onFilterChange('grade', val)"
+                @update:subject="val => onFilterChange('subject', val)"
+                @update:topic="val => onFilterChange('topic', val)"
+                @apply="() => { page = 1; fetchItems() }"
+                @clear="() => { selectedGrade = ''; selectedSubject = ''; selectedTopic = ''; page = 1; fetchItems() }"
+              />
             </div>
           </div>
-        </aside>
+        </div>
+      </div>
 
-        <main class="lg:col-span-3 order-1 lg:order-2 min-w-0">
-          <!-- Controls: Sort, Per Page -->
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div class="flex items-center gap-3 ml-auto">
-              <USelectMenu v-model="sortBy" :options="sortOptions" class="w-40" />
-              <USelect v-model.number="perPage" @change="fetchItems" :options="[{label: '5/page', value: 5}, {label: '10/page', value: 10}, {label: '20/page', value: 20}]" class="w-28" />
-            </div>
-          </div>
-
-          <!-- List -->
-          <div v-if="loading" class="space-y-4">
-            <USkeleton v-for="i in perPage" :key="i" class="h-20 w-full" />
-          </div>
-          <div v-else>
-            <div v-if="!sortedQuestions || sortedQuestions.length === 0" class="text-center py-12 text-gray-500">No questions found.</div>
-            <div v-else class="space-y-3">
-              <div class="overflow-x-auto bg-white rounded shadow">
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
-                    <tr>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 w-2/3">Title</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Type</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Level</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Grade</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Subject</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Topic</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Marks</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Quiz</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Status</th>
-                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody class="bg-white divide-y divide-gray-100">
-                    <tr v-for="(qitem, idx) in sortedQuestions" :key="qitem?.id || idx">
-                      <td class="px-4 py-3 text-sm text-gray-700 whitespace-normal">{{ qitem.title || (qitem.body ? (qitem.body.replace(/<[^>]*>?/gm, '').slice(0, 140) + (qitem.body.length > 140 ? '…' : '')) : 'Untitled') }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 uppercase hidden sm:table-cell">{{ (qitem.type || 'question').toUpperCase() }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getLevelName(qitem.level || qitem.level_id || qitem.level_name) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getGradeName(qitem.grade || qitem.grade_id || qitem.grade_name) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getSubjectName(qitem.subject || qitem.subject_id || qitem.subject_name) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getTopicName(qitem.topic || qitem.topic_id || qitem.topic_name) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-700 hidden sm:table-cell">{{ (qitem.marks !== undefined && qitem.marks !== null) ? Math.round(Number(qitem.marks)) : 0 }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getQuizName(qitem) }}</td>
-                      <td class="px-4 py-3 text-sm hidden sm:table-cell">
-                        <span :class="['inline-flex items-center px-2 py-0.5 rounded text-xs font-medium', qitem.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">{{ statusLabel(qitem.is_approved) }}</span>
-                      </td>
-                      <td class="px-4 py-3 text-right text-sm">
-                        <div class="inline-flex items-center space-x-2">
-                          <UButton v-if="!qitem.is_approved" size="xs" variant="outline" color="gray" @click="requestApproval(qitem)" :disabled="!!qitem.approval_requested_at" class="hidden sm:inline-flex">Request</UButton>
-                          <UButton @click.prevent="goToEdit(qitem)" icon="i-heroicons-pencil-square" size="sm" color="gray" variant="ghost" />
-                          <UButton v-if="isAdmin" size="sm" color="red" variant="ghost" @click.prevent="confirmDelete(qitem)" icon="i-heroicons-trash" class="hidden sm:inline-flex" />
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+      <!-- Main Content -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main>
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
+            <!-- Controls: Sort, Per Page -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div class="flex items-center gap-3 ml-auto">
+                <USelectMenu v-model="sortBy" :options="sortOptions" class="w-40" />
+                <USelect v-model.number="perPage" @change="fetchItems" :options="[{label: '5/page', value: 5}, {label: '10/page', value: 10}, {label: '20/page', value: 20}]" class="w-28" />
               </div>
             </div>
 
-            <div class="mt-4">
-              <Pagination :paginator="paginatorObj" @change-page="onPageChange" />
+            <!-- List -->
+            <div v-if="loading" class="space-y-4">
+              <USkeleton v-for="i in perPage" :key="i" class="h-20 w-full" />
+            </div>
+            <div v-else>
+              <div v-if="!sortedQuestions || sortedQuestions.length === 0" class="text-center py-16">
+                <div class="text-gray-400 mb-2">
+                  <Icon name="heroicons:inbox-20-solid" class="w-12 h-12 mx-auto opacity-50" />
+                </div>
+                <p class="text-gray-600 font-medium">No questions found</p>
+                <p class="text-gray-500 text-sm mt-1">Create your first question to get started.</p>
+              </div>
+              <div v-else class="space-y-3">
+                <div class="overflow-x-auto bg-white rounded shadow">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 w-2/3">Title</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Type</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Level</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Grade</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Subject</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Topic</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Marks</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Quiz</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 hidden sm:table-cell">Status</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                      <tr v-for="(qitem, idx) in sortedQuestions" :key="qitem?.id || idx">
+                        <td class="px-4 py-3 text-sm text-gray-700 whitespace-normal">{{ qitem.title || (qitem.body ? (qitem.body.replace(/<[^>]*>?/gm, '').slice(0, 140) + (qitem.body.length > 140 ? '…' : '')) : 'Untitled') }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 uppercase hidden sm:table-cell">{{ (qitem.type || 'question').toUpperCase() }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getLevelName(qitem.level || qitem.level_id || qitem.level_name) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getGradeName(qitem.grade || qitem.grade_id || qitem.grade_name) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getSubjectName(qitem.subject || qitem.subject_id || qitem.subject_name) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getTopicName(qitem.topic || qitem.topic_id || qitem.topic_name) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 hidden sm:table-cell">{{ (qitem.marks !== undefined && qitem.marks !== null) ? Math.round(Number(qitem.marks)) : 0 }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{{ getQuizName(qitem) }}</td>
+                        <td class="px-4 py-3 text-sm hidden sm:table-cell">
+                          <span :class="['inline-flex items-center px-2 py-0.5 rounded text-xs font-medium', qitem.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">{{ statusLabel(qitem.is_approved) }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm">
+                          <div class="inline-flex items-center space-x-2">
+                            <UButton v-if="!qitem.is_approved" size="xs" variant="outline" color="gray" @click="requestApproval(qitem)" :disabled="!!qitem.approval_requested_at" class="hidden sm:inline-flex">Request</UButton>
+                            <UButton @click.prevent="goToEdit(qitem)" icon="i-heroicons-pencil-square" size="sm" color="gray" variant="ghost" />
+                            <UButton v-if="isAdmin" size="sm" color="red" variant="ghost" @click.prevent="confirmDelete(qitem)" icon="i-heroicons-trash" class="hidden sm:inline-flex" />
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div v-if="sortedQuestions && sortedQuestions.length > 0" class="mt-8 pt-6 border-t border-slate-200">
+                <Pagination :paginator="paginatorObj" @change-page="onPageChange" />
+              </div>
             </div>
           </div>
         </main>
@@ -136,6 +169,7 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
 import FiltersSidebar from '~/components/FiltersBar.vue'
+import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 const alert = useAppAlert()
@@ -316,6 +350,7 @@ async function fetchItems() {
 function onFilterChange(type, val) {
   if (type === 'grade') selectedGrade.value = val
   if (type === 'subject') selectedSubject.value = val
+  if (type === 'topic') selectedTopic.value = val
   page.value = 1
   fetchItems()
 }

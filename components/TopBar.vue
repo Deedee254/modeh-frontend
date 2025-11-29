@@ -20,10 +20,9 @@
             <NuxtLink :to="memberRoute" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Members</NuxtLink>
           </template>
           <template v-else-if="isquizee && auth.user">
-            <NuxtLink to="/grades" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Grades</NuxtLink>
-            <NuxtLink to="/subjects" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Subjects</NuxtLink>
-            <NuxtLink to="/levels" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Levels</NuxtLink>
-            <NuxtLink to="/topics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Topics</NuxtLink>
+            <NuxtLink :to="`/quizee/${isTertiary ? 'courses' : 'grades'}`" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">{{ isTertiary ? 'Courses' : 'Grades' }}</NuxtLink>
+            <NuxtLink to="/quizee/subjects" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Subjects</NuxtLink>
+            <NuxtLink to="/quizee/topics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Topics</NuxtLink>
             <NuxtLink to="/quizee/quiz-masters" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Quiz Masters</NuxtLink>
           </template>
           <template v-else>
@@ -98,6 +97,7 @@
                   <div class="px-4 py-3">
                     <p class="text-sm text-gray-900 dark:text-white">Signed in as {{ userName }}</p>
                     <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ auth.user.email }}</p>
+                    <p v-if="userLevel" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Level: <span class="font-semibold">{{ userLevel }}</span></p>
                   </div>
                   <div class="border-t border-gray-200 dark:border-slate-700"></div>
                   <NuxtLink :to="dashboardRoute" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Dashboard</NuxtLink>
@@ -147,10 +147,9 @@
             <NuxtLink @click="ui.mobileNavOpen = false" :to="memberRoute" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Members</NuxtLink>
           </template>
           <template v-else-if="isquizee && auth.user">
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/grades" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Grades</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/subjects" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Subjects</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/levels" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Levels</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/topics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Topics</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" :to="`/quizee/${isTertiary ? 'courses' : 'grades'}`" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">{{ isTertiary ? 'Courses' : 'Grades' }}</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/subjects" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Subjects</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/topics" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Topics</NuxtLink>
             <NuxtLink @click="ui.mobileNavOpen = false" to="/quizee/quiz-masters" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Quiz Masters</NuxtLink>
           </template>
           <template v-else>
@@ -292,6 +291,14 @@ const memberRoute = computed(() => {
     return { path: '/institution-manager/institutions' }
   }
   return { path: '/quizee/profile' }
+})
+
+// Check if user's level is tertiary
+const isTertiary = computed(() => {
+  if (!auth.user) return false
+  const profile = auth.user.quizeeProfile || auth.user
+  const level = profile.level?.name || profile.level_name || ''
+  return level.toLowerCase().includes('tertiary')
 })
 
 const searchInput = ref(null)
@@ -467,5 +474,14 @@ onBeforeUnmount(() => {
 const userName = computed(() => auth.user?.name || 'User')
 const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || auth.user?.avatar) || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
+const userLevel = computed(() => {
+  if (auth.user?.quizeeProfile?.level?.name) {
+    return auth.user.quizeeProfile.level.name
+  }
+  if (auth.user?.level?.name) {
+    return auth.user.level.name
+  }
+  return null
+})
 
 </script>

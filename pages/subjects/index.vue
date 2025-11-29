@@ -54,31 +54,32 @@
     </PageHero>
 
     <!-- Compact filters (replaces subject pills) -->
-    <div class="max-w-7xl mx-auto px-4 py-12">
-      <!-- Sticky Filters at Top -->
-      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
-        <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="store.topics" :grade-options="allGrades" v-model:grade="gradeFilter" />
-      </div>
-
-      <div class="mt-6">
-      <div class="flex items-center gap-3">
-  <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="subject-filters">
-          <button @click="setFilter('')" :class="filterBtnClass('')" :aria-pressed="activeFilter === ''">All</button>
-          <button @click="setFilter('top')" :class="filterBtnClass('top')" :aria-pressed="activeFilter === 'top'">Top</button>
-          <button @click="setFilter('featured')" :class="filterBtnClass('featured')" :aria-pressed="activeFilter === 'featured'">Featured</button>
-          <button @click="setFilter('new')" :class="filterBtnClass('new')" :aria-pressed="activeFilter === 'new'">New</button>
+    <div class="bg-gray-50 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Sticky Filters at Top -->
+        <div class="sticky top-0 z-40 bg-gray-50 -mx-4 px-4 sm:px-6 lg:px-8 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
+          <FiltersSidebar storageKey="filters:subjects" :subject-options="subjectsForFilters" :topic-options="store.topics" :grade-options="allGrades" v-model:grade="gradeFilter" />
         </div>
-        <div class="ml-auto text-sm text-gray-500">Showing {{ filtered.length }} subjects</div>
-      </div>
-    </div>
 
-  <div class="grid grid-cols-1 gap-3 sm:gap-6 mt-6">
-        <main class="w-full">
-          <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
-          <div v-else-if="error" class="mt-6 text-red-600 dark:text-red-400">Failed to load subjects.</div>
-          <div v-else class="mt-6">
-            <div v-if="filtered.length === 0" class="p-6 border rounded-md text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">No subjects found.</div>
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-3">
+        <div class="mt-6">
+          <div class="flex items-center gap-3">
+            <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="subject-filters">
+              <button @click="setFilter('')" :class="filterBtnClass('')" :aria-pressed="activeFilter === ''">All</button>
+              <button @click="setFilter('top')" :class="filterBtnClass('top')" :aria-pressed="activeFilter === 'top'">Top</button>
+              <button @click="setFilter('featured')" :class="filterBtnClass('featured')" :aria-pressed="activeFilter === 'featured'">Featured</button>
+              <button @click="setFilter('new')" :class="filterBtnClass('new')" :aria-pressed="activeFilter === 'new'">New</button>
+            </div>
+            <div class="ml-auto text-sm text-gray-500">Showing {{ filtered.length }} subjects</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:gap-6 mt-6">
+          <main class="w-full">
+            <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
+            <div v-else-if="error" class="mt-6 text-red-600 dark:text-red-400">Failed to load subjects.</div>
+            <div v-else class="mt-6">
+              <div v-if="filtered.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 rounded-xl shadow-sm border-slate-200 dark:border-slate-800">No subjects found.</div>
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-3">
               <SubjectCard
                 v-for="s in filtered"
                 :key="s.id"
@@ -101,16 +102,17 @@
         </main>
       </div>
 
-    <!-- CTA -->
-    <div class="mt-10">
-      <div class="bg-brand-50 rounded-lg p-6 flex items-center justify-between">
-        <div>
-          <h3 class="text-lg font-semibold text-brand-800">Want to help build content?</h3>
-          <p class="text-sm text-brand-600/90">Create subjects and topics to organize your quizzes for learners worldwide.</p>
+      <!-- CTA -->
+      <div class="mt-10">
+        <div class="bg-brand-50 rounded-lg p-6 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-brand-800">Want to help build content?</h3>
+            <p class="text-sm text-brand-600/90">Create subjects and topics to organize your quizzes for learners worldwide.</p>
+          </div>
+          <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-brand-600 text-white rounded">Become a quiz-master</NuxtLink>
         </div>
-        <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-brand-600 text-white rounded">Become a quiz-master</NuxtLink>
       </div>
-    </div>
+      </div>
     </div>
   </div>
 </template>

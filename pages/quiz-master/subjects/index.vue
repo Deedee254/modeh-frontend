@@ -12,84 +12,105 @@
       </template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-12">
-      <!-- Compact filters -->
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div class="w-full sm:w-auto inline-flex rounded-md shadow-sm" role="tablist" aria-label="subject-filters">
-          <button @click="setFilter('')" :class="filterBtnClass('')" :aria-pressed="activeFilter === ''">All</button>
-          <button @click="setFilter('top')" :class="filterBtnClass('top')" :aria-pressed="activeFilter === 'top'">Most Used</button>
-          <button @click="setFilter('new')" :class="filterBtnClass('new')" :aria-pressed="activeFilter === 'new'">Recent</button>
-        </div>
-        <div class="w-full sm:w-auto sm:ml-auto text-sm text-gray-500 text-center sm:text-right">
-          Showing {{ filtered.length }} subjects
+    <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <!-- Sticky Filter Bar -->
+      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-4 px-4 sm:px-6 lg:px-8 mb-6">
+        <div class="max-w-7xl mx-auto">
+          <div class="space-y-4">
+            <!-- Compact filters header -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div class="w-full sm:w-auto inline-flex rounded-lg border border-slate-200 shadow-sm bg-white p-1" role="tablist" aria-label="subject-filters">
+                <button @click="setFilter('')" :class="filterBtnClass('')" :aria-pressed="activeFilter === ''">All Subjects</button>
+                <button @click="setFilter('top')" :class="filterBtnClass('top')" :aria-pressed="activeFilter === 'top'">Most Used</button>
+                <button @click="setFilter('new')" :class="filterBtnClass('new')" :aria-pressed="activeFilter === 'new'">Recent</button>
+              </div>
+              <div class="w-full sm:w-auto sm:ml-auto text-sm text-gray-600 text-center sm:text-right font-medium">
+                Showing <span class="text-brand-600 font-semibold">{{ filtered.length }}</span> subjects
+              </div>
+            </div>
+
+            <!-- Mobile Filter Drawer & Desktop Filters -->
+            <div class="flex items-center gap-3">
+              <!-- Mobile Filter Drawer -->
+              <MobileFilterDrawer
+                @apply="() => handlePageChange(1)"
+                @clear="() => { selectedGrade = null; handlePageChange(1) }"
+              >
+                <FiltersSidebar 
+                  storageKey="filters:subjects" 
+                  :grade-options="grades" 
+                  :grade="selectedGrade"
+                  @update:grade="val => selectedGrade = val" 
+                  class="w-full"
+                />
+              </MobileFilterDrawer>
+
+              <!-- Desktop Filters -->
+              <div class="hidden lg:block w-full">
+                <FiltersSidebar 
+                  storageKey="filters:subjects" 
+                  :grade-options="grades" 
+                  :grade="selectedGrade"
+                  @update:grade="val => selectedGrade = val" 
+                  class="w-full"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
-        <aside class="lg:col-span-1 order-2 lg:order-1">
-          <!-- Mobile Filter Drawer -->
-          <MobileFilterDrawer
-            @apply="() => handlePageChange(1)"
-            @clear="() => { selectedGrade = null; handlePageChange(1) }"
-          >
-            <FiltersSidebar 
-              storageKey="filters:subjects" 
-              :grade-options="grades" 
-              :grade="selectedGrade"
-              @update:grade="val => selectedGrade = val" 
-              class="w-full"
-            />
-          </MobileFilterDrawer>
+      <!-- Main Content -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main>
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
+              <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                <UiSkeleton :count="6" />
+              </div>
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                <SubjectCard
+                  v-for="(subject, idx) in (Array.isArray(filtered) ? filtered.filter(Boolean) : [])"
+                  :key="subject?.id || idx"
+                  :title="subject?.name"
+                  :subtitle="`${subject?.quizzes_count || 0} quizzes`"
+                  :image="resolveIcon(subject)"
+                  :badgeText="(subject?.name || '').charAt(0).toUpperCase()"
+                  :topicsCount="subject?.topics_count || subject?.topics?.length || 0"
+                  :startLink="`/quiz-master/subjects/${subject?.id}`"
+                  :description="subject?.description || subject?.summary || ''"
+                  :grade="subject?.grade?.name || subject?.grade_id || ''"
+                  startLabel="View Details"
+                >
+                  <div class="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-200">
+                    <div class="text-sm text-brand-600 font-medium">
+                      <span>{{ subject.is_approved ? '✓ Approved' : '⏳ Pending Approval' }}</span>
+                    </div>
+                    <div>
+                      <NuxtLink :to="`/quiz-master/quizzes/create?subject_id=${subject?.id}`" class="inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors w-full">
+                        <Icon name="heroicons:plus" class="w-4 h-4" />
+                        Add quiz
+                      </NuxtLink>
+                    </div>
+                  </div>
+                </SubjectCard>
 
-          <!-- Desktop Filter Sidebar -->
-          <div class="sticky top-[calc(4rem+1.5rem)] md:top-4 hidden lg:block">
-            <FiltersSidebar 
-              storageKey="filters:subjects" 
-              :grade-options="grades" 
-              :grade="selectedGrade"
-              @update:grade="val => selectedGrade = val" 
-              class="w-full"
-            />
-          </div>
-        </aside>
-
-        <main class="lg:col-span-3 order-1 lg:order-2">
-          <div v-if="isLoading"><UiSkeleton :count="6" /></div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-            <SubjectCard
-              v-for="(subject, idx) in (Array.isArray(filtered) ? filtered.filter(Boolean) : [])"
-              :key="subject?.id || idx"
-              :title="subject?.name"
-              :subtitle="`${subject?.quizzes_count || 0} quizzes`"
-              :image="resolveIcon(subject)"
-              :badgeText="(subject?.name || '').charAt(0).toUpperCase()"
-              :topicsCount="subject?.topics_count || subject?.topics?.length || 0"
-              :startLink="`/quiz-master/subjects/${subject?.id}`"
-              :description="subject?.description || subject?.summary || ''"
-              :grade="subject?.grade?.name || subject?.grade_id || ''"
-              startLabel="View Details"
-            >
-              <div class="flex flex-col gap-2">
-                <div class="text-sm text-brand-600">
-                  <span>{{ subject.is_approved ? 'Approved' : 'Pending Approval' }}</span>
-                </div>
-                <div>
-                  <NuxtLink :to="`/quiz-master/quizzes/create?subject_id=${subject?.id}`" class="inline-flex items-center px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-sm font-semibold">Add quiz</NuxtLink>
+                <div v-if="filtered.length === 0" class="col-span-full text-center py-16">
+                  <div class="text-gray-400 mb-2">
+                    <Icon name="heroicons:inbox-20-solid" class="w-12 h-12 mx-auto opacity-50" />
+                  </div>
+                  <p class="text-gray-600 font-medium">No subjects found</p>
+                  <p class="text-gray-500 text-sm mt-1">Try adjusting your filters or search again.</p>
                 </div>
               </div>
-            </SubjectCard>
-
-            <div v-if="filtered.length === 0" class="col-span-full text-center py-12 text-gray-500">
-              No subjects found. Try adjusting your filters.
+              
+              <!-- Pagination -->
+              <div v-if="subjectsResponse?.subjects?.meta && filtered.length > 0" class="mt-8 pt-6 border-t border-slate-200">
+                <Pagination 
+                  :paginator="subjectsResponse.subjects" 
+                  @change-page="handlePageChange"
+                />
+              </div>
             </div>
-          </div>
-          
-          <div v-if="subjectsResponse?.subjects?.meta" class="mt-6">
-            <Pagination 
-              :paginator="subjectsResponse.subjects" 
-              @change-page="handlePageChange"
-            />
-          </div>
         </main>
       </div>
     </div>
@@ -101,6 +122,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 import { useRuntimeConfig } from '#app'
+import useApi from '~/composables/useApi'
 import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
@@ -114,6 +136,7 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const store = useTaxonomyStore()
+const api = useApi()
 const { print: printMetrics } = useMetricsDebug()
 
 // SSR hydration: pre-fetch grades and subjects
@@ -151,13 +174,22 @@ onMounted(async () => {
   }
 })
 
-// Refresh helper to match previous API (used by Pagination)
+// Refresh helper with auth handling
 async function refresh() {
   try {
-    const resp = await store.fetchSubjectsPage({ page: page.value, perPage: perPage.value, q: query.value || '' })
-    subjectsResponse.value = { subjects: { data: resp.items || [], meta: resp.meta || null } }
+    const params = new URLSearchParams()
+    params.set('page', page.value)
+    params.set('per_page', perPage.value)
+    if (selectedGrade.value) params.set('grade_id', selectedGrade.value)
+    if (query.value) params.set('q', query.value)
+    
+    const res = await api.get(`/api/subjects?${params.toString()}`)
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to fetch subjects')
+    const data = await res.json().catch(() => null)
+    subjectsResponse.value = { subjects: { data: data?.subjects?.data || data?.data || [], meta: data?.subjects?.meta || null } }
   } catch (e) {
-    // ignore
+    // ignore for now
   }
 }
 
@@ -202,19 +234,27 @@ function setFilter(v) {
 
 function filterBtnClass(v) {
   const active = activeFilter.value === v
-  const base = 'px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md border'
-  return `${base} ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-700 border-gray-200'}`
+  const base = 'px-4 py-2 text-sm font-medium first:rounded-l-lg last:rounded-r-lg border-r last:border-r-0 transition-colors'
+  return `${base} ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'}`
 }
 
 async function onServerSearch(q) {
   try {
-    // Use the taxonomy composable to search subjects (server-side pagination)
+    // Use API composable to search subjects (server-side pagination)
     page.value = 1
-    const resp = await fetchSubjectsPage({ q: q, page: 1, perPage: perPage.value })
     query.value = q
-    if (resp) {
-      subjectsResponse.value = { subjects: { data: resp.items || [], meta: resp.meta || null } }
-    }
+    
+    const params = new URLSearchParams()
+    params.set('page', page.value)
+    params.set('per_page', perPage.value)
+    if (q) params.set('q', q)
+    if (selectedGrade.value) params.set('grade_id', selectedGrade.value)
+    
+    const res = await api.get(`/api/subjects?${params.toString()}`)
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to fetch subjects')
+    const data = await res.json().catch(() => null)
+    subjectsResponse.value = { subjects: { data: data?.subjects?.data || data?.data || [], meta: data?.subjects?.meta || null } }
   } catch (e) {
     // ignore network errors
   }
