@@ -26,7 +26,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-12">
     <h1 class="text-2xl font-bold mb-6">My Quiz Attempts</h1>
     
     <div v-if="loading" class="text-gray-600">Loading attempts...</div>
@@ -35,8 +35,8 @@ onMounted(async () => {
       No attempts yet. <NuxtLink to="/quizzes" class="text-brand-600 hover:underline">Start a quiz</NuxtLink>
     </div>
     
-    <div v-else class="space-y-4">
-      <div v-for="attempt in attempts" :key="attempt.id" class="bg-white shadow rounded-lg p-4">
+    <div v-else class="space-y-4 sm:space-y-6">
+      <div v-for="attempt in attempts" :key="attempt.id" class="bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
           <div>
             <h3 class="font-semibold text-lg">{{ attempt.quiz?.title || 'Untitled Quiz' }}</h3>

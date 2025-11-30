@@ -4,6 +4,17 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
   devtools: { enabled: true },
 
+  // Ensure the browser sees the manifest via an explicit <link rel="manifest"> in the HTML head.
+  // Some PWA modules inject this automatically, but adding it here guarantees the link is present.
+  app: {
+    head: {
+      link: [
+        // Point explicitly to the .webmanifest file so the browser picks up the PWA manifest
+        { rel: 'manifest', href: '/manifest.webmanifest' }
+      ]
+    }
+  },
+
   // -----------------------------
   // Modules
   // -----------------------------

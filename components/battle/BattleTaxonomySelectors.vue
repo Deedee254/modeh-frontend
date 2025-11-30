@@ -74,7 +74,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
-import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 
 // Props
 const props = defineProps({
@@ -98,26 +98,26 @@ const showTopicModal = ref(false)
 const subjectQuery = ref('')
 const topicQuery = ref('')
 
-// Taxonomy composable
-const { grades: taxGrades, subjects: taxSubjects, topics: taxTopics, levels, fetchSubjectsByGrade, fetchTopicsBySubject, fetchGradesByLevel, addTopic, fetchLevels } = useTaxonomy()
+// Taxonomy store (new centralized store)
+const taxonomy = useTaxonomyStore()
 
 // Selected names for display
 const selectedGradeName = computed(() => {
   const id = selectedGrade.value
-  const g = (taxGrades.value || []).find(x => String(x.id) === String(id))
+  const g = (taxonomy.grades || []).value ? (taxonomy.grades.value || []).find(x => String(x.id) === String(id)) : null
   return g?.name || ''
 })
 
 // Selected names for display
 const selectedSubjectName = computed(() => {
   const id = selectedSubject.value
-  const s = (taxSubjects.value || []).find(x => String(x.id) === String(id))
+  const s = (taxonomy.subjects || []).value ? (taxonomy.subjects.value || []).find(x => String(x.id) === String(id)) : null
   return s?.name || ''
 })
 
 const selectedTopicName = computed(() => {
   const id = selectedTopic.value
-  const t = (taxTopics.value || []).find(x => String(x.id) === String(id))
+  const t = (taxonomy.topics || []).value ? (taxonomy.topics.value || []).find(x => String(x.id) === String(id)) : null
   return t?.name || ''
 })
 
@@ -147,7 +147,7 @@ watch(selectedGrade, (nv, ov) => {
   })
   // Fetch subjects for the selected grade
   if (nv) {
-    fetchSubjectsByGrade(nv)
+    taxonomy.fetchSubjectsByGrade(nv)
   }
 })
 
@@ -163,7 +163,7 @@ watch(selectedSubject, (nv, ov) => {
   })
   // Preload topics for the selected subject
   if (nv) {
-    fetchTopicsBySubject(nv)
+    taxonomy.fetchTopicsBySubject(nv)
   }
 })
 
@@ -178,10 +178,10 @@ watch(selectedLevel, async (nv, ov) => {
   topicQuery.value = ''
   // Fetch grades for the selected level
   if (nv) {
-    try { await fetchGradesByLevel(nv) } catch (e) {}
+    try { await taxonomy.fetchGradesByLevel(nv) } catch (e) {}
   } else {
     // If no level selected, fetch all grades
-    try { await fetchLevels() } catch (e) {}
+    try { await taxonomy.fetchLevels() } catch (e) {}
   }
 })
 
@@ -201,7 +201,7 @@ function onGradeSelected(item) {
 
 function onTopicCreated(created) {
   if (!created) { showTopicModal.value = false; return }
-  try { addTopic(created) } catch (e) {}
+  try { taxonomy.addTopic(created) } catch (e) {}
   try { selectedTopic.value = created.id ?? created.value ?? created } catch (e) {}
   showTopicModal.value = false
 }

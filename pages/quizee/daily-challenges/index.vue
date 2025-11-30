@@ -108,10 +108,11 @@
             <p class="text-sm text-gray-500 mb-4">
               <strong>Quick troubleshooting:</strong><br />
               <span v-if="!debugInfo.grade || !debugInfo.level" class="text-red-600">• ❌ Grade or Level missing - Update your profile</span>
-              <span v-else style="color: #891f21">• ✅ Grade and Level are set</span><br />
-              <span v-if="debugInfo.questionCount === 0" class="text-red-600">• ❌ No questions available for this grade/level</span>
+              <span v-else style="color: #891f21">• ✅ Grade {{ debugInfo.grade }} and Level {{ debugInfo.level }} are set</span><br />
+              <span v-if="debugInfo.questionCount === 0" class="text-red-600">• ❌ No questions available for Grade {{ debugInfo.grade }} / Level {{ debugInfo.level }}</span>
               <span v-else style="color: #891f21">• ✅ {{ debugInfo.questionCount }} questions loaded</span><br />
-              • Contact support if the issue persists
+              <span v-if="error && error.includes('Insufficient')" class="text-red-600">• The system needs at least 5 questions to create a daily challenge</span>
+              <br />• Contact support if the issue persists
             </p>
             <button 
               type="button" 
@@ -346,6 +347,7 @@ definePageMeta({ layout: 'quizee' })
 import PageHero from '~/components/ui/PageHero.vue'
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 import { useAuthStore } from '~/stores/auth'
 
 const api = useApi()
@@ -395,6 +397,34 @@ const fetchLeaderboard = async () => {
     leaderboard.value = data?.data || data || []
   } catch (e) {
     // ignore leaderboard errors
+  }
+}
+
+// Resolve numeric grade/level ids to human-friendly names using taxonomy store
+const taxonomy = useTaxonomy()
+async function resolveDebugNames() {
+  try {
+    const gradeId = debugInfo.value.grade
+    const levelId = debugInfo.value.level
+    const toFetch = []
+    // If the server returned numeric ids, ensure taxonomy data is loaded
+    if (gradeId && String(gradeId).match(/^\d+$/) && (!taxonomy.grades || taxonomy.grades.length === 0)) toFetch.push(taxonomy.fetchGrades())
+    if (levelId && String(levelId).match(/^\d+$/) && (!taxonomy.levels || taxonomy.levels.length === 0)) toFetch.push(taxonomy.fetchLevels())
+    if (toFetch.length) await Promise.all(toFetch)
+
+    // Try to map grade id -> name
+    if (gradeId) {
+      const g = (taxonomy.grades || []).find(x => String(x.id) === String(gradeId) || String(x.name) === String(gradeId))
+      if (g && g.name) debugInfo.value.grade = g.name
+    }
+
+    // Try to map level id -> name
+    if (levelId) {
+      const l = (taxonomy.levels || []).find(x => String(x.id) === String(levelId) || String(x.name) === String(levelId))
+      if (l && l.name) debugInfo.value.level = l.name
+    }
+  } catch (e) {
+    // ignore resolution errors; keep whatever debugInfo we have
   }
 }
 
@@ -477,15 +507,40 @@ const fetchDailyChallenge = async () => {
   try {
     const res = await api.get('/api/daily-challenges/today')
     if (api.handleAuthStatus(res)) return
-    if (!res.ok) {
-      throw new Error('Failed to fetch daily challenge')
+
+    // Parse body where possible so we can show useful debug info on error responses
+    let data = null
+    try {
+      data = await res.json()
+    } catch (e) {
+      data = null
     }
-    const data = await res.json()
-    // support multiple response shapes
+
+    if (!res.ok) {
+      const serverMessage = data?.error || data?.message || data?.data?.message || 'Failed to fetch daily challenge'
+
+      // Use any grade/level info the backend returned; fall back to user profile
+      debugInfo.value = {
+        grade: data?.challenge?.grade?.name || data?.grade_name || data?.grade || userProfileGrade.value || null,
+        level: data?.challenge?.level?.name || data?.level_name || data?.level || userProfileLevel.value || null,
+        questionCount: (data?.questions && Array.isArray(data.questions)) ? data.questions.length : (data?.question_count ?? 0),
+        cacheId: data?.cache_id || null
+      }
+
+      // Attempt to resolve numeric ids to names (e.g., backend may return ids)
+      try { await resolveDebugNames() } catch (e) { /* ignore */ }
+
+      error.value = serverMessage
+      challenge.value = null
+      completion.value = null
+      return
+    }
+
+    // Success path
     challenge.value = data?.challenge || data?.data?.challenge || data?.data || data || null
     completion.value = data?.completion || data?.data?.completion || null
-    
-    // Extract debug info for display - from API response first
+
+    // Extract debug info for display - prefer challenge object if present
     if (data?.challenge) {
       debugInfo.value = {
         grade: data.challenge.grade?.name || null,
@@ -493,13 +548,15 @@ const fetchDailyChallenge = async () => {
         questionCount: data.questions?.length || 0,
         cacheId: data.cache_id || null
       }
+      try { await resolveDebugNames() } catch (e) { /* ignore */ }
     }
+
     error.value = null
   } catch (err) {
     console.error('Failed to fetch daily challenge:', err)
     error.value = err?.data?.error || err?.data?.message || err?.message || 'Unable to load daily challenge'
     challenge.value = null
-    // Set debug info from user profile as fallback (always show user's actual profile data)
+    completion.value = null
     debugInfo.value = {
       grade: userProfileGrade.value || null,
       level: userProfileLevel.value || null,

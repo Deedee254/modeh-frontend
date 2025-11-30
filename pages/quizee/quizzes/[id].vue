@@ -1,5 +1,13 @@
 <template>
   <div class="bg-gray-50">
+    <!-- Sticky Share Button -->
+    <StickyShareButton
+      itemType="Quiz"
+      :itemId="quiz.id"
+      :itemTitle="`${quiz.title} - Take the challenge on Modeh!`"
+      :disabled="!quiz.id"
+    />
+
     <!-- Skeleton Loading State -->
     <div v-if="pending" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 animate-pulse">
       <!-- New Integrated Hero Section -->

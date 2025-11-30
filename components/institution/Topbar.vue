@@ -9,14 +9,10 @@
         <NuxtLink to="/" class="text-lg font-semibold">Modeh</NuxtLink>
         <!-- Institution selector: default to first institution when available. -->
         <div class="relative hidden sm:block">
-          <template v-if="isInstitutionManager && institutions && institutions.length > 0">
-            <select @change="onSelectInstitution" :value="_instSlug" class="text-sm text-slate-600 bg-transparent border border-transparent focus:border-brand-300 rounded px-2 py-1">
-              <option v-for="inst in institutions" :key="inst.slug || inst.id" :value="inst.slug || inst.id">{{ inst.name || inst.slug || inst.id }}</option>
-            </select>
-          </template>
-          <template v-else>
-            <span class="text-sm text-slate-500">{{ institutionName }}</span>
-          </template>
+          <select v-if="isInstitutionManager && institutions && institutions.length > 0" @change="onSelectInstitution" :value="_instSlug" class="text-sm text-slate-600 bg-transparent border border-transparent focus:border-brand-300 rounded px-2 py-1">
+            <option v-for="inst in institutions" :key="inst.slug || inst.id" :value="inst.slug || inst.id">{{ inst.name || inst.slug || inst.id }}</option>
+          </select>
+          <span v-else class="text-sm text-slate-500">{{ institutionName }}</span>
         </div>
       </div>
     </div>
@@ -28,17 +24,15 @@
           <img :src="userAvatar" :alt="auth.user?.name || 'User'" class="w-8 h-8 rounded-full object-cover" />
         </button>
 
-        <transition name="fade">
-          <div v-if="open" class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border rounded shadow-lg z-60 text-sm max-h-96 overflow-y-auto">
-            <NuxtLink :to="dashboardLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Dashboard</NuxtLink>
-            <NuxtLink :to="instManageLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Manage Institution</NuxtLink>
-            <NuxtLink :to="inviteLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Invite users</NuxtLink>
-            <NuxtLink :to="subscriptionsLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Subscriptions</NuxtLink>
-            <NuxtLink :to="settingsLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Settings</NuxtLink>
-            <div class="border-t mt-1"></div>
-            <button @click="logout" class="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Logout</button>
-          </div>
-        </transition>
+        <div v-if="open" class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border rounded shadow-lg z-60 text-sm max-h-96 overflow-y-auto animate-in fade-in duration-150">
+          <NuxtLink :to="dashboardLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Dashboard</NuxtLink>
+          <NuxtLink :to="instManageLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Manage Institution</NuxtLink>
+          <NuxtLink :to="inviteLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Invite users</NuxtLink>
+          <NuxtLink :to="subscriptionsLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Subscriptions</NuxtLink>
+          <NuxtLink :to="settingsLink" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Settings</NuxtLink>
+          <div class="border-t mt-1"></div>
+          <button @click="logout" class="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">Logout</button>
+        </div>
       </div>
 
       <slot name="actions" />

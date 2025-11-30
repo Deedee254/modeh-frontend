@@ -210,10 +210,49 @@
     :searchResults="searchResults"
     @close="closeNewChat"
     @start-dm="handleStartDM"
-    @start-support="handleStartSupport"
+    @open-dm-modal="handleOpenDMModal"
+    @start-support="openSupportModal"
     @add-user="addUserToInvite"
     @search="onUserSearch"
   />
+  <SupportChatModal
+    :is-open="showSupportChat"
+    @close="closeSupportModal"
+    @support-message-sent="handleSupportMessageSent"
+  />
+
+  <!-- Direct Message Modal -->
+  <ChatModal
+    :is-open="showDMModal"
+    :is-support="false"
+    :recipient-id="dmModalData.userId"
+    :recipient-name="dmModalData.userName"
+    :recipient-avatar="dmModalData.userAvatar"
+    :recipient-greeting="`Hi ${dmModalData.userName}! Let's chat about quizzes.`"
+    @close="closeDMModal"
+    @message-sent="handleDMMessageSent"
+  />
+
+  <!-- User not found message -->
+  <div v-if="dmModalData.notFound && !dmModalData.searching" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-sm">
+      <h3 class="text-lg font-semibold mb-2">User Not Found</h3>
+      <p class="text-muted-foreground mb-4">
+        No user found with email: <strong>{{ dmModalData.email }}</strong>
+      </p>
+      <p v-if="dmModalData.error" class="text-sm text-red-600 mb-4">
+        {{ dmModalData.error }}
+      </p>
+      <div class="flex justify-end gap-2">
+        <button 
+          @click="closeDMModal"
+          class="px-4 py-2 rounded-md border border-input text-foreground hover:bg-accent/5 transition-colors"
+        >
+          Back
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
@@ -222,6 +261,12 @@ import { type Ref } from 'vue';
 import useChat from '~/composables/useChat'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import NewChatModal from '~/components/chat/NewChatModal.vue'
+import SupportChatModal from '~/components/SupportChatModal.vue'
+import ChatModal from '~/components/ChatModal.vue'
+import { useRuntimeConfig } from '#app'
+
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase
 
 const {
   threads,
@@ -403,15 +448,120 @@ function triggerFileInput() { fileInput.value?.click() }
 function openNewChat() { showCreate.value = true }
 function closeNewChat() { showCreate.value = false }
 
-async function handleStartSupport() {
+const showSupportChat = ref(false)
+
+function openSupportModal() {
+  showSupportChat.value = true
+  closeNewChat()
+}
+
+function closeSupportModal() {
+  showSupportChat.value = false
+}
+
+function handleSupportMessageSent(data: any) {
+  // Support message was sent successfully
+  // Optionally refresh threads to show new support chat thread
   try {
-    // Set email to 'support' to trigger support chat in startDMByEmail
-    dmEmail.value = 'support'
-    await startDMByEmail()
-    closeNewChat()
+    loadThreads()
   } catch (e) {
-    console.error('Support chat error:', e)
-    closeNewChat()
+    console.error('Error refreshing threads:', e)
+  }
+}
+
+// Direct Message Modal State
+const showDMModal = ref(false)
+const dmModalData = ref({
+  email: '',
+  userId: null as any,
+  userName: '',
+  userAvatar: '',
+  userExists: false,
+  searching: false,
+  notFound: false,
+  error: ''
+})
+
+async function handleOpenDMModal(data: any) {
+  // Set initial data from NewChatModal
+  dmModalData.value = {
+    email: data.email,
+    userId: data.userId || null,
+    userName: data.userName || '',
+    userAvatar: data.userAvatar || '',
+    userExists: data.userExists || false,
+    searching: data.searching || false,
+    notFound: false,
+    error: ''
+  }
+
+  // If we need to search for user, do it now
+  if (data.searching) {
+    dmModalData.value.searching = true
+    try {
+      const response = await fetch(apiBase + '/api/users/find-by-email?email=' + encodeURIComponent(data.email), { 
+        credentials: 'include' 
+      })
+      
+      if (response.status === 404) {
+        dmModalData.value.notFound = true
+        dmModalData.value.error = 'User not found with this email'
+        dmModalData.value.userExists = false
+      } else if (response.ok) {
+        const json = await response.json()
+        const user = json.user
+        dmModalData.value.userId = user.id
+        dmModalData.value.userName = user.name
+        dmModalData.value.userAvatar = resolveAssetUrl(user.avatar_url) || user.avatar || '/logo/avatar-placeholder.png'
+        dmModalData.value.userExists = true
+        dmModalData.value.notFound = false
+        dmModalData.value.error = ''
+      } else {
+        dmModalData.value.error = 'Failed to look up user'
+        dmModalData.value.notFound = true
+      }
+    } catch (e) {
+      dmModalData.value.error = 'Network error while searching for user'
+      dmModalData.value.notFound = true
+      console.error('User search error:', e)
+    } finally {
+      dmModalData.value.searching = false
+    }
+  }
+
+  showDMModal.value = true
+}
+
+function closeDMModal() {
+  showDMModal.value = false
+  // Reset data
+  dmModalData.value = {
+    email: '',
+    userId: null,
+    userName: '',
+    userAvatar: '',
+    userExists: false,
+    searching: false,
+    notFound: false,
+    error: ''
+  }
+}
+
+function handleDMMessageSent(data: any) {
+  // Direct message was sent successfully
+  // Close modal and refresh threads
+  closeDMModal()
+  try {
+    loadThreads()
+    // Optionally select the conversation
+    if (data.recipient_id) {
+      selectConversation({ id: data.recipient_id, type: 'direct' })
+      if (isMobile.value) {
+        showChatWindowOnMobile.value = true
+      }
+    }
+  } catch (e) {
+    console.error('Error after sending DM:', e)
   }
 }
 

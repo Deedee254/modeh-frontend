@@ -57,7 +57,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
 // Heroicons outline
-import { HomeIcon, ClipboardDocumentListIcon, TrophyIcon, FlagIcon, StarIcon, CreditCardIcon, UserGroupIcon, CogIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon, CalendarDaysIcon, LinkIcon } from '@heroicons/vue/24/outline'
+import { HomeIcon, ClipboardDocumentListIcon, TrophyIcon, FlagIcon, StarIcon, CreditCardIcon, UserGroupIcon, CogIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon, CalendarDaysIcon, LinkIcon, BuildingLibraryIcon } from '@heroicons/vue/24/outline'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -92,6 +92,7 @@ const navItems = [
   { to: '/quizee/affiliate', label: 'Affiliate Program', icon: LinkIcon },
   { to: '/quizee/chat', label: 'Messages', icon: ChatBubbleLeftRightIcon },
   { to: '/quizee/quiz-masters', label: 'Quiz Masters', icon: UserGroupIcon },
+  { to: '/quizee/institutions', label: 'Institutions', icon: BuildingLibraryIcon },
   { to: '/quizee/settings', label: 'Settings', icon: CogIcon },
 ]
 

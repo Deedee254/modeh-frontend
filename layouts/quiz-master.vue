@@ -2,6 +2,7 @@
   <div>
     <!-- If authenticated show quiz-master sidebar/topbar layout, else show public header -->
     <template v-if="isAuthed">
+      <TopBar v-if="!route.meta.hideTopBar" />
       <div class="min-h-screen flex bg-gray-100">
         <!-- Sidebar wrapper -->
         <div :class="['transition-all duration-300', { 'hidden lg:block': !ui.sidebarOpen, 'fixed inset-y-0 left-0 z-40 lg:static': ui.sidebarOpen }]">
@@ -14,7 +15,6 @@
 
         <!-- Main content area -->
         <div class="flex-1 flex flex-col transition-all duration-300 lg:ml-0" :style="{ marginLeft: contentMargin }">
-          <TopBar v-if="!route.meta.hideTopBar" />
           <main class="flex-1 overflow-y-auto pb-20 md:pb-6 min-h-0">
             <slot></slot>
           </main>

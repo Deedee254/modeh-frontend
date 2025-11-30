@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-slate-900">
-    <div class="max-w-7xl mx-auto p-6">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <!-- Main column -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="lg:col-span-2 space-y-4 sm:space-y-6">
           <!-- Hero card -->
           <div class="rounded-lg bg-gradient-to-r from-brand-600 to-brand-950 text-white p-6 shadow-lg overflow-hidden">
             <div class="flex items-center gap-6">
@@ -26,7 +26,7 @@
           
           <!-- Metrics grid (client-only to avoid SSR/client hydration mismatches for auth-protected data) -->
           <ClientOnly>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
             <UiCard class="p-4 text-center">
               <div class="text-sm text-gray-500">Average Score</div>
               <div class="mt-2 text-2xl font-bold">{{ avgScore }}%</div>
@@ -85,7 +85,7 @@
               </div>
             </template>
 
-            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
               <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
               <div v-for="q in recQuizzes" :key="q.id" v-else class="p-4 border rounded-md bg-white/50 dark:bg-slate-800">
@@ -103,7 +103,7 @@
           </UiCard>
 
           <ClientOnly>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <UiCard>
               <template #header>
                 <div class="flex items-center justify-between">
@@ -141,7 +141,7 @@
         </div>
 
         <!-- Sidebar widgets -->
-        <aside class="space-y-4">
+        <aside class="space-y-4 sm:space-y-6">
           <UiCard>
             <template #header>
               <div class="flex items-center justify-between">

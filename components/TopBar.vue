@@ -1,7 +1,7 @@
 <template>
-  <div ref="topbarRef" class="bg-white border-b shadow-sm sticky top-0 z-40" :class="{ 'z-50': ui.mobileNavOpen || ui.sidebarOpen }">
-    <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-0 sm:gap-2">
-      <div class="flex items-center gap-1 sm:gap-2 w-full">
+  <header ref="topbarRef" class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center px-4 h-14 sticky top-0 z-40" :class="{ 'z-50': ui.mobileNavOpen || ui.sidebarOpen }">
+    <div class="flex items-center gap-2 w-full">
+  <div class="flex items-center gap-1 sm:gap-2 flex-1 overflow-hidden">
         <!-- Bars / hamburger: hidden on md+ (desktop). Visible only on small screens -->
         <button class="inline-flex p-1 rounded-md text-gray-500 hover:bg-gray-100 md:hidden" @click="onBarsClick" aria-label="Open menu">
           <Bars3Icon class="w-5 h-5" />
@@ -33,9 +33,9 @@
             <NuxtLink to="/quiz-master/analytics" class="text-sm text-gray-600 hover:text-gray-900 router-link-exact-active:text-brand-600 router-link-exact-active:font-semibold">Analytics</NuxtLink>
           </template>
         </nav>
-      </div>
+  </div>
 
-      <div class="flex items-center gap-4">
+  <div class="ml-auto flex items-center gap-4">
         <!-- Chat Button -->
         <button @click="openChatDrawer" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input text-primary bg-background hover:bg-accent hover:text-accent-foreground size-10 relative" aria-label="Chat">
           <ChatBubbleOvalLeftEllipsisIcon class="h-5 w-5" />
@@ -196,7 +196,7 @@
         <button @click="() => { showSearch = false }" class="mt-2 text-sm text-gray-500">Cancel</button>
       </div>
     </div>
-  </div>
+  </header>
 </template>
 
 <script setup>

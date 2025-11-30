@@ -2,18 +2,26 @@
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
     <Topbar @toggle-sidebar="ui.toggleSidebar()">
       <template #actions>
-        <ClientOnly>
-          <div class="flex items-center gap-3 hidden sm:flex">
-            <NuxtLink :to="{ path: '/institution-manager/settings', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="text-sm">Profile</NuxtLink>
-          </div>
-        </ClientOnly>
+        <div class="flex items-center gap-3 hidden sm:flex">
+          <NuxtLink :to="{ path: '/institution-manager/settings', query: { institutionSlug: instStore.activeInstitutionSlug } }" class="text-sm">Profile</NuxtLink>
+        </div>
       </template>
     </Topbar>
 
     <div class="flex">
-      <transition name="slide-fade">
-        <Sidebar v-if="(ui.sidebarOpen || !ui.sidebarCollapsed)" class="hidden md:block" />
-      </transition>
+      <!-- Desktop Sidebar (always visible) -->
+      <div class="hidden md:block">
+        <Sidebar />
+      </div>
+
+      <!-- Mobile Drawer Overlay (not in DOM tree during SSR, only on client) -->
+      <ClientOnly>
+        <div v-if="ui.sidebarOpen" class="md:hidden fixed inset-0 z-50 bg-black/50" @click="ui.sidebarOpen = false">
+          <div @click.stop class="w-64 h-full bg-white dark:bg-slate-800 overflow-y-auto">
+            <Sidebar />
+          </div>
+        </div>
+      </ClientOnly>
 
       <main class="flex-1 p-6">
         <NuxtPage />
@@ -75,27 +83,9 @@ watch(() => instStore.activeInstitutionSlug, (newSlug) => {
 </script>
 
 <style scoped>
-.slide-fade-enter-active {
-  transition: all .2s ease;
-}
-.slide-fade-leave-active {
-  transition: all .15s ease;
-}
-.slide-fade-enter-from {
-  transform: translateX(-8px);
-  opacity: 0;
-}
-.slide-fade-enter-to {
-  transform: translateX(0);
-  opacity: 1;
-}
-.slide-fade-leave-from {
-  transform: translateX(0);
-  opacity: 1;
-}
-.slide-fade-leave-to {
-  transform: translateX(-8px);
-  opacity: 0;
+/* Mobile drawer uses CSS transitions */
+.md\:hidden {
+  transition: all 0.2s ease;
 }
 </style>
 

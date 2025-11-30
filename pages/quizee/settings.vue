@@ -1,24 +1,31 @@
 <template>
-  <div class="py-12">
-    <Container>
-      <div class="max-w-3xl mx-auto">
-        <header class="mb-6">
-          <h1 class="text-3xl font-extrabold">Account settings</h1>
-          <p class="mt-1 text-sm text-slate-600">Manage profile details, security, payouts and notifications</p>
-        </header>
+  <div>
+    <PageHero
+      title="Account settings"
+      description="Manage profile details, security, payouts and notifications"
+      :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Settings', current: true }]"
+    >
+      <template #eyebrow>Your account</template>
+    </PageHero>
 
-        <div class="bg-white rounded-lg shadow-sm border p-6">
+    <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
           <SettingsTabs initial="profile" />
         </div>
       </div>
-    </Container>
+    </div>
   </div>
 </template>
 
 <script setup>
 import SettingsTabs from '~/components/SettingsTabs.vue'
-import Container from '~/components/ui/Container.vue'
+import PageHero from '~/components/ui/PageHero.vue'
 
 // Use the quizee layout for quizee settings
 definePageMeta({ layout: 'quizee', title: 'Account settings' })
+
+useHead({
+  title: 'Account settings'
+})
 </script>

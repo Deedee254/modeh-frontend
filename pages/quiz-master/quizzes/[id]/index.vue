@@ -1,6 +1,14 @@
 
 <template>
   <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Sticky Share Button -->
+    <StickyShareButton
+      itemType="Quiz"
+      :itemId="quiz.id"
+      :itemTitle="`${quiz.title} - Check it out on Modeh!`"
+      :disabled="!quiz.id"
+    />
+
     <div class="max-w-5xl mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-gray-800">{{ quiz.title || 'Quiz Details' }}</h1>

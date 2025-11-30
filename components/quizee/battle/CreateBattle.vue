@@ -1,11 +1,10 @@
 <template>
   <ClientOnly>
     <div class="p-2">
-    <BattleTaxonomySelectors
-      v-model:level="level"
-      v-model:grade="grade"
-      v-model:subject="subject"
-      v-model:topic="topic"
+    <TaxonomyFlowPicker
+      v-model="selection"
+      :includeTopics="true"
+      :multiSelectSubjects="false"
     />
 
     <!-- Error Alert -->
@@ -45,13 +44,109 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useBattleCreation } from '~/composables/useBattleCreation'
-import BattleTaxonomySelectors from '~/components/battle/BattleTaxonomySelectors.vue'
+import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 
 const emit = defineEmits(['battleCreated'])
 
 const { level, grade, subject, topic, difficulty, totalQuestions, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: '1v1' })
+// Selection object used by TaxonomyFlowPicker (objects with id/name)
+const selection = ref({ level: null, grade: null, subject: null, topic: null })
+
+// Sync selection -> primitive refs expected by useBattleCreation
+watch(selection, (nv) => {
+  try {
+    level.value = nv?.level?.id ?? ''
+    grade.value = nv?.grade?.id ?? ''
+    // subject can be array (multi) or single; pick first id when array
+    if (Array.isArray(nv?.subject)) subject.value = nv.subject[0]?.id ?? ''
+    else subject.value = nv?.subject?.id ?? ''
+    topic.value = nv?.topic?.id ?? ''
+  } catch (e) {}
+}, { deep: true })
+
+// Sync primitive refs -> selection so picker initializes correctly
+watch([level, grade, subject, topic], async () => {
+  // Only update selection shallowly to avoid breaking object refs
+  selection.value = {
+    level: selection.value.level,
+    grade: selection.value.grade,
+    subject: selection.value.subject,
+    topic: selection.value.topic
+  }
+}, { immediate: true })
+
+// Resolve primitive ids -> taxonomy objects so the FlowPicker shows current selection
+const store = useTaxonomyStore()
+async function initSelectionFromIds() {
+  try {
+    const sel = { level: null, grade: null, subject: null, topic: null }
+
+    // Try to resolve level -> grade -> subject -> topic cascade
+    if (level.value) {
+      await store.fetchLevels()
+      sel.level = (store.levels || []).find(l => String(l.id) === String(level.value)) || null
+      if (sel.level) {
+        await store.fetchGradesByLevel(sel.level.id)
+      } else {
+        await store.fetchGrades()
+      }
+      if (grade.value) {
+        sel.grade = (store.grades || []).find(g => String(g.id) === String(grade.value)) || null
+        if (sel.grade) await store.fetchSubjectsByGrade(sel.grade.id)
+      }
+      if (subject.value) {
+        sel.subject = (store.subjects || []).find(s => String(s.id) === String(subject.value)) || null
+        if (sel.subject) await store.fetchTopicsBySubject(sel.subject.id)
+      }
+      if (topic.value) {
+        sel.topic = (store.topics || []).find(t => String(t.id) === String(topic.value)) || null
+      }
+    } else if (grade.value) {
+      // No level but grade exists — fetch grades and try to infer level
+      await store.fetchGrades()
+      sel.grade = (store.grades || []).find(g => String(g.id) === String(grade.value)) || null
+      if (sel.grade && sel.grade.grade_id) {
+        // sometimes grade carries level info
+        await store.fetchLevels()
+        sel.level = (store.levels || []).find(l => String(l.id) === String(sel.grade.level_id || sel.grade.grade_id || '')) || null
+      }
+      if (sel.grade) await store.fetchSubjectsByGrade(sel.grade.id)
+      if (subject.value) sel.subject = (store.subjects || []).find(s => String(s.id) === String(subject.value)) || null
+      if (sel.subject) await store.fetchTopicsBySubject(sel.subject.id)
+      if (topic.value) sel.topic = (store.topics || []).find(t => String(t.id) === String(topic.value)) || null
+    } else if (subject.value) {
+      // Try to resolve subject and infer grade/level
+      await store.fetchAllSubjects()
+      sel.subject = (store.subjects || []).find(s => String(s.id) === String(subject.value)) || null
+      if (sel.subject && sel.subject.grade_id) {
+        await store.fetchGrades()
+        sel.grade = (store.grades || []).find(g => String(g.id) === String(sel.subject.grade_id)) || null
+        if (sel.grade && sel.grade.level_id) {
+          await store.fetchLevels()
+          sel.level = (store.levels || []).find(l => String(l.id) === String(sel.grade.level_id)) || null
+        }
+      }
+      if (topic.value) {
+        await store.fetchTopicsBySubject(sel.subject?.id)
+        sel.topic = (store.topics || []).find(t => String(t.id) === String(topic.value)) || null
+      }
+    }
+
+    // assign resolved objects to selection — this will flow down to primitive refs via the selection watcher
+    selection.value = sel
+  } catch (e) {
+    // ignore resolution errors
+    // console.warn('Failed to init taxonomy selection', e)
+  }
+}
+
+onMounted(() => {
+  // Initialize once on mount to hydrate picker when editing drafts
+  initSelectionFromIds()
+})
 const totalTimeMinutes = ref(null)
 const errorMessage = ref(null)
 

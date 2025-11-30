@@ -136,7 +136,7 @@
             <!-- Actions -->
             <div class="mt-6 md:mt-8 flex flex-col xs:flex-row gap-3">
               <button 
-                @click="messageQuizee"
+                @click="openChatModal"
                 class="flex-1 px-4 py-2.5 md:py-3 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition text-sm md:text-base"
               >
                 Message
@@ -160,14 +160,27 @@
         </div>
       </div>
     </div>
+
+    <!-- Chat Modal -->
+    <ChatModal
+      :is-open="chatModalOpen"
+      :recipient-id="quizee?.id"
+      :recipient-name="quizee?.name || 'User'"
+      :recipient-avatar="resolvedAvatar || '/logo/avatar-placeholder.png'"
+      :recipient-greeting="`Hi there! Feel free to send me a message about quizzes or anything else.`"
+      @close="chatModalOpen = false"
+      @message-sent="onMessageSent"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import { useQuizeeProfile } from '~/composables/useQuizeeProfile'
+import ChatModal from '~/components/ChatModal.vue'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 definePageMeta({
   layout: 'quiz-master',
@@ -182,6 +195,10 @@ const router = useRouter()
 
 // Extract the name from the route parameter
 const quizeeName = computed(() => decodeURIComponent(route.params.name as string))
+
+// Chat modal state
+const chatModalOpen = ref(false)
+const alert = useAppAlert()
 
 // Use the composable to manage quizee profile state
 const {
@@ -199,13 +216,21 @@ const resolvedAvatar = computed(() => {
   return resolveAssetUrl(avatarUrl) || (avatarUrl || null)
 })
 
-// Send message to quizee
-function messageQuizee() {
-  if (!quizee.value?.id) return
-  router.push({
-    path: '/quiz-master/chat',
-    query: { user: quizee.value.id }
+// Open chat modal
+function openChatModal() {
+  chatModalOpen.value = true
+}
+
+// Handle message sent
+function onMessageSent(messageData: any) {
+  alert.push({
+    type: 'success',
+    message: 'Message sent successfully!'
   })
+  // Optionally, emit event to update chat widget or other components
+  if ((window as any).__messageSent) {
+    (window as any).__messageSent(messageData)
+  }
 }
 
 // Set page meta with proper SEO

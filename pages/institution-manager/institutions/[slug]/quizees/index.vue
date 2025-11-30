@@ -2,6 +2,7 @@
 import { useRoute } from 'vue-router';
 definePageMeta({ layout: 'institution' as any })
 import { ref, watch } from 'vue';
+import { ClientOnly } from '#components'
 import { useApi } from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
@@ -131,7 +132,8 @@ watch(
         <p class="text-sm">No institution selected. Add ?institutionSlug=SLUG to the URL.</p>
       </div>
 
-      <div v-else>
+      <ClientOnly>
+      <div v-if="institutionId">
         <div class="mb-6">
           <h2 class="text-lg font-medium">Pending Requests</h2>
           <div class="mt-2">
@@ -202,6 +204,7 @@ watch(
           </div>
         </div>
       </div>
+      </ClientOnly>
     </div>
   </div>
 </template>

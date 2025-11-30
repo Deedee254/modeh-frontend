@@ -34,36 +34,37 @@
           <UFormGroup label="Phone" name="phone">
             <UInput v-model="form.phone" type="tel" placeholder="+254..." />
           </UFormGroup>
-          <UFormGroup label="Institution" name="institution">
-            <UInput v-model="form.institution" placeholder="e.g., University Name" />
-          </UFormGroup>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <UFormGroup label="Grade" name="grade_id">
-            <USelect
-              v-model="form.grade_id"
-              :options="[{ name: 'Select a grade', id: '' }, ...filteredGrades]"
-              option-attribute="name"
-              value-attribute="id"
-            />
-          </UFormGroup>
-          <UFormGroup label="Level" name="level_id">
-            <USelect
-              v-model="form.level_id"
-              :options="[{ name: 'Select a level', id: '' }, ...levels]"
-              option-attribute="name"
-              value-attribute="id"
-            />
-          </UFormGroup>
-        </div>
-
-        <!-- Subject Selection -->
-        <fieldset>
-          <legend class="block text-sm font-medium mb-2">Subjects</legend>
-          <div class="border rounded-lg p-2">
-            <MultiTaxonomyPicker resource="subjects" :grade-id="form.grade_id" v-model="form.subjects" compact />
+        <!-- Institution Selector -->
+        <fieldset class="border rounded-lg p-4 space-y-3">
+          <legend class="text-sm font-medium mb-2">Institution</legend>
+          <div v-if="user?.institution_verified" class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <VerifiedBadge :is-verified="true" :institution-name="form.institution || 'Institution'" size="sm" show-label />
+            <span class="text-sm text-green-700 dark:text-green-300">Verified with {{ form.institution }}</span>
           </div>
+          <div v-else-if="form.institution_id" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p class="text-sm text-blue-700 dark:text-blue-300">⏳ Awaiting approval from {{ form.institution }}</p>
+          </div>
+          <InstitutionPicker
+            v-model="form.institution_id"
+            :query="institutionQuery"
+            @update:query="institutionQuery = $event"
+            @selected="onInstitutionSelected"
+            title="Select or Create Institution"
+            subtitle="Search for existing institutions or add a new one"
+          />
+        </fieldset>
+
+        <!-- Taxonomy Selection -->
+        <fieldset class="border rounded-lg p-4 space-y-3">
+          <legend class="text-sm font-medium mb-2">Your Education Background</legend>
+          <TaxonomyFlowPicker
+            :modelValue="taxonomySelection"
+            :includeTopics="false"
+            :multiSelectSubjects="true"
+            @update:modelValue="updateTaxonomySelection"
+          />
         </fieldset>
 
         <!-- Bio -->
@@ -78,36 +79,37 @@
           <UFormGroup label="Phone" name="phone">
             <UInput v-model="form.phone" type="tel" placeholder="+254..." />
           </UFormGroup>
-          <UFormGroup label="Institution" name="institution">
-            <UInput v-model="form.institution" placeholder="e.g., University Name" />
-          </UFormGroup>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <UFormGroup label="Grade" name="grade_id">
-            <USelect
-              v-model="form.grade_id"
-              :options="[{ name: 'Select a grade', id: '' }, ...filteredGrades]"
-              option-attribute="name"
-              value-attribute="id"
-            />
-          </UFormGroup>
-          <UFormGroup label="Level" name="level_id">
-            <USelect
-              v-model="form.level_id"
-              :options="[{ name: 'Select a level', id: '' }, ...levels]"
-              option-attribute="name"
-              value-attribute="id"
-            />
-          </UFormGroup>
-        </div>
-
-        <!-- Subject Selection -->
-        <fieldset>
-          <legend class="block text-sm font-medium mb-2">Teaching Subjects</legend>
-          <div class="border rounded-lg p-2">
-            <MultiTaxonomyPicker resource="subjects" :grade-id="form.grade_id" v-model="form.subjects" compact />
+        <!-- Institution Selector -->
+        <fieldset class="border rounded-lg p-4 space-y-3">
+          <legend class="text-sm font-medium mb-2">Institution</legend>
+          <div v-if="user?.institution_verified" class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <VerifiedBadge :is-verified="true" :institution-name="form.institution || 'Institution'" size="sm" show-label />
+            <span class="text-sm text-green-700 dark:text-green-300">Verified with {{ form.institution }}</span>
           </div>
+          <div v-else-if="form.institution_id" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p class="text-sm text-blue-700 dark:text-blue-300">⏳ Awaiting approval from {{ form.institution }}</p>
+          </div>
+          <InstitutionPicker
+            v-model="form.institution_id"
+            :query="institutionQuery"
+            @update:query="institutionQuery = $event"
+            @selected="onInstitutionSelected"
+            title="Select or Create Institution"
+            subtitle="Search for existing institutions or add a new one"
+          />
+        </fieldset>
+
+        <!-- Taxonomy Selection -->
+        <fieldset class="border rounded-lg p-4 space-y-3">
+          <legend class="text-sm font-medium mb-2">Your Education & Teaching Areas</legend>
+          <TaxonomyFlowPicker
+            :modelValue="taxonomySelection"
+            :includeTopics="false"
+            :multiSelectSubjects="true"
+            @update:modelValue="updateTaxonomySelection"
+          />
         </fieldset>
 
         <UFormGroup label="Headline" name="headline">
@@ -134,25 +136,38 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useUserRole } from '~/composables/useUserRole'
+import { useApi } from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import { useProfileForm } from '~/composables/useProfileForm'
 import useTaxonomy from '~/composables/useTaxonomy'
-import MultiTaxonomyPicker from '~/components/taxonomy/MultiTaxonomyPicker.vue'
+import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
+import InstitutionPicker from '~/components/institution/InstitutionPicker.vue'
+import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
 
 const auth = useAuthStore()
 const { isQuizMaster, isInstitutionManager, preferredRole } = useUserRole()
 const { createFormState, onFile, saveProfile, avatarPreview, avatarFile } = useProfileForm()
+const api = useApi()
+const appAlert = useAppAlert()
 
 const avatarInput = ref(null)
 
 // Data lists
-const grades = ref([])
-const levels = ref([])
+const institutionQuery = ref('')
 const { fetchGrades, fetchLevels, fetchGradesByLevel, grades: taxGrades, levels: taxLevels } = useTaxonomy()
+
+// Taxonomy selection state
+const taxonomySelection = ref({
+  level: null,
+  grade: null,
+  subject: null,
+  topic: null
+})
 
 // Make user reactive and form depend on it
 const user = computed(() => auth.user)
@@ -171,79 +186,85 @@ watch(
   currentProfile,
   () => {
     form.value = createFormState(user.value)
+    // Also initialize taxonomy selection from loaded profile data
+    initializeTaxonomySelection()
   },
   { deep: true, immediate: true }
 )
 
-// Filtered grades based on selected level
-const filteredGrades = computed(() => {
-  if (!form.value.level_id) return grades.value
-  return grades.value.filter(g => String(g.level_id) === String(form.value.level_id))
-})
-
-// When level changes, fetch grades for that level and reset grade if it doesn't belong to the new level
-watch(
-  () => form.value.level_id,
-  async (newLevelId) => {
-    if (!newLevelId) {
-      // No level selected, fetch all grades
-      try {
-        await fetchGrades()
-        grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
-      } catch (err) {
-        console.error('Failed to fetch grades:', err)
-      }
-    } else {
-      // Fetch grades for the selected level
-      try {
-        if (typeof fetchGradesByLevel === 'function') {
-          await fetchGradesByLevel(newLevelId)
-        } else {
-          await fetchGrades()
-        }
-        grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
-      } catch (err) {
-        console.error('Failed to fetch grades for level:', err)
-      }
-    }
-    
-    // Reset grade if it doesn't belong to the new level
-    if (form.value.grade_id) {
-      const gradeExists = grades.value.some(g => String(g.id) === String(form.value.grade_id))
-      if (!gradeExists) {
-        form.value.grade_id = ''
-      }
-    }
-  }
-)
-
-// Avatar preview initialization and fetch grades/levels
+// Avatar preview initialization
 onMounted(async () => {
   avatarPreview.value = resolveAssetUrl(user?.avatar_url || user?.avatar) || null
-  
-  // Fetch grades and levels
-  try {
-    await Promise.all([fetchGrades(), fetchLevels()])
-    grades.value = Array.isArray(taxGrades.value) ? taxGrades.value : []
-    levels.value = Array.isArray(taxLevels.value) ? taxLevels.value : []
-    
-    // Force grade update to trigger MultiTaxonomyPicker's watcher
-    // This ensures subjects load with proper grade context after mounting
-    if (form.value.grade_id) {
-      const currentGradeId = form.value.grade_id
-      form.value.grade_id = ''
-      await nextTick()
-      form.value.grade_id = currentGradeId
-    }
-  } catch (err) {
-    console.error('Failed to fetch form data:', err)
-    grades.value = []
-    levels.value = []
-  }
 })
+
+function initializeTaxonomySelection() {
+  // Build taxonomy selection from form data (used when loading existing profile)
+  const profile = isQuizMaster.value ? user.value?.quizMasterProfile : user.value?.quizeeProfile
+  
+  if (!profile) return
+  
+  // Build level object if level_id exists
+  const level = profile.level_id ? (profile.level || { id: profile.level_id }) : null
+  
+  // Build grade object if grade_id exists
+  const grade = profile.grade_id ? (profile.grade || { id: profile.grade_id }) : null
+  
+  // Build subjects array if subjects exist
+  let subject = null
+  if (Array.isArray(profile.subjects) && profile.subjects.length > 0) {
+    // Convert subjects array to objects with id and name
+    subject = profile.subjects.map(s => {
+      if (typeof s === 'object' && s?.id) {
+        return { id: s.id, name: s.name || `Subject #${s.id}` }
+      }
+      return { id: s, name: `Subject #${s}` }
+    })
+  }
+  
+  taxonomySelection.value = {
+    level,
+    grade,
+    subject,
+    topic: null
+  }
+}
 
 function triggerAvatarUpload() {
   avatarInput.value?.click()
+}
+
+function onInstitutionSelected(institution) {
+  // Handle selected institution
+  if (institution.is_new) {
+    // Custom institution
+    form.value.institution = institution.name
+    form.value.institution_id = null
+  } else {
+    // Existing institution
+    form.value.institution = institution.name
+    form.value.institution_id = institution.id
+  }
+}
+
+function updateTaxonomySelection(selection) {
+  // Update the taxonomy selection state
+  taxonomySelection.value = selection
+  
+  // Extract IDs and update form
+  if (selection.level) {
+    form.value.level_id = selection.level.id
+  }
+  if (selection.grade) {
+    form.value.grade_id = selection.grade.id
+  }
+  if (selection.subject) {
+    // Handle both single subject and multiple subjects
+    if (Array.isArray(selection.subject)) {
+      form.value.subjects = selection.subject.map(s => s.id)
+    } else {
+      form.value.subjects = [selection.subject.id]
+    }
+  }
 }
 
 function reset() {
@@ -253,12 +274,44 @@ function reset() {
 }
 
 async function save() {
-  // Pass the preferred role so institution-managers won't trigger role-specific profile endpoints
-  // preferredRole is one of: 'institution-manager' | 'quiz-master' | 'quizee'
+  // First save the main profile
   const success = await saveProfile(form.value, preferredRole.value)
   if (success) {
+    // If institution was selected, submit through onboarding step
+    if (form.value.institution_id || form.value.institution) {
+      try {
+        const institutionPayload = form.value.institution_id
+          ? { institution_id: form.value.institution_id }
+          : { institution: form.value.institution, is_custom: true }
+
+        const resp = await api.postJson('/api/onboarding/step', {
+          step: 'institution',
+          data: institutionPayload
+        })
+
+        if (api.handleAuthStatus(resp)) return
+
+        const json = await api.parseResponse(resp)
+        if (resp.ok) {
+          appAlert.push({
+            message: form.value.institution_id
+              ? `Request sent to ${form.value.institution}! Awaiting manager approval for verification.`
+              : `Custom institution "${form.value.institution}" saved to your profile!`,
+            type: 'success'
+          })
+          await auth.fetchUser()
+        } else {
+          appAlert.push({
+            message: json?.message || 'Failed to set institution',
+            type: 'error'
+          })
+        }
+      } catch (e) {
+        console.error('Institution save error:', e)
+      }
+    }
+
     // Form will auto-update via the watcher when auth.user changes
-    // But ensure it updates immediately
     await nextTick()
     form.value = createFormState(user.value)
     

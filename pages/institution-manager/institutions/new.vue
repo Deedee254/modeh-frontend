@@ -89,7 +89,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 definePageMeta({ layout: 'institution' })
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'

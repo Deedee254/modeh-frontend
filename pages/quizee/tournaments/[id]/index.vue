@@ -1,5 +1,13 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 py-12">
+    <!-- Sticky Share Button -->
+    <StickyShareButton
+      itemType="Tournament"
+      :itemId="tournament?.id"
+      :itemTitle="`${tournament?.name} - Join the battle on Modeh!`"
+      :disabled="!tournament?.id"
+    />
+
     <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
       <div
         class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"

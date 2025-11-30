@@ -17,11 +17,10 @@
           <UInput v-model="battleName" placeholder="e.g., 'Friday Night Trivia'" />
         </div>
 
-        <BattleTaxonomySelectors
-          v-model:level="level"
-          v-model:grade="grade"
-          v-model:subject="subject"
-          v-model:topic="topic"
+        <TaxonomyFlowPicker
+          v-model="selection"
+          :includeTopics="true"
+          :multiSelectSubjects="false"
         />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -62,9 +61,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useBattleCreation } from '~/composables/useBattleCreation'
-import BattleTaxonomySelectors from '~/components/battle/BattleTaxonomySelectors.vue'
+import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 
 const emit = defineEmits(['battleCreated'])
 
@@ -82,6 +82,84 @@ const maxPlayerOptions = [
 ]
 
 const { level, grade, subject, topic, difficulty, totalQuestions, difficulties, questionCountOptions, starting, canStart, createBattle } = useBattleCreation({ battleType: 'group', battleName, maxPlayers })
+
+const selection = ref({ level: null, grade: null, subject: null, topic: null })
+
+watch(selection, (nv) => {
+  try {
+    level.value = nv?.level?.id ?? ''
+    grade.value = nv?.grade?.id ?? ''
+    if (Array.isArray(nv?.subject)) subject.value = nv.subject[0]?.id ?? ''
+    else subject.value = nv?.subject?.id ?? ''
+    topic.value = nv?.topic?.id ?? ''
+  } catch (e) {}
+}, { deep: true })
+
+watch([level, grade, subject, topic], async () => {
+  selection.value = {
+    level: selection.value.level,
+    grade: selection.value.grade,
+    subject: selection.value.subject,
+    topic: selection.value.topic
+  }
+}, { immediate: true })
+
+// Resolve primitive ids -> taxonomy objects so the FlowPicker shows current selection
+const store = useTaxonomyStore()
+async function initSelectionFromIds() {
+  try {
+    const sel = { level: null, grade: null, subject: null, topic: null }
+    if (level.value) {
+      await store.fetchLevels()
+      sel.level = (store.levels || []).find(l => String(l.id) === String(level.value)) || null
+      if (sel.level) {
+        await store.fetchGradesByLevel(sel.level.id)
+      } else {
+        await store.fetchGrades()
+      }
+      if (grade.value) {
+        sel.grade = (store.grades || []).find(g => String(g.id) === String(grade.value)) || null
+        if (sel.grade) await store.fetchSubjectsByGrade(sel.grade.id)
+      }
+      if (subject.value) {
+        sel.subject = (store.subjects || []).find(s => String(s.id) === String(subject.value)) || null
+        if (sel.subject) await store.fetchTopicsBySubject(sel.subject.id)
+      }
+      if (topic.value) {
+        sel.topic = (store.topics || []).find(t => String(t.id) === String(topic.value)) || null
+      }
+    } else if (grade.value) {
+      await store.fetchGrades()
+      sel.grade = (store.grades || []).find(g => String(g.id) === String(grade.value)) || null
+      if (sel.grade && sel.grade.grade_id) {
+        await store.fetchLevels()
+        sel.level = (store.levels || []).find(l => String(l.id) === String(sel.grade.level_id || sel.grade.grade_id || '')) || null
+      }
+      if (sel.grade) await store.fetchSubjectsByGrade(sel.grade.id)
+      if (subject.value) sel.subject = (store.subjects || []).find(s => String(s.id) === String(subject.value)) || null
+      if (sel.subject) await store.fetchTopicsBySubject(sel.subject.id)
+      if (topic.value) sel.topic = (store.topics || []).find(t => String(t.id) === String(topic.value)) || null
+    } else if (subject.value) {
+      await store.fetchAllSubjects()
+      sel.subject = (store.subjects || []).find(s => String(s.id) === String(subject.value)) || null
+      if (sel.subject && sel.subject.grade_id) {
+        await store.fetchGrades()
+        sel.grade = (store.grades || []).find(g => String(g.id) === String(sel.subject.grade_id)) || null
+        if (sel.grade && sel.grade.level_id) {
+          await store.fetchLevels()
+          sel.level = (store.levels || []).find(l => String(l.id) === String(sel.grade.level_id)) || null
+        }
+      }
+      if (topic.value) {
+        await store.fetchTopicsBySubject(sel.subject?.id)
+        sel.topic = (store.topics || []).find(t => String(t.id) === String(topic.value)) || null
+      }
+    }
+    selection.value = sel
+  } catch (e) {}
+}
+
+onMounted(() => initSelectionFromIds())
 
 async function startBattle() {
   const totalTimeSeconds = totalTimeMinutes && totalTimeMinutes.value ? Math.max(0, Math.floor(totalTimeMinutes.value * 60)) : null

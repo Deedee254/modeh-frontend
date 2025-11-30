@@ -9,7 +9,7 @@
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- Level Progress -->
-      <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border p-6 mb-8">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div class="flex items-center gap-4">
             <div 
@@ -41,18 +41,18 @@
       </div>
 
       <!-- Points Summary -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border text-center">
           <p class="text-sm text-gray-500">Total Points</p>
           <p class="text-4xl font-bold text-brand-600 mt-2">{{ userStats.total_points || 0 }}</p>
           <p class="text-xs text-gray-500 mt-2">Lifetime earnings</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
+        <div class="bg-white p-6 rounded-xl shadow-sm border text-center">
           <p class="text-sm text-gray-500">Current Rank</p>
           <p class="text-4xl font-bold text-gray-800 mt-2">#{{ userStats.rank || 'N/A' }}</p>
           <p class="text-xs text-gray-500 mt-2">Among all quizees</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-sm border text-center">
+        <div class="bg-white p-6 rounded-xl shadow-sm border text-center">
           <p class="text-sm text-gray-500">Achievements</p>
           <p class="text-4xl font-bold text-emerald-600 mt-2">
             {{ userStats.unlocked_achievements || 0 }}/{{ userStats.total_achievements || 0 }}
@@ -62,7 +62,7 @@
       </div>
 
       <!-- Achievements Section -->
-      <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border p-6 mb-8">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-gray-900">My Achievements</h2>
           <NuxtLink to="/quizee/badges" class="text-sm text-brand-600 hover:text-brand-700">View All Achievements →</NuxtLink>
@@ -81,9 +81,9 @@
           <!-- Recently Unlocked -->
           <div v-if="recentAchievements.length" class="mb-8">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Recently Unlocked 🎉</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div v-for="achievement in recentAchievements" :key="achievement.id" 
-                   class="bg-gradient-to-br from-brand-600/10 to-brand-950/10 rounded-lg p-4 flex items-center gap-4">
+                   class="bg-gradient-to-br from-brand-600/10 to-brand-950/10 rounded-xl p-4 flex items-center gap-4">
                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-600 to-brand-950 flex items-center justify-center text-xl text-white">
                   {{ achievement.icon }}
                 </div>
@@ -99,9 +99,9 @@
           <!-- Next Achievements -->
           <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Next Achievements to Unlock 🎯</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div v-for="achievement in nextAchievements" :key="achievement.id" 
-                   class="border rounded-lg p-4">
+                   class="border rounded-xl p-4">
                 <div class="flex items-center gap-4 mb-3">
                   <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl">
                     {{ achievement.icon }}
@@ -128,10 +128,10 @@
       </div>
 
       <!-- Redeem Points Section -->
-      <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border p-6 mb-8">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Redeem Points</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div v-for="reward in availableRewards" :key="reward.id" class="border rounded-lg p-4 flex flex-col items-center text-center">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div v-for="reward in availableRewards" :key="reward.id" class="border rounded-xl p-4 flex flex-col items-center text-center">
             <div class="text-4xl mb-2">{{ reward.icon }}</div>
             <h3 class="font-semibold text-lg">{{ reward.name }}</h3>
             <p class="text-sm text-gray-500 mb-3">{{ reward.description }}</p>
@@ -139,7 +139,7 @@
             <button 
               @click="redeem(reward)"
               :disabled="(userStats.total_points || 0) < reward.points"
-              class="w-full mt-auto px-4 py-2 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              class="w-full mt-auto px-4 py-2 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               Redeem
             </button>
@@ -148,10 +148,10 @@
       </div>
 
       <!-- Recent Activity -->
-      <div class="bg-white rounded-lg shadow-sm border p-6">
+      <div class="bg-white rounded-xl shadow-sm border p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
         <div v-if="loading" class="space-y-4">
-          <UiSkeleton v-for="i in 5" :key="i" class="h-12 rounded-lg" />
+          <UiSkeleton v-for="i in 5" :key="i" class="h-12 rounded-xl" />
         </div>
         <div v-else-if="!activity.length" class="text-center py-8 text-gray-500">
           <p>No recent activity to show.</p>

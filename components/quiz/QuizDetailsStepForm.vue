@@ -14,11 +14,11 @@
     <!-- Step Indicator -->
     <div class="flex items-center justify-between mb-6">
       <div class="text-sm font-medium text-gray-600">
-        Step <span class="text-brand-600 font-bold">{{ currentStep }}</span> of 4
+        Step <span class="text-brand-600 font-bold">{{ currentStep }}</span> of 3
       </div>
       <div class="flex gap-1.5">
         <button
-          v-for="step in 4"
+          v-for="step in 3"
           :key="step"
           @click="goToStep(step)"
           :class="[
@@ -62,45 +62,20 @@
       </div>
     </div>
 
-    <!-- Step 2: Level & Grade -->
+    <!-- Step 2: Taxonomy Selection -->
     <div v-if="currentStep === 2" class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-4 animate-fadeIn">
       <div>
-        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-1">Education Level & Grade</h3>
-        <p class="text-sm text-gray-500">Select the level and grade for your quiz</p>
+        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-1">Education Path & Topic</h3>
+        <p class="text-sm text-gray-500">Select level, grade, subject, and topic for your quiz</p>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label for="quiz-level" class="block text-sm font-medium text-gray-700 mb-2">Level</label>
-          <ClientOnly>
-            <template #placeholder>
-              <USelect :options="[]" placeholder="Loading…" disabled />
-            </template>
-            <USelect
-              v-model="selectedLevel"
-              id="quiz-level"
-              :options="levels.map(l => ({ label: l.name, value: l.id }))"
-              placeholder="Select Level"
-              size="lg"
-            />
-          </ClientOnly>
-        </div>
-        <div>
-          <label for="quiz-grade" class="block text-sm font-medium text-gray-700 mb-2">Grade / Course <span class="text-red-500">*</span></label>
-          <ClientOnly>
-            <TaxonomyPicker
-              resource="grades"
-              :level-id="selectedLevel || null"
-              :model-value="selectedGrade || null"
-              compact
-              title="Grades"
-              subtitle="Pick a grade or course"
-              @update:modelValue="onGradeModelUpdate"
-              @selected="onGradeSelected"
-            />
-          </ClientOnly>
-          <p v-if="displayGradeError" class="mt-1 text-sm text-red-600">{{ displayGradeError }}</p>
-        </div>
-      </div>
+      <ClientOnly>
+        <TaxonomyFlowPicker
+          :modelValue="taxonomySelection"
+          :includeTopics="true"
+          @update:modelValue="updateTaxonomySelection"
+          @submit="onTaxonomySubmit"
+        />
+      </ClientOnly>
       <div class="flex gap-2 justify-between pt-4">
         <UButton
           @click="prevStep"
@@ -112,7 +87,7 @@
         </UButton>
         <UButton
           @click="nextStep"
-          :disabled="!levelGradeComplete"
+          :disabled="!taxonomyComplete"
           icon="i-heroicons-arrow-right"
           size="md"
           class="!bg-brand-600 hover:!bg-brand-700 text-white"
@@ -122,96 +97,8 @@
       </div>
     </div>
 
-    <!-- Step 3: Subject & Topic -->
+    <!-- Step 3: Description & YouTube (Optional) -->
     <div v-if="currentStep === 3" class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-4 animate-fadeIn">
-      <div>
-        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-1">Subject & Topic</h3>
-        <p class="text-sm text-gray-500">Pick a subject and topic for your quiz</p>
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- Subject -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-          <ClientOnly>
-            <template #placeholder>
-              <div class="h-12 bg-gray-100 rounded animate-pulse"></div>
-            </template>
-            <TaxonomyPicker
-              ref="subjectsPicker"
-              resource="subjects"
-              :grade-id="selectedGrade || null"
-              :per-page="50"
-              :model-value="selectedSubjectObj || null"
-              title="Subjects"
-              subtitle="Pick a subject"
-              :disabled="!selectedGrade"
-              @selected="onSubjectPicked"
-              aria-labelledby="subject-label"
-              v-model:query="subjectQuery"
-            />
-            <p v-if="displaySubjectError" class="text-sm text-red-600">{{ displaySubjectError }}</p>
-          </ClientOnly>
-        </div>
-
-        <!-- Topic -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Topic</label>
-          <ClientOnly>
-            <template #placeholder>
-              <div class="h-12 bg-gray-100 rounded animate-pulse"></div>
-            </template>
-            <TaxonomyPicker
-              ref="topicsPicker"
-              resource="topics"
-              :subject-id="selectedSubject || null"
-              :per-page="50"
-              :model-value="selectedTopicObj || null"
-              title="Topics"
-              subtitle="Pick or create a topic"
-              :disabled="!selectedSubject"
-              aria-labelledby="topic-label"
-              aria-describedby="topic-error"
-              @selected="onTopicPicked"
-              v-model:query="topicQuery"
-            >
-              <template #actions>
-                <UButton
-                  size="xs"
-                  variant="soft"
-                  @click="openCreateTopic"
-                  :disabled="!selectedSubject"
-                  icon="i-heroicons-plus"
-                >New Topic</UButton>
-              </template>
-            </TaxonomyPicker>
-            <p v-if="displayTopicError" id="topic-error" class="text-sm text-red-600">{{ displayTopicError }}</p>
-          </ClientOnly>
-        </div>
-      </div>
-
-      <div class="flex gap-2 justify-between pt-4">
-        <UButton
-          @click="prevStep"
-          icon="i-heroicons-arrow-left"
-          size="md"
-          variant="ghost"
-        >
-          Back
-        </UButton>
-        <UButton
-          @click="nextStep"
-          :disabled="!subjectComplete || !topicComplete"
-          icon="i-heroicons-arrow-right"
-          size="md"
-          class="!bg-brand-600 hover:!bg-brand-700 text-white"
-        >
-          Next
-        </UButton>
-      </div>
-    </div>
-
-    <!-- Step 4: Description & YouTube (Optional) -->
-    <div v-if="currentStep === 4" class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-4 animate-fadeIn">
       <div>
         <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-1">Extra Information</h3>
         <p class="text-sm text-gray-500">Optional: Add description and media</p>
@@ -298,7 +185,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { resolveAssetUrl } from '~/composables/useAssets'
-import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
+import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 const props = defineProps({
@@ -567,6 +454,35 @@ function onSubjectPicked(item) {
 function onTopicPicked(item) {
   const tid = item?.id ? (Number(item.id) || null) : null
   emit('update:modelValue', { ...props.modelValue, topic_id: tid, topic: item })
+}
+
+// Taxonomy Flow Picker handlers
+const taxonomySelection = ref({
+  level: null,
+  grade: null,
+  subject: null,
+  topic: null
+})
+
+const taxonomyComplete = computed(() => !!(taxonomySelection.value.level && taxonomySelection.value.grade && taxonomySelection.value.subject && taxonomySelection.value.topic))
+
+const updateTaxonomySelection = (selection) => {
+  taxonomySelection.value = selection
+}
+
+const onTaxonomySubmit = (selection) => {
+  emit('update:modelValue', {
+    ...props.modelValue,
+    level_id: selection.level?.id,
+    grade_id: selection.grade?.id,
+    subject_id: selection.subject?.id,
+    topic_id: selection.topic?.id,
+    level_name: selection.level?.name,
+    grade_name: selection.grade?.name,
+    subject: selection.subject,
+    topic: selection.topic
+  })
+  nextStep()
 }
 
 watch(selectedLevel, async (nv, ov) => {

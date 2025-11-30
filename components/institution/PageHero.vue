@@ -73,7 +73,8 @@ const buttonVariantConfig = {
   }
 }
 
-const config = themeConfig[props.theme as keyof typeof themeConfig]
+// Ensure we always have a valid theme config (fallback to 'green' when unknown)
+const config = themeConfig[props.theme as keyof typeof themeConfig] ?? themeConfig.green
 </script>
 
 <template>

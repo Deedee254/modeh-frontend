@@ -1,11 +1,10 @@
 <template>
-  <ClientOnly>
-    <nav
-      v-show="isMobile && !ui.sidebarOpen"
-      class="fixed inset-x-0 bottom-0 z-50 safe-area-bottom"
-      role="navigation"
-      aria-label="Primary mobile navigation"
-    >
+  <nav
+    v-if="isMobile && !ui.sidebarOpen"
+    class="fixed inset-x-0 bottom-0 z-50 safe-area-bottom"
+    role="navigation"
+    aria-label="Primary mobile navigation"
+  >
       <!-- Overlay backdrop -->
       <Transition
         enter-active-class="transition duration-150"
@@ -93,7 +92,6 @@
       </div>
     </div>
     </nav>
-  </ClientOnly>
 </template>
 
 <script setup>

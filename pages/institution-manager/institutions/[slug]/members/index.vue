@@ -2,6 +2,7 @@
 import { useRoute } from 'vue-router'
 definePageMeta({ layout: 'institution' as any })
 import { ref, onMounted } from 'vue'
+import { ClientOnly } from '#components'
 import { useApi } from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
@@ -12,12 +13,15 @@ const route = useRoute()
 const api = useApi()
 const appAlert = useAppAlert()
 
-const institutionSlug = route.params.slug as string
+// Prefer route param slug (when using the nested route), fallback to query.institutionSlug
+const institutionSlug = (route.params.slug || route.query.institutionSlug) as string
 const members = ref([] as any[])
 const membersMeta = ref({ total: 0, per_page: 10, current_page: 1, last_page: 1 })
+const requests = ref([] as any[])
 const loading = ref(false)
 const error = ref(null as any)
 const selectedRole = ref('')
+const activeTab = ref('members') // 'members' or 'requests'
 
 // Invitation modal
 const showInviteModal = ref(false)
@@ -30,6 +34,11 @@ const inviting = ref(false)
 const showRemoveModal = ref(false)
 const memberToRemove = ref(null as any)
 const removing = ref(false)
+
+// Accept request modal
+const showAcceptModal = ref(false)
+const requestToAccept = ref(null as any)
+const accepting = ref(false)
 
 async function loadMembers(page = 1) {
   loading.value = true
@@ -49,6 +58,19 @@ async function loadMembers(page = 1) {
     error.value = e
   } finally {
     loading.value = false
+  }
+}
+
+async function loadRequests() {
+  try {
+    const resp = await api.get(`/api/institutions/${institutionSlug}/requests`)
+    if (api.handleAuthStatus(resp)) return
+    const json = await api.parseResponse(resp)
+    requests.value = json?.users || []
+    console.log('Requests loaded:', requests.value)
+  } catch (e: any) {
+    console.error('Error loading requests:', e)
+    appAlert.push({ message: 'Failed to load pending requests: ' + (e?.message ?? e), type: 'error' })
   }
 }
 
@@ -90,7 +112,7 @@ async function removeMember() {
 
   removing.value = true
   try {
-  const resp = await api.del(`/api/institutions/${institutionSlug}/members/${memberToRemove.value.id}`)
+    const resp = await api.del(`/api/institutions/${institutionSlug}/members/${memberToRemove.value.id}`)
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
     if (resp.ok) {
@@ -105,6 +127,39 @@ async function removeMember() {
     appAlert.push({ message: 'Failed to remove member: ' + (e?.message ?? e), type: 'error' })
   } finally {
     removing.value = false
+  }
+}
+
+function confirmAcceptRequest(request: any) {
+  requestToAccept.value = request
+  showAcceptModal.value = true
+}
+
+async function acceptRequest() {
+  if (!requestToAccept.value) return
+
+  accepting.value = true
+  try {
+    const resp = await api.postJson(`/api/institutions/${institutionSlug}/members/accept`, {
+      user_id: requestToAccept.value.id
+    })
+    if (api.handleAuthStatus(resp)) return
+    const json = await api.parseResponse(resp)
+    if (resp.ok) {
+      appAlert.push({ message: json?.message || 'Member request accepted successfully. Verified badge added to their profile.', type: 'success' })
+      showAcceptModal.value = false
+      requestToAccept.value = null
+      
+      // Refresh both requests and members lists sequentially
+      await loadRequests()
+      await loadMembers(1)
+    } else {
+      appAlert.push({ message: json?.message || 'Failed to accept request', type: 'error' })
+    }
+  } catch (e: any) {
+    appAlert.push({ message: 'Failed to accept request: ' + (e?.message ?? e), type: 'error' })
+  } finally {
+    accepting.value = false
   }
 }
 
@@ -135,6 +190,7 @@ function getRoleBadge(role: string) {
 
 onMounted(() => {
   loadMembers()
+  loadRequests()
 })
 </script>
 
@@ -156,6 +212,37 @@ onMounted(() => {
     />
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Tabs -->
+      <ClientOnly>
+      <div class="mb-6 border-b border-gray-200 dark:border-slate-700">
+        <div class="flex gap-4">
+          <button
+            @click="activeTab = 'members'"
+            :class="[
+              'px-4 py-3 border-b-2 font-medium text-sm transition-colors',
+              activeTab === 'members'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+          >
+            Members ({{ members.length }})
+          </button>
+          <button
+            @click="activeTab = 'requests'"
+            :class="[
+              'px-4 py-3 border-b-2 font-medium text-sm transition-colors',
+              activeTab === 'requests'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+          >
+            Pending Requests ({{ requests.length }})
+          </button>
+        </div>
+      </div>
+
+      <!-- Members Tab -->
+      <div v-if="activeTab === 'members'" class="space-y-6">
       <!-- Filters -->
       <div class="mb-6">
       <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -287,8 +374,69 @@ onMounted(() => {
         </div>
       </div>
     </div>
+      </div>
+
+      <!-- Requests Tab -->
+      <div v-if="activeTab === 'requests'" class="space-y-6">
+        <!-- Requests List -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div v-if="requests.length === 0" class="p-8 text-center text-gray-500">
+            No pending requests.
+          </div>
+
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="request in requests" :key="request.id" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div class="text-sm font-medium text-gray-900">{{ request.name }}</div>
+                      <div class="text-sm text-gray-500">{{ request.email }}</div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span :class="['inline-flex px-2 py-1 text-xs font-semibold rounded-full', getRoleBadge(request.requested_role || request.role)]">
+                      {{ titleCaseRole(request.requested_role || request.role || 'Member') }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex flex-col gap-1">
+                      <span class="text-sm text-gray-500">
+                        {{ new Date(request.created_at || request.requested_at).toLocaleDateString() }}
+                      </span>
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        ⏳ Awaiting Approval
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      @click="confirmAcceptRequest(request)"
+                      class="inline-flex items-center px-3 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors text-xs font-medium"
+                    >
+                      ✓ Accept
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      </ClientOnly>
+      </div>
+    </div>
 
     <!-- Invite Member Modal -->
+    <ClientOnly>
     <div v-if="showInviteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="showInviteModal = false">
       <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
         <div class="mt-3">
@@ -345,6 +493,38 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Accept Request Modal -->
+    <div v-if="showAcceptModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="showAcceptModal = false">
+      <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Accept Request</h3>
+          <p class="text-sm text-gray-600 mb-2">
+            Accept <strong>{{ requestToAccept?.name }}</strong> as a 
+            <strong>{{ titleCaseRole(requestToAccept?.requested_role || requestToAccept?.role || 'Member') }}</strong>?
+          </p>
+          <p class="text-xs text-gray-500 mb-4 bg-yellow-50 p-3 rounded border border-yellow-200">
+            💬 Current Status: <span class="font-semibold">Awaiting Approval</span> - Once accepted, a verified badge will be added to their profile.
+          </p>
+          <div class="flex flex-col sm:flex-row justify-end gap-3">
+            <button
+              @click="showAcceptModal = false"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 w-full sm:w-auto"
+            >
+              Cancel
+            </button>
+            <button
+              @click="acceptRequest"
+              :disabled="accepting"
+              class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50 w-full sm:w-auto"
+            >
+              <span v-if="accepting">Accepting...</span>
+              <span v-else>✓ Accept & Verify</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Remove Member Modal -->
     <div v-if="showRemoveModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="showRemoveModal = false">
       <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
@@ -372,9 +552,9 @@ onMounted(() => {
           </div>
         </div>
       </div>
-    </div>
-    </div>
   </div>
+    </ClientOnly>
+
 </template>
 
 <style scoped>

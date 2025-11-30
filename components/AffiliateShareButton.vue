@@ -256,6 +256,13 @@ watch(showShareModal, (val) => {
   if (val) fetchAffiliateIfMissing()
 })
 
+// Expose an imperative method for other components (e.g., StickyShareButton) to open the modal
+defineExpose({
+  openShareModal() {
+    showShareModal.value = true
+  }
+})
+
 // Copy to clipboard function
 const copyToClipboard = async (text) => {
   try {

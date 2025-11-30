@@ -151,7 +151,7 @@ const timerDashOffset = computed(() => {
   const remaining = Math.max(0, Math.ceil(questionRemaining.value || 20))
   const limit = timePerQuestion.value || 20
   const frac = limit ? (remaining / limit) : 0
-  return String(timerCircumference.value * (1 - Math.max(0, Math.min(1, frac))))
+  return timerCircumference.value * (1 - Math.max(0, Math.min(1, frac)))
 })
 
 // Persistent countdown alert state (shows real-time countdown instead of discrete alerts)

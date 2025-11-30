@@ -87,12 +87,14 @@ const props = defineProps({
   searchResults: { type: Array, default: () => [] } 
 })
 
-const emit = defineEmits(['close', 'start-dm', 'add-user', 'search', 'start-support'])
+const emit = defineEmits(['close', 'start-dm', 'add-user', 'search', 'start-support', 'open-dm-modal'])
 
 const localEmail = ref('')
 const userSearchLocal = ref('')
 const searchResultsLocal = ref(props.searchResults || [])
 const dmInput = ref(null)
+const searching = ref(false)
+const selectedUser = ref(null)
 
 watch(() => props.searchResults, (v) => { 
   searchResultsLocal.value = v || [] 
@@ -113,9 +115,43 @@ function onSearch() {
   emit('search', userSearchLocal.value) 
 }
 
-function start() { 
+async function start() { 
   if (!localEmail.value.trim()) return
-  emit('start-dm', localEmail.value.trim()) 
+  
+  // Try to find user by email
+  searching.value = true
+  try {
+    const emailToSearch = localEmail.value.trim()
+    // Use the search results if available, or fetch
+    let user = null
+    
+    if (searchResultsLocal.value.length > 0) {
+      user = searchResultsLocal.value.find(u => u.email === emailToSearch)
+    }
+    
+    if (!user) {
+      // Emit to parent to fetch user info
+      emit('open-dm-modal', {
+        email: emailToSearch,
+        searching: true
+      })
+    } else {
+      // User found, open modal with user info
+      emit('open-dm-modal', {
+        email: emailToSearch,
+        userId: user.id,
+        userName: user.name,
+        userAvatar: user.avatar,
+        userExists: true
+      })
+    }
+    
+    emit('close')
+  } catch (e) {
+    console.error('Error in start:', e)
+  } finally {
+    searching.value = false
+  }
 }
 
 function startSupport() {
@@ -125,7 +161,10 @@ function startSupport() {
 
 function selectUser(user) {
   localEmail.value = user.email
+  selectedUser.value = user
   searchResultsLocal.value = []
+  // Auto-trigger start with selected user
+  start()
 }
 </script>
 

@@ -90,41 +90,15 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Education Level <span class="text-red-600">*</span></label>
-                <TaxonomyPicker
-                  resource="levels"
-                  v-model="form.level_id"
-                  title="Level"
-                  subtitle="Select education level"
-                  compact
+                <label class="block text-sm font-medium text-gray-700 mb-2">Education Journey <span class="text-red-600">*</span></label>
+                <TaxonomyFlowPicker
+                  v-model="taxonomySelection"
+                  :includeTopics="false"
+                  :multiSelectSubjects="true"
+                  @submit="onTaxonomyComplete"
                 />
                 <p v-if="fieldErrors.level_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.level_id }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Class / Grade <span class="text-red-600">*</span></label>
-                <TaxonomyPicker
-                  resource="grades"
-                  :level-id="form.level_id"
-                  v-model="form.grade_id"
-                  title="Grade / Course"
-                  subtitle="Select class, course or grade"
-                  compact
-                />
                 <p v-if="fieldErrors.grade_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.grade_id }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Subjects <span class="text-red-600">*</span></label>
-                <MultiTaxonomyPicker
-                  resource="subjects"
-                  :grade-id="form.grade_id"
-                  compact
-                  v-model="form.subjects"
-                  title="Subjects"
-                  subtitle="Pick subjects"
-                />
-                <p class="mt-1 text-xs text-gray-500">Select at least one subject relevant to your grade/course.</p>
                 <p v-if="fieldErrors.subjects" class="mt-1 text-sm text-red-600">{{ fieldErrors.subjects }}</p>
               </div>
 
@@ -168,40 +142,14 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Education Level <span class="text-red-600">*</span></label>
-                <TaxonomyPicker
-                  resource="levels"
-                  v-model="form.level_id"
-                  title="Level"
-                  subtitle="Select education level"
-                  compact
+                <label class="block text-sm font-medium text-gray-700 mb-2">Education Journey <span class="text-red-600">*</span></label>
+                <TaxonomyFlowPicker
+                  v-model="taxonomySelection"
+                  :includeTopics="false"
+                  :multiSelectSubjects="true"
+                  @submit="onTaxonomyComplete"
                 />
                 <p v-if="fieldErrors.level_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.level_id }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Class / Grade (Optional)</label>
-                <TaxonomyPicker
-                  resource="grades"
-                  :level-id="form.level_id"
-                  v-model="form.grade_id"
-                  title="Grade / Course"
-                  subtitle="Select class, course or grade"
-                  compact
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Subject Specializations <span class="text-red-600">*</span></label>
-                <MultiTaxonomyPicker
-                  resource="subjects"
-                  :grade-id="form.grade_id"
-                  compact
-                  v-model="form.subjects"
-                  title="Subjects"
-                  subtitle="Pick subjects"
-                />
-                <p class="mt-1 text-xs text-gray-500">Select at least one subject you teach or specialize in.</p>
                 <p v-if="fieldErrors.subjects" class="mt-1 text-sm text-red-600">{{ fieldErrors.subjects }}</p>
               </div>
 
@@ -370,8 +318,7 @@ import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '../stores/auth'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
-import MultiTaxonomyPicker from '~/components/taxonomy/MultiTaxonomyPicker.vue'
-import TaxonomyPicker from '~/components/taxonomy/TaxonomyPicker.vue'
+import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
 
 
 const router = useRouter()
@@ -421,6 +368,30 @@ const form = reactive({
   password: '',
   confirmPassword: ''
 })
+
+// Taxonomy selection state
+const taxonomySelection = ref({
+  level: null,
+  grade: null,
+  subject: null,
+  topic: null
+})
+
+const onTaxonomyComplete = (selection) => {
+  form.level_id = selection.level?.id
+  form.grade_id = selection.grade?.id
+  
+  // Handle both single subject and multiple subjects
+  if (selection.subject) {
+    if (Array.isArray(selection.subject)) {
+      form.subjects = selection.subject.map(s => s.id)
+    } else {
+      form.subjects = [selection.subject.id]
+    }
+  } else {
+    form.subjects = []
+  }
+}
 
 // field-level errors from server-side validation
 const fieldErrors = reactive({

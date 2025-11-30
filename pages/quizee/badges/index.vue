@@ -9,10 +9,10 @@
       <template #eyebrow>Achievements & Badges</template>
     </PageHero>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
      <!-- Stats Overview -->
-     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
        <StatCard
          label="Badges Earned"
          :value="`${unlockedCount} / ${totalBadges}`"
@@ -77,9 +77,9 @@
 
         <!-- Badges Grid -->
         <div v-for="category in categories" :key="category" v-show="activeTab === category">
-           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                <div v-for="badge in groupedBadges[category]" :key="badge.id"
-                    class="group bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-200">
+                    class="group bg-white/70 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 p-6 hover:shadow-xl transition-all duration-200">
                    <div class="flex items-start gap-4">
                      <!-- Badge Icon -->
                      <div :class="[
