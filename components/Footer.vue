@@ -4,7 +4,6 @@
       <div>
         <div class="flex items-center gap-3">
           <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8" />
-          <div class="text-2xl font-extrabold text-brand-600">Modeh</div>
         </div>
         <div class="mt-3 text-sm text-brand-600/80">Create and take beautiful quizzes — for quiz-mastering, classrooms and practice. Fast to build, fun to take.</div>
         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">

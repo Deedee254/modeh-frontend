@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col bg-gray-50" style="min-height: calc(100vh - 6rem); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem)">
+  <div class="flex flex-col bg-gray-50 overflow-hidden" style="height: 100vh; padding-bottom: 0px">
     <!-- Header: Title, Progress, Timer -->
     <header class="sticky top-0 z-30 bg-white border-b border-gray-200 flex-shrink-0">
       <div class="max-w-4xl mx-auto px-4 py-4 sm:px-6">
@@ -50,7 +50,7 @@
     </transition>
 
     <!-- Main Content: Question Area -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full">
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full overflow-auto">
       <slot name="content" />
     </main>
 

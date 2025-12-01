@@ -37,7 +37,11 @@
 
   <div class="ml-auto flex items-center gap-4">
         <!-- Chat Button -->
-        <button @click="openChatDrawer" class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input text-primary bg-background hover:bg-accent hover:text-accent-foreground size-10 relative" aria-label="Chat">
+        <!-- Hide on mobile for quizee and quiz-master areas per request -->
+        <button @click="openChatDrawer" :class="[
+          'inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input text-primary bg-background hover:bg-accent hover:text-accent-foreground size-10 relative',
+          { 'max-sm:hidden': (isquizee || route.path.startsWith('/quiz-master')) }
+        ]" aria-label="Chat">
           <ChatBubbleOvalLeftEllipsisIcon class="h-5 w-5" />
           <span v-if="unreadChatCount > 0" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
             {{ unreadChatCount }}
