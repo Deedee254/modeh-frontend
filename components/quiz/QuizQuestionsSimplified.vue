@@ -101,6 +101,7 @@
 
               <!-- Actions -->
               <div class="flex items-center justify-end gap-1 p-3 sm:p-4 bg-gray-50 border-t border-gray-100">
+                <UButton size="xs" variant="ghost" icon="i-heroicons-pencil" @click="editQuestion(idx)" />
                 <UButton size="xs" variant="ghost" icon="i-heroicons-document-duplicate" @click="duplicateQuestion(idx)" />
                 <UButton size="xs" variant="ghost" color="red" icon="i-heroicons-trash" @click="removeQuestion(idx)" />
               </div>
@@ -149,6 +150,7 @@
       :topic-id="topicId"
       :grade-id="gradeId"
       :level-id="levelId"
+      :initial-question="editingQuestion"
       @saved="onQuestionSaved"
     />
 
@@ -197,6 +199,7 @@ const store = useCreateQuizStore()
 const questions = computed(() => store.questions)
 const showQuestionModal = ref(false)
 const showImportModal = ref(false)
+const editingQuestion = ref<any>(null)
 
 const typeLabels = {
   mcq: 'Multiple Choice',
@@ -247,8 +250,36 @@ function duplicateQuestion(idx) {
 }
 
 function onQuestionSaved(question) {
-  store.addQuestion(question)
+  // If the saved question corresponds to an existing question in the store, update it.
+  const uid = question?.uid
+  const id = question?.id
+  const existingIdx = store.questions.findIndex(q => (q.uid && uid && q.uid === uid) || (q.id && id && q.id === id))
+
+  if (existingIdx !== -1) {
+    // Update local copy first for immediate feedback
+    try {
+      store.questions.splice(existingIdx, 1, question)
+    } catch (e) {}
+
+    // If the question has a server id, persist as partial update; otherwise it's a local-only edit
+    if (question && question.id) {
+      store.saveQuestion(question)
+    }
+  } else {
+    store.addQuestion(question)
+  }
+
+  // Clear editing state and close modal
+  editingQuestion.value = null
   showQuestionModal.value = false
+}
+
+function editQuestion(idx) {
+  const q = questions.value[idx]
+  if (!q) return
+  // Open modal prefilled with the selected question
+  editingQuestion.value = JSON.parse(JSON.stringify(q))
+  showQuestionModal.value = true
 }
 
 function handlePublish() {

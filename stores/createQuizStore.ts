@@ -388,9 +388,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   }
 
   // restore any saved draft on initialization
-  if (typeof window !== 'undefined') {
-    try { restoreProgress() } catch (e) { /* ignore */ }
-  }
+  // NOTE: defer calling restoreProgress until the helper and progressKey
+  // are defined further below to avoid referencing uninitialized bindings.
 
   // Helper: find File objects nested anywhere inside an object
   function findFilesInObject(obj: any, prefix = ''): Array<{ key: string; file: File }> {
@@ -769,16 +768,33 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       try { console.debug('saveQuestion:start', { quizId: quizId.value, uid: question?.uid || question?.id, type: question?.type }) } catch (e) {}
       
       const sanitizedQuestion = sanitizeQuestionForPayload(question)
-      try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, sanitizedQuestion) } catch (e) {}
-      
+      try { console.debug('saveQuestion: payload', { quizId: quizId.value, sanitizedQuestion }) } catch (e) {}
+
       let res: Response
       const hasFile = questionContainsFile(question)
-      
-      if (hasFile) {
-        const form = buildQuestionFormData(sanitizedQuestion, question)
-        res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
+
+      // If the question has an existing server id, perform a per-question PATCH (partial update).
+      // This keeps payloads small and uses the server's single-question update endpoint.
+      if (question && question.id) {
+        // Update existing question
+        try { console.debug(`PATCH /api/questions/${question.id}`, sanitizedQuestion) } catch (e) {}
+        if (hasFile) {
+          const form = buildQuestionFormData(sanitizedQuestion, question)
+          // multipart doesn't support PATCH verb reliably; emulate with _method
+          form.append('_method', 'PATCH')
+          res = await api.postFormData(`/api/questions/${question.id}`, form)
+        } else {
+          res = await api.patchJson(`/api/questions/${question.id}`, sanitizedQuestion)
+        }
       } else {
-        res = await api.postJson(`/api/quizzes/${quizId.value}/questions`, sanitizedQuestion)
+        // Create new question under the quiz (existing behavior)
+        try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, sanitizedQuestion) } catch (e) {}
+        if (hasFile) {
+          const form = buildQuestionFormData(sanitizedQuestion, question)
+          res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
+        } else {
+          res = await api.postJson(`/api/quizzes/${quizId.value}/questions`, sanitizedQuestion)
+        }
       }
       
       if (api.handleAuthStatus(res)) return
@@ -787,15 +803,15 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const data = await res.json().catch(() => null)
       try { console.debug('saveQuestion:response', { status: res.status, body: data }) } catch (e) {}
       
-      const idx = questions.value.findIndex(q => q.uid === question.uid || q.id === question.id)
-      if (idx !== -1 && data?.question) {
-        // Normalize server response into editor shape to keep UI consistent
-        const norm = normalizeQuestionForEditor(data.question)
-        // preserve local uid if present so optimistic UI mapping remains stable
+      const idx = questions.value.findIndex(q => q.uid === question.uid || (q.id && question.id && q.id === question.id))
+      // prefer server-returned question payload when available
+      const returned = data?.question || data?.data || data
+      if (idx !== -1 && returned) {
+        const norm = normalizeQuestionForEditor(returned)
         if (question.uid) norm.uid = question.uid
         questions.value.splice(idx, 1, norm)
-      } else if (data?.question) {
-        const norm = normalizeQuestionForEditor(data.question)
+      } else if (returned) {
+        const norm = normalizeQuestionForEditor(returned)
         questions.value.push(norm)
       }
       questionsSaved.value = true
@@ -972,6 +988,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     } catch (e) {
       // ignore parse errors
     }
+  }
+
+  // Restore any saved draft on initialization (client-side only).
+  // We defer this call until progressKey and restoreProgress are defined.
+  if (typeof window !== 'undefined') {
+    try { restoreProgress() } catch (e) { /* ignore */ }
   }
 
   // Persist progress to localStorage with a debounce to avoid excessive writes.

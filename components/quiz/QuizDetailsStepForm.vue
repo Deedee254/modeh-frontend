@@ -299,7 +299,7 @@ const selectedTopicObj = computed(() => {
 })
 
 // Methods
-const { fetchSubjectsByGrade, fetchTopicsBySubject, fetchGradesByLevel } = useTaxonomy()
+const { fetchSubjectsByGrade, fetchTopicsBySubject, fetchGradesByLevel, loadingLevels, loadingGrades, loadingSubjects, loadingTopics } = useTaxonomy()
 
 function sameId(a, b) {
   const left = a === null || typeof a === 'undefined' ? '' : String(a)
@@ -466,6 +466,10 @@ const taxonomySelection = ref({
 
 const taxonomyComplete = computed(() => !!(taxonomySelection.value.level && taxonomySelection.value.grade && taxonomySelection.value.subject && taxonomySelection.value.topic))
 
+const isPreloading = computed(() => {
+  return Boolean(loadingLevels.value || loadingGrades.value || loadingSubjects.value || loadingTopics.value)
+})
+
 const updateTaxonomySelection = (selection) => {
   taxonomySelection.value = selection
 }
@@ -514,6 +518,43 @@ watch(() => props.modelValue, (nv) => {
   selectedSubject.value = nv.subject_id ?? ''
   selectedTopic.value = nv.topic_id ?? ''
 }, { deep: true })
+
+// Keep the TaxonomyFlowPicker selection in sync with the incoming modelValue
+watch(async () => props.modelValue, async (nv) => {
+  if (!nv) return
+  const levelId = nv.level_id ?? nv.level?.id ?? null
+  const gradeId = nv.grade_id ?? nv.grade?.id ?? null
+  const subjectId = nv.subject_id ?? nv.subject?.id ?? null
+  const topicId = nv.topic_id ?? nv.topic?.id ?? null
+
+  // Ensure grade/subject/topic option lists contain the selected items
+  try {
+    if (levelId) {
+      // fetch grades for this level to populate the grades list if needed
+      try { await fetchGradesByLevel(levelId) } catch (e) {}
+    }
+    if (gradeId) {
+      try { await fetchSubjectsByGrade(gradeId, levelId) } catch (e) {}
+    }
+    if (subjectId) {
+      try { await fetchTopicsBySubject(subjectId) } catch (e) {}
+    }
+  } catch (e) {}
+
+  // Resolve the actual objects from passed lists or fallback to model properties
+  const levelObj = (props.levels || []).find(l => String(l.id) === String(levelId)) || nv.level || (levelId ? { id: levelId } : null)
+  const gradeObj = (props.grades || []).find(g => String(g.id) === String(gradeId)) || nv.grade || (gradeId ? { id: gradeId } : null)
+  const subjectObj = (props.subjects || []).find(s => String(s.id) === String(subjectId)) || nv.subject || (subjectId ? { id: subjectId } : null)
+  const topicObj = (props.topics || []).find(t => String(t.id) === String(topicId)) || nv.topic || (topicId ? { id: topicId } : null)
+
+  taxonomySelection.value = {
+    level: levelObj,
+    grade: gradeObj,
+    subject: subjectObj,
+    topic: topicObj
+  }
+
+}, { deep: true, immediate: true })
 </script>
 
 <style scoped>

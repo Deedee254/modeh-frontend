@@ -373,7 +373,7 @@ const userProfileGrade = computed(() => {
   return auth.user?.quizeeProfile?.grade?.name || auth.user?.grade?.name || null
 })
 
-const userProfileLevel = computed(() => {
+const userLevel = computed(() => {
   return auth.user?.quizeeProfile?.level?.name || auth.user?.level?.name || null
 })
 
@@ -522,7 +522,7 @@ const fetchDailyChallenge = async () => {
       // Use any grade/level info the backend returned; fall back to user profile
       debugInfo.value = {
         grade: data?.challenge?.grade?.name || data?.grade_name || data?.grade || userProfileGrade.value || null,
-        level: data?.challenge?.level?.name || data?.level_name || data?.level || userProfileLevel.value || null,
+        level: data?.challenge?.level?.name || data?.level_name || data?.level || userLevel.value || null,
         questionCount: (data?.questions && Array.isArray(data.questions)) ? data.questions.length : (data?.question_count ?? 0),
         cacheId: data?.cache_id || null
       }
@@ -559,7 +559,7 @@ const fetchDailyChallenge = async () => {
     completion.value = null
     debugInfo.value = {
       grade: userProfileGrade.value || null,
-      level: userProfileLevel.value || null,
+      level: userLevel.value || null,
       questionCount: 0,
       cacheId: null
     }

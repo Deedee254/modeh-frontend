@@ -75,14 +75,32 @@
         </div>
       </div>
 
-      <!-- CTA Button -->
-      <NuxtLink 
-        :to="to || (quizId ? `/quiz-master/quizzes/${quizId}` : '#')" 
-        class="mt-auto pt-4 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white transition active:scale-95"
-        :style="{ backgroundColor: '#891f21' }"
-      >
-        Start Quiz
-      </NuxtLink>
+      <!-- CTA Buttons: show admin links (Details / Analytics) when editing/showEdit is enabled -->
+      <div class="mt-auto pt-4">
+        <div v-if="showEdit && quizId" class="flex gap-3">
+          <NuxtLink
+            :to="to || (quizId ? `/quiz-master/quizzes/${quizId}` : '#')"
+            class="flex-1 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 border border-slate-200 bg-white hover:shadow-sm"
+          >
+            Details
+          </NuxtLink>
+          <NuxtLink
+            :to="(quizId ? `/quiz-master/quizzes/${quizId}/analytics` : '#')"
+            class="flex-1 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white"
+            :style="{ backgroundColor: '#891f21' }"
+          >
+            Analytics
+          </NuxtLink>
+        </div>
+        <NuxtLink
+          v-else
+          :to="to || (quizId ? `/quiz-master/quizzes/${quizId}` : '#')"
+          class="mt-2 block w-full text-center inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white transition active:scale-95"
+          :style="{ backgroundColor: '#891f21' }"
+        >
+          Start Quiz
+        </NuxtLink>
+      </div>
     </div>
   </div>
 </template>

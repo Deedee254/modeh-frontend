@@ -31,12 +31,13 @@ export function useProfileForm() {
       display_name: u?.name || '',
       phone: u?.phone || '',
       institution: profile?.institution || '',
+      institution_id: profile?.institution_id || '',
       grade_id: profile?.grade_id || profile?.grade?.id || '',
       level_id: profile?.level_id || profile?.level?.id || '',
       subjects: Array.isArray(profile?.subjects)
         ? profile.subjects.filter(Boolean)
         : [],
-      bio: profile?.bio || ''
+      bio: u?.bio || ''
     }
 
     // Quizee-specific fields
@@ -139,6 +140,9 @@ export function useProfileForm() {
       
       if (form.institution !== originalForm.institution) {
         profileData.institution = form.institution || null
+      }
+      if (form.institution_id !== originalForm.institution_id) {
+        profileData.institution_id = form.institution_id || null
       }
       if (form.grade_id !== originalForm.grade_id) {
         profileData.grade_id = form.grade_id || null

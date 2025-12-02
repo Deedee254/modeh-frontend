@@ -63,6 +63,30 @@
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <!-- Sort Bar (button group) -->
+      <div class="mb-8 flex items-center gap-3">
+        <div class="text-sm text-gray-600">Sort:</div>
+        <div class="flex items-center gap-2">
+          <button
+            :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'newest' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+            @click="sortOption = 'newest'"
+          >
+            Newest
+          </button>
+          <button
+            :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'name' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+            @click="sortOption = 'name'"
+          >
+            Name (A–Z)
+          </button>
+          <button
+            :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'most_subjects' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+            @click="sortOption = 'most_subjects'"
+          >
+            Most subjects
+          </button>
+        </div>
+      </div>
       <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load grades.</div>
 
@@ -113,6 +137,7 @@ const searchTerm = ref('')
 const subjectsCount = ref(0)
 const topicsCount = ref(0)
 const totalQuizzes = ref(0)
+const sortOption = ref('newest')
 
 const userProfile = computed(() => {
   const u = (auth as any).user
@@ -126,6 +151,22 @@ const filteredGrades = computed(() => {
     const q = searchTerm.value.toLowerCase()
     grades = grades.filter((g: any) => (g.name || '').toLowerCase().includes(q))
   }
+  const sort = sortOption.value
+  if (sort === 'name') {
+    grades = grades.slice().sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')))
+  } else if (sort === 'most_subjects') {
+    grades = grades.slice().sort((a: any, b: any) => {
+      const aCount = Array.isArray(a.subjects) ? a.subjects.length : (a.subjects_count || 0)
+      const bCount = Array.isArray(b.subjects) ? b.subjects.length : (b.subjects_count || 0)
+      return bCount - aCount
+    })
+  } else {
+    grades = grades.slice().sort((a: any, b: any) => {
+      const ta = a?.created_at ? Date.parse(String(a.created_at)) : 0
+      const tb = b?.created_at ? Date.parse(String(b.created_at)) : 0
+      return tb - ta
+    })
+  }
   return grades
 })
 
@@ -135,7 +176,12 @@ async function loadGradesByLevel() {
   try {
     const levelId = userProfile.value?.level?.id || userProfile.value?.level_id
     if (!levelId) {
-      error.value = true
+      // fallback: fetch all grades so the page still shows content for browsing
+      try {
+        await taxonomy.fetchGrades()
+      } catch (e) {
+        // ignore
+      }
       loading.value = false
       return
     }

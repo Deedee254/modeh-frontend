@@ -233,19 +233,23 @@ export default function useTaxonomy() {
     return (levels.value || []).map(l => ({ id: l.id ? String(l.id) : l.id, name: l.name || l.display_name || '', slug: l.slug || null }))
   })
 
-  async function fetchSubjectsByGrade(gradeId) {
+  async function fetchSubjectsByGrade(gradeId, levelId) {
     if (gradeId === null || gradeId === undefined || gradeId === '') {
       subjects.value = []
       return
     }
-    const key = String(gradeId)
+    const key = String(gradeId) + (levelId ? `|${levelId}` : '')
     if (subjectsCache.has(key)) {
       subjects.value = subjectsCache.get(key)
       return
     }
     loadingSubjects.value = true
     try {
-      const res = await api.get(`/api/subjects?grade_id=${encodeURIComponent(gradeId)}`)
+      let url = `/api/subjects?grade_id=${encodeURIComponent(gradeId)}`
+      if (levelId) {
+        url += `&level_id=${encodeURIComponent(levelId)}`
+      }
+      const res = await api.get(url)
       if (!res.ok) {
         subjects.value = []
         subjectsCache.delete(key)
@@ -257,11 +261,11 @@ export default function useTaxonomy() {
         if (!s) return false
         const gradeRef = s.grade_id ?? (s.grade && typeof s.grade === 'object' ? s.grade.id : null)
         if (gradeRef == null) return false
-        return String(gradeRef) === key
+        return String(gradeRef) === String(gradeId)
       })
       subjects.value = filtered
       setCacheWithLimit(subjectsCache, key, filtered)
-      try { console.debug('useTaxonomy.fetchSubjectsByGrade: gradeId', gradeId, 'fetched', filtered.length, 'subjects') } catch (e) {}
+      try { console.debug('useTaxonomy.fetchSubjectsByGrade: gradeId', gradeId, 'levelId', levelId, 'fetched', filtered.length, 'subjects') } catch (e) {}
     } catch (e) {
       subjects.value = []
       subjectsCache.delete(key)

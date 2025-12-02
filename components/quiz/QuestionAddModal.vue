@@ -67,6 +67,10 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
+  initialQuestion: {
+    type: Object,
+    default: null
+  },
   subjectId: {
     type: [String, Number],
     default: null
@@ -99,6 +103,25 @@ watch(() => props.modelValue, (nv) => {
 watch(isOpen, (nv) => {
   emit('update:modelValue', nv)
 })
+
+// If an initialQuestion is provided, populate the builder form when modal opens
+watch(() => props.initialQuestion, (q) => {
+  if (!q) return
+  // Ensure builder is ready
+  try {
+    if (builderRef.value) {
+      // Set the internal question form if available
+      if (typeof builderRef.value === 'object') {
+        // Some runtimes expose refs differently; defensively set questionForm
+        try { builderRef.value.questionForm = JSON.parse(JSON.stringify(q)) } catch (e) {}
+      }
+      // Open the modal if not already open
+      isOpen.value = true
+    }
+  } catch (e) {
+    // ignore
+  }
+}, { immediate: false })
 
 function handleClose() {
   isOpen.value = false

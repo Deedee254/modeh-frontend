@@ -30,9 +30,9 @@
 
       <template #highlight>
         <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Your level</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ userLevel }}</p>
-          <p class="mt-2 text-sm text-white/70">{{ filteredTopics.length || 0 }} topics available</p>
+          <p class="text-xs uppercase tracking-wide text-white/70">Your learning path</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ userGrade }}</p>
+          <p class="mt-2 text-sm text-white/70">{{ userLevel }} • {{ filteredTopics.length || 0 }} topics</p>
         </div>
       </template>
 
@@ -51,6 +51,33 @@
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <!-- Sort Bar (button group) -->
+      <div class="mb-8 flex items-center gap-3">
+        <div class="text-sm text-gray-600">Sort:</div>
+        <div class="flex items-center gap-2">
+          <button
+            :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'newest' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+            @click="sortOption = 'newest'"
+          >
+            Newest
+          </button>
+          <button
+            :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'name' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+            @click="sortOption = 'name'"
+          >
+            Name (A–Z)
+          </button>
+          <button
+            :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'most_quizzes' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+            @click="sortOption = 'most_quizzes'"
+          >
+            Most quizzes
+          </button>
+        </div>
+      </div>
+
+      <!-- Removed grade/level selectors — sorting now via buttons above -->
+
       <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load topics.</div>
 
@@ -64,7 +91,8 @@
             :key="topic.id"
             :title="topic.name"
             :slug="topic.slug"
-            :href="`/quizee/topics/${topic.slug || topic.id}`"
+            :to="`/quizee/topics/${topic.slug || topic.id}`"
+            :quizzes-count="topic.quizzes_count"
           />
         </div>
       </div>
@@ -97,18 +125,55 @@ const loading = ref(false)
 const error = ref(false)
 const searchTerm = ref('')
 const allTopics = ref<any[]>([])
+const sortOption = ref('newest')
+const allGrades = ref<any[]>([])
+const allLevels = ref<any[]>([])
+const selectedGradeId = ref<number | null>(null)
+const selectedLevelId = ref<number | null>(null)
 
+// Wrap auth.user in a computed to ensure reactivity
 const userProfile = computed(() => {
-  const u = (auth as any).user
-  return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
+  // auth.user may be a ref or a plain object depending on store wiring.
+  // Use `any` to avoid TS narrowing to `never` when checking `.value`.
+  const rawUser: any = (auth as any).user
+  if (!rawUser) return {}
+  const unwrapped = (rawUser && typeof rawUser === 'object' && 'value' in rawUser) ? rawUser.value : rawUser
+  return unwrapped || {}
 })
-const userLevel = computed(() => userProfile.value?.level?.name || userProfile.value?.level_name || 'Your Level')
+
+// Compute level with default fallback - ensure consistent SSR/client rendering
+const userLevel = computed(() => {
+  const profile = userProfile.value
+  const name = profile?.level?.name || profile?.level_name
+  // Always return a string, never undefined
+  return name || 'Your Level'
+})
+
+// Compute grade with default fallback - ensure consistent SSR/client rendering
+const userGrade = computed(() => {
+  const profile = userProfile.value
+  const name = profile?.grade?.name || profile?.grade_name
+  // Always return a string, never undefined
+  return name || 'Your Grade'
+})
 
 const filteredTopics = computed(() => {
   let topics = allTopics.value || []
   if (searchTerm.value) {
     const q = searchTerm.value.toLowerCase()
     topics = topics.filter((t: any) => (t.name || '').toLowerCase().includes(q))
+  }
+  const sort = sortOption.value
+  if (sort === 'name') {
+    topics = topics.slice().sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')))
+  } else if (sort === 'most_quizzes') {
+    topics = topics.slice().sort((a: any, b: any) => Number(b.quizzes_count || b.quizzes || 0) - Number(a.quizzes_count || a.quizzes || 0))
+  } else {
+    topics = topics.slice().sort((a: any, b: any) => {
+      const ta = a?.created_at ? Date.parse(String(a.created_at)) : 0
+      const tb = b?.created_at ? Date.parse(String(b.created_at)) : 0
+      return tb - ta
+    })
   }
   return topics
 })
@@ -117,22 +182,38 @@ async function loadTopicsByLevel() {
   loading.value = true
   error.value = false
   try {
-    const levelId = userProfile.value?.level?.id || userProfile.value?.level_id
-    if (!levelId) {
-      error.value = true
+    // Use selected values if available, otherwise fall back to user profile
+    const levelId = selectedLevelId.value || userProfile.value?.level?.id || userProfile.value?.level_id
+    const gradeId = selectedGradeId.value || userProfile.value?.grade?.id || userProfile.value?.grade_id
+    
+    if (!levelId || !gradeId) {
+      // fallback: fetch all topics so page shows content for browsing
+      try {
+        await taxonomy.fetchAllTopics()
+        allTopics.value = Array.isArray(taxonomy.topics.value) ? taxonomy.topics.value : []
+      } catch (e) {
+        // best-effort: leave allTopics empty
+      }
       loading.value = false
       return
     }
 
-    // Fetch topics filtered by level
-    const res = await api.get(`/api/topics?level_id=${encodeURIComponent(levelId)}`)
+    // Fetch topics filtered by both level and grade
+    const res = await api.get(`/api/topics?level_id=${encodeURIComponent(levelId)}&grade_id=${encodeURIComponent(gradeId)}`)
+    
+    // Handle auth errors
+    if (api.handleAuthStatus(res)) {
+      return
+    }
+    
     if (!res.ok) {
       error.value = true
       loading.value = false
       return
     }
-    const data = await res.json()
-    allTopics.value = data.data || data.topics || []
+    
+    const data = await api.parseResponse(res)
+    allTopics.value = Array.isArray(data) ? data : (data?.data || data?.topics || [])
   } catch (e) {
     error.value = true
   } finally {
@@ -144,7 +225,38 @@ function onSearch(query: string) {
   searchTerm.value = query
 }
 
-onMounted(() => {
+// selector functions removed — UI no longer exposes grade/level selectors
+
+onMounted(async () => {
+  // Load all grades and levels for filter dropdowns using api composable
+  try {
+    const gradesRes = await api.get('/api/grades')
+    if (gradesRes.ok) {
+      const gradesData = await api.parseResponse(gradesRes)
+      allGrades.value = Array.isArray(gradesData) ? gradesData : (gradesData?.data || gradesData || [])
+    }
+  } catch (e) {
+    console.error('Failed to load grades:', e)
+  }
+
+  try {
+    const levelsRes = await api.get('/api/levels')
+    if (levelsRes.ok) {
+      const levelsData = await api.parseResponse(levelsRes)
+      allLevels.value = Array.isArray(levelsData) ? levelsData : (levelsData?.data || levelsData || [])
+    }
+  } catch (e) {
+    console.error('Failed to load levels:', e)
+  }
+
+  // Initialize selected grade/level from user profile
+  if (userProfile.value?.grade?.id) {
+    selectedGradeId.value = userProfile.value.grade.id
+  }
+  if (userProfile.value?.level?.id) {
+    selectedLevelId.value = userProfile.value.level.id
+  }
+
   loadTopicsByLevel()
 })
 </script>

@@ -174,16 +174,34 @@ async function load() {
   error.value = null
   try {
     const response = await api.get('/api/quiz-master/analytics')
-    if (!response.ok) throw new Error('Failed to load analytics overview')
-    const body = await response.json()
-    stats.value = body?.stats ?? stats.value
-    series.value = Array.isArray(body?.series) ? body.series : []
-    distribution.value = Array.isArray(body?.distribution) ? body.distribution : []
-    topQuizzes.value = Array.isArray(body?.top_quizzes) ? body.top_quizzes : []
+    if (api.handleAuthStatus(response)) return
+    const body = await api.parseResponse(response)
+    if (!response.ok) {
+      const msg = (body && (body.message || body.error)) ? (body.message || body.error) : `Failed to load analytics overview (status ${response.status})`
+      throw new Error(msg)
+    }
+
+    // Support payloads that may be wrapped under `data` or returned directly
+    const payload = (body && (body.data || body.stats)) ? (body.data || body) : (body || {})
+
+    stats.value = payload?.stats ?? stats.value
+    series.value = Array.isArray(payload?.series) ? payload.series : []
+
+    // Normalize distribution: backend returns counts; convert to percent for UI display
+    const rawDist = Array.isArray(payload?.distribution) ? payload.distribution : []
+    const totalCount = rawDist.reduce((s, it) => s + (Number(it?.value || 0)), 0)
+    distribution.value = rawDist.map(d => ({ ...d, value: totalCount ? Math.round((Number(d.value || 0) / totalCount) * 100) : 0 }))
+
+    topQuizzes.value = Array.isArray(payload?.top_quizzes) ? payload.top_quizzes : []
     lastUpdated.value = new Date()
   } catch (err) {
     console.error('Analytics overview fetch failed', err)
-    error.value = 'Unable to load analytics right now. Please try refreshing shortly.'
+    // Surface backend message when available
+    try {
+      error.value = (err && err.message) ? err.message : 'Unable to load analytics right now. Please try refreshing shortly.'
+    } catch (e) {
+      error.value = 'Unable to load analytics right now. Please try refreshing shortly.'
+    }
   } finally {
     loading.value = false
   }

@@ -11,6 +11,20 @@ if (typeof window !== 'undefined' && import.meta && import.meta.client) {
 let _auth_storage_handler = null
 let _auth_beforeunload = null
 
+// Helper: Convert snake_case keys to camelCase for backward compatibility
+function convertToCamelCase(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  if (Array.isArray(obj)) return obj.map(convertToCamelCase)
+
+  const result = {}
+  for (const [key, value] of Object.entries(obj)) {
+    // Convert snake_case to camelCase: quizee_profile -> quizeeProfile, quiz_master_profile -> quizMasterProfile
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+    result[camelKey] = convertToCamelCase(value)
+  }
+  return result
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const role = ref(null)
@@ -76,6 +90,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function setUser(newUser) {
+    // Normalize snake_case keys from backend to camelCase for frontend consistency
+    if (newUser) {
+      newUser = convertToCamelCase(newUser)
+    }
     user.value = newUser
     role.value = newUser && newUser.role ? newUser.role : null
     try {

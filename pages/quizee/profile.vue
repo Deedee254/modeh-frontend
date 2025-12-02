@@ -9,7 +9,7 @@
           <div class="absolute inset-0 px-6 sm:px-8 pt-6 flex flex-col justify-start text-white">
             <div>
               <h1 class="text-3xl sm:text-4xl font-bold">{{ user?.name || 'Quizee' }}</h1>
-              <p class="text-brand-100 mt-1">@{{ user?.username || 'user' }}</p>
+              <p class="text-brand-100 mt-1">@{{ userUsername }}</p>
             </div>
             <!-- Quick stats on cover -->
             <div class="flex flex-wrap items-center gap-4 mt-4 text-sm text-brand-100">
@@ -176,6 +176,29 @@
 
         <!-- Sidebar -->
         <aside class="space-y-4 sm:space-y-6">
+          <!-- Personal Info Card -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-sm font-bold text-slate-900 mb-4">Personal Info</h3>
+            <div class="space-y-3 text-sm">
+              <div v-if="profile?.first_name">
+                <label class="block font-medium text-slate-700">First Name</label>
+                <p class="text-slate-600 mt-1">{{ profile.first_name }}</p>
+              </div>
+              <div v-if="profile?.last_name">
+                <label class="block font-medium text-slate-700">Last Name</label>
+                <p class="text-slate-600 mt-1">{{ profile.last_name }}</p>
+              </div>
+              <div v-if="profile?.first_name || profile?.last_name" class="pt-2 border-t border-slate-200">
+                <NuxtLink
+                  to="/quizee/settings"
+                  class="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                >
+                  Edit personal info →
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+
           <!-- Info Card -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 class="text-sm font-bold text-slate-900 mb-4">Learning Info</h3>
@@ -337,6 +360,7 @@ interface User {
   rewards?: { points?: number }
   username?: string
   verified?: boolean
+  institution_verified?: boolean
   created_at?: string
   quizeeProfile?: {
     first_name?: string
@@ -346,16 +370,30 @@ interface User {
     grade_id?: number
     level?: { id: number; name: string }
     level_id?: number
-    subjects?: Array<{ id: number; name: string }>
+    subjects?: Array<any>
+    subjectModels?: Array<{ id: number; name: string }>
     bio?: string
   }
 }
 
 // Since auth.user is a ref from the Pinia store, unwrap it to get the raw user object
 const user = computed<User>(() => {
-  const u: any = (auth as any).user
-  // If it's a ref with a .value property, unwrap it; otherwise use it directly
-  return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
+  // auth.user may be a ref or a plain object depending on the store wiring.
+  // Use `any` locally to avoid TS narrowing to `never` when checking `.value`.
+  const rawUser: any = (auth as any).user
+  const unwrapped = (rawUser && typeof rawUser === 'object' && 'value' in rawUser) ? rawUser.value : rawUser
+  return (unwrapped || {}) as User
+})
+
+// Derive username from name if not present (username field is not in users table)
+const userUsername = computed(() => {
+  const u = user.value
+  if (u?.username) return u.username
+  if (u?.name && typeof u.name === 'string') {
+    const parts = u.name.split(' ')
+    return parts[0]?.toLowerCase() || 'user'
+  }
+  return 'user'
 })
 
 // Prefer `avatar_url` then fallback to `avatar`; resolve via runtime apiBase
@@ -365,7 +403,7 @@ const pointsDisplay = computed(() => {
   return typeof p === 'number' ? `${p}` : '0'
 })
 
-// Get profile based on user type
+// Get profile based on user type — read camelCase key
 const profile = computed(() => user.value?.quizeeProfile || {})
 
 // Get grade label from profile
@@ -378,11 +416,15 @@ const levelLabel = computed(() => {
   return profile.value?.level?.name || null
 })
 
-// Get subject labels from profile
+// Get subject labels from profile — prefer subjectModels (full objects), fallback to subjects
 const subjectLabels = computed(() => {
-  if (!Array.isArray(profile.value?.subjects)) return []
-  return profile.value.subjects
-    .map((s: any) => s.name || s)
+  const subjectArray = Array.isArray(profile.value?.subjectModels)
+    ? profile.value.subjectModels
+    : Array.isArray(profile.value?.subjects)
+      ? profile.value.subjects
+      : []
+  return subjectArray
+    .map((s: any) => (s && typeof s === 'object' ? s.name : s))
     .filter(Boolean)
 })
 

@@ -49,27 +49,51 @@
         <div v-if="loading" class="text-center py-12">Loading topic...</div>
         <div v-else-if="error" class="mt-6 text-red-600">Failed to load this topic.</div>
 
-        <div v-else class="bg-white rounded-xl shadow-sm p-8">
-          <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ topic?.name }}</h2>
-          <p v-if="topic?.description" class="text-gray-600 mb-6 whitespace-pre-line">{{ topic.description }}</p>
-          
-          <div v-if="topic?.subject?.name" class="mt-8 p-4 bg-brand-50 rounded-lg border border-brand-100">
-            <p class="text-sm text-gray-600">Subject:</p>
-            <NuxtLink 
-              :to="`/quizee/subjects/${topic.subject.slug || topic.subject.id}`"
-              class="text-brand-600 hover:text-brand-700 font-semibold"
-            >
-              {{ topic.subject.name }}
-            </NuxtLink>
+        <div v-else class="space-y-12">
+          <!-- Topic Details Box -->
+          <div class="bg-white rounded-xl shadow-sm p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ topic?.name }}</h2>
+            <p v-if="topic?.description" class="text-gray-600 mb-6 whitespace-pre-line">{{ topic.description }}</p>
+            
+            <div v-if="topic?.subject?.name" class="mt-8 p-4 bg-brand-50 rounded-lg border border-brand-100">
+              <p class="text-sm text-gray-600">Subject:</p>
+              <NuxtLink 
+                :to="`/quizee/subjects/${topic.subject.slug || topic.subject.id}`"
+                class="text-brand-600 hover:text-brand-700 font-semibold"
+              >
+                {{ topic.subject.name }}
+              </NuxtLink>
+            </div>
           </div>
 
-          <div class="mt-8">
-            <NuxtLink
-              :to="`/quizee/quizzes?topic=${encodeURIComponent(topic?.slug || topic?.id)}`"
-              class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition"
-            >
-              Start Quiz
-            </NuxtLink>
+          <!-- Quizzes List -->
+          <div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">Quizzes in this Topic</h3>
+            <div v-if="quizzesLoading" class="text-center">
+              <UiSkeleton :count="3" />
+            </div>
+            <div v-else-if="quizzesError" class="text-red-600">
+              Failed to load quizzes.
+            </div>
+            <div v-else-if="quizzes.length === 0" class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">
+              No quizzes found for this topic yet.
+            </div>
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <QuizCard
+                v-for="quiz in quizzes"
+                :key="quiz.id"
+                :quiz-id="quiz.id"
+                :title="quiz.name"
+                :description="quiz.description"
+                :likes="quiz.likes_count"
+                :questions-count="quiz.questions_count"
+                :difficulty="quiz.difficulty"
+                :cover="quiz.cover_image"
+                :to="`/quizee/quizzes/${quiz.id}`"
+                :quiz="quiz"
+              />
+            </div>
+            <!-- TODO: Add pagination controls using quizzesMeta -->
           </div>
         </div>
       </div>
@@ -83,6 +107,8 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 import PageHero from '~/components/ui/PageHero.vue'
+import QuizCard from '~/components/ui/QuizCard.vue'
+import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 
 definePageMeta({
   layout: 'quizee',
@@ -102,6 +128,11 @@ const error = ref(false)
 const topic = ref<any>(null)
 const searchTerm = ref('')
 
+const quizzes = ref<any[]>([])
+const quizzesLoading = ref(false)
+const quizzesError = ref(false)
+const quizzesMeta = ref<any>(null)
+
 async function fetchTopic() {
   loading.value = true
   error.value = false
@@ -113,7 +144,7 @@ async function fetchTopic() {
       return
     }
     const data = await res.json()
-    topic.value = data.data || data
+    topic.value = data.topic || data.data || data
   } catch (e) {
     error.value = true
   } finally {
@@ -121,13 +152,41 @@ async function fetchTopic() {
   }
 }
 
-function onSearch(query: string) {
-  searchTerm.value = query
+async function fetchQuizzes(page = 1) {
+  if (!topicId.value) return
+  quizzesLoading.value = true
+  quizzesError.value = false
+  try {
+    const query = new URLSearchParams({
+      page: page.toString(),
+      q: searchTerm.value,
+    })
+    const res = await api.get(`/api/topics/${topicId.value}/quizzes?${query}`)
+    if (!res.ok) {
+      quizzesError.value = true
+      return
+    }
+    const data = await api.parseResponse(res)
+    quizzes.value = data.quizzes || []
+    quizzesMeta.value = data.meta || null
+  } catch (e) {
+    quizzesError.value = true
+  } finally {
+    quizzesLoading.value = false
+  }
 }
 
-onMounted(() => {
+function onSearch(query: string) {
+  searchTerm.value = query
+  fetchQuizzes()
+}
+
+onMounted(async () => {
   if (topicId.value) {
-    fetchTopic()
+    await fetchTopic()
+    if (topic.value) {
+      fetchQuizzes()
+    }
   }
 })
 </script>

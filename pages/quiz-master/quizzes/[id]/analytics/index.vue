@@ -11,6 +11,10 @@
       </div>
     </div>
 
+    <div v-if="error" class="mt-4">
+      <div class="rounded p-3 bg-red-50 text-red-700">{{ error }}</div>
+    </div>
+
   <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- KPIs -->
       <div class="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -124,9 +128,17 @@ async function fetchAnalytics() {
   loading.value = true
   try {
     const res = await api.get(`/api/quizzes/${quizId}/analytics`)
-    if (!res.ok) throw new Error('Failed to load analytics')
-    const data = await res.json().catch(()=>({}))
-    analytics.value = data || {}
+    if (api.handleAuthStatus(res)) return
+    // parseResponse handles JSON or returns the raw Response for non-JSON
+    const data = await api.parseResponse(res)
+    if (!res.ok) {
+      // Try to extract a helpful message from the body
+      const message = (data && (data.message || data.error)) ? (data.message || data.error) : `Failed to load analytics (status ${res.status})`
+      throw new Error(message)
+    }
+
+    // Backend returns a plain object of analytics fields; some endpoints may wrap under `data` or `analytics`
+    analytics.value = (data && (data.analytics || data.data)) ? (data.analytics || data.data) : (data || {})
   } catch (err) {
     console.error('Error loading quiz analytics', err)
     error.value = err.message || String(err)

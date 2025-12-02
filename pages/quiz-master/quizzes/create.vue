@@ -41,14 +41,14 @@
         <ClientOnly>
           <QuizDetailsStepForm
             v-if="store.activeTab === 'details'"
-            :model-value="store.quiz"
+            v-model="store.quiz"
             :levels="levels"
             :grades="grades"
             :subjects="subjects"
             :topics="topics"
             :errors="store.detailsErrors"
             :saving="store.isSubmitting"
-            @update:modelValue="(v: any) => (store.quiz = v)"
+            
             @create-topic="showTopicModal = true"
             @save="onSaveDetails"
             @next="onDetailsNext"
@@ -195,6 +195,11 @@ const {
   fetchGrades,
   fetchSubjectsPage,
   fetchTopicsPage,
+  fetchSubjectsByGrade,
+  fetchTopicsBySubject,
+  fetchAllSubjects,
+  addTopic,
+  addSubject,
 } = useTaxonomy()
 
 // UI state
@@ -355,6 +360,59 @@ onMounted(async () => {
     const quizId = route.query.id
     if (quizId) {
       await store.loadQuiz(quizId)
+
+      // After loading the quiz object into the store, preload subjects/topics
+      try {
+        const q = store.quiz || {}
+        const levelId = q?.level_id ?? q?.level?.id ?? null
+        const gradeId = q?.grade_id ?? q?.grade?.id ?? null
+        const subjectId = q?.subject_id ?? q?.subject?.id ?? null
+        const topicId = q?.topic_id ?? q?.topic?.id ?? null
+
+        // If we have a grade, fetch subjects filtered by grade (and level if present).
+        if (gradeId) {
+          // fetchSubjectsByGrade will populate the shared `subjects` ref
+          try {
+            await fetchSubjectsByGrade(gradeId, levelId)
+          } catch (e) {
+            // fallback to paged fetch
+            await fetchSubjectsPage({ gradeId, page: 1, perPage: 50, q: '' })
+          }
+        } else {
+          // no grade specified: fetch all subjects so the picker can show the saved subject
+          await fetchAllSubjects()
+        }
+
+        // If we have a subject, fetch topics for that subject
+        if (subjectId) {
+          try {
+            await fetchTopicsBySubject(subjectId)
+          } catch (e) {
+            // fallback to page fetch
+            await fetchTopicsPage({ subjectId, page: 1, perPage: 50, q: '' })
+          }
+        } else if (topicId) {
+          // If only topic id was provided (rare), ensure the specific topic is added to the list
+          // store.loadQuiz already attempts addTopic if server returned the object, but ensure fallback
+          try {
+            addTopic({ id: topicId })
+          } catch (e) {}
+        }
+
+        // Ensure the loaded subject/topic objects are present in the shared lists so the pickers
+        // can display the currently-selected labels even if the server uses some different shapes.
+        try {
+          if (subjectId && !subjects.find((s: any) => String(s.id) === String(subjectId))) {
+            addSubject({ id: subjectId })
+          }
+          if (topicId && !topics.find((t: any) => String(t.id) === String(topicId))) {
+            addTopic({ id: topicId })
+          }
+        } catch (e) {}
+      } catch (e: any) {
+        // non-fatal preload errors; the UI will still function and user can re-select
+        console.warn('Failed to preload taxonomy for edit mode', e)
+      }
     } else {
       store.reset()
     }

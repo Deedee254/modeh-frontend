@@ -361,7 +361,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from '#imports'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
+import useApi from '~/composables/useApi'
 
 interface TaxonomyItem {
   id: string | number
@@ -698,10 +700,12 @@ watch(
       // Trigger data fetch cascade if we have level selected
       if (newValue.level) {
         currentStep.value = 1
-        await fetchGrades(newValue.level.id)
+        const levelId = (newValue.level as TaxonomyItem).id
+        await fetchGrades(levelId)
         if (newValue.grade) {
           currentStep.value = 2
-          await fetchSubjects(newValue.grade.id)
+          const gradeId = (newValue.grade as TaxonomyItem).id
+          await fetchSubjects(gradeId)
           if (newValue.subject) {
             const subjectId = Array.isArray(newValue.subject)
               ? newValue.subject[0]?.id
@@ -725,10 +729,12 @@ onMounted(async () => {
     selections.value = props.modelValue
     if (selections.value.level) {
       currentStep.value = 1
-      await fetchGrades(selections.value.level.id)
+      const lvlId = (selections.value.level as TaxonomyItem).id
+      await fetchGrades(lvlId)
       if (selections.value.grade) {
         currentStep.value = 2
-        await fetchSubjects(selections.value.grade.id)
+        const grdId = (selections.value.grade as TaxonomyItem).id
+        await fetchSubjects(grdId)
         if (selections.value.subject) {
           // Handle both single subject and array of subjects
           const subjectId = Array.isArray(selections.value.subject)
@@ -740,6 +746,135 @@ onMounted(async () => {
           }
         }
       }
+    }
+  }
+  // If no explicit modelValue provided, allow URL query params to prefill selections
+  else {
+    try {
+      const route = useRoute()
+      const q = route.query || {}
+      const levelId = q.level_id ?? q.levelId ?? q.level ?? null
+      const gradeId = q.grade_id ?? q.gradeId ?? q.grade ?? null
+      const subjectId = q.subject_id ?? q.subjectId ?? q.subject ?? null
+      const topicId = q.topic_id ?? q.topicId ?? q.topic ?? null
+
+  // Always return a string (empty string when input is null/undefined).
+  // This simplifies later use where we only enter the guarded branches
+  // when the original query value was present.
+  const asString = (v: any) => (v === null || typeof v === 'undefined') ? '' : String(v)
+
+      const api = useApi()
+
+    if (levelId) {
+  const levelIdStr = asString(levelId)
+    // Ensure levels loaded
+    if (!levels.value || levels.value.length === 0) await fetchLevels()
+    let foundLevel: TaxonomyItem | undefined = levels.value.find(l => String(l.id) === levelIdStr)
+    if (!foundLevel) {
+          // Try server fetch-by-id fallback
+          try {
+            const res = await api.get(`/api/levels/${encodeURIComponent(levelIdStr)}`)
+            if (res.ok) {
+              const data = await res.json().catch(() => null)
+              // server may return { level: {...} } or direct object
+              const serverLevel = data?.level || data?.data || data || null
+                if (serverLevel) {
+                foundLevel = { id: String(serverLevel.id ?? levelIdStr), name: serverLevel.name ?? serverLevel.title ?? `Level #${levelIdStr}` }
+                // insert into local list so picker can display it
+                if (foundLevel) {
+                  levels.value = [foundLevel, ...levels.value.filter(l => String(l.id) !== String(foundLevel.id))]
+                }
+              }
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+  selections.value.level = foundLevel ?? { id: levelIdStr, name: `Level #${levelIdStr}` }
+  currentStep.value = 1
+  // load grades for this level
+  if (selections.value.level) await fetchGrades((selections.value.level as TaxonomyItem).id)
+      }
+
+  if (gradeId) {
+  const gradeIdStr = asString(gradeId)
+    if (!grades.value || grades.value.length === 0) await fetchGrades(asString(selections.value.level?.id))
+    let foundGrade: TaxonomyItem | undefined = grades.value.find(g => String(g.id) === gradeIdStr)
+    if (!foundGrade) {
+          try {
+            const res = await api.get(`/api/grades/${encodeURIComponent(gradeIdStr)}`)
+            if (res.ok) {
+              const data = await res.json().catch(() => null)
+              const serverGrade = data?.grade || data?.data || data || null
+                if (serverGrade) {
+                foundGrade = { id: String(serverGrade.id ?? gradeIdStr), name: serverGrade.name ?? serverGrade.title ?? `Grade #${gradeIdStr}`, level_id: serverGrade.level_id ?? serverGrade.level ?? selections.value.level?.id }
+                if (foundGrade) {
+                  grades.value = [foundGrade, ...grades.value.filter(g => String(g.id) !== String(foundGrade.id))]
+                }
+              }
+            }
+          } catch (e) {}
+        }
+  selections.value.grade = foundGrade ?? { id: gradeIdStr, name: `Grade #${gradeIdStr}`, level_id: selections.value.level?.id }
+  currentStep.value = 2
+  // load subjects for this grade
+  if (selections.value.grade) await fetchSubjects((selections.value.grade as TaxonomyItem).id)
+      }
+
+  if (subjectId) {
+  const subjectIdStr = asString(subjectId)
+    if (!subjects.value || subjects.value.length === 0) await fetchSubjects(asString(selections.value.grade?.id))
+    let foundSubject: TaxonomyItem | undefined = subjects.value.find(s => String(s.id) === subjectIdStr)
+    if (!foundSubject) {
+          try {
+            const res = await api.get(`/api/subjects/${encodeURIComponent(subjectIdStr)}`)
+            if (res.ok) {
+              const data = await res.json().catch(() => null)
+              const serverSubject = data?.subject || data?.data || data || null
+                if (serverSubject) {
+                foundSubject = { id: String(serverSubject.id ?? subjectIdStr), name: serverSubject.name ?? serverSubject.title ?? `Subject #${subjectIdStr}`, grade_id: serverSubject.grade_id ?? serverSubject.grade ?? selections.value.grade?.id }
+                if (foundSubject) {
+                  subjects.value = [foundSubject, ...subjects.value.filter(s => String(s.id) !== String(foundSubject.id))]
+                }
+              }
+            }
+          } catch (e) {}
+        }
+  selections.value.subject = foundSubject ?? { id: subjectIdStr, name: `Subject #${subjectIdStr}`, grade_id: selections.value.grade?.id }
+  currentStep.value = 3
+  // load topics for this subject
+  if (props.includeTopics && selections.value.subject) await fetchTopics((selections.value.subject as TaxonomyItem).id)
+      }
+
+  if (topicId && props.includeTopics) {
+  const topicIdStr = asString(topicId)
+  const subjectIdForTopics = Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id
+  if (!topics.value || topics.value.length === 0) await fetchTopics(asString(subjectIdForTopics))
+    let foundTopic: TaxonomyItem | undefined = topics.value.find(t => String(t.id) === topicIdStr)
+    if (!foundTopic) {
+          try {
+            const res = await api.get(`/api/topics/${encodeURIComponent(topicIdStr)}`)
+            if (res.ok) {
+              const data = await res.json().catch(() => null)
+              const serverTopic = data?.topic || data?.data || data || null
+                if (serverTopic) {
+                foundTopic = { id: String(serverTopic.id ?? topicIdStr), name: serverTopic.name ?? serverTopic.title ?? `Topic #${topicIdStr}`, subject_id: serverTopic.subject_id ?? (Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id) }
+                if (foundTopic) {
+                  topics.value = [foundTopic, ...topics.value.filter(t => String(t.id) !== String(foundTopic.id))]
+                }
+              }
+            }
+          } catch (e) {}
+        }
+        selections.value.topic = foundTopic ?? { id: topicIdStr, name: `Topic #${topicIdStr}`, subject_id: (Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id) }
+        currentStep.value = steps.value.length - 1
+      }
+
+      // update parent with derived selections
+      emit('update:modelValue', selections.value)
+    } catch (e) {
+      // non-fatal
+      console.warn('TaxonomyFlowPicker: failed to prefill from query', e)
     }
   }
 })
