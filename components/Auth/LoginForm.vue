@@ -88,11 +88,18 @@ const compact = computed(() => props.compact || false)
 const wrapperClass = computed(() => compact.value ? 'mx-auto w-full max-w-md' : 'w-full')
 const cardClass = computed(() => compact.value ? 'rounded-2xl bg-white p-6 shadow-lg' : 'w-full max-w-md bg-white rounded-lg shadow p-8')
 
-async function ensureCsrf() {
-  try { await api.ensureCsrf?.() } catch (e) { /* ignore */ }
+async function ensureCsrfReady() {
+  try { 
+    await api.ensureCsrf?.() 
+  } catch (e) { 
+    // Log but continue - user can still try to login
+    console.warn('CSRF pre-fetch failed, will retry on submit', e)
+  }
 }
 
-onMounted(() => { ensureCsrf() })
+onMounted(async () => { 
+  await ensureCsrfReady() 
+})
 
 async function submit() {
   if (isLoading.value) return
@@ -100,7 +107,10 @@ async function submit() {
   error.value = null
   
   try {
-  const res = await auth.login(email.value, password.value, remember.value)
+    // Ensure CSRF is ready right before login (should be fast due to caching)
+    await ensureCsrfReady()
+    
+    const res = await auth.login(email.value, password.value, remember.value)
     const user = auth.user // Use the store's user state directly
 
     // Handle `next` param safely and prefer same-role area

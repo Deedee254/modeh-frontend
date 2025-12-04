@@ -3,6 +3,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useAccountApi } from '~/composables/useAccountApi'
 import useApi from '~/composables/useApi'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 /**
  * Composable for managing profile form state and operations.
@@ -13,31 +14,71 @@ export function useProfileForm() {
   const alert = useAppAlert()
   const { patchMe } = useAccountApi()
   const api = useApi()
+  const { grades: taxGrades, levels: taxLevels, subjects: taxSubjects, addSubject } = useTaxonomy()
 
   const avatarFile = ref(null)
   const avatarPreview = ref(null)
 
   /**
+   * Extract institution name from either a string or object
+   */
+  function extractInstitutionName(inst) {
+    if (!inst) return ''
+    if (typeof inst === 'string') return inst
+    if (typeof inst === 'object' && inst.name) return String(inst.name)
+    return ''
+  }
+
+  /**
+   * Extract institution ID from either a number, string, or object
+   */
+  function extractInstitutionId(inst) {
+    if (!inst) return ''
+    if (typeof inst === 'number') return inst
+    if (typeof inst === 'string' && !isNaN(inst)) return inst
+    if (typeof inst === 'object' && inst.id) return inst.id
+    return ''
+  }
+
+  /**
    * Creates a clean form state object from user data.
    * Extracts profile data from nested profile objects (quizeeProfile or quizMasterProfile).
+   * Also populates taxonomy refs with profile data so pickers can preselect values.
    * @param {object | null} u - The user object from the auth store.
    * @returns {object} A form state object with only backend-supported fields.
    */
   function createFormState(u) {
-    // Determine the profile object based on role
-    const profile = u?.role === 'quiz-master' ? u?.quizMasterProfile : u?.quizeeProfile
+    // Determine the profile object based on role (quiz-master / quizee)
+    // Handle both 'quiz-master' (with hyphen) and other variations
+    const isQuizMaster = u?.role === 'quiz-master' || u?.role === 'quizMaster'
+    const profile = isQuizMaster ? u?.quizMasterProfile : u?.quizeeProfile
+
+    // Default institution values (handle institution-manager who stores institutions on user)
+    let instName = ''
+    let instId = ''
+    if (u?.role === 'institution-manager') {
+      if (u?.institutions && Array.isArray(u.institutions) && u.institutions.length > 0) {
+        const first = u.institutions[0]
+        instName = first?.name || ''
+        instId = first?.id || first?.slug || ''
+      } else {
+        instName = u?.institution || ''
+        instId = ''
+      }
+    }
 
     const state = {
       display_name: u?.name || '',
       phone: u?.phone || '',
-      institution: profile?.institution || '',
-      institution_id: profile?.institution_id || '',
+      institution: (u?.role === 'institution-manager') ? instName : (extractInstitutionName(profile?.institution) || ''),
+      institution_id: (u?.role === 'institution-manager') ? instId : (extractInstitutionId(profile?.institution) || ''),
       grade_id: profile?.grade_id || profile?.grade?.id || '',
       level_id: profile?.level_id || profile?.level?.id || '',
       subjects: Array.isArray(profile?.subjects)
         ? profile.subjects.filter(Boolean)
         : [],
-      bio: u?.bio || ''
+      // prefer profile.bio if available, otherwise fall back to top-level user bio
+      bio: (u?.role === 'institution-manager') ? (u?.bio || '') : (profile?.bio || u?.bio || '')
     }
 
     // Quizee-specific fields
@@ -49,6 +90,31 @@ export function useProfileForm() {
     // Quiz Master-specific fields
     if (u?.role === 'quiz-master') {
       state.headline = profile?.headline || ''
+    }
+
+    // CRITICAL FIX: Add profile taxonomy objects to composable refs
+    // so pickers can preselect them. This ensures level, grade, and subjects
+    // from the loaded profile are available in the dropdowns.
+    try {
+      if (profile?.level && profile.level.id) {
+        if (!taxLevels.value.find(l => String(l.id) === String(profile.level.id))) {
+          taxLevels.value = [...taxLevels.value, profile.level]
+        }
+      }
+      if (profile?.grade && profile.grade.id) {
+        if (!taxGrades.value.find(g => String(g.id) === String(profile.grade.id))) {
+          taxGrades.value = [...taxGrades.value, profile.grade]
+        }
+      }
+      if (profile?.subjects && Array.isArray(profile.subjects)) {
+        for (const subject of profile.subjects) {
+          if (subject && subject.id) {
+            addSubject(subject)
+          }
+        }
+      }
+    } catch (e) {
+      // ignore errors adding to taxonomy refs
     }
 
     return state
@@ -110,9 +176,6 @@ export function useProfileForm() {
         return false
       }
 
-      // Get original values to detect changes
-      const originalForm = createFormState(auth.user)
-
       // Normalize role parameter
       let role = null
       if (typeof isQuizMasterOrRole === 'boolean') {
@@ -121,14 +184,35 @@ export function useProfileForm() {
         role = isQuizMasterOrRole
       }
 
+      // Helper to safely compare values (handles null, undefined, empty strings)
+      const hasChanged = (newVal, oldVal) => {
+        // Handle null/undefined/empty string equivalence
+        const newEmpty = newVal === null || newVal === undefined || newVal === ''
+        const oldEmpty = oldVal === null || oldVal === undefined || oldVal === ''
+        
+        // Both empty = no change
+        if (newEmpty && oldEmpty) return false
+        
+        // One empty, one not = changed
+        if (newEmpty !== oldEmpty) return true
+        
+        // Handle numeric IDs - compare as strings
+        if (typeof newVal === 'number' || typeof oldVal === 'number') {
+          return String(newVal) !== String(oldVal)
+        }
+        
+        // Default comparison
+        return newVal !== oldVal
+      }
+
       // Build user data with only changed fields (FormData)
       const userData = new FormData()
       
       // Only add fields that changed
-      if (form.display_name !== originalForm.display_name) {
+      if (hasChanged(form.display_name, originalForm.display_name)) {
         userData.append('name', form.display_name)
       }
-      if (form.phone !== originalForm.phone) {
+      if (hasChanged(form.phone, originalForm.phone)) {
         userData.append('phone', form.phone || '')
       }
       if (avatarFile.value) {
@@ -138,16 +222,17 @@ export function useProfileForm() {
       // Build profile data with only changed fields (JSON)
       const profileData = {}
       
-      if (form.institution !== originalForm.institution) {
+      
+      if (hasChanged(form.institution, originalForm.institution)) {
         profileData.institution = form.institution || null
       }
-      if (form.institution_id !== originalForm.institution_id) {
+      if (hasChanged(form.institution_id, originalForm.institution_id)) {
         profileData.institution_id = form.institution_id || null
       }
-      if (form.grade_id !== originalForm.grade_id) {
+      if (hasChanged(form.grade_id, originalForm.grade_id)) {
         profileData.grade_id = form.grade_id || null
       }
-      if (form.level_id !== originalForm.level_id) {
+      if (hasChanged(form.level_id, originalForm.level_id)) {
         profileData.level_id = form.level_id || null
       }
       
@@ -162,20 +247,20 @@ export function useProfileForm() {
 
       // Add role-specific fields only if they changed
       if (role === 'quiz-master') {
-        if (form.headline !== originalForm.headline) {
+        if (hasChanged(form.headline, originalForm.headline)) {
           profileData.headline = form.headline || ''
         }
-        if (form.bio !== originalForm.bio) {
+        if (hasChanged(form.bio, originalForm.bio)) {
           profileData.bio = form.bio || ''
         }
       } else if (role === 'quizee') {
-        if (form.first_name !== originalForm.first_name) {
+        if (hasChanged(form.first_name, originalForm.first_name)) {
           profileData.first_name = form.first_name || ''
         }
-        if (form.last_name !== originalForm.last_name) {
+        if (hasChanged(form.last_name, originalForm.last_name)) {
           profileData.last_name = form.last_name || ''
         }
-        if (form.bio !== originalForm.bio) {
+        if (hasChanged(form.bio, originalForm.bio)) {
           profileData.bio = form.bio || ''
         }
       }
@@ -197,6 +282,15 @@ export function useProfileForm() {
       }
 
       // Update profile data if there are changes (for quiz-master/quizee)
+      // If the user is an institution-manager, the profile-like fields (institution, institution_id, bio)
+      // are stored on the user model. Append them to the FormData so patchMe('/api/me') will persist them.
+      if (role === 'institution-manager' && Object.keys(profileData).length > 0) {
+        Object.entries(profileData).forEach(([k, v]) => {
+          // normalize null -> empty string for FormData
+          userData.append(k, v === null || typeof v === 'undefined' ? '' : v)
+        })
+      }
+
       if (Object.keys(profileData).length > 0 && (role === 'quiz-master' || role === 'quizee')) {
         const profileEndpoint = role === 'quiz-master' ? '/api/profile/quiz-master' : '/api/profile/quizee'
         const profileRes = await api.patchJson(profileEndpoint, profileData)

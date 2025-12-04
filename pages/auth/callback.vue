@@ -10,10 +10,12 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '~/stores/auth'
 
 const router = useRouter()
 const config = useRuntimeConfig()
 const api = useApi()
+const auth = useAuthStore()
 
 function parseQuery(qs) {
   const params = {}
@@ -73,8 +75,11 @@ onMounted(async () => {
 
       // Parse the user data
       user = await response.json()
-      const authUser = useState('authUser', () => null)
-      authUser.value = user
+      
+      // CRITICAL: Set the user in the auth store so the entire app knows they're logged in
+      if (user) {
+        auth.setUser(user)
+      }
     } catch (err) {
       console.warn('Failed to fetch /api/me after social login:', err)
       // Continue - user may be created server-side but /me may require cookies
@@ -96,7 +101,7 @@ onMounted(async () => {
     }
 
     // Otherwise go to dashboard depending on role
-    const role = user?.role || useState('authUser').value?.role || null
+    const role = user?.role || auth.user?.role || null
     if (role === 'quiz-master') {
       return router.replace('/quiz-master/dashboard')
     }

@@ -3,7 +3,7 @@
     <!-- Mobile dropdown -->
     <div class="sm:hidden mb-4">
       <label for="settings-tabs" class="sr-only">Select a tab</label>
-      <select id="settings-tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-brand-500 focus:ring-brand-600" @change="selectTab($event.target.value)">
+      <select id="settings-tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-brand-500 focus:ring-brand-600" @change="selectTab(($event.target as HTMLSelectElement).value)">
         <option v-for="tab in tabs" :key="tab.key" :value="tab.key" :selected="tab.key === active">{{ tab.label }}</option>
       </select>
     </div>
@@ -42,6 +42,8 @@ import { useUserRole } from '~/composables/useUserRole'
 import { getSettingsTabs } from '~/utils/getSettingsTabs'
 
 import { defineAsyncComponent } from 'vue'
+// Eagerly load ProfileTab to avoid async loading hiccups for the main settings view
+import ProfileTab from '~/components/settings/ProfileTab.vue'
 
 const props = defineProps({
   initial: { type: String, default: 'profile' }
@@ -49,8 +51,9 @@ const props = defineProps({
 
 const { isQuizMaster, isquizee } = useUserRole()
 
-const componentMap: Record<string, ReturnType<typeof defineAsyncComponent>> = {
-  profile: defineAsyncComponent(() => import('~/components/settings/ProfileTab.vue')),
+const componentMap: Record<string, any> = {
+  // Profile is critical and should render immediately without async boundary issues
+  profile: ProfileTab,
   security: defineAsyncComponent(() => import('~/components/settings/SecurityTab.vue')),
   notifications: defineAsyncComponent(() => import('~/components/settings/NotificationsTab.vue')),
   payouts: defineAsyncComponent(() => import('~/components/settings/PayoutsTab.vue')),

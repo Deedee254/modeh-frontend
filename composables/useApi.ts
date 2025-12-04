@@ -17,8 +17,9 @@ export function useApi() {
   function getXsrfFromCookie() {
     try {
       if (typeof document === 'undefined') return null
-      // if we recently parsed the cookie, reuse the cached token for 5s
-      if (_lastXsrf && Date.now() - _lastXsrfAt < 5_000) return _lastXsrf
+      // if we recently parsed the cookie, reuse the cached token for 30s (not 5s)
+      // to avoid re-parsing during logout->login flow
+      if (_lastXsrf && Date.now() - _lastXsrfAt < 30_000) return _lastXsrf
       const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
       if (!match || typeof match[1] !== 'string') return null
       _lastXsrf = decodeURIComponent(match[1])
@@ -34,8 +35,9 @@ export function useApi() {
   async function ensureCsrf() {
     // Avoid repeated network calls: if an ensure is in-flight, reuse its promise.
     // Also skip a new fetch if we recently fetched and the cookie appears present.
+    // Note: After logout clears the cache (_csrfFetchedAt = 0), we MUST fetch fresh.
     try {
-      if (typeof document !== 'undefined') {
+      if (typeof document !== 'undefined' && _csrfFetchedAt > 0) {
         const xsrf = getXsrfFromCookie()
         if (xsrf && Date.now() - _csrfFetchedAt < 30_000) return
       }
@@ -141,8 +143,8 @@ export function useApi() {
   }
 
   async function postJson(path: string, body: any) {
-    // Skip session renewal check for authentication endpoints (login/register)
-    const skipSession = typeof path === 'string' && (path === '/api/login' || path === '/login' || path.endsWith('/login'))
+    // Skip session renewal check for authentication endpoints (login/register/logout)
+    const skipSession = typeof path === 'string' && (path === '/api/login' || path === '/login' || path === '/api/logout' || path.endsWith('/login'))
     if (!skipSession) await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {

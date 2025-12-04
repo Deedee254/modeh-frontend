@@ -17,8 +17,8 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.5m-2.5 0H3m14 0v-6m0 0V9m0 6v6m-9-13h9" />
                 </svg>
-                <span class="flex items-center gap-1">
-                  {{ profile?.institution }}
+                  <span class="flex items-center gap-1">
+                    {{ instName }}
                   <svg v-if="user?.institution_verified" class="w-4 h-4 text-green-300" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                   </svg>
@@ -356,6 +356,7 @@ interface User {
   phone?: string
   avatar?: string
   avatar_url?: string
+  avatarUrl?: string
   points?: number
   rewards?: { points?: number }
   username?: string
@@ -365,7 +366,7 @@ interface User {
   quizeeProfile?: {
     first_name?: string
     last_name?: string
-    institution?: string
+    institution?: string | { name?: string; slug?: string }
     grade?: { id: number; name: string }
     grade_id?: number
     level?: { id: number; name: string }
@@ -396,8 +397,8 @@ const userUsername = computed(() => {
   return 'user'
 })
 
-// Prefer `avatar_url` then fallback to `avatar`; resolve via runtime apiBase
-const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url || user.value?.avatar) || '/logo/avatar-placeholder.png')
+// Prefer the auth store's camelCase `avatarUrl` while falling back to legacy keys for safety.
+const userAvatar = computed(() => resolveAssetUrl(user.value?.avatarUrl || user.value?.avatar || user.value?.avatar_url) || '/logo/avatar-placeholder.png')
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points
   return typeof p === 'number' ? `${p}` : '0'
@@ -455,4 +456,15 @@ function formatActivityDate(date: string | null | undefined): string {
     day: 'numeric'
   })
 }
+
+// Institution name helper: sometimes `profile.institution` is an object, sometimes a string.
+const instName = computed(() => {
+  const inst = profile.value?.institution
+  if (!inst) return ''
+  if (typeof inst === 'string') return inst
+  if (typeof inst === 'object' && inst.name) return inst.name
+  if (typeof inst === 'object' && inst.slug) return inst.slug
+  // Unknown format - don't show anything
+  return ''
+})
 </script>

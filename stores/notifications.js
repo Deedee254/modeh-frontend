@@ -15,7 +15,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const api = useApi()
 
   // computed unread count for badges
-  const unreadCount = computed(() => items.value.filter(i => !i.read).length)
+  // Exclude chat/message notifications from the general 'unreadCount' so chat is handled by the chat UI.
+  const unreadCount = computed(() => items.value.filter(i => !i.read && (i.type || '').toString().toLowerCase() !== 'message').length)
 
   function openDrawer() { drawerOpen.value = true }
   function closeDrawer() { drawerOpen.value = false }

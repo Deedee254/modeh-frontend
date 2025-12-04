@@ -1,18 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import type { Ref } from 'vue'
+import type { Institution, User } from '~/types'
 import useApi from '~/composables/useApi'
 
 export const useInstitutionsStore = defineStore('institutions', () => {
-  const institution = ref(null)
-  const members = ref([])
-  const requests = ref([])
-  const loading = ref(false)
+  const institution: Ref<Institution | null> = ref(null)
+  const members: Ref<User[]> = ref([])
+  const requests: Ref<User[]> = ref([])
+  const loading: Ref<boolean> = ref(false)
   const api = useApi()
 
   // Keep track of the active institution slug (we prefer slugs for routing) for synchronization with the route
   const STORAGE_KEY = 'modeh.activeInstitutionSlug'
   const initialSlug = (typeof window !== 'undefined') ? (localStorage.getItem(STORAGE_KEY) || null) : null
-  const activeInstitutionSlug = ref(initialSlug)
+  const activeInstitutionSlug: Ref<string | null> = ref(initialSlug)
 
   // Persist any changes to the active slug to localStorage so selection survives reloads
   try {
@@ -26,14 +28,15 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     }
   } catch (e) {}
 
-  async function fetchInstitution(id) {
+  async function fetchInstitution(id: string | number) {
     loading.value = true
     try {
       const res = await api.get(`/api/institutions/${id}`)
       if (!res.ok) throw new Error('Failed to fetch institution')
-      institution.value = await res.json()
+      const json = await res.json()
+      institution.value = (json && json.data) || json || null
       // prefer slug for route/query synchronization
-      activeInstitutionSlug.value = institution.value?.slug ?? institution.value?.id ?? null
+      activeInstitutionSlug.value = institution.value?.slug ?? (String(institution.value?.id) || null)
       try {
         if (typeof window !== 'undefined') {
           if (activeInstitutionSlug.value) localStorage.setItem(STORAGE_KEY, String(activeInstitutionSlug.value))
@@ -46,7 +49,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
   }
 
   // Set active institution by id (id may be null to clear)
-  async function setActiveInstitution(id) {
+  async function setActiveInstitution(id: string | number | null) {
     if (!id) {
       institution.value = null
       activeInstitutionSlug.value = null
@@ -63,7 +66,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     await fetchInstitution(id).catch(() => {})
   }
 
-  async function fetchMembers(id) {
+  async function fetchMembers(id: string | number) {
     loading.value = true
     try {
       const res = await api.get(`/api/institutions/${id}/members`)
@@ -78,7 +81,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     } finally { loading.value = false }
   }
 
-  async function fetchRequests(id) {
+  async function fetchRequests(id: string | number) {
     loading.value = true
     try {
       const res = await api.get(`/api/institutions/${id}/requests`)
@@ -90,13 +93,13 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     } finally { loading.value = false }
   }
 
-  async function acceptMember(institutionId, userId) {
+  async function acceptMember(institutionId: string | number, userId: string | number) {
     const res = await api.postJson(`/api/institutions/${institutionId}/members/accept`, { user_id: userId })
     if (!res.ok) throw new Error('Failed to accept member')
     return await res.json()
   }
 
-  async function removeMember(institutionId, userId) {
+  async function removeMember(institutionId: string | number, userId: string | number) {
     const res = await api.del(`/api/institutions/${institutionId}/members/${userId}`)
     if (!res.ok) throw new Error('Failed to remove member')
     return await res.json()
@@ -104,3 +107,4 @@ export const useInstitutionsStore = defineStore('institutions', () => {
 
   return { institution, members, requests, loading, activeInstitutionSlug, fetchInstitution, fetchMembers, fetchRequests, acceptMember, removeMember, setActiveInstitution }
 })
+

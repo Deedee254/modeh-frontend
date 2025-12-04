@@ -40,28 +40,36 @@
   </header>
 </template>
 
-<script setup>
-defineProps({});
-defineEmits(['toggle-sidebar']);
-
+<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import type { Ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
 import { useInstitutionsStore } from '~/stores/institutions'
 import { resolveAssetUrl } from '~/composables/useAssets'
+import type { Institution, User } from '~/types'
 
-const open = ref(false)
-const menuRef = ref(null)
+defineProps({})
+defineEmits(['toggle-sidebar'])
+
+const open = ref<boolean>(false)
+const menuRef = ref<HTMLElement | null>(null)
 const auth = useAuthStore()
 const router = useRouter()
 const instStore = useInstitutionsStore()
-const institutionName = computed(() => instStore.institution?.name || 'Institution manager')
+const institutionName = computed(() => {
+  const inst = instStore.institution as Institution | null
+  return inst?.name || 'Institution manager'
+})
 
 // list of institutions available on the authenticated user payload (may be undefined)
-const institutions = computed(() => (auth.user && Array.isArray(auth.user.institutions)) ? auth.user.institutions : [])
+const institutions = computed(() => {
+  const user = auth.user as User | null
+  return (user && Array.isArray(user.institutions)) ? user.institutions : []
+})
 
-function onSelectInstitution(e) {
-  const val = e && e.target ? e.target.value : null
+function onSelectInstitution(e: any) {
+  const val = e && e.target ? (e.target as HTMLSelectElement).value : null
   if (!val) return
   // Set the active institution (the store will fetch details and sync route query)
   instStore.setActiveInstitution(String(val)).catch(() => {})
@@ -82,7 +90,7 @@ function toggleMenu() {
   open.value = !open.value
 }
 
-function handleDocumentClick(e) {
+function handleDocumentClick(e: any) {
   try {
     if (!menuRef.value) return
     const el = menuRef.value
@@ -101,25 +109,30 @@ onBeforeUnmount(() => {
 })
 
 const isInstitutionManager = computed(() => {
-  if (!auth?.user) return false
-  if (auth.user.role === 'institution-manager') return true
-  if (auth.user.institutions && Array.isArray(auth.user.institutions) && auth.user.institutions.length > 0) return true
+  const user = auth.user as User | null
+  if (!user) return false
+  if (user.role === 'institution-manager') return true
+  if (user.institutions && Array.isArray(user.institutions) && user.institutions.length > 0) return true
   return false
 })
 
 const profileLink = computed(() => {
-  if (!auth?.user) return '/'
+  const user = auth.user as User | null
+  if (!user) return '/'
   // If the user is an institution manager or belongs to institutions, point to the institution manager profile
-  if (auth.user.role === 'institution-manager' || (auth.user?.institutions && auth.user.institutions.length > 0)) {
+  if (user.role === 'institution-manager' || (user.institutions && user.institutions.length > 0)) {
     if (instStore.activeInstitutionSlug) return { path: '/institution-manager/profile', query: { institutionSlug: String(instStore.activeInstitutionSlug) } }
     return { path: '/institution-manager/profile' }
   }
-  const role = auth.user.role || 'quizee'
+  const role = user.role || 'quizee'
   if (role === 'quiz-master') return '/quiz-master/profile'
   return '/quizee/profile'
 })
 
-const _instSlug = computed(() => instStore.activeInstitutionSlug || instStore.institution?.slug || null)
+const _instSlug = computed(() => {
+  const inst = instStore.institution as Institution | null
+  return instStore.activeInstitutionSlug || inst?.slug || null
+})
 
 const instManageLink = computed(() => {
   if (_instSlug.value) return { path: `/institution-manager/institutions/${String(_instSlug.value)}` }
@@ -140,7 +153,10 @@ const subscriptionsLink = computed(() => ({ path: '/institution-manager/subscrip
 
 const settingsLink = computed(() => ({ path: '/institution-manager/settings', query: _instSlug.value ? { institutionSlug: String(_instSlug.value) } : {} }))
 
-const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => {
+  const user = auth.user as User | null
+  return resolveAssetUrl(user?.avatarUrl || user?.avatar || user?.avatar_url) || '/logo/avatar-placeholder.png'
+})
 
 function logout() {
   open.value = false

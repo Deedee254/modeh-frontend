@@ -104,10 +104,9 @@ const menuId = `account-menu-${Math.random().toString(36).slice(2,9)}`
 
 const auth = useAuthStore()
 
-// Use asset composable to resolve avatar URL
+// Use asset composable to resolve avatar URL. Prefer camelCase `avatarUrl` normalized by the auth store.
 const userAvatarUrl = computed(() => {
-  // Prefer `avatar_url` then `avatar` and resolve relative paths
-  return resolveAssetUrl(auth?.user?.avatar_url || auth?.user?.avatar) || '/logo/avatar-placeholder.png'
+  return resolveAssetUrl(auth?.user?.avatarUrl || auth?.user?.avatar || auth?.user?.avatar_url) || '/logo/avatar-placeholder.png'
 })
 
 function toggle() {

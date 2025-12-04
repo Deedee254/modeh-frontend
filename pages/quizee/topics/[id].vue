@@ -46,31 +46,15 @@
 
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div v-if="loading" class="text-center py-12">Loading topic...</div>
+        <div v-if="loading" class="text-center py-12"><UiSkeleton :count="6" /></div>
         <div v-else-if="error" class="mt-6 text-red-600">Failed to load this topic.</div>
 
-        <div v-else class="space-y-12">
-          <!-- Topic Details Box -->
-          <div class="bg-white rounded-xl shadow-sm p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ topic?.name }}</h2>
-            <p v-if="topic?.description" class="text-gray-600 mb-6 whitespace-pre-line">{{ topic.description }}</p>
-            
-            <div v-if="topic?.subject?.name" class="mt-8 p-4 bg-brand-50 rounded-lg border border-brand-100">
-              <p class="text-sm text-gray-600">Subject:</p>
-              <NuxtLink 
-                :to="`/quizee/subjects/${topic.subject.slug || topic.subject.id}`"
-                class="text-brand-600 hover:text-brand-700 font-semibold"
-              >
-                {{ topic.subject.name }}
-              </NuxtLink>
-            </div>
-          </div>
-
-          <!-- Quizzes List -->
+        <div v-else>
+          <!-- Quizzes Grid -->
           <div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-6">Quizzes in this Topic</h3>
-            <div v-if="quizzesLoading" class="text-center">
-              <UiSkeleton :count="3" />
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">Available Quizzes</h3>
+            <div v-if="quizzesLoading" class="mt-6">
+              <UiSkeleton :count="6" />
             </div>
             <div v-else-if="quizzesError" class="text-red-600">
               Failed to load quizzes.
@@ -83,7 +67,7 @@
                 v-for="quiz in quizzes"
                 :key="quiz.id"
                 :quiz-id="quiz.id"
-                :title="quiz.name"
+                :title="quiz.title || quiz.name"
                 :description="quiz.description"
                 :likes="quiz.likes_count"
                 :questions-count="quiz.questions_count"
@@ -167,9 +151,12 @@ async function fetchQuizzes(page = 1) {
       return
     }
     const data = await api.parseResponse(res)
-    quizzes.value = data.quizzes || []
-    quizzesMeta.value = data.meta || null
+    // Backend returns { quizzes: { data: [...], meta: {...} } }
+    const paginatedQuizzes = data?.quizzes || {}
+    quizzes.value = paginatedQuizzes.data || []
+    quizzesMeta.value = paginatedQuizzes || null
   } catch (e) {
+    console.error('Error fetching quizzes:', e)
     quizzesError.value = true
   } finally {
     quizzesLoading.value = false

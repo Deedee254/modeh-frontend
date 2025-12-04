@@ -73,6 +73,7 @@
           :image="resolveIcon(s)"
           :badgeText="(s.name || '').charAt(0).toUpperCase()"
           :topicsCount="s.topics_count || s.topics?.length || 0"
+          :to="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
           :startLink="`/subjects/${s.slug || s.id}`"
           :description="s.description || s.summary || ''"
           :grade="s.grade?.name || s.grade_id || ''"

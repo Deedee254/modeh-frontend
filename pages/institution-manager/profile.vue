@@ -89,7 +89,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useInstitutionsStore } from '~/stores/institutions'
@@ -105,8 +105,9 @@ const auth = useAuthStore()
 const instStore = useInstitutionsStore()
 const accountApi = useAccountApi()
 
-const user = computed(() => auth.user || {})
-const userAvatar = computed(() => resolveAssetUrl(user.value?.avatar_url) || '/logo/avatar-placeholder.png')
+const user = computed(() => auth.user || { name: '', email: '', avatarUrl: '', avatar: '', avatar_url: '' })
+// Auth store normalizes backend snake_case to camelCase (avatar_url -> avatarUrl)
+const userAvatar = computed(() => resolveAssetUrl(user.value?.avatarUrl || user.value?.avatar || user.value?.avatar_url) || '/logo/avatar-placeholder.png')
 const instId = computed(() => instStore.activeInstitutionSlug)
 const instName = computed(() => instStore.institution?.name || '')
 
@@ -124,8 +125,8 @@ function resetForm() {
   success.value = null
 }
 
-function onFileChange(e) {
-  const f = e.target.files && e.target.files[0]
+function onFileChange(e: Event) {
+  const f = (e.target as HTMLInputElement).files && (e.target as HTMLInputElement).files?.[0]
   if (f) avatarFile.value = f
 }
 
@@ -144,7 +145,7 @@ async function submit() {
     await auth.fetchUser()
     success.value = 'Profile updated'
   } catch (e) {
-    error.value = e?.message || 'Failed to update profile'
+    error.value = (e as Error)?.message || 'Failed to update profile'
     throw e
   }
 }

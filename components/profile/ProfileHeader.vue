@@ -11,9 +11,17 @@
     <!-- Avatar + Meta -->
     <div class="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-end gap-4 items-center">
       <div class="-mt-14 sm:-mt-16">
-        <div class="w-20 h-20 sm:w-28 sm:h-28 rounded-full ring-4 ring-white overflow-hidden bg-slate-200 mx-auto sm:mx-0">
-          <img v-if="resolvedAvatarUrl" :src="resolvedAvatarUrl" alt="avatar" class="w-full h-full object-cover" />
-          <div v-else class="w-full h-full grid place-items-center text-slate-400">NA</div>
+        <!-- make this a group so children can respond to hover -->
+        <div class="relative w-20 h-20 sm:w-28 sm:h-28 rounded-full ring-4 ring-white mx-auto sm:mx-0 group">
+          <div class="w-full h-full rounded-full overflow-hidden bg-slate-200">
+            <img v-if="resolvedAvatarUrl" :src="resolvedAvatarUrl" alt="avatar" class="w-full h-full object-cover" />
+            <div v-else class="w-full h-full grid place-items-center text-slate-400">NA</div>
+          </div>
+
+          <!-- optional avatar controls (e.g. edit overlay) - hidden by default, fade in on hover -->
+          <div class="absolute -top-2 -right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150 ease-in-out pointer-events-none group-hover:pointer-events-auto">
+            <slot name="avatarControls" />
+          </div>
         </div>
       </div>
 

@@ -12,7 +12,7 @@
     </template>
   </PageHero>
 
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
     <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
       <SettingsTabs initial="profile" />

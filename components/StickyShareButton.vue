@@ -82,7 +82,14 @@
       </div>
     </transition>
     <!-- Invisible AffiliateShareButton instance so we can open its modal programmatically -->
-    <AffiliateShareButton ref="affiliateRef" class="hidden" />
+    <AffiliateShareButton
+      ref="affiliateRef"
+      class="hidden"
+      :itemType="itemType"
+      :itemId="itemId"
+      :itemTitle="itemTitle"
+      :baseUrl="baseUrl"
+    />
   </div>
 </template>
 

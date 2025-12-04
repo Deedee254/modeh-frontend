@@ -4,9 +4,10 @@ declare module '~/composables/useProfileForm' {
   /** Shape of the profile form state returned by createFormState */
   export interface ProfileFormState {
     display_name: string
-    name: string
-    email: string
+    name?: string
+    email?: string
     institution?: string | null
+    institution_id?: string | number | null
     grade_id?: number | string | null
     level_id?: number | string | null
     phone?: string
@@ -25,7 +26,7 @@ declare module '~/composables/useProfileForm' {
     onFile: (e: Event) => void
     resetAvatar: (userAvatarUrl?: string | null) => void
     validateForm: (form: ProfileFormState) => Record<string, string>
-    saveProfile: (form: ProfileFormState, isQuizMaster: boolean) => Promise<boolean>
+    saveProfile: (form: ProfileFormState, isQuizMasterOrRole: boolean | string) => Promise<boolean>
   }
 }
 

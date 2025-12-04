@@ -87,6 +87,7 @@
                 :subtitle="`${s.quizzes_count} quizzes available`"
                 :image="resolveIcon(s)"
                 :badgeText="(s.name || '').charAt(0).toUpperCase()"
+                :to="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
                 :topicsCount="s.topics_count || s.topics?.length || 0"
                 :startLink="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
                 :description="s.description || s.summary || ''"

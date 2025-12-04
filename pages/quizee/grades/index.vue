@@ -101,7 +101,7 @@
             :title="grade.name"
             :description="grade.description || grade.summary"
             :slug="grade.slug"
-            :href="`/quizee/grades/${grade.slug || grade.id}`"
+            :to="`/quizee/grades/${grade.slug || grade.id}`"
             :icon="grade.icon"
           />
         </div>

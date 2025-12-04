@@ -203,17 +203,6 @@ const emit = defineEmits(['update:modelValue', 'create-topic', 'save', 'next', '
 // Local state
 const currentStep = ref(1)
 const localErrors = ref({ _title: null, _grade: null, _subject: null, _topic: null })
-const selectedLevel = ref(props.modelValue?.level_id ?? '')
-const selectedGrade = ref(props.modelValue?.grade_id ?? '')
-const selectedSubject = ref(props.modelValue?.subject_id ?? '')
-const selectedTopic = ref(props.modelValue?.topic_id ?? '')
-const lastSelectedGrade = ref(null)
-const lastSelectedSubject = ref(null)
-const lastSelectedTopic = ref(null)
-const subjectsPicker = ref(null)
-const topicsPicker = ref(null)
-const subjectQuery = ref('')
-const topicQuery = ref('')
 const fileInput = ref(null)
 
 // Computed
@@ -238,9 +227,6 @@ const displaySubjectError = computed(() => props.errors?._subject || localErrors
 const displayTopicError = computed(() => props.errors?._topic || localErrors.value._topic)
 
 const titleComplete = computed(() => !!title.value?.trim())
-const levelGradeComplete = computed(() => !!(selectedLevel.value && selectedGrade.value))
-const subjectComplete = computed(() => !!selectedSubject.value)
-const topicComplete = computed(() => !!selectedTopic.value)
 
 const previewUrl = computed(() => {
   try {
@@ -259,43 +245,19 @@ const previewUrl = computed(() => {
 const hasCover = computed(() => !!(props.modelValue?.cover || props.modelValue?.cover_image))
 
 const selectedLevelName = computed(() => {
-  const levelId = selectedLevel.value || props.modelValue?.level_id || ''
-  if (!levelId) return props.modelValue?.level_name ?? ''
-  return props.levels.find(l => String(l.id) === String(levelId))?.name || ''
+  return taxonomySelection.value?.level?.name ?? ''
 })
 
 const selectedGradeName = computed(() => {
-  const gradeId = selectedGrade.value || props.modelValue?.grade_id || ''
-  if (!gradeId) return props.modelValue?.grade_name ?? ''
-  return props.grades.find(g => String(g.id) === String(gradeId))?.name || ''
+  return taxonomySelection.value?.grade?.name ?? ''
 })
 
 const selectedSubjectName = computed(() => {
-  const subjectId = selectedSubject.value || props.modelValue?.subject_id || ''
-  if (!subjectId) return props.modelValue?.subject?.name ?? ''
-  return props.subjects.find(s => String(s.id) === String(subjectId))?.name || ''
+  return taxonomySelection.value?.subject?.name ?? ''
 })
 
 const selectedTopicName = computed(() => {
-  const topicId = selectedTopic.value || props.modelValue?.topic_id || ''
-  if (!topicId) return props.modelValue?.topic?.name ?? ''
-  return props.topics.find(t => String(t.id) === String(topicId))?.name || ''
-})
-
-const selectedSubjectObj = computed(() => {
-  const modelSub = props.modelValue?.subject || null
-  if (modelSub && typeof modelSub === 'object' && modelSub.id) return modelSub
-  const sid = selectedSubject.value || props.modelValue?.subject_id || ''
-  if (!sid) return null
-  return props.subjects.find(s => String(s.id) === String(sid)) || sid
-})
-
-const selectedTopicObj = computed(() => {
-  const modelTopic = props.modelValue?.topic || null
-  if (modelTopic && typeof modelTopic === 'object' && modelTopic.id) return modelTopic
-  const tid = selectedTopic.value || props.modelValue?.topic_id || ''
-  if (!tid) return null
-  return props.topics.find(t => String(t.id) === String(tid)) || tid
+  return taxonomySelection.value?.topic?.name ?? ''
 })
 
 // Methods
@@ -325,15 +287,15 @@ function validate() {
     localErrors.value._title = 'Title is required.'
     ok = false
   }
-  if (!selectedGrade.value) {
+  if (!taxonomySelection.value.grade) {
     localErrors.value._grade = 'Grade is required.'
     ok = false
   }
-  if (!selectedSubject.value) {
+  if (!taxonomySelection.value.subject) {
     localErrors.value._subject = 'Subject is required.'
     ok = false
   }
-  if (!selectedTopic.value) {
+  if (!taxonomySelection.value.topic) {
     localErrors.value._topic = 'Topic is required.'
     ok = false
   }
@@ -349,13 +311,11 @@ function validateAndNext() {
 
 function nextStep() {
   if (currentStep.value === 1 && !titleComplete.value) return
-  if (currentStep.value === 2 && !levelGradeComplete.value) return
-  if (currentStep.value === 3 && !subjectComplete.value) return
-  if (currentStep.value === 4 && !topicComplete.value) return
-  if (currentStep.value < 5) {
+  if (currentStep.value === 2 && !taxonomyComplete.value) return
+  if (currentStep.value < 3) {
     currentStep.value++
   } else {
-    validateAndNext()
+    emit('next')
   }
 }
 
@@ -397,65 +357,6 @@ function onCoverChange(e) {
   emit('update:modelValue', newModel)
 }
 
-function onGradeModelUpdate(v) {
-  if (v && typeof v === 'object') {
-    lastSelectedGrade.value = v
-    selectedGrade.value = v.id || ''
-  } else {
-    lastSelectedGrade.value = null
-    selectedGrade.value = v || ''
-  }
-}
-
-function onGradeSelected(item) {
-  lastSelectedGrade.value = item || null
-  selectedGrade.value = item?.id || ''
-  const currentId = item?.id || ''
-  
-  emit('update:modelValue', {
-    ...props.modelValue,
-    grade_id: currentId ? currentId : null,
-    grade: item || null,
-    grade_name: item?.name || null,
-    subject_id: null,
-    subject: null,
-    topic_id: null,
-    topic: null
-  })
-
-  nextTick(async () => {
-    if (subjectsPicker.value && typeof subjectsPicker.value.focusSearch === 'function') {
-      subjectsPicker.value.focusSearch()
-    }
-    try { await fetchSubjectsByGrade(currentId) } catch (e) {}
-  })
-}
-
-function onSubjectPicked(item) {
-  selectedSubject.value = item?.id || ''
-  const sid = item?.id ? (Number(item.id) || null) : null
-
-  if (!sameId(sid, props.modelValue?.subject_id)) {
-    topicQuery.value = ''
-    emit('update:modelValue', { ...props.modelValue, subject_id: sid, topic_id: null, subject: item })
-  }
-
-  nextTick(() => {
-    if (topicsPicker.value && typeof topicsPicker.value.focusSearch === 'function') {
-      topicsPicker.value.focusSearch()
-    }
-  })
-
-  if (sid) {
-    try { fetchTopicsBySubject(sid) } catch (e) {}
-  }
-}
-
-function onTopicPicked(item) {
-  const tid = item?.id ? (Number(item.id) || null) : null
-  emit('update:modelValue', { ...props.modelValue, topic_id: tid, topic: item })
-}
-
 // Taxonomy Flow Picker handlers
 const taxonomySelection = ref({
   level: null,
@@ -489,71 +390,43 @@ const onTaxonomySubmit = (selection) => {
   nextStep()
 }
 
-watch(selectedLevel, async (nv, ov) => {
-  if (sameId(nv, ov)) return
-  selectedGrade.value = ''
-  selectedSubject.value = ''
-  selectedTopic.value = ''
-  lastSelectedGrade.value = null
-  lastSelectedSubject.value = null
-  lastSelectedTopic.value = null
+// Sync taxonomySelection when modelValue is first provided (e.g., when editing existing quiz)
+watch(() => props.modelValue, async (nv) => {
+  if (!nv) return
   
-  emit('update:modelValue', {
-    ...props.modelValue,
-    level_id: nv || null,
-    grade_id: null,
-    subject_id: null,
-    topic_id: null
-  })
-
-  if (nv) {
-    try { await fetchGradesByLevel(nv) } catch (e) {}
-  }
-})
-
-watch(() => props.modelValue, (nv) => {
-  if (!nv) return
-  selectedLevel.value = nv.level_id ?? ''
-  selectedGrade.value = nv.grade_id ?? ''
-  selectedSubject.value = nv.subject_id ?? ''
-  selectedTopic.value = nv.topic_id ?? ''
-}, { deep: true })
-
-// Keep the TaxonomyFlowPicker selection in sync with the incoming modelValue
-watch(async () => props.modelValue, async (nv) => {
-  if (!nv) return
   const levelId = nv.level_id ?? nv.level?.id ?? null
   const gradeId = nv.grade_id ?? nv.grade?.id ?? null
   const subjectId = nv.subject_id ?? nv.subject?.id ?? null
   const topicId = nv.topic_id ?? nv.topic?.id ?? null
 
-  // Ensure grade/subject/topic option lists contain the selected items
-  try {
-    if (levelId) {
-      // fetch grades for this level to populate the grades list if needed
-      try { await fetchGradesByLevel(levelId) } catch (e) {}
-    }
-    if (gradeId) {
-      try { await fetchSubjectsByGrade(gradeId, levelId) } catch (e) {}
-    }
-    if (subjectId) {
-      try { await fetchTopicsBySubject(subjectId) } catch (e) {}
-    }
-  } catch (e) {}
+  // Only initialize if taxonomySelection is empty and modelValue has values
+  if (!taxonomySelection.value.grade && gradeId) {
+    // Preload the taxonomy lists if needed
+    try {
+      if (levelId) {
+        await fetchGradesByLevel(levelId)
+      }
+      if (gradeId) {
+        await fetchSubjectsByGrade(gradeId, levelId)
+      }
+      if (subjectId) {
+        await fetchTopicsBySubject(subjectId)
+      }
+    } catch (e) {}
 
-  // Resolve the actual objects from passed lists or fallback to model properties
-  const levelObj = (props.levels || []).find(l => String(l.id) === String(levelId)) || nv.level || (levelId ? { id: levelId } : null)
-  const gradeObj = (props.grades || []).find(g => String(g.id) === String(gradeId)) || nv.grade || (gradeId ? { id: gradeId } : null)
-  const subjectObj = (props.subjects || []).find(s => String(s.id) === String(subjectId)) || nv.subject || (subjectId ? { id: subjectId } : null)
-  const topicObj = (props.topics || []).find(t => String(t.id) === String(topicId)) || nv.topic || (topicId ? { id: topicId } : null)
+    // Set the taxonomySelection from the modelValue
+    const levelObj = (props.levels || []).find(l => String(l.id) === String(levelId)) || nv.level || (levelId ? { id: levelId } : null)
+    const gradeObj = (props.grades || []).find(g => String(g.id) === String(gradeId)) || nv.grade || (gradeId ? { id: gradeId } : null)
+    const subjectObj = (props.subjects || []).find(s => String(s.id) === String(subjectId)) || nv.subject || (subjectId ? { id: subjectId } : null)
+    const topicObj = (props.topics || []).find(t => String(t.id) === String(topicId)) || nv.topic || (topicId ? { id: topicId } : null)
 
-  taxonomySelection.value = {
-    level: levelObj,
-    grade: gradeObj,
-    subject: subjectObj,
-    topic: topicObj
+    taxonomySelection.value = {
+      level: levelObj,
+      grade: gradeObj,
+      subject: subjectObj,
+      topic: topicObj
+    }
   }
-
 }, { deep: true, immediate: true })
 </script>
 

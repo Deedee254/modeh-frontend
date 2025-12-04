@@ -1,18 +1,8 @@
 <template>
-  <div>
-    <PageHero
-      title="Account settings"
-      description="Manage profile details, security, payouts and notifications"
-      :breadcrumbs="[{ text: 'Dashboard', href: '/quiz-master/dashboard' }, { text: 'Settings', current: true }]"
-    >
-      <template #eyebrow>Quiz-master tools</template>
-    </PageHero>
-
-    <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
-          <SettingsTabs initial="profile" />
-        </div>
+  <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <SettingsTabs initial="profile" />
       </div>
     </div>
   </div>

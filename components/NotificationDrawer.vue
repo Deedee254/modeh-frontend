@@ -93,8 +93,10 @@ import { useNotificationsStore } from '~/stores/notifications'
 const store = useNotificationsStore()
 const loading = ref(false)
 
-const newItems = computed(() => (store.items || []).filter(i => !i.read))
-const earlierItems = computed(() => (store.items || []).filter(i => i.read))
+// Exclude chat/message notifications from the drawer since chat has its own drawer.
+const nonChatItems = computed(() => (store.items || []).filter(i => (i.type || '').toString().toLowerCase() !== 'message'))
+const newItems = computed(() => nonChatItems.value.filter(i => !i.read))
+const earlierItems = computed(() => nonChatItems.value.filter(i => i.read))
 
 // Watch for drawer open/close
 watch(() => store.drawerOpen, async (open) => {

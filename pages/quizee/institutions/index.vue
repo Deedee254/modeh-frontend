@@ -37,30 +37,34 @@
       </div>
 
       <!-- Institutions Grid -->
-      <div v-else-if="institutions.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <NuxtLink
-          v-for="institution in institutions"
+      <div v-else-if="institutionsProcessed.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div
+          v-for="institution in institutionsProcessed"
           :key="institution.id"
-          :to="`/quizee/institutions/${institution.slug}`"
-          class="block bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-6 group"
+          class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-6 group"
         >
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-              <h2 class="text-lg font-bold text-gray-900 group-hover:text-brand-600 transition mb-1">
-                {{ institution.name }}
-              </h2>
-              <p class="text-sm text-gray-600">{{ institution.email || 'No email' }}</p>
+          <NuxtLink
+            :to="`/quizee/institutions/${institution.slug}`"
+            class="block"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex-1">
+                <h2 class="text-lg font-bold text-gray-900 group-hover:text-brand-600 transition mb-1">
+                  {{ institution.name }}
+                </h2>
+                <p class="text-sm text-gray-600">{{ institution.email || 'No email' }}</p>
+              </div>
+              <svg class="w-5 h-5 text-gray-400 group-hover:text-brand-600 transition flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
             </div>
-            <svg class="w-5 h-5 text-gray-400 group-hover:text-brand-600 transition flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+          </NuxtLink>
 
           <div v-if="institution.phone" class="text-sm text-gray-600 mb-3">
             📱 {{ institution.phone }}
           </div>
 
-          <div class="flex items-center gap-3 text-sm text-gray-500">
+          <div class="flex items-center gap-3 text-sm text-gray-500 mb-3">
             <span v-if="institution.users && institution.users.length" class="flex items-center gap-1">
               👥 {{ institution.users.length }} members
             </span>
@@ -68,7 +72,25 @@
               Active
             </span>
           </div>
-        </NuxtLink>
+
+          <!-- Branches (nested under parent) -->
+          <div v-if="institution.children && institution.children.length" class="mt-2 border-t pt-3">
+            <p class="text-sm font-medium text-gray-600 mb-2">Branches</p>
+            <ul class="space-y-2">
+              <li v-for="b in institution.children" :key="b.id">
+                <NuxtLink
+                  :to="`/quizee/institutions/${b.slug}`"
+                  class="text-sm text-brand-600 hover:underline flex items-center gap-2"
+                >
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                  {{ b.name }}
+                </NuxtLink>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <!-- Empty State -->
@@ -156,6 +178,8 @@ interface Institution {
   phone?: string
   slug: string
   users?: any[]
+  // optional children/branches when institutions are grouped
+  children?: Institution[]
   is_active: boolean
 }
 
@@ -169,6 +193,8 @@ interface Pagination {
 const searchQuery = ref('')
 const loading = ref(false)
 const institutions = ref<Institution[]>([])
+// processed roots with nested children/branches
+const institutionsProcessed = ref<Institution[]>([])
 const pagination = ref<Pagination | null>(null)
 const currentPage = ref(1)
 let searchTimeout: NodeJS.Timeout | null = null
@@ -218,6 +244,31 @@ async function fetchInstitutions() {
 
     const data: any = await res.json()
     institutions.value = data.data || data || []
+
+    // Group branches under parent institutions (support parent_id or parentId)
+    const byId: Record<string, any> = {}
+    institutions.value.forEach((inst: any) => {
+      byId[String(inst.id)] = { ...inst, children: inst.children || inst.branches || [] }
+    })
+
+    const roots: any[] = []
+    institutions.value.forEach((inst: any) => {
+      const parentId = inst.parent_id ?? inst.parentId ?? null
+      if (parentId) {
+        const parent = byId[String(parentId)]
+        if (parent) {
+          parent.children = parent.children || []
+          if (!parent.children.find((c: any) => c.id === inst.id)) parent.children.push(inst)
+        } else {
+          roots.push(byId[String(inst.id)])
+        }
+      } else {
+        roots.push(byId[String(inst.id)])
+      }
+    })
+
+    institutionsProcessed.value = roots
+
     pagination.value = {
       current_page: data.current_page || 1,
       per_page: data.per_page || 12,

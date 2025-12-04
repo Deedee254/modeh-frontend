@@ -148,18 +148,18 @@ import useApi from '~/composables/useApi'
 const props = defineProps({
   itemType: {
     type: String,
-    required: true,
-    validator: (value) => ['Quiz', 'Tournament', 'Battle'].includes(value)
+    default: 'Item',
+    validator: (value) => value === undefined || value === null || ['Quiz', 'Tournament', 'Battle', 'Item'].includes(value)
   },
   itemId: {
     type: [String, Number],
-    required: true
+    default: null,
+    required: false
   },
   baseUrl: {
     type: String,
     default: null
-  }
-  ,
+  },
   btnClass: {
     type: String,
     default: null
@@ -220,8 +220,9 @@ const affiliateLink = computed(() => {
   // Prefer the affiliate relation's referral_code, then any appended affiliate_code on user,
   // then a cached value fetched from /api/affiliates/me. If none, return base without query.
   const code = auth.user?.affiliate?.referral_code ?? auth.user?.affiliate_code ?? fetchedAffiliateCode.value ?? ''
-  if (!code) return `${base}/${props.itemId}`
-  return `${base}/${props.itemId}?ref=${encodeURIComponent(code)}`
+  const idPart = props.itemId !== null && props.itemId !== undefined ? `/${props.itemId}` : ''
+  if (!code) return `${base}${idPart}`
+  return `${base}${idPart}?ref=${encodeURIComponent(code)}`
 })
 
 // When the modal opens, fetch the affiliate code if it's not already present on the user

@@ -18,15 +18,32 @@ export function useUserRole() {
   const roles = computed(() => {
     try {
       const u = auth.user as any
-      if (u && Array.isArray(u.roles)) {
-        return u.roles.map((r: any) => (r && (r.name ?? r.title ?? r) ? String(r.name ?? r.title ?? r) : null)).filter(Boolean)
+      if (!u) return []
+      
+      // First, check for explicit roles array
+      if (u.roles && Array.isArray(u.roles) && u.roles.length > 0) {
+        const extracted = u.roles.map((r: any) => {
+          // Handle both { name: "role" } and simple "role" string formats
+          if (typeof r === 'string') return r
+          if (r && typeof r === 'object' && (r.name || r.title)) {
+            return String(r.name || r.title)
+          }
+          return null
+        }).filter(Boolean)
+        if (extracted.length > 0) return extracted
       }
-      if (u && (u.role || u.roles)) {
-        // single role as string
-        return [String(u.role || u.roles)]
+      
+      // Then check for single role string
+      if (u.role && typeof u.role === 'string') {
+        return [String(u.role)]
+      }
+      
+      // Fallback for alternate role field name
+      if (u.global_role && typeof u.global_role === 'string') {
+        return [String(u.global_role)]
       }
     } catch (e) {
-      // ignore and fall-through
+      console.error('Error in useUserRole while extracting roles:', e)
     }
     return []
   })

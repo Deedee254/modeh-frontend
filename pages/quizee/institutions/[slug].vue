@@ -74,6 +74,12 @@
             <p class="text-green-800">You're connected to this institution and can view its members and resources.</p>
           </div>
 
+          <div v-else-if="requestPending" class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-yellow-900 mb-2">Request Sent</h3>
+            <p class="text-yellow-800 mb-4">Your request to join this institution has been sent and is awaiting approval from the institution manager.</p>
+            <div class="text-sm text-gray-600">You will be notified when your membership is approved.</div>
+          </div>
+
           <div v-else class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h3 class="text-lg font-semibold text-yellow-900 mb-2">Join This Institution</h3>
             <p class="text-yellow-800 mb-4">Link your profile to this institution to connect with its community of educators and learners.</p>
@@ -277,6 +283,7 @@ const branches = computed(() => {
 })
 
 const selectedBranchId = ref<number | null>(null)
+const requestPending = ref(false)
 
 // Determine if current user is a member of this institution
 const isUserMember = computed(() => {
@@ -354,22 +361,26 @@ async function joinInstitution() {
       throw new Error(error.message || 'Failed to join institution')
     }
 
-    // Refresh user data to reflect the change
+    const body = await res.json().catch(() => null)
+
+    // Refresh user data to reflect any immediate membership change
     await auth.fetchUser()
 
-    alert.push({
-      type: 'success',
-      message: `Successfully joined ${institution.value.name}!`
-    })
+    const becameMember = isUserMember.value
+
+    if (becameMember) {
+      alert.push({ type: 'success', message: `Successfully joined ${institution.value.name}!` })
+    } else {
+      const pendingFlag = body && (body.pending === true || body.status === 'pending' || /pending|awaiting approval/i.test(body.message || ''))
+  requestPending.value = pendingFlag || !becameMember
+      alert.push({ type: 'info', message: `Request sent to ${institution.value.name}. Awaiting manager approval.` })
+    }
 
     // Refresh the institution data to update member count
     await refreshNuxtData(`institution-${institutionSlug}`)
   } catch (e: any) {
     console.error('Failed to join institution', e)
-    alert.push({
-      type: 'error',
-      message: e.message || 'Failed to join institution. Please try again.'
-    })
+    alert.push({ type: 'error', message: e.message || 'Failed to join institution. Please try again.' })
   } finally {
     joiningLoading.value = false
   }
@@ -388,6 +399,13 @@ onMounted(() => {
     if (branches.value && branches.value.length === 1) {
       selectedBranchId.value = branches.value[0].id
     }
+      // If user already has a pending request (pivot or similar), show awaiting approval
+      if (auth.user && auth.user.institutions && Array.isArray(auth.user.institutions)) {
+        const match = auth.user.institutions.find((inst: any) => inst.id === institution.value!.id || inst.slug === institution.value!.slug)
+        if (match && (match.pivot?.status === 'pending' || match.pivot?.approved === false || match.pivot?.approved === '0')) {
+          requestPending.value = true
+        }
+      }
     // otherwise leave selection null (join main institution) unless user chooses
   }
 })

@@ -66,8 +66,18 @@ async function loadRequests() {
     const resp = await api.get(`/api/institutions/${institutionSlug}/requests`)
     if (api.handleAuthStatus(resp)) return
     const json = await api.parseResponse(resp)
-    requests.value = json?.users || []
-    console.log('Requests loaded:', requests.value)
+    // Backend returns { ok: true, requests: [...], meta: {...} }
+    const items = json?.requests || json?.data || []
+    // Normalize to shape expected by the UI
+    requests.value = (items || []).map((i: any) => ({
+      id: i.id,
+      name: i.name || i.full_name || i.invited_email || null,
+      email: i.email || i.invited_email || null,
+      // backend provides global role on the user as `role`; requests endpoint uses 'global_role'
+      requested_role: i.requested_role || i.role || i.global_role || null,
+      created_at: i.created_at || i.requested_at || null
+    }))
+    console.log('Requests loaded (normalized):', requests.value)
   } catch (e: any) {
     console.error('Error loading requests:', e)
     appAlert.push({ message: 'Failed to load pending requests: ' + (e?.message ?? e), type: 'error' })

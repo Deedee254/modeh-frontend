@@ -83,6 +83,7 @@
                 :description="t.description || t.summary || ''"
                 :quizzesCount="t.quizzes_count || 0"
                 :startLink="`/topics/${t.id}`"
+                :to="`/topics/${encodeURIComponent(t.slug || t.id)}`"
                 startLabel="View Assessments"
               />
             </div>

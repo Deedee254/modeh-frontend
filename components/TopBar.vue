@@ -257,11 +257,11 @@ const { isquizee } = useUserRole()
 const api = useApi()
 const instStore = useInstitutionsStore()
 
+// Only consider a user an institution manager when their role explicitly indicates it.
+// Previously we considered any user with an `institutions` array to be an institution manager,
+// which caused quizee users who had an `institutions` relation to be treated as managers.
 const isInstitutionManager = computed(() => {
-  if (!auth.user) return false
-  if (auth.user.role === 'institution-manager') return true
-  if (auth.user.institutions && Array.isArray(auth.user.institutions) && auth.user.institutions.length > 0) return true
-  return false
+  return !!(auth.user && auth.user.role === 'institution-manager')
 })
 
 const dashboardRoute = computed(() => {
@@ -476,7 +476,8 @@ onBeforeUnmount(() => {
 })
 
 const userName = computed(() => auth.user?.name || 'User')
-const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || auth.user?.avatar) || '/logo/avatar-placeholder.png')
+// Prefer the auth store's camelCase `avatarUrl` while falling back to legacy keys for safety.
+const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatarUrl || auth.user?.avatar || auth.user?.avatar_url) || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
 const userLevel = computed(() => {
   if (auth.user?.quizeeProfile?.level?.name) {

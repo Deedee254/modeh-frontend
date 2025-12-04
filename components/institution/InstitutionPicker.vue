@@ -171,9 +171,10 @@ const effectivePerPage = computed(() => {
 })
 
 const canCreateNew = computed(() => {
-  if (!props.query || props.query.trim() === '') return false
+  const q = String(props.query || '')
+  if (!q || q.trim() === '') return false
   // Don't show create option if an exact match exists
-  return !items.value.some(item => item.name.toLowerCase() === props.query.toLowerCase())
+  return !items.value.some(item => item.name.toLowerCase() === q.toLowerCase())
 })
 
 watch(() => props.modelValue, () => {
@@ -244,7 +245,7 @@ function select(item, isNew = false) {
 function selectNewInstitution() {
   const newInstitution = {
     id: null,
-    name: props.query.trim(),
+    name: String(props.query || '').trim(),
     is_new: true,
     type: 'new'
   }

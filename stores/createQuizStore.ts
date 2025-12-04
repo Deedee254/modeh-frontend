@@ -862,7 +862,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   async function loadQuiz(id: any) {
     try {
       const res = await api.get(`/api/quizzes/${id}`)
-      const { addTopic } = useTaxonomy()
+      const { addTopic, grades: taxGrades, levels: taxLevels, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 
       if(res.ok) {
         const data = await res.json()
@@ -913,6 +913,37 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.subject = loaded.subject || (loaded.subject_id ? { id: loaded.subject_id } : null)
         loaded.grade = loaded.grade || (loaded.grade_id ? { id: loaded.grade_id } : null)
         loaded.level = loaded.level || (loaded.level_id ? { id: loaded.level_id } : null)
+
+        // CRITICAL FIX: Add the loaded taxonomy objects to the composable caches
+        // so they're available in the dropdowns/pickers when displaying the quiz
+        // This ensures preselection works correctly
+        
+        // Ensure level is in the levels ref if it was loaded from server
+        if (loaded.level && loaded.level.id) {
+          try {
+            if (!taxLevels.value.find((l: any) => String(l.id) === String(loaded.level.id))) {
+              taxLevels.value = [...taxLevels.value, loaded.level]
+            }
+          } catch (e) {}
+        }
+
+        // Ensure grade is in the grades ref if it was loaded from server
+        if (loaded.grade && loaded.grade.id) {
+          try {
+            if (!taxGrades.value.find((g: any) => String(g.id) === String(loaded.grade.id))) {
+              taxGrades.value = [...taxGrades.value, loaded.grade]
+            }
+          } catch (e) {}
+        }
+
+        // Ensure subject is in the subjects ref if it was loaded from server
+        if (loaded.subject && loaded.subject.id) {
+          try {
+            if (!taxSubjects.value.find((s: any) => String(s.id) === String(loaded.subject.id))) {
+              taxSubjects.value = [...taxSubjects.value, loaded.subject]
+            }
+          } catch (e) {}
+        }
 
         // If the specific topic is not in the initial list for the subject, fetch it directly
         // This ensures the TaxonomyPicker can display the selection correctly.

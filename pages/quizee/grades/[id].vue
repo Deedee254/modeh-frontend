@@ -58,7 +58,7 @@
               :key="t.id"
               :title="t.name"
               :slug="t.slug"
-              :href="`/quizee/topics/${t.slug || t.id}`"
+              :to="`/quizee/topics/${t.slug || t.id}`"
             />
           </div>
         </div>

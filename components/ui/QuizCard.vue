@@ -109,6 +109,7 @@
 import { computed, ref } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
+import { resolveAssetUrl } from '~/composables/useAssets'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import { useRuntimeConfig } from '#app'
 
@@ -287,14 +288,7 @@ if (process.client && typeof window !== 'undefined' && window.Echo) {
 const resolvedCover = computed(() => {
   const v = props.cover
   if (!v) return ''
-  try {
-    if (/^(?:https?:)?\/\//.test(v) || /^(?:data:|blob:)/.test(v)) return v
-  } catch (e) {}
-  const base = config.public?.apiBase || ''
-  if (!base) return v.startsWith('/') ? v : `/${v}`
-  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
-  const cleanPath = v.startsWith('/') ? v : `/${v}`
-  return `${cleanBase}${cleanPath}`
+  return resolveAssetUrl(v) || ''
 })
 
 defineExpose({
