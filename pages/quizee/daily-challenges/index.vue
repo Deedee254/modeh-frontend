@@ -236,11 +236,11 @@
             <div v-else class="space-y-4">
               <div v-for="item in (history || [])" :key="item && item.id" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <h4 class="font-medium text-gray-900">{{ item.dailyChallenge.title }}</h4>
-                  <p class="text-sm text-gray-600">Score: {{ item.score }}% — {{ new Date(item.completed_at).toLocaleDateString() }}</p>
+                  <h4 class="font-medium text-gray-900">{{ item?.dailyChallenge?.title || item?.title || 'Daily Challenge' }}</h4>
+                  <p class="text-sm text-gray-600">Score: {{ item?.score || 0 }}% — {{ item?.completed_at ? new Date(item.completed_at).toLocaleDateString() : 'N/A' }}</p>
                 </div>
                 <div class="text-right">
-                  <span class="text-sm font-medium text-gray-900">{{ item.dailyChallenge.points_reward }} pts</span>
+                  <span class="text-sm font-medium text-gray-900">{{ item?.dailyChallenge?.points_reward || item?.points_reward || 0 }} pts</span>
                 </div>
               </div>
             </div>
