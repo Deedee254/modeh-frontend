@@ -83,6 +83,20 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Main Content (left: spans 2 cols on large screens) -->
         <div class="lg:col-span-2 space-y-8">
+          <!-- Qualification Phase: "Take Qualifier" Button -->
+          <div v-if="tournament.status === 'upcoming' && isRegistered && !userHasQualified && !currentBattle" class="bg-blue-50 rounded-xl p-6 shadow-sm border border-blue-200">
+            <h2 class="text-xl font-bold mb-4 text-blue-900">Qualification Round</h2>
+            <p class="text-blue-800 mb-4">
+              This tournament starts with a qualification round. Answer questions to earn a spot in the bracket!
+            </p>
+            <button
+              @click="router.push(`/quizee/tournaments/${tournament.id}/qualify`)"
+              class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
+            >
+              Take Qualifier
+            </button>
+          </div>
+
           <!-- User Battle / Taking Area -->
           <div v-if="currentBattle" class="bg-white rounded-xl p-6 shadow-sm">
             <h2 class="text-xl font-bold mb-4">
@@ -458,6 +472,7 @@ const fetchTournament = async () => {
 
     await checkRegistrationStatus();
     await fetchLeaderboard();
+    await checkQualificationStatus();
   } catch (error) {
     console.error("Error fetching tournament:", error);
   } finally {
@@ -489,6 +504,35 @@ const isTaking = computed(() => {
       (currentBattle.value.status || "").toString(),
     )
   );
+});
+
+// Check if user has already taken the qualifier (using dedicated API endpoint)
+const userHasQualified = ref(false)
+
+const checkQualificationStatus = async () => {
+  try {
+    const response = await api.get(
+      `/api/tournaments/${route.params.id}/qualification-status`,
+    )
+    const json: any = await response.json()
+    userHasQualified.value = !!(json?.qualified ?? false)
+  } catch (error) {
+    console.warn('Error checking qualification status:', error)
+    // Non-fatal; user may not be authenticated
+  }
+}
+
+// Check if user has already taken the qualifier (dummy check for now; ideally call an API endpoint)
+const userHasQualifiedComputed = computed(() => {
+  // This is a simple heuristic: if leaderboard is not empty and user is registered, assume they've qualified
+  // In a real implementation, you could add an API endpoint to check qualification status
+  try {
+    const userId = (auth.user as any)?.id;
+    if (!userId || !topPlayers.value || topPlayers.value.length === 0) return false;
+    return topPlayers.value.some((p: any) => p.id === userId);
+  } catch (e) {
+    return false;
+  }
 });
 
 // Check if user is registered and their registration status

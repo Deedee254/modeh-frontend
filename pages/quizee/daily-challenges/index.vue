@@ -258,7 +258,12 @@
                 <div class="space-y-2">
                   <h3 class="text-sm font-medium flex items-center"><Icon name="heroicons:calendar" class="h-4 w-4 mr-2 text-brand-500" />Daily Streak</h3>
                   <div class="flex space-x-1">
-                    <div v-for="day in 7" :key="day" :class="['relative flex items-center justify-center h-8 w-8 rounded-full border', day <= streak ? 'bg-brand-100 border-brand-300 dark:bg-brand-900 dark:border-brand-700' : 'bg-muted/30 border-muted']">
+                    <div v-for="day in 7" :key="day" :class="[
+                      'relative flex items-center justify-center h-8 w-8 rounded-full border transition-all',
+                      day <= streak
+                        ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
+                        : 'bg-muted/30 border-muted text-gray-600'
+                    ]">
                       <span class="text-xs font-medium">{{ day }}</span>
                       <div v-if="day === 7" class="absolute -top-1 -right-1">
                         <Icon name="heroicons:trophy" class="h-3 w-3 text-amber-500" />
@@ -271,22 +276,33 @@
                 <div class="space-y-2">
                   <h3 class="text-sm font-medium flex items-center"><Icon name="heroicons:trophy" class="h-4 w-4 mr-2 text-amber-500" />Streak Rewards</h3>
                   <div class="grid grid-cols-2 gap-2">
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold mb-1">3 Days</div><span class="text-xs font-medium">+50 Coins</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold mb-1">5 Days</div><span class="text-xs font-medium">+100 Coins</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold mb-1">7 Days</div><span class="text-xs font-medium">Special Badge</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold mb-1">14 Days</div><span class="text-xs font-medium">Premium Theme</span></div>
+                    <div v-for="r in rewards" :key="r.days" :class="['border rounded-lg p-2 flex flex-col items-center text-center transition', rewardEarned(r.days) ? 'bg-brand-50 border-brand-200' : 'bg-gray-50 border-gray-200']">
+                      <div :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold mb-1', rewardEarned(r.days) ? 'bg-brand-600 text-white' : 'bg-white text-gray-700']">{{ r.days }} Days</div>
+                      <span class="text-xs font-medium">{{ r.label }}</span>
+                      <div v-if="rewardEarned(r.days)" class="text-xs text-green-600 mt-1 font-semibold">Earned</div>
+                    </div>
                   </div>
                 </div>
 
                 <div class="space-y-2">
                   <h3 class="text-sm font-medium flex items-center"><Icon name="heroicons:trophy" class="h-4 w-4 mr-2 text-purple-500" />Daily Challenge Badges</h3>
                   <div class="grid grid-cols-3 gap-2">
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 rounded-full mb-1" style="background-color: rgba(137, 31, 33, 0.1)"><Icon name="heroicons:sparkles" class="h-3 w-3" :style="{ color: '#891f21' }" /></div><span class="text-xs">First Try</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-brand-100 dark:bg-brand-900 rounded-full mb-1"><Icon name="heroicons:clock" class="h-3 w-3 text-brand-600 dark:text-brand-400" /></div><span class="text-xs">Speedster</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-purple-100 dark:bg-purple-900 rounded-full mb-1"><Icon name="heroicons:star" class="h-3 w-3 text-purple-600 dark:text-purple-400" /></div><span class="text-xs">Perfect</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center opacity-50"><div class="p-1 bg-amber-100 dark:bg-amber-900 rounded-full mb-1"><Icon name="heroicons:trophy" class="h-3 w-3 text-amber-600 dark:text-amber-400" /></div><span class="text-xs">Top 3</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center opacity-50"><div class="p-1 bg-red-100 dark:bg-red-900 rounded-full mb-1"><Icon name="heroicons:gift" class="h-3 w-3 text-red-600 dark:text-red-400" /></div><span class="text-xs">Generous</span></div>
-                    <div class="border rounded-lg p-2 flex flex-col items-center text-center opacity-50"><div class="p-1 bg-slate-100 dark:bg-slate-900 rounded-full mb-1"><Icon name="heroicons:check-circle" class="h-3 w-3 text-slate-600 dark:text-slate-400" /></div><span class="text-xs">Veteran</span></div>
+                    <!-- Use badges fetched from the API when available. Fallback to static placeholders if not. -->
+                    <template v-if="badges && badges.length">
+                      <div v-for="b in badges" :key="b.id || b.name" :class="['border rounded-lg p-2 flex flex-col items-center text-center transition', badgeEarned(b) ? 'bg-brand-50 border-brand-200' : 'bg-white border-gray-200']">
+                        <div :class="['p-1 rounded-full mb-1', badgeEarned(b) ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600']">
+                          <Icon :name="b.icon || 'heroicons:sparkles'" class="h-3 w-3" />
+                        </div>
+                        <span class="text-xs">{{ b.display_name || b.name || 'Badge' }}</span>
+                        <div v-if="badgeEarned(b)" class="text-xs text-green-600 mt-1 font-semibold">Unlocked</div>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <!-- fallback static placeholders -->
+                      <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 rounded-full mb-1" style="background-color: rgba(137, 31, 33, 0.1)"><Icon name="heroicons:sparkles" class="h-3 w-3" :style="{ color: '#891f21' }" /></div><span class="text-xs">First Try</span></div>
+                      <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-brand-100 dark:bg-brand-900 rounded-full mb-1"><Icon name="heroicons:clock" class="h-3 w-3 text-brand-600 dark:text-brand-400" /></div><span class="text-xs">Speedster</span></div>
+                      <div class="border rounded-lg p-2 flex flex-col items-center text-center"><div class="p-1 bg-purple-100 dark:bg-purple-900 rounded-full mb-1"><Icon name="heroicons:star" class="h-3 w-3 text-purple-600 dark:text-purple-400" /></div><span class="text-xs">Perfect</span></div>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -319,19 +335,22 @@
             <div class="grid grid-cols-2 gap-3 text-sm text-gray-600">
               <div class="p-3 bg-gray-50 rounded-lg text-center">
                 <div class="text-xs">Attempts</div>
-                <div class="font-semibold text-gray-900">{{ history?.length ?? 0 }}</div>
+                <div class="font-semibold text-gray-900">{{ statsAttempts }}</div>
               </div>
               <div class="p-3 bg-gray-50 rounded-lg text-center">
                 <div class="text-xs">Today Points</div>
-                <div class="font-semibold text-gray-900">{{ challenge?.points_reward ?? '\u2014' }}</div>
+                <div class="font-semibold text-gray-900">{{ statsTodayPoints }}</div>
               </div>
               <div class="p-3 bg-gray-50 rounded-lg text-center">
                 <div class="text-xs">Difficulty</div>
-                <div class="font-semibold text-gray-900">{{ challenge?.difficulty ?? '\u2014' }}</div>
+                <div class="font-semibold text-gray-900">{{ statsDifficulty }}</div>
               </div>
               <div class="p-3 bg-gray-50 rounded-lg text-center">
                 <div class="text-xs">Leaderboard</div>
-                <div class="font-semibold text-gray-900">Top</div>
+                <div class="font-semibold text-gray-900">
+                  <span v-if="statsLeaderboardTopName !== '\u2014'">{{ statsLeaderboardTopName }}<span v-if="statsLeaderboardTopScore"> — {{ statsLeaderboardTopScore }} pts</span></span>
+                  <span v-else>No entries</span>
+                </div>
               </div>
             </div>
           </div>
@@ -381,9 +400,58 @@ const userLevel = computed(() => {
 const badges = ref([])
 const badgesLoading = ref(true)
 
+// Streak rewards configuration (days -> label shown in UI)
+const rewards = [
+  { days: 3, label: '+50 Coins' },
+  { days: 5, label: '+100 Coins' },
+  { days: 7, label: 'Special Badge' },
+  { days: 14, label: 'Premium Theme' }
+]
+
+function rewardEarned(daysRequired) {
+  try {
+    return Number(streak.value) >= Number(daysRequired)
+  } catch (e) { return false }
+}
+
+function badgeEarned(badge) {
+  // Flexible checks depending on backend shape: look for common flags
+  if (!badge) return false
+  return Boolean(badge.awarded || badge.earned || badge.unlocked || badge.is_unlocked || badge.user_has_badge)
+}
+
 // Leaderboard & streak
 const leaderboard = ref([])
 const streak = ref(0)
+
+// Quick stats computed helpers
+const statsAttempts = computed(() => {
+  try { return history.value ? history.value.length : 0 } catch (e) { return 0 }
+})
+
+const statsTodayPoints = computed(() => {
+  try { return challenge.value?.points_reward ?? '\u2014' } catch (e) { return '\u2014' }
+})
+
+const statsDifficulty = computed(() => {
+  try { return challenge.value?.difficulty ?? '\u2014' } catch (e) { return '\u2014' }
+})
+
+const statsLeaderboardTopName = computed(() => {
+  try {
+    if (!leaderboard.value || !leaderboard.value.length) return '\u2014'
+    const top = leaderboard.value[0]
+    return top?.name || top?.username || top?.display_name || '\u2014'
+  } catch (e) { return '\u2014' }
+})
+
+const statsLeaderboardTopScore = computed(() => {
+  try {
+    if (!leaderboard.value || !leaderboard.value.length) return null
+    const top = leaderboard.value[0]
+    return top?.score ?? top?.points ?? null
+  } catch (e) { return null }
+})
 
 // Countdown display (HH:MM:SS) until end of the UTC day or challenge expiry if present
 const timeRemaining = ref('--:--:--')
@@ -392,11 +460,20 @@ const fetchLeaderboard = async () => {
   try {
     const res = await api.get('/api/daily-challenges/leaderboard')
     if (api.handleAuthStatus(res)) return
-    if (!res.ok) return
-    const data = await res.json()
-    leaderboard.value = data?.data || data || []
+
+    // Use composable's parseResponse which handles content-type and structured errors
+    const parsed = await api.parseResponse(res)
+
+    // Normalize to an array: support both paginated { data: [...] } and raw array
+    let list = []
+    if (Array.isArray(parsed)) list = parsed
+    else if (parsed && Array.isArray(parsed.data)) list = parsed.data
+    else if (parsed && Array.isArray(parsed)) list = parsed
+
+    leaderboard.value = list
   } catch (e) {
-    // ignore leaderboard errors
+    // ignore leaderboard errors — keep previous value
+    console.debug('fetchLeaderboard error', e)
   }
 }
 
@@ -540,6 +617,20 @@ const fetchDailyChallenge = async () => {
     challenge.value = data?.challenge || data?.data?.challenge || data?.data || data || null
     completion.value = data?.completion || data?.data?.completion || null
 
+    // If backend returned the full `questions` array but did not populate
+    // `challenge.questions_count` (some endpoints omit it), populate it
+    // from the returned array so the completion UI can show a proper denominator.
+    if (data?.questions && Array.isArray(data.questions) && challenge.value) {
+      // set questions_count if not present or falsy
+      if (!challenge.value.questions_count) {
+        challenge.value.questions_count = data.questions.length
+      }
+      // include the questions on the challenge object for convenient access
+      if (!challenge.value.questions) {
+        challenge.value.questions = data.questions
+      }
+    }
+
     // Extract debug info for display - prefer challenge object if present
     if (data?.challenge) {
       debugInfo.value = {
@@ -622,9 +713,53 @@ onMounted(async () => {
   // start countdown and fetch leaderboard
   startCountdown()
   fetchLeaderboard()
+
+  // Listen for instant updates emitted by the `take.vue` submit flow
+  const onLeaderboardUpdated = (e) => {
+    try {
+      const payload = e?.detail?.leaderboard
+      if (Array.isArray(payload)) leaderboard.value = payload
+    } catch (err) { /* ignore */ }
+  }
+  const onSubmitted = (e) => {
+    try {
+      const s = e?.detail?.streak
+      if (typeof s !== 'undefined' && s !== null) streak.value = Number(s)
+      // Optionally refresh leaderboard to ensure server ordering
+      fetchLeaderboard()
+      // Refresh badges so newly-awarded badges appear immediately
+      try { fetchBadges() } catch (err) { /* ignore */ }
+    } catch (err) { /* ignore */ }
+  }
+
+  window.addEventListener('daily-challenge:leaderboard:updated', onLeaderboardUpdated)
+  window.addEventListener('daily-challenge:submitted', onSubmitted)
+
+  // Hydrate from localStorage if available (fast path)
+  try {
+    const rawLb = localStorage.getItem('daily-challenge:leaderboard')
+    if (rawLb) {
+      const parsed = JSON.parse(rawLb)
+      if (Array.isArray(parsed)) leaderboard.value = parsed
+    }
+    const rawSt = localStorage.getItem('daily-challenge:last-streak')
+    if (rawSt) {
+      const n = Number(rawSt)
+      if (!Number.isNaN(n)) streak.value = n
+    }
+  } catch (err) { /* ignore localStorage errors */ }
+
+  // store listeners so we can remove them on unmount
+  window.__modeh_daily_challenge_listeners = { onLeaderboardUpdated, onSubmitted }
 })
 
 onBeforeUnmount(() => {
   if (countdownInterval) clearInterval(countdownInterval)
+  try {
+  const listeners = window.__modeh_daily_challenge_listeners || {}
+  if (listeners.onLeaderboardUpdated) window.removeEventListener('daily-challenge:leaderboard:updated', listeners.onLeaderboardUpdated)
+  if (listeners.onSubmitted) window.removeEventListener('daily-challenge:submitted', listeners.onSubmitted)
+  try { delete window.__modeh_daily_challenge_listeners } catch (e) { /* ignore */ }
+  } catch (e) { /* ignore */ }
 })
 </script>

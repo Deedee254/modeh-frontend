@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import useApi from "~/composables/useApi";
 import useTaxonomy from "~/composables/useTaxonomy";
 import Podium from '~/components/leaderboard/Podium.vue'
@@ -38,25 +38,35 @@ const fetchLeaderboard = async () => {
   loading.value = true;
   error.value = null;
   try {
+    // Build params and query string manually — useApi.get doesn't accept a params object.
     const params = {
       page: meta.value.current_page || 1,
     };
-    // Add filters to params if they have a value
     if (filters.value.date) params.date = filters.value.date;
     if (filters.value.level_id) params.level_id = filters.value.level_id;
     if (filters.value.grade_id) params.grade_id = filters.value.grade_id;
 
-    const res = await api.get("/api/daily-challenges/leaderboard", { params });
-    if (res.ok) {
-      const data = await res.json();
-      leaderboard.value = data.data;
-      meta.value = data.meta;
+    const qs = new URLSearchParams(params).toString();
+    const path = `/api/daily-challenges/leaderboard${qs ? `?${qs}` : ''}`;
+
+    const res = await api.get(path);
+    if (api.handleAuthStatus(res)) return;
+
+    const parsed = await api.parseResponse(res);
+
+    // Normalize possible paginated shape { data: [...], meta: {...} }
+    if (parsed && Array.isArray(parsed.data)) {
+      leaderboard.value = parsed.data;
+      meta.value = parsed.meta || {};
+    } else if (Array.isArray(parsed)) {
+      leaderboard.value = parsed;
+      meta.value = {};
     } else {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || "Failed to fetch leaderboard data.");
+      leaderboard.value = [];
+      meta.value = {};
     }
   } catch (e) {
-    error.value = e.message;
+    error.value = e?.message || String(e);
     leaderboard.value = [];
   } finally {
     loading.value = false;
@@ -117,7 +127,51 @@ onMounted(async () => {
       await fetchGradesByLevel(filters.value.level_id);
     else await fetchGrades();
   } catch (e) {}
+  
+  // Hydrate from localStorage fast-path and listen for instant updates
+  try {
+    const rawLb = localStorage.getItem('daily-challenge:leaderboard')
+    if (rawLb) {
+      const parsed = JSON.parse(rawLb)
+      if (Array.isArray(parsed)) leaderboard.value = parsed
+    }
+    const rawSt = localStorage.getItem('daily-challenge:last-streak')
+    if (rawSt) {
+      const n = Number(rawSt)
+      if (!Number.isNaN(n)) {
+        // the leaderboard page doesn't show the streak, but keep for parity
+      }
+    }
+  } catch (err) { /* ignore localStorage errors */ }
+
+  const onLeaderboardUpdated = (e) => {
+    try {
+      const payload = e?.detail?.leaderboard
+      if (Array.isArray(payload)) leaderboard.value = payload
+      else if (Array.isArray(window.__modeh_daily_challenge_leaderboard)) leaderboard.value = window.__modeh_daily_challenge_leaderboard
+    } catch (err) { /* ignore */ }
+  }
+
+  const onSubmitted = (e) => {
+    try {
+      // A submit happened — refresh to ensure server-side ordering/filters
+      fetchLeaderboard()
+    } catch (err) { /* ignore */ }
+  }
+
+  window.addEventListener('daily-challenge:leaderboard:updated', onLeaderboardUpdated)
+  window.addEventListener('daily-challenge:submitted', onSubmitted)
+  window.__modeh_daily_challenge_listeners = { onLeaderboardUpdated, onSubmitted }
 });
+
+onUnmounted(() => {
+  try {
+    const listeners = window.__modeh_daily_challenge_listeners || {}
+    if (listeners.onLeaderboardUpdated) window.removeEventListener('daily-challenge:leaderboard:updated', listeners.onLeaderboardUpdated)
+    if (listeners.onSubmitted) window.removeEventListener('daily-challenge:submitted', listeners.onSubmitted)
+    try { delete window.__modeh_daily_challenge_listeners } catch (e) { /* ignore */ }
+  } catch (e) { /* ignore */ }
+})
 </script>
 
 <template>

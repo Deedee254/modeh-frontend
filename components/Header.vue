@@ -24,7 +24,7 @@
       <div class="flex items-center">
         <NuxtLink to="/" class="flex items-center gap-2">
           <!-- slightly smaller logo for compact header -->
-          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-10 md:h-14 w-auto" />
+              <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8 md:h-12 w-auto" />
         </NuxtLink>
       </div>
 
@@ -130,9 +130,9 @@
       <div v-if="showMobileMenu" class="absolute top-0 left-0 w-full h-screen bg-white dark:bg-slate-900 z-50 md:hidden">
         <div class="p-4">
           <div class="flex justify-between items-center">
-            <NuxtLink to="/" class="flex items-center gap-2">
-                <img src="/logo/modeh-logo.png" alt="Modeh" class="h-10 w-auto" />
-            </NuxtLink>
+      <NuxtLink to="/" class="flex items-center gap-2">
+        <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8 w-auto" />
+      </NuxtLink>
             <button @click="closeMobileMenu">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>

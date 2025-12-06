@@ -36,6 +36,19 @@
       </div>
     </div>
 
+    <!-- Persistent countdown alert (shows near the top during final seconds) -->
+    <div v-if="countdownAlert.show" class="max-w-7xl mx-auto px-4 py-2 sm:px-6 lg:px-8">
+      <div :class="countdownClass" class="rounded px-4 py-2 text-sm flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span v-if="countdownAlert.type === 'warning'" class="text-xl">⚠️</span>
+          <span v-else-if="countdownAlert.type === 'error'" class="text-xl">⛔</span>
+          <span v-else class="text-xl">⏱️</span>
+          <div class="text-sm">{{ countdownAlert.message }}</div>
+        </div>
+        <div class="text-2xl font-mono font-bold">{{ countdownAlert.timeRemaining }}</div>
+      </div>
+    </div>
+
     <!-- Battle Content -->
     <div class="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
@@ -259,7 +272,6 @@ const fetchBattle = async () => {
     const data = json?.data ?? json as Battle
     battle.value = data
     // Normalize questions for QuestionCard component
-    // Normalize questions for QuestionCard component without anonymous callback typing
     const qList: any[] = []
     for (const qItem of (data.questions || [])) {
       const q = qItem as any
@@ -271,12 +283,33 @@ const fetchBattle = async () => {
         media_path: q.media_url // Also set media_path for compatibility
       })
     }
-    questions.value = qList
-  startTimer(data.duration * 60) // Convert minutes to seconds
-  // Use per-question timing if provided by battle payload
+
+    // If backend provided per-question seconds, use it; otherwise fallback to tournament config
     timePerQuestion.value = (data as any).per_question_seconds ?? null
+
+    // If battle didn't include per-question seconds or question count, fetch tournament config and apply fallbacks
+    let tournamentConfig: any = null
+    if (timePerQuestion.value === null || !data.questions || data.questions.length === 0) {
+      try {
+        const tResp = await api.get(`/tournaments/${route.params.id}`)
+        const tJson = await tResp.json().catch(() => null)
+        tournamentConfig = tJson?.tournament ?? tJson
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const configuredCount = (data as any).question_count ?? tournamentConfig?.battle_question_count ?? null
+    const questionCount = configuredCount && Number.isFinite(Number(configuredCount)) ? Math.max(1, Number(configuredCount)) : qList.length
+    questions.value = qList.slice(0, questionCount)
+
+    if (timePerQuestion.value === null) {
+      timePerQuestion.value = tournamentConfig?.battle_per_question_seconds ?? null
+    }
+
+    startTimer(data.duration * 60) // Convert minutes to seconds
     // If per-question timing is enabled, start the question countdown and schedule expiry
-  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
     if (typeof timePerQuestion.value === 'number' && Number.isFinite(timePerQuestion.value) && timePerQuestion.value > 0) {
       const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) ? questionRemaining.value : undefined
       // start the composable interval so `questionRemaining` updates for UI
@@ -321,28 +354,56 @@ const { push: pushAlert } = useAppAlert()
 // Disable context menu, common shortcuts and text selection while this page is active
 useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
 
-// Announce countdowns: show second-by-second announcements when <= 10s
-watch(questionRemaining, (val) => {
-  if (typeof val !== 'number') return
-  const sec = Math.ceil(val)
-  if (sec <= 10 && sec > 0 && lastQuestionAnnouncement.value !== sec) {
-    pushAlert({ message: `${sec} seconds left for this question`, type: 'info' })
-    lastQuestionAnnouncement.value = sec
+// Persistent countdown alert state and helpers (replaces per-second push alerts)
+const countdownAlert = ref({ show: false, type: 'info', message: '', timeRemaining: 0 })
+
+const countdownClass = computed(() => {
+  if (!countdownAlert.value?.type) return 'bg-blue-50 text-blue-800 border border-blue-200'
+  switch (countdownAlert.value.type) {
+    case 'error': return 'bg-red-50 text-red-800 border border-red-200'
+    case 'warning': return 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+    default: return 'bg-blue-50 text-blue-800 border border-blue-200'
   }
 })
 
+function formatSeconds(s: number) {
+  const mins = Math.floor(s / 60)
+  const secs = Math.max(0, Math.floor(s % 60))
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+const updateCountdownAlert = () => {
+  // per-question urgency first
+  if (typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = questionRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(questionRemaining.value)
+    countdownAlert.value.message = `⏱️ Time for this question: ${formatSeconds(Math.ceil(questionRemaining.value))}`
+    return
+  }
+
+  // then overall time
+  if (typeof timeRemaining.value === 'number' && timeRemaining.value <= 5 && timeRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = timeRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(timeRemaining.value)
+    countdownAlert.value.message = `⏱️ Battle time remaining: ${formatSeconds(Math.ceil(timeRemaining.value))}`
+    return
+  }
+
+  countdownAlert.value.show = false
+}
+
+watch(questionRemaining, () => updateCountdownAlert(), { immediate: false })
 watch(timeRemaining, (val) => {
+  // keep critical timeout warning behaviour
   if (typeof val !== 'number') return
   const sec = Math.ceil(val)
-  
-  // Show critical timeout warning when < 30 seconds
   if (sec <= 30 && sec > 0 && !timeoutWarningShown.value) {
     showTimeoutWarning.value = true
     timeoutWarningShown.value = true
     pushAlert({ message: `⏰ CRITICAL: Only ${sec} seconds remaining!`, type: 'warning' })
   }
-  
-  // Disable submit and auto-submit if time expires
   if (sec <= 0) {
     showTimeoutWarning.value = false
     submissionMessage.value = 'Battle timeout - auto-submitting...'
@@ -350,13 +411,9 @@ watch(timeRemaining, (val) => {
     submitBattle()
     return
   }
-  
-  // Second-by-second countdown for last 10 seconds
-  if (sec <= 10 && sec > 0 && lastTotalAnnouncement.value !== sec) {
-    pushAlert({ message: `${sec} seconds remaining for the battle`, type: 'info' })
-    lastTotalAnnouncement.value = sec
-  }
-})
+  // update persistent countdown UI
+  updateCountdownAlert()
+}, { immediate: false })
 
 const selectAnswer = async (optionId: string | number) => {
   if (answerSubmitted.value || !currentQuestion.value) return

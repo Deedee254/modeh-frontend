@@ -32,6 +32,18 @@
     @confirm-submit="submitBattle"
   >
     <template #content>
+        <!-- Persistent countdown alert (shows near the top during final seconds) -->
+        <div v-if="countdownAlert.show" :class="countdownClass" class="mb-4 rounded px-4 py-2 text-sm flex items-center gap-4 justify-between">
+          <div class="flex items-center gap-2">
+            <span v-if="countdownAlert.type === 'warning'" class="text-xl">⚠️</span>
+            <span v-else-if="countdownAlert.type === 'error'" class="text-xl">⛔</span>
+            <span v-else class="text-xl">⏱️</span>
+            <div class="text-sm">{{ countdownAlert.message }}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="text-2xl font-mono font-bold countdown-number" aria-hidden="true">{{ countdownAlert.timeRemaining }}</div>
+          </div>
+        </div>
       <div v-if="loading" class="flex justify-center items-center min-h-[300px]">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-brand-600 border-t-transparent"></div>
       </div>
@@ -163,19 +175,61 @@ const allAnswered = computed(() => questions.value.length > 0 && Object.keys(ans
 
 const { push: pushAlert } = useAppAlert()
 
-// Countdown alerts for total timer and per-question timer
-watch(totalTimeLeft, (val) => {
-  if (typeof val === 'number' && val <= 10 && val > 0) {
-    pushAlert({ message: `${val} second${val === 1 ? '' : 's'} remaining`, type: 'info' })
+// Persistent countdown alert state (shows a single countdown instead of firing many alerts)
+const countdownAlert = ref({
+  show: false,
+  type: 'info', // 'info' | 'warning' | 'error'
+  message: '',
+  timeRemaining: 0
+})
+
+// CSS class computed for alert styling based on type
+const countdownClass = computed(() => {
+  if (!countdownAlert.value?.type) return 'bg-blue-50 text-blue-800 border border-blue-200'
+  switch (countdownAlert.value.type) {
+    case 'error':
+      return 'bg-red-50 text-red-800 border border-red-200'
+    case 'warning':
+      return 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+    default:
+      return 'bg-blue-50 text-blue-800 border border-blue-200'
   }
 })
 
-watch(questionRemaining, (val) => {
-  const secs = Math.ceil(Number(val || 0))
-  if (secs > 0 && secs <= 10) {
-    pushAlert({ message: `${secs} second${secs === 1 ? '' : 's'} left for this question`, type: 'info' })
+// small helper to format seconds -> M:SS
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.max(0, Math.floor(seconds % 60))
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+// Update countdown alert based on which timer is most urgent
+const updateCountdownAlert = () => {
+  // Per-question timer is more urgent: show when <= 5 seconds
+  if (typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = questionRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(questionRemaining.value)
+    countdownAlert.value.message = `⏱️ Time for this question: ${formatTime(Math.ceil(questionRemaining.value))}`
+    return
   }
-})
+
+  // Otherwise check overall timer (show when <= 5s)
+  if (typeof totalTimeLeft.value === 'number' && totalTimeLeft.value <= 5 && totalTimeLeft.value > 0 && battle.value?.settings?.time_total_seconds) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = totalTimeLeft.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(totalTimeLeft.value)
+    countdownAlert.value.message = `⏱️ Quiz time remaining: ${formatTime(Math.ceil(totalTimeLeft.value))}`
+    return
+  }
+
+  // otherwise hide
+  countdownAlert.value.show = false
+}
+
+// Watch timers and update the single countdown alert (avoids per-second pushAlert spam)
+watch(totalTimeLeft, () => updateCountdownAlert(), { immediate: false })
+watch(questionRemaining, () => updateCountdownAlert(), { immediate: false })
 
 function onQuestionSelect(val) {
   const q = currentQuestion.value
@@ -459,5 +513,15 @@ onBeforeUnmount(() => {
   0% { opacity: 0.2; transform: translateY(0) }
   50% { opacity: 1; transform: translateY(-4px) }
   100% { opacity: 0.2; transform: translateY(0) }
+}
+
+/* Countdown number pulse animation */
+.countdown-number {
+  animation: countdown-pulse 1s infinite linear;
+}
+@keyframes countdown-pulse {
+  0% { transform: scale(1); opacity: 1 }
+  50% { transform: scale(1.08); opacity: 0.95 }
+  100% { transform: scale(1); opacity: 1 }
 }
 </style>

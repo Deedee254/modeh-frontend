@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-4xl mx-auto px-4">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <PageHero
         v-if="result?.battle"
         :title="result.battle.name || 'Battle Results'"
@@ -76,17 +76,17 @@
                 <!-- Your Answer -->
                 <div class="p-4 rounded-lg" :class="myAnswerClass(q)">
                   <p class="font-semibold mb-1">Your Answer</p>
-                  <p class="font-mono">{{ Array.isArray(myAnswer(q)?.selected) ? myAnswer(q)?.selected.map(a => a.toString()).join(', ') : myAnswer(q)?.selected?.toString() || 'Not answered' }}</p>
+                  <p class="font-mono">{{ formatSelected(q, myAnswer(q)?.selected) }}</p>
                 </div>
                 <!-- Opponent's Answer -->
                 <div class="p-4 rounded-lg" :class="opponentAnswerClass(q)">
                   <p class="font-semibold mb-1">Opponent's Answer</p>
-                  <p class="font-mono">{{ Array.isArray(opponentAnswer(q)?.selected) ? opponentAnswer(q)?.selected.map(a => a.toString()).join(', ') : opponentAnswer(q)?.selected?.toString() || 'Not answered' }}</p>
+                  <p class="font-mono">{{ formatSelected(q, opponentAnswer(q)?.selected) }}</p>
                 </div>
                 <!-- Correct Answer -->
                 <div class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800">
                   <p class="font-semibold mb-1">Correct Answer</p>
-                  <p class="font-mono">{{ Array.isArray(q.correct) ? q.correct.map(a => a.toString()).join(', ') : q.correct?.toString() || 'Not provided' }}</p>
+                  <p class="font-mono">{{ formatSelected(q, q.correct) }}</p>
                 </div>
               </div>
             </div>
@@ -132,10 +132,18 @@ onMounted(async () => {
       credentials: 'include'
     })
     // $fetch automatically unwraps the response
+    // Support two possible response shapes:
+    // 1) { battle: {...}, questions: [...] } (older shape)
+    // 2) { ok: true, result: { battle: {...}, questions: [...] } } (current shape)
     if (res?.battle) {
       result.value = res
       // Cache the results for future use
       answerStore.storeAttemptForReview(battleId, res)
+    } else if (res?.result) {
+      // set result to the inner result object so template bindings like
+      // result.battle and result.questions continue to work
+      result.value = res.result
+      answerStore.storeAttemptForReview(battleId, res.result)
     }
   } catch (error) {
     console.error("Failed to fetch battle results:", error)
@@ -220,6 +228,41 @@ const opponentAnswerClass = (q) => {
   return answer.correct_flag
     ? 'bg-green-50 border border-green-200 text-green-800'
     : 'bg-red-50 border border-red-200 text-red-800'
+}
+
+/**
+ * Format a selected value (index or text) into a human readable string using
+ * the question options when possible. Handles arrays of indices, single index
+ * strings/numbers, or raw text answers.
+ */
+const formatSelected = (q, selected) => {
+  try {
+    if (!selected) return 'Not answered'
+
+    // find full question object (with options) from loaded battle.questions
+    const fullQ = (result.value && result.value.battle && Array.isArray(result.value.battle.questions))
+      ? result.value.battle.questions.find(x => x.id === (q.question_id || q.id))
+      : null
+
+    const optionTexts = (fullQ && Array.isArray(fullQ.options)) ? fullQ.options.map(o => o.text) : null
+
+    const mapOne = (val) => {
+      // numeric index (string or number) -> map to option text
+      if (optionTexts && (typeof val === 'string' || typeof val === 'number') && String(val).match(/^\d+$/)) {
+        const idx = Number(val)
+        return optionTexts[idx] ?? String(val)
+      }
+      // otherwise return as string
+      return String(val)
+    }
+
+    if (Array.isArray(selected)) {
+      return selected.map(s => mapOne(s)).join(', ')
+    }
+    return mapOne(selected)
+  } catch (e) {
+    return Array.isArray(selected) ? selected.join(', ') : (selected?.toString() || 'Not answered')
+  }
 }
 
 useHead({

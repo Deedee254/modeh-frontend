@@ -9,7 +9,7 @@
 
         <!-- Logo -->
         <NuxtLink :to="isInstitutionManager ? '/institution-manager/dashboard' : (isquizee ? '/quizee/dashboard' : '/quiz-master/dashboard')" class="flex items-center">
-          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-6 sm:h-8 w-auto" />
+          <img src="/logo/modeh-logo.png" alt="Modeh" class="h-5 sm:h-7 w-auto" />
         </NuxtLink>
 
   <!-- Navigation (hidden on mobile) -->
@@ -137,7 +137,7 @@
       <div class="absolute top-0 left-0 right-0 bg-white p-4">
         <div class="flex items-center justify-between">
           <NuxtLink :to="dashboardRoute" class="flex items-center">
-            <img src="/logo/modeh-logo.png" alt="Modeh" class="h-6 w-auto" />
+            <img src="/logo/modeh-logo.png" alt="Modeh" class="h-5 w-auto" />
           </NuxtLink>
           <button @click="() => { ui.mobileNavOpen = false }" class="p-2 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Close menu">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>

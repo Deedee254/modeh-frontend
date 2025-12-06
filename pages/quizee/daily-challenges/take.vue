@@ -25,6 +25,18 @@
     @submit="submitChallenge"
   >
     <template #content>
+      <!-- Persistent countdown alert (shows near the top during final seconds) -->
+      <div v-if="countdownAlert.show" class="mb-4">
+        <div :class="countdownClass" class="rounded px-4 py-2 text-sm flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span v-if="countdownAlert.type === 'warning'" class="text-xl">⚠️</span>
+            <span v-else-if="countdownAlert.type === 'error'" class="text-xl">⛔</span>
+            <span v-else class="text-xl">⏱️</span>
+            <div class="text-sm">{{ countdownAlert.message }}</div>
+          </div>
+          <div class="text-2xl font-mono font-bold">{{ countdownAlert.timeRemaining }}</div>
+        </div>
+      </div>
       <div v-if="errorState.show" class="bg-red-50 border border-red-200 rounded-lg p-6">
         <h3 class="text-lg font-medium text-red-900">Unable to Load Daily Challenge</h3>
         <p class="mt-2 text-sm text-red-700">{{ errorState.message }}</p>
@@ -179,6 +191,44 @@ const lowTime = computed(() => perQuestionSeconds.value <= 5)
 
 const { push: pushAlert } = useAppAlert()
 
+// Persistent countdown alert state for daily challenge
+const countdownAlert = ref({ show: false, type: 'info', message: '', timeRemaining: 0 })
+const countdownClass = computed(() => {
+  if (!countdownAlert.value?.type) return 'bg-blue-50 text-blue-800 border border-blue-200'
+  switch (countdownAlert.value.type) {
+    case 'error': return 'bg-red-50 text-red-800 border border-red-200'
+    case 'warning': return 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+    default: return 'bg-blue-50 text-blue-800 border border-blue-200'
+  }
+})
+
+function formatSeconds(s) {
+  const mins = Math.floor(s / 60)
+  const secs = Math.max(0, Math.floor(s % 60))
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function updateCountdownAlertDaily() {
+  if (typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = questionRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(questionRemaining.value)
+    countdownAlert.value.message = `⏱️ Time for this question: ${formatSeconds(Math.ceil(questionRemaining.value))}`
+    return
+  }
+  if (typeof timeLeft.value === 'number' && timeLeft.value <= 5 && timeLeft.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = timeLeft.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(timeLeft.value)
+    countdownAlert.value.message = `⏱️ Challenge time remaining: ${formatSeconds(Math.ceil(timeLeft.value))}`
+    return
+  }
+  countdownAlert.value.show = false
+}
+
+watch(questionRemaining, () => updateCountdownAlertDaily(), { immediate: false })
+watch(timeLeft, () => updateCountdownAlertDaily(), { immediate: false })
+
 // Disable context menu, common shortcuts and text selection while this page is active
 useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
 
@@ -298,6 +348,34 @@ const submitChallenge = async () => {
     // Prefer explicit `awarded_achievements` then fallback to other shapes
     earnedAchievements.value = data?.awarded_achievements || data?.achievements || data?.data?.achievements || data?.awards || data?.user?.achievements || []
     showResultsModal.value = true
+
+    // --- Instant UI update for leaderboard & streak (no redirect required) ---
+    // Persist a small local cache and dispatch events so other pages/components
+    // can react immediately without waiting for navigation.
+    try {
+      // Streak from server response
+      const newStreak = data?.streak
+      if (typeof newStreak !== 'undefined') {
+        try { localStorage.setItem('daily-challenge:last-streak', String(newStreak)) } catch (e) {}
+        try { window.dispatchEvent(new CustomEvent('daily-challenge:submitted', { detail: { streak: newStreak, submission: data?.submission || null } })) } catch (e) {}
+      }
+
+      // Refresh leaderboard immediately and cache it for other pages
+      try {
+        const lbRes = await api.get('/api/daily-challenges/leaderboard')
+        if (lbRes && lbRes.ok) {
+          const lbJson = await lbRes.json()
+          const list = lbJson?.data || lbJson || []
+          try { localStorage.setItem('daily-challenge:leaderboard', JSON.stringify(list)) } catch (e) {}
+          try { window.dispatchEvent(new CustomEvent('daily-challenge:leaderboard:updated', { detail: { leaderboard: list } })) } catch (e) {}
+        }
+      } catch (e) {
+        // non-fatal: leaderboard refresh failed; continue without blocking the user
+        console.debug('Failed to refresh daily challenge leaderboard immediately:', e)
+      }
+    } catch (e) {
+      // ignore any failures in the instant update logic
+    }
   } catch (error) {
     console.error('Failed to submit challenge:', error)
     // Handle error
