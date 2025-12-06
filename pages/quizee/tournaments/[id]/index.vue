@@ -97,6 +97,18 @@
             </button>
           </div>
 
+          <!-- Debug Info -->
+          <div v-if="true" class="bg-gray-100 p-4 rounded text-xs mb-4">
+            <p><strong>Status:</strong> {{ tournament.status }} (need 'upcoming')</p>
+            <p><strong>Registered:</strong> {{ isRegistered }} (need true)</p>
+            <p><strong>Has Qualified:</strong> {{ userHasQualified }} (need false)</p>
+            <p><strong>Has Battle:</strong> {{ !!currentBattle }} (need false)</p>
+            <p v-if="!isRegistered" class="mt-2 text-orange-600"><strong>⚠️ Not registered - join first!</strong></p>
+            <p v-if="tournament.status !== 'upcoming'" class="mt-2 text-orange-600"><strong>⚠️ Tournament status is '{{ tournament.status }}', not 'upcoming'</strong></p>
+            <p v-if="userHasQualified" class="mt-2 text-orange-600"><strong>✓ Already qualified</strong></p>
+            <p v-if="currentBattle" class="mt-2 text-orange-600"><strong>✓ Already in a battle</strong></p>
+          </div>
+
           <!-- User Battle / Taking Area -->
           <div v-if="currentBattle" class="bg-white rounded-xl p-6 shadow-sm">
             <h2 class="text-xl font-bold mb-4">

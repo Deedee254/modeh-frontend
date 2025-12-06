@@ -46,6 +46,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const user = auth.user
+const api = useApi()
 
 const tournament = ref<Tournament | null>(null)
 const battles = ref<TournamentBattle[]>([])
@@ -70,11 +71,18 @@ const fetchData = async () => {
     loading.value = true
     error.value = null
 
-    const api = useApi()
     const [tournamentResponse, battlesResponse] = await Promise.all([
-      api.get(`/tournaments/${route.params.id}`),
-      api.get(`/tournaments/${route.params.id}/battles`)
+      api.get(`/api/tournaments/${route.params.id}`),
+      api.get(`/api/tournaments/${route.params.id}/battles`)
     ])
+
+    if (!tournamentResponse.ok) {
+      throw new Error('Failed to load tournament data')
+    }
+
+    if (!battlesResponse.ok) {
+      throw new Error('Failed to load battles data')
+    }
 
     const [tournamentJson, battlesJson] = await Promise.all([
       tournamentResponse.json(),
@@ -93,6 +101,7 @@ const fetchData = async () => {
     battles.value = Array.isArray(battlesData) ? battlesData : []
   } catch (error) {
     console.error('Error fetching data:', error)
+    error.value = error instanceof Error ? error.message : 'Failed to load battles'
   } finally {
     loading.value = false
   }
