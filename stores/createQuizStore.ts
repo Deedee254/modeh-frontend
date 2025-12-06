@@ -12,6 +12,7 @@ import useTaxonomy from '~/composables/useTaxonomy'
 
 export interface Quiz {
   id?: number | string | null;
+  created_by?: number | null;
   title: string;
   description: string;
   youtube_url: string | null;
@@ -40,6 +41,7 @@ export interface Quiz {
 
 export interface Question {
   id?: number;
+  created_by?: number | null;
   uid?: string;
   type: string;
   body?: string;
@@ -69,7 +71,7 @@ interface ApiResponse<T> {
 function validateApiResponse<T>(response: unknown): response is ApiResponse<T> {
   if (typeof response !== 'object' || response === null) return false
   if (!('data' in response)) return false
-  
+
   if ('message' in response && typeof response.message !== 'string') return false
   if ('errors' in response) {
     const errors = (response as any).errors
@@ -79,7 +81,7 @@ function validateApiResponse<T>(response: unknown): response is ApiResponse<T> {
       if (!errors[key].every(e => typeof e === 'string')) return false
     }
   }
-  
+
   return true
 }
 
@@ -92,7 +94,7 @@ interface ApiError {
 function isApiError(error: unknown): error is ApiError {
   if (typeof error !== 'object' || error === null) return false
   if (!('message' in error) || typeof (error as any).message !== 'string') return false
-  
+
   if ('errors' in error) {
     const errors = (error as any).errors
     if (typeof errors !== 'object' || errors === null) return false
@@ -101,9 +103,9 @@ function isApiError(error: unknown): error is ApiError {
       if (!errors[key].every(e => typeof e === 'string')) return false
     }
   }
-  
+
   if ('status' in error && typeof (error as any).status !== 'number') return false
-  
+
   return true
 }
 
@@ -130,16 +132,20 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     one_off_price: null,
     visibility: 'draft' as 'draft' | 'published' | 'scheduled',
     cover_image: undefined,
-      cover: undefined,
-      cover_file: undefined
-    };
+    cover: undefined,
+    cover_file: undefined
+  };
 
-    const quiz = ref<Quiz>({ ...initialForm });
-    const questions = ref<Question[]>([]);
-    const questionsErrors = ref<Record<string, string[]>>({})
+  const quiz = ref<Quiz>({ ...initialForm });
+  const questions = ref<Question[]>([]);
+  const questionsErrors = ref<Record<string, string[]>>({})
   const detailsErrors = ref<Record<string, string[]>>({})
   const settingsErrors = ref<Record<string, string[]>>({})
   const publishError = ref<{ message: string; details?: string[] } | null>(null)
+
+  // Track pristine state for discard changes feature
+  const originalForm = ref<Quiz | null>(null)
+
   const quizId = ref(null)
   const lastCreated = ref<any>(null)
   const detailsSaved = ref(false)
@@ -159,21 +165,21 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
    */
   function normalizeQuizForPayload(data: any) {
     const result: any = { ...data }
-    
+
     if (result.grade_id === '') result.grade_id = null
     if (result.subject_id === '') result.subject_id = null
     if (result.level_id === '') result.level_id = null
     if (result.topic_id === '') result.topic_id = null
-    
+
     result.topic_id = result.topic_id ? (Number(result.topic_id) || null) : null
     result.subject_id = result.subject_id ? (Number(result.subject_id) || null) : null
     result.grade_id = result.grade_id ? (Number(result.grade_id) || null) : null
     result.level_id = result.level_id ? (Number(result.level_id) || null) : null
-    
+
     // Force timer values to be numbers
     result.per_question_seconds = result.per_question_seconds ? Number(result.per_question_seconds) : null
     result.timer_minutes = result.timer_minutes ? Number(result.timer_minutes) : null
-    
+
     // Handle attempts_allowed: empty string means unlimited (null), otherwise convert to number
     result.attempts_allowed = (() => {
       const raw = result.attempts_allowed
@@ -181,12 +187,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const n = Number(raw)
       return Number.isFinite(n) ? n : null
     })()
-    
+
     // Ensure boolean fields
     result.use_per_question_timer = Boolean(result.use_per_question_timer)
     result.shuffle_questions = Boolean(result.shuffle_questions)
     result.shuffle_answers = Boolean(result.shuffle_answers)
-    
+
     return result
   }
 
@@ -196,7 +202,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
    */
   function buildQuizPayload(includeTimers = true, includeSettings = true): Record<string, any> {
     const normalized = normalizeQuizForPayload(quiz.value as any)
-    
+
     const payload: any = {
       topic_id: normalized.topic_id,
       title: normalized.title,
@@ -205,22 +211,19 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       subject_id: normalized.subject_id,
       grade_id: normalized.grade_id,
       level_id: normalized.level_id,
+      created_by: normalized.created_by,
     }
-    
+
     if (includeTimers) {
       // If using per-question timer, set per_question_seconds and leave timer_seconds as null
-      if (normalized.use_per_question_timer) {
-        payload.use_per_question_timer = true
-        payload.per_question_seconds = normalized.per_question_seconds || 30
-        payload.timer_seconds = null
-      } else {
-        // If using total timer, set timer_seconds (convert minutes to seconds)
-        payload.use_per_question_timer = false
-        payload.per_question_seconds = null
+      if (includeTimers) {
+        // Send both timer values to backend to ensure data retention on mode switch
+        payload.use_per_question_timer = normalized.use_per_question_timer
+        payload.per_question_seconds = normalized.per_question_seconds || 30 // Default to 30s if null
         payload.timer_seconds = normalized.timer_minutes ? Number(normalized.timer_minutes) * 60 : null
       }
     }
-    
+
     if (includeSettings) {
       payload.attempts_allowed = normalized.attempts_allowed
       payload.shuffle_questions = Boolean(normalized.shuffle_questions)
@@ -228,7 +231,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       payload.access = normalized.access
       payload.visibility = normalized.visibility
       payload.one_off_price = normalized.access === 'paywall' && normalized.one_off_price ? Number(normalized.one_off_price) : null
-      
+
       // DEBUG: Log settings being added
       try {
         console.debug('buildQuizPayload: added settings', {
@@ -238,13 +241,13 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           access: payload.access,
           visibility: payload.visibility,
         })
-      } catch (e) {}
+      } catch (e) { }
     }
-    
+
     try {
       console.debug('buildQuizPayload: complete payload', { payload, includeTimers, includeSettings })
-    } catch (e) {}
-    
+    } catch (e) { }
+
     return payload
   }
 
@@ -342,21 +345,35 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       body: q.body || q.text || q || '',
       explanation: q.explanation ?? null,
       difficulty: (typeof q.difficulty !== 'undefined' && q.difficulty !== null) ? Number(q.difficulty) : 3,
-      marks: (typeof q.marks !== 'undefined' && q.marks !== null) ? Number(q.marks) : 1
+      marks: (typeof q.marks !== 'undefined' && q.marks !== null) ? Number(q.marks) : 1,
+      created_by: q.created_by,
     }
 
     // Pass through taxonomy ids when explicitly present on the question object.
+    // Pass through taxonomy ids when explicitly present on the question object.
+    // Fallback to the current quiz taxonomy if the question doesn't have it set.
+    // This ensures that questions added before the quiz details were finalized (or if sync failed) 
+    // still get created with the correct parentage.
+
+    // Grade ID
     if (typeof q.grade_id !== 'undefined' && q.grade_id !== null) copy.grade_id = q.grade_id
     else if (q.grade && typeof q.grade.id !== 'undefined') copy.grade_id = q.grade.id
+    else if (quiz.value.grade_id) copy.grade_id = quiz.value.grade_id
 
+    // Level ID
     if (typeof q.level_id !== 'undefined' && q.level_id !== null) copy.level_id = q.level_id
     else if (q.level && typeof q.level.id !== 'undefined') copy.level_id = q.level.id
+    else if (quiz.value.level_id) copy.level_id = quiz.value.level_id
 
+    // Subject ID
     if (typeof q.subject_id !== 'undefined' && q.subject_id !== null) copy.subject_id = q.subject_id
     else if (q.subject && typeof q.subject.id !== 'undefined') copy.subject_id = q.subject.id
+    else if (quiz.value.subject_id) copy.subject_id = quiz.value.subject_id
 
+    // Topic ID
     if (typeof q.topic_id !== 'undefined' && q.topic_id !== null) copy.topic_id = q.topic_id
     else if (q.topic && typeof q.topic.id !== 'undefined') copy.topic_id = q.topic.id
+    else if (quiz.value.topic_id) copy.topic_id = quiz.value.topic_id
 
     if (q.media_type) {
       copy.media_type = q.media_type
@@ -408,11 +425,11 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
               found.push({ key: p, file: v })
               continue
             }
-          } catch (e) {}
+          } catch (e) { }
           if (v && typeof v === 'object') stack.push({ cur: v, path: p })
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return found
   }
 
@@ -423,14 +440,14 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   function buildQuestionsFormData(questionsPayload: any[]): FormData {
     const form = new FormData()
     form.append('questions', JSON.stringify(questionsPayload))
-    
+
     for (let i = 0; i < questions.value.length; i++) {
       const file = questions.value[i]?.media_file
       if (file instanceof File) {
         form.append(`question_media[${i}]`, file)
       }
     }
-    
+
     return form
   }
 
@@ -525,18 +542,75 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     return true
   }
 
+  /**
+   * Helper to perform the actual API request for saving quiz data.
+   * centralized logic for:
+   * - determining POST vs PATCH
+   * - handling FormData (files) vs JSON
+   * - error handling
+   */
+  async function performSaveRequest(
+    payload: any,
+    questionsPayload: any[] | undefined,
+    errorRef: Ref<Record<string, string[]>>,
+    files: Array<File | undefined> = []
+  ) {
+    const method = quizId.value ? 'PATCH' : 'POST'
+    const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes'
+
+    let res: Response
+    // check if we have any actual files to upload
+    const hasFiles = files.some(f => f instanceof File)
+
+    if (hasFiles) {
+      const formData = new FormData()
+      if (method === 'PATCH') formData.append('_method', 'PATCH')
+
+      // If we have questionsPayload, we pass it to the form builder
+      // otherwise we just pass the quiz payload
+      appendQuizDataToForm(formData, payload, questionsPayload)
+
+      res = await api.postFormData(url, formData)
+    } else {
+      // JSON path
+      const finalPayload = questionsPayload
+        ? { ...payload, questions: questionsPayload }
+        : payload
+
+      if (method === 'PATCH') {
+        res = await api.patchJson(url, finalPayload)
+      } else {
+        res = await api.postJson(url, finalPayload)
+      }
+    }
+
+    if (api.handleAuthStatus(res)) {
+      alert.push({ type: 'warning', message: 'Session expired — please sign in again' })
+      return null
+    }
+
+    const data = await res.json().catch(() => null)
+
+    if (handleApiErrors(res, data, errorRef)) {
+      return null
+    }
+
+    return data
+  }
+
   function setTab(tab: any) {
     activeTab.value = tab
   }
 
   function reset() {
     quiz.value = { ...initialForm }
+    originalForm.value = null
     questions.value = []
     quizId.value = null
     activeTab.value = 'details'
   }
 
-    async function saveDetails() {
+  async function saveDetails() {
     if (!isDetailsValid.value) {
       alert.push({ type: 'warning', message: 'Please fill in all quiz details.' })
       return false
@@ -544,43 +618,38 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     isSubmitting.value = true
     try {
       const payload = buildQuizPayload(true, false)
-
-      const method = quizId.value ? 'PATCH' : 'POST'
-      const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes'
-      
-      let res: Response;
       const coverFile = quiz.value.cover_file
-      if (coverFile instanceof File) {
-        const formData = new FormData()
-        if (method === 'PATCH') formData.append('_method', 'PATCH')
-        appendQuizDataToForm(formData, { ...payload, cover: coverFile })
-        res = await api.postFormData(url, formData)
-      } else {
-        if (method === 'PATCH') {
-          res = await api.patchJson(url, payload)
-        } else {
-          res = await api.postJson(url, payload)
-        }
-      }
 
-      if (api.handleAuthStatus(res)) {
-        alert.push({ type: 'warning', message: 'Session expired — please sign in again' })
-        return false
-      }
-      const data = await res.json().catch(() => null)
+      const data = await performSaveRequest(
+        { ...payload, cover: coverFile }, // pass cover explicitly if needed by form builder, though appendQuizDataToForm handles keys
+        undefined, // no questions for partial save
+        detailsErrors,
+        [coverFile]
+      )
 
-      if (handleApiErrors(res, data, detailsErrors)) {
-        return false
-      }
+      if (!data) return false
 
       detailsErrors.value = {}
 
-      try { console.debug('saveDetails: api response', data) } catch (e) {}
       const returnedQuiz = (data && (data.quiz || (data.data && data.data.quiz))) ? (data.quiz || data.data.quiz) : (data && data.data && data.data.id ? data.data : (data && data.id ? data : null))
       if (returnedQuiz && returnedQuiz.id) {
         quizId.value = returnedQuiz.id
-        const { level, grade, subject, topic, level_id, grade_id, subject_id, topic_id } = quiz.value;
-        quiz.value = { ...quiz.value, ...returnedQuiz, level, grade, subject, topic, level_id, grade_id, subject_id, topic_id };
+
+        // Merge returned quiz data, ensuring taxonomy IDs are numbers
+        const merged = { ...quiz.value, ...returnedQuiz }
+        if (merged.grade_id) merged.grade_id = Number(merged.grade_id)
+        if (merged.level_id) merged.level_id = Number(merged.level_id)
+        if (merged.subject_id) merged.subject_id = Number(merged.subject_id)
+        if (merged.topic_id) merged.topic_id = Number(merged.topic_id)
+
+        // Ensure objects are preserved if not returned by server (server might return IDs but not full relations immediately)
+        // But if server returns null for ID, we should likely clear the object too? 
+        // For now, prioritize server IDs. If server returns IDs, we trust them.
+        // If server response lacks relations (level, grade objects), keep local ones IF IDs match.
+        // Actually, simplest fix for "parsing": ensure IDs are numbers.
+
+        quiz.value = merged
+        originalForm.value = JSON.parse(JSON.stringify(quiz.value))
         detailsSaved.value = true
       } else {
         console.error('API response missing quiz object:', data)
@@ -605,76 +674,36 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     isSubmitting.value = true;
     try {
       const payload = buildQuizPayload(true, true);
-
-      // DEBUG: Log the complete payload being built
-      try {
-        console.debug('saveQuiz: buildQuizPayload result', {
-          payload,
-          payloadKeys: Object.keys(payload),
-          hasShuffleQuestions: 'shuffle_questions' in payload,
-          hasShuffleAnswers: 'shuffle_answers' in payload,
-          hasAttemptsAllowed: 'attempts_allowed' in payload,
-          hasVisibility: 'visibility' in payload,
-          hasAccess: 'access' in payload,
-        })
-      } catch (e) {}
-
       const sanitizedQuestions = questions.value.map(q => sanitizeQuestionForPayload(q));
-      
-      const method = quizId.value ? 'PATCH' : 'POST';
-      const url = quizId.value ? `/api/quizzes/${quizId.value}` : '/api/quizzes';
 
-      let res: Response;
       const coverFile = quiz.value.cover_file;
-      const hasQuestionFiles = questions.value.some(q => q.media_file instanceof File);
+      // Collect all question media files
+      const questionFiles = questions.value.map(q => q.media_file).filter(f => f instanceof File)
+      const allFiles = (coverFile instanceof File) ? [coverFile, ...questionFiles] : questionFiles
 
-      try {
-        try { console.debug('saveQuiz: outgoing payload preview', { payload, questionsCount: sanitizedQuestions?.length, hasQuestionFiles }) } catch (e) {}
-      } catch (e) {}
-
-      if (coverFile instanceof File || hasQuestionFiles) {
-        try { console.debug('saveQuiz: using FormData path (has files)') } catch (e) {}
-        const formData = new FormData();
-        if (method === 'PATCH') formData.append('_method', 'PATCH');
-        
-        const quizData = { ...payload };
-        if (coverFile instanceof File) {
-          quizData.cover = coverFile;
-        }
-        
-        appendQuizDataToForm(formData, quizData, sanitizedQuestions);
-        res = await api.postFormData(url, formData);
-      } else {
-        try { console.debug('saveQuiz: using JSON path (no files)') } catch (e) {}
-        const finalPayload = { ...payload, questions: sanitizedQuestions };
-        try { console.debug('saveQuiz: final JSON payload', { finalPayload, payloadKeys: Object.keys(finalPayload) }) } catch (e) {}
-        if (method === 'PATCH') {
-          res = await api.patchJson(url, finalPayload);
-        } else {
-          res = await api.postJson(url, finalPayload);
-        }
+      // If cover is file, ensure it's in payload
+      if (coverFile instanceof File) {
+        (payload as any).cover = coverFile
       }
 
-      if (api.handleAuthStatus(res)) {
-        alert.push({ type: 'warning', message: 'Session expired — please sign in again' });
-        return false;
-      }
+      const data = await performSaveRequest(
+        payload,
+        sanitizedQuestions,
+        detailsErrors, // Use detailsErrors for general main errors? or maybe separate? Reusing matching existing logic
+        allFiles as File[]
+      )
 
-      const data = await res.json().catch(() => null);
-
-      if (handleApiErrors(res, data, detailsErrors)) {
-        return false;
-      }
+      if (!data) return false
 
       detailsErrors.value = {};
-      try { console.debug('saveQuiz: api response', data) } catch (e) {}
       const returnedQuiz = (data && (data.quiz || (data.data && data.data.quiz))) ? (data.quiz || data.data.quiz) : (data && data.data && data.data.id ? data.data : (data && data.id ? data : null))
       if (returnedQuiz && returnedQuiz.id) {
         quizId.value = returnedQuiz.id;
-        try { quiz.value = { ...quiz.value, ...returnedQuiz } } catch (e) {}
+        try { quiz.value = { ...quiz.value, ...returnedQuiz } } catch (e) { }
         if (Array.isArray(returnedQuiz.questions) && returnedQuiz.questions.length) {
           questions.value = returnedQuiz.questions.map((q: any, idx: number) => normalizeQuestionForEditor(q))
         }
+        originalForm.value = JSON.parse(JSON.stringify(quiz.value))
       } else {
         console.error('API response missing quiz object:', data);
       }
@@ -701,16 +730,23 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       const payload = buildQuizPayload(true, true)
 
-      const res = await api.patchJson(`/api/quizzes/${quizId.value}`, payload)
-      const data = await res.json().catch(() => null)
+      // Settings only updates, so it relies on existing quiz id.
+      // Reuse performSaveRequest, passing undefined for questions.
+      const data = await performSaveRequest(
+        payload,
+        undefined,
+        settingsErrors
+      )
 
-      if (handleApiErrors(res, data, settingsErrors)) {
-        return false
-      }
+      if (!data) return false
 
       settingsErrors.value = {}
       alert.push({ type: 'success', message: 'Settings saved successfully!' })
       settingsSaved.value = true
+
+      // Update local state if needed (usually settings are already in sync because of v-model)
+      originalForm.value = JSON.parse(JSON.stringify(quiz.value))
+
       persistProgress()
       return true
     } catch (err: unknown) {
@@ -730,7 +766,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     for (const k in q) {
       try {
         if (typeof File !== 'undefined' && q[k] instanceof File) return true
-      } catch (e) {}
+      } catch (e) { }
     }
     return false
   }
@@ -740,22 +776,22 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
    */
   function buildQuestionFormData(sanitizedQuestion: any, question: any): FormData {
     const form = new FormData()
-    
+
     for (const k in question) {
       try {
         if (typeof File !== 'undefined' && question[k] instanceof File) {
           form.append('media', question[k])
         }
-      } catch (e) {}
+      } catch (e) { }
     }
-    
+
     Object.keys(sanitizedQuestion).forEach((k) => {
       const v: any = sanitizedQuestion[k]
       if (v === null || typeof v === 'undefined') return
       if (typeof v === 'object') form.append(k, JSON.stringify(v))
       else form.append(k, String(v))
     })
-    
+
     return form
   }
 
@@ -765,10 +801,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       return
     }
     try {
-      try { console.debug('saveQuestion:start', { quizId: quizId.value, uid: question?.uid || question?.id, type: question?.type }) } catch (e) {}
-      
+      try { console.debug('saveQuestion:start', { quizId: quizId.value, uid: question?.uid || question?.id, type: question?.type }) } catch (e) { }
+
       const sanitizedQuestion = sanitizeQuestionForPayload(question)
-      try { console.debug('saveQuestion: payload', { quizId: quizId.value, sanitizedQuestion }) } catch (e) {}
+      try { console.debug('saveQuestion: payload', { quizId: quizId.value, sanitizedQuestion }) } catch (e) { }
 
       let res: Response
       const hasFile = questionContainsFile(question)
@@ -777,7 +813,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       // This keeps payloads small and uses the server's single-question update endpoint.
       if (question && question.id) {
         // Update existing question
-        try { console.debug(`PATCH /api/questions/${question.id}`, sanitizedQuestion) } catch (e) {}
+        try { console.debug(`PATCH /api/questions/${question.id}`, sanitizedQuestion) } catch (e) { }
         if (hasFile) {
           const form = buildQuestionFormData(sanitizedQuestion, question)
           // multipart doesn't support PATCH verb reliably; emulate with _method
@@ -788,7 +824,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         }
       } else {
         // Create new question under the quiz (existing behavior)
-        try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, sanitizedQuestion) } catch (e) {}
+        try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, sanitizedQuestion) } catch (e) { }
         if (hasFile) {
           const form = buildQuestionFormData(sanitizedQuestion, question)
           res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
@@ -796,13 +832,13 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           res = await api.postJson(`/api/quizzes/${quizId.value}/questions`, sanitizedQuestion)
         }
       }
-      
+
       if (api.handleAuthStatus(res)) return
       if (!res.ok) throw new Error('Failed to save question')
-      
+
       const data = await res.json().catch(() => null)
-      try { console.debug('saveQuestion:response', { status: res.status, body: data }) } catch (e) {}
-      
+      try { console.debug('saveQuestion:response', { status: res.status, body: data }) } catch (e) { }
+
       const idx = questions.value.findIndex(q => q.uid === question.uid || (q.id && question.id && q.id === question.id))
       // prefer server-returned question payload when available
       const returned = data?.question || data?.data || data
@@ -817,7 +853,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       questionsSaved.value = true
       alert.push({ type: 'success', message: 'Question saved' })
     } catch (err: unknown) {
-      try { console.debug('saveQuestion:error', { err: (err as any)?.message || String(err) }) } catch (e) {}
+      try { console.debug('saveQuestion:error', { err: (err as any)?.message || String(err) }) } catch (e) { }
       const e = err as Error
       try {
         if ((err as any)?.response && (err as any).response.status === 422) {
@@ -832,7 +868,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
             questionsErrors.value = { ...questionsErrors.value, [uid]: msgs }
           }
         }
-      } catch (ex) {}
+      } catch (ex) { }
 
       alert.push({ type: 'error', message: e.message })
     }
@@ -858,17 +894,17 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       isSubmitting.value = false;
     }
   }
-  
+
   async function loadQuiz(id: any) {
     try {
       const res = await api.get(`/api/quizzes/${id}`)
       const { addTopic, grades: taxGrades, levels: taxLevels, subjects: taxSubjects, topics: taxTopics } = useTaxonomy()
 
-      if(res.ok) {
+      if (res.ok) {
         const data = await res.json()
         const serverQuiz = data.quiz || data.data || data || {}
         const loaded: any = { ...initialForm, ...serverQuiz }
-        
+
         loaded.level_id = serverQuiz.level_id ?? serverQuiz.level?.id ?? serverQuiz.grade?.level?.id ?? serverQuiz.levelId ?? null
         loaded.grade_id = serverQuiz.grade_id ?? serverQuiz.grade?.id ?? null
         loaded.subject_id = serverQuiz.subject_id ?? serverQuiz.subject?.id ?? null
@@ -878,10 +914,10 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         loaded.grade = serverQuiz.grade || (loaded.grade_id ? { id: loaded.grade_id, name: serverQuiz.grade_name } : null);
         loaded.subject = serverQuiz.subject || (loaded.subject_id ? { id: loaded.subject_id, name: serverQuiz.subject_name } : null);
         loaded.topic = serverQuiz.topic || (loaded.topic_id ? { id: loaded.topic_id, name: serverQuiz.topic_name } : null);
-        
+
         // Set timer mode first to determine which timer field to populate
         loaded.use_per_question_timer = serverQuiz.use_per_question_timer ?? initialForm.use_per_question_timer
-        
+
         // Convert timer_seconds back to timer_minutes for the UI. 
         // When editing, if use_per_question_timer is true, timer_seconds will be null and we use timer_minutes default
         if (serverQuiz.use_per_question_timer) {
@@ -908,7 +944,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           loaded.cover_image = serverQuiz.cover_image
           loaded.cover = serverQuiz.cover_image
         }
-        
+
         loaded.topic = loaded.topic || (loaded.topic_id ? { id: loaded.topic_id } : null)
         loaded.subject = loaded.subject || (loaded.subject_id ? { id: loaded.subject_id } : null)
         loaded.grade = loaded.grade || (loaded.grade_id ? { id: loaded.grade_id } : null)
@@ -917,14 +953,14 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         // CRITICAL FIX: Add the loaded taxonomy objects to the composable caches
         // so they're available in the dropdowns/pickers when displaying the quiz
         // This ensures preselection works correctly
-        
+
         // Ensure level is in the levels ref if it was loaded from server
         if (loaded.level && loaded.level.id) {
           try {
             if (!taxLevels.value.find((l: any) => String(l.id) === String(loaded.level.id))) {
               taxLevels.value = [...taxLevels.value, loaded.level]
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         // Ensure grade is in the grades ref if it was loaded from server
@@ -933,7 +969,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
             if (!taxGrades.value.find((g: any) => String(g.id) === String(loaded.grade.id))) {
               taxGrades.value = [...taxGrades.value, loaded.grade]
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         // Ensure subject is in the subjects ref if it was loaded from server
@@ -942,7 +978,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
             if (!taxSubjects.value.find((s: any) => String(s.id) === String(loaded.subject.id))) {
               taxSubjects.value = [...taxSubjects.value, loaded.subject]
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         // If the specific topic is not in the initial list for the subject, fetch it directly
@@ -961,7 +997,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         }
 
         quiz.value = loaded
-        
+
         const rawQuestions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions : []
         // Normalize questions using the shared normalizer so fields like `open`, `text`, `options`,
         // and `uid` are consistently present for the editor UI. This fixes issues when editing
@@ -973,8 +1009,11 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         detailsSaved.value = !!(quiz.value.title && quiz.value.grade_id && quiz.value.subject_id && quiz.value.topic_id)
         settingsSaved.value = true
         questionsSaved.value = Array.isArray(questions.value) && questions.value.length > 0
+
+        // Deep copy loaded state to originalForm
+        originalForm.value = JSON.parse(JSON.stringify(quiz.value))
       }
-    } catch(err: unknown) {
+    } catch (err: unknown) {
       const e = err as Error
       alert.push({ type: 'error', message: 'Failed to load quiz data.' })
     }
@@ -1036,6 +1075,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
   // Cleanup function to reset store state
   function cleanup() {
     quiz.value = { ...initialForm }
+    originalForm.value = null
     questions.value = []
     questionsErrors.value = {}
     detailsErrors.value = {}
@@ -1065,12 +1105,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       // Return a cleanup function so the calling component can register
       // its own onBeforeUnmount and call this to remove listeners.
       return () => {
-        try { window.removeEventListener('beforeunload', unloadHandler) } catch (e) {}
-        try { cleanup() } catch (e) {}
+        try { window.removeEventListener('beforeunload', unloadHandler) } catch (e) { }
+        try { cleanup() } catch (e) { }
       }
     }
     // If not running in client, return noop
-    return () => {}
+    return () => { }
   }
 
   function addQuestion(q?: any) {
@@ -1104,7 +1144,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     // Check timer is properly configured (either total timer or per-question timer)
     const hasTotalTimer = Number(quiz.value.timer_minutes) > 0
     const hasPerQuestionTimer = quiz.value.use_per_question_timer && Number(quiz.value.per_question_seconds) > 0
-    
+
     if (!hasTotalTimer && !hasPerQuestionTimer) {
       errors._timer = ['Please set a time limit or enable per-question timer']
     }
@@ -1119,7 +1159,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         hasPerQuestionTimer,
         hasTimerError: !!errors._timer
       })
-    } catch (e) {}
+    } catch (e) { }
 
     // Validate questions
     if (!Array.isArray(questions.value) || questions.value.length === 0) {
@@ -1147,7 +1187,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     const isValid = Object.keys(errors).length === 0
 
     if (!isValid) {
-      try { console.debug('validateBeforeSubmit: validation failed', errors) } catch (e) {}
+      try { console.debug('validateBeforeSubmit: validation failed', errors) } catch (e) { }
     }
 
     return { isValid, errors }
@@ -1162,7 +1202,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     const stats = {
       totalQuestions: questions.value.length,
       totalMarks: questions.value.reduce((sum, q) => sum + (Number(q.marks) || 0), 0),
-      avgDifficulty: questions.value.length 
+      avgDifficulty: questions.value.length
         ? (questions.value.reduce((sum, q) => sum + (Number(q.difficulty) || 0), 0) / questions.value.length).toFixed(1)
         : 0
     }
@@ -1194,12 +1234,12 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       // Step 1: Validate everything
       const validation = validateBeforeSubmit()
-      try { console.debug('submitFinalPayload: validation result', { isValid: validation.isValid, errors: validation.errors }) } catch (e) {}
-      
+      try { console.debug('submitFinalPayload: validation result', { isValid: validation.isValid, errors: validation.errors }) } catch (e) { }
+
       if (!validation.isValid) {
         // Set errors on appropriate error objects
         detailsErrors.value = { ...validation.errors }
-        
+
         // Collect error messages for the user
         const errorMessages: string[] = []
         Object.entries(validation.errors).forEach(([key, msgs]) => {
@@ -1207,18 +1247,18 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
             errorMessages.push(...msgs)
           }
         })
-        
+
         // Set publish error for modal display
         publishError.value = {
           message: 'Please fix the highlighted errors before publishing',
           details: errorMessages
         }
-        
+
         alert.push({
           type: 'warning',
           message: 'Please fix the highlighted errors before publishing'
         })
-        try { console.debug('submitFinalPayload: validation failed', { errors: validation.errors, errorMessages }) } catch (e) {}
+        try { console.debug('submitFinalPayload: validation failed', { errors: validation.errors, errorMessages }) } catch (e) { }
         return false
       }
 
@@ -1231,7 +1271,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       try {
         const success = await submitQuiz()
         if (success) {
-          try { console.debug('submitFinalPayload: quiz published successfully', { quizId: quizId.value }) } catch (e) {}
+          try { console.debug('submitFinalPayload: quiz published successfully', { quizId: quizId.value }) } catch (e) { }
           alert.push({
             type: 'success',
             message: 'Quiz published successfully!'
@@ -1253,7 +1293,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           type: 'error',
           message: e.message || 'Failed to publish quiz'
         })
-        try { console.debug('submitFinalPayload: error', e) } catch (err2) {}
+        try { console.debug('submitFinalPayload: error', e) } catch (err2) { }
         return false
       }
     } finally {
@@ -1263,6 +1303,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
 
   return {
     quiz,
+    originalForm,
     questions,
     questionsErrors,
     detailsErrors,

@@ -37,24 +37,70 @@
         </div>
 
         <!-- Score & Rank Summary -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-center flex flex-col justify-center">
-            <div class="text-5xl font-extrabold text-brand-600 dark:text-brand-400">{{ attempt.score || 0 }}<span class="text-3xl text-slate-400 dark:text-slate-500">%</span></div>
-            <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Your Score</div>
+            <div class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-brand-600 dark:text-brand-400">{{ Math.round(attempt.score || 0) }}<span class="text-xl sm:text-2xl text-slate-400 dark:text-slate-500">%</span></div>
+            <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Your Score</div>
           </div>
           <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-center flex flex-col justify-center">
-            <div class="text-5xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ attempt.points_earned ?? 0 }}</div>
-            <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Points Earned</div>
+            <div class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ attempt.points_earned ?? 0 }}</div>
+            <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Points Earned</div>
           </div>
           <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-center flex flex-col justify-center">
-            <div class="text-5xl font-extrabold text-amber-600 dark:text-amber-400">
+            <div class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-blue-600 dark:text-blue-400">
+              {{ correctCount }}/{{ totalCount }}
+            </div>
+            <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Accuracy</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-center flex flex-col justify-center">
+            <div class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-amber-600 dark:text-amber-400">
               <span v-if="rank">{{ rank }}</span>
               <span v-else>-</span>
             </div>
-            <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Your Rank <span v-if="totalParticipants"> (out of {{ totalParticipants }})</span>
+            <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Your Rank <span v-if="totalParticipants"> (/ {{ totalParticipants }})</span>
             </div>
           </div>
+        </div>
+
+        <!-- Performance Insights -->
+        <div v-if="percentile !== null || responseAnalysis" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <!-- Social Motivation -->
+           <div v-if="percentile !== null" class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-md p-6 text-white flex flex-col justify-center items-center text-center">
+              <div class="text-lg font-medium opacity-90">You performed better than</div>
+              <div class="text-4xl font-extrabold my-2">{{ percentile }}%</div>
+              <div class="text-sm opacity-80">of other students</div>
+           </div>
+
+           <!-- Response Time Analysis -->
+           <div v-if="responseAnalysis" class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-slate-200 dark:border-slate-700">
+              <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Response Time Analysis
+              </h3>
+              <div class="space-y-4">
+                 <div v-if="responseAnalysis.fastest" class="flex gap-3">
+                    <div class="text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-lg">
+                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <div>
+                       <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Fastest Answer</div>
+                       <div class="font-bold text-slate-900 dark:text-slate-100">{{ formatTime(responseAnalysis.fastest.time) }}</div>
+                       <div class="text-xs text-slate-500 truncate mt-0.5 max-w-[200px]" v-html="responseAnalysis.fastest.body"></div>
+                    </div>
+                 </div>
+                 <div v-if="responseAnalysis.slowest" class="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    <div class="text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded-lg">
+                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                       <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Slowest Answer</div>
+                       <div class="font-bold text-slate-900 dark:text-slate-100">{{ formatTime(responseAnalysis.slowest.time) }}</div>
+                       <div class="text-xs text-slate-500 truncate mt-0.5 max-w-[200px]" v-html="responseAnalysis.slowest.body"></div>
+                    </div>
+                 </div>
+              </div>
+           </div>
         </div>
 
         <!-- Badges -->
@@ -120,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
 import { useAnswerStore } from '~/stores/answerStore'
@@ -138,6 +184,18 @@ const totalParticipants = ref(null)
 const loading = ref(true)
 const error = ref('')
 const quizId = ref(null)
+const percentile = ref(null)
+const responseAnalysis = ref(null)
+
+const correctCount = computed(() => {
+  if (!attempt.value || !attempt.value.details) return 0
+  return attempt.value.details.filter(d => d.correct).length
+})
+
+const totalCount = computed(() => {
+  if (!attempt.value || !attempt.value.details) return 0
+  return attempt.value.details.length
+})
 
 const answerStore = useAnswerStore()
 
@@ -155,6 +213,8 @@ async function fetchResults() {
       rank.value = cached.rank ?? null
       totalParticipants.value = cached.total_participants ?? null
       quizId.value = cached.quiz_id ?? null
+      percentile.value = cached.percentile ?? null
+      responseAnalysis.value = cached.response_analysis ?? null
     }
 
     // polished confetti animation
@@ -177,6 +237,8 @@ async function fetchResults() {
       rank.value = res.rank || null
       totalParticipants.value = res.total_participants || null
       quizId.value = (res.attempt && res.attempt.quiz_id) || res.quiz_id || null
+      percentile.value = res.percentile ?? null
+      responseAnalysis.value = res.response_analysis ?? null
 
       // Cache the results for future use
       answerStore.storeAttemptForReview(attemptId, {
@@ -185,6 +247,8 @@ async function fetchResults() {
         points: res.points,
         points_earned: res.points ?? res.points_earned,
         rank: res.rank,
+        percentile: res.percentile ?? null,
+        response_analysis: res.response_analysis ?? null,
         total_participants: res.total_participants,
         quiz_id: (res.attempt && res.attempt.quiz_id) || res.quiz_id
       })

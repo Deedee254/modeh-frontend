@@ -65,17 +65,33 @@ function getVideoType(url) {
 }
 
 function formatYouTubeUrl(url) {
-  let videoId = ''
-  try {
-    if (url.includes('youtube.com')) {
-      videoId = url.split('v=')[1]
-      const amp = videoId?.indexOf('&')
-      if (amp !== -1) videoId = videoId.substring(0, amp)
-    } else if (url.includes('youtu.be')) {
-      videoId = url.split('youtu.be/')[1]
-    }
-  } catch (e) { videoId = '' }
-  return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1` : url
+  if (!url) return ''
+  // trim whitespace
+  url = url.trim()
+  
+  // If already an embed URL, just return it
+  if (url.includes('/embed/')) {
+     return url
+  }
+
+  // Robust Regex for ID extraction
+  // Covers: youtu.be, youtube.com/watch?v=, youtube.com/v/, youtube.com/embed/
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+
+  let videoId = (match && match[2].length === 11) ? match[2] : null;
+
+  if (!videoId) {
+    // Basic fallback for simple v= param if regex fails (unlikely for valid urls)
+    try {
+      if (url.includes('v=')) {
+         const parts = url.split('v=')
+         if (parts[1]) videoId = parts[1].split('&')[0]
+      }
+    } catch (e) {}
+  }
+
+  return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1` : url;
 }
 
 function formatVimeoUrl(url) {

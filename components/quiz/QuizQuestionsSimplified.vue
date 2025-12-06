@@ -199,7 +199,7 @@ const store = useCreateQuizStore()
 const questions = computed(() => store.questions)
 const showQuestionModal = ref(false)
 const showImportModal = ref(false)
-const editingQuestion = ref<any>(null)
+const editingQuestion = ref(null)
 
 const typeLabels = {
   mcq: 'Multiple Choice',

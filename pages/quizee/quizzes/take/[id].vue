@@ -300,17 +300,23 @@ function nextQuestion() {
   // Move to next question
   navNextQuestion()
   
-  // Reinitialize timer for new question with 15 seconds
-  startQuestionTimer(15, undefined)
-  
-  // Schedule the expiry action (auto-next or submit)
-  schedulePerQuestionLimit(15, () => {
-    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
-    else {
-      submissionMessage.value = 'Time is over — submitting...'
-      submitAnswers()
-    }
-  }, undefined)
+  // Reinitialize timer for new question using dynamic limit
+  const limit = currentQuestionLimit()
+  if (limit) {
+    startQuestionTimer(limit, undefined)
+    
+    // Schedule the expiry action (auto-next or submit)
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+      else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, undefined)
+  } else {
+    stopQuestionTimer() 
+    clearPerQuestionLimit()
+  }
   
   // Force update countdown alert for new question
   updateCountdownAlert()
@@ -326,16 +332,22 @@ function previousQuestion() {
   // Move to previous question
   navPreviousQuestion()
   
-  // Reinitialize timer for previous question with 15 seconds
-  startQuestionTimer(15, undefined)
+  // Reinitialize timer for previous question using dynamic limit
+  const limit = currentQuestionLimit()
+  if (limit) {
+    startQuestionTimer(limit, undefined)
   
-  schedulePerQuestionLimit(15, () => {
-    if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
-    else {
-      submissionMessage.value = 'Time is over — submitting...'
-      submitAnswers()
-    }
-  }, undefined)
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+      else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, undefined)
+  } else {
+    stopQuestionTimer()
+    clearPerQuestionLimit()
+  }
   
   // Force update countdown alert for new question
   updateCountdownAlert()
@@ -409,21 +421,23 @@ function onQuestionSelect(val) {
 function initializeQuestionTimer() {
   try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
   
-  // Start with 15 seconds per question
-  const timerLimit = 15
+  // Start with dynamic limit per question
+  const limit = currentQuestionLimit()
   
-  // Start the question timer explicitly
-  startQuestionTimer(timerLimit, undefined)
-  
-  // Schedule the expiry callback
-  schedulePerQuestionLimit(timerLimit, () => {
-    if (currentQuestion.value < quizQuestionsLength.value - 1) {
-      nextQuestion()
-    } else {
-      submissionMessage.value = 'Time is over — submitting...'
-      submitAnswers()
-    }
-  }, undefined)
+  if (limit) {
+    // Start the question timer explicitly
+    startQuestionTimer(limit, undefined)
+    
+    // Schedule the expiry callback
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) {
+        nextQuestion()
+      } else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, undefined)
+  }
 }
 
 onMounted(async () => {

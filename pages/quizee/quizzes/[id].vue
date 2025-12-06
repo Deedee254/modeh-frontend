@@ -59,6 +59,23 @@
             </div>
             <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 line-clamp-2">{{ quiz.title }}</h1>
             <div class="flex flex-wrap gap-x-4 gap-y-2 text-white/90 text-sm">
+              <!-- Creator Info -->
+              <div v-if="quiz.created_by" class="flex items-center gap-1.5">
+                 <div class="w-5 h-5 rounded-full bg-gray-300 overflow-hidden" v-if="quiz.created_by.avatar">
+                    <img :src="quiz.created_by.avatar" alt="" class="w-full h-full object-cover">
+                 </div>
+                 <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                 <span>By {{ quiz.created_by.name }}</span>
+              </div>
+              
+              <!-- Pricing -->
+              <div class="flex items-center gap-1.5 font-medium px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm">
+                <span v-if="quiz.is_paid && quiz.price">
+                  {{ typeof quiz.price === 'number' ? '$' + quiz.price : quiz.price }}
+                </span>
+                <span v-else>Free</span>
+              </div>
+
               <div class="flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span>{{ quiz.questions_count || questionCount }} questions</span>
@@ -69,7 +86,7 @@
               </div>
               <div class="flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span>{{ quiz.points || quiz.marks || 10 }} points</span>
+                <span>{{ quiz.marks || quiz.points || 10 }} points</span>
               </div>
             </div>
           </div>
@@ -297,6 +314,15 @@ interface Quiz {
   per_question_seconds?: number | null;
   use_per_question_timer?: boolean;
   attempts_allowed?: number;
+  shuffle_questions?: boolean;
+  shuffle_answers?: boolean;
+  is_paid?: boolean;
+  price?: string | number;
+  created_by?: {
+    id: number;
+    name: string;
+    avatar?: string | null;
+  } | null;
 }
 
 interface RelatedQuiz {
@@ -419,43 +445,6 @@ const related = ref<RelatedQuiz[]>([
 ])
 
 const lastAttempt = ref<LastAttempt | null>(null)
-
-// Media utility functions
-const isYouTube = (url: string | null | undefined): boolean => typeof url === 'string' && (url.includes('youtube.com') || url.includes('youtu.be'))
-const isVimeo = (url: string | null | undefined): boolean => typeof url === 'string' && url.includes('vimeo.com')
-const isVideo = (url: string | null | undefined): boolean => typeof url === 'string' && /\.(mp4|webm|ogg)$/i.test(url)
-
-function getVideoType(url: string): string {
-  const ext = url.split('.').pop()?.toLowerCase() || ''
-  return `video/${ext}`
-}
-
-function formatYouTubeUrl(url: string): string {
-  let videoId = ''
-  try {
-    if (url.includes('youtube.com')) {
-      const query = url.split('?')[1] ?? ''
-      const params = new URLSearchParams(query)
-      videoId = params.get('v') ?? ''
-    } else if (url.includes('youtu.be')) {
-      videoId = url.split('youtu.be/')[1] ?? ''
-    }
-
-    if (typeof videoId === 'string' && videoId.includes('&')) {
-      videoId = (videoId.split('&')[0]) ?? ''
-    }
-  } catch (e) {
-    // if parsing fails, fallback to empty id
-    videoId = ''
-  }
-
-  return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`
-}
-
-function formatVimeoUrl(url: string): string {
-  const vimeoId = url.split('vimeo.com/')[1]
-  return `https://player.vimeo.com/video/${vimeoId}?dnt=1&title=0&byline=0&portrait=0`
-}
 
 // Format time limit for display
 function formatTimeLimit(limit: number | null | undefined): string {

@@ -163,7 +163,7 @@ export function useProfileForm() {
    * Saves profile data to the API (partial updates - only changed fields).
    * Handles both user data and role-specific profile data.
    */
-  async function saveProfile(form, isQuizMasterOrRole) {
+  async function saveProfile(form, isQuizMasterOrRole, originalForm) {
     try {
       // Validate form
       const errors = validateForm(form)
@@ -189,25 +189,25 @@ export function useProfileForm() {
         // Handle null/undefined/empty string equivalence
         const newEmpty = newVal === null || newVal === undefined || newVal === ''
         const oldEmpty = oldVal === null || oldVal === undefined || oldVal === ''
-        
+
         // Both empty = no change
         if (newEmpty && oldEmpty) return false
-        
+
         // One empty, one not = changed
         if (newEmpty !== oldEmpty) return true
-        
+
         // Handle numeric IDs - compare as strings
         if (typeof newVal === 'number' || typeof oldVal === 'number') {
           return String(newVal) !== String(oldVal)
         }
-        
+
         // Default comparison
         return newVal !== oldVal
       }
 
       // Build user data with only changed fields (FormData)
       const userData = new FormData()
-      
+
       // Only add fields that changed
       if (hasChanged(form.display_name, originalForm.display_name)) {
         userData.append('name', form.display_name)
@@ -221,8 +221,8 @@ export function useProfileForm() {
 
       // Build profile data with only changed fields (JSON)
       const profileData = {}
-      
-      
+
+
       if (hasChanged(form.institution, originalForm.institution)) {
         profileData.institution = form.institution || null
       }
@@ -235,12 +235,12 @@ export function useProfileForm() {
       if (hasChanged(form.level_id, originalForm.level_id)) {
         profileData.level_id = form.level_id || null
       }
-      
+
       // Check if subjects actually changed
       const originalSubjectsSet = new Set((originalForm.subjects || []).map(s => String(s)))
       const newSubjectsSet = new Set((form.subjects || []).map(s => String(s)))
       const subjectsChanged = originalSubjectsSet.size !== newSubjectsSet.size ||
-                             ![...originalSubjectsSet].every(s => newSubjectsSet.has(s))
+        ![...originalSubjectsSet].every(s => newSubjectsSet.has(s))
       if (subjectsChanged) {
         profileData.subjects = form.subjects || []
       }
@@ -306,7 +306,7 @@ export function useProfileForm() {
 
       // Update auth store with merged data
       let mergedUser = { ...userJson }
-      
+
       // Ensure profile relationships are loaded
       if (profileJson && profileJson.user) {
         if (role === 'quiz-master' && profileJson.user.quizMasterProfile) {

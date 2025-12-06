@@ -76,6 +76,24 @@
             </div>
           </UiCard>
 
+          <!-- Topic Strength -->
+          <UiCard v-if="topicStrength && topicStrength.length > 0">
+            <template #header>
+              <div class="font-medium">Topic Strength</div>
+            </template>
+            <div class="p-4 space-y-4">
+               <div v-for="topic in topicStrength.slice(0, 5)" :key="topic.name">
+                  <div class="flex justify-between text-sm mb-1">
+                     <span class="text-gray-700 dark:text-gray-300 font-medium">{{ topic.name }}</span>
+                     <span class="text-gray-500">{{ topic.accuracy }}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                     <div class="bg-brand-600 h-2 rounded-full transition-all duration-500" :style="{ width: topic.accuracy + '%' }"></div>
+                  </div>
+               </div>
+            </div>
+          </UiCard>
+
           <!-- Recommended quizzes -->
           <UiCard>
             <template #header>
@@ -364,6 +382,7 @@ const avgQuizTime = ref(0)
 const fastestQuizTime = ref(0)
 const avgQuestionTime = ref(0)
 const pointsToday = ref(0)
+const topicStrength = ref([])
 
 async function fetchStats() {
   try {
@@ -379,6 +398,7 @@ async function fetchStats() {
       avgQuestionTime.value = data.avg_question_time || 0
       pointsToday.value = data.points_today || 0
       streakDays.value = data.current_streak || 0
+      topicStrength.value = data.topic_strength || []
     }
   } catch (e) {
     console.error('Failed to fetch quiz stats:', e)

@@ -428,11 +428,14 @@ async function handleParsedRows(rows) {
     // Ensure imported questions inherit the current quiz taxonomy so server-side created
     // questions already have grade/level/subject/topic set when the quiz is saved.
     try {
-      q.grade_id = store.quiz?.grade_id ?? null
-      q.level_id = store.quiz?.level_id ?? null
-      q.subject_id = store.quiz?.subject_id ?? null
-      q.topic_id = store.quiz?.topic_id ?? null
-    } catch (e) {}
+      // Robust inheritance: try direct ID first, then fall back to object.id
+      q.grade_id = store.quiz?.grade_id ?? (store.quiz?.grade?.id ?? null)
+      q.level_id = store.quiz?.level_id ?? (store.quiz?.level?.id ?? null)
+      q.subject_id = store.quiz?.subject_id ?? (store.quiz?.subject?.id ?? null)
+      q.topic_id = store.quiz?.topic_id ?? (store.quiz?.topic?.id ?? null)
+    } catch (e) {
+      console.warn('Error inheriting taxonomy from quiz store:', e)
+    }
 
     // Ensure answers array is properly set for validation
     const tmp = JSON.parse(JSON.stringify(q))

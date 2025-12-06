@@ -377,39 +377,6 @@ const related = ref([
 // Mock last attempt (replace with actual API call)
 const lastAttempt = ref(null)
 
-// Media utility functions
-const isYouTube = (url) => typeof url === 'string' && (url.includes('youtube.com') || url.includes('youtu.be'))
-const isVimeo = (url) => typeof url === 'string' && url.includes('vimeo.com')
-const isVideo = (url) => typeof url === 'string' && /\.(mp4|webm|ogg)$/i.test(url)
-
-function getVideoType(url) {
-  const ext = url.split('.').pop().toLowerCase()
-  return `video/${ext}`
-}
-
-function formatYouTubeUrl(url) {
-  // Handle both youtube.com and youtu.be URLs
-  let videoId = ''
-  if (url.includes('youtube.com')) {
-    videoId = url.split('v=')[1]
-    const ampersandPosition = videoId?.indexOf('&')
-    if (ampersandPosition !== -1) {
-      videoId = videoId.substring(0, ampersandPosition)
-    }
-  } else if (url.includes('youtu.be')) {
-    videoId = url.split('youtu.be/')[1]
-  }
-  
-  // Return embed URL with additional parameters for better UX
-  return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`
-}
-
-function formatVimeoUrl(url) {
-  // Extract Vimeo ID and format the embed URL
-  const vimeoId = url.split('vimeo.com/')[1]
-  return `https://player.vimeo.com/video/${vimeoId}?dnt=1&title=0&byline=0&portrait=0`
-}
-
 // Format time limit for display
 function formatTimeLimit(limit) {
   if (!limit) return '∞'

@@ -42,17 +42,7 @@
               <TaxonomyFlowPicker class="w-full" v-model="taxonomySelection" :includeTopics="false" :multiSelectSubjects="true" />
             </div>
 
-            <!-- Institution: hide for institution-managers (they manage institutions separately) -->
-            <div v-if="!isInstitutionManager">
-              <label class="block text-sm font-medium text-slate-700 mb-2">Institution</label>
-              <InstitutionPicker
-                class="w-full"
-                :model-value="form.institution_id || form.institution"
-                :query="institutionQuery"
-                @update:query="(v: string) => (institutionQuery = v)"
-                @selected="onInstitutionSelected"
-              />
-            </div>
+            <!-- Institution field removed as per request -->
 
             <!-- Buttons span both columns -->
             <div class="flex gap-2 md:col-span-2">
@@ -175,6 +165,8 @@ const currentProfile = computed(() => {
 
 // Initialize form from user data - will react to user changes
 const form = ref(createFormState(user.value))
+// Track original form state for change detection
+const originalForm = ref(JSON.parse(JSON.stringify(form.value)))
 
 // Keep taxonomySelection in sync with form values
 watch(taxonomySelection, (sel: any) => {
@@ -199,6 +191,10 @@ watch(
 
     // ensure institutionQuery reflects the saved institution string so InstitutionPicker shows it
     institutionQuery.value = form.value.institution || ''
+    
+    // Update original form state
+    originalForm.value = JSON.parse(JSON.stringify(form.value))
+    
     initializeTaxonomySelection()
   },
   { deep: true, immediate: true }
@@ -226,93 +222,89 @@ async function initializeTaxonomySelection() {
 
   // Ensure taxonomy lists are loaded to allow the picker to preselect values
   try {
-    await taxonomyStore.fetchLevels()
+    if (!taxonomyStore.levels || taxonomyStore.levels.length === 0) {
+      await taxonomyStore.fetchLevels()
+    }
   } catch (e) {}
 
-  // Resolve level
-  let level: any = profile.level_id ? (profile.level || { id: profile.level_id }) : null
-  if (level && (!level.name || level.name === '')) {
-    // try to find in store
-    let found = (taxonomyStore.levels || []).find(l => String(l.id) === String(level?.id) || String(l.value) === String(level?.id))
-    if (!found) {
-      try { await taxonomyStore.fetchLevels() } catch (e) {}
-      found = (taxonomyStore.levels || []).find(l => String(l.id) === String(level?.id) || String(l.value) === String(level?.id))
+  // Helper to find item in list or fetch if missing
+  const resolveItem = async (current: any, list: any[], fetchFn: Function, apiEndpoint: string, parentId: string | null = null) => {
+    let item = current || null
+    const id = item?.id || item // handle if item is just an ID
+    if (!id) return null
+    
+    // 1. Try to find in existing list
+    let found = list.find(l => String(l.id) === String(id) || String(l.value) === String(id))
+    
+    // 2. If not found, try fetching list (if fetchFn provided)
+    if (!found && fetchFn) {
+      try { 
+        await fetchFn() 
+        // Re-check list after fetch
+        // Note: we need to access the store list again, but here we passed a static ref. 
+        // Ideally we check taxonomyStore directly.
+      } catch (e) {}
     }
-  if (found) level = found
-    else {
-      // server fallback: try fetching the level by id
+
+    // 3. Fallback: try fetching individual item from API
+    if (!found && apiEndpoint) {
       try {
-        const resp = await api.get(`/api/levels/${encodeURIComponent(String(level?.id))}`)
+        const resp = await api.get(`${apiEndpoint}/${encodeURIComponent(String(id))}`)
         if (resp.ok) {
           const data = await resp.json().catch(() => null)
-          const srv = data?.level || data?.data || data || null
-          if (srv) level = { id: srv.id ?? level?.id, name: srv.name ?? srv.title ?? `Level ${String(level?.id)}` }
+          const srv = data?.level || data?.grade || data?.subject || data?.data || data || null
+          if (srv) return { id: srv.id, name: srv.name ?? srv.title ?? `Item ${id}`, ...srv }
         }
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
+    
+    return found || ((item && item.name) ? item : { id, name: `Item ${id}` })
   }
 
-  // If we have a level, ensure grades for it are loaded so the picker can prefill
+  // Resolve Level
+  // Prefer the profile object if it exists and has an ID, otherwise fall back to creating an object from level_id
+  let level = await resolveItem(
+    (profile.level && profile.level.id) ? profile.level : (profile.level_id ? { id: profile.level_id } : null), 
+    taxonomyStore.levels || [], 
+    taxonomyStore.fetchLevels, 
+    '/api/levels'
+  )
+  
+  // If we found a level, ensuring its grades are loaded is critical
   if (level && level.id) {
     try { await taxonomyStore.fetchGradesByLevel(level.id) } catch (e) {}
   }
 
-  // Resolve grade
-  let grade: any = profile.grade_id ? (profile.grade || { id: profile.grade_id }) : null
-  if (grade && (!grade.name || grade.name === '')) {
-    let foundG = (taxonomyStore.grades || []).find(g => String(g.id) === String(grade?.id) || String(g.value) === String(grade?.id))
-    if (!foundG) {
-      // try to load grades for the known level first
-      if (level && level.id) {
-        try { await taxonomyStore.fetchGradesByLevel(level.id) } catch (e) {}
-      }
-      // fallback to fetching all grades
-      try { await taxonomyStore.fetchGrades() } catch (e) {}
-      foundG = (taxonomyStore.grades || []).find(g => String(g.id) === String(grade?.id) || String(g.value) === String(grade?.id))
-    }
-  if (foundG) grade = foundG
-    else {
-      // server fallback: try fetching the grade by id
-      try {
-        const resp = await api.get(`/api/grades/${encodeURIComponent(String(grade?.id))}`)
-        if (resp.ok) {
-          const data = await resp.json().catch(() => null)
-          const srv = data?.grade || data?.data || data || null
-          if (srv) grade = { id: srv.id ?? grade?.id, name: srv.name ?? srv.title ?? `Grade ${String(grade?.id)}`, level_id: srv.level_id ?? srv.level ?? (level && level.id ? level.id : null) }
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-  }
+  // Resolve Grade
+  let grade = await resolveItem(
+    (profile.grade && profile.grade.id) ? profile.grade : (profile.grade_id ? { id: profile.grade_id } : null), 
+    taxonomyStore.grades || [], 
+    null, // fetchGradesByLevel already called above
+    '/api/grades'
+  )
 
-  // Resolve subjects
+  // Resolve Subjects
   let subject = null
   if (Array.isArray(profile.subjects) && profile.subjects.length > 0) {
-    // ensure subjects are loaded so we can resolve names
-    try { await taxonomyStore.fetchAllSubjects() } catch (e) {}
-    const missing = []
-    subject = profile.subjects.map(s => {
-      if (typeof s === 'object' && s?.id) return { id: s.id, name: s.name || String(s.id) }
-      const id = String(s)
-      const found = (taxonomyStore.subjects || []).find(ss => String(ss.id) === id || String(ss.value) === id)
-      if (found) return found
-      missing.push(id)
-      return { id, name: `Subject ${id}` }
-    })
-
-    if (missing.length > 0 && (!taxonomyStore.subjects || taxonomyStore.subjects.length === 0)) {
+    // Ensure all subjects are loaded
+    if (!taxonomyStore.subjects || taxonomyStore.subjects.length === 0) {
       try { await taxonomyStore.fetchAllSubjects() } catch (e) {}
-      subject = profile.subjects.map(s => {
-        if (typeof s === 'object' && s?.id) return { id: s.id, name: s.name || String(s.id) }
-        const id = String(s)
-        const f = (taxonomyStore.subjects || []).find(ss => String(ss.id) === id || String(ss.value) === id)
-        if (f) return f
-        return { id, name: `Subject ${id}` }
-      })
     }
+    
+    const resolvedSubjects = []
+    for (const s of profile.subjects) {
+      const sId = s?.id || s
+      if (!sId) continue
+      
+      const found = (taxonomyStore.subjects || []).find(ss => String(ss.id) === String(sId))
+      if (found) {
+        resolvedSubjects.push(found)
+      } else {
+        // preserve existing object if it has name, otherwise placeholder
+        resolvedSubjects.push((typeof s === 'object' && s.name) ? s : { id: sId, name: `Subject ${sId}` })
+      }
+    }
+    subject = resolvedSubjects
   }
 
   taxonomySelection.value = { level, grade, subject, topic: null }
@@ -340,7 +332,7 @@ function reset() {
 }
 
 async function save() {
-  const success = await saveProfile(form.value, preferredRole.value)
+  const success = await saveProfile(form.value, preferredRole.value, originalForm.value)
   if (!success) return
 
   if (form.value.institution_id || form.value.institution) {
@@ -376,7 +368,9 @@ async function save() {
   }
 
   await nextTick()
+  // Re-initialize state to reflect saved data
   form.value = createFormState(user.value)
+  originalForm.value = JSON.parse(JSON.stringify(form.value))
   const u = user.value as User | null
   avatarPreview.value = resolveAssetUrl(u?.avatarUrl || u?.avatar || u?.avatar_url) || null
   avatarFile.value = null
