@@ -22,6 +22,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   const topic = ref('')
   const difficulty = ref('')
   const totalQuestions = ref(10)
+  const perQuestionSeconds = ref(15)
   const starting = ref(false)
 
   // --- Persistence ---
@@ -41,6 +42,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
           if (parsed.topic) topic.value = parsed.topic
           if (parsed.difficulty) difficulty.value = parsed.difficulty
           if (parsed.totalQuestions) totalQuestions.value = parsed.totalQuestions
+          if (typeof parsed.perQuestionSeconds !== 'undefined') perQuestionSeconds.value = parsed.perQuestionSeconds
           // restore optional fields when provided
           if (battleName && parsed.battleName) battleName.value = parsed.battleName
           if (maxPlayers && parsed.maxPlayers) maxPlayers.value = parsed.maxPlayers
@@ -61,6 +63,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
         topic: topic.value,
         difficulty: difficulty.value,
         totalQuestions: totalQuestions.value,
+        perQuestionSeconds: typeof perQuestionSeconds !== 'undefined' ? perQuestionSeconds.value : undefined,
         ...(battleName && { battleName: battleName.value }),
         ...(maxPlayers && { maxPlayers: maxPlayers.value })
       }
@@ -72,6 +75,8 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
 
   // watch fields and persist
   watch([level, grade, subject, topic, difficulty, totalQuestions], () => { persistDraft() })
+  // persist per-question seconds when present
+  if (typeof perQuestionSeconds !== 'undefined') watch(perQuestionSeconds, () => { persistDraft() })
   if (battleName) watch(battleName, () => { persistDraft() })
   if (maxPlayers) watch(maxPlayers, () => { persistDraft() })
 
@@ -211,7 +216,7 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
    * should be split across questions; when provided it will be sent as settings.time_total_seconds
    * so the backend computes and persists time_per_question.
    */
-  async function createBattle({ totalTimeSeconds = null } = {}) {
+  async function createBattle({ totalTimeSeconds = null, perQuestionSeconds = null } = {}) {
     if (!canStart.value) return { error: 'Please fill all required fields.' }
     starting.value = true
     try {
@@ -226,7 +231,13 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
         random: 1,
         ...(battleType === 'group' && { max_players: maxPlayers.value })
       }
-      if (totalTimeSeconds) settings.time_total_seconds = totalTimeSeconds
+      // If per-question seconds provided prefer that (send multiple keys for backend compatibility)
+      if (perQuestionSeconds) {
+        // send both naming variants to be robust against API expectations
+        settings.time_per_question = perQuestionSeconds
+        settings.per_question_seconds = perQuestionSeconds
+      }
+      if (totalTimeSeconds && !perQuestionSeconds) settings.time_total_seconds = totalTimeSeconds
 
       const payload = {
         name: battleType === 'group' ? battleName.value : `Battle - ${new Date().toISOString()}`,
@@ -278,5 +289,5 @@ export function useBattleCreation(options = { battleType: '1v1' }) {
   // initialize grades from taxonomy composable
   fetchTaxGrades()
 
-  return { level, grade, subject, topic, difficulty, totalQuestions, grades, subjects, topics, levels: taxLevels, loadingLevels, difficulties, questionCountOptions, starting, canStart, createBattle }
+  return { level, grade, subject, topic, difficulty, totalQuestions, perQuestionSeconds, grades, subjects, topics, levels: taxLevels, loadingLevels, difficulties, questionCountOptions, starting, canStart, createBattle }
 }

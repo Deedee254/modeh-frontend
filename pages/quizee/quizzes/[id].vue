@@ -338,6 +338,9 @@ interface LastAttempt {
   incorrect: number;
 }
 
+// --- Page Meta ---
+definePageMeta({ layout: 'quizee' })
+
 // --- Component Logic ---
 
 const router = useRouter()

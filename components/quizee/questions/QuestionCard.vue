@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+  <div class="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-2 sm:p-3">
   <div :class="layoutClass">
-      <div v-if="hasMedia" class="media-col mb-4 sm:mb-0 sm:mr-6">
+      <div v-if="hasMedia" class="media-col mb-2 sm:mb-0 sm:mr-3">
         <slot name="media">
           <img v-if="isImage" :src="mediaSrc" class="w-full h-auto rounded-lg object-cover" />
           <audio v-else-if="isAudio" controls class="w-full rounded-lg"><source :src="mediaSrc" /></audio>
@@ -11,12 +11,12 @@
       </div>
 
       <div class="content-col">
-    <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-3" v-html="question?.body"></h3>
+    <h3 class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-1" v-html="question?.body"></h3>
   <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" :compact="isCompact" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" @toggle="$emit('toggle',$event)" />
-  <div v-else class="text-sm text-red-600 dark:text-red-400">Component missing for question type: {{ question?.type || 'unknown' }}</div>
-                  <div>
-                    <span v-if="question.is_approved === 1 || question.is_approved === true" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Approved</span>
-                    <span v-else-if="question.is_approved === 0 || question.is_approved === false" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">Pending</span>
+  <div v-else class="text-xs text-red-600 dark:text-red-400">Component missing for question type: {{ question?.type || 'unknown' }}</div>
+                  <div class="mt-1">
+                    <span v-if="question.is_approved === 1 || question.is_approved === true" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Approved</span>
+                    <span v-else-if="question.is_approved === 0 || question.is_approved === false" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">Pending</span>
                   </div>
       </div>
     </div>

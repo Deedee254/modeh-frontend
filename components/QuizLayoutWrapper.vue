@@ -2,12 +2,12 @@
   <div class="flex flex-col bg-gray-50 overflow-hidden" style="height: 100vh; padding-bottom: 0px">
     <!-- Header: Title, Progress, Timer -->
     <header class="sticky top-0 z-30 bg-white border-b border-gray-200 flex-shrink-0">
-      <div class="max-w-4xl mx-auto px-4 py-4 sm:px-6">
-        <div class="flex items-center justify-between gap-4 mb-3">
+      <div class="max-w-4xl mx-auto px-4 py-3 sm:px-6">
+        <div class="flex items-center justify-between gap-4 mb-2">
           <!-- Left: Title and Progress -->
           <div class="flex-1 min-w-0">
-            <h1 class="text-lg sm:text-xl font-semibold text-gray-900 truncate">{{ title }}</h1>
-            <div class="flex items-center gap-2 mt-2">
+            <h1 class="text-base sm:text-lg font-semibold text-gray-900 truncate">{{ title }}</h1>
+            <div class="flex items-center gap-2 mt-1">
               <span class="text-xs font-medium text-gray-600 whitespace-nowrap">Q{{ currentQuestion + 1 }}/{{ totalQuestions }}</span>
               <div class="flex-1 bg-gray-200 h-1.5 rounded-full overflow-hidden">
                 <div class="bg-brand-600 h-full transition-all" :style="{ width: `${progressPercent}%` }"></div>
@@ -17,22 +17,22 @@
 
           <!-- Right: Timer Circle -->
           <div v-if="showTimer" class="flex-shrink-0">
-            <div class="relative w-14 h-14 sm:w-16 sm:h-16">
+            <div class="relative w-12 h-12 sm:w-14 sm:h-14">
               <svg class="w-full h-full transform -rotate-90" viewBox="0 0 40 40">
                 <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="2" class="text-gray-200" fill="none" />
                 <circle class="transition-all" cx="20" cy="20" r="18" stroke-width="2" stroke-linecap="round" fill="none" :stroke-dasharray="timerCircumference" :stroke-dashoffset="timerDashOffset" :class="timerColorClass" />
               </svg>
-              <div class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-mono font-semibold" :class="timerColorClass">{{ timerDisplay }}</div>
+              <div class="absolute inset-0 flex items-center justify-center text-xs font-mono font-semibold" :class="timerColorClass">{{ timerDisplay }}</div>
             </div>
           </div>
         </div>
 
         <!-- Info badges and encouragement -->
-        <div v-if="showMeta" class="flex items-center justify-between gap-4 text-xs sm:text-sm">
+        <div v-if="showMeta" class="flex items-center justify-between gap-4 text-xs">
           <div class="flex flex-wrap gap-2">
             <slot name="meta-badges" />
           </div>
-          <div v-if="encouragement" class="px-3 py-1 rounded-full bg-gradient-to-r whitespace-nowrap font-semibold text-xs sm:text-sm" :class="encouragementClass">
+          <div v-if="encouragement" class="px-3 py-0.5 rounded-full bg-gradient-to-r whitespace-nowrap font-semibold text-xs" :class="encouragementClass">
             {{ encouragement }}
           </div>
         </div>
@@ -41,8 +41,8 @@
 
     <!-- Alert/Status Messages -->
     <transition name="slide-down">
-      <div v-if="alertMessage" :class="['max-w-4xl mx-auto px-4 sm:px-6 py-3 text-sm flex items-center gap-2 font-semibold', alertClass]">
-        <svg class="w-5 h-5 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+      <div v-if="alertMessage" :class="['max-w-4xl mx-auto px-4 sm:px-6 py-2 text-xs flex items-center gap-2 font-semibold', alertClass]">
+        <svg class="w-4 h-4 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00-.293.707l-.707.707a1 1 0 101.414 1.414L9 9.414V6z" clip-rule="evenodd" />
         </svg>
         <span>{{ alertMessage }}</span>
@@ -50,7 +50,7 @@
     </transition>
 
     <!-- Main Content: Question Area -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full overflow-auto">
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-2 flex-1 w-full overflow-y-auto overflow-x-hidden min-h-0">
       <slot name="content" />
     </main>
 

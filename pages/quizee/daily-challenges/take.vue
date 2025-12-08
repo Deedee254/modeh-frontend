@@ -97,6 +97,7 @@
 </template>
 
 <script setup>
+definePageMeta({ layout: 'quizee', hideTopBar: true })
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
 import useQuestionTimer from '~/composables/useQuestionTimer'

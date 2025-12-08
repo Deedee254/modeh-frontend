@@ -163,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'quizee' })
+definePageMeta({ layout: 'quizee', hideTopBar: true })
 
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'

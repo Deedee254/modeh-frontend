@@ -22,9 +22,14 @@
         <USelect v-model="totalQuestions" :options="questionCountOptions" />
       </div>
       <div>
+        <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Per-question Time (seconds)</label>
+        <UInput v-model.number="perQuestionSeconds" type="number" min="5" placeholder="e.g., 15" />
+        <p class="text-xs text-gray-500 mt-1">Seconds per question. Defaults to 15s. This will be used unless you prefer to set a total battle time below.</p>
+      </div>
+      <div>
         <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Total Battle Time (minutes)</label>
         <UInput v-model.number="totalTimeMinutes" type="number" min="1" placeholder="e.g., 10" />
-        <p class="text-xs text-gray-500 mt-1">Optional — if set, each question will be given an equal share of this time.</p>
+        <p class="text-xs text-gray-500 mt-1">Optional — if set, each question will be given an equal share of this time (overridden by explicit per-question seconds).</p>
       </div>
     </div>
 
@@ -148,13 +153,15 @@ onMounted(() => {
   initSelectionFromIds()
 })
 const totalTimeMinutes = ref(null)
+const perQuestionSeconds = ref(15)
 const errorMessage = ref(null)
 
 async function startBattle() {
   errorMessage.value = null
   try {
     const totalTimeSeconds = totalTimeMinutes && totalTimeMinutes.value ? Math.max(0, Math.floor(totalTimeMinutes.value * 60)) : null
-    const result = await createBattle({ totalTimeSeconds })
+    const perSec = perQuestionSeconds && perQuestionSeconds.value ? Math.max(1, Math.floor(perQuestionSeconds.value)) : null
+    const result = await createBattle({ totalTimeSeconds, perQuestionSeconds: perSec })
     if (result && result.battle) {
       emit('battleCreated', result.battle)
     } else if (result && result.error) {

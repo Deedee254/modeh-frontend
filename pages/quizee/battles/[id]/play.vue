@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'quizee' })
+definePageMeta({ layout: 'quizee', hideTopBar: true })
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
 import useDisableUserActions from '~/composables/useDisableUserActions'

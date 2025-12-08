@@ -142,7 +142,7 @@ import { ref, computed, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { ShareIcon, ClipboardIcon, CheckIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '~/stores/auth'
-import { useRuntimeConfig } from '#imports'
+import { useRuntimeConfig, navigateTo } from '#imports'
 import useApi from '~/composables/useApi'
 
 const props = defineProps({
@@ -236,19 +236,27 @@ const fetchAffiliateIfMissing = async () => {
     }
 
     const res = await api.get('/api/affiliates/me')
-    // API may return either the affiliate object or a consistent shape like { referral_code: null }
-    if (!res) {
+    if (!res || !res.ok) {
       fetchedAffiliateCode.value = null
       return
     }
-    if (res.referral_code !== undefined) {
-      fetchedAffiliateCode.value = res.referral_code
+    
+    const data = await res.json().catch(() => null)
+    if (!data) {
+      fetchedAffiliateCode.value = null
+      return
+    }
+    
+    // API returns either the affiliate object or a consistent shape like { referral_code: null }
+    if (data.referral_code !== undefined) {
+      fetchedAffiliateCode.value = data.referral_code
       return
     }
     // If the API returned full affiliate object, it should have referral_code
-    fetchedAffiliateCode.value = res.referral_code ?? null
+    fetchedAffiliateCode.value = data.referral_code ?? null
   } catch (err) {
     // network or auth error: leave as null
+    console.error('Failed to fetch affiliate code:', err)
     fetchedAffiliateCode.value = null
   }
 }

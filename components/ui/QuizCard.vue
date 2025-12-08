@@ -39,6 +39,15 @@
       <!-- Title -->
       <h4 class="text-lg font-semibold text-slate-900 dark:text-slate-100 line-clamp-2">{{ displayTitle }}</h4>
 
+      <!-- User attempt summary -->
+      <div v-if="attempted" class="mt-2">
+        <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100/80 text-emerald-800 px-3 py-1 text-xs font-medium">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Attempted</span>
+          <span v-if="attemptScore !== null" class="ml-1 font-mono">{{ attemptScore }}%</span>
+        </span>
+      </div>
+
       <!-- Level, Grade, Subject and Topic Tags -->
       <div v-if="displayGrade || displayLevel || (showSubject && displaySubject) || (showTopic && displayTopic)" class="mt-2 flex flex-wrap gap-2">
         <span v-if="displayLevel" class="inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
@@ -135,6 +144,10 @@ const props = defineProps({
   questionsCount: { type: [Number, String], default: null },
   quizId: { type: [String, Number], default: null },
   liked: { type: Boolean, default: false },
+  attempted: { type: Boolean, default: false },
+  attemptScore: { type: [Number, String], default: null },
+  attemptCorrect: { type: [Number, String], default: null },
+  attemptIncorrect: { type: [Number, String], default: null },
   showGrade: { type: Boolean, default: false },
   showSubject: { type: Boolean, default: true },
   showTopic: { type: Boolean, default: true },

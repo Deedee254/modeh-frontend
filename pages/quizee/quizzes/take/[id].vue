@@ -54,6 +54,7 @@ import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
 definePageMeta({
   layout: 'quizee',
   hideBottomNav: true,
+  hideTopBar: true,
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
     { name: 'description', content: 'Take this assessment on Modeh. Your progress will be saved automatically.' },

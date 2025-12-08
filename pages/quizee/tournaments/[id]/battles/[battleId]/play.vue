@@ -162,7 +162,7 @@
 
 <script setup lang="ts">
 // Use the quizee layout
-definePageMeta({ layout: 'quizee' })
+definePageMeta({ layout: 'quizee', hideTopBar: true })
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -284,8 +284,21 @@ const fetchBattle = async () => {
       })
     }
 
-    // If backend provided per-question seconds, use it; otherwise fallback to tournament config
-    timePerQuestion.value = (data as any).per_question_seconds ?? null
+    // If backend provided per-question seconds, use it; otherwise derive from total seconds
+    // (some admin UIs/setups set total seconds instead of per-question seconds)
+    if (typeof (data as any).per_question_seconds === 'number') {
+      timePerQuestion.value = (data as any).per_question_seconds
+    } else if (typeof (data as any).time_per_question === 'number') {
+      timePerQuestion.value = (data as any).time_per_question
+    } else if (typeof (data as any).time_total_seconds === 'number' && Array.isArray(data.questions) && data.questions.length) {
+      const per = Math.floor((data as any).time_total_seconds / data.questions.length)
+      timePerQuestion.value = per > 0 ? per : null
+    } else if (typeof (data as any).settings?.time_total_seconds === 'number' && Array.isArray(data.questions) && data.questions.length) {
+      const per = Math.floor((data as any).settings.time_total_seconds / data.questions.length)
+      timePerQuestion.value = per > 0 ? per : null
+    } else {
+      timePerQuestion.value = null
+    }
 
     // If battle didn't include per-question seconds or question count, fetch tournament config and apply fallbacks
     let tournamentConfig: any = null

@@ -82,6 +82,10 @@
             :quiz-id="qitem.id"
             :liked="qitem.liked || false"
             :likes="qitem.likes_count || 0"
+            :attempted="qitem.attempted || false"
+            :attempt-score="qitem.attempt_score ?? null"
+            :attempt-correct="qitem.attempt_correct ?? null"
+            :attempt-incorrect="qitem.attempt_incorrect ?? null"
             @like="onQuizLike(qitem, $event)"
           />
         </div>
@@ -164,7 +168,8 @@ watch([q, perPage, page, topicId], () => {
     params.grade_id = userGradeId.value
   }
   
-  fetchItems(params)
+  // ensure we merge user's attempts into the listing so attempted badges show
+  fetchItems({ ...params, mergeAttempts: true })
 })
 
 onMounted(async () => { 
@@ -182,7 +187,7 @@ onMounted(async () => {
     params.grade_id = userGradeId.value
   }
   
-  await Promise.all([fetchItems(params), fetchTopics()]) 
+  await Promise.all([fetchItems({ ...params, mergeAttempts: true }), fetchTopics()]) 
 })
 
 // fetchItems & fetchTopics provided by composable

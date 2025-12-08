@@ -99,9 +99,9 @@ const fetchData = async () => {
     // Handle battles data
     const battlesData = battlesJson?.data ?? battlesJson ?? []
     battles.value = Array.isArray(battlesData) ? battlesData : []
-  } catch (error) {
-    console.error('Error fetching data:', error)
-    error.value = error instanceof Error ? error.message : 'Failed to load battles'
+  } catch (err) {
+    console.error('Error fetching data:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to load battles'
   } finally {
     loading.value = false
   }

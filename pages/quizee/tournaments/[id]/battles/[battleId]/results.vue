@@ -39,9 +39,16 @@
           <h3 class="text-lg font-semibold mb-4">Participants</h3>
           <div class="space-y-3">
             <div v-for="p in participants" :key="p.id || p.name" class="flex items-center justify-between p-4 rounded-lg border">
-              <div>
-                <div class="font-medium text-gray-900">{{ p.name || (p.user && p.user.name) || 'You' }}</div>
-                <div class="text-sm text-gray-600">{{ p.meta || p.description || '' }}</div>
+              <div class="flex items-center gap-3">
+                <img 
+                  :src="getParticipantAvatar(p)" 
+                  :alt="p.name || (p.user && p.user.name) || 'Participant'" 
+                  class="w-10 h-10 rounded-full object-cover"
+                />
+                <div>
+                  <div class="font-medium text-gray-900">{{ p.name || (p.user && p.user.name) || 'You' }}</div>
+                  <div class="text-sm text-gray-600">{{ p.meta || p.description || '' }}</div>
+                </div>
               </div>
               <div class="text-right">
                 <div class="text-lg font-bold">{{ p.score }}</div>
@@ -98,6 +105,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useApi } from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
 import { useRoute } from 'vue-router'
+import { resolveAssetUrl } from '~/composables/useAssets'
 const route = useRoute()
 const loading = ref(true)
 const result = ref<any>(null)
@@ -177,5 +185,20 @@ function mySide() {
     if ((result.value as any).battle.opponent_id === meId) return 'opponent'
   }
   return 'initiator'
+}
+
+function getParticipantAvatar(participant: any): string {
+  // Check multiple possible paths where avatar might be stored
+  const avatarUrl = 
+    participant?.avatar_url || 
+    participant?.avatar || 
+    participant?.user?.avatar_url || 
+    participant?.user?.avatar ||
+    participant?.user?.photo ||
+    participant?.photo ||
+    null
+  
+  // Use the resolveAssetUrl composable to handle relative paths
+  return resolveAssetUrl(avatarUrl) || '/logo/avatar-placeholder.png'
 }
 </script>
