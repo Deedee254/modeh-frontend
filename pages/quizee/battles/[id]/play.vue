@@ -330,7 +330,42 @@ async function submitBattle() {
     submissionMessage.value = 'Saving answers...'
     try { calculateAchievements() } catch (e) { console.warn('calculateAchievements failed', e) }
     stopTimer()
-    const payload = { answers: Object.keys(answers.value).map(qid => ({ question_id: parseInt(qid, 10) || 0, selected: answers.value[qid] })), defer_marking: true }
+    // Build answers payload
+  const answersPayload = Object.keys(answers.value).map(qid => ({ question_id: parseInt(qid, 10) || 0, selected: answers.value[qid] }))
+
+    // Compute best-effort score locally so backend can record points immediately
+    let computedScore = 0
+    try {
+      for (const q of questions.value) {
+        const ansEntry = answersPayload.find(x => String(x.question_id) === String(q.id || q.question_id))
+        if (ansEntry && ansEntry.selected !== '' && typeof q?.correct_option_id !== 'undefined') {
+          if (String(ansEntry.selected) === String(q.correct_option_id)) {
+            computedScore += (q.points ?? 1)
+          }
+        }
+      }
+    } catch (e) {
+      // ignore and keep computedScore as 0
+    }
+
+    let payload = { answers: answersPayload }
+
+    if (useBot.value) {
+      // For bot matches: defer marking but send both scores. Persist opponent=false so bot score is not saved.
+      payload = Object.assign(payload, {
+        score: computedScore,
+        opponent_score: opponentScore.value || 0,
+        defer_marking: true,
+        persist_opponent: false,
+        persist_initiator: true
+      })
+    } else {
+      // For human matches: follow quizzes flow — defer marking and redirect to checkout so user can pay/unlock results
+      payload = Object.assign(payload, {
+        defer_marking: true
+      })
+    }
+
     const res = await api.postJson(`/api/battles/${id}/submit`, payload)
     if (api.handleAuthStatus(res)) { loading.value = false; return }
     if (!res.ok) {
