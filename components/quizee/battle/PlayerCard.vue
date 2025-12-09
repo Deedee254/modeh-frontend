@@ -2,7 +2,7 @@
   <div :class="['w-full flex flex-col items-center text-center p-2 sm:p-4 rounded-lg', isActive ? 'ring-2 ring-brand-600 bg-brand-50/30' : '']">
     <div class="relative">
       <img 
-        :src="avatarSrc || '/avatars/default.png'"
+        :src="avatarSrc || '/images/avatar-placeholder.png'"
         :alt="player.first_name"
         class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
       />
@@ -31,7 +31,24 @@ const props = defineProps({
   answered: { type: Number, default: null }
 })
 
+// Match Leaderboard.vue/Podium.vue's resolvedAvatar pattern for consistency
+function resolvePlayerAvatar(v) {
+  try {
+    // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
+    let val = null
+    if (v && typeof v === 'object') {
+    // Prefer the canonical backend field `avatarUrl` (frontend normalized) then `avatar`, `avatar_url`, `photo`, `profile.avatar`, `profile_image`.
+    val = v.avatarUrl || v.avatar || v.avatar_url || v.photo || (v.profile && (v.profile.avatar || v.profile.profile_image)) || null
+    } else {
+      val = v
+    }
+    return resolveAssetUrl(val) || val || '/images/avatar-placeholder.png'
+  } catch {
+    return (typeof v === 'string' ? v : null) || '/images/avatar-placeholder.png'
+  }
+}
+
 const avatarSrc = computed(() => {
-  try { return resolveAssetUrl(props.player?.profile?.avatar) || props.player?.profile?.avatar || null } catch { return props.player?.profile?.avatar || null }
+  return resolvePlayerAvatar(props.player)
 })
 </script>

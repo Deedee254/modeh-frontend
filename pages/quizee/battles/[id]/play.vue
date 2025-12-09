@@ -1,36 +1,37 @@
 <template>
-  <QuizLayoutWrapper
-    :title="`Battle vs ${battle.opponent ? battle.opponent.first_name : useBot ? 'QuizBot' : 'Opponent'}`"
-    :current-question="currentIndex"
-    :total-questions="questions.length"
-    :show-timer="true"
-    :timer-display="displayTime"
-    :timer-color-class="timerColorClass"
-    :timer-circumference="113"
-    :timer-dash-offset="0"
-    :encouragement="encouragementMessage"
-    :encouragement-class="encouragementStyle"
-    :show-meta="false"
-    :alert-message="connectionStatus !== 'connected' ? (connectionStatus === 'disconnected' ? '❌ Connection lost' : '⚠️ Reconnecting...') : ''"
-    :alert-class="connectionStatus === 'disconnected' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-yellow-100 text-yellow-800 border border-yellow-300'"
-    :show-previous="currentIndex > 0"
-    :disable-previous="currentIndex === 0 || !canNavigate"
-    :show-next="currentIndex < questions.length - 1"
-    :disable-next="!canNavigate"
-    :show-submit="currentIndex === questions.length - 1"
-    :submit-label="'Finish Battle'"
-    :disable-submit="!allAnswered || submitting"
-    :is-submitting="submitting"
-    :show-confirmation="showConfirm"
-    :confirm-title="'Finish Battle?'"
-    :confirm-message="'Are you sure you want to finish? You won\'t be able to change your answers.'"
-    :confirm-button-label="'Submit Battle'"
-    @previous="prevQuestion"
-    @next="nextQuestion"
-    @submit="confirmFinish"
-    @cancel-confirm="showConfirm = false"
-    @confirm-submit="submitBattle"
-  >
+  <ClientOnly>
+    <QuizLayoutWrapper
+      :title="`Battle vs ${battle.opponent ? battle.opponent.first_name : useBot ? 'QuizBot' : 'Opponent'}`"
+      :current-question="currentIndex"
+      :total-questions="questions.length"
+      :show-timer="true"
+      :timer-display="displayTime"
+      :timer-color-class="timerColorClass"
+      :timer-circumference="113"
+      :timer-dash-offset="0"
+      :encouragement="encouragementMessage"
+      :encouragement-class="encouragementStyle"
+      :show-meta="false"
+      :alert-message="connectionStatus !== 'connected' ? (connectionStatus === 'disconnected' ? '❌ Connection lost' : '⚠️ Reconnecting...') : ''"
+      :alert-class="connectionStatus === 'disconnected' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-yellow-100 text-yellow-800 border border-yellow-300'"
+      :show-previous="currentIndex > 0"
+      :disable-previous="currentIndex === 0 || !canNavigate"
+      :show-next="currentIndex < questions.length - 1"
+      :disable-next="!canNavigate"
+      :show-submit="currentIndex === questions.length - 1"
+      :submit-label="'Finish Battle'"
+      :disable-submit="!allAnswered || submitting"
+      :is-submitting="submitting"
+      :show-confirmation="showConfirm"
+      :confirm-title="'Finish Battle?'"
+      :confirm-message="'Are you sure you want to finish? You won\'t be able to change your answers.'"
+      :confirm-button-label="'Submit Battle'"
+      @previous="prevQuestion"
+      @next="nextQuestion"
+      @submit="confirmFinish"
+      @cancel-confirm="showConfirm = false"
+      @confirm-submit="submitBattle"
+    >
     <template #content>
         <!-- Persistent countdown alert (shows near the top during final seconds) -->
         <div v-if="countdownAlert.show" :class="countdownClass" class="mb-4 rounded px-4 py-2 text-sm flex items-center gap-4 justify-between">
@@ -62,7 +63,7 @@
         <!-- Player Cards -->
         <div class="grid grid-cols-3 items-start gap-2 sm:gap-4">
           <PlayerCard 
-            :player="auth.user" 
+            :player="auth.user || {}" 
             role="You"
             :score="score"
             :is-active="true"
@@ -73,7 +74,7 @@
             <div class="text-lg font-mono font-bold mt-1 text-brand-600">{{ score }} - {{ opponentScore }}</div>
           </div>
           <PlayerCard 
-            :player="battle.opponent || botUser"
+            :player="battle.opponent || { first_name: useBot ? 'QuizBot' : 'Opponent', last_name: '', avatar_url: useBot ? '/avatars/bot.png' : null, avatar: useBot ? '/avatars/bot.png' : null }"
             :role="useBot ? 'QuizBot' : 'Opponent'"
             :score="opponentScore"
             :is-active="false"
@@ -88,10 +89,11 @@
       </div>
     </template>
   </QuizLayoutWrapper>
+  </ClientOnly>
 </template>
 
 <script setup>
-definePageMeta({ layout: 'quizee', hideTopBar: true })
+definePageMeta({ layout: 'quizee', hideTopBar: true, hideBottomNav: true })
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
 import useDisableUserActions from '~/composables/useDisableUserActions'
@@ -125,9 +127,16 @@ const botThinking = ref(false)
 const { answers, initializeAnswers, clearSavedAnswers, toggleMulti: rawToggleMulti } = useQuizAnswers(computed(() => ({ questions: questions.value })), id)
 const score = ref(0)
 const opponentScore = ref(0)
+const connectionStatus = ref('connected') // 'connected' | 'disconnected' | 'reconnecting'
+const canNavigate = ref(true)
+const error = ref(null)
+const questionTimes = ref({})
 
 const botUser = {
   first_name: 'QuizBot',
+  last_name: '',
+  avatar_url: '/avatars/bot.png',
+  avatar: '/avatars/bot.png',
   profile: { avatar: '/avatars/bot.png' }
 }
 
@@ -406,12 +415,14 @@ function confirmFinish() {
   showConfirm.value = true
 }
 
-onMounted(async () => {
+async function fetchBattle() {
   try {
+    loading.value = true
+    error.value = null
     const res = await api.get(`/api/battles/${id}?with_questions=true`)
     if (!res.ok) {
-      pushAlert({ message: 'Failed to load battle', type: 'error' })
-      loading.value = false
+      error.value = 'Failed to load battle'
+      pushAlert({ message: error.value, type: 'error' })
       return
     }
 
@@ -422,11 +433,11 @@ onMounted(async () => {
     
     // Validate questions are loaded
     if (!questions.value || questions.value.length === 0) {
+      error.value = 'No questions available for this battle'
       pushAlert({ 
-        message: 'No questions available for this battle. Please contact support.',
+        message: error.value,
         type: 'error'
       })
-      loading.value = false
       return
     }
     
@@ -444,11 +455,18 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error('Failed to load battle:', e)
-    pushAlert({ message: 'Error loading battle', type: 'error' })
-    loading.value = false
+    error.value = 'Error loading battle'
+    pushAlert({ message: error.value, type: 'error' })
     return
   } finally {
     loading.value = false
+  }
+}
+
+onMounted(async () => {
+  try {
+    await fetchBattle()
+    if (error.value) return
     if (questions.value.length > 0) {
       // If we restored progress, restoreProgress() will start the per-question timer with remaining seconds
       try { restoreProgress() } catch (e) {}
@@ -456,6 +474,8 @@ onMounted(async () => {
       if (typeof questionRemaining.value !== 'number') startTimer()
       try { startTotalTimer() } catch (e) {}
     }
+  } catch (e) {
+    console.error('onMounted error:', e)
   }
 })
 

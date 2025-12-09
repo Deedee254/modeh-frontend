@@ -74,6 +74,15 @@
                 <div class="text-sm">{{ tournament.winner.name }}</div>
               </div>
             </div>
+            <!-- Admin: Advance Round Button -->
+            <div v-if="auth.user && (auth.user.role === 'quiz-master' || auth.user.role === 'admin')" class="ml-4">
+              <button
+                @click="advanceRound"
+                class="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
+              >
+                Advance Round
+              </button>
+            </div>
           </div>
         
         </div>
@@ -338,6 +347,31 @@
                 </div>
               </div>
             </div>
+
+            <!-- Admin: Current Round & Scheduled Matches -->
+            <div v-if="auth.user && (auth.user.role === 'quiz-master' || auth.user.role === 'admin')" class="bg-white rounded-xl p-6 shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">Current Round</h2>
+              </div>
+              <div v-if="adminRoundInfo && adminRoundInfo.roundIndex != null">
+                <div class="text-sm text-gray-600 mb-2">{{ adminRoundInfo.roundName }}</div>
+                <div class="text-xs text-gray-500 mb-3">Ends: {{ adminRoundInfo.roundEndDate ? formatDate(adminRoundInfo.roundEndDate) : 'TBD' }}</div>
+                <div class="text-sm font-medium mb-2">Scheduled Matches</div>
+                <div v-if="(adminRoundInfo.scheduledMatches || []).length === 0" class="text-gray-600">No scheduled matches</div>
+                <ul class="space-y-2">
+                  <li v-for="m in adminRoundInfo.scheduledMatches" :key="m.id" class="text-sm text-gray-700">
+                    <div class="flex justify-between">
+                      <div>{{ m.player1?.name || 'TBD' }} vs {{ m.player2?.name || 'TBD' }}</div>
+                      <div class="text-xs text-gray-500">{{ m.scheduled_at ? formatDate(m.scheduled_at) : '-' }}</div>
+                    </div>
+                  </li>
+                </ul>
+                <div class="mt-3">
+                  <button @click="advanceRound" class="w-full bg-indigo-600 text-white px-3 py-2 rounded-md text-sm">Advance Round</button>
+                </div>
+              </div>
+              <div v-else class="text-gray-600">Loading round info…</div>
+            </div>
           </div>
         </div>
       </div>
@@ -354,6 +388,7 @@ import QuestionCard from "~/components/quizee/questions/QuestionCard.vue";
 import TournamentBracket from "~/components/TournamentBracket.vue";
 import MatchResultCard from "~/components/quizee/tournaments/MatchResultCard.vue";
 import useApi from "~/composables/useApi";
+import { useAppAlert } from '~/composables/useAppAlert';
 import AffiliateShareButton from "~/components/AffiliateShareButton.vue";
 import { resolveAssetUrl } from "~/composables/useAssets";
 const api = useApi();
@@ -574,6 +609,35 @@ const recentMatches = computed(() => {
   }
 });
 
+// Admin-only: fetch current round & scheduled matches for a quick panel
+const adminRoundInfo = ref<any>(null);
+const fetchAdminRoundInfo = async () => {
+  if (!auth.user || !(auth.user.role === 'quiz-master' || auth.user.role === 'admin')) return;
+  try {
+    const res = await api.get(`/api/tournaments/${route.params.id}/tree`);
+    const json = await res.json().catch(() => null);
+    const bracket = json?.bracket ?? json?.data?.bracket ?? null;
+    if (!bracket) return;
+    // find current round
+    let currentIdx = bracket.findIndex((r: any) => r.is_current);
+    if (currentIdx === -1) {
+      currentIdx = bracket.findIndex((r: any) => !r.is_complete);
+    }
+    if (currentIdx === -1) currentIdx = 0;
+    const round = bracket[currentIdx] ?? null;
+    const scheduled = (round?.matches || []).filter((m: any) => m.status === 'scheduled' || m.scheduled_at);
+    adminRoundInfo.value = {
+      roundIndex: currentIdx,
+      roundName: round?.name || `Round ${currentIdx + 1}`,
+      roundEndDate: round?.round_end_date || null,
+      scheduledMatches: scheduled,
+      raw: round
+    };
+  } catch (e) {
+    // ignore
+  }
+};
+
 // Normalize route param id (could be string | string[] | undefined) into a plain string
 const tournamentIdStr = computed(() => {
   const p = route.params.id as unknown as string | string[] | undefined;
@@ -614,6 +678,30 @@ const fetchLeaderboard = async () => {
       : [];
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
+  }
+};
+
+const { push: pushAlert } = useAppAlert();
+
+const advanceRound = async () => {
+  if (!auth.user || !(auth.user.role === 'quiz-master' || auth.user.role === 'admin')) {
+    pushAlert({ message: 'You do not have permission to advance rounds', type: 'error' });
+    return;
+  }
+
+  try {
+    const res = await api.postJson(`/api/admin/tournaments/${route.params.id}/advance-round`, {});
+    const body = await res.json().catch(() => null);
+    if (res.ok) {
+      pushAlert({ message: body?.message || 'Round advanced', type: 'success' });
+      // Refresh tournament and battles to update bracket
+      await fetchTournament();
+      return;
+    }
+    pushAlert({ message: body?.message || 'Failed to advance round', type: 'error' });
+  } catch (e) {
+    console.error('Advance round failed', e);
+    pushAlert({ message: 'Advance round failed', type: 'error' });
   }
 };
 
@@ -736,6 +824,7 @@ const formatPrize = (amount: number) => {
 // Fetch data on component mount
 onMounted(() => {
   fetchTournament();
+  fetchAdminRoundInfo();
 });
 
 // Ensure timeline shows standard phases when some are missing.

@@ -1,5 +1,43 @@
 <template>
   <div class="tournament-bracket">
+    <!-- Tournament Winner Display -->
+    <div v-if="winner && !loading" class="winner-banner mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 flex-shrink-0">
+          <img 
+            :src="getPlayerAvatar(winner)" 
+            :alt="winner.name"
+            class="w-full h-full object-cover"
+          />
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span class="text-sm font-semibold text-yellow-700">Tournament Champion</span>
+          </div>
+          <div class="text-lg font-bold text-gray-900">{{ winner.name }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Summary -->
+    <div v-if="summary && !loading" class="progress-summary mb-6 grid grid-cols-3 gap-4">
+      <div class="bg-white border rounded-lg p-4">
+        <div class="text-sm text-gray-600">Total Matches</div>
+        <div class="text-2xl font-bold text-gray-900">{{ summary.total_matches }}</div>
+      </div>
+      <div class="bg-white border rounded-lg p-4">
+        <div class="text-sm text-gray-600">Completed</div>
+        <div class="text-2xl font-bold text-green-600">{{ summary.completed_matches }}</div>
+      </div>
+      <div class="bg-white border rounded-lg p-4">
+        <div class="text-sm text-gray-600">Pending</div>
+        <div class="text-2xl font-bold text-orange-600">{{ summary.pending_matches }}</div>
+      </div>
+    </div>
+
     <div v-if="loading" class="py-6 text-center">Loading bracket…</div>
     <div v-else class="bracket-container">
       <template v-if="!rounds || !rounds.length">
@@ -60,7 +98,36 @@
               class="bracket-round"
               :style="{ width: `${100 / displayRounds.length}%` }"
             >
-              <h3 class="round-title">{{ getRoundName(roundIndex) }}</h3>
+              <div class="round-header">
+                <h3 class="round-title">{{ getRoundName(roundIndex) }}</h3>
+                
+                <!-- Round Status from Enhanced API -->
+                <div v-if="roundsData[roundIndex]" class="round-status text-xs">
+                  <div class="status-badge" :class="roundsData[roundIndex].is_complete ? 'complete' : roundsData[roundIndex].is_current ? 'current' : ''">
+                    <template v-if="roundsData[roundIndex].is_current">
+                      <span class="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-1"></span>
+                      Current Round
+                    </template>
+                    <template v-else-if="roundsData[roundIndex].is_complete">
+                      <span>✓ Complete</span>
+                    </template>
+                    <template v-else>
+                      <span>Upcoming</span>
+                    </template>
+                  </div>
+                  
+                  <!-- Round Progress -->
+                  <div class="round-progress">
+                    {{ roundsData[roundIndex].status?.completed || 0 }}/{{ roundsData[roundIndex].status?.total || 0 }}
+                  </div>
+                  
+                  <!-- Round End Date / Countdown -->
+                  <div v-if="roundsData[roundIndex].round_end_date" class="round-end-date">
+                    {{ countdowns[roundIndex] || formatDateShort(roundsData[roundIndex].round_end_date) }}
+                  </div>
+                </div>
+              </div>
+              
               <div
                 class="bracket-matches"
                 :style="{
@@ -168,12 +235,38 @@
             :key="`m-${rIdx}`"
             class="bg-white border rounded p-3"
           >
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-sm font-semibold">{{ getRoundName(rIdx) }}</div>
-              <div class="text-xs text-gray-500">
-                {{ (round || []).length }} matches
+            <div class="flex items-center justify-between mb-3 pb-3 border-b">
+              <div>
+                <div class="text-sm font-semibold">{{ getRoundName(rIdx) }}</div>
+                <div class="text-xs text-gray-500">
+                  {{ (round || []).length }} matches
+                </div>
+              </div>
+              <div class="text-right">
+                <!-- Round Status Badge -->
+                <div v-if="roundsData[rIdx]" class="text-xs space-y-1">
+                  <div class="status-badge-mobile" :class="roundsData[rIdx].is_complete ? 'complete' : roundsData[rIdx].is_current ? 'current' : ''">
+                    <template v-if="roundsData[rIdx].is_current">
+                      <span class="inline-block w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse mr-1"></span>
+                      Current
+                    </template>
+                    <template v-else-if="roundsData[rIdx].is_complete">
+                      Complete ✓
+                    </template>
+                    <template v-else>
+                      Upcoming
+                    </template>
+                  </div>
+                  <div class="text-gray-600 font-medium">
+                    {{ roundsData[rIdx].status?.completed || 0 }}/{{ roundsData[rIdx].status?.total || 0 }}
+                  </div>
+                  <div v-if="roundsData[rIdx].round_end_date" class="text-gray-500">
+                    {{ countdowns[rIdx] || formatDateShort(roundsData[rIdx].round_end_date) }}
+                  </div>
+                </div>
               </div>
             </div>
+            
             <div class="space-y-2">
               <div
                 v-if="!(round && round.length)"
@@ -223,7 +316,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onUnmounted } from "vue";
 import useApi from "~/composables/useApi";
 import resolveAssetUrl from "~/composables/useAssets";
 const props = defineProps({
@@ -232,6 +325,12 @@ const props = defineProps({
   initialRounds: { type: Array, required: false, default: null },
 });
 const rounds = ref<any[][]>([]);
+const roundsData = ref<any[]>([]); // Complete round data with progress, end dates, etc.
+const countdowns = ref<Record<number, string>>({});
+let countdownInterval: any = null;
+const tournament = ref<any>(null);
+const winner = ref<any>(null);
+const summary = ref<any>(null);
 const loading = ref(true);
 const api = useApi();
 
@@ -266,14 +365,76 @@ const fetchTree = async () => {
   try {
     const res = await api.get(`/api/tournaments/${props.tournamentId}/tree`);
     const json = await res.json();
-    // Expect { rounds: [ [match,...], ... ] } or fallback
-    rounds.value = json?.rounds ?? json?.data?.rounds ?? [];
+    
+    // Enhanced tree endpoint response structure
+    if (json?.ok && json?.bracket) {
+      // New enhanced response from updated tree() endpoint
+      tournament.value = json.tournament;
+      winner.value = json.winner;
+      summary.value = json.summary;
+      roundsData.value = json.bracket || [];
+      
+      // Extract matches from bracket rounds for rendering
+      const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
+      rounds.value = matchesFromBracket;
+
+      // initialize countdowns for rounds that have end dates
+      updateCountdowns();
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(updateCountdowns, 1000);
+    } else {
+      // Fallback for old-style response
+      rounds.value = json?.rounds ?? json?.data?.rounds ?? [];
+    }
   } catch (e) {
+    console.error('Failed to fetch tournament bracket:', e);
     rounds.value = [];
   } finally {
     loading.value = false;
   }
 };
+
+function formatCountdownForDate(dateString: string | null) {
+  if (!dateString) return '';
+  try {
+    const target = new Date(dateString).getTime();
+    const now = Date.now();
+    let diff = Math.max(0, target - now);
+    if (diff === 0) return 'Ended';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    diff -= days * (1000 * 60 * 60 * 24);
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    diff -= hours * (1000 * 60 * 60);
+    const minutes = Math.floor(diff / (1000 * 60));
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  } catch (e) {
+    return '';
+  }
+}
+
+function updateCountdowns() {
+  try {
+    const out: Record<number, string> = {};
+    for (let i = 0; i < (roundsData.value || []).length; i++) {
+      const rd = roundsData.value[i];
+      if (rd && rd.round_end_date) {
+        out[i] = formatCountdownForDate(rd.round_end_date);
+      } else {
+        out[i] = '';
+      }
+    }
+    countdowns.value = out;
+  } catch (e) {
+    // ignore
+  }
+}
+
+onUnmounted(() => {
+  if (countdownInterval) clearInterval(countdownInterval);
+});
 
 const openMatch = (match: any) => {
   if (!match) return;
@@ -338,8 +499,34 @@ const formatMatchInfo = (m: any) => {
 
 const getPlayerAvatar = (player: any) => {
   if (!player) return '/avatars/default.png'
-  const avatar = player.avatar_url || player.avatar || player.profile?.avatar
+  // Prefer camelCase `avatarUrl` (auth store) then legacy `avatar`, then snake_case `avatar_url`.
+  const avatar = player.avatarUrl || player.avatar || player.avatar_url || player.profile?.avatar
   return resolveAssetUrl(avatar) || '/avatars/default.png'
+}
+
+const formatDateShort = (dateString: string | null) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Format as "Ends in X hours" or "Dec 15, 2:00 PM"
+    const diffMs = date.getTime() - today.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffHours > 0 && diffHours < 48) {
+      if (diffHours < 1) return 'Ends soon';
+      if (diffHours === 1) return 'Ends in 1 hour';
+      return `Ends in ${diffHours}h`;
+    }
+    
+    // Format as "Dec 15, 2:00 PM"
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return dateString;
+  }
 }
 </script>
 
@@ -348,6 +535,25 @@ const getPlayerAvatar = (player: any) => {
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+.winner-banner {
+  animation: slideIn 0.6s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.progress-summary {
+  animation: slideIn 0.6s ease-out 0.1s backwards;
 }
 
 .bracket-container {
@@ -367,12 +573,81 @@ const getPlayerAvatar = (player: any) => {
   position: relative;
 }
 
+.round-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
 .round-title {
   font-size: 14px;
   font-weight: 600;
   text-align: center;
-  margin-bottom: 16px;
   color: #374151;
+}
+
+.round-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.status-badge.current {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.complete {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.round-progress {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.round-end-date {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.status-badge-mobile {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-badge-mobile.current {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge-mobile.complete {
+  background-color: #dcfce7;
+  color: #166534;
 }
 
 .bracket-matches {
@@ -502,4 +777,3 @@ const getPlayerAvatar = (player: any) => {
   }
 }
 </style>
-

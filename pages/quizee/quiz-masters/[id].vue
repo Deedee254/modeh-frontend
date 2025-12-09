@@ -243,7 +243,7 @@ const quizMaster = computed(() => {
 const resolvedAvatar = _computed(() => {
   const qm = quizMaster.value
   if (!qm) return null
-  const v = qm.avatar_url || qm.avatar || qm.image || qm.photo || qm.profile_image
+  const v = qm.avatar_url || qm.avatar
   return resolveAssetUrl(v) || (v || null)
 })
 
@@ -256,7 +256,7 @@ watchEffect(() => {
         { name: 'description', content: (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) },
         { property: 'og:title', content: quizMaster?.value?.name ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh' },
         { property: 'og:description', content: (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) },
-        { property: 'og:image', content: quizMaster?.value?.avatar_url || quizMaster?.value?.avatar || '/social-share.png' }
+  { property: 'og:image', content: quizMaster?.value?.avatar_url || quizMaster?.value?.avatar || '/social-share.png' }
       ]
     })
   } catch (e) {

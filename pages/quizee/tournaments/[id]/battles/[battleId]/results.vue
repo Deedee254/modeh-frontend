@@ -188,17 +188,8 @@ function mySide() {
 }
 
 function getParticipantAvatar(participant: any): string {
-  // Check multiple possible paths where avatar might be stored
-  const avatarUrl = 
-    participant?.avatar_url || 
-    participant?.avatar || 
-    participant?.user?.avatar_url || 
-    participant?.user?.avatar ||
-    participant?.user?.photo ||
-    participant?.photo ||
-    null
-  
-  // Use the resolveAssetUrl composable to handle relative paths
+  // Prefer canonical `avatar_url`, fall back to legacy `avatar`, then user's avatar_url
+  const avatarUrl = participant?.avatar_url || participant?.avatar || participant?.user?.avatar_url || null
   return resolveAssetUrl(avatarUrl) || '/logo/avatar-placeholder.png'
 }
 </script>

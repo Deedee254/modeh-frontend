@@ -51,9 +51,10 @@ export default function useChat() {
   const convs = (threads.value || []).map(c => {
     const cId = String(c.other_user_id || c.otherId || c.id)
     const cName = cId === '-1' ? 'Support' : (c.other_name || c.otherName || c.name)
-    return { id: cId, type: 'direct', name: cName, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: cId === '-1' ? null : (c.status || 'offline'), avatar: resolveAssetUrl(c.avatar_url) || c.avatar || null }
+    // Prefer camelCase avatarUrl then legacy avatar then avatar_url
+    return { id: cId, type: 'direct', name: cName, last_preview: c.last_message || c.last_preview, last_at: c.last_at || c.updated_at, unread: c.unread_count || 0, unread_count: c.unread_count || 0, status: cId === '-1' ? null : (c.status || 'offline'), avatar: resolveAssetUrl(c.avatarUrl || c.avatar || c.avatar_url) || c.avatar || c.avatar_url || null }
   })
-  const grps = (groups.value || []).map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: resolveAssetUrl(g.avatar_url) || g.avatar || null }))
+  const grps = (groups.value || []).map(g => ({ id: String(g.id), type: 'group', name: g.name, last_preview: g.last_message, last_at: g.updated_at, unread: g.unread_count || 0, unread_count: g.unread_count || 0, status: null, avatar: resolveAssetUrl(g.avatarUrl || g.avatar || g.avatar_url) || g.avatar || g.avatar_url || null }))
       conversations.value = [...convs, ...grps].sort((a,b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime())
     } catch (e) {
       // fallback: linear merge

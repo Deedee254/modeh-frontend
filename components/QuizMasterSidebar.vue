@@ -68,7 +68,7 @@ const auth = useAuthStore()
 const ui = useUiStore()
 const user = computed(() => auth.user || {})
 import { resolveAssetUrl } from '~/composables/useAssets'
-const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatarUrl || auth.user?.avatar || auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
 
 const route = useRoute()
 

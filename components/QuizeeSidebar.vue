@@ -63,8 +63,8 @@ const auth = useAuthStore()
 const ui = useUiStore()
 const user = computed(() => auth.user || {})
 import { resolveAssetUrl } from '~/composables/useAssets'
-// Prefer `avatar_url` then `avatar`, resolve any relative backend path
-const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatar_url || auth.user?.avatar) || '/logo/avatar-placeholder.png')
+// Prefer camelCase `avatarUrl` (auth store) then legacy `avatar`, resolve any relative backend path
+const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatarUrl || auth.user?.avatar || auth.user?.avatar_url) || '/logo/avatar-placeholder.png')
 
 const route = useRoute()
 

@@ -95,30 +95,31 @@
           </UiCard>
 
           <!-- Recommended quizzes -->
-          <UiCard>
-            <template #header>
-              <div class="flex items-center justify-between">
-                <div class="text-lg font-semibold">Recommended for you</div>
-                <!-- Removed Browse all link -->
-              </div>
-            </template>
+          <ClientOnly>
+            <UiCard>
+              <template #header>
+                <div class="flex items-center justify-between">
+                  <div class="text-lg font-semibold">Recommended for you</div>
+                  <!-- Removed Browse all link -->
+                </div>
+              </template>
 
-            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
-              <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
-              <div v-for="q in recQuizzes" :key="q.id" v-else class="p-4 border rounded-md bg-white/50 dark:bg-slate-800">
-                <div class="flex items-start justify-between">
-                  <div>
-                    <div class="font-medium">{{ q.title || q.name || 'Untitled Quiz' }}</div>
-                    <div class="text-xs text-gray-500 mt-1">{{ q.description || '' }}</div>
-                  </div>
-                  <div class="flex flex-col items-end gap-2">
-                    <NuxtLink :to="`/quizee/quizzes/${q.id}`" class="inline-flex items-center px-3 py-1.5 bg-brand-600 text-white text-sm rounded">Take</NuxtLink>
+              <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div v-if="!recQuizzes.length" class="text-sm text-gray-500">No recommendations yet — try browsing quizzes.</div>
+                <div v-for="q in recQuizzes" :key="q.id" class="p-4 border rounded-md bg-white/50 dark:bg-slate-800">
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <div class="font-medium">{{ q.title || q.name || 'Untitled Quiz' }}</div>
+                      <div class="text-xs text-gray-500 mt-1">{{ q.description || '' }}</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                      <NuxtLink :to="`/quizee/quizzes/${q.id}`" class="inline-flex items-center px-3 py-1.5 bg-brand-600 text-white text-sm rounded">Take</NuxtLink>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </UiCard>
+            </UiCard>
+          </ClientOnly>
 
           <ClientOnly>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -335,28 +336,35 @@ let recentBadges = []
     recentBadges = []
   }
 
-// Recommended quizzes for quizee (public API call, fallback to empty)
-let recQuizzes = []
+// Recommended quizzes for quizee (use ClientOnly to avoid hydration mismatches)
+const recQuizzes = ref([])
+
+// Fetch recommendations only on client side
+async function fetchRecommendations() {
   try {
     const res = await api.get('/api/recommendations/quizzes?per_page=5')
-    let recData = { value: null }
     if (api.handleAuthStatus(res)) {
-      recData = { value: null }
+      recQuizzes.value = []
     } else if (res && res.ok) {
       const j = await res.json().catch(() => null)
-      recData = { value: j }
+      // Handle various response formats
+      if (j?.quizzes?.data && Array.isArray(j.quizzes.data)) {
+        recQuizzes.value = j.quizzes.data
+      } else if (Array.isArray(j?.quizzes)) {
+        recQuizzes.value = j.quizzes
+      } else if (Array.isArray(j)) {
+        recQuizzes.value = j
+      } else {
+        recQuizzes.value = []
+      }
     } else {
-      recData = { value: null }
+      recQuizzes.value = []
     }
-    // recData may be { quizzes: paginator } or direct array
-    if (recData?.value?.quizzes?.data && Array.isArray(recData.value.quizzes.data)) recQuizzes = recData.value.quizzes.data
-    else if (Array.isArray(recData?.value?.quizzes)) recQuizzes = recData.value.quizzes
-    else if (Array.isArray(recData?.value)) recQuizzes = recData.value
-    else recQuizzes = []
   } catch (e) {
-    // keep recQuizzes as empty array on errors
-    recQuizzes = []
+    console.error('Failed to fetch recommendations:', e)
+    recQuizzes.value = []
   }
+}
 
 // Small progress calculations (client-side fallbacks)
 const completedSubjects = computed(() => subjectsArr.value.filter(s => (s.progress || 0) >= 80).length)
@@ -409,5 +417,6 @@ onMounted(async () => {
   // ensure subjects for this user's grade are loaded
   await store.fetchSubjectsByGrade(grade)
   await fetchStats()
+  await fetchRecommendations()
 })
 </script>

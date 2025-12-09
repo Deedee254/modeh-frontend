@@ -53,6 +53,7 @@ const formatPlayer = (p: any) => {
     id: p.id,
     first_name: p.first_name ?? p.name ?? (p.display_name ?? '').split(' ')[0] ?? '',
     last_name: p.last_name ?? '',
+    // Normalize to use canonical `avatar_url` when available; fall back to legacy `avatar`.
     profile: { avatar: p.avatar_url ?? p.avatar ?? p.profile?.avatar ?? '/avatars/default.png' }
   }
 }

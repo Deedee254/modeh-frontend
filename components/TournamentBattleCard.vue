@@ -146,7 +146,9 @@ const statusMessage = computed(() => {
         case 'cancelled':
             return 'Cancelled'
         default:
-            return props.battle.status.charAt(0).toUpperCase() + props.battle.status.slice(1)
+          // Use an any-cast to avoid exhaustive-switch narrowing by TypeScript
+          const raw = String((props.battle as any)?.status || '')
+          return raw.charAt(0).toUpperCase() + raw.slice(1)
     }
 })
 
@@ -161,12 +163,14 @@ const totalPoints = computed(() =>
 )
 
 const player1Avatar = computed(() => {
-  const avatar = props.battle?.player1?.avatar_url || props.battle?.player1?.avatar || props.battle?.player1?.profile?.avatar
+  const p1 = (props.battle?.player1) as any
+  const avatar = p1?.avatarUrl || p1?.avatar || p1?.avatar_url || p1?.profile?.avatar
   return resolveAssetUrl(avatar) || null
 })
 
 const player2Avatar = computed(() => {
-  const avatar = props.battle?.player2?.avatar_url || props.battle?.player2?.avatar || props.battle?.player2?.profile?.avatar
+  const p2 = (props.battle?.player2) as any
+  const avatar = p2?.avatarUrl || p2?.avatar || p2?.avatar_url || p2?.profile?.avatar
   return resolveAssetUrl(avatar) || null
 })
 

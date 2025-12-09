@@ -119,7 +119,7 @@
           <button
             v-else
             @click="finishBattle"
-            :disabled="!allQuestionsAnswered || timeRemaining <= 0 || connectionStatus !== 'connected' || isSubmitting"
+            :disabled="timeRemaining <= 0 || connectionStatus !== 'connected' || isSubmitting"
             :title="timeRemaining <= 0 ? 'Battle timeout - cannot submit' : connectionStatus !== 'connected' ? 'Connection required to submit' : ''"
             class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
           >
@@ -135,10 +135,10 @@
       <div class="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel class="mx-auto max-w-md rounded-lg bg-white p-6">
           <DialogTitle class="text-lg font-medium text-gray-900 mb-4">
-            Finish Battle?
+            {{ confirmTitle }}
           </DialogTitle>
           <p class="text-gray-600 mb-6">
-            Are you sure you want to finish this battle? You won't be able to change your answers after submission.
+            {{ confirmMessage }}
           </p>
           <div class="flex justify-end space-x-4">
             <button
@@ -217,6 +217,9 @@ const selectedAnswers = ref<SelectedAnswers>({})
 const timeRemaining = ref<number>(0)
 const answerSubmitted = ref<boolean>(false)
 const showConfirmation = ref<boolean>(false)
+// Dynamic confirmation dialog content (allows warning when some questions are unanswered)
+const confirmTitle = ref<string>('Finish Battle?')
+const confirmMessage = ref<string>("Are you sure you want to finish this battle? You won't be able to change your answers after submission.")
 const score = ref<number>(0)
 const isSubmitting = ref<boolean>(false)
 const submissionMessage = ref<string>('')
@@ -256,9 +259,17 @@ const selectedAnswerId = computed<string | number | undefined>(() => {
   return selectedAnswers.value[currentQuestion.value.id]
 })
 const canNavigate = computed<boolean>(() => !!(currentQuestion.value && selectedAnswers.value[currentQuestion.value.id]))
-const allQuestionsAnswered = computed<boolean>(() => 
-  Object.keys(selectedAnswers.value).length === totalQuestions.value
-)
+const allQuestionsAnswered = computed<boolean>(() => {
+  if (!questions.value || questions.value.length === 0) return false
+  return questions.value.every(q => {
+    const qid = Number(String((q as any).id))
+    // Prefer persisted answers in the store (they may be saved from other tabs)
+    const stored = answerStore.getAnswer(qid)
+    const local = selectedAnswers.value[(q as any).id]
+    const ans = (typeof stored !== 'undefined') ? stored : local
+    return typeof ans !== 'undefined' && ans !== '' && ans !== null
+  })
+})
 
 // Methods
 const config = useRuntimeConfig()
@@ -580,12 +591,23 @@ const finishBattle = () => {
     pushAlert({ message: 'Connection required to submit - please reconnect', type: 'error' })
     return
   }
-  
-  if (!allQuestionsAnswered.value) {
-    pushAlert({ message: 'Please answer all questions before submitting', type: 'warning' })
-    return
+  // Allow finishing even if some questions are unanswered. Prepare a contextual confirmation.
+  const unanswered = questions.value.filter(q => {
+    const qid = Number(String((q as any).id))
+    const stored = answerStore.getAnswer(qid)
+    const local = selectedAnswers.value[(q as any).id]
+    const ans = (typeof stored !== 'undefined') ? stored : local
+    return typeof ans === 'undefined' || ans === '' || ans === null
+  })
+
+  if (unanswered.length > 0) {
+    confirmTitle.value = 'Finish Battle (Unanswered)'
+    confirmMessage.value = `You have ${unanswered.length} unanswered question${unanswered.length === 1 ? '' : 's'}. Are you sure you want to submit now? You won't be able to change your answers.`
+  } else {
+    confirmTitle.value = 'Finish Battle?'
+    confirmMessage.value = "Are you sure you want to finish this battle? You won't be able to change your answers after submission."
   }
-  
+
   showConfirmation.value = true
 }
 

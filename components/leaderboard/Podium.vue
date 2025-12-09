@@ -128,7 +128,8 @@ function resolvedAvatar(v) {
     // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
     let val = null
     if (v && typeof v === 'object') {
-      val = v.avatar_url || v.avatar || v.photo || v.profile_image || null
+      // Prefer camelCase `avatarUrl` then legacy `avatar` then snake_case `avatar_url`.
+      val = v.avatarUrl || v.avatar || v.avatar_url || v.photo || v.profile_image || null
     } else {
       val = v
     }
