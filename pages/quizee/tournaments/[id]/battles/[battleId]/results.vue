@@ -20,7 +20,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="text-center">
-              <div class="text-3xl font-bold text-gray-900">{{ result.score }}</div>
+              <div class="text-3xl font-bold text-gray-900">{{ getScore(result) }}</div>
               <div class="text-gray-600">Your Points</div>
             </div>
             <div class="text-center">
@@ -51,7 +51,7 @@
                 </div>
               </div>
               <div class="text-right">
-                <div class="text-lg font-bold">{{ p.score }}</div>
+                <div class="text-lg font-bold">{{ getScore(p) }}</div>
                 <div class="text-sm text-gray-500">{{ p.correct }}/{{ p.total }}</div>
               </div>
             </div>
@@ -169,13 +169,18 @@ onMounted(async () => {
   }
 })
 
-const rankLabel = computed(() => {
-  if (!participants.value.length || !result.value) return '-'
-  const sorted = [...participants.value].sort((a, b) => (b.score || 0) - (a.score || 0))
-  const meId = user.value?.id || (result.value as any).id || 'me'
-  const idx = sorted.findIndex(p => p.id === meId || p.name === 'You' || (p.user && p.user.id === meId))
-  return idx >= 0 ? `#${idx + 1}` : '-'
-})
+  function getScore(item: any) {
+    if (!item) return 0
+    return item.score ?? item.points ?? item.points_earned ?? item.pointsEarned ?? item.total_points ?? 0
+  }
+
+  const rankLabel = computed(() => {
+    if (!participants.value.length || !result.value) return '-'
+    const sorted = [...participants.value].sort((a, b) => (getScore(b) || 0) - (getScore(a) || 0))
+    const meId = user.value?.id || (result.value as any).id || 'me'
+    const idx = sorted.findIndex(p => p.id === meId || p.name === 'You' || (p.user && p.user.id === meId))
+    return idx >= 0 ? `#${idx + 1}` : '-'
+  })
 
 function mySide() {
   if (!user.value || !result.value) return 'initiator'

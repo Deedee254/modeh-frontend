@@ -1,16 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <PageHero
-        v-if="result?.battle"
-        :title="result.battle.name || 'Battle Results'"
-        :description="`Review the outcome of your epic clash against ${opponent?.name || 'your opponent'}.`"
-        :breadcrumbs="[
-          { text: 'Dashboard', href: '/quizee/dashboard' },
-          { text: 'Battles', href: '/quizee/battles' },
-          { text: 'Result', current: true }
-        ]"
-      />
 
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="flex items-center gap-3 text-gray-500">
@@ -33,11 +23,10 @@
       </div>
 
       <div v-else>
-        <!-- Final Result Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-brand-600 rounded-2xl shadow-lg border border-gray-100 p-8 mb-8 text-white">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
           <div class="text-center">
             <div class="text-5xl font-bold mb-2" :class="resultClass">{{ resultLabel }}</div>
-            <p class="text-xl text-blue-100">Final Score: {{ myScore }} - {{ opponentScore }}</p>
+            <p class="text-xl text-gray-600">Final Score: {{ myScore }} - {{ opponentScore }}</p>
           </div>
         </div>
 
@@ -235,7 +224,6 @@ import resolveAssetUrl from '~/composables/useAssets'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useAnswerStore } from '~/stores/answerStore'
-import PageHero from '~/components/ui/PageHero.vue'
 
 definePageMeta({ layout: 'quizee' })
 

@@ -342,7 +342,10 @@ const recQuizzes = ref([])
 // Fetch recommendations only on client side
 async function fetchRecommendations() {
   try {
-    const res = await api.get('/api/recommendations/quizzes?per_page=5')
+    // prefer explicit grade param to ensure backend filters recommendations to user's grade
+    const forGrade = (auth.user && auth.user.quizeeProfile && auth.user.quizeeProfile.grade_id) ? auth.user.quizeeProfile.grade_id : (auth.user && auth.user.grade ? auth.user.grade : null)
+    const url = forGrade ? `/api/recommendations/quizzes?per_page=5&for_grade=${encodeURIComponent(forGrade)}` : '/api/recommendations/quizzes?per_page=5'
+    const res = await api.get(url)
     if (api.handleAuthStatus(res)) {
       recQuizzes.value = []
     } else if (res && res.ok) {

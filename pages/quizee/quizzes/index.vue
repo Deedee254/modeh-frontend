@@ -179,7 +179,8 @@ const userGradeName = computed(() => userProfile.value?.quizeeProfile?.grade?.na
 const { paginator, loading, normalizedQuizzes, fetchItems } = useQuizzes()
 
 // keep local params reactive and trigger composable fetches
-watch([sortBy, perPage, page], () => {
+// Also watch user's level/grade so filters reapply if the auth/profile changes
+watch([sortBy, perPage, page, userLevelId, userGradeId], () => {
   // on filter change, call fetchItems with current params, including level/grade filter
   const params = {
     sort: sortBy.value,
@@ -213,6 +214,19 @@ onMounted(async () => {
   }
   
   await fetchItems({ ...params, mergeAttempts: true }) 
+})
+
+// Also refetch when the auth store user object changes (covers cases where
+// the profile is updated after submitting a quiz and the page isn't remounted).
+watch(() => auth.user, () => {
+  const params = {
+    sort: sortBy.value,
+    per_page: perPage.value,
+    page: page.value
+  }
+  if (userLevelId.value) params.level_id = userLevelId.value
+  else if (userGradeId.value) params.grade_id = userGradeId.value
+  fetchItems({ ...params, mergeAttempts: true })
 })
 
 // fetchItems & fetchTopics provided by composable
