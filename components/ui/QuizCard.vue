@@ -77,6 +77,12 @@
           <span class="font-medium">{{ localLikes }}</span>
         </div>
 
+        <!-- Total Attempts (Popularity) -->
+        <div v-if="attemptsCount > 0" class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+          <Icon name="heroicons:users" class="h-4 w-4" />
+          <span class="font-medium">{{ attemptsCount }}</span>
+        </div>
+
         <!-- Duration/Time -->
         <div class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
           <Icon name="heroicons:clock" class="h-4 w-4" />
@@ -148,6 +154,7 @@ const props = defineProps({
   attemptScore: { type: [Number, String], default: null },
   attemptCorrect: { type: [Number, String], default: null },
   attemptIncorrect: { type: [Number, String], default: null },
+  attemptsCount: { type: [Number, String], default: 0 },
   showGrade: { type: Boolean, default: false },
   showSubject: { type: Boolean, default: true },
   showTopic: { type: Boolean, default: true },

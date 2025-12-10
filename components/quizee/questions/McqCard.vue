@@ -1,11 +1,11 @@
 <template>
-  <div class="w-full" :class="compact ? 'space-y-1.5' : 'space-y-2'">
+  <div :class="compact ? 'space-y-1' : 'space-y-2'">
     <div v-for="(opt, i) in question.options || []" :key="i">
-      <button @click="select(opt)" :class="[btnClass(opt), compact ? 'p-1.5 rounded-md gap-1.5 text-xs' : 'p-2 rounded-lg gap-2 text-sm']" class="w-full text-left border-2 transition-all duration-150 flex items-start">
-        <span :class="compact ? 'font-medium mr-1 mt-0.5 text-xs' : 'font-medium mr-1 mt-0.5 text-sm'">{{ String.fromCharCode(65 + i) }}.</span>
-        <div class="flex-1">
+      <button @click="select(opt)" :class="[btnClass(opt), compact ? 'px-2 py-1.5 rounded-md gap-1 text-xs' : 'p-2 rounded-lg gap-2 text-sm sm:p-2 sm:gap-2']" class="w-full text-left border-2 transition-all duration-150 flex items-start">
+        <span :class="compact ? 'font-medium mr-0.5 mt-0.5 text-xs flex-shrink-0' : 'font-medium mr-1 mt-0.5 text-sm flex-shrink-0'">{{ String.fromCharCode(65 + i) }}.</span>
+        <div class="flex-1 min-w-0">
           <div v-if="optionMedia(opt)" :class="compact ? 'mb-0.5' : 'mb-1'">
-            <img v-if="isImage(optionMedia(opt))" :src="optionMedia(opt)" :class="compact ? 'max-w-full rounded max-h-24' : 'max-w-full rounded max-h-32'" />
+            <img v-if="isImage(optionMedia(opt))" :src="optionMedia(opt)" :class="compact ? 'max-w-full rounded max-h-20' : 'max-w-full rounded max-h-32'" />
             <audio v-else-if="isAudio(optionMedia(opt))" controls class="w-full h-6">
               <source :src="optionMedia(opt)" />
             </audio>
@@ -13,7 +13,7 @@
               <iframe :src="formatYouTubeUrl(optionMedia(opt))" class="w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe>
             </div>
           </div>
-          <div :class="compact ? 'leading-tight text-xs' : 'leading-snug text-sm'" v-html="display(opt)"></div>
+          <div :class="compact ? 'leading-tight text-xs break-words' : 'leading-snug text-sm break-words'" v-html="display(opt)"></div>
         </div>
       </button>
     </div>

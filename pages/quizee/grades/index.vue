@@ -3,9 +3,7 @@
     <PageHero
       title="Your Grade Levels"
       description="Explore assessments and topics specific to your grade level."
-      :showSearch="true"
       :flush="true"
-      @search="onSearch"
     >
       <template #eyebrow>
         Your learning path
@@ -133,7 +131,6 @@ const taxonomy = useTaxonomy()
 
 const loading = ref(false)
 const error = ref(false)
-const searchTerm = ref('')
 const subjectsCount = ref(0)
 const topicsCount = ref(0)
 const totalQuizzes = ref(0)
@@ -147,10 +144,7 @@ const userLevel = computed(() => userProfile.value?.level?.name || userProfile.v
 
 const filteredGrades = computed(() => {
   let grades = taxonomy.grades.value || []
-  if (searchTerm.value) {
-    const q = searchTerm.value.toLowerCase()
-    grades = grades.filter((g: any) => (g.name || '').toLowerCase().includes(q))
-  }
+  // client-side search removed for this page
   const sort = sortOption.value
   if (sort === 'name') {
     grades = grades.slice().sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')))
@@ -193,9 +187,7 @@ async function loadGradesByLevel() {
   }
 }
 
-function onSearch(query: string) {
-  searchTerm.value = query
-}
+// search removed for this page
 
 onMounted(() => {
   loadGradesByLevel()

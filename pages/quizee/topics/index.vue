@@ -3,9 +3,7 @@
     <PageHero
       title="Your Topics"
       description="Discover topics aligned to your learning level."
-      :showSearch="true"
       :flush="true"
-      @search="onSearch"
     >
       <template #eyebrow>
         Your learning topics
@@ -86,14 +84,17 @@
           No topics available for your level.
         </div>
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <TopicCard
-            v-for="topic in filteredTopics"
-            :key="topic.id"
-            :title="topic.name"
-            :slug="topic.slug"
-            :to="`/quizee/topics/${topic.slug || topic.id}`"
-            :quizzes-count="topic.quizzes_count"
-          />
+                <TopicCard
+                  v-for="topic in filteredTopics"
+                  :key="topic.id"
+                  :title="topic.name"
+                  :slug="topic.slug"
+                  :to="`/quizee/topics/${topic.slug || topic.id}`"
+                  :quizzes-count="topic.quizzes_count"
+                  :subject="topic.subject?.name || topic.subject_name || ''"
+                  :grade="getGradeName(topic)"
+                  :course="getCourseName(topic)"
+                />
         </div>
       </div>
     </div>
@@ -104,6 +105,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
 import PageHero from '~/components/ui/PageHero.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
@@ -120,14 +122,15 @@ definePageMeta({
 const auth = useAuthStore()
 const api = useApi()
 const taxonomy = useTaxonomy()
+const taxonomyStore = useTaxonomyStore()
 
 const loading = ref(false)
 const error = ref(false)
-const searchTerm = ref('')
 const allTopics = ref<any[]>([])
 const sortOption = ref('newest')
 const allGrades = ref<any[]>([])
 const allLevels = ref<any[]>([])
+const allCourses = ref<any[]>([])
 const selectedGradeId = ref<number | null>(null)
 const selectedLevelId = ref<number | null>(null)
 
@@ -143,7 +146,8 @@ const userProfile = computed(() => {
 
 // Compute level with default fallback - ensure consistent SSR/client rendering
 const userLevel = computed(() => {
-  const profile = userProfile.value
+  const u = userProfile.value
+  const profile = u.quizeeProfile || u
   const name = profile?.level?.name || profile?.level_name
   // Always return a string, never undefined
   return name || 'Your Level'
@@ -151,7 +155,8 @@ const userLevel = computed(() => {
 
 // Compute grade with default fallback - ensure consistent SSR/client rendering
 const userGrade = computed(() => {
-  const profile = userProfile.value
+  const u = userProfile.value
+  const profile = u.quizeeProfile || u
   const name = profile?.grade?.name || profile?.grade_name
   // Always return a string, never undefined
   return name || 'Your Grade'
@@ -159,10 +164,7 @@ const userGrade = computed(() => {
 
 const filteredTopics = computed(() => {
   let topics = allTopics.value || []
-  if (searchTerm.value) {
-    const q = searchTerm.value.toLowerCase()
-    topics = topics.filter((t: any) => (t.name || '').toLowerCase().includes(q))
-  }
+  // no client-side search filter (filter bar removed)
   const sort = sortOption.value
   if (sort === 'name') {
     topics = topics.slice().sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')))
@@ -222,13 +224,15 @@ async function loadTopicsByLevel() {
 }
 
 function onSearch(query: string) {
-  searchTerm.value = query
+  // search removed for this page
 }
 
 // selector functions removed — UI no longer exposes grade/level selectors
 
 onMounted(async () => {
   // Load all grades and levels for filter dropdowns using api composable
+  const taxonomyStore = useTaxonomyStore()
+
   try {
     const gradesRes = await api.get('/api/grades')
     if (gradesRes.ok) {
@@ -249,6 +253,24 @@ onMounted(async () => {
     console.error('Failed to load levels:', e)
   }
 
+  // fetch courses via taxonomy store (uses caching)
+  try {
+    await taxonomyStore.fetchCourses()
+    // taxonomyStore.courses may be a ref or plain array depending on Pinia config
+    allCourses.value = Array.isArray((taxonomyStore as any).courses) ? (taxonomyStore as any).courses : (Array.isArray((taxonomyStore as any).courses?.value) ? (taxonomyStore as any).courses.value : [])
+  } catch (e) {
+    try {
+      // fallback: fetch directly
+      const coursesRes = await api.get('/api/courses')
+      if (coursesRes.ok) {
+        const coursesData = await api.parseResponse(coursesRes)
+        allCourses.value = Array.isArray(coursesData) ? coursesData : (coursesData?.data || coursesData?.courses || [])
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+
   // Initialize selected grade/level from user profile
   if (userProfile.value?.grade?.id) {
     selectedGradeId.value = userProfile.value.grade.id
@@ -259,4 +281,49 @@ onMounted(async () => {
 
   loadTopicsByLevel()
 })
+
+// Helper to derive grade name for a topic from available data
+function getGradeName(topic: any) {
+  if (!topic) return ''
+  // direct grade object or flat name from API
+  if (topic.grade && typeof topic.grade === 'object' && (topic.grade.name || topic.grade.display_name)) return topic.grade.name || topic.grade.display_name || ''
+  if (topic.grade_name) return topic.grade_name
+  if (topic.grade) return String(topic.grade)
+
+  // Try subject -> grade_id
+  // Resolve subjects from taxonomy store safely (Pinia may expose either array or ref)
+  const subjectsArr = Array.isArray((taxonomyStore as any).subjects) ? (taxonomyStore as any).subjects : (Array.isArray((taxonomyStore as any).subjects?.value) ? (taxonomyStore as any).subjects.value : [])
+  const subject = topic.subject || (topic.subject_id ? subjectsArr.find((s: any) => String(s.id) === String(topic.subject_id)) : null)
+  const gradeId = subject && (subject.grade_id || subject.grade) ? String(subject.grade_id || subject.grade) : null
+  if (!gradeId) return ''
+  const found = (allGrades.value || []).find((g: any) => String(g.id) === String(gradeId) || String(g.id) === String(g?.id))
+  if (found) return found.name || found.display_name || found.title || ''
+  // Fallback to taxonomy computed grades if available
+  const gradesArr = Array.isArray((taxonomyStore as any).grades) ? (taxonomyStore as any).grades : (Array.isArray((taxonomyStore as any).grades?.value) ? (taxonomyStore as any).grades.value : [])
+  const rg = gradesArr.find((g: any) => String(g.id) === String(gradeId))
+  if (rg) return rg.name || rg.display_name || ''
+  return ''
+}
+
+function getCourseName(topic: any) {
+  if (!topic) return ''
+  if (topic.course && typeof topic.course === 'object' && (topic.course.name || topic.course.title)) return topic.course.name || topic.course.title || ''
+  if (topic.course_name) return topic.course_name
+  // try course id mapping from fetched courses
+  const courseId = topic.course_id || (topic.course && topic.course.id) || topic.courseId || null
+  if (courseId) {
+    const found = (allCourses.value || []).find((c: any) => String(c.id) === String(courseId) || String(c.id) === String(c?.id))
+    if (found) return found.name || found.title || ''
+    // try taxonomy store grades/courses as fallback
+    try {
+      const cs = (taxonomyStore as any).courses
+      const arr = Array.isArray(cs) ? cs : (Array.isArray(cs?.value) ? cs.value : [])
+      const f2 = arr.find((c: any) => String(c.id) === String(courseId))
+      if (f2) return f2.name || f2.title || ''
+    } catch (e) {
+      // ignore
+    }
+  }
+  return ''
+}
 </script>

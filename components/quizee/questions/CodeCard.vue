@@ -1,18 +1,8 @@
 <template>
-  <div class="space-y-3">
+  <div class="space-y-2 sm:space-y-3">
     <div>
-      <h3 class="text-base font-semibold text-gray-900 dark:text-white" v-html="question?.body"></h3>
-      <div v-if="hasMedia" class="mt-3">
-        <img v-if="isImage" :src="mediaSrc" class="w-full max-h-48 object-cover rounded-lg" />
-        <audio v-else-if="isAudio" :src="mediaSrc" controls class="w-full" />
-        <div v-else-if="isEmbed" class="aspect-video rounded-lg overflow-hidden"><iframe :src="embedUrl" class="w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>
-      </div>
-      <div v-if="question?.explanation" class="mt-3 text-sm text-gray-600 dark:text-gray-300 prose prose-sm" v-html="question.explanation"></div>
-    </div>
-
-    <div>
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Your code answer (JavaScript)</label>
-      <textarea v-model="code" rows="10" class="w-full font-mono text-sm rounded border border-gray-200 dark:border-gray-700 px-3 py-2 mt-2" placeholder="Write JavaScript code here..."></textarea>
+      <label class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">Your code answer (JavaScript)</label>
+      <textarea v-model="code" rows="6" class="w-full font-mono text-xs sm:text-sm rounded border border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 mt-2 resize-vertical" placeholder="Write JavaScript code here..."></textarea>
     </div>
   </div>
 </template>

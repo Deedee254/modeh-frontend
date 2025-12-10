@@ -248,6 +248,43 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     return promise
   }
 
+  // Fetch all courses (no grade filter)
+  async function fetchCourses() {
+    const cacheKey = 'all'
+    const cached = coursesCache.get(cacheKey)
+    if (cached) {
+      courses.value = cached
+      return
+    }
+    const inflight = coursesCache.getInflight(cacheKey)
+    if (inflight) return inflight
+
+    loadingCourses.value = true
+    const promise = (async () => {
+      try {
+        const res = await api.get('/api/courses')
+        if (!res.ok) return
+        const data = await res.json().catch(() => null)
+        const list = normalizeList(data)
+        courses.value = list
+        coursesCache.set(cacheKey, list)
+        persistToStorage('taxonomy:courses:all', list)
+      } catch (e) {
+        const stale = readFromStorage('taxonomy:courses:all', ttl.value * 2)
+        if (stale) {
+          courses.value = stale
+          coursesCache.set(cacheKey, stale)
+        }
+      } finally {
+        loadingCourses.value = false
+        coursesCache.clearInflight(cacheKey)
+      }
+    })()
+
+    coursesCache.setInflight(cacheKey, promise)
+    return promise
+  }
+
   async function fetchLevels() {
     const cacheKey = 'all'
     const cached = levelsCache.get(cacheKey)
@@ -775,6 +812,7 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     fetchAllTopics,
     fetchTopicsBySubject,
     fetchTopicsPage,
+  fetchCourses,
     // selection state & actions
     selectedGrade,
     selectedSubject,

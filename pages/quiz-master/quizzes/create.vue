@@ -127,7 +127,7 @@
           :publishing="store.isSubmitting"
           :publish-error="store.publishError ?? undefined"
           @update:modelValue="(v: any) => (showPreviewModal = v)"
-          @edit-section="(section: any) => store.setTab(section)"
+          @edit-section="(section: any) => { store.setTab(section); showPreviewModal = false }"
           @publish="onPublishConfirmed"
         />
 

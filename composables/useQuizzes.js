@@ -20,6 +20,7 @@ export default function useQuizzes(initial = {}) {
       },
       cover_image: item.cover_image ?? '',
       questions_count: item.questions_count ?? 0,
+      attempts_count: item.attempts_count ?? 0,
       difficulty: item.difficulty ?? 0,
       user_id: item.user_id ?? null,
       likes_count: item.likes_count ?? item.likes ?? 0,

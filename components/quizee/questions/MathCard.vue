@@ -1,39 +1,21 @@
 <template>
-  <div class="space-y-3">
-    <div class="flex items-start justify-between gap-3">
-      <div class="flex-1">
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white" v-html="question?.body"></h3>
-        <div v-if="hasMedia" class="mt-3">
-          <img v-if="isImage" :src="mediaSrc" class="w-full max-h-48 object-cover rounded-lg" />
-          <audio v-else-if="isAudio" :src="mediaSrc" controls class="w-full" />
-          <div v-else-if="isEmbed" class="aspect-video rounded-lg overflow-hidden"><iframe :src="embedUrl" class="w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>
-        </div>
-        <div v-if="question?.explanation" class="mt-3 text-sm text-gray-600 dark:text-gray-300 prose prose-sm" v-html="question.explanation"></div>
-      </div>
-      <div class="w-28 text-right">
-        <div class="text-xs text-gray-500">Total marks</div>
-        <div class="text-2xl font-bold text-brand-600">{{ totalMarks }}</div>
-      </div>
-    </div>
-
-    <div class="space-y-3">
-      <div v-for="(part, idx) in parts" :key="idx" class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1">
-            <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"><strong>{{ partLabel(idx) }}</strong></div>
-            <div class="text-sm text-gray-600 dark:text-gray-300 mb-3" v-html="part.text || ''"></div>
+  <div class="space-y-2 sm:space-y-3">
+      <div v-for="(part, idx) in parts" :key="idx" class="p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 sm:mb-2"><strong>{{ partLabel(idx) }}</strong></div>
+            <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-2 sm:mb-3 break-words" v-html="part.text || ''"></div>
             <div>
-              <textarea v-model="localAnswers[idx]" rows="3" class="w-full font-mono text-sm rounded border border-gray-200 dark:border-gray-700 px-3 py-2" placeholder="Enter answer for {{ partLabel(idx) }}"></textarea>
-              <div class="mt-2 prose-sm text-sm text-gray-700 dark:text-gray-300" v-html="previews[idx]"></div>
+              <textarea v-model="localAnswers[idx]" rows="3" class="w-full font-mono text-xs sm:text-sm rounded border border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2" placeholder="Enter answer for {{ partLabel(idx) }}"></textarea>
+              <div class="mt-1 sm:mt-2 prose-sm text-xs sm:text-sm text-gray-700 dark:text-gray-300 break-words" v-html="previews[idx]"></div>
             </div>
           </div>
-          <div class="w-24 text-right">
+          <div class="flex-shrink-0 text-right">
             <div class="text-xs text-gray-500">Marks</div>
-            <div class="text-lg font-semibold">{{ part.marks ?? '-' }}</div>
+            <div class="text-lg sm:text-2xl font-semibold">{{ part.marks ?? '-' }}</div>
           </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 

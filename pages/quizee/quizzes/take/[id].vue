@@ -530,6 +530,7 @@ async function submitAnswers() {
   // Log for debugging
   console.log('Raw answers object:', answersToSubmit)
   console.log('Sanitized answers:', sanitizedAnswers)
+  console.log('Question times:', questionTimes.value)
   
   // Only filter out answers with question_id of 0 (completely invalid)
   const finalAnswers = sanitizedAnswers.filter(a => {
@@ -537,8 +538,17 @@ async function submitAnswers() {
     return Number.isFinite(qid)
   })
 
+  // Extract per-question times into a separate object for the backend
+  const perQuestionTimes = {}
+  for (const [qid, time] of Object.entries(questionTimes.value)) {
+    if (typeof time === 'number' && time > 0) {
+      perQuestionTimes[Number(qid)] = time
+    }
+  }
+
   const payload = {
     answers: finalAnswers,
+    question_times: Object.keys(perQuestionTimes).length > 0 ? perQuestionTimes : null,
     defer_marking: true,
     total_time_seconds: totalTime,
     started_at: quiz.value._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : (quiz.value.started_at || null),

@@ -13,7 +13,7 @@
       <!-- New Integrated Hero Section -->
       <div class="mb-6">
         <div class="h-6 w-24 bg-gray-200 rounded-md mb-4"></div>
-        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gray-200"></div>
+        <div class="relative h-72 md:h-96 lg:h-[28rem] rounded-xl overflow-hidden bg-gray-200"></div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div class="lg:col-span-2 space-y-6">
@@ -34,9 +34,15 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
           Back
         </button>
-        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden" :style="heroStyle">
+        <div class="relative h-72 md:h-96 lg:h-[28rem] rounded-xl overflow-hidden" :style="heroStyle">
           <!-- preload cover to detect load state -->
           <img v-if="coverSrc" :src="coverSrc || undefined" class="hidden" @load="onCoverLoaded" @error="onCoverError" />
+
+          <!-- Likes Badge (Top Right) -->
+          <div v-if="quiz.likes_count" class="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/95 text-red-500 font-medium shadow-lg">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span class="text-sm">{{ quiz.likes_count }}</span>
+          </div>
 
           <!-- Overlay Content (title, badges) -->
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
@@ -57,36 +63,31 @@
                 {{ subject_name }}
               </span>
             </div>
-            <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 line-clamp-2">{{ quiz.title }}</h1>
-            <div class="flex flex-wrap gap-x-4 gap-y-2 text-white/90 text-sm">
-              <!-- Creator Info -->
-              <div v-if="quiz.created_by" class="flex items-center gap-1.5">
-                 <div class="w-5 h-5 rounded-full bg-gray-300 overflow-hidden" v-if="quiz.created_by.avatar">
-                    <img :src="quiz.created_by.avatar" alt="" class="w-full h-full object-cover">
-                 </div>
-                 <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                 <span>By {{ quiz.created_by.name }}</span>
-              </div>
-              
-              <!-- Pricing -->
-              <div class="flex items-center gap-1.5 font-medium px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm">
-                <span v-if="quiz.is_paid && quiz.price">
-                  {{ typeof quiz.price === 'number' ? '$' + quiz.price : quiz.price }}
-                </span>
-                <span v-else>Free</span>
-              </div>
-
+            <!-- Responsive Title: break-words on mobile, line-clamp on desktop -->
+            <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 break-words">{{ quiz.title }}</h1>
+            <!-- Metadata: Simple flex layout to avoid hydration mismatch -->
+            <div class="flex flex-wrap gap-3 text-white/90 text-xs sm:text-sm">
+              <!-- Questions Count -->
               <div class="flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <svg class="w-4 h-4 text-white/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span>{{ quiz.questions_count || questionCount }} questions</span>
               </div>
+              <!-- Time Limit -->
               <div class="flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span>{{ quiz.timer_seconds ? formatTimeLimit(Math.floor(quiz.timer_seconds / 60)) : 'No time limit' }}</span>
+                <svg class="w-4 h-4 text-white/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ quiz.timer_seconds ? formatTimeLimit(Math.floor(quiz.timer_seconds / 60)) : 'Unlimited' }}</span>
               </div>
+              <!-- Points -->
               <div class="flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <svg class="w-4 h-4 text-white/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 <span>{{ quiz.marks || quiz.points || 10 }} points</span>
+              </div>
+              <!-- Pricing -->
+              <div class="flex items-center gap-1.5 font-medium">
+                <span v-if="quiz.is_paid && quiz.price" class="px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm">
+                  {{ typeof quiz.price === 'number' ? '$' + quiz.price : quiz.price }}
+                </span>
+                <span v-else class="px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm">Free</span>
               </div>
             </div>
           </div>
@@ -318,6 +319,7 @@ interface Quiz {
   shuffle_answers?: boolean;
   is_paid?: boolean;
   price?: string | number;
+  likes_count?: number;
   created_by?: {
     id: number;
     name: string;
@@ -431,6 +433,17 @@ const coverSrc = computed(() => {
 const posterSrc = computed(() => {
   const p = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
   return typeof p === 'string' && p ? resolveAssetUrl(p) : null
+})
+
+const creatorAvatarUrl = computed(() => {
+  const avatar = quiz.value.created_by?.avatar
+  if (!avatar || typeof avatar !== 'string') return null
+  // If it's already a full URL, return as-is
+  if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+    return avatar
+  }
+  // Otherwise, resolve it through asset URL handler
+  return resolveAssetUrl(avatar)
 })
 
 const heroStyle = computed(() => {

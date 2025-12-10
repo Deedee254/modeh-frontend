@@ -186,7 +186,12 @@ const circleRadius = 18
 const circumference = 2 * Math.PI * circleRadius
 const dashOffset = computed(() => {
   const frac = perQuestionTotal.value ? (perQuestionSeconds.value / perQuestionTotal.value) : 0
-  return String(circumference * (1 - Math.max(0, Math.min(1, frac))))
+  return circumference * (1 - Math.max(0, Math.min(1, frac)))
+})
+const timerColorClass = computed(() => {
+  if (perQuestionSeconds.value <= 2) return 'text-red-600'
+  if (lowTime.value) return 'text-yellow-600'
+  return 'text-brand-600'
 })
 const lowTime = computed(() => perQuestionSeconds.value <= 5)
 

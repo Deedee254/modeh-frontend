@@ -28,11 +28,18 @@
       </h3>
 
       <!-- Subject Tag -->
-      <div v-if="displaySubject" class="mt-2 inline-block">
-        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-        Subject : {{ displaySubject }}
-        </span>
-      </div>
+          <!-- Meta Tags (Subject / Grade / Course) -->
+          <div class="mt-2 flex flex-wrap gap-2 items-center">
+            <span v-if="displaySubject" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              Subject: {{ displaySubject }}
+            </span>
+            <span v-if="displayGrade" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              Grade: {{ displayGrade }}
+            </span>
+            <span v-if="displayCourse" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              Course: {{ displayCourse }}
+            </span>
+          </div>
 
       <!-- Description -->
       <p v-if="displayDescription" class="mt-3 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
@@ -60,6 +67,8 @@ const props = defineProps({
   image: { type: String, default: '' },
   palette: { type: String, default: '' },
   subject: { type: [String, Object], default: '' },
+  grade: { type: [String, Object], default: '' },
+  course: { type: [String, Object], default: '' },
   quizzesCount: { type: [String, Number], default: 0 },
   startLink: { type: [String, Object], default: null },
   startLabel: { type: String, default: 'View Quizzes' },
@@ -73,5 +82,17 @@ const displaySubject = computed(() => {
   if (!s) return ''
   if (typeof s === 'string') return s
   return s.name || s.title || s.label || String(s.id || '')
+})
+const displayGrade = computed(() => {
+  const g = props.grade || props.topic?.grade
+  if (!g) return ''
+  if (typeof g === 'string') return g
+  return g.name || g.title || String(g.id || '')
+})
+const displayCourse = computed(() => {
+  const c = props.course || props.topic?.course
+  if (!c) return ''
+  if (typeof c === 'string') return c
+  return c.name || c.title || String(c.id || '')
 })
 </script>

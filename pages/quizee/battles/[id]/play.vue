@@ -20,7 +20,7 @@
       :disable-next="!canNavigate"
       :show-submit="currentIndex === questions.length - 1"
       :submit-label="'Finish Battle'"
-      :disable-submit="!allAnswered || submitting"
+      :disable-submit="submitting"
       :is-submitting="submitting"
       :show-confirmation="showConfirm"
       :confirm-title="'Finish Battle?'"
@@ -281,7 +281,6 @@ watch(currentIndex, () => {
 })
 
 function finishBattle() {
-  if (!allAnswered.value) return
   submitBattle()
 }
 

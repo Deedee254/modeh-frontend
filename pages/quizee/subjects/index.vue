@@ -3,9 +3,7 @@
     <PageHero
       title="Your Subjects"
       description="Explore subjects relevant to your grade level."
-      :showSearch="true"
       :flush="true"
-      @search="onSearch"
     >
       <template #eyebrow>
         Your learning subjects
@@ -93,6 +91,7 @@
             :description="subject.description || subject.summary"
             :slug="subject.slug"
             :to="`/quizee/subjects/${subject.slug || subject.id}`"
+            :grade="subject.grade || subject.grade_id || ''"
           />
         </div>
       </div>
@@ -104,6 +103,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
+import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
 import PageHero from '~/components/ui/PageHero.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
@@ -123,7 +123,6 @@ const taxonomy = useTaxonomy()
 
 const loading = ref(false)
 const error = ref(false)
-const searchTerm = ref('')
 const allGrades = ref<any[]>([])
 const allLevels = ref<any[]>([])
 const allCourses = ref<any[]>([])
@@ -141,12 +140,38 @@ const userProfile = computed(() => {
   return unwrapped || {}
 })
 
-// Compute grade with default fallback - ensure consistent SSR/client rendering
+// Compute grade with fallback to loaded grades list so PageHero shows an actual grade when available
+const taxonomyStore = useTaxonomyStore()
 const userGrade = computed(() => {
-  const profile = userProfile.value
+  const profile = userProfile.value?.quizeeProfile || userProfile.value
   const name = profile?.grade?.name || profile?.grade_name
-  // Always return a string, never undefined
-  return name || 'Your Grade'
+  if (name) return name
+
+  // try to resolve from explicit grade id (profile or selected)
+  const gradeId = profile?.grade?.id || profile?.grade_id || selectedGradeId.value
+  // prefer grades from the Pinia taxonomy store
+  if (gradeId && taxonomyStore.grades && taxonomyStore.grades.length) {
+    const found = taxonomyStore.grades.find((g: any) => String(g.id) === String(gradeId))
+    if (found) return found.name || found.display_name || found.title || ''
+  }
+
+  if (gradeId && Array.isArray(allGrades.value) && allGrades.value.length) {
+    const found = allGrades.value.find(g => String(g.id) === String(gradeId))
+    if (found) return found.name || found.display_name || found.title || ''
+  }
+
+  // fallback to first loaded grade if available
+  if (taxonomyStore.grades && taxonomyStore.grades.length) {
+    const g = taxonomyStore.grades[0]
+    return g?.name || g?.display_name || g?.title || 'Your Grade'
+  }
+  if (Array.isArray(allGrades.value) && allGrades.value.length) {
+    const g = allGrades.value[0]
+    return g?.name || g?.display_name || g?.title || 'Your Grade'
+  }
+
+  // final fallback
+  return 'Your Grade'
 })
 
 // Compute level with default fallback - ensure consistent SSR/client rendering
@@ -160,10 +185,7 @@ const userLevel = computed(() => {
 
 const filteredSubjects = computed(() => {
   let subjects = taxonomy.subjects.value || []
-  if (searchTerm.value) {
-    const q = searchTerm.value.toLowerCase()
-    subjects = subjects.filter((s: any) => (s.name || '').toLowerCase().includes(q))
-  }
+  // client-side search removed for this page
   // apply sorting
   const sort = sortOption.value
   if (sort === 'name') {
@@ -207,9 +229,7 @@ async function loadSubjectsByGrade() {
   }
 }
 
-function onSearch(query: string) {
-  searchTerm.value = query
-}
+// search removed for this page
 
 // selector helper functions removed — UI no longer exposes course/grade/level selectors
 
@@ -223,6 +243,13 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error('Failed to load grades:', e)
+  }
+
+  // populate Pinia taxonomy store grades (used by SubjectCard to resolve grade names)
+  try {
+    await taxonomyStore.fetchGrades()
+  } catch (e) {
+    // ignore
   }
 
   try {

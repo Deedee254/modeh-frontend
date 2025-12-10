@@ -361,7 +361,7 @@ watch(() => props.modelValue, (nv) => {
     shuffleAnswers.value = nv.shuffle_answers ?? false
     access.value = nv.access ?? 'free'
   }
-}, { deep: true })
+}, { deep: true, immediate: true })
 </script>
 
 <style scoped>

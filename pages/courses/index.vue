@@ -10,27 +10,34 @@
       <div v-if="loading" class="text-center py-12">Loading courses…</div>
 
       <div v-else>
-        <!-- Sticky Filters at Top -->
-        <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
-          <FiltersSidebar
-            :subject-options="store.subjects"
-            :grade-options="store.grades"
-            :showTopic="false"
-            :subject="subjectFilter"
-            :grade="gradeFilter"
-            :level="levelFilter"
-            storageKey="filters:courses"
-            @update:subject="val => subjectFilter.value = val"
-            @update:grade="val => gradeFilter.value = val"
-            @update:level="val => levelFilter.value = val"
-            @apply="() => {}"
-          />
+        <!-- Sort pills -->
+        <div class="mb-6 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <button
+              :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'newest' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+              @click="sortOption = 'newest'"
+            >
+              Newest
+            </button>
+            <button
+              :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'name' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+              @click="sortOption = 'name'"
+            >
+              Name (A–Z)
+            </button>
+            <button
+              :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'most_quizzes' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+              @click="sortOption = 'most_quizzes'"
+            >
+              Most quizzes
+            </button>
+          </div>
         </div>
 
         <main class="w-full">
           <div v-if="coursesFiltered.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No courses found.</div>
 
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <GradeCard
               v-for="c in coursesFiltered"
               :key="c.id"
@@ -51,7 +58,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import FiltersSidebar from '~/components/FiltersBar.vue'
+// FiltersSidebar removed: using simple sort pills instead
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 import PageHero from '~/components/ui/PageHero.vue'
@@ -68,9 +75,7 @@ const { data } = await useTaxonomyHydration({
   fetchLevels: true
 })
 
-const subjectFilter = ref('')
-const gradeFilter = ref('')
-const levelFilter = ref('')
+const sortOption = ref('newest')
 
 // Compute courses by filtering store.grades for course type
 const courses = computed(() => {
@@ -83,9 +88,17 @@ const loading = computed(() => !store.grades.length)
 
 const coursesFiltered = computed(() => {
   let list = courses.value.slice()
-  if (subjectFilter.value) list = list.filter(c => Array.isArray(c.subjects) ? c.subjects.some(s => String(s.id) === String(subjectFilter.value)) : false)
-  if (gradeFilter.value) list = list.filter(c => String(c.grade_id || c.grade || '') === String(gradeFilter.value))
-  if (levelFilter.value) list = list.filter(c => String(c.level_id || (c.grade && c.grade.level_id) || '') === String(levelFilter.value))
+  if (sortOption.value === 'name') {
+    list = list.slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')))
+  } else if (sortOption.value === 'most_quizzes') {
+    list = list.slice().sort((a,b) => Number(b.quizzes_count || b.count || 0) - Number(a.quizzes_count || a.count || 0))
+  } else {
+    list = list.slice().sort((a,b) => {
+      const ta = a?.created_at ? Date.parse(String(a.created_at)) : 0
+      const tb = b?.created_at ? Date.parse(String(b.created_at)) : 0
+      return tb - ta
+    })
+  }
   return list
 })
 

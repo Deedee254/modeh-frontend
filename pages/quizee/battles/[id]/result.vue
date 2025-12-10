@@ -10,15 +10,23 @@
       </div>
 
       <div v-else-if="!result" class="text-center py-20 bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div v-if="errorMessage" class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m6-4a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <div v-else class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         </div>
-        <h3 class="text-xl font-medium text-gray-900 mb-2">Results Not Found</h3>
-        <p class="text-gray-600">We couldn't load the results for this battle. It might still be in progress.</p>
-        <div class="mt-6">
+        <h3 v-if="errorMessage" class="text-xl font-medium text-red-900 mb-2">Unable to Load Results</h3>
+        <h3 v-else class="text-xl font-medium text-gray-900 mb-2">Results Not Found</h3>
+        <p v-if="errorMessage" class="text-red-600 mb-2">{{ errorMessage }}</p>
+        <p v-else class="text-gray-600">We couldn't load the results for this battle. It might still be in progress.</p>
+        <div class="mt-6 flex gap-3 justify-center flex-wrap">
           <NuxtLink to="/quizee/battles" class="px-6 py-3 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700">
             Back to Battles
           </NuxtLink>
+          <button v-if="errorMessage && errorMessage.includes('subscription')" @click="() => { $router.push('/quizee/pricing') }" class="px-6 py-3 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700">
+            Upgrade Plan
+          </button>
         </div>
       </div>
 
@@ -221,20 +229,24 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import resolveAssetUrl from '~/composables/useAssets'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useAnswerStore } from '~/stores/answerStore'
+import useApi from '~/composables/useApi'
 
 definePageMeta({ layout: 'quizee' })
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const cfg = useRuntimeConfig()
 const answerStore = useAnswerStore()
+const api = useApi()
 
 const loading = ref(true)
 const result = ref(null)
 const awardedAchievements = ref([])
+const errorMessage = ref(null)
 
 const battleId = route.params.id
 
@@ -248,11 +260,33 @@ onMounted(async () => {
   }
 
   try {
-    const res = await $fetch(`/api/battles/${battleId}/result`, {
-      baseURL: cfg.public.apiBase,
-      credentials: 'include'
-    })
-    // $fetch automatically unwraps the response
+    const resp = await api.get(`/api/battles/${battleId}/result`)
+    
+    // Check for auth errors (401, 419)
+    if (resp.status === 401 || resp.status === 419) {
+      api.handleAuthStatus(resp)
+      result.value = null
+      loading.value = false
+      return
+    }
+    
+    // Parse the response to check for subscription/limit errors
+    const res = await api.parseResponse(resp)
+    
+    // Check if we got a limit error (subscription reached, etc.)
+    if (resp.status === 403 && res && res.code === 'limit_reached') {
+      // User has hit subscription limit - show error message
+      // Note: Limits should ideally be checked on checkout page before user reaches results
+      console.error('Subscription limit reached:', res.message)
+      errorMessage.value = res.message || 'You have reached your subscription limit. Please upgrade to view results.'
+      return
+    }
+    
+    // If response is not OK and not a limit error, throw
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch battle results: ${resp.status} ${resp.statusText}`)
+    }
+    
     // Support two possible response shapes:
     // 1) { battle: {...}, questions: [...] } (older shape)
     // 2) { ok: true, result: { battle: {...}, questions: [...] } } (current shape)
@@ -277,6 +311,8 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error("Failed to fetch battle results:", error)
+    // Store the error message for display
+    errorMessage.value = error?.message || 'Failed to load battle results. Please try again.'
     // Show the error state
     result.value = null
   } finally {

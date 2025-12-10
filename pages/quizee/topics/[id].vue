@@ -3,9 +3,7 @@
     <PageHero
       :title="topic?.name || 'Topic'"
       :description="topic?.description || `Explore this topic in detail`"
-      :showSearch="true"
       :flush="true"
-      @search="onSearch"
     >
       <template #eyebrow>
         Topic detail
@@ -53,6 +51,30 @@
           <!-- Quizzes Grid -->
           <div>
             <h3 class="text-2xl font-bold text-gray-900 mb-6">Available Quizzes</h3>
+            <!-- Sort pills for quizzes -->
+            <div class="mb-6 flex items-center gap-3">
+              <div class="text-sm text-gray-600">Sort:</div>
+              <div class="flex items-center gap-2">
+                <button
+                  :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'newest' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+                  @click="sortOption = 'newest'"
+                >
+                  Newest
+                </button>
+                <button
+                  :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'name' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+                  @click="sortOption = 'name'"
+                >
+                  Name (A–Z)
+                </button>
+                <button
+                  :class="[ 'px-3 py-1 rounded-full text-sm font-medium', sortOption === 'most_questions' ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700' ]"
+                  @click="sortOption = 'most_questions'"
+                >
+                  Most questions
+                </button>
+              </div>
+            </div>
             <div v-if="quizzesLoading" class="mt-6">
               <UiSkeleton :count="6" />
             </div>
@@ -64,7 +86,7 @@
             </div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <QuizCard
-                v-for="quiz in quizzes"
+                v-for="quiz in displayQuizzes"
                 :key="quiz.id"
                 :quiz-id="quiz.id"
                 :title="quiz.title || quiz.name"
@@ -110,9 +132,9 @@ const topicId = computed(() => route.params.id)
 const loading = ref(false)
 const error = ref(false)
 const topic = ref<any>(null)
-const searchTerm = ref('')
 
 const quizzes = ref<any[]>([])
+const sortOption = ref('newest')
 const quizzesLoading = ref(false)
 const quizzesError = ref(false)
 const quizzesMeta = ref<any>(null)
@@ -141,10 +163,7 @@ async function fetchQuizzes(page = 1) {
   quizzesLoading.value = true
   quizzesError.value = false
   try {
-    const query = new URLSearchParams({
-      page: page.toString(),
-      q: searchTerm.value,
-    })
+    const query = new URLSearchParams({ page: page.toString() })
     const res = await api.get(`/api/topics/${topicId.value}/quizzes?${query}`)
     if (!res.ok) {
       quizzesError.value = true
@@ -153,7 +172,7 @@ async function fetchQuizzes(page = 1) {
     const data = await api.parseResponse(res)
     // Backend returns { quizzes: { data: [...], meta: {...} } }
     const paginatedQuizzes = data?.quizzes || {}
-    quizzes.value = paginatedQuizzes.data || []
+  quizzes.value = paginatedQuizzes.data || []
     quizzesMeta.value = paginatedQuizzes || null
   } catch (e) {
     console.error('Error fetching quizzes:', e)
@@ -163,10 +182,24 @@ async function fetchQuizzes(page = 1) {
   }
 }
 
-function onSearch(query: string) {
-  searchTerm.value = query
-  fetchQuizzes()
-}
+// search removed for topic detail
+
+const displayQuizzes = computed(() => {
+  let arr = Array.isArray(quizzes.value) ? quizzes.value.slice() : []
+  const s = sortOption.value
+  if (s === 'name') {
+    arr.sort((a: any, b: any) => String(a.title || a.name || '').localeCompare(String(b.title || b.name || '')))
+  } else if (s === 'most_questions') {
+    arr.sort((a: any, b: any) => Number(b.questions_count || 0) - Number(a.questions_count || 0))
+  } else {
+    arr.sort((a: any, b: any) => {
+      const ta = a?.created_at ? Date.parse(String(a.created_at)) : 0
+      const tb = b?.created_at ? Date.parse(String(b.created_at)) : 0
+      return tb - ta
+    })
+  }
+  return arr
+})
 
 onMounted(async () => {
   if (topicId.value) {

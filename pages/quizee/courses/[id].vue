@@ -3,9 +3,7 @@
     <PageHero
       :title="course?.name || 'Course'"
       :description="course?.description || course?.summary || `Topics in ${course?.name || ''}`"
-      :showSearch="true"
       :flush="true"
-      @search="onSearch"
     >
       <template #eyebrow>
         Course topics
@@ -95,14 +93,10 @@ const loading = ref(false)
 const error = ref(false)
 const course = ref<any>(null)
 const topics = ref<any[]>([])
-const searchTerm = ref('')
 
 const displayTopics = computed(() => {
   let list = topics.value || []
-  if (searchTerm.value) {
-    const q = searchTerm.value.toLowerCase()
-    list = list.filter((t: any) => (t.name || '').toLowerCase().includes(q))
-  }
+  // client-side search removed for this page
   return list
 })
 
@@ -133,9 +127,7 @@ async function fetchCourseAndTopics() {
   }
 }
 
-function onSearch(query: string) {
-  searchTerm.value = query
-}
+// search removed for this page
 
 onMounted(() => {
   if (courseId.value) {

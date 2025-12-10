@@ -260,10 +260,12 @@ async function fetchResults() {
     } catch (err) {
       // Distinguish not-found vs other errors
       const status = err?.status || err?.response?.status || null
+      const resData = err?.data || {}
+      
       if (status === 404) {
         error.value = 'Results not found. The attempt may no longer exist.'
       } else if (status >= 400 && status < 500) {
-        error.value = err?.data?.message || err?.message || 'Could not load results. You may need an active subscription.'
+        error.value = resData?.message || err?.message || 'Could not load results. You may need an active subscription.'
       } else {
         error.value = 'An unexpected error occurred. Please try again later.'
       }

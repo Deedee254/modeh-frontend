@@ -11,7 +11,7 @@
       </div>
 
       <div class="content-col">
-    <h3 class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-1" v-html="question?.body"></h3>
+  <h3 v-if="showHeader" class="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 leading-snug break-words whitespace-normal" v-html="question?.body"></h3>
   <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" :compact="isCompact" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" @toggle="$emit('toggle',$event)" />
   <div v-else class="text-xs text-red-600 dark:text-red-400">Component missing for question type: {{ question?.type || 'unknown' }}</div>
                   <div class="mt-1">
@@ -60,6 +60,12 @@ const componentName = computed(() => {
   return McqCard
 })
 
+// don't show the header in the parent when the child renders the body itself
+const showHeader = computed(() => {
+  const t = (props.question?.type || 'mcq').toString()
+  return t !== 'fill_blank'
+})
+
 // expose local computed to template
 const isImage = isImageLocal
 const isAudio = isAudioLocal
@@ -104,10 +110,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.media-col { width: 240px; flex: 0 0 240px }
+/* Media column: responsive width, max 240px on desktop, full on mobile */
+.media-col { 
+  width: 100%; 
+  flex: 0 0 100%; 
+  max-width: 240px;
+}
 .content-col { flex: 1 }
 @media (max-width: 640px) {
-  .media-col { width: 100%; flex: none }
+  .media-col { width: 100%; flex: none; max-width: 100% }
 }
+/* Ensure long question text wraps and preserves normal whitespace */
+.content-col h3 { word-wrap: break-word; word-break: break-word; white-space: normal }
 </style>
 

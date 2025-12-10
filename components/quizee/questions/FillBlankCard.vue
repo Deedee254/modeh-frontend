@@ -1,15 +1,15 @@
 <template>
-  <div class="prose max-w-none fill-blank-card">
+  <div class="fill-blank-card">
     <div class="inline-flex flex-wrap items-center gap-1">
       <template v-for="(tok, idx) in tokens" :key="idx">
-        <span v-if="tok.type === 'text'" v-html="tok.value"></span>
+        <span v-if="tok.type === 'text'" class="text-sm sm:text-base break-words" v-html="tok.value"></span>
         <span v-else-if="tok.type === 'blank'" class="inline-block">
           <input
             type="text"
             :aria-label="`Blank ${tok.index + 1}`"
             :value="localAnswers[tok.index] || ''"
             @input="onInput(tok.index, $event.target.value)"
-            class="inline-block px-2 py-1 border rounded-md w-40"
+            class="inline-block px-2 py-1 border rounded-md w-40 text-sm sm:text-base"
           />
         </span>
       </template>
@@ -72,6 +72,22 @@ function onInput(index, value) {
 </script>
 
 <style scoped>
-.fill-blank-card input { min-width: 8rem }
+/* Allow tokens and long text to wrap; ensure blanks size responsively */
+.fill-blank-card { word-wrap: break-word; overflow-wrap: anywhere; white-space: normal }
+.fill-blank-card .inline-flex { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem }
+.fill-blank-card span { display: inline-block }
+.fill-blank-card input {
+  font-size: inherit;
+  min-width: 6rem;
+  max-width: 100%;
+  width: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  /* On narrow screens make blanks take available width and wrap onto new lines when needed */
+  .fill-blank-card .inline-flex { gap: 0.75rem }
+  .fill-blank-card input { display: block; width: 100%; min-width: 0 }
+}
 </style>
 

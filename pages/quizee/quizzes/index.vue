@@ -94,6 +94,7 @@
             :attempt-score="qitem.attempt_score ?? null"
             :attempt-correct="qitem.attempt_correct ?? null"
             :attempt-incorrect="qitem.attempt_incorrect ?? null"
+            :attempts-count="qitem.attempts_count || 0"
             @like="onQuizLike(qitem, $event)"
           />
         </div>
@@ -117,7 +118,8 @@ definePageMeta({
     { property: 'og:description', content: 'Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration.' }
   ]
 })
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import Pagination from '~/components/Pagination.vue'
@@ -128,6 +130,7 @@ import { useAuthStore } from '~/stores/auth'
 
 const alert = useAppAlert()
 const auth = useAuthStore()
+const route = useRoute()
 
 function pickPaletteClass(id) {
   const palettes = [
@@ -188,10 +191,11 @@ watch([sortBy, perPage, page, userLevelId, userGradeId], () => {
     page: page.value
   }
   
-  // Add level or grade filter if available
+  // Add BOTH level and grade filters if available (API expects both)
   if (userLevelId.value) {
     params.level_id = userLevelId.value
-  } else if (userGradeId.value) {
+  }
+  if (userGradeId.value) {
     params.grade_id = userGradeId.value
   }
   
@@ -206,10 +210,11 @@ onMounted(async () => {
     page: page.value
   }
   
-  // Add level or grade filter if available
+  // Add BOTH level and grade filters if available (API expects both)
   if (userLevelId.value) {
     params.level_id = userLevelId.value
-  } else if (userGradeId.value) {
+  }
+  if (userGradeId.value) {
     params.grade_id = userGradeId.value
   }
   
@@ -225,8 +230,36 @@ watch(() => auth.user, () => {
     page: page.value
   }
   if (userLevelId.value) params.level_id = userLevelId.value
-  else if (userGradeId.value) params.grade_id = userGradeId.value
+  if (userGradeId.value) params.grade_id = userGradeId.value
   fetchItems({ ...params, mergeAttempts: true })
+})
+
+// Watch for route changes to refetch when navigating to this page
+// This ensures fresh data (including user level/grade) loads when navigating from quiz results
+watch(() => route.path, async (newPath) => {
+  // Only refetch if we're on this page
+  if (newPath === '/quizee/quizzes') {
+    // Refresh user profile to get latest level/grade
+    try {
+      await auth.fetchUser()
+    } catch (e) {
+      // Continue even if user fetch fails
+    }
+    
+    // Give Vue time to update computed properties (userLevelId, userGradeId) 
+    // after auth.fetchUser() updates auth.user
+    await nextTick()
+    
+    // Refetch quizzes with current filters (BOTH level_id and grade_id)
+    const params = {
+      sort: sortBy.value,
+      per_page: perPage.value,
+      page: page.value
+    }
+    if (userLevelId.value) params.level_id = userLevelId.value
+    if (userGradeId.value) params.grade_id = userGradeId.value
+    await fetchItems({ ...params, mergeAttempts: true })
+  }
 })
 
 // fetchItems & fetchTopics provided by composable

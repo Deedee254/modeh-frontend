@@ -128,6 +128,7 @@
                   :questionsCount="quiz.questionsCount"
                   :likes="quiz.likes"
                   :quizId="quiz.id"
+                  :attemptsCount="quiz.attemptsCount"
                   :show-approval="true"
                   :showEdit="true"
                   :editLink="quiz.editLink"
@@ -209,6 +210,7 @@ const normalizedQuizzes = computed(() => {
       grade: quiz.grade?.name || quiz.grade_name || quiz.grade_id || 'N/A',
       level: quiz.level?.name || quiz.level_name || quiz.level_id || '',
       questionsCount: quiz.questions_count ?? quiz.questions?.length ?? 0,
+      attemptsCount: quiz.attempts_count ?? 0,
       likes: quiz.likes_count ?? quiz.likes ?? 0,
       startLink: `/quiz-master/quizzes/${quiz.id}`,
       editLink: `/quiz-master/quizzes/${quiz.id}/edit`,

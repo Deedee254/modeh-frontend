@@ -13,14 +13,89 @@
       <div v-if="loading" class="p-4 text-sm text-slate-600 dark:text-slate-300">Checking subscription status...</div>
 
       <div v-else>
-        <div v-if="isActive" class="mb-4 p-4 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+        <!-- Limit Info Alert (if provided in query params or fetched from server) -->
+        <div v-if="limitInfo" class="mb-6 p-4 rounded-lg border-2" :class="limitInfo.reached ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-300 dark:border-amber-800'">
+          <div class="flex items-start gap-3">
+            <div :class="['w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0', limitInfo.reached ? 'bg-red-200' : 'bg-amber-200']">
+              <svg v-if="limitInfo.reached" class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <svg v-else class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0 4v.01M7.08 6.47A9.001 9.001 0 1020.92 17.53M9.76 17H14m-2.5-4h5"></path></svg>
+            </div>
+            <div class="flex-1">
+              <h4 v-if="limitInfo.reached" class="font-semibold text-red-900 dark:text-red-100">Daily Limit Reached</h4>
+              <h4 v-else class="font-semibold text-amber-900 dark:text-amber-100">Approaching Limit</h4>
+              <p v-if="limitInfo.reached" class="text-sm text-red-700 dark:text-red-200 mt-1">You've used all {{ limitInfo.limit }} {{ limitInfo.type || 'reveals' }} for today. Upgrade to continue.</p>
+              <p v-else class="text-sm text-amber-700 dark:text-amber-200 mt-1">{{ limitInfo.remaining || 0 }} of {{ limitInfo.limit }} {{ limitInfo.type || 'reveals' }} remaining today.</p>
+            </div>
+            <div class="flex items-start gap-2 ml-4">
+              <button @click="refreshLimit" :disabled="limitRefreshing" class="px-3 py-1 text-xs rounded-md border" :class="limitRefreshing ? 'opacity-60 cursor-wait' : 'hover:bg-slate-100 dark:hover:bg-slate-700'">
+                <svg v-if="limitRefreshing" class="w-4 h-4 animate-spin inline-block mr-1" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="2"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Institution Subscription Status (if applicable) -->
+        <div v-if="hasInstitution" class="mb-6 p-4 rounded-lg border-2" :class="institutionIsActive ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-700/30 border-slate-300 dark:border-slate-600'">
+          <div class="flex items-start gap-3">
+            <div :class="['w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0', institutionIsActive ? 'bg-blue-200' : 'bg-slate-200']">
+              <svg :class="['w-6 h-6', institutionIsActive ? 'text-blue-600' : 'text-slate-600']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <div class="flex-1">
+              <h4 :class="['font-semibold', institutionIsActive ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300']">Institution Package: {{ institutionName }}</h4>
+              <p v-if="institutionIsActive" :class="['text-sm mt-1', 'text-blue-700 dark:text-blue-200']">
+                ✅ Your institution has an active subscription. You can use this feature through your institution.
+                <span v-if="limitInfo" class="block text-sm text-blue-700 dark:text-blue-200 mt-1">You have <strong>{{ limitInfo.remaining ?? 0 }}</strong> of <strong>{{ limitInfo.limit }}</strong> {{ limitInfo.type || 'reveals' }} left today.</span>
+              </p>
+              <p v-else :class="['text-sm mt-1', 'text-slate-600 dark:text-slate-400']">
+                Your institution does not have an active subscription for this feature.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal Subscription Status -->
+        <div v-if="!isActive && !institutionIsActive" class="mb-6 p-4 rounded-lg border-2 bg-amber-50 dark:bg-amber-900/10 border-amber-300 dark:border-amber-800">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-200">
+              <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0 4v.01M7.08 6.47A9.001 9.001 0 1020.92 17.53"></path></svg>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-semibold text-amber-900 dark:text-amber-100">No Active Subscription</h4>
+              <p class="text-sm text-amber-700 dark:text-amber-200 mt-1">
+                You need either a personal subscription or institutional access to view results.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal Subscription Status (when user has one) -->
+        <div v-if="isActive && !institutionIsActive" class="mb-4 p-4 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
               <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
             <div>
-              <div class="text-emerald-700 dark:text-emerald-200 font-semibold">Subscription Active 🎉</div>
-              <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">You can now view your full results. Active package: <strong>{{ activePackageName }}</strong></p>
+              <div class="text-emerald-700 dark:text-emerald-200 font-semibold">Personal Subscription Active 🎉</div>
+              <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">Active package: <strong>{{ activePackageName }}</strong>
+                <span v-if="limitInfo" class="block text-sm text-slate-600 dark:text-slate-300 mt-1">You have <strong>{{ limitInfo.remaining ?? 0 }}</strong> of <strong>{{ limitInfo.limit }}</strong> {{ limitInfo.type || 'reveals' }} left today.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Both Active Status -->
+        <div v-if="isActive && institutionIsActive" class="mb-4 p-4 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <div class="text-emerald-700 dark:text-emerald-200 font-semibold">Multiple Subscriptions Active 🎉</div>
+              <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                Personal: <strong>{{ activePackageName }}</strong> | Institution: <strong>{{ institutionName }}</strong>
+              </p>
+              <p v-if="limitInfo" class="text-sm text-slate-600 dark:text-slate-300 mt-1">Remaining: <strong>{{ limitInfo.remaining ?? 0 }}</strong> / <strong>{{ limitInfo.limit }}</strong> {{ limitInfo.type || 'reveals' }} today.</p>
             </div>
           </div>
         </div>
@@ -150,8 +225,12 @@ const attemptId = q.attempt_id || null
 
 const loading = ref(true)
 const isActive = ref(false)
+const hasInstitution = ref(false)
+const institutionName = ref('')
+const institutionIsActive = ref(false)
 const showAwaitingModal = ref(false)
 const selectedPackage = ref(null)
+const limitRefreshing = ref(false)
 
 const showReview = ref(false)
 const isTournamentCheckout = computed(() => type === 'tournament' && !!id)
@@ -182,6 +261,77 @@ const activePackageName = ref('')
 
 const phoneForPayment = computed(() => selectedPhonePreset.value || phoneInputLocal.value)
 
+// Limit info: prefer explicit query params (redirect), otherwise fall back to server-provided usage
+const limitState = ref(null)
+const limitInfo = computed(() => {
+  // 1) Query params (explicit redirect from results page)
+  const reason = q.reason
+  const qLimit = q.limit ? parseInt(q.limit) : null
+  const qRemaining = q.remaining ? parseInt(q.remaining) : null
+  const qLimitType = q.limit_type || q.type || 'reveals'
+  if (reason === 'limit' || reason === 'result_limit') {
+    return {
+      reached: !qRemaining || qRemaining === 0,
+      limit: qLimit || 10,
+      remaining: qRemaining,
+      type: qLimitType
+    }
+  }
+
+  // 2) Fallback to usage fetched from API during mount
+  if (limitState.value) {
+    return {
+      reached: !!(limitState.value.remaining !== null && limitState.value.remaining <= 0),
+      limit: limitState.value.limit ?? limitState.value.total ?? null,
+      remaining: limitState.value.remaining ?? null,
+      type: limitState.value.type || 'reveals'
+    }
+  }
+
+  return null
+})
+
+// Fetch remaining quota/usage from backend. Try a dedicated usage endpoint first,
+// fall back to subscription endpoint if it contains usage info.
+async function fetchLimitInfo() {
+  try {
+    // Try a dedicated usage endpoint (non-breaking if it doesn't exist)
+    let res = await api.get('/api/subscriptions/usage')
+    if (res?.ok) {
+      const data = await res.json()
+      // expected shape: { limit: 10, remaining: 3, type: 'reveals' }
+      limitState.value = {
+        limit: data.limit ?? data.total ?? null,
+        remaining: data.remaining ?? data.left ?? null,
+        type: data.type || 'reveals'
+      }
+      return
+    }
+  } catch (e) {
+    // ignore and try fallback
+  }
+
+  try {
+    // Fallback: check subscriptions/mine for usage info if provided by backend
+    const res2 = await api.get('/api/subscriptions/mine')
+    if (res2?.ok) {
+      const data = await res2.json()
+      // possible shapes: { subscription: { usage: { limit, remaining, type } } }
+      const usage = data?.subscription?.usage || data?.usage || data?.limit || null
+      if (usage) {
+        limitState.value = {
+          limit: usage.limit ?? usage.total ?? null,
+          remaining: usage.remaining ?? usage.left ?? null,
+          type: usage.type || 'reveals'
+        }
+      }
+    }
+  } catch (e) {
+    // nothing we can do - leave limitState null
+    console.debug('Could not fetch usage info:', e)
+  }
+}
+
 async function loadPackages() {
   try {
     await subscriptionsStore.fetchPackages()
@@ -195,6 +345,7 @@ async function loadPackages() {
 async function checkSubscription() {
   loading.value = true
   try {
+    // Check personal subscription
     const res = await api.get('/api/subscriptions/mine')
     if (res?.ok) {
       const data = await res.json()
@@ -204,10 +355,36 @@ async function checkSubscription() {
     } else {
       throw new Error('Failed to fetch subscription status')
     }
+    
+    // Check institution subscription
+    const authStore = useAuthStore()
+    if (authStore.user?.institutions && authStore.user.institutions.length > 0) {
+      hasInstitution.value = true
+      const institution = authStore.user.institutions[0]
+      institutionName.value = institution.name || 'Your Institution'
+      
+      // Check if institution has active subscription (institution object should have package/subscription data)
+      // Precedence: Institution subscription > Personal subscription
+      if (institution.package && (institution.package.status === 'active' || institution.package.status === 'paid')) {
+        institutionIsActive.value = true
+        // Institution subscription takes precedence
+        activePackageName.value = institution.package.title || institution.package.name || activePackageName.value
+      } else if (institution.pivot && institution.pivot.status === 'approved') {
+        // User is approved member of institution but institution may not have active subscription
+        institutionIsActive.value = false
+      }
+    } else {
+      hasInstitution.value = false
+      institutionName.value = ''
+      institutionIsActive.value = false
+    }
   } catch (e) {
     console.error('Subscription check failed:', e)
     isActive.value = false
     activePackageName.value = ''
+    hasInstitution.value = false
+    institutionName.value = ''
+    institutionIsActive.value = false
   } finally {
     loading.value = false
   }
@@ -403,6 +580,19 @@ function seeResults() {
   checkout.markResults({ type, id, attemptId })
 }
 
+async function refreshLimit() {
+  limitRefreshing.value = true
+  try {
+    await fetchLimitInfo()
+  } catch (e) {
+    console.debug('refreshLimit failed', e)
+  } finally {
+    // add tiny delay so spinner is visible
+    await new Promise(r => setTimeout(r, 250))
+    limitRefreshing.value = false
+  }
+}
+
 function retry() { window.location.reload() }
 function redo() { router.push(type === 'quiz' && id ? `/quizee/quizzes/take/${id}` : '/quizee') }
 
@@ -415,6 +605,8 @@ function payForThisItem() {
 onMounted(async () => {
   checkout.reset();
   await loadPackages()
+  // Fetch the latest usage/quota information so checkout can show remaining uses
+  await fetchLimitInfo()
   await checkSubscription()
   // fetch quiz or battle to display one_off_price if available
   try {

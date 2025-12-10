@@ -3,9 +3,7 @@
     <PageHero
       :title="grade?.name || 'Grade'"
       :description="grade?.description || grade?.summary || `Topics for ${grade?.name || ''}`"
-      :showSearch="true"
       :flush="true"
-      @search="onSearch"
     >
       <template #eyebrow>
         Grade detail
@@ -95,7 +93,6 @@ const loading = ref(false)
 const error = ref(false)
 const grade = ref<any>(null)
 const topics = ref<any[]>([])
-const searchTerm = ref('')
 
 const userProfile = computed(() => {
   const u = (auth as any).user
@@ -104,10 +101,7 @@ const userProfile = computed(() => {
 
 const displayTopics = computed(() => {
   let list = topics.value || []
-  if (searchTerm.value) {
-    const q = searchTerm.value.toLowerCase()
-    list = list.filter((t: any) => (t.name || '').toLowerCase().includes(q))
-  }
+  // client-side search removed for this page
   return list
 })
 
@@ -138,9 +132,7 @@ async function fetchGradeAndTopics() {
   }
 }
 
-function onSearch(query: string) {
-  searchTerm.value = query
-}
+// search removed for this page
 
 onMounted(() => {
   if (gradeId.value) {

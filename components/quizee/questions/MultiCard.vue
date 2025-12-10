@@ -1,17 +1,17 @@
 <template>
-  <div :class="compact ? 'space-y-2' : 'space-y-3'">
+  <div :class="compact ? 'space-y-1' : 'space-y-2'">
     <div v-for="(opt, i) in question.options || []" :key="i">
-      <button type="button" @click="toggle(opt)" :class="[buttonClass(opt), compact ? 'p-2 rounded-md gap-2 text-sm' : 'p-3 rounded-lg gap-3 text-base']" class="w-full text-left border transition-colors flex items-start">
-        <input type="checkbox" :class="compact ? 'h-3 w-3 mt-1' : 'h-4 w-4 mt-2'" :checked="isSelected(opt)" readonly />
-        <div class="flex-1">
-          <div v-if="optionMedia(opt)" :class="compact ? 'mb-1' : 'mb-2'">
-            <img v-if="isImage(optionMedia(opt))" :src="optionMedia(opt)" :class="compact ? 'max-w-full rounded max-h-28' : 'max-w-full rounded'" />
+      <button type="button" @click="toggle(opt)" :class="[buttonClass(opt), compact ? 'px-2 py-1.5 rounded-md gap-1 text-xs' : 'p-2 sm:p-3 rounded-lg gap-2 sm:gap-3 text-sm sm:text-base']" class="w-full text-left border transition-colors flex items-start">
+        <input type="checkbox" :class="compact ? 'h-3 w-3 mt-1 flex-shrink-0' : 'h-4 w-4 mt-1 sm:mt-2 flex-shrink-0'" :checked="isSelected(opt)" readonly />
+        <div class="flex-1 min-w-0">
+          <div v-if="optionMedia(opt)" :class="compact ? 'mb-1' : 'mb-1 sm:mb-2'">
+            <img v-if="isImage(optionMedia(opt))" :src="optionMedia(opt)" :class="compact ? 'max-w-full rounded max-h-20' : 'max-w-full rounded max-h-32'" />
             <audio v-else-if="isAudio(optionMedia(opt))" controls class="w-full"><source :src="optionMedia(opt)" /></audio>
             <div v-else-if="isYouTube(optionMedia(opt))" class="aspect-video rounded overflow-hidden">
               <iframe :src="formatYouTubeUrl(optionMedia(opt))" class="w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe>
             </div>
           </div>
-          <div :class="compact ? 'leading-tight text-sm' : 'leading-relaxed text-base'" v-html="display(opt)"></div>
+          <div :class="compact ? 'leading-tight text-xs break-words' : 'leading-snug text-sm sm:leading-relaxed sm:text-base break-words'" v-html="display(opt)"></div>
         </div>
       </button>
     </div>

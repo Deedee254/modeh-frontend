@@ -1,13 +1,6 @@
 <template>
-  <div class="space-y-3">
-    <div>
-      <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-2" v-html="question?.body"></h4>
-      <div v-if="question?.explanation" class="text-xs text-gray-500 dark:text-gray-400 mb-2" v-html="question.explanation"></div>
-    </div>
-
-    <div>
-      <RichTextEditor v-model="localValue" :features="{ math: false, code: false }" class="min-h-[60px] rounded" />
-    </div>
+  <div>
+    <RichTextEditor v-model="localValue" :features="{ math: false, code: false }" class="min-h-[48px] sm:min-h-[60px] rounded text-xs sm:text-sm" />
   </div>
 </template>
 

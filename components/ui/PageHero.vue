@@ -135,8 +135,8 @@ const props = withDefaults(defineProps<Props>(), {
   description: '',
   align: 'left',
   variant: 'default',
-  // reduced default vertical padding to make the hero less tall
-  padding: 'py-8 sm:py-12',
+  // increased default vertical padding to make the hero taller for better visual impact
+  padding: 'py-12 sm:py-16 lg:py-20',
   bgClass: 'bg-gradient-to-br from-gray-900 to-brand-900',
   textClass: 'text-white',
   textMutedClass: 'text-gray-300',
