@@ -202,9 +202,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
-      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? 'c631b05ce9d7217de73e',
+      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? '5a6916ce972fd4a06074',
       pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? 'ap2',
-      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'api-ap2.pusher.com',
+      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'https://admin.modeh.co.ke',
       wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : 443,
       wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? 'wss'
     }
