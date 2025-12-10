@@ -11,7 +11,7 @@
         </div>
         <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
         <div class="flex-1 flex flex-col transition-all duration-300 lg:ml-0" :style="{ marginLeft: contentMargin }">
-          <main class="flex-1 overflow-y-auto pb-20 md:pb-6 min-h-0">
+          <main :class="['flex-1 overflow-y-auto min-h-0', !route.meta.hideBottomNav && 'pb-20 md:pb-6']">
             <slot></slot>
           </main>
         </div>

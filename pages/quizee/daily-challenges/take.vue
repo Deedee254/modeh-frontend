@@ -60,7 +60,7 @@
 
       <div v-else-if="questions.length > 0">
         <transition name="fade-slide" mode="out-in">
-          <div :key="currentQuestionIndex" class="space-y-6">
+          <div :key="currentQuestionIndex" class="space-y-3 sm:space-y-6">
             <QuestionCard v-if="currentQuestion" v-model="selectedAnswer" :question="currentQuestion" @select="(val) => { if (currentQuestion && currentQuestion.id) answers[currentQuestion.id] = val }" @toggle="(opt) => { if (currentQuestion && currentQuestion.id) rawToggleMulti(currentQuestion.id, opt) }" />
           </div>
         </transition>

@@ -125,20 +125,38 @@
         <!-- Question Breakdown -->
         <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700">
           <h3 class="font-semibold text-slate-900 dark:text-slate-100">Question Breakdown</h3>
-          <div class="mt-4 space-y-4">
-            <div v-for="d in attempt.details" :key="d.question_id" class="p-4 border-l-4 rounded-r-lg" :class="d.correct ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500' : 'bg-red-50 dark:bg-red-900/20 border-red-500'">
-              <div class="flex items-start gap-3">
-                <div class="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-sm font-bold" :class="d.correct ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'">
-                  {{ d.correct ? '✓' : '✕' }}
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="(d, idx) in attempt.details" :key="d.question_id" class="p-4 rounded-lg border bg-white dark:bg-slate-800">
+              <div class="mb-4">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-semibold text-sm">{{ idx + 1 }}</div>
+                  <p class="font-semibold text-slate-800 dark:text-slate-100">Question {{ idx + 1 }}</p>
                 </div>
-                <div class="flex-1">
-                  <div class="font-medium text-slate-800 dark:text-slate-200" v-html="d.body"></div>
-                  <div class="text-sm text-slate-600 dark:text-slate-400 mt-2">Your answer: <span class="font-semibold text-slate-700 dark:text-slate-300" v-html="formatProvided(d.provided)"></span></div>
-            <div v-if="attempt.per_question_time" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Time taken: <span class="font-medium">{{ formatTime(getPerQuestionTime(d.question_id)) }}</span></div>
-                  <div v-if="!d.correct" class="text-sm text-emerald-700 dark:text-emerald-400">Correct answer: <span class="font-semibold" v-html="formatProvided(d.correct_answers)"></span></div>
-                  <div v-if="d.explanation" class="text-sm text-slate-500 dark:text-slate-400 mt-2 p-2 bg-slate-100 dark:bg-slate-700/50 rounded"><strong>Explanation:</strong> {{ d.explanation }}</div>
+                <div class="text-slate-800 dark:text-slate-200 mb-3" v-html="d.body"></div>
+                <div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                  <div>Marks: <span class="font-medium text-slate-900 dark:text-slate-100">{{ marksForDetail(d) }}</span></div>
+                  <div>Points: <span class="font-medium text-green-700">{{ pointsForDetail(d) }}</span></div>
+                  <div v-if="attempt.per_question_time">Time: <span class="font-medium">{{ formatTime(getPerQuestionTime(d.question_id)) }}</span></div>
                 </div>
               </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div :class="d.correct ? 'p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800' : 'p-4 rounded-lg bg-red-50 border border-red-200 text-red-800'">
+                  <div class="flex items-center justify-between">
+                    <div class="font-semibold">Your Answer</div>
+                    <div class="text-sm text-slate-500">{{ pointsForDetail(d) }} pts</div>
+                  </div>
+                  <div class="mt-2 text-sm font-mono break-words" v-html="formatProvided(d.provided)"></div>
+                  <div class="mt-1 text-xs" :class="d.correct ? 'text-green-700' : 'text-red-600'">{{ d.correct ? 'Correct' : 'Incorrect' }}</div>
+                </div>
+
+                <div class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+                  <div class="font-semibold">Correct Answer</div>
+                  <div class="mt-2 text-sm font-mono break-words" v-html="formatProvided(d.correct_answers)"></div>
+                </div>
+              </div>
+
+              <div v-if="d.explanation" class="text-sm text-slate-500 dark:text-slate-400 mt-2 p-2 bg-slate-100 dark:bg-slate-700/50 rounded"><strong>Explanation:</strong> {{ d.explanation }}</div>
             </div>
           </div>
         </div>
@@ -170,6 +188,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
 import { useAnswerStore } from '~/stores/answerStore'
+import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 
 // ensure this page uses the quizee layout. Results are user-specific — mark noindex.
 definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'View your quiz results and detailed breakdowns on Modeh.' } ] })
@@ -329,6 +348,19 @@ function formatProvided(p) {
   // Non-array values
   if (String(p).trim() === '') return 'Not provided'
   return `<code>${p}</code>`
+}
+
+function marksForDetail(d) {
+  return d?.marks ?? d?.points ?? d?.marks_possible ?? 1
+}
+
+function pointsForDetail(d) {
+  // If backend provides explicit awarded points, prefer that
+  if (typeof d?.points_awarded !== 'undefined' && d.points_awarded !== null) return d.points_awarded
+  if (typeof d?.points !== 'undefined' && d.points !== null) return d.points
+  if (typeof d?.marks_awarded !== 'undefined' && d.marks_awarded !== null) return d.marks_awarded
+  // Fallback: if correct flag present, award marks; otherwise zero
+  return d?.correct ? (marksForDetail(d) || 0) : 0
 }
 
 // share helpers

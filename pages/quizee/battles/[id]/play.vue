@@ -59,7 +59,7 @@
         </button>
       </div>
 
-      <div v-else-if="questions.length > 0" class="space-y-6">
+      <div v-else-if="questions.length > 0" class="space-y-3 sm:space-y-6">
         <!-- Player Cards -->
         <div class="grid grid-cols-3 items-start gap-2 sm:gap-4">
           <PlayerCard 
@@ -102,6 +102,7 @@ import { useAuthStore } from '~/stores/auth'
 import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
 import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
+import { formatAnswersForSubmission, normalizeAnswer } from '~/composables/useAnswerNormalization'
 import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
 import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
@@ -338,17 +339,26 @@ async function submitBattle() {
     submissionMessage.value = 'Saving answers...'
     try { calculateAchievements() } catch (e) { console.warn('calculateAchievements failed', e) }
     stopTimer()
-    // Build answers payload
-  const answersPayload = Object.keys(answers.value).map(qid => ({ question_id: parseInt(qid, 10) || 0, selected: answers.value[qid] }))
+    // Build answers payload using centralized normalization helper so battles and quizzes submit the same shape.
+    // This ensures option objects emitted by the UI are converted to the backend-expected string/array form.
+  const answersToSubmit = {}
+  Object.keys(answers.value).forEach(k => { answersToSubmit[Number(k)] = answers.value[k] })
+  const answersPayload = formatAnswersForSubmission(answersToSubmit, questionTimes.value)
 
-    // Compute best-effort score locally so backend can record points immediately
+    // Compute best-effort score locally so backend can record points immediately. Use normalized comparisons.
     let computedScore = 0
     try {
       for (const q of questions.value) {
-        const ansEntry = answersPayload.find(x => String(x.question_id) === String(q.id || q.question_id))
-        if (ansEntry && ansEntry.selected !== '' && typeof q?.correct_option_id !== 'undefined') {
-          if (String(ansEntry.selected) === String(q.correct_option_id)) {
-            computedScore += (q.points ?? 1)
+  const ansEntry = (answersPayload || []).find(x => String(x.question_id) === String(q.id || q.question_id))
+        if (!ansEntry || ansEntry.selected === '' || ansEntry.selected === null) continue
+        // If question provides a correct option index, compare the normalized texts
+        if (typeof q?.correct_option_id !== 'undefined' && Array.isArray(q.options)) {
+          const correctOpt = q.options[q.correct_option_id]
+          const correctNorm = normalizeAnswer(correctOpt)
+          if (Array.isArray(ansEntry.selected)) {
+            if (ansEntry.selected.includes(correctNorm)) computedScore += (q.points ?? q.marks ?? 1)
+          } else {
+            if (String(ansEntry.selected) === String(correctNorm)) computedScore += (q.points ?? q.marks ?? 1)
           }
         }
       }

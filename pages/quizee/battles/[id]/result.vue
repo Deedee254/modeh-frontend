@@ -191,32 +191,48 @@
         <!-- Detailed Answers -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <h3 class="text-2xl font-bold text-gray-900 mb-6">Question Breakdown</h3>
-          <div class="space-y-6">
-            <div v-for="(q, index) in result.questions" :key="q.question_id" class="border-b border-gray-200 pb-6 last:border-b-0">
+
+          <!-- Grid: two questions per row on large screens -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div v-for="(q, index) in result.questions" :key="q.question_id" class="p-4 rounded-lg border bg-white">
               <div class="mb-4">
                 <div class="flex items-center gap-3 mb-2">
                   <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-semibold text-sm">{{ index + 1 }}</div>
                   <p class="font-semibold text-gray-800">Question {{ index + 1 }}</p>
                 </div>
-                <div class="text-gray-700 text-base" v-html="q.body"></div>
+                <div class="text-gray-700 text-base mb-3" v-html="q.body"></div>
+                <div class="flex items-center gap-4 text-sm text-gray-600">
+                  <div>Marks: <span class="font-medium text-gray-900">{{ marksForQuestion(q) }}</span></div>
+                  <div>You earned: <span class="font-medium text-green-700">{{ pointsForSide(q, mySide()) }}</span></div>
+                  <div>Opponent: <span class="font-medium text-gray-900">{{ pointsForSide(q, mySide() === 'initiator' ? 'opponent' : 'initiator') }}</span></div>
+                </div>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <!-- Your Answer -->
+              <!-- Answers: two columns underneath the question -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="p-4 rounded-lg" :class="myAnswerClass(q)">
-                  <p class="font-semibold mb-2">Your Answer</p>
-                  <p class="font-mono text-sm">{{ formatSelected(q, myAnswer(q)?.selected) }}</p>
+                  <div class="flex items-center justify-between">
+                    <div class="font-semibold">Your Answer</div>
+                    <div class="text-sm text-gray-500">{{ pointsForSide(q, mySide()) }} pts</div>
+                  </div>
+                  <div class="mt-2 text-sm font-mono break-words">{{ formatSelected(q, myAnswer(q)?.selected) }}</div>
+                  <div class="mt-1 text-xs" :class="(myAnswer(q) && myAnswer(q).correct_flag) ? 'text-green-700' : 'text-red-600'">{{ myAnswer(q) ? (myAnswer(q).correct_flag ? 'Correct' : 'Incorrect') : 'No answer' }}</div>
                 </div>
-                <!-- Opponent's Answer -->
+
                 <div class="p-4 rounded-lg" :class="opponentAnswerClass(q)">
-                  <p class="font-semibold mb-2">Opponent's Answer</p>
-                  <p class="font-mono text-sm">{{ formatSelected(q, opponentAnswer(q)?.selected) }}</p>
+                  <div class="flex items-center justify-between">
+                    <div class="font-semibold">Opponent's Answer</div>
+                    <div class="text-sm text-gray-500">{{ pointsForSide(q, mySide() === 'initiator' ? 'opponent' : 'initiator') }} pts</div>
+                  </div>
+                  <div class="mt-2 text-sm font-mono break-words">{{ formatSelected(q, opponentAnswer(q)?.selected) }}</div>
+                  <div class="mt-1 text-xs" :class="(opponentAnswer(q) && opponentAnswer(q).correct_flag) ? 'text-green-700' : 'text-red-600'">{{ opponentAnswer(q) ? (opponentAnswer(q).correct_flag ? 'Correct' : 'Incorrect') : 'No answer' }}</div>
                 </div>
-                <!-- Correct Answer -->
-                <div class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
-                  <p class="font-semibold mb-2">✓ Correct Answer</p>
-                  <p class="font-mono text-sm">{{ formatSelected(q, q.correct) }}</p>
-                </div>
+              </div>
+
+              <!-- Correct Answer spans full width below -->
+              <div class="mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+                <div class="font-semibold">✓ Correct Answer</div>
+                <div class="mt-2 text-sm font-mono break-words">{{ formatSelected(q, q.correct) }}</div>
               </div>
             </div>
           </div>
@@ -229,6 +245,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import resolveAssetUrl from '~/composables/useAssets'
+import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useAnswerStore } from '~/stores/answerStore'
@@ -427,22 +444,36 @@ const opponentAnswerClass = (q) => {
  */
 const formatSelected = (q, selected) => {
   try {
-    if (!selected) return 'Not answered'
+    if (selected === null || typeof selected === 'undefined' || selected === '') return 'Not answered'
 
     // find full question object (with options) from loaded battle.questions
     const fullQ = (result.value && result.value.battle && Array.isArray(result.value.battle.questions))
       ? result.value.battle.questions.find(x => x.id === (q.question_id || q.id))
       : null
 
-    const optionTexts = (fullQ && Array.isArray(fullQ.options)) ? fullQ.options.map(o => o.text) : null
+    const optionObjs = (fullQ && Array.isArray(fullQ.options)) ? fullQ.options : null
 
     const mapOne = (val) => {
-      // numeric index (string or number) -> map to option text
-      if (optionTexts && (typeof val === 'string' || typeof val === 'number') && String(val).match(/^\d+$/)) {
-        const idx = Number(val)
-        return optionTexts[idx] ?? String(val)
+      // If option object was stored/returned, prefer readable fields
+      if (val && typeof val === 'object') {
+        return (val.body || val.text || val.label || String(val))
       }
-      // otherwise return as string
+
+      // numeric index (string or number) -> map to option text
+      if (optionObjs && (typeof val === 'string' || typeof val === 'number') && String(val).match(/^\d+$/)) {
+        const idx = Number(val)
+        const opt = optionObjs[idx]
+        return opt ? (opt.text || opt.body || opt.label || String(opt)) : String(val)
+      }
+
+      // string normalized: try to match an option by normalized text
+      if (optionObjs && typeof val === 'string') {
+        const norm = normalizeAnswer(val)
+        const found = optionObjs.find(o => normalizeAnswer(o) === norm)
+        if (found) return (found.text || found.body || found.label || String(found))
+      }
+
+      // otherwise return as-is
       return String(val)
     }
 
@@ -453,6 +484,28 @@ const formatSelected = (q, selected) => {
   } catch (e) {
     return Array.isArray(selected) ? selected.join(', ') : (selected?.toString() || 'Not answered')
   }
+}
+
+// helper to determine marks for a question from the full question object
+function marksForQuestion(q) {
+  const fullQ = (result.value && result.value.battle && Array.isArray(result.value.battle.questions))
+    ? result.value.battle.questions.find(x => x.id === (q.question_id || q.id))
+    : null
+  return fullQ ? (fullQ.marks ?? fullQ.points ?? 1) : (q.marks ?? q.points ?? 1)
+}
+
+function pointsForSide(q, side = 'initiator') {
+  const fullMarks = marksForQuestion(q)
+  if (side === 'initiator') return (q.initiator && q.initiator.correct_flag) ? fullMarks : 0
+  return (q.opponent && q.opponent.correct_flag) ? fullMarks : 0
+}
+
+function mySide() {
+  if (!auth.user || !result.value?.battle) return 'initiator'
+  const meId = auth.user.id
+  if (result.value.battle.initiator_id === meId) return 'initiator'
+  if (result.value.battle.opponent_id === meId) return 'opponent'
+  return 'initiator'
 }
 
 useHead({

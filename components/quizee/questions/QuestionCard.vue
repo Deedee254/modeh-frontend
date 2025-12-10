@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-2 sm:p-3">
+  <div class="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
   <div :class="layoutClass">
       <div v-if="hasMedia" class="media-col mb-2 sm:mb-0 sm:mr-3">
         <slot name="media">

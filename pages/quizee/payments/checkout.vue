@@ -35,21 +35,39 @@
           </div>
         </div>
 
-        <!-- Institution Subscription Status (if applicable) -->
-        <div v-if="hasInstitution" class="mb-6 p-4 rounded-lg border-2" :class="institutionIsActive ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-700/30 border-slate-300 dark:border-slate-600'">
-          <div class="flex items-start gap-3">
-            <div :class="['w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0', institutionIsActive ? 'bg-blue-200' : 'bg-slate-200']">
-              <svg :class="['w-6 h-6', institutionIsActive ? 'text-blue-600' : 'text-slate-600']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path></svg>
+        <!-- Subscription Selection (Personal vs Institution) -->
+        <div v-if="isActive || (institutionSubscriptions && institutionSubscriptions.length > 0)" class="mb-6 space-y-3">
+          <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Your Subscriptions</h3>
+          
+          <!-- Personal Subscription Option -->
+          <div v-if="isActive" @click="activeSubscriptionType = 'personal'" :class="['p-4 rounded-lg border-2 cursor-pointer transition-all', activeSubscriptionType === 'personal' ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500']">
+            <div class="flex items-start gap-3">
+              <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" :class="activeSubscriptionType === 'personal' ? 'border-emerald-600 bg-emerald-600' : 'border-slate-400'">
+                <svg v-if="activeSubscriptionType === 'personal'" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="font-semibold text-slate-900 dark:text-slate-100">Personal: {{ activePackageName }}</h4>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                  You have <strong>{{ personalRemaining ?? 'unlimited' }}</strong> reveals remaining today
+                  <span v-if="personalLimit" class="text-xs text-slate-500"> ({{ personalUsed }}/{{ personalLimit }})</span>
+                </p>
+              </div>
             </div>
-            <div class="flex-1">
-              <h4 :class="['font-semibold', institutionIsActive ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300']">Institution Package: {{ institutionName }}</h4>
-              <p v-if="institutionIsActive" :class="['text-sm mt-1', 'text-blue-700 dark:text-blue-200']">
-                ✅ Your institution has an active subscription. You can use this feature through your institution.
-                <span v-if="limitInfo" class="block text-sm text-blue-700 dark:text-blue-200 mt-1">You have <strong>{{ limitInfo.remaining ?? 0 }}</strong> of <strong>{{ limitInfo.limit }}</strong> {{ limitInfo.type || 'reveals' }} left today.</span>
-              </p>
-              <p v-else :class="['text-sm mt-1', 'text-slate-600 dark:text-slate-400']">
-                Your institution does not have an active subscription for this feature.
-              </p>
+          </div>
+          
+          <!-- Institution Subscription Options -->
+          <div v-for="instSub in institutionSubscriptions" :key="instSub.id" @click="activeSubscriptionType = 'institution-' + instSub.institution_id" :class="['p-4 rounded-lg border-2 cursor-pointer transition-all', activeSubscriptionType === ('institution-' + instSub.institution_id) ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500']">
+            <div class="flex items-start gap-3">
+              <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" :class="activeSubscriptionType === ('institution-' + instSub.institution_id) ? 'border-blue-600 bg-blue-600' : 'border-slate-400'">
+                <svg v-if="activeSubscriptionType === ('institution-' + instSub.institution_id)" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="font-semibold text-slate-900 dark:text-slate-100">🏢 {{ instSub.institution_name }}: {{ instSub.package?.title || 'Institutional' }}</h4>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                  You have <strong>{{ instSub.remaining ?? 'unlimited' }}</strong> reveals remaining today
+                  <span v-if="instSub.limit" class="text-xs text-slate-500"> ({{ instSub.used }}/{{ instSub.limit }})</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -231,6 +249,11 @@ const institutionIsActive = ref(false)
 const showAwaitingModal = ref(false)
 const selectedPackage = ref(null)
 const limitRefreshing = ref(false)
+const activeSubscriptionType = ref('personal') // 'personal' or 'institution-{id}'
+const institutionSubscriptions = ref([])
+const personalLimit = ref(null)
+const personalUsed = ref(0)
+const personalRemaining = ref(null)
 
 const showReview = ref(false)
 const isTournamentCheckout = computed(() => type === 'tournament' && !!id)
@@ -291,31 +314,12 @@ const limitInfo = computed(() => {
   return null
 })
 
-// Fetch remaining quota/usage from backend. Try a dedicated usage endpoint first,
-// fall back to subscription endpoint if it contains usage info.
+// Fetch remaining quota/usage from backend using subscriptions/mine endpoint
 async function fetchLimitInfo() {
   try {
-    // Try a dedicated usage endpoint (non-breaking if it doesn't exist)
-    let res = await api.get('/api/subscriptions/usage')
+    const res = await api.get('/api/subscriptions/mine')
     if (res?.ok) {
       const data = await res.json()
-      // expected shape: { limit: 10, remaining: 3, type: 'reveals' }
-      limitState.value = {
-        limit: data.limit ?? data.total ?? null,
-        remaining: data.remaining ?? data.left ?? null,
-        type: data.type || 'reveals'
-      }
-      return
-    }
-  } catch (e) {
-    // ignore and try fallback
-  }
-
-  try {
-    // Fallback: check subscriptions/mine for usage info if provided by backend
-    const res2 = await api.get('/api/subscriptions/mine')
-    if (res2?.ok) {
-      const data = await res2.json()
       // possible shapes: { subscription: { usage: { limit, remaining, type } } }
       const usage = data?.subscription?.usage || data?.usage || data?.limit || null
       if (usage) {
@@ -345,38 +349,41 @@ async function loadPackages() {
 async function checkSubscription() {
   loading.value = true
   try {
-    // Check personal subscription
+    // Check personal and institution subscriptions
     const res = await api.get('/api/subscriptions/mine')
     if (res?.ok) {
       const data = await res.json()
-      const sub = data?.subscription || data?.data?.subscription || data || null
+      
+      // Personal subscription
+      const sub = data?.subscription || data?.data?.subscription || null
       isActive.value = !!(sub && (sub.status === 'active' || sub.status === 'paid'))
       activePackageName.value = sub?.package?.title || sub?.package?.name || ''
-    } else {
-      throw new Error('Failed to fetch subscription status')
-    }
-    
-    // Check institution subscription
-    const authStore = useAuthStore()
-    if (authStore.user?.institutions && authStore.user.institutions.length > 0) {
-      hasInstitution.value = true
-      const institution = authStore.user.institutions[0]
-      institutionName.value = institution.name || 'Your Institution'
       
-      // Check if institution has active subscription (institution object should have package/subscription data)
-      // Precedence: Institution subscription > Personal subscription
-      if (institution.package && (institution.package.status === 'active' || institution.package.status === 'paid')) {
-        institutionIsActive.value = true
-        // Institution subscription takes precedence
-        activePackageName.value = institution.package.title || institution.package.name || activePackageName.value
-      } else if (institution.pivot && institution.pivot.status === 'approved') {
-        // User is approved member of institution but institution may not have active subscription
-        institutionIsActive.value = false
+      // Extract personal subscription limits
+      if (sub) {
+        personalLimit.value = sub.limit
+        personalUsed.value = sub.used || 0
+        personalRemaining.value = sub.remaining
+      }
+      
+      // Institution subscriptions
+      const instSubs = data?.institution_subscriptions || []
+      institutionSubscriptions.value = instSubs
+      hasInstitution.value = !!data?.has_institution
+      
+      if (instSubs.length > 0) {
+        // Use the first institution as primary display
+        const primaryInst = instSubs[0]
+        institutionName.value = primaryInst.institution_name || 'Your Institution'
+        institutionIsActive.value = primaryInst.status === 'active'
+        
+        // If institution is active, prefer it for results view
+        if (institutionIsActive.value) {
+          activeSubscriptionType.value = 'institution-' + primaryInst.institution_id
+        }
       }
     } else {
-      hasInstitution.value = false
-      institutionName.value = ''
-      institutionIsActive.value = false
+      throw new Error('Failed to fetch subscription status')
     }
   } catch (e) {
     console.error('Subscription check failed:', e)
@@ -385,6 +392,7 @@ async function checkSubscription() {
     hasInstitution.value = false
     institutionName.value = ''
     institutionIsActive.value = false
+    institutionSubscriptions.value = []
   } finally {
     loading.value = false
   }
