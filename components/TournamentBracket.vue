@@ -487,6 +487,12 @@ const fetchTree = async () => {
   loading.value = true;
   try {
     const res = await api.get(`/api/tournaments/${props.tournamentId}/tree`);
+    if (!res.ok) {
+      console.error(`Failed to fetch tournament bracket: ${res.status} ${res.statusText}`);
+      rounds.value = [];
+      loading.value = false;
+      return;
+    }
     const json = await res.json();
     
     // Enhanced tree endpoint response structure
@@ -531,6 +537,10 @@ const startBracketRefreshPolling = () => {
   bracketRefreshInterval = setInterval(async () => {
     try {
       const res = await api.get(`/api/tournaments/${props.tournamentId}/tree`);
+      if (!res.ok) {
+        console.warn(`Bracket refresh failed: ${res.status} ${res.statusText}`);
+        return;
+      }
       const json = await res.json();
       
       if (json?.ok && json?.bracket) {

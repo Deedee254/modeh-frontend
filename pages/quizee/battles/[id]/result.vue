@@ -70,10 +70,10 @@
               
               <div class="space-y-4">
                 <!-- You -->
-                <div class="flex items-center justify-between p-6 rounded-xl" :class="[myScore >= opponentScore ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-50 border border-gray-200']">
+                <div class="flex items-center justify-between p-6 rounded-xl" :class="[isWinner ? 'bg-green-50 border-2 border-green-200' : isTie ? 'bg-yellow-50 border-2 border-yellow-200' : 'bg-gray-50 border border-gray-200']">
                   <div class="flex items-center gap-4">
-                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold text-white', myScore >= opponentScore ? 'bg-green-500' : 'bg-gray-400']">
-                      {{ myScore >= opponentScore ? '1' : '2' }}
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold text-white', isWinner ? 'bg-green-500' : isTie ? 'bg-yellow-500' : 'bg-gray-400']">
+                      {{ isWinner ? '1' : isTie ? '=' : '2' }}
                     </div>
                     <img :src="meAvatar" alt="You" class="w-12 h-12 rounded-full object-cover" />
                     <div>
@@ -88,10 +88,10 @@
                 </div>
 
                 <!-- Opponent -->
-                <div class="flex items-center justify-between p-6 rounded-xl" :class="[opponentScore >= myScore ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-50 border border-gray-200']">
+                <div class="flex items-center justify-between p-6 rounded-xl" :class="[isLoser ? 'bg-green-50 border-2 border-green-200' : isTie ? 'bg-yellow-50 border-2 border-yellow-200' : 'bg-gray-50 border border-gray-200']">
                   <div class="flex items-center gap-4">
-                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold text-white', opponentScore >= myScore ? 'bg-green-500' : 'bg-gray-400']">
-                      {{ opponentScore >= myScore ? '1' : '2' }}
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold text-white', isLoser ? 'bg-green-500' : isTie ? 'bg-yellow-500' : 'bg-gray-400']">
+                      {{ isLoser ? '1' : isTie ? '=' : '2' }}
                     </div>
                     <img :src="opponentAvatar" :alt="opponent?.name || 'Opponent'" class="w-12 h-12 rounded-full object-cover" />
                     <div>
@@ -139,8 +139,8 @@
                     <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M7 12a5 5 0 1110 0M15 8h.01M9 12H8.01"></path></svg>
                     <span class="text-sm font-medium text-gray-700">Result</span>
                   </div>
-                  <span class="text-lg font-bold" :class="[myScore >= opponentScore ? 'text-green-600' : 'text-red-600']">
-                    {{ myScore >= opponentScore ? 'Won!' : 'Lost' }}
+                  <span class="text-lg font-bold" :class="[isWinner ? 'text-green-600' : isTie ? 'text-yellow-600' : 'text-red-600']">
+                    {{ isWinner ? 'Won!' : isTie ? 'Tied' : 'Lost' }}
                   </span>
                 </div>
               </div>
@@ -160,13 +160,22 @@
                   <span class="text-lg font-bold text-amber-600">+{{ myScore }}</span>
                 </div>
 
-                <!-- Streak -->
-                <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <!-- Achievement Bonus -->
+                <div v-if="achievementBonusPoints > 0" class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                   <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10h.01M11 10h.01M7 10h.01M6 20h12a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    <span class="text-sm font-medium text-gray-700">Streak Bonus</span>
+                    <svg class="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                    <span class="text-sm font-medium text-gray-700">Achievement Bonus</span>
                   </div>
-                  <span class="text-lg font-bold text-purple-600">+10</span>
+                  <span class="text-lg font-bold text-purple-600">+{{ achievementBonusPoints }}</span>
+                </div>
+
+                <!-- Total Earned -->
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-sm font-medium text-gray-700">Total Earned</span>
+                  </div>
+                  <span class="text-lg font-bold text-blue-600">+{{ myScore + achievementBonusPoints }}</span>
                 </div>
               </div>
             </div>
@@ -268,18 +277,11 @@ const errorMessage = ref(null)
 const battleId = route.params.id
 
 onMounted(async () => {
-  // Check if we have cached results first
-  if (answerStore.hasAttemptForReview(battleId)) {
-    const cached = answerStore.getAttemptForReview(battleId)
-    if (cached?.result) {
-      result.value = cached.result
-    }
-  }
-
   try {
-    const resp = await api.get(`/api/battles/${battleId}/result`)
+    // Call /mark endpoint which handles marking and returns full result
+    // This follows the same pattern as quiz marking
+    const resp = await api.post(`/api/battles/${battleId}/mark`, {})
     
-    // Check for auth errors (401, 419)
     if (resp.status === 401 || resp.status === 419) {
       api.handleAuthStatus(resp)
       result.value = null
@@ -287,40 +289,21 @@ onMounted(async () => {
       return
     }
     
-    // Parse the response to check for subscription/limit errors
     const res = await api.parseResponse(resp)
     
-    // Check if we got a limit error (subscription reached, etc.)
     if (resp.status === 403 && res && res.code === 'limit_reached') {
-      // User has hit subscription limit - show error message
-      // Note: Limits should ideally be checked on checkout page before user reaches results
       console.error('Subscription limit reached:', res.message)
       errorMessage.value = res.message || 'You have reached your subscription limit. Please upgrade to view results.'
       return
     }
     
-    // If response is not OK and not a limit error, throw
     if (!resp.ok) {
       throw new Error(`Failed to fetch battle results: ${resp.status} ${resp.statusText}`)
     }
     
-    // Support two possible response shapes:
-    // 1) { battle: {...}, questions: [...] } (older shape)
-    // 2) { ok: true, result: { battle: {...}, questions: [...] } } (current shape)
-    // 3) { ok: true, battle: {...}, awarded_achievements: [...] } (from /mark endpoint)
-    if (res?.battle) {
-      result.value = res
-      // Capture awarded achievements from response
-      if (Array.isArray(res?.awarded_achievements)) {
-        awardedAchievements.value = res.awarded_achievements
-      }
-      // Cache the results for future use
-      answerStore.storeAttemptForReview(battleId, res)
-    } else if (res?.result) {
-      // set result to the inner result object so template bindings like
-      // result.battle and result.questions continue to work
+    // mark() returns { ok: true, result: {...}, awarded_achievements: [...] }
+    if (res?.result) {
       result.value = res.result
-      // Capture awarded achievements from response
       if (Array.isArray(res?.awarded_achievements)) {
         awardedAchievements.value = res.awarded_achievements
       }
@@ -328,9 +311,7 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error("Failed to fetch battle results:", error)
-    // Store the error message for display
     errorMessage.value = error?.message || 'Failed to load battle results. Please try again.'
-    // Show the error state
     result.value = null
   } finally {
     loading.value = false
@@ -348,21 +329,32 @@ const me = computed(() => {
 const opponent = computed(() => {
   if (!auth.user || !result.value?.battle) return null
   const battle = result.value.battle
+  // If the backend marks the opponent as a bot (admin used as bot), show a Bot placeholder
+  const opponentIsBot = result.value?.opponent_is_bot || result.value?.battle?.opponent_is_bot || false
+  if (opponentIsBot) {
+    return { id: battle.opponent_id || 0, name: 'Bot', avatar: '/logo/bot-placeholder.png' }
+  }
   if (battle.initiator_id === auth.user.id) return battle.opponent
   if (battle.opponent_id === auth.user.id) return battle.initiator
   return null
 })
 
 const myScore = computed(() => {
-  if (!auth.user || !result.value?.battle) return '?'
+  if (!auth.user || !result.value?.battle) return 0
   const battle = result.value.battle
-  return battle.initiator_id === auth.user.id ? battle.initiator_points : battle.opponent_points
+  const isInitiator = battle.initiator_id === auth.user.id
+  // Always use server-provided points - never compute client-side
+  const points = isInitiator ? result.value?.initiator_points : result.value?.opponent_points
+  return typeof points === 'number' ? points : 0
 })
 
 const opponentScore = computed(() => {
-  if (!auth.user || !result.value?.battle) return '?'
+  if (!auth.user || !result.value?.battle) return 0
   const battle = result.value.battle
-  return battle.initiator_id === auth.user.id ? battle.opponent_points : battle.initiator_points
+  const isInitiator = battle.initiator_id === auth.user.id
+  // Always use server-provided points - never compute client-side
+  const points = isInitiator ? result.value?.opponent_points : result.value?.initiator_points
+  return typeof points === 'number' ? points : 0
 })
 
 // Match Podium.vue's resolvedAvatar pattern for consistency
@@ -393,22 +385,49 @@ const resultLabel = computed(() => {
   if (!result.value?.battle) return 'In Progress'
   const battle = result.value.battle
   if (battle.status !== 'completed') return 'In Progress'
-  if (battle.winner_id === null) return 'It\'s a Tie!'
-  return battle.winner_id === auth.user?.id ? 'Victory!' : 'Defeat'
+  
+  const winnerId = result.value?.winner_id
+  if (winnerId === null) return "It's a Tie!"
+  return winnerId === auth.user?.id ? 'Victory!' : 'Defeat'
 })
 
 const resultClass = computed(() => {
   if (!result.value?.battle || result.value.battle.status !== 'completed') return 'text-gray-700'
-  if (result.value.battle.winner_id === null) return 'text-yellow-500'
-  return result.value.battle.winner_id === auth.user?.id ? 'text-green-500' : 'text-red-500'
+  
+  const winnerId = result.value?.winner_id
+  if (winnerId === null) return 'text-yellow-500'
+  return winnerId === auth.user?.id ? 'text-green-500' : 'text-red-500'
+})
+
+const isWinner = computed(() => {
+  return result.value?.winner_id === auth.user?.id && result.value?.battle?.status === 'completed'
+})
+
+const isTie = computed(() => {
+  return result.value?.winner_id === null && result.value?.battle?.status === 'completed'
+})
+
+const isLoser = computed(() => {
+  return result.value?.winner_id && result.value?.winner_id !== auth.user?.id && result.value?.battle?.status === 'completed'
+})
+
+const achievementBonusPoints = computed(() => {
+  if (!awardedAchievements.value || !Array.isArray(awardedAchievements.value)) return 0
+  return awardedAchievements.value.reduce((total, achievement) => {
+    return total + (achievement.points ?? 0)
+  }, 0)
 })
 
 const correctAnswerCount = computed(() => {
   if (!result.value?.questions) return 0
-  return result.value.questions.filter(q => {
+  let count = 0
+  result.value.questions.forEach(q => {
     const answer = myAnswer(q)
-    return answer && answer.correct_flag
-  }).length
+    if (answer && answer.correct_flag) {
+      count += 1
+    }
+  })
+  return count
 })
 
 const myAnswer = (q) => {
@@ -486,8 +505,13 @@ const formatSelected = (q, selected) => {
   }
 }
 
-// helper to determine marks for a question from the full question object
+// helper to determine marks for a question - use from result questions first, then fall back to full question
 function marksForQuestion(q) {
+  // First check if marks are directly on the result question object
+  if (q.marks !== undefined && q.marks !== null) {
+    return q.marks
+  }
+  // Fall back to looking in the full question object
   const fullQ = (result.value && result.value.battle && Array.isArray(result.value.battle.questions))
     ? result.value.battle.questions.find(x => x.id === (q.question_id || q.id))
     : null

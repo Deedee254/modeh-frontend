@@ -40,6 +40,7 @@
         <!-- Details Tab -->
         <ClientOnly>
           <QuizDetailsStepForm
+            ref="quizDetailsFormRef"
             v-if="store.activeTab === 'details'"
             v-model="store.quiz"
             :levels="levels"
@@ -209,6 +210,7 @@ const showImportModal = ref(false)
 const showPreviewModal = ref(false)
 const showCreatedModal = ref(false)
 const createdPayload = ref(null)
+const quizDetailsFormRef = ref(null)
 
 // Tab configuration
 const tabConfig = [
@@ -281,6 +283,12 @@ const onTopicCreated = async (topic: any) => {
     })
     store.quiz.topic_id = topic.id
     showTopicModal.value = false
+    
+    // Update the TaxonomyFlowPicker with the new topic
+    if (quizDetailsFormRef.value && typeof quizDetailsFormRef.value.handleTopicCreated === 'function') {
+      quizDetailsFormRef.value.handleTopicCreated(topic)
+    }
+    
     alert.push({ type: 'success', message: 'Topic created' })
   } catch (e: any) {
     alert.push({ type: 'error', message: `Failed to refresh topics: ${e?.message || 'Unknown error'}` })

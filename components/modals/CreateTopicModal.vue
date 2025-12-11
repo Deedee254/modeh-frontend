@@ -41,6 +41,33 @@
             <option v-for="s in filteredSubjectList" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
         </div>
+
+        <!-- Image Upload -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Topic Image (Optional)</label>
+          <div 
+            class="mt-1 border-2 border-dashed border-gray-300 rounded-md p-3 text-center hover:border-gray-400 hover:bg-gray-50 cursor-pointer transition-colors"
+            @click="$refs.imageInput.click()"
+            @dragover.prevent
+            @drop.prevent="handleImageDrop"
+          >
+            <input 
+              ref="imageInput"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="handleImageSelect"
+            />
+            <div v-if="!imagePreview" class="space-y-1">
+              <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p class="text-xs text-gray-600">Click or drag image to upload</p>
+            </div>
+            <img v-else :src="imagePreview" class="max-h-24 mx-auto rounded" alt="Topic image" />
+          </div>
+        </div>
+
         <div class="mt-2">
           <label class="inline-flex items-center gap-2 text-sm">
             <input type="checkbox" v-model="localRequestApproval" class="rounded" />
@@ -134,6 +161,9 @@ const createdTopic = ref(null)
 const approvalRequestLoading = ref(false)
 const localRequestApproval = ref(props.requestApprovalImmediately || false)
 const config = useRuntimeConfig()
+const imageInput = ref(null)
+const imageFile = ref(null)
+const imagePreview = ref('')
 
 watch(() => props.defaultSubjectId, v => { subjectId.value = normalizeSubjectId(v) || '' })
 watch(() => props.defaultGradeId, v => { gradeId.value = normalizeGradeId(v) })
@@ -225,34 +255,73 @@ watch(subjectId, (nv) => {
 })
 
 function close() { emit('update:modelValue', false); clear() }
-function clear() { name.value=''; description.value=''; subjectId.value = normalizeSubjectId(props.defaultSubjectId) || ''; levelId.value = normalizeLevelId(props.defaultLevelId) || ''; gradeId.value = normalizeGradeId(props.defaultGradeId) }
+function clear() { name.value=''; description.value=''; subjectId.value = normalizeSubjectId(props.defaultSubjectId) || ''; levelId.value = normalizeLevelId(props.defaultLevelId) || ''; gradeId.value = normalizeGradeId(props.defaultGradeId); imageFile.value = null; imagePreview.value = '' }
+
+function handleImageSelect(event) {
+  const file = event.target.files?.[0]
+  if (file && file.type.startsWith('image/')) {
+    imageFile.value = file
+    createImagePreview(file)
+  }
+}
+
+function handleImageDrop(event) {
+  const file = event.dataTransfer.files?.[0]
+  if (file && file.type.startsWith('image/')) {
+    imageFile.value = file
+    createImagePreview(file)
+  }
+}
+
+function createImagePreview(file) {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    imagePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
 
 async function create() {
   if (!name.value || !subjectId.value) return
   submitting.value = true
   try {
-    const payload = { name: name.value, description: description.value, subject_id: normalizeSubjectId(subjectId.value), grade_id: normalizeGradeId(gradeId.value) }
-    // debug: show whether XSRF token exists and cookie keys
-    try {
-      const token = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-      console.debug('[CreateTopicModal] XSRF present:', !!token, 'cookieKeys:', document.cookie.split(';').map(s=>s.trim().split('=')[0]))
-    } catch(e) { console.debug('[CreateTopicModal] cookie read failed', e) }
-
-    // Use composable to ensure CSRF cookie and send headers
     const api = useApi()
-    // If the user opted-in via checkbox, include flag to request approval immediately
-  if (localRequestApproval) payload.request_approval = true
-  const res = await api.postJson('/api/topics', payload)
-    if (res.ok) {
-      const json = await res.json().catch(() => null)
-      const created = json?.topic || json || null
-      // store locally and notify parent
-      createdTopic.value = created
-      emit('created', created)
+    
+    // If there's an image, use FormData for multipart upload
+    if (imageFile.value) {
+      const formData = new FormData()
+      formData.append('name', name.value)
+      formData.append('description', description.value)
+      formData.append('subject_id', String(normalizeSubjectId(subjectId.value)))
+      formData.append('grade_id', String(normalizeGradeId(gradeId.value)))
+      if (localRequestApproval) formData.append('request_approval', '1')
+      formData.append('image', imageFile.value)
+      
+      const res = await api.postFormData('/api/topics', formData)
+      if (res.ok) {
+        const json = await res.json().catch(() => null)
+        const created = json?.topic || json || null
+        createdTopic.value = created
+        emit('created', created)
+      } else {
+        const t = await res.text().catch(()=>null)
+        console.error('Failed to create topic', t)
+      }
     } else {
-      const t = await res.text().catch(()=>null)
-      console.error('Failed to create topic', t)
-      // keep modal open for retry
+      // No image, use regular JSON
+      const payload = { name: name.value, description: description.value, subject_id: normalizeSubjectId(subjectId.value), grade_id: normalizeGradeId(gradeId.value) }
+      if (localRequestApproval) payload.request_approval = true
+      
+      const res = await api.postJson('/api/topics', payload)
+      if (res.ok) {
+        const json = await res.json().catch(() => null)
+        const created = json?.topic || json || null
+        createdTopic.value = created
+        emit('created', created)
+      } else {
+        const t = await res.text().catch(()=>null)
+        console.error('Failed to create topic', t)
+      }
     }
   } catch (e) {
     console.error('Create topic error', e)

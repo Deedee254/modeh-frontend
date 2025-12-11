@@ -68,7 +68,8 @@
             <div class="text-sm text-gray-600">
               <div class="text-xs">This Question</div>
               <div class="font-medium text-lg" :class="currentQuestionPoints > 0 ? 'text-green-600' : 'text-gray-500'">
-                {{ currentQuestionPoints > 0 ? '+' : '' }}{{ currentQuestionPoints }}
+                <span v-if="questionPoints[currentQuestion.id] !== undefined">{{ currentQuestionPoints }}/{{ currentQuestionMaxMarks }}</span>
+                <span v-else>0/{{ currentQuestionMaxMarks }}</span>
               </div>
             </div>
             <div v-if="myRank" class="text-sm text-gray-600">
@@ -94,21 +95,31 @@
             <span 
               :class="[
                 'px-3 py-1 rounded-full text-xs font-semibold',
-                currentQuestion.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-700' :
-                currentQuestion.difficulty?.toLowerCase() === 'hard' ? 'bg-red-100 text-red-700' :
+                getDifficultyLevel(currentQuestion.difficulty) === 'easy' ? 'bg-green-100 text-green-700' :
+                getDifficultyLevel(currentQuestion.difficulty) === 'hard' ? 'bg-red-100 text-red-700' :
                 'bg-yellow-100 text-yellow-700'
               ]"
             >
-              Difficulty: {{ currentQuestion.difficulty }}
+              Difficulty: {{ getDifficultyText(currentQuestion.difficulty) }}
             </span>
           </div>
 
           <!-- Explanation & Correct Answer (Shows when answered) -->
           <transition name="fade-up">
             <div v-if="showingFeedback && currentQuestion" class="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <!-- Answer result header -->
+              <div class="mb-4 pb-3 border-b border-blue-200">
+                <div v-if="currentQuestionPoints > 0" class="font-semibold text-green-600 text-lg">
+                  ✅ Correct! +{{ currentQuestionPoints }} point{{ currentQuestionPoints !== 1 ? 's' : '' }}
+                </div>
+                <div v-else class="font-semibold text-red-600 text-lg">
+                  ❌ Incorrect (0 points)
+                </div>
+              </div>
+
               <!-- Show correct answer only if wrong -->
               <div v-if="currentQuestionPoints === 0 && currentQuestion.correct !== undefined" class="mb-4 pb-4 border-b border-blue-200">
-                <div class="font-semibold text-red-600 mb-2">❌ Correct Answer:</div>
+                <div class="font-semibold text-red-600 mb-2">Correct Answer:</div>
                 <div class="text-sm bg-white p-2 rounded border border-red-100">
                   {{ getCorrectAnswerDisplay() }}
                 </div>
@@ -219,6 +230,11 @@ const allQuestionsAnswered = computed(() => true) // Don't require all answered 
 const currentQuestionPoints = computed(() => {
   const qId = currentQuestion.value?.id
   return qId ? (questionPoints.value[qId] ?? 0) : 0
+})
+
+const currentQuestionMaxMarks = computed(() => {
+  const marks = currentQuestion.value?.marks
+  return typeof marks !== 'undefined' && marks !== null ? parseFloat(marks) : 1
 })
 
 const countdownClass = computed(() => {
@@ -480,20 +496,8 @@ function markAnswer(question, answer) {
   // Update total score
   score.value = Math.max(0, (score.value || 0) + points)
   
-  // Show feedback with marks info
-  if (isCorrect) {
-    pushAlert({ 
-      type: 'success', 
-      title: `+${points} point${points !== 1 ? 's' : ''}!`, 
-      message: 'Correct answer' 
-    })
-  } else {
-    pushAlert({ 
-      type: 'info', 
-      title: 'Question answered', 
-      message: `0 points (max: ${maxPoints})` 
-    })
-  }
+  // Note: Feedback is shown via the showingFeedback panel below,
+  // so we don't need separate alerts here to reduce UI clutter
   
   // Show answer feedback with explanation and delay before auto-advance
   showingFeedback.value = true
@@ -646,5 +650,27 @@ onBeforeUnmount(() => {
   stopTimer()
   persistProgress() // Save state before leaving
 })
+
+// Helper function to convert difficulty number to text
+function getDifficultyText(difficulty) {
+  if (typeof difficulty === 'string') return difficulty
+  switch(Number(difficulty)) {
+    case 1: return 'Easy'
+    case 2: return 'Medium'
+    case 3: return 'Hard'
+    default: return 'Medium'
+  }
+}
+
+// Helper function to get difficulty level for styling
+function getDifficultyLevel(difficulty) {
+  if (typeof difficulty === 'string') return difficulty.toLowerCase()
+  switch(Number(difficulty)) {
+    case 1: return 'easy'
+    case 2: return 'medium'
+    case 3: return 'hard'
+    default: return 'medium'
+  }
+}
 </script>
 

@@ -236,17 +236,30 @@
 
         <!-- Topic Selection -->
         <div v-if="currentStep === 3" class="space-y-3">
-          <div>
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Select Topic</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
-              Choose a topic for
-              <template v-if="Array.isArray(selections.subject)">
-                {{ selections.subject[0]?.name }}
-              </template>
-              <template v-else>
-                {{ (selections.subject as TaxonomyItem)?.name }}
-              </template>
-            </p>
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Select Topic</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Choose a topic for
+                <template v-if="Array.isArray(selections.subject)">
+                  {{ selections.subject[0]?.name }}
+                </template>
+                <template v-else>
+                  {{ (selections.subject as TaxonomyItem)?.name }}
+                </template>
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="$emit('create-topic')"
+              class="flex-shrink-0 inline-flex items-center gap-2 rounded-lg border border-brand-600 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:bg-brand-900/50 transition-colors"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              New Topic
+            </button>
           </div>
           <div class="max-h-96 overflow-y-auto">
             <div v-if="loadingTopics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -401,6 +414,7 @@ const props = defineProps({
 const emit = defineEmits<{
   'update:modelValue': [value: SelectionState]
   submit: [value: SelectionState]
+  'create-topic': []
 }>()
 
 const store = useTaxonomyStore()
@@ -566,6 +580,24 @@ const selectTopic = (topic: TaxonomyItem) => {
   selections.value.topic = topic
   emit('update:modelValue', selections.value)
   submit()
+}
+
+const handleTopicCreated = (newTopic: TaxonomyItem) => {
+  // Add new topic to the list
+  const topicToAdd = {
+    id: newTopic.id,
+    name: newTopic.name,
+    description: newTopic.description,
+    subject_id: newTopic.subject_id
+  }
+  
+  // Add to topics list if not already there
+  if (!topics.value.find(t => String(t.id) === String(newTopic.id))) {
+    topics.value = [topicToAdd, ...topics.value]
+  }
+  
+  // Auto-select the newly created topic
+  selectTopic(topicToAdd)
 }
 
 // Fetch methods

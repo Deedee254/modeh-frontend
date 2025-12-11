@@ -287,8 +287,11 @@ const subscriptionsStore = useSubscriptionsStore()
 const ui = useUiStore()
 
 const canRedo = ref(false)
-const canSeeResults = computed(() => { // Renamed from canSeeResults for clarity
-  return !!((isActive.value || checkout.status === 'success') && (attemptId || id))
+const canSeeResults = computed(() => { // Check personal subscription OR institution subscription
+  const hasPersonalSubscription = isActive.value
+  const hasInstitutionSubscription = institutionSubscriptions.value && institutionSubscriptions.value.length > 0
+  const hasAnySubscription = hasPersonalSubscription || hasInstitutionSubscription
+  return !!(( hasAnySubscription || checkout.status === 'success') && (attemptId || id))
 })
 
 const activePackageName = ref('')
@@ -623,15 +626,9 @@ function payForThisItem() {
 }
 
 async function viewFreeResults() {
-  checkout.status = 'success'
-  checkout.pendingMessage = 'This item is free! Redirecting to results...'
-  setTimeout(async () => {
-    if (attemptId) {
-      router.push(`/quizee/results/${attemptId}`)
-    } else if (type === 'battle' && id) {
-      router.push(`/quizee/battles/${id}/result`)
-    }
-  }, 500)
+  // Free items still need to be marked on the backend to award points and achievements
+  // Just call seeResults() which will handle the marking via checkout.markResults()
+  await seeResults()
 }
 
 onMounted(async () => {

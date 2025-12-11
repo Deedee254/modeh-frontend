@@ -70,10 +70,12 @@
       </div>
       <ClientOnly>
         <TaxonomyFlowPicker
+          ref="taxonomyFlowPickerRef"
           :modelValue="taxonomySelection"
           :includeTopics="true"
           @update:modelValue="updateTaxonomySelection"
           @submit="onTaxonomySubmit"
+          @create-topic="$emit('create-topic')"
         />
       </ClientOnly>
       <div class="flex gap-2 justify-between pt-4">
@@ -204,6 +206,7 @@ const emit = defineEmits(['update:modelValue', 'create-topic', 'save', 'next', '
 const currentStep = ref(1)
 const localErrors = ref({ _title: null, _grade: null, _subject: null, _topic: null })
 const fileInput = ref(null)
+const taxonomyFlowPickerRef = ref(null)
 
 // Computed
 const title = computed({
@@ -388,6 +391,13 @@ const onTaxonomySubmit = (selection) => {
     topic: selection.topic
   })
   nextStep()
+}
+
+const handleTopicCreated = (newTopic) => {
+  // Call the TaxonomyFlowPicker's method to add the new topic to its list
+  if (taxonomyFlowPickerRef.value && typeof taxonomyFlowPickerRef.value.handleTopicCreated === 'function') {
+    taxonomyFlowPickerRef.value.handleTopicCreated(newTopic)
+  }
 }
 
 // Sync taxonomySelection when modelValue is first provided (e.g., when editing existing quiz)
