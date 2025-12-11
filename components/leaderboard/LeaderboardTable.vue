@@ -74,9 +74,14 @@
                   class="w-8 h-8 rounded-full object-cover"
                 />
                 <div class="ml-3">
-                  <div class="font-medium text-gray-900">{{ player.name }}</div>
-                  <div v-if="player.title" class="text-sm text-gray-500">
-                    {{ player.title }}
+                  <div class="flex items-center gap-2">
+                    <div class="font-medium text-gray-900">{{ player.name }}</div>
+                    <div v-if="player.qualified" class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Qualified</div>
+                  </div>
+                  <div v-if="player.title || player.final_rank" class="text-sm text-gray-500">
+                    <span v-if="player.title">{{ player.title }}</span>
+                    <span v-if="player.title && player.final_rank"> · </span>
+                    <span v-if="player.final_rank">Final rank: {{ player.final_rank }}</span>
                   </div>
                 </div>
               </div>

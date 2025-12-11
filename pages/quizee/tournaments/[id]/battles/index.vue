@@ -35,7 +35,7 @@
 <script setup lang="ts">
 // Ensure this page uses the quizee layout when rendered
 definePageMeta({ layout: 'quizee' })
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useTournamentRealtime } from '~/composables/useTournamentRealtime'
@@ -52,6 +52,7 @@ const tournament = ref<Tournament | null>(null)
 const battles = ref<TournamentBattle[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
+let statusCheckInterval: NodeJS.Timeout | null = null
 
 const { battleUpdates, isConnected } = useTournamentRealtime(route.params.id as string)
 
@@ -107,6 +108,47 @@ const fetchData = async () => {
   }
 }
 
+// Poll for tournament status updates (check every 5 seconds if qualifier just closed)
+const startStatusPolling = () => {
+  if (statusCheckInterval) clearInterval(statusCheckInterval)
+  
+  statusCheckInterval = setInterval(async () => {
+    try {
+      const res = await api.get(`/api/tournaments/${route.params.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        const currentStatus = data?.tournament?.status ?? data?.status
+        
+        // Check if battles were just generated (status changed from upcoming to active)
+        if (currentStatus === 'active' && tournament.value?.status === 'upcoming') {
+          // Status changed! Reload battles
+          await fetchData()
+          
+          // Show notification
+          if (battles.value.length > 0) {
+            console.log('✅ Tournament battles are now available!')
+          }
+        }
+        
+        // Update tournament status
+        if (tournament.value) {
+          tournament.value.status = currentStatus
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to check tournament status:', err)
+    }
+  }, 5000) // Check every 5 seconds
+}
+
+// Stop status polling
+const stopStatusPolling = () => {
+  if (statusCheckInterval) {
+    clearInterval(statusCheckInterval)
+    statusCheckInterval = null
+  }
+}
+
 // Check if user can participate in battle
 const canParticipate = (battle: TournamentBattle): boolean => {
   // Resolve user id whether `user` is a ref or a plain object
@@ -130,5 +172,11 @@ const viewResults = (battleId: number | string) => {
 // Fetch data on component mount
 onMounted(() => {
   fetchData()
+  startStatusPolling()
+})
+
+// Clean up polling interval on unmount
+onBeforeUnmount(() => {
+  stopStatusPolling()
 })
 </script>

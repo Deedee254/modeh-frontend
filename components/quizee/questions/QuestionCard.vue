@@ -11,8 +11,19 @@
       </div>
 
       <div class="content-col">
-  <h3 v-if="showHeader" class="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 leading-snug break-words whitespace-normal" v-html="question?.body"></h3>
-  <component v-if="componentName" :is="componentName" :question="question" :model-value="modelValue" :compact="isCompact" @update:model-value="emit('update:modelValue', $event)" @select="$emit('select',$event)" @toggle="$emit('toggle',$event)" />
+  <!-- Larger, more readable question text on mobile: increase base size and tighten leading -->
+  <h3 v-if="showHeader" class="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2 leading-tight sm:leading-snug break-words whitespace-normal" v-html="question?.body"></h3>
+  <component
+    v-if="componentName"
+    :is="componentName"
+    :question="question"
+    :model-value="modelValue"
+    :compact="isCompact"
+    @update:model-value="emit('update:modelValue', $event)"
+    @select="$emit('select',$event)"
+    @toggle="$emit('toggle',$event)"
+    @request-next="$emit('request-next')"
+  />
   <div v-else class="text-xs text-red-600 dark:text-red-400">Component missing for question type: {{ question?.type || 'unknown' }}</div>
                   <div class="mt-1">
                     <span v-if="question.is_approved === 1 || question.is_approved === true" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Approved</span>

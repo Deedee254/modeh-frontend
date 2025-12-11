@@ -3,7 +3,7 @@
     <!-- Battle Header -->
     <div class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between mb-3">
           <div class="flex items-center space-x-4">
             <h1 class="text-xl font-bold text-gray-900">Tournament Battle</h1>
             <div v-if="timeRemaining" class="flex items-center space-x-2 text-gray-600">
@@ -15,6 +15,18 @@
             <div class="flex items-center space-x-2">
               <span class="text-sm text-gray-600">Question</span>
               <span class="font-medium">{{ currentQuestionIndex + 1 }}/{{ totalQuestions }}</span>
+            </div>
+            <div v-if="currentQuestion?.difficulty" class="flex items-center space-x-2">
+              <span 
+                :class="[
+                  'px-2 py-1 rounded-full text-xs font-semibold',
+                  currentQuestion.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-700' :
+                  currentQuestion.difficulty?.toLowerCase() === 'hard' ? 'bg-red-100 text-red-700' :
+                  'bg-yellow-100 text-yellow-700'
+                ]"
+              >
+                {{ currentQuestion.difficulty }}
+              </span>
             </div>
             <div class="flex items-center space-x-2">
               <span class="text-sm text-gray-600">Score</span>
@@ -75,6 +87,30 @@
           @select="selectAnswer"
           class="mb-8"
         />
+
+        <!-- Explanation & Correct Answer (Shows when answered) -->
+        <transition name="fade-up">
+          <div v-if="showingFeedback && currentQuestion" class="mb-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <!-- Show correct answer only if wrong -->
+            <div v-if="!isCurrentQuestionCorrect && currentQuestion.correct_option_id !== undefined" class="mb-4 pb-4 border-b border-blue-200">
+              <div class="font-semibold text-red-600 mb-2">❌ Correct Answer:</div>
+              <div class="text-sm bg-white p-2 rounded border border-red-100">
+                {{ getCorrectAnswerDisplay() }}
+              </div>
+            </div>
+
+            <!-- Explanation if exists -->
+            <div v-if="currentQuestion.explanation">
+              <div class="font-semibold text-blue-700 mb-2">💡 Explanation:</div>
+              <div class="text-sm text-gray-700">{{ currentQuestion.explanation }}</div>
+            </div>
+
+            <!-- Auto-advance countdown -->
+            <div class="text-xs text-gray-500 mt-3 text-center">
+              Auto-advancing to next question...
+            </div>
+          </div>
+        </transition>
 
   <!-- Battle Progress -->
   <div class="flex justify-between items-center">
@@ -185,6 +221,8 @@ interface Question {
   youtube?: string
   options: Option[]
   correct_option_id?: number | string
+  difficulty?: string
+  explanation?: string
 }
 
 interface Battle {
@@ -222,6 +260,12 @@ const connectionStatus = ref<'connected'|'disconnected'|'reconnecting'>('connect
 // Timeout warning state - triggers when time < 30 seconds
 const showTimeoutWarning = ref<boolean>(false)
 const timeoutWarningShown = ref<boolean>(false)
+
+// Answer feedback state
+const showingFeedback = ref<boolean>(false)
+const feedbackDelay = ref<number>(3000) // 3 second delay before auto-advance
+const questionPoints = ref<Record<string | number, number>>({}) // Track points earned per question
+const isCurrentQuestionCorrect = ref<boolean>(false) // Track if current answer is correct
 
 // Per-question timer
 // use shared question timer composable for countdown UI + scheduling expiry
@@ -307,7 +351,7 @@ const fetchBattle = async () => {
     let tournamentConfig: any = null
     if (timePerQuestion.value === null || !data.questions || data.questions.length === 0) {
       try {
-        const tResp = await api.get(`/tournaments/${route.params.id}`)
+        const tResp = await api.get(`/api/tournaments/${route.params.id}`)
         const tJson = await tResp.json().catch(() => null)
         tournamentConfig = tJson?.tournament ?? tJson
       } catch (e) {
@@ -448,15 +492,21 @@ const selectAnswer = async (optionId: string | number) => {
     console.warn('Failed to persist answer locally', e)
   }
 
+  // Mark answer and show feedback
+  markAnswer(currentQuestion.value, optionId)
+
   // Optimistic local-only: do not require connection for per-question submits.
   // We'll submit all answers in bulk on `submitBattle()` so skip network call here.
-  // Auto-advance to next question after a short delay
+  // Auto-advance to next question after a short delay (with feedback showing)
   setTimeout(() => {
     if (!isLastQuestion.value) {
       nextQuestion()
+      showingFeedback.value = false
+    } else {
+      showingFeedback.value = false
     }
     answerSubmitted.value = false
-  }, 300)
+  }, feedbackDelay.value)
 }
 
 // Auto-save state
@@ -503,6 +553,52 @@ const saveToBackend = async () => {
     console.warn('Auto-save failed (will retry):', error)
     // Fail silently - will retry on next trigger
   }
+}
+
+// Mark answer and calculate correctness
+function markAnswer(question: Question | undefined, answer: string | number) {
+  if (!question) return
+  
+  // Track if answer is correct
+  let isCorrect = false
+  
+  if (question.type === 'mcq' && question.correct_option_id !== undefined) {
+    isCorrect = String(question.correct_option_id) === String(answer)
+  }
+  
+  // Store correctness and show feedback
+  isCurrentQuestionCorrect.value = isCorrect
+  showingFeedback.value = true
+  
+  // Show alert feedback
+  if (isCorrect) {
+    pushAlert({ 
+      type: 'success', 
+      title: 'Correct answer!', 
+      message: '+1 point' 
+    })
+  } else {
+    pushAlert({ 
+      type: 'info', 
+      title: 'Question answered', 
+      message: '0 points' 
+    })
+  }
+}
+
+// Display correct answer based on question type
+function getCorrectAnswerDisplay(): string {
+  const q = currentQuestion.value
+  if (!q) return 'N/A'
+  
+  if (q.type === 'mcq' && q.options && Array.isArray(q.options) && q.correct_option_id !== undefined) {
+    const option = q.options[Number(q.correct_option_id)]
+    if (option) {
+      return typeof option === 'string' ? option : (option as any).content || (option as any).text || `Option ${Number(q.correct_option_id) + 1}`
+    }
+  }
+  
+  return 'N/A'
 }
 
 const previousQuestion = () => {

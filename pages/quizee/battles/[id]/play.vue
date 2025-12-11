@@ -84,7 +84,14 @@
 
         <!-- Question -->
         <transition name="fade-slide" mode="out-in">
-          <QuestionCard :key="currentIndex" :question="currentQuestion" v-model="answers[currentQuestion.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)" />
+          <QuestionCard
+            :key="currentIndex"
+            :question="currentQuestion"
+            v-model="answers[currentQuestion.id]"
+            @select="onQuestionSelect"
+            @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)"
+            @request-next="handleRequestNext"
+          />
         </transition>
       </div>
     </template>
@@ -422,6 +429,16 @@ async function submitBattle() {
 
 function confirmFinish() {
   showConfirm.value = true
+}
+
+function handleRequestNext() {
+  // Called when a child input requests advancing (e.g. user pressed Enter)
+  if (currentIndex.value < questions.value.length - 1) {
+    nextQuestion()
+  } else {
+    // On last question, act like submit
+    confirmFinish()
+  }
 }
 
 async function fetchBattle() {

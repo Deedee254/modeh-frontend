@@ -11,14 +11,49 @@
         <p class="text-gray-600">{{ tournament?.name }}</p>
       </div>
 
-      <Podium :entries="topPlayers" />
+      <!-- Tabs: Tournament (bracket + leaderboard) | Qualifiers -->
+      <div class="mt-4">
+        <div class="flex items-center gap-4">
+          <button
+            :class="activeTab === 'tournament' ? 'px-4 py-2 rounded-md bg-brand-600 text-white' : 'px-4 py-2 rounded-md bg-white border'
+            "
+            @click="activeTab = 'tournament'"
+          >Tournament</button>
+          <button
+            :class="activeTab === 'qualifiers' ? 'px-4 py-2 rounded-md bg-brand-600 text-white' : 'px-4 py-2 rounded-md bg-white border'"
+            @click="activeTab = 'qualifiers'"
+          >Qualifiers</button>
+        </div>
 
-      <div class="mt-8">
-        <LeaderboardTable
-          :entries="paginatedLeaderboard"
-          variant="tournament"
-          :loading="loading"
-        />
+        <div class="mt-6">
+          <!-- Bracket always shown at the top for context -->
+            <div class="mb-8">
+            <TournamentBracket :tournament-id="id" :loading="loading" />
+          </div>
+
+          <div v-if="activeTab === 'tournament'">
+            <Podium :entries="topPlayers" />
+
+            <div class="mt-8">
+              <LeaderboardTable
+                :entries="annotatedLeaderboard"
+                variant="tournament"
+                :loading="loading"
+              />
+            </div>
+          </div>
+
+          <div v-else>
+            <!-- Qualifiers table uses same LeaderboardTable but with qualifier dataset -->
+            <div class="mt-2">
+              <LeaderboardTable
+                :entries="paginatedQualifiers"
+                variant="qualifier"
+                :loading="loadingQualifiers"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Pagination -->
@@ -74,6 +109,7 @@ import { useAuthStore } from "~/stores/auth";
 import { useApi } from "~/composables/useApi";
 import Podium from "~/components/leaderboard/Podium.vue";
 import LeaderboardTable from "~/components/leaderboard/LeaderboardTable.vue";
+import TournamentBracket from "~/components/TournamentBracket.vue";
 
 // Define interfaces for tournament and player
 interface Tournament {
@@ -95,11 +131,26 @@ interface Player {
 const route = useRoute();
 const auth = useAuthStore();
 
+// Normalized tournament id (string). route.params.id can be string|string[]|undefined so
+// coerce to a single string to satisfy component/api typings.
+const id = computed(() => {
+  const p = route.params.id as unknown;
+  if (Array.isArray(p)) return String(p[0] ?? '');
+  return String(p ?? '');
+});
+
 const tournament = ref<Tournament | null>(null);
 const leaderboard = ref<Player[]>([]);
 const loading = ref(true);
 const currentPage = ref(1);
 const itemsPerPage = 20;
+const activeTab = ref<'tournament' | 'qualifiers'>('tournament');
+
+// Qualifiers state
+const qualifiers = ref<any[]>([]);
+const loadingQualifiers = ref(false);
+const qualifiersPerPage = 20;
+const qualifierPage = ref(1);
 
 // Computed top 3 players for podium
 const topPlayers = computed(() => {
@@ -113,6 +164,22 @@ const paginatedLeaderboard = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   const end = start + itemsPerPage;
   return leaderboard.value.slice(start, end);
+});
+
+const paginatedQualifiers = computed(() => {
+  const start = (qualifierPage.value - 1) * qualifiersPerPage;
+  const end = start + qualifiersPerPage;
+  return qualifiers.value.slice(start, end);
+});
+
+// Annotate tournament leaderboard with qualifier flag and final rank info
+const annotatedLeaderboard = computed(() => {
+  const qualIds = qualifiers.value.map((a: any) => a.user_id ?? a.id ?? a.user?.id).filter(Boolean);
+  return leaderboard.value.map((p) => ({
+    ...p,
+    qualified: qualIds.includes(p.id),
+    final_rank: (p as any).rank ?? null,
+  }));
 });
 
 const startItem = computed(() => (currentPage.value - 1) * itemsPerPage + 1);
@@ -156,9 +223,15 @@ const api = useApi();
 const fetchData = async () => {
   try {
     loading.value = true;
+    if (!id.value) {
+      console.warn('Missing tournament id in route');
+      leaderboard.value = [];
+      return;
+    }
+
     const [tournamentResp, leaderboardResp] = await Promise.all([
-      api.get(`/api/tournaments/${route.params.id}`),
-      api.get(`/api/tournaments/${route.params.id}/leaderboard`),
+      api.get(`/api/tournaments/${id.value}`),
+      api.get(`/api/tournaments/${id.value}/leaderboard`),
     ]);
 
     // handle auth redirects if necessary
@@ -185,10 +258,39 @@ const fetchData = async () => {
     
     // Reset to first page after loading
     currentPage.value = 1;
+    // fetch qualifiers preview (top N)
+    fetchQualifiers();
   } catch (error) {
     console.error("Error fetching data:", error);
   } finally {
     loading.value = false;
+  }
+};
+
+const fetchQualifiers = async () => {
+  try {
+    loadingQualifiers.value = true;
+    // fetch enough rows to cover typical bracket sizes
+  if (!id.value) return;
+  const resp = await api.get(`/api/tournaments/${id.value}/qualifier-leaderboard?per_page=100`);
+    if (api.handleAuthStatus && api.handleAuthStatus(resp)) return;
+    const json = await resp.json().catch(() => null);
+    const data = json?.data ?? json ?? null;
+    if (Array.isArray(data)) {
+      qualifiers.value = data;
+    } else if (data && Array.isArray(data.data)) {
+      qualifiers.value = data.data;
+    } else if (data && Array.isArray(data.leaderboard)) {
+      qualifiers.value = data.leaderboard;
+    } else {
+      qualifiers.value = [];
+    }
+    qualifierPage.value = 1;
+  } catch (e) {
+    console.error('Failed to fetch qualifiers', e);
+    qualifiers.value = [];
+  } finally {
+    loadingQualifiers.value = false;
   }
 };
 

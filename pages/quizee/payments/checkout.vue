@@ -145,8 +145,19 @@
           <div>
             <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Choose Your Payment Option</h3>
             
-            <!-- One-off Payment -->
-            <div v-if="itemPrice !== null" class="mb-4 p-4 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between gap-4">
+            <!-- One-off Payment: Free -->
+            <div v-if="itemPrice === 0" class="mb-4 p-4 border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-between gap-4">
+              <div>
+                <div class="font-medium text-emerald-900 dark:text-emerald-100">This {{ type }} is Free!</div>
+                <div class="text-sm text-emerald-700 dark:text-emerald-200">No payment needed. View your results immediately.</div>
+              </div>
+              <button @click="viewFreeResults" :disabled="checkout.processing" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
+                View Results
+              </button>
+            </div>
+
+            <!-- One-off Payment: Paid -->
+            <div v-else-if="itemPrice && itemPrice > 0" class="mb-4 p-4 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between gap-4">
               <div>
                 <div class="font-medium text-slate-800 dark:text-slate-200">Pay for this item only</div>
                 <div class="text-sm text-slate-500 dark:text-slate-400">One-time payment to unlock results for this {{ type }}.</div>
@@ -339,7 +350,8 @@ async function fetchLimitInfo() {
 async function loadPackages() {
   try {
     await subscriptionsStore.fetchPackages()
-    packages.value = subscriptionsStore.packages
+    const allPackages = subscriptionsStore.packages || []
+    packages.value = allPackages.filter(pkg => !pkg.audience || pkg.audience === 'quizee')
     if (Array.isArray(packages.value) && packages.value.length) selectedPackage.value = packages.value[0]
   } catch (e) {
     packages.value = []
@@ -605,9 +617,21 @@ function retry() { window.location.reload() }
 function redo() { router.push(type === 'quiz' && id ? `/quizee/quizzes/take/${id}` : '/quizee') }
 
 function payForThisItem() {
-  if (item.value && itemPrice.value !== null) {
+  if (item.value && itemPrice.value !== null && itemPrice.value > 0) {
     initiatePayment('one-off', { ...item.value, price: itemPrice.value });
   }
+}
+
+async function viewFreeResults() {
+  checkout.status = 'success'
+  checkout.pendingMessage = 'This item is free! Redirecting to results...'
+  setTimeout(async () => {
+    if (attemptId) {
+      router.push(`/quizee/results/${attemptId}`)
+    } else if (type === 'battle' && id) {
+      router.push(`/quizee/battles/${id}/result`)
+    }
+  }, 500)
 }
 
 onMounted(async () => {

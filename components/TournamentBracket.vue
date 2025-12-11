@@ -1,7 +1,7 @@
 <template>
   <div class="tournament-bracket">
     <!-- Tournament Winner Display -->
-    <div v-if="winner && !loading" class="winner-banner mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg">
+    <div v-if="winner && !loading" class="winner-banner mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg relative">
       <div class="flex items-center gap-4">
         <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 flex-shrink-0">
           <img 
@@ -22,6 +22,11 @@
       </div>
     </div>
 
+    <!-- Confetti celebration when champion appears -->
+    <div v-if="showChampionConfetti" class="confetti-root" aria-hidden="true">
+      <div class="confetti-piece" v-for="n in 18" :key="n"></div>
+    </div>
+
     <!-- Progress Summary -->
     <div v-if="summary && !loading" class="progress-summary mb-6 grid grid-cols-3 gap-4">
       <div class="bg-white border rounded-lg p-4">
@@ -40,6 +45,11 @@
 
     <div v-if="loading" class="py-6 text-center">Loading bracket…</div>
     <div v-else class="bracket-container">
+      <!-- Header controls: last-updated and manual refresh -->
+      <div class="flex items-center justify-end gap-3 mb-2">
+        <div class="text-xs text-gray-500">Last update: <span class="font-mono">{{ lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '—' }}</span></div>
+        <button @click="manualRefresh" class="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-50">Refresh</button>
+      </div>
       <template v-if="!rounds || !rounds.length">
         <div class="placeholder-bracket p-6 bg-white rounded-lg border">
           <div class="text-sm text-gray-600 mb-3">
@@ -96,6 +106,10 @@
               v-for="(round, roundIndex) in displayRounds"
               :key="roundIndex"
               class="bracket-round"
+              :class="{
+                'left-side': isLeftBracket(roundIndex),
+                'right-side': isRightBracket(roundIndex)
+              }"
               :style="{ width: `${100 / displayRounds.length}%` }"
             >
               <div class="round-header">
@@ -138,6 +152,10 @@
                   v-for="(match, matchIndex) in round"
                   :key="match?.id || `p-${roundIndex}-${matchIndex}`"
                   class="bracket-match"
+                  :class="{
+                    'match-upper': matchIndex < Math.ceil(round.length / 2),
+                    'match-lower': matchIndex >= Math.ceil(round.length / 2)
+                  }"
                   :style="{
                     top: `${matchIndex * Math.pow(2, displayRounds.length - roundIndex) * 40}px`,
                   }"
@@ -310,14 +328,111 @@
             </div>
           </div>
         </div>
+        
+        <!-- Groups Display (below bracket) -->
+        <div v-if="calculateGroups && calculateGroups.length > 0" class="groups-container">
+          <div v-for="(group, idx) in calculateGroups" :key="`group-${idx}`" class="group-box">
+            <div class="group-title">{{ group.name }}</div>
+            <div v-for="player in group.players" :key="player.id" class="group-player">
+              <img 
+                :src="getPlayerAvatar(player)" 
+                :alt="player.name"
+                class="group-avatar"
+              />
+              <span class="group-player-name">{{ player.name }}</span>
+            </div>
+          </div>
+        </div>
       </template>
     </div>
+      <!-- Match Details Modal -->
+      <div v-if="isModalOpen" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center">
+        <div class="modal-panel bg-white rounded-lg shadow-lg w-11/12 md:w-3/4 lg:w-2/3 p-4 relative">
+          <button class="absolute top-3 right-3 text-gray-500" @click="closeModal" aria-label="Close">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+          <div v-if="matchDetailsLoading" class="py-8 text-center">Loading match details…</div>
+          <div v-else>
+            <div class="flex items-start gap-4 mb-4">
+              <div class="flex-1">
+                <div class="text-sm text-gray-500">Match</div>
+                <div class="text-lg font-bold">{{ selectedMatch?.id ? `#${selectedMatch.id}` : selectedMatch?.name || 'Match details' }}</div>
+                <div class="text-xs text-gray-400">{{ formatMatchInfo(selectedMatch) }}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm text-gray-500">Round</div>
+                <div class="font-semibold">{{ selectedMatch?.round ?? selectedMatch?.stage ?? '—' }}</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="p-3 border rounded">
+                <div class="flex items-center gap-3">
+                  <img :src="getPlayerAvatar(selectedMatch?.player1 || matchDetails?.initiator)" class="w-12 h-12 rounded-full object-cover" />
+                  <div>
+                    <div class="font-semibold">{{ selectedMatch?.player1?.name || matchDetails?.initiator?.name || 'TBD' }}</div>
+                    <div class="text-sm text-gray-500">Score: <span class="font-bold">{{ selectedMatch?.player1_score ?? matchDetails?.initiator_score ?? '-' }}</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="p-3 border rounded">
+                <div class="flex items-center gap-3 justify-end">
+                  <div class="text-right">
+                    <div class="font-semibold">{{ selectedMatch?.player2?.name || matchDetails?.opponent?.name || 'TBD' }}</div>
+                    <div class="text-sm text-gray-500">Score: <span class="font-bold">{{ selectedMatch?.player2_score ?? matchDetails?.opponent_score ?? '-' }}</span></div>
+                  </div>
+                  <img :src="getPlayerAvatar(selectedMatch?.player2 || matchDetails?.opponent)" class="w-12 h-12 rounded-full object-cover" />
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="text-sm font-semibold mb-2">Summary</div>
+              <div class="text-sm text-gray-700">{{ selectedMatch?.summary || matchDetails?.summary || (selectedMatch?.player1_score != null || selectedMatch?.player2_score != null ? `${selectedMatch?.player1_score ?? '-'} - ${selectedMatch?.player2_score ?? '-'}` : 'No summary available') }}</div>
+            </div>
+
+            <!-- Per-question breakdown (if available) -->
+            <div v-if="(matchDetails && matchDetails.questions && matchDetails.questions.length) || (selectedMatch && (selectedMatch.questions || selectedMatch.attempts))">
+              <div class="text-sm font-semibold mb-2">Questions</div>
+              <div class="space-y-2 max-h-64 overflow-auto p-2 border rounded">
+                <div v-for="(q, qi) in (matchDetails?.questions || selectedMatch?.questions || [])" :key="qi" class="p-2 bg-white rounded border">
+                  <div class="text-sm font-medium">{{ q.text || q.question || q.title || `Question ${qi + 1}` }}</div>
+                  <div class="text-xs text-gray-500">Correct: <span class="font-semibold">{{ q.correct_answer || q.answer }}</span></div>
+                  <template v-if="isViewerParticipant || q.user_answers">
+                    <!-- Show participant answers if viewer was a participant or answers are provided -->
+                    <div class="mt-1 text-xs text-gray-700">
+                      <div v-if="q.user_answers && q.user_answers.length">
+                        <div v-for="(ua, uai) in q.user_answers" :key="uai">{{ ua.player_name || ua.name }}: <span :class="{'text-green-600': ua.is_correct, 'text-red-500': !ua.is_correct}">{{ ua.answer }}</span></div>
+                      </div>
+                      <div v-else-if="matchDetails?.initiator_answer || matchDetails?.opponent_answer">
+                        <div>{{ matchDetails?.initiator?.name || 'Player 1' }}: {{ matchDetails?.initiator_answer ?? '-' }}</div>
+                        <div>{{ matchDetails?.opponent?.name || 'Player 2' }}: {{ matchDetails?.opponent_answer ?? '-' }}</div>
+                      </div>
+                      <div v-else class="text-xs text-gray-400">Answers not available publicly.</div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+              <div class="text-xs text-gray-500">Completed: {{ selectedMatch?.completed_at || matchDetails?.completed_at || '—' }}</div>
+              <div class="flex items-center gap-2">
+                <a v-if="selectedMatch?.id" :href="`/quizee/tournaments/${props.tournamentId}/battles/${selectedMatch.id}/results`" class="text-sm px-3 py-1 bg-white border rounded">View full battle</a>
+                <a v-else-if="matchDetails?.uuid" :href="`/quizee/battles/${matchDetails.uuid}/result`" class="text-sm px-3 py-1 bg-white border rounded">View full battle</a>
+                <button @click="closeModal" class="text-sm px-3 py-1 bg-brand-50 border rounded">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, computed, onUnmounted, watch } from "vue";
 import useApi from "~/composables/useApi";
+import { useAuthStore } from '~/stores/auth';
 import resolveAssetUrl from "~/composables/useAssets";
 const props = defineProps({
   tournamentId: { type: [String, Number], required: true },
@@ -328,11 +443,19 @@ const rounds = ref<any[][]>([]);
 const roundsData = ref<any[]>([]); // Complete round data with progress, end dates, etc.
 const countdowns = ref<Record<number, string>>({});
 let countdownInterval: any = null;
+let bracketRefreshInterval: any = null; // Auto-refresh polling
 const tournament = ref<any>(null);
 const winner = ref<any>(null);
 const summary = ref<any>(null);
 const loading = ref(true);
 const api = useApi();
+// UI state for match modal and live indicators
+const selectedMatch = ref<any>(null);
+const matchDetails = ref<any>(null);
+const matchDetailsLoading = ref(false);
+const isModalOpen = ref(false);
+const lastUpdated = ref<string | null>(null);
+const showChampionConfetti = ref(false);
 
 const buildRoundsFromBattles = (battles: any[]) => {
   // battles: array of battle objects with round property
@@ -375,13 +498,21 @@ const fetchTree = async () => {
       roundsData.value = json.bracket || [];
       
       // Extract matches from bracket rounds for rendering
-      const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
-      rounds.value = matchesFromBracket;
+  const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
+  rounds.value = matchesFromBracket;
+  // record last updated timestamp for UI
+  lastUpdated.value = new Date().toISOString();
 
       // initialize countdowns for rounds that have end dates
       updateCountdowns();
       if (countdownInterval) clearInterval(countdownInterval);
       countdownInterval = setInterval(updateCountdowns, 1000);
+      
+      // Start auto-refresh polling if tournament is still active
+      const hasCurrentRound = roundsData.value.some((r: any) => r.is_current);
+      if (hasCurrentRound && !bracketRefreshInterval) {
+        startBracketRefreshPolling();
+      }
     } else {
       // Fallback for old-style response
       rounds.value = json?.rounds ?? json?.data?.rounds ?? [];
@@ -392,6 +523,37 @@ const fetchTree = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// Auto-refresh polling: refresh bracket data every 8 seconds during active tournament
+const startBracketRefreshPolling = () => {
+  if (bracketRefreshInterval) clearInterval(bracketRefreshInterval);
+  bracketRefreshInterval = setInterval(async () => {
+    try {
+      const res = await api.get(`/api/tournaments/${props.tournamentId}/tree`);
+      const json = await res.json();
+      
+      if (json?.ok && json?.bracket) {
+        tournament.value = json.tournament;
+        winner.value = json.winner;
+        summary.value = json.summary;
+        roundsData.value = json.bracket || [];
+        
+        const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
+  rounds.value = matchesFromBracket;
+  lastUpdated.value = new Date().toISOString();
+        
+        // Stop polling if tournament is complete (no current round)
+        const hasCurrentRound = roundsData.value.some((r: any) => r.is_current);
+        if (!hasCurrentRound && bracketRefreshInterval) {
+          clearInterval(bracketRefreshInterval);
+          bracketRefreshInterval = null;
+        }
+      }
+    } catch (e) {
+      console.debug('Bracket auto-refresh polling error:', e);
+    }
+  }, 8000); // Poll every 8 seconds
 };
 
 function formatCountdownForDate(dateString: string | null) {
@@ -434,15 +596,90 @@ function updateCountdowns() {
 
 onUnmounted(() => {
   if (countdownInterval) clearInterval(countdownInterval);
+  if (bracketRefreshInterval) clearInterval(bracketRefreshInterval);
 });
 
 const openMatch = (match: any) => {
   if (!match) return;
-  // Navigate to battle details if available
+  selectedMatch.value = match;
+  isModalOpen.value = true;
+  matchDetails.value = null;
+  // If match already includes questions/attempts, use it; otherwise fetch details
+  if (match.questions || match.attempts || match.detail) {
+    matchDetails.value = match;
+    return;
+  }
+
   if (match.id) {
-    window.location.href = `/quizee/tournaments/${props.tournamentId}/battles/${match.id}/results`;
+    fetchBattleDetails(match.id);
   }
 };
+
+const fetchBattleDetails = async (battleId: number | string) => {
+  matchDetailsLoading.value = true;
+  try {
+    const res = await api.get(`/api/battles/${battleId}?with_questions=true`);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      matchDetails.value = j.battle || j || { id: battleId };
+      return;
+    }
+    const json = await res.json().catch(() => ({}));
+    matchDetails.value = json.battle || json || { id: battleId };
+  } catch (e) {
+    console.error('Failed to fetch battle details:', e);
+    matchDetails.value = { id: battleId };
+  } finally {
+    matchDetailsLoading.value = false;
+  }
+};
+
+const closeModal = () => {
+  isModalOpen.value = false;
+  selectedMatch.value = null;
+  matchDetails.value = null;
+};
+
+// Manual refresh handler
+const manualRefresh = async () => {
+  loading.value = true;
+  await fetchTree();
+  loading.value = false;
+};
+
+// Watch for champion and trigger confetti briefly
+watch(winner, (nv, ov) => {
+  if (nv && nv !== ov) {
+    showChampionConfetti.value = true;
+    setTimeout(() => (showChampionConfetti.value = false), 4200);
+  }
+});
+
+// Keyboard: close modal on Escape
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && isModalOpen.value) closeModal();
+};
+document.addEventListener('keydown', onKeydown as any);
+onUnmounted(() => document.removeEventListener('keydown', onKeydown as any));
+
+const auth = useAuthStore();
+const isViewerParticipant = computed(() => {
+  let uid: any = null;
+  try {
+    // auth.user may be a Ref or a plain object depending on Pinia usage; handle both
+    if (!auth.user) uid = null;
+    else if ((auth.user as any).id) uid = (auth.user as any).id;
+    else if ((auth.user as any).value && (auth.user as any).value.id) uid = (auth.user as any).value.id;
+  } catch (e) {
+    uid = null;
+  }
+  if (!uid) return false;
+  const m = selectedMatch.value || matchDetails.value;
+  if (!m) return false;
+  const p1 = m.player1 || m.initiator;
+  const p2 = m.player2 || m.opponent;
+  return (p1 && p1.id && Number(p1.id) === Number(uid)) || (p2 && p2.id && Number(p2.id) === Number(uid));
+});
 
 onMounted(fetchTree);
 
@@ -485,6 +722,54 @@ const matchStatus = (m: any) => {
     return "completed";
   return "pending";
 };
+
+// Determine if a round is on the left (upper) bracket side
+const isLeftBracket = (roundIndex: number): boolean => {
+  const total = displayRounds.value?.length ?? 0;
+  return roundIndex < Math.floor(total / 2);
+};
+
+// Determine if a round is on the right (lower) bracket side
+const isRightBracket = (roundIndex: number): boolean => {
+  const total = displayRounds.value?.length ?? 0;
+  return roundIndex >= Math.ceil(total / 2);
+};
+
+// Calculate groups from first round matches
+const calculateGroups = computed(() => {
+  try {
+    if (!roundsData.value || roundsData.value.length === 0) return [];
+    
+    const firstRound = roundsData.value[0];
+    if (!firstRound || !firstRound.matches || firstRound.matches.length === 0) return [];
+    
+    const groupCount = Math.max(firstRound.matches.length / 2, 1);
+    const groups = [];
+    
+    for (let i = 0; i < Math.min(4, groupCount); i++) {
+      const matchIndices = [i * 2, i * 2 + 1];
+      const players: any[] = [];
+      
+      for (const idx of matchIndices) {
+        if (firstRound.matches[idx]) {
+          if (firstRound.matches[idx].player1) players.push(firstRound.matches[idx].player1);
+          if (firstRound.matches[idx].player2) players.push(firstRound.matches[idx].player2);
+        }
+      }
+      
+      if (players.length > 0) {
+        groups.push({
+          name: `Group ${String.fromCharCode(65 + i)}`,  // Group A, B, C, D
+          players: players.slice(0, 4)
+        });
+      }
+    }
+    
+    return groups;
+  } catch (e) {
+    return [];
+  }
+});
 
 const formatMatchInfo = (m: any) => {
   if (!m) return ''
@@ -565,6 +850,8 @@ const formatDateShort = (dateString: string | null) => {
   display: flex;
   height: 100%;
   position: relative;
+  gap: 40px; /* More breathing room between round columns */
+  margin-top: 20px;
 }
 
 .bracket-round {
@@ -669,7 +956,18 @@ const formatDateShort = (dateString: string | null) => {
 
 .bracket-match:hover {
   border-color: #3b82f6;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Upper bracket match styling */
+.bracket-match.match-upper {
+  border-top: 3px solid #e0e7ff;
+}
+
+/* Lower bracket match styling */
+.bracket-match.match-lower {
+  border-bottom: 3px solid #f0f9ff;
 }
 
 .match-content {
@@ -725,19 +1023,10 @@ const formatDateShort = (dateString: string | null) => {
   background: #d1d5db;
 }
 
-/* Winner highlight */
-.player.winner {
-  background: rgba(250, 204, 21, 0.08); /* amber-100 tint */
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-weight: 700;
-  color: #92400e; /* slightly darker amber */
-}
-
-/* Tooltips shown on hover - desktop */
 .bracket-match {
   position: relative;
 }
+
 .match-tooltip {
   position: absolute;
   left: 50%;
@@ -756,10 +1045,31 @@ const formatDateShort = (dateString: string | null) => {
   transition: opacity 0.12s ease, transform 0.12s ease;
   z-index: 30;
 }
-.bracket-match:hover .match-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto }
+
+.bracket-match:hover .match-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+/* Winner highlight */
+.player.winner {
+  background: rgba(250, 204, 21, 0.08); /* amber-100 tint */
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-weight: 700;
+  color: #92400e; /* slightly darker amber */
+}
 
 /* Mobile tooltip inside stacked card */
-.md\:hidden .match-tooltip { position: static; transform: none; opacity: 1; box-shadow: none; border: none; padding: 0; }
+.md\:hidden .match-tooltip {
+  position: static;
+  transform: none;
+  opacity: 1;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -776,4 +1086,118 @@ const formatDateShort = (dateString: string | null) => {
     font-size: 11px;
   }
 }
+
+/* Groups Container */
+.groups-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin-top: 60px;
+  padding-top: 40px;
+  padding-bottom: 20px;
+  border-top: 2px solid #e5e7eb;
+}
+
+.group-box {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f9fafb;
+  transition: all 0.2s ease;
+}
+
+.group-box:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.group-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 10px;
+  color: #374151;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.group-player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 4px 0;
+  overflow: hidden;
+}
+
+.group-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  flex-shrink: 0;
+}
+
+.group-player-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* Left/Right bracket positioning for center-converging effect */
+.bracket-round.left-side {
+  text-align: right;
+  order: -1;
+}
+
+.bracket-round.right-side {
+  text-align: left;
+  order: 1;
+}
+
+/* Final round (center) */
+.bracket-round:last-of-type {
+  order: 0;
+  text-align: center;
+}
+
+/* Modal styles */
+.modal-backdrop {
+  background: rgba(0,0,0,0.45);
+}
+.modal-panel { max-height: 85vh; overflow: auto; }
+
+/* Confetti pieces */
+.confetti-root { pointer-events: none; position: absolute; inset: 0; overflow: hidden; }
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  background: var(--c, #f59e0b);
+  top: 10%;
+  left: 50%;
+  transform-origin: center;
+  animation: confetti-fall 3.4s linear infinite;
+  opacity: 0.9;
+}
+.confetti-piece:nth-child(2n) { background: #f97316; }
+.confetti-piece:nth-child(3n) { background: #f43f5e; }
+.confetti-piece:nth-child(4n) { background: #60a5fa; }
+.confetti-piece:nth-child(5n) { background: #34d399; }
+.confetti-piece:nth-child(6n) { background: #f59e0b; }
+.confetti-piece { left: calc(20% + (var(--i,0) * 4%)); animation-duration: calc(2.8s + (var(--i,0) * 0.15s)); }
+@keyframes confetti-fall {
+  0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(360deg) scale(0.9); opacity: 0; }
+}
+
+/* Small score change animation */
+.player-score { transition: transform 0.25s ease, color 0.25s ease; }
+.player-score.updated { transform: scale(1.08); color: #111827; }
 </style>

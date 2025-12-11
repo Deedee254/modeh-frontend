@@ -106,6 +106,20 @@
             </button>
           </div>
 
+          <!-- Qualification Closed -->
+          <div v-else-if="tournament.status === 'active' && isRegistered" class="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">Qualification Closed</h2>
+            <p class="text-gray-700 mb-4">
+              The qualification round has ended. Tournament battles are now underway.
+            </p>
+            <button
+              @click="router.push(`/quizee/tournaments/${tournament.id}/battles`)"
+              class="w-full bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700"
+            >
+              View Battles
+            </button>
+          </div>
+
           <!-- Debug Info -->
           <div v-if="true" class="bg-gray-100 p-4 rounded text-xs mb-4">
             <p><strong>Status:</strong> {{ tournament.status }} (need 'upcoming')</p>

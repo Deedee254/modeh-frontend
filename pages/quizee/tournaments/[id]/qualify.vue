@@ -1,217 +1,225 @@
 <template>
-  <div class="bg-gray-50">
-    <!-- Qualifier Header -->
-    <div class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <h1 class="text-xl font-bold text-gray-900">Tournament Qualification</h1>
-            <div v-if="timeRemaining" class="flex items-center space-x-2 text-gray-600">
-              <Icon name="mdi:clock-outline" class="w-5 h-5" />
-              <span>{{ formatTime(timeRemaining) }}</span>
+  <ClientOnly>
+    <QuizLayoutWrapper
+      :title="`Tournament Qualification${tournament?.name ? ' — ' + tournament.name : ''}`"
+      :current-question="currentQuestionIndex"
+      :total-questions="totalQuestions"
+      :show-timer="true"
+      :timer-display="displayTime"
+      :timer-color-class="timerColorClass"
+      :timer-circumference="113"
+      :timer-dash-offset="0"
+      :show-meta="false"
+      :show-previous="false"
+      :show-next="!isLastQuestion"
+      :disable-next="false"
+      :show-submit="isLastQuestion"
+      :submit-label="'Finish Qualifier'"
+      :disable-submit="isSubmitting || timeRemaining <= 0 || connectionStatus !== 'connected'"
+      :show-confirmation="showConfirmation"
+      :confirm-title="'Finish Qualifier?'"
+      :confirm-message="'Are you sure you want to submit your qualification attempt? You won\'t be able to change your answers.'"
+      :confirm-button-label="'Submit Qualifier'"
+      :is-submitting="isSubmitting"
+      :alert-message="connectionStatus !== 'connected' ? (connectionStatus === 'disconnected' ? '❌ Connection lost' : '⚠️ Reconnecting...') : ''"
+      :alert-class="connectionStatus === 'disconnected' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-yellow-100 text-yellow-800 border border-yellow-300'"
+      @next="nextQuestion"
+      @submit="finishQualifier"
+      @cancel-confirm="showConfirmation = false"
+      @confirm-submit="submitQualifier"
+    >
+      <template #content>
+        <!-- Persistent countdown alert -->
+        <div v-if="countdownAlert.show" :class="countdownClass" class="mb-4 rounded px-4 py-2 text-sm flex items-center gap-4 justify-between">
+          <div class="flex items-center gap-2">
+            <span v-if="countdownAlert.type === 'warning'" class="text-xl">⚠️</span>
+            <span v-else-if="countdownAlert.type === 'error'" class="text-xl">⛔</span>
+            <span v-else class="text-xl">⏱️</span>
+            <div class="text-sm">{{ countdownAlert.message }}</div>
+          </div>
+          <div class="text-2xl font-mono font-bold countdown-number" aria-hidden="true">{{ countdownAlert.timeRemaining }}</div>
+        </div>
+
+        <div v-if="loading" class="flex justify-center items-center min-h-[300px]">
+          <div class="animate-spin rounded-full h-12 w-12 border-4 border-brand-600 border-t-transparent"></div>
+        </div>
+
+        <div v-else-if="error" class="text-center py-12">
+          <div class="text-red-600 mb-4">{{ error }}</div>
+          <button 
+            @click="fetchTournament" 
+            class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"
+          >
+            Try Again
+          </button>
+        </div>
+
+        <div v-else-if="questions.length > 0" class="space-y-3 sm:space-y-6">
+          <!-- Tournament Info & Score Breakdown -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4">
+            <div class="text-sm text-gray-600">
+              <div class="text-xs">Question</div>
+              <div class="font-medium text-lg">{{ currentQuestionIndex + 1 }}/{{ totalQuestions }}</div>
+            </div>
+            <div class="text-sm text-gray-600">
+              <div class="text-xs">Total Score</div>
+              <div class="font-medium text-lg text-brand-600">{{ score }}</div>
+            </div>
+            <div class="text-sm text-gray-600">
+              <div class="text-xs">This Question</div>
+              <div class="font-medium text-lg" :class="currentQuestionPoints > 0 ? 'text-green-600' : 'text-gray-500'">
+                {{ currentQuestionPoints > 0 ? '+' : '' }}{{ currentQuestionPoints }}
+              </div>
+            </div>
+            <div v-if="myRank" class="text-sm text-gray-600">
+              <div class="text-xs">Rank</div>
+              <div class="font-medium text-lg text-brand-600">{{ myRank }}</div>
             </div>
           </div>
-          <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2">
-              <span class="text-sm text-gray-600">Question</span>
-              <span class="font-medium">{{ currentQuestionIndex + 1 }}/{{ totalQuestions }}</span>
-            </div>
-            <div class="flex items-center space-x-2">
-              <span class="text-sm text-gray-600">Score</span>
-              <span class="font-medium">{{ score }}</span>
-            </div>
-            <!-- My Position Indicator -->
-            <div v-if="myRank" class="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-              <Icon name="mdi:trophy" class="w-5 h-5 text-blue-600" />
-              <span class="text-sm font-medium text-blue-900">{{ myRank }}</span>
-            </div>
+
+          <!-- Current Question -->
+          <transition name="fade-slide" mode="out-in">
+            <QuestionCard
+              :key="currentQuestionIndex"
+              :question="currentQuestion"
+              v-model="answers[currentQuestion.id]"
+              @select="onQuestionSelect"
+              @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)"
+              @request-next="handleRequestNext"
+            />
+          </transition>
+
+          <!-- Difficulty Level Badge -->
+          <div v-if="currentQuestion.difficulty" class="flex justify-center mb-3">
+            <span 
+              :class="[
+                'px-3 py-1 rounded-full text-xs font-semibold',
+                currentQuestion.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-700' :
+                currentQuestion.difficulty?.toLowerCase() === 'hard' ? 'bg-red-100 text-red-700' :
+                'bg-yellow-100 text-yellow-700'
+              ]"
+            >
+              Difficulty: {{ currentQuestion.difficulty }}
+            </span>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Connection status banner -->
-    <div v-if="connectionStatus !== 'connected'" class="max-w-7xl mx-auto px-4 py-2 sm:px-6 lg:px-8">
-      <div :class="[
-        'rounded-md p-3 text-sm',
-        connectionStatus === 'disconnected' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
-      ]">
-        <div v-if="connectionStatus === 'disconnected'">Connection lost — answers may not be saved. Reconnect to continue.</div>
-        <div v-else-if="connectionStatus === 'reconnecting'">Reconnecting to realtime service…</div>
-      </div>
-    </div>
+          <!-- Explanation & Correct Answer (Shows when answered) -->
+          <transition name="fade-up">
+            <div v-if="showingFeedback && currentQuestion" class="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <!-- Show correct answer only if wrong -->
+              <div v-if="currentQuestionPoints === 0 && currentQuestion.correct !== undefined" class="mb-4 pb-4 border-b border-blue-200">
+                <div class="font-semibold text-red-600 mb-2">❌ Correct Answer:</div>
+                <div class="text-sm bg-white p-2 rounded border border-red-100">
+                  {{ getCorrectAnswerDisplay() }}
+                </div>
+              </div>
 
-    <!-- Persistent countdown alert -->
-    <div v-if="countdownAlert.show" class="max-w-7xl mx-auto px-4 py-2 sm:px-6 lg:px-8">
-      <div :class="countdownClass" class="rounded px-4 py-2 text-sm flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span v-if="countdownAlert.type === 'warning'" class="text-xl">⚠️</span>
-          <span v-else-if="countdownAlert.type === 'error'" class="text-xl">⛔</span>
-          <span v-else class="text-xl">⏱️</span>
-          <div class="text-sm">{{ countdownAlert.message }}</div>
-        </div>
-        <div class="text-2xl font-mono font-bold">{{ countdownAlert.timeRemaining }}</div>
-      </div>
-    </div>
+              <!-- Explanation if exists -->
+              <div v-if="currentQuestion.explanation">
+                <div class="font-semibold text-blue-700 mb-2">💡 Explanation:</div>
+                <div class="text-sm text-gray-700">{{ currentQuestion.explanation }}</div>
+              </div>
 
-    <!-- Qualifier Content -->
-    <div class="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-      </div>
+              <!-- Auto-advance countdown -->
+              <div class="text-xs text-gray-500 mt-3 text-center">
+                Auto-advancing to next question...
+              </div>
+            </div>
+          </transition>
 
-      <div v-else-if="error" class="flex flex-col items-center justify-center min-h-[400px]">
-        <div class="text-red-600 mb-4">{{ error }}</div>
-        <button 
-          @click="fetchTournament" 
-          class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
-
-      <template v-else>
-        <!-- Current Question -->
-        <QuestionCard 
-          v-if="currentQuestion"
-          :question="currentQuestion"
-          :model-value="selectedAnswerId"
-          @update:model-value="selectAnswer"
-          @select="selectAnswer"
-          class="mb-8"
-        />
-
-        <!-- Qualifier Progress -->
-        <div class="flex justify-between items-center">
-          <!-- Previous button removed for qualifier to enforce forward-only progression -->
-
-          <div class="flex-1 mx-8">
-            <div class="flex items-center justify-center space-x-2">
-              <div 
+          <!-- Progress Dots with Points Indicator -->
+          <div class="space-y-2">
+            <div class="flex justify-center items-center gap-1 sm:gap-2">
+              <div
                 v-for="(_, index) in questions"
                 :key="index"
-                :class="[
-                  'w-2.5 h-2.5 rounded-full',
-                  index === currentQuestionIndex ? 'bg-primary' :
-                  index < currentQuestionIndex ? 'bg-gray-300' :
-                  'bg-gray-200'
-                ]"
-              />
+                class="relative group"
+              >
+                <!-- Dot -->
+                <div
+                  :class="[
+                    'w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full transition-colors cursor-pointer',
+                    index === currentQuestionIndex ? 'bg-brand-600 ring-2 ring-brand-300' :
+                    index < currentQuestionIndex ? 'bg-gray-300' :
+                    'bg-gray-200'
+                  ]"
+                />
+                <!-- Tooltip showing points for answered questions -->
+                <div v-if="questionPoints[questions[index]?.id] !== undefined" class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                  +{{ questionPoints[questions[index]?.id] }}
+                </div>
+              </div>
+            </div>
+            <!-- Question status summary -->
+            <div class="text-center text-xs text-gray-500">
+              {{ Object.keys(questionPoints).length }} answered • {{ Object.values(questionPoints).reduce((a, b) => a + b, 0) }} points earned
             </div>
           </div>
-
-          <button
-            v-if="!isLastQuestion"
-            @click="nextQuestion"
-            :disabled="!canNavigate"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-          >
-            Next
-            <Icon name="mdi:chevron-right" class="w-5 h-5 ml-1" />
-          </button>
-
-          <button
-            v-else
-            @click="finishQualifier"
-            :disabled="!allQuestionsAnswered || timeRemaining <= 0 || connectionStatus !== 'connected' || isSubmitting"
-            :title="timeRemaining <= 0 ? 'Qualifier timeout - cannot submit' : connectionStatus !== 'connected' ? 'Connection required to submit' : ''"
-            class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-          >
-            {{ isSubmitting ? 'Submitting...' : 'Submit Qualifier' }}
-          </button>
         </div>
       </template>
-    </div>
-
-    <!-- Confirmation Dialog -->
-    <Dialog :open="showConfirmation" @close="showConfirmation = false">
-      <div class="fixed inset-0 bg-black/30" aria-hidden="true" />
-      <div class="fixed inset-0 flex items-center justify-center p-4">
-        <DialogPanel class="mx-auto max-w-md rounded-lg bg-white p-6">
-          <DialogTitle class="text-lg font-medium text-gray-900 mb-4">
-            Submit Qualifier?
-          </DialogTitle>
-          <p class="text-gray-600 mb-6">
-            Are you sure you want to submit your qualification attempt? You won't be able to change your answers after submission.
-          </p>
-          <div class="flex justify-end space-x-4">
-            <button
-              @click="showConfirmation = false"
-              class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800"
-            >
-              Cancel
-            </button>
-            <button
-              @click="submitQualifier"
-              class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark"
-            >
-              Submit
-            </button>
-          </div>
-        </DialogPanel>
-      </div>
-    </Dialog>
-  </div>
+    </QuizLayoutWrapper>
+  </ClientOnly>
 </template>
 
-<script setup lang="ts">
-definePageMeta({ layout: 'quizee', hideTopBar: true })
+<script setup>
+definePageMeta({ layout: 'quizee', hideTopBar: true, hideBottomNav: true })
 
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useAppAlert } from '~/composables/useAppAlert'
+import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
 import useDisableUserActions from '~/composables/useDisableUserActions'
 import { useRoute, useRouter } from 'vue-router'
-import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
-import { QuestionCard } from '#components'
-import { useAnswerStore } from '~/stores/answerStore'
+import { useAuthStore } from '~/stores/auth'
+import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
+import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
 import useQuestionTimer from '~/composables/useQuestionTimer'
-import { useApi } from '~/composables/useApi'
-
-interface Question {
-  id: number | string
-  type?: string
-  body?: string
-  content?: string
-  media_url?: string
-  media?: string
-  options?: any[]
-  correct_option_id?: number | string
-  marks?: number
-}
-
-interface Tournament {
-  id: number | string
-  name: string
-  questions: Question[]
-  duration?: number
-  start_date?: string
-  end_date?: string
-}
-
-type SelectedAnswers = Record<string | number, string | number>
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
+const api = useApi()
+const { push: pushAlert } = useAppAlert()
 
-// State
-const loading = ref<boolean>(true)
-const error = ref<string | null>(null)
-const tournament = ref<Tournament | null>(null)
-const questions = ref<Question[]>([])
-const currentQuestionIndex = ref<number>(0)
-const selectedAnswers = ref<SelectedAnswers>({})
-const timeRemaining = ref<number>(0)
-const timePerQuestion = ref<number | null>(null)
-const { questionRemaining, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer()
-const answerSubmitted = ref<boolean>(false)
-const showConfirmation = ref<boolean>(false)
-const score = ref<number>(0)
-const isSubmitting = ref<boolean>(false)
-const connectionStatus = ref<'connected' | 'disconnected' | 'reconnecting'>('connected')
-const myRank = ref<string | null>(null)
-
-// Countdown alert
+const loading = ref(true)
+const error = ref(null)
+const tournament = ref(null)
+const questions = ref([])
+const currentQuestionIndex = ref(0)
+const score = ref(0)
+const myRank = ref(null)
+const showConfirmation = ref(false)
+const isSubmitting = ref(false)
+const connectionStatus = ref('connected')
+const timeRemaining = ref(0)
 const countdownAlert = ref({ show: false, type: 'info', message: '', timeRemaining: 0 })
+const qualifierStartTime = ref(0)
+const questionPoints = ref({}) // Track points earned per question
+const showingFeedback = ref(false) // Show feedback with explanation
+const feedbackDelay = ref(3000) // 3 second delay before auto-advance
+
+const { answers, initializeAnswers, toggleMulti: rawToggleMulti } = useQuizAnswers(
+  computed(() => ({ questions: questions.value })),
+  route.params.id
+)
+
+// Initialize timer with default 30s per question (will be updated from tournament settings)
+let timePerQuestion_ = ref(30)
+const { timePerQuestion, questionRemaining, displayTime, timerColorClass, startTimer, stopTimer, resetTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(30)
+
+useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
+
+// Computed
+const currentQuestion = computed(() => questions.value[currentQuestionIndex.value] || {})
+const totalQuestions = computed(() => questions.value.length)
+const isLastQuestion = computed(() => currentQuestionIndex.value === totalQuestions.value - 1)
+// Allow navigation to next question without requiring an answer (per requirements)
+const canNavigate = computed(() => true)
+const allQuestionsAnswered = computed(() => true) // Don't require all answered for qualifier
+const currentQuestionPoints = computed(() => {
+  const qId = currentQuestion.value?.id
+  return qId ? (questionPoints.value[qId] ?? 0) : 0
+})
 
 const countdownClass = computed(() => {
   if (!countdownAlert.value?.type) return 'bg-blue-50 text-blue-800 border border-blue-200'
@@ -222,269 +230,421 @@ const countdownClass = computed(() => {
   }
 })
 
-const answerStore = useAnswerStore()
-const { push: pushAlert } = useAppAlert()
-
-useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
-
-// Computed
-const currentQuestion = computed<Question | undefined>(() => questions.value[currentQuestionIndex.value])
-const totalQuestions = computed<number>(() => questions.value.length)
-const isFirstQuestion = computed<boolean>(() => currentQuestionIndex.value === 0)
-const isLastQuestion = computed<boolean>(() => currentQuestionIndex.value === totalQuestions.value - 1)
-const selectedAnswerId = computed<string | number | undefined>(() => {
-  if (!currentQuestion.value) return undefined
-  const stored = answerStore.getAnswer(Number(String(currentQuestion.value.id)))
-  if (typeof stored !== 'undefined') return stored as any
-  return selectedAnswers.value[currentQuestion.value.id]
-})
-const canNavigate = computed<boolean>(() => !!(currentQuestion.value && selectedAnswers.value[currentQuestion.value.id]))
-const allQuestionsAnswered = computed<boolean>(() => 
-  Object.keys(selectedAnswers.value).length === totalQuestions.value
-)
-
-const api = useApi()
-
-const fetchTournament = async () => {
-  try {
-    loading.value = true
-    const resp = await api.get(`/api/tournaments/${route.params.id}`)
-    const json = await resp.json().catch(() => null)
-    const data = json?.tournament ?? json as Tournament
-
-    tournament.value = data
-    
-    const qList: any[] = []
-    for (const q of (data.questions || [])) {
-      qList.push({
-        ...q,
-        type: 'mcq',
-        body: q.body || q.content,
-        media: q.media_url,
-        media_path: q.media_url
-      })
-    }
-    // Apply configured qualifier question count if present
-    const configuredCount = data?.qualifier_question_count ?? null
-    const questionCount = configuredCount && Number.isFinite(Number(configuredCount)) ? Math.max(1, Number(configuredCount)) : qList.length
-    questions.value = qList.slice(0, questionCount)
-
-    // Use configured per-question seconds to compute total duration (fallback to 30s)
-    timePerQuestion.value = data?.qualifier_per_question_seconds ?? 30
-    const totalSeconds = (timePerQuestion.value ?? 30) * questions.value.length
-    startTimer(totalSeconds)
-    // Optionally start per-question timer UI (light-weight scheduling)
-    try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
-    if (typeof timePerQuestion.value === 'number' && Number.isFinite(timePerQuestion.value) && timePerQuestion.value > 0) {
-      startQuestionTimer(timePerQuestion.value)
-      // schedule per-question expiry to auto-advance
-      schedulePerQuestionLimit(timePerQuestion.value, () => {
-        if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
-          // mark empty answer
-          answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
-          selectedAnswers.value[currentQuestion.value.id] = ''
-        }
-        if (!isLastQuestion.value) {
-          nextQuestion()
-        } else {
-          submitQualifier()
-        }
-      })
-    }
-    
-    // Fetch user's qualification status
-    await fetchQualificationStatus()
-  } catch (e) {
-    console.error('Error fetching tournament:', e)
-    error.value = 'Failed to load tournament qualifier'
-  } finally {
-    loading.value = false
-  }
-}
-
-const fetchQualificationStatus = async () => {
-  try {
-    const resp = await api.get(`/api/tournaments/${route.params.id}/qualification-status`)
-    const json = await resp.json().catch(() => null)
-    
-    if (json?.rank) {
-      myRank.value = `#${json.rank}`
-    }
-  } catch (error) {
-    console.warn('Failed to fetch qualification status:', error)
-    // Non-fatal; user might not be authenticated or no attempt yet
-  }
-}
-
-const selectAnswer = async (optionId: string | number) => {
-  if (answerSubmitted.value || !currentQuestion.value) return
-
-  answerSubmitted.value = true
-  
-  try {
-    answerStore.setAnswer(Number(String(currentQuestion.value.id)), optionId as any)
-    selectedAnswers.value[currentQuestion.value.id] = optionId
-    persistProgress()
-  } catch (e) {
-    console.warn('Failed to persist answer locally', e)
-  }
-
-  setTimeout(() => {
-    if (!isLastQuestion.value) {
-      nextQuestion()
-    }
-    answerSubmitted.value = false
-  }, 300)
-}
-
-const previousQuestion = () => {
-  if (!isFirstQuestion.value) {
-    answerSubmitted.value = false
-    currentQuestionIndex.value--
-  }
-}
-
-const nextQuestion = () => {
-  if (!isLastQuestion.value) {
-    answerSubmitted.value = false
-    currentQuestionIndex.value++
-  }
-}
-
-const finishQualifier = () => {
-  if (timeRemaining.value <= 0) {
-    pushAlert({ message: 'Qualifier timeout - cannot submit', type: 'error' })
-    return
-  }
-  
-  if (connectionStatus.value !== 'connected') {
-    pushAlert({ message: 'Connection required to submit - please reconnect', type: 'error' })
-    return
-  }
-  
-  if (!allQuestionsAnswered.value) {
-    pushAlert({ message: 'Please answer all questions before submitting', type: 'warning' })
-    return
-  }
-  
-  showConfirmation.value = true
-}
-
-const submitQualifier = async () => {
-  try {
-    if (timeRemaining.value <= 0) {
-      error.value = 'Qualifier timeout - submission rejected'
-      pushAlert({ message: 'Qualifier timeout - submission rejected', type: 'error' })
-      return
-    }
-    
-    if (connectionStatus.value !== 'connected') {
-      error.value = 'Connection lost - cannot submit. Please reconnect and try again.'
-      pushAlert({ message: 'Connection required for submission', type: 'error' })
-      return
-    }
-
-    isSubmitting.value = true
-    loading.value = true
-
-    // Build answers payload from persisted answers
-    const answersStoreArray = ((answerStore.allAnswers as any)?.value ?? []) as any[]
-    const answersPayload: any[] = []
-    for (const a of answersStoreArray) {
-      answersPayload.push({ question_id: a.question_id, answer: a.answer })
-    }
-
-    // Calculate time taken
-    const tournamentStart = tournament.value?.duration ? (tournament.value.duration * 60) : 1800
-    const durationSeconds = tournamentStart - timeRemaining.value
-
-    // Submit to backend
-    await api.postJson(`/api/tournaments/${route.params.id}/qualify/submit`, {
-      answers: answersPayload,
-      duration_seconds: durationSeconds
-    })
-
-    // Refresh qualification status to get updated rank
-    await fetchQualificationStatus()
-
-    pushAlert({ message: 'Qualification submitted successfully!', type: 'success' })
-    router.push(`/quizee/tournaments/${route.params.id}`)
-  } catch (e) {
-    console.error('Error submitting qualifier:', e)
-    error.value = 'Failed to submit qualifier attempt'
-    pushAlert({ message: 'Failed to submit qualifier attempt', type: 'error' })
-  } finally {
-    loading.value = false
-    isSubmitting.value = false
-    showConfirmation.value = false
-  }
-}
-
-const startTimer = (seconds: number) => {
-  timeRemaining.value = seconds
-  let timer: ReturnType<typeof setInterval> | undefined = setInterval(() => {
-    if (timeRemaining.value && timeRemaining.value > 0) {
-      timeRemaining.value--
-      
-      // Update countdown alert
-      if (timeRemaining.value <= 5 && timeRemaining.value > 0) {
-        countdownAlert.value.show = true
-        countdownAlert.value.type = timeRemaining.value <= 2 ? 'error' : 'warning'
-        countdownAlert.value.timeRemaining = Math.ceil(timeRemaining.value)
-        countdownAlert.value.message = `⏱️ Time remaining: ${formatTime(Math.ceil(timeRemaining.value))}`
-      }
-      
-      if (timeRemaining.value % 5 === 0) persistProgress()
-    } else {
-      if (timer) clearInterval(timer)
-      submitQualifier()
-    }
-  }, 1000)
-  
-  onBeforeUnmount(() => {
-    if (timer) clearInterval(timer)
-  })
-}
-
-const formatTime = (seconds: number) => {
+function formatTime(seconds) {
   const mins = Math.floor(seconds / 60)
   const secs = Math.max(0, Math.floor(seconds % 60))
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-const persistProgress = () => {
+const updateCountdownAlert = () => {
+  if (typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = questionRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(questionRemaining.value)
+    countdownAlert.value.message = `⏱️ Time for this question: ${formatTime(Math.ceil(questionRemaining.value))}`
+    return
+  }
+
+  if (typeof timeRemaining.value === 'number' && timeRemaining.value <= 5 && timeRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = timeRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(timeRemaining.value)
+    countdownAlert.value.message = `⏱️ Quiz time remaining: ${formatTime(Math.ceil(timeRemaining.value))}`
+    return
+  }
+
+  countdownAlert.value.show = false
+}
+
+watch(timeRemaining, () => updateCountdownAlert(), { immediate: false })
+watch(questionRemaining, () => updateCountdownAlert(), { immediate: false })
+
+// Watch for timeout and auto-submit
+watch(timeRemaining, (val) => {
+  if (val <= 0 && !isSubmitting.value && questions.value.length > 0 && !showConfirmation.value) {
+    // Auto-submit immediately when time runs out
+    submitQualifier()
+  }
+})
+
+// Persist progress to localStorage whenever state changes
+function persistProgress() {
   try {
-    const meta = {
+    const progressData = {
       currentQuestionIndex: currentQuestionIndex.value,
       timeRemaining: timeRemaining.value,
-      answers: ((answerStore.allAnswers as any)?.value ?? []).map((a: any) => [a.question_id, a.answer])
+      answers: Object.fromEntries(Object.entries(answers.value)),
+      lastSavedAt: Date.now()
     }
-    localStorage.setItem(`qualifier_progress_${route.params.id}`, JSON.stringify(meta))
+    localStorage.setItem(`qualifier_progress_${route.params.id}`, JSON.stringify(progressData))
   } catch (e) {
     console.warn('Failed to persist progress', e)
   }
 }
 
-const restoreProgress = () => {
+// Restore progress from localStorage
+function restoreProgress() {
   try {
     const stored = localStorage.getItem(`qualifier_progress_${route.params.id}`)
     if (!stored) return
-    
-    const meta = JSON.parse(stored)
-    if (meta.currentQuestionIndex) currentQuestionIndex.value = meta.currentQuestionIndex
-    if (meta.answers && Array.isArray(meta.answers)) {
-      for (const [qId, ans] of meta.answers) {
-        answerStore.setAnswer(Number(qId), ans)
-        selectedAnswers.value[qId] = ans
-      }
+
+    const progressData = JSON.parse(stored)
+    // Restore position and answers if saved
+    if (typeof progressData.currentQuestionIndex === 'number' && progressData.currentQuestionIndex < questions.value.length) {
+      currentQuestionIndex.value = progressData.currentQuestionIndex
+    }
+    if (progressData.answers && typeof progressData.answers === 'object') {
+      Object.assign(answers.value, progressData.answers)
     }
   } catch (e) {
     console.warn('Failed to restore progress', e)
   }
 }
 
+// Methods
+async function fetchTournament() {
+  try {
+    loading.value = true
+    error.value = null
+    const res = await api.get(`/api/tournaments/${route.params.id}`)
+    
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      error.value = data?.message || `Failed to load tournament (status ${res.status})`
+      return
+    }
+    
+    const data = await res.json()
+    tournament.value = data.tournament || data
+    questions.value = tournament.value?.questions || []
+    
+    if (questions.value.length === 0) {
+      error.value = 'No questions available for this qualifier'
+      return
+    }
+
+    // Read configuration from tournament settings
+    const perQuestionSeconds = tournament.value?.qualifier_per_question_seconds ?? 30
+    const configuredQuestionCount = tournament.value?.qualifier_question_count ?? questions.value.length
+    
+    // Limit questions to configured count
+    const questionCount = Math.min(configuredQuestionCount, questions.value.length)
+    questions.value = questions.value.slice(0, questionCount)
+
+    // Initialize answers for all questions
+    initializeAnswers(questions.value)
+    
+    // Calculate total duration based on per-question timer and question count
+    const totalDuration = perQuestionSeconds * questions.value.length
+    timeRemaining.value = totalDuration
+    timePerQuestion_.value = perQuestionSeconds
+    qualifierStartTime.value = Date.now()
+    
+    // Start the global timer
+    recordAndReset()
+    startTimer(() => {
+      timeRemaining.value -= 0.1
+      // Persist every 5 seconds
+      if (Math.floor(timeRemaining.value) % 5 === 0) {
+        persistProgress()
+      }
+    })
+
+    // Restore any previous progress from this session
+    restoreProgress()
+    
+    // Fetch user's qualification status (rank, previous score)
+    await fetchQualificationStatus()
+    
+    // Schedule per-question timer to auto-advance
+    schedulePerQuestionLimit(perQuestionSeconds, () => {
+      if (!isLastQuestion.value) {
+        nextQuestion()
+      } else {
+        // Auto-submit on last question timeout
+        finishQualifier()
+      }
+    })
+  } catch (err) {
+    error.value = err?.message || 'Failed to load tournament'
+    console.error('Fetch tournament error:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function fetchQualificationStatus() {
+  try {
+    const res = await api.get(`/api/tournaments/${route.params.id}/qualification-status`)
+    if (!res.ok) return
+
+    const data = await res.json()
+    if (data?.rank) {
+      myRank.value = data.rank
+    }
+  } catch (e) {
+    console.warn('Failed to fetch qualification status:', e)
+  }
+}
+
+function nextQuestion() {
+  if (currentQuestionIndex.value < totalQuestions.value - 1) {
+    currentQuestionIndex.value++
+    clearPerQuestionLimit()
+    persistProgress()
+    // Re-schedule per-question timer for new question with configured time
+    const perQuestionSeconds = tournament.value?.qualifier_per_question_seconds ?? 30
+    schedulePerQuestionLimit(perQuestionSeconds, () => {
+      // Auto-advance when per-question time is up
+      if (!isLastQuestion.value) {
+        nextQuestion()
+      } else {
+        // On last question, auto-submit
+        finishQualifier()
+      }
+    })
+  } else if (isLastQuestion.value) {
+    // Already on last question, no more to advance to
+    finishQualifier()
+  }
+}
+
+// No previous button allowed per requirements
+function previousQuestion() {
+  // Disabled - users cannot go back
+}
+
+function onQuestionSelect(answer) {
+  if (currentQuestion.value) {
+    answers.value[currentQuestion.value.id] = answer
+    // Mark answer immediately (calculate points)
+    markAnswer(currentQuestion.value, answer)
+    persistProgress()
+  }
+}
+
+// Mark answer and calculate score immediately
+function markAnswer(question, answer) {
+  if (!question) return
+  
+  // Don't re-mark if already marked
+  if (questionPoints.value[question.id] !== undefined) {
+    return
+  }
+  
+  // Use marks from question, default to 1 if not specified
+  const maxPoints = question.marks ?? 1
+  let points = 0
+  let isCorrect = false
+  
+  // Handle MCQ
+  if (question.type === 'mcq') {
+    if (!is_null(question.correct) && String(question.correct) === String(answer)) {
+      isCorrect = true
+      points = maxPoints
+    } else if (typeof answer === 'string') {
+      // Try matching by option text
+      const correctIdx = findOptionIndexByText(question, answer)
+      if (!is_null(correctIdx) && String(correctIdx) === String(question.correct)) {
+        isCorrect = true
+        points = maxPoints
+      }
+    }
+  }
+  // Handle multi-select
+  else if (question.type === 'multi') {
+    const givenArr = Array.isArray(answer) ? answer : (typeof answer === 'string' ? JSON.parse(answer).catch(() => []) : [])
+    const correctsArr = Array.isArray(question.corrects) ? question.corrects : []
+    
+    if (Array.isArray(givenArr) && Array.isArray(correctsArr)) {
+      const corrects = correctsArr.map(String).sort()
+      const given = givenArr.map(String).sort()
+      if (JSON.stringify(corrects) === JSON.stringify(given)) {
+        isCorrect = true
+        points = maxPoints
+      }
+    }
+  }
+  // Handle numeric/text/fill-blank
+  else {
+    const expectedAnswers = question.answers || []
+    if (Array.isArray(expectedAnswers) && expectedAnswers.includes(String(answer))) {
+      isCorrect = true
+      points = maxPoints
+    }
+  }
+  
+  // Store points for this question
+  questionPoints.value[question.id] = points
+  
+  // Update total score
+  score.value = Math.max(0, (score.value || 0) + points)
+  
+  // Show feedback with marks info
+  if (isCorrect) {
+    pushAlert({ 
+      type: 'success', 
+      title: `+${points} point${points !== 1 ? 's' : ''}!`, 
+      message: 'Correct answer' 
+    })
+  } else {
+    pushAlert({ 
+      type: 'info', 
+      title: 'Question answered', 
+      message: `0 points (max: ${maxPoints})` 
+    })
+  }
+  
+  // Show answer feedback with explanation and delay before auto-advance
+  showingFeedback.value = true
+  
+  // Auto-advance after delay if not on last question
+  setTimeout(() => {
+    if (!isLastQuestion.value) {
+      nextQuestion()
+      showingFeedback.value = false
+    } else {
+      // On last question, just clear the flag
+      showingFeedback.value = false
+    }
+  }, feedbackDelay.value)
+}
+
+// Helper to find option index by text
+function findOptionIndexByText(question, text) {
+  if (!question.options || !Array.isArray(question.options)) return null
+  const idx = question.options.findIndex(opt => {
+    const optText = typeof opt === 'string' ? opt : opt.text || opt.label || ''
+    return String(optText).toLowerCase() === String(text).toLowerCase()
+  })
+  return idx >= 0 ? idx : null
+}
+
+// Display correct answer based on question type
+function getCorrectAnswerDisplay() {
+  const q = currentQuestion.value
+  if (!q) return 'N/A'
+  
+  if (q.type === 'mcq') {
+    // For MCQ, show the correct option text
+    if (q.options && Array.isArray(q.options) && q.correct !== undefined) {
+      const option = q.options[q.correct]
+      return typeof option === 'string' ? option : option?.text || option?.label || `Option ${parseInt(q.correct) + 1}`
+    }
+    return `Option ${parseInt(q.correct) + 1}`
+  } else if (q.type === 'multi') {
+    // For multi-select, show all correct options
+    if (q.options && Array.isArray(q.options) && q.corrects && Array.isArray(q.corrects)) {
+      return q.corrects.map(idx => {
+        const option = q.options[idx]
+        return typeof option === 'string' ? option : option?.text || option?.label || `Option ${parseInt(idx) + 1}`
+      }).join(', ')
+    }
+    return q.corrects?.join(', ') || 'N/A'
+  } else {
+    // For text/numeric/fill-blank, show expected answers
+    if (q.answers && Array.isArray(q.answers)) {
+      return q.answers.join(' / ')
+    }
+    return q.answers || 'N/A'
+  }
+}
+
+// Null check helper
+function is_null(val) {
+  return val === null || val === undefined
+}
+
+function handleRequestNext() {
+  // Enter key pressed on input - advance to next question or finish if last
+  if (!isLastQuestion.value) {
+    nextQuestion()
+  } else {
+    // On last question, show confirmation to submit
+    finishQualifier()
+  }
+}
+
+function finishQualifier() {
+  showConfirmation.value = true
+}
+
+async function submitQualifier() {
+  if (isSubmitting.value) return
+  
+  try {
+    isSubmitting.value = true
+    stopTimer()
+    clearPerQuestionLimit()
+    
+    // Calculate actual duration taken
+    const durationSeconds = Math.max(0, Date.now() - qualifierStartTime.value) / 1000
+    
+    // Build answers payload - include all answered questions, even if some were skipped
+    const submitData = {
+      answers: Object.entries(answers.value)
+        .filter(([_, answer]) => answer !== null && answer !== undefined)
+        .map(([qId, answer]) => ({
+          question_id: parseInt(qId),
+          answer: answer ?? null
+        })),
+      duration_seconds: Math.round(durationSeconds)
+    }
+    
+    const res = await api.postJson(`/api/tournaments/${route.params.id}/qualify/submit`, submitData)
+    
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      pushAlert({ 
+        type: 'error', 
+        title: 'Submission failed', 
+        message: data?.message || 'Please try again' 
+      })
+      isSubmitting.value = false
+      showConfirmation.value = false
+      return
+    }
+    
+    const data = await res.json()
+    score.value = data?.attempt?.score || 0
+    myRank.value = data?.rank || null
+    
+    // Clear persisted progress on successful submission
+    try {
+      localStorage.removeItem(`qualifier_progress_${route.params.id}`)
+    } catch (e) {
+      console.warn('Failed to clear progress', e)
+    }
+    
+    pushAlert({ 
+      type: 'success', 
+      title: 'Qualifier completed!', 
+      message: `Score: ${score.value}` 
+    })
+    
+    // Redirect to tournament details page after delay
+    setTimeout(() => {
+      router.push(`/quizee/tournaments/${route.params.id}`)
+    }, 2000)
+  } catch (err) {
+    pushAlert({ 
+      type: 'error', 
+      title: 'Submission failed', 
+      message: err?.message || 'Please try again' 
+    })
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Lifecycle
 onMounted(() => {
   fetchTournament()
-  restoreProgress()
+})
+
+onBeforeUnmount(() => {
+  stopTimer()
+  persistProgress() // Save state before leaving
 })
 </script>
+

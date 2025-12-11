@@ -40,17 +40,9 @@
         Create Tournament
       </button>
     </div>
-    <!-- Pagination -->
-    <div class="mt-6 flex items-center justify-center">
-      <nav class="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-        <button @click="goToPage(page - 1)" :disabled="page <= 1" class="px-3 py-2 bg-white border text-sm rounded-l-md disabled:opacity-50">Prev</button>
-        <button v-for="p in Math.max(1, meta.last_page)" :key="p" @click="goToPage(p)" :class="['px-3 py-2 border text-sm', p === page ? 'bg-brand-600 text-white' : 'bg-white text-gray-700']">{{ p }}</button>
-        <button @click="goToPage(page + 1)" :disabled="page >= meta.last_page" class="px-3 py-2 bg-white border text-sm rounded-r-md disabled:opacity-50">Next</button>
-      </nav>
-    </div>
 
     <!-- Tournament list -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
       <div 
         v-for="tournament in filteredTournaments" 
         :key="tournament.id" 
@@ -77,7 +69,7 @@
 
         <div class="p-6">
           <h3 class="text-xl font-bold mb-2">{{ tournament.name }}</h3>
-          <p class="text-gray-600 mb-4 line-clamp-2">{{ tournament.description }}</p>
+          <p class="text-gray-600 mb-4 line-clamp-2">{{ stripHtmlTags(tournament.description) }}</p>
           
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
@@ -107,6 +99,15 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-8 flex items-center justify-center">
+      <nav class="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+        <button @click="goToPage(page - 1)" :disabled="page <= 1" class="px-3 py-2 bg-white border text-sm rounded-l-md disabled:opacity-50">Prev</button>
+        <button v-for="p in Math.max(1, meta.last_page)" :key="p" @click="goToPage(p)" :class="['px-3 py-2 border text-sm', p === page ? 'bg-brand-600 text-white' : 'bg-white text-gray-700']">{{ p }}</button>
+        <button @click="goToPage(page + 1)" :disabled="page >= meta.last_page" class="px-3 py-2 bg-white border text-sm rounded-r-md disabled:opacity-50">Next</button>
+      </nav>
     </div>
     </div>
   </div>
@@ -225,6 +226,12 @@ const formatPrize = (amount: number) => {
     style: 'currency',
     currency: 'USD'
   }).format(amount)
+}
+
+// Strip HTML tags from text
+const stripHtmlTags = (html: string) => {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, '')
 }
 
 // Fetch tournaments on component mount

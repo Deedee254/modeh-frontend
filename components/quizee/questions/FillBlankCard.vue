@@ -9,7 +9,8 @@
             :aria-label="`Blank ${tok.index + 1}`"
             :value="localAnswers[tok.index] || ''"
             @input="onInput(tok.index, $event.target.value)"
-            class="inline-block px-2 py-1 border rounded-md w-40 text-sm sm:text-base"
+            @keydown.enter.prevent="onEnter"
+            class="inline-block px-3 py-1.5 border rounded-md w-40 text-sm sm:text-base"
           />
         </span>
       </template>
@@ -68,6 +69,11 @@ function onInput(index, value) {
   localAnswers.value = arr
   emit('update:modelValue', arr)
   emit('select', arr)
+}
+
+function onEnter() {
+  // When Enter is pressed inside any blank input, request advancing to next question
+  emit('request-next')
 }
 </script>
 
