@@ -30,13 +30,13 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <GradeCard
-            v-for="g in levelGrades"
+            v-for="g in levelGradesWithCounts"
             :key="g.id"
             :to="`/grades/${g.id}`"
             :title="g.name || g.title || g.id"
             :grade="g"
-            :quizzes_count="g.quizzes_count || g.count || 0"
-            :subjects_count="g.subjects_count || 0"
+            :quizzes_count="g.quizzes_count"
+            :subjects_count="g.subjects_count"
             actionLabel="Explore Grade"
             :actionLink="`/grades/${g.id}`"
           />
@@ -98,6 +98,22 @@ const levelGrades = computed(() => {
   // Prefer server-provided nested grades when available
   if (Array.isArray(level.value?.grades) && level.value.grades.length) return level.value.grades
   return Array.isArray(taxGrades.value) ? taxGrades.value : []
+})
+
+// Ensure grades have reliable counts for subjects and quizzes regardless of API shape
+const levelGradesWithCounts = computed(() => {
+  return (levelGrades.value || []).map(g => {
+  const subjectsCount = (g.subjects_count ?? (Array.isArray(g.subjects) ? g.subjects.length : (g.subjects?.data && Array.isArray(g.subjects.data) ? g.subjects.data.length : 0))) || 0
+
+  // Prefer canonical quizzes_count field; fall back to 0 if missing
+  const quizzesCount = (typeof g.quizzes_count === 'number') ? g.quizzes_count : 0
+
+    return {
+      ...g,
+      subjects_count: subjectsCount,
+      quizzes_count: quizzesCount
+    }
+  })
 })
 </script>
 

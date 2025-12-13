@@ -84,11 +84,11 @@
                 v-for="s in filtered"
                 :key="s.id"
                 :title="s.name"
-                :subtitle="`${s.quizzes_count} quizzes available`"
+                :subtitle="`${s.quizzes_count || 0} quizzes available`"
                 :image="resolveIcon(s)"
                 :badgeText="(s.name || '').charAt(0).toUpperCase()"
                 :to="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
-                :topicsCount="s.topics_count || s.topics?.length || 0"
+                :topicsCount="(s.topics_count ?? (Array.isArray(s.topics) ? s.topics.length : (s.topics?.data && Array.isArray(s.topics.data) ? s.topics.data.length : 0))) || 0"
                 :startLink="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
                 :description="s.description || s.summary || ''"
                 :grade="s.grade?.name || s.grade_id || ''"
@@ -161,13 +161,13 @@ const topicsCount = computed(() => Array.isArray(store.subjects) ? (store.subjec
 
 const api = useApi()
 let totalQuizzes = 0
-try {
-  const res = await api.get('/api/quizzes?per_page=1')
-  if (res.ok) {
-    const data = await res.json()
-    totalQuizzes = data?.quizzes?.total || data?.total || 0
-  }
-} catch (e) { totalQuizzes = 0 }
+    try {
+      const res = await api.get('/api/quizzes?per_page=1')
+      if (res.ok) {
+        const data = await res.json()
+        totalQuizzes = data?.quizzes?.total || data?.total || 0
+      }
+    } catch (e) { totalQuizzes = 0 }
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -194,18 +194,19 @@ onMounted(() => {
 
 async function onServerSearch(q) {
   const api = useApi()
-  try {
-    const res = await api.get(`/api/subjects?query=${encodeURIComponent(q)}`)
-    if (!res.ok) return
-    const data = await res.json()
-    const items = data?.subjects?.data || data?.subjects || data?.data || []
-    if (Array.isArray(items)) {
-      taxSubjects.value.length = 0
-      taxSubjects.value.push(...items)
+    try {
+      const res = await api.get(`/api/subjects?query=${encodeURIComponent(q)}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const items = data?.subjects?.data || data?.subjects || data?.data || []
+      if (Array.isArray(items)) {
+        // Update the shared store subjects array with search results
+        store.subjects.length = 0
+        store.subjects.push(...items)
+      }
+    } catch (e) {
+      // ignore network errors
     }
-  } catch (e) {
-    // ignore network errors
-  }
 }
 
 function filterBtnClass(v) {
@@ -221,12 +222,12 @@ function setFilter(v) {
   else activeFilter.value = v
 
     if (activeFilter.value === 'top') {
-    taxSubjects.value.sort((a, b) => (b.quizzes_count || 0) - (a.quizzes_count || 0))
-  } else if (activeFilter.value === 'featured') {
-    taxSubjects.value.sort((a, b) => ((b.is_featured || b.featured || 0) - (a.is_featured || a.featured || 0)))
-  } else if (activeFilter.value === 'new') {
-    taxSubjects.value.sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))
-  }
+      store.subjects.sort((a, b) => (b.quizzes_count || 0) - (a.quizzes_count || 0))
+    } else if (activeFilter.value === 'featured') {
+      store.subjects.sort((a, b) => ((b.is_featured || b.featured || 0) - (a.is_featured || a.featured || 0)))
+    } else if (activeFilter.value === 'new') {
+      store.subjects.sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))
+    }
 }
 
 function resolveIcon(s) {

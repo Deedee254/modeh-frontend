@@ -42,8 +42,8 @@
               :key="c.id"
               :grade="c"
               :title="c.display_name || c.name || c.title || `Course ${c.id}`"
-              :subtitle="`${c.quizzes_count || c.count || 0} quizzes available`"
-              :quizzes_count="c.quizzes_count || c.count || 0"
+              :subtitle="`${c.quizzes_count || 0} quizzes available`"
+              :quizzes_count="c.quizzes_count || 0"
               :description="c.description || c.summary || ''"
               :actionLink="`/courses/${c.id}`"
               :actionLabel="'Open course'"
@@ -98,7 +98,7 @@ const coursesFiltered = computed(() => {
   if (sortOption.value === 'name') {
     list = list.slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')))
   } else if (sortOption.value === 'most_quizzes') {
-    list = list.slice().sort((a,b) => Number(b.quizzes_count || b.count || 0) - Number(a.quizzes_count || a.count || 0))
+    list = list.slice().sort((a,b) => Number(b.quizzes_count || 0) - Number(a.quizzes_count || 0))
   } else {
     list = list.slice().sort((a,b) => {
       const ta = a?.created_at ? Date.parse(String(a.created_at)) : 0

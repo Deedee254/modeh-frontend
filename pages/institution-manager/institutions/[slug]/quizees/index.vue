@@ -20,8 +20,6 @@ const members = ref([] as any[])
 const membersMeta = ref({ total: 0, per_page: 8, current_page: 1, last_page: 1 })
 const selectedLevel = ref(null as any)
 const selectedGrade = ref(null as any)
-const selectedSubject = ref(null as any)
-const selectedTopic = ref(null as any)
 const requests = ref([] as any[])
 const requestsMeta = ref({ total: 0, per_page: 8, current_page: 1, last_page: 1 })
 const loadingMembers = ref(false)
@@ -29,7 +27,7 @@ const loadingRequests = ref(false)
 const errorMembers = ref(null as any)
 const errorRequests = ref(null as any)
 const appAlert = useAppAlert()
-const { fetchLevels, fetchGrades, fetchGradesByLevel, fetchSubjectsByGrade, fetchTopicsBySubject, levels, grades, subjects, topics } = useTaxonomy()
+const { fetchLevels, fetchGrades, fetchGradesByLevel, levels, grades } = useTaxonomy()
 
 async function loadMembers(page = 1) {
   if (!institutionId.value) return
@@ -43,8 +41,6 @@ async function loadMembers(page = 1) {
     params.set('role', 'quizee')
     if (selectedLevel.value) params.set('level_id', String(selectedLevel.value))
     if (selectedGrade.value) params.set('grade_id', String(selectedGrade.value))
-    if (selectedSubject.value) params.set('subject_id', String(selectedSubject.value))
-    if (selectedTopic.value) params.set('topic_id', String(selectedTopic.value))
 
   const resp = await api.get(`/api/institutions/${institutionId.value}/members?${params.toString()}`)
     if (api.handleAuthStatus(resp)) return
@@ -78,8 +74,6 @@ async function loadRequests(page = 1) {
 function clearFilters() {
   selectedLevel.value = null
   selectedGrade.value = null
-  selectedSubject.value = null
-  selectedTopic.value = null
   void loadMembers(1)
 }
 
@@ -136,37 +130,7 @@ watch(
       <div v-if="institutionId">
         <div class="mb-6">
           <h2 class="text-lg font-medium">Pending Requests</h2>
-          <div class="mt-2">
-            <div class="mb-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-              <div>
-                <label class="block text-xs text-gray-600">Level</label>
-                <select v-model="selectedLevel" @change="(e)=>{ if (selectedLevel) fetchGradesByLevel(selectedLevel); selectedGrade = null; selectedSubject = null; selectedTopic = null; loadMembers(1) }" class="w-full border rounded px-2 py-1">
-                  <option :value="null">All levels</option>
-                  <option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs text-gray-600">Grade</label>
-                <select v-model="selectedGrade" @change="(e)=>{ if (selectedGrade) fetchSubjectsByGrade(selectedGrade); selectedSubject = null; selectedTopic = null; loadMembers(1) }" class="w-full border rounded px-2 py-1">
-                  <option :value="null">All grades</option>
-                  <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs text-gray-600">Subject</label>
-                <select v-model="selectedSubject" @change="(e)=>{ if (selectedSubject) fetchTopicsBySubject(selectedSubject); selectedTopic = null; loadMembers(1) }" class="w-full border rounded px-2 py-1">
-                  <option :value="null">All subjects</option>
-                  <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs text-gray-600">Topic</label>
-                <select v-model="selectedTopic" @change="() => loadMembers(1)" class="w-full border rounded px-2 py-1">
-                  <option :value="null">All topics</option>
-                  <option v-for="t in topics" :key="t.id" :value="t.id">{{ t.name }}</option>
-                </select>
-              </div>
-            </div>
+          <div class="mt-4">
             <LoadingSpinner v-if="loadingRequests" />
             <ErrorAlert v-else-if="errorRequests">Failed to load requests: {{ errorRequests.message || errorRequests }}</ErrorAlert>
             <div v-else>
@@ -195,7 +159,63 @@ watch(
 
         <div>
           <h2 class="text-lg font-medium">Members</h2>
-          <div class="mt-2">
+          <div class="mt-4">
+            <!-- Filters with Dropdowns -->
+            <div class="mb-6 grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
+              <!-- Level Dropdown -->
+              <div class="lg:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Filter by Level</label>
+                <select
+                  v-model="selectedLevel"
+                  @change="() => { selectedGrade = null; if (selectedLevel) fetchGradesByLevel(selectedLevel); loadMembers(1) }"
+                  class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="">All Levels</option>
+                  <option v-for="level in levels" :key="level.id" :value="level.id">{{ level.name }}</option>
+                </select>
+              </div>
+
+              <!-- Grade Dropdown -->
+              <div class="lg:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Filter by Grade</label>
+                <select
+                  v-model="selectedGrade"
+                  @change="() => loadMembers(1)"
+                  :disabled="!selectedLevel && grades.length === 0"
+                  class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">All Grades</option>
+                  <option v-for="grade in grades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+                </select>
+              </div>
+
+              <!-- Clear Filters Button -->
+              <div class="lg:col-span-4">
+                <button
+                  v-if="selectedLevel || selectedGrade"
+                  @click="clearFilters"
+                  class="w-full px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white font-medium hover:bg-gray-300 dark:hover:bg-slate-600 transition-all"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+
+            <!-- Selected Filters Display -->
+            <div v-if="selectedLevel || selectedGrade" class="mb-6 p-4 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800">
+              <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Active Filters:</p>
+              <div class="flex flex-wrap gap-2">
+                <span v-if="selectedLevel" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-600 text-white text-sm font-medium">
+                  📚 {{ levels.find((l: any) => l.id === selectedLevel)?.name }}
+                  <button @click="() => { selectedLevel = null; selectedGrade = null; loadMembers(1) }" class="ml-1 hover:opacity-75">✕</button>
+                </span>
+                <span v-if="selectedGrade" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600 text-white text-sm font-medium">
+                  🎓 {{ grades.find((g: any) => g.id === selectedGrade)?.name }}
+                  <button @click="() => { selectedGrade = null; loadMembers(1) }" class="ml-1 hover:opacity-75">✕</button>
+                </span>
+              </div>
+            </div>
+
             <LoadingSpinner v-if="loadingMembers" />
             <ErrorAlert v-else-if="errorMembers">Failed to load members: {{ errorMembers.message || errorMembers }}</ErrorAlert>
             <div v-else>

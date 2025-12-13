@@ -243,6 +243,12 @@
                 <div class="font-semibold">✓ Correct Answer</div>
                 <div class="mt-2 text-sm font-mono break-words">{{ formatSelected(q, q.correct) }}</div>
               </div>
+
+              <!-- Explanation if available -->
+              <div v-if="q.explanation" class="mt-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+                <div class="font-semibold text-blue-700 mb-2">💡 Explanation</div>
+                <div class="text-sm text-blue-900">{{ q.explanation }}</div>
+              </div>
             </div>
           </div>
         </div>

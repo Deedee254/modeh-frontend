@@ -72,7 +72,7 @@
           :subtitle="`${s.quizzes_count || 0} quizzes available`"
           :image="resolveIcon(s)"
           :badgeText="(s.name || '').charAt(0).toUpperCase()"
-          :topicsCount="s.topics_count || s.topics?.length || 0"
+          :topicsCount="s.topics_count || (s.topics ? (Array.isArray(s.topics) ? s.topics.length : (s.topics.length || 0)) : 0)"
           :to="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
           :startLink="`/subjects/${s.slug || s.id}`"
           :description="s.description || s.summary || ''"

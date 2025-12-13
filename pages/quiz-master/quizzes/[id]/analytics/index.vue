@@ -95,6 +95,36 @@
         </div>
       </div>
     </div>
+
+    <!-- Liked by section -->
+    <div class="mt-6 bg-white p-4 rounded shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-lg font-semibold">❤️ Liked by</div>
+        <span class="text-sm text-slate-500">{{ likedByUsers.length }} user(s) have liked this quiz</span>
+      </div>
+      <div v-if="likedByLoading" class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+      </div>
+      <div v-else-if="likedByUsers.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div v-for="user in likedByUsers" :key="user.id" class="p-3 rounded-lg border border-gray-200 hover:border-brand-300 hover:shadow-md transition-all">
+          <div class="flex items-center gap-3">
+            <div v-if="user.avatar_url || user.avatar" class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+              <img :src="user.avatar_url || user.avatar" :alt="user.name" class="w-full h-full object-cover">
+            </div>
+            <div v-else class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+              {{ user.name?.charAt(0)?.toUpperCase() || '?' }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="text-center py-8 text-gray-500">
+        <p>No likes yet. Be the first to like this quiz!</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -117,6 +147,8 @@ const loading = ref(false)
 const error = ref(null)
 const analytics = ref({})
 const exportLoading = ref(false)
+const likedByLoading = ref(false)
+const likedByUsers = ref([])
 
 const trendCanvas = ref(null)
 const distCanvas = ref(null)
@@ -147,9 +179,37 @@ async function fetchAnalytics() {
   }
 }
 
-function refresh() { fetchAnalytics() }
+function refresh() { 
+  fetchAnalytics()
+  fetchLikedByUsers()
+}
 
-onMounted(fetchAnalytics)
+async function fetchLikedByUsers() {
+  if (!quizId) return
+  likedByLoading.value = true
+  try {
+    const res = await api.get(`/api/quizzes/${quizId}/likers`)
+    if (api.handleAuthStatus(res)) return
+    
+    const data = await api.parseResponse(res)
+    if (res.ok) {
+      // Handle both paginated and direct array responses
+      const users = data?.data || data || []
+      likedByUsers.value = Array.isArray(users) ? users : []
+    }
+  } catch (err) {
+    console.warn('Error loading liked users', err)
+    // Don't show error, just leave the section empty
+    likedByUsers.value = []
+  } finally {
+    likedByLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchAnalytics()
+  fetchLikedByUsers()
+})
 
 // Sparkline helpers
 const trendViewBox = computed(() => {

@@ -237,8 +237,10 @@ const instStore = useInstitutionsStore()
 
 const profileLink = computed(() => {
   if (!auth?.user) return '/' 
-  // If user is an institution manager or belongs to institutions, route to institution manager profile
-  if (auth.user.role === 'institution-manager' || (auth.user.institutions && Array.isArray(auth.user.institutions) && auth.user.institutions.length > 0)) {
+  // Only treat a user as an institution manager when their explicit role is 'institution-manager'.
+  // Previously we routed any user who 'belonged' to institutions to the institution manager profile,
+  // which caused quizee users who were members of an institution to be redirected incorrectly.
+  if (auth.user.role === 'institution-manager') {
     const qs = instStore.activeInstitutionSlug ? { institutionSlug: String(instStore.activeInstitutionSlug) } : {}
     return { path: '/institution-manager/profile', query: qs }
   }

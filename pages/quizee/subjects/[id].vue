@@ -82,7 +82,7 @@
               :title="t.name"
               :slug="t.slug"
               :to="`/quizee/topics/${t.slug || t.id}`"
-              :quizzes-count="t.quizzes_count || t.quizzes || 0"
+              :quizzes-count="t.quizzes_count || 0"
               :subject="subject?.name || subject?.id"
             />
           </div>
@@ -155,7 +155,7 @@ const displayTopics = computed(() => {
   if (sort === 'name') {
     list = list.slice().sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')))
   } else if (sort === 'most_quizzes') {
-    list = list.slice().sort((a: any, b: any) => Number(b.quizzes_count || b.quizzes || 0) - Number(a.quizzes_count || a.quizzes || 0))
+  list = list.slice().sort((a: any, b: any) => Number(b.quizzes_count || 0) - Number(a.quizzes_count || 0))
   } else {
     list = list.slice().sort((a: any, b: any) => {
       const ta = a?.created_at ? Date.parse(String(a.created_at)) : 0

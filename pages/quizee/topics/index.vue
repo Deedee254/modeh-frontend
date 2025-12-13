@@ -169,7 +169,7 @@ const filteredTopics = computed(() => {
   if (sort === 'name') {
     topics = topics.slice().sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')))
   } else if (sort === 'most_quizzes') {
-    topics = topics.slice().sort((a: any, b: any) => Number(b.quizzes_count || b.quizzes || 0) - Number(a.quizzes_count || a.quizzes || 0))
+  topics = topics.slice().sort((a: any, b: any) => Number(b.quizzes_count || 0) - Number(a.quizzes_count || 0))
   } else {
     topics = topics.slice().sort((a: any, b: any) => {
       const ta = a?.created_at ? Date.parse(String(a.created_at)) : 0

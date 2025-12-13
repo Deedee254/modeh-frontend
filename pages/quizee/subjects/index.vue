@@ -191,7 +191,7 @@ const filteredSubjects = computed(() => {
   if (sort === 'name') {
     subjects = subjects.slice().sort((a: any, b: any) => (String(a.name || '').localeCompare(String(b.name || ''))))
   } else if (sort === 'most_quizzes') {
-    subjects = subjects.slice().sort((a: any, b: any) => (Number(b.quizzes_count || b.quizzes || 0) - Number(a.quizzes_count || a.quizzes || 0)))
+  subjects = subjects.slice().sort((a: any, b: any) => (Number(b.quizzes_count || 0) - Number(a.quizzes_count || 0)))
   } else {
     // newest: fallback to created_at if present
     subjects = subjects.slice().sort((a: any, b: any) => {

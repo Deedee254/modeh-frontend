@@ -269,7 +269,7 @@
               :image="topic.image || topic.cover_image || ''"
               :grade="getTopicGradeLabel(topic)"
               :subject="getTopicSubjectLabel(topic)"
-              :quizzesCount="topic.quizzes_count || topic.quizzes?.length || 0"
+              :quizzesCount="topic.quizzes_count || 0"
               :description="topic.description || topic.summary || ''"
               startLabel="View Quizzes"
               class="h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
