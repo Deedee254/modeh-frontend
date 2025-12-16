@@ -69,7 +69,7 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <img
-                  :src="resolveAssetUrl(player.avatarUrl || player.avatar || player.avatar_url || player.photo || player.profile_image) || player.avatarUrl || player.avatar || player.avatar_url || player.photo || player.profile_image || placeholder"
+                  :src="resolvePlayerAvatar(player)"
                   alt="avatar"
                   class="w-8 h-8 rounded-full object-cover"
                 />
@@ -133,7 +133,7 @@
             <div>
               <span :class="rankBadgeClass(index)">{{ index + 1 }}</span>
             </div>
-            <img :src="resolveAssetUrl(player.avatarUrl || player.avatar || player.avatar_url || player.photo || player.profile_image) || player.avatarUrl || player.avatar || player.avatar_url || player.photo || player.profile_image || placeholder" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+            <img :src="resolvePlayerAvatar(player)" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
             <div>
               <div class="font-medium truncate" style="max-width: 160px">{{ player.name }}</div>
               <div v-if="player.title" class="text-sm text-gray-500">{{ player.title }}</div>
@@ -165,6 +165,16 @@ const colspan = computed(() => {
   if (props.variant === "daily") return 3;
   return 4;
 });
+
+function resolvePlayerAvatar(player) {
+  try {
+    // Backend returns avatar_url (primary DB column) and avatar (accessor)
+    const val = player?.avatar_url || player?.avatar || null
+    return resolveAssetUrl(val) || val || props.placeholder
+  } catch {
+    return props.placeholder
+  }
+}
 
 function rankBadgeClass(index) {
   return [

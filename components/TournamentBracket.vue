@@ -50,54 +50,75 @@
         <div class="text-xs text-gray-500">Last update: <span class="font-mono">{{ lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '—' }}</span></div>
         <button @click="manualRefresh" class="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-50">Refresh</button>
       </div>
-      <template v-if="!rounds || !rounds.length">
-        <div class="placeholder-bracket p-6 bg-white rounded-lg border">
-          <div class="text-sm text-gray-600 mb-3">
-            Bracket preview (placeholder)
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gray-50 p-3 rounded">
-              <div class="font-semibold text-sm mb-2">Group A</div>
-              <div class="space-y-1 text-sm text-gray-700">
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
+
+      <!-- Qualifier Phase: Display Standings/Leaderboard -->
+      <template v-if="isQualifierPhase && (qualifierResults && qualifierResults.length > 0)">
+        <div class="qualifier-standings mb-6">
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-bold text-gray-900">Qualifier Standings</h3>
+              <div class="text-sm text-gray-500">
+                <span class="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2"></span>
+                Live Updates
               </div>
             </div>
-            <div class="bg-gray-50 p-3 rounded">
-              <div class="font-semibold text-sm mb-2">Group B</div>
-              <div class="space-y-1 text-sm text-gray-700">
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
-              </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Rank</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Player</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-700">Score</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-700">Attempts</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-700">Qualified</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  <tr 
+                    v-for="(result, idx) in qualifierResults" 
+                    :key="result.user_id"
+                    :class="{
+                      'bg-green-50': result.is_qualified,
+                      'bg-white hover:bg-gray-50': !result.is_qualified
+                    }"
+                  >
+                    <td class="px-4 py-3">
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm" 
+                        :class="idx < 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'">
+                        {{ idx + 1 }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <img 
+                          :src="getPlayerAvatar(result.user)" 
+                          :alt="result.user?.name"
+                          class="w-7 h-7 rounded-full object-cover"
+                        />
+                        <span class="font-medium text-gray-900">{{ result.user?.name || 'Unknown' }}</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      <span class="font-bold text-lg text-gray-900">{{ result.score ?? '-' }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-center text-gray-600">
+                      {{ result.attempt_count ?? 0 }}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      <span v-if="result.is_qualified" class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
+                        <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.364 7.364a1 1 0 01-1.414 0L3.293 9.707a1 1 0 011.414-1.414L8 11.586l6.293-6.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                        Yes
+                      </span>
+                      <span v-else class="text-gray-400">—</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="bg-gray-50 p-3 rounded">
-              <div class="font-semibold text-sm mb-2">Group C</div>
-              <div class="space-y-1 text-sm text-gray-700">
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
-              </div>
-            </div>
-            <div class="bg-gray-50 p-3 rounded">
-              <div class="font-semibold text-sm mb-2">Group D</div>
-              <div class="space-y-1 text-sm text-gray-700">
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
-                <div>TBD</div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 text-sm text-gray-500">
-            When battles start, participants and results will populate here.
           </div>
         </div>
       </template>
+
       <template v-else>
         <!-- Desktop / wide screens: original bracket layout (hidden on small screens) -->
         <div class="hidden md:block">
@@ -447,6 +468,7 @@ let bracketRefreshInterval: any = null; // Auto-refresh polling
 const tournament = ref<any>(null);
 const winner = ref<any>(null);
 const summary = ref<any>(null);
+const qualifierResults = ref<any[]>([]); // Qualifier standings during qualifying phase
 const loading = ref(true);
 const api = useApi();
 // UI state for match modal and live indicators
@@ -502,6 +524,7 @@ const fetchTree = async () => {
       winner.value = json.winner;
       summary.value = json.summary;
       roundsData.value = json.bracket || [];
+      qualifierResults.value = json.qualifier_results || []; // Populate qualifier standings
       
       // Extract matches from bracket rounds for rendering
   const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
@@ -514,9 +537,12 @@ const fetchTree = async () => {
       if (countdownInterval) clearInterval(countdownInterval);
       countdownInterval = setInterval(updateCountdowns, 1000);
       
-      // Start auto-refresh polling if tournament is still active
+      // Start auto-refresh polling if tournament is still active (has current round OR during qualifiers)
       const hasCurrentRound = roundsData.value.some((r: any) => r.is_current);
-      if (hasCurrentRound && !bracketRefreshInterval) {
+      const isQualifying = tournament.value?.status === 'qualifying' || 
+                          tournament.value?.phase === 'qualifiers' ||
+                          tournament.value?.current_phase === 'qualifiers';
+      if ((hasCurrentRound || isQualifying) && !bracketRefreshInterval) {
         startBracketRefreshPolling();
       }
     } else {
@@ -548,14 +574,18 @@ const startBracketRefreshPolling = () => {
         winner.value = json.winner;
         summary.value = json.summary;
         roundsData.value = json.bracket || [];
+        qualifierResults.value = json.qualifier_results || []; // Update qualifier standings
         
         const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
   rounds.value = matchesFromBracket;
   lastUpdated.value = new Date().toISOString();
         
-        // Stop polling if tournament is complete (no current round)
+        // Stop polling if tournament is complete (no current round and not in qualifiers)
         const hasCurrentRound = roundsData.value.some((r: any) => r.is_current);
-        if (!hasCurrentRound && bracketRefreshInterval) {
+        const isQualifying = tournament.value?.status === 'qualifying' || 
+                            tournament.value?.phase === 'qualifiers' ||
+                            tournament.value?.current_phase === 'qualifiers';
+        if (!hasCurrentRound && !isQualifying && bracketRefreshInterval) {
           clearInterval(bracketRefreshInterval);
           bracketRefreshInterval = null;
         }
@@ -720,6 +750,12 @@ const displayRounds = computed(() => {
   return [...r, ...placeholders];
 });
 
+const isQualifierPhase = computed(() => {
+  return tournament.value?.status === 'qualifying' || 
+         tournament.value?.phase === 'qualifiers' ||
+         tournament.value?.current_phase === 'qualifiers';
+});
+
 const matchStatus = (m: any) => {
   if (!m) return "pending";
   if (m.status === "active" || m.status === "live") return "live";
@@ -794,8 +830,8 @@ const formatMatchInfo = (m: any) => {
 
 const getPlayerAvatar = (player: any) => {
   if (!player) return '/avatars/default.png'
-  // Prefer camelCase `avatarUrl` (auth store) then legacy `avatar`, then snake_case `avatar_url`.
-  const avatar = player.avatarUrl || player.avatar || player.avatar_url || player.profile?.avatar
+  // Backend returns avatar_url (primary DB column) and avatar (accessor)
+  const avatar = player.avatar_url || player.avatar
   return resolveAssetUrl(avatar) || '/avatars/default.png'
 }
 
@@ -1210,4 +1246,64 @@ const formatDateShort = (dateString: string | null) => {
 /* Small score change animation */
 .player-score { transition: transform 0.25s ease, color 0.25s ease; }
 .player-score.updated { transform: scale(1.08); color: #111827; }
+
+/* Qualifier Standings Styles */
+.qualifier-standings {
+  animation: slideIn 0.6s ease-out 0.1s backwards;
+}
+
+.qualifier-standings table {
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.qualifier-standings thead {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.qualifier-standings th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qualifier-standings td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.qualifier-standings tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.qualifier-standings tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.qualifier-standings tbody tr:hover:not(.bg-green-50) {
+  background-color: #f3f4f6;
+}
+
+.qualifier-standings tbody tr.bg-green-50 {
+  background-color: #dcfce7;
+}
+
+@media (max-width: 768px) {
+  .qualifier-standings table {
+    font-size: 12px;
+  }
+  
+  .qualifier-standings th,
+  .qualifier-standings td {
+    padding: 8px 12px;
+  }
+}
 </style>

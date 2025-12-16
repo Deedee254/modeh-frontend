@@ -70,34 +70,34 @@
                   <p class="font-semibold text-gray-800">Question {{ idx + 1 }}</p>
                 </div>
                 <div class="text-gray-700 text-base mb-3" v-html="q.body"></div>
-                <div class="flex items-center gap-4 text-sm text-gray-600">
+                  <div class="flex items-center gap-4 text-sm text-gray-600">
                   <div>Marks: <span class="font-medium text-gray-900">{{ marksForQuestion(q) }}</span></div>
-                  <div>Your: <span class="font-medium text-green-700">{{ pointsForSide(q, mySide()) }}</span></div>
+                  <div>Your: <span class="font-medium text-primary-600">{{ pointsForSide(q, mySide()) }}</span></div>
                   <div>Opponent: <span class="font-medium text-gray-900">{{ pointsForSide(q, mySide() === 'initiator' ? 'opponent' : 'initiator') }}</span></div>
                 </div>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-4 rounded-lg" :class="(mySide() === 'initiator' ? (q.initiator && q.initiator.correct_flag) : (q.opponent && q.opponent.correct_flag)) ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'">
+                <div class="p-4 rounded-lg" :class="(mySide() === 'initiator' ? (q.initiator && q.initiator.correct_flag) : (q.opponent && q.opponent.correct_flag)) ? 'bg-primary-50 border border-primary-200 text-primary-800' : 'bg-red-50 border border-red-200 text-red-800'">
                   <div class="flex items-center justify-between">
                     <div class="font-semibold">Your Answer</div>
                     <div class="text-sm text-gray-500">{{ pointsForSide(q, mySide()) }} pts</div>
                   </div>
                   <div class="mt-2 text-sm font-mono break-words">{{ formatSelected(q, mySide() === 'initiator' ? (q.initiator && q.initiator.selected) : (q.opponent && q.opponent.selected)) }}</div>
-                  <div class="mt-1 text-xs" :class="(mySide() === 'initiator' ? (q.initiator && q.initiator.correct_flag) : (q.opponent && q.opponent.correct_flag)) ? 'text-green-700' : 'text-red-600'">{{ (mySide() === 'initiator' ? (q.initiator && q.initiator.correct_flag) : (q.opponent && q.opponent.correct_flag)) ? 'Correct' : 'Incorrect' }}</div>
+                  <div class="mt-1 text-xs" :class="(mySide() === 'initiator' ? (q.initiator && q.initiator.correct_flag) : (q.opponent && q.opponent.correct_flag)) ? 'text-primary-600' : 'text-red-600'">{{ (mySide() === 'initiator' ? (q.initiator && q.initiator.correct_flag) : (q.opponent && q.opponent.correct_flag)) ? 'Correct' : 'Incorrect' }}</div>
                 </div>
 
-                <div class="p-4 rounded-lg" :class="(mySide() === 'initiator' ? (q.opponent && q.opponent.correct_flag) : (q.initiator && q.initiator.correct_flag)) ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'">
+                <div class="p-4 rounded-lg" :class="(mySide() === 'initiator' ? (q.opponent && q.opponent.correct_flag) : (q.initiator && q.initiator.correct_flag)) ? 'bg-primary-50 border border-primary-200 text-primary-800' : 'bg-red-50 border border-red-200 text-red-800'">
                   <div class="flex items-center justify-between">
                     <div class="font-semibold">Opponent's Answer</div>
                     <div class="text-sm text-gray-500">{{ pointsForSide(q, mySide() === 'initiator' ? 'opponent' : 'initiator') }} pts</div>
                   </div>
                   <div class="mt-2 text-sm font-mono break-words">{{ formatSelected(q, mySide() === 'initiator' ? (q.opponent && q.opponent.selected) : (q.initiator && q.initiator.selected)) }}</div>
-                  <div class="mt-1 text-xs" :class="(mySide() === 'initiator' ? (q.opponent && q.opponent.correct_flag) : (q.initiator && q.initiator.correct_flag)) ? 'text-green-700' : 'text-red-600'">{{ (mySide() === 'initiator' ? (q.opponent && q.opponent.correct_flag) : (q.initiator && q.initiator.correct_flag)) ? 'Correct' : 'Incorrect' }}</div>
+                  <div class="mt-1 text-xs" :class="(mySide() === 'initiator' ? (q.opponent && q.opponent.correct_flag) : (q.initiator && q.initiator.correct_flag)) ? 'text-primary-600' : 'text-red-600'">{{ (mySide() === 'initiator' ? (q.opponent && q.opponent.correct_flag) : (q.initiator && q.initiator.correct_flag)) ? 'Correct' : 'Incorrect' }}</div>
                 </div>
               </div>
 
-              <div class="mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+              <div class="mt-4 p-4 rounded-lg bg-primary-50 border border-primary-200 text-primary-800">
                 <div class="font-semibold">✓ Correct Answer</div>
                 <div class="mt-2 text-sm font-mono break-words">{{ formatSelected(q, q.correct) }}</div>
               </div>
@@ -213,8 +213,8 @@ function mySide() {
 }
 
 function getParticipantAvatar(participant: any): string {
-  // Prefer canonical `avatar_url`, fall back to legacy `avatar`, then user's avatar_url
-  const avatarUrl = participant?.avatar_url || participant?.avatar || participant?.user?.avatar_url || null
+  // Backend returns avatar_url (primary DB column) and avatar (accessor)
+  const avatarUrl = participant?.avatar_url || participant?.avatar || null
   return resolveAssetUrl(avatarUrl) || '/logo/avatar-placeholder.png'
 }
 

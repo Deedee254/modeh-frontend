@@ -125,11 +125,10 @@ function displayPoints(p) {
 
 function resolvedAvatar(v) {
   try {
-    // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
+    // Backend returns avatar_url (primary DB column) and avatar (accessor)
     let val = null
     if (v && typeof v === 'object') {
-      // Prefer camelCase `avatarUrl` then legacy `avatar` then snake_case `avatar_url`.
-      val = v.avatarUrl || v.avatar || v.avatar_url || v.photo || v.profile_image || null
+      val = v.avatar_url || v.avatar || null
     } else {
       val = v
     }

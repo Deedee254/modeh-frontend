@@ -71,6 +71,14 @@
           ← Previous
         </button>
 
+        <button 
+          v-else-if="showExit" 
+          @click="$emit('exit')" 
+          class="px-4 sm:px-5 py-2 sm:py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm sm:text-base lg:text-lg font-medium"
+        >
+          {{ exitLabel }}
+        </button>
+
         <div v-else class="flex-1" />
 
         <div class="flex items-center gap-1 sm:gap-2 lg:gap-3 flex-shrink-0">
@@ -169,6 +177,8 @@ const props = defineProps({
   // Navigation
   showPrevious: { type: Boolean, default: true },
   disablePrevious: { type: Boolean, default: false },
+  showExit: { type: Boolean, default: false },
+  exitLabel: { type: String, default: 'Exit' },
   showNext: { type: Boolean, default: true },
   disableNext: { type: Boolean, default: false },
   
@@ -185,7 +195,7 @@ const props = defineProps({
   confirmButtonLabel: { type: String, default: 'Submit' },
 })
 
-defineEmits(['previous', 'next', 'submit', 'cancel-confirm', 'confirm-submit'])
+defineEmits(['previous', 'next', 'submit', 'cancel-confirm', 'confirm-submit', 'exit'])
 
 const progressPercent = computed(() => {
   if (props.totalQuestions === 0) return 0

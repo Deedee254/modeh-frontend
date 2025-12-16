@@ -20,7 +20,7 @@
               <span 
                 :class="[
                   'px-2 py-1 rounded-full text-xs font-semibold',
-                  currentQuestion.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-700' :
+                  currentQuestion.difficulty?.toLowerCase() === 'easy' ? 'bg-primary-50 text-primary-600' :
                   currentQuestion.difficulty?.toLowerCase() === 'hard' ? 'bg-red-100 text-red-700' :
                   'bg-yellow-100 text-yellow-700'
                 ]"
@@ -311,6 +311,76 @@ const allQuestionsAnswered = computed<boolean>(() => {
 const config = useRuntimeConfig()
 const api = useApi()
 
+// Shuffle seed for this battle session (used when mapping indices)
+let battleShuffleSeed: string | null = null
+
+function cryptoRandomHex(bytes: number) {
+  try {
+    if (typeof crypto !== 'undefined' && (crypto as any).getRandomValues) {
+      const arr = new Uint8Array(bytes)
+      ;(crypto as any).getRandomValues(arr)
+      return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('')
+    }
+  } catch (e) {}
+  // fallback
+  let s = ''
+  for (let i = 0; i < bytes; i++) s += Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+  return s
+}
+
+function seededRngFromString(seedStr: string) {
+  let seed = 0
+  for (let i = 0; i < seedStr.length; i++) {
+    seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0
+  }
+  let a = seed
+  return function() {
+    a |= 0
+    a = a + 0x6D2B79F5 | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function seededShuffle<T>(arr: T[], seed: string): T[] {
+  const copy: T[] = arr.slice()
+  const rng = seededRngFromString(seed)
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    const tmp: T = copy[i]!
+    copy[i] = copy[j]!
+    copy[j] = tmp
+  }
+  return copy
+}
+
+function getOptionKey(opt: any) {
+  if (opt === null || opt === undefined) return null
+  if (typeof opt === 'string' || typeof opt === 'number') return String(opt)
+  return String((opt as any).id ?? (opt as any).text ?? (opt as any).body ?? JSON.stringify(opt))
+}
+
+function mapAnswerToIndex(question: Question | undefined, answer: any) {
+  if (!question || !question.options || !Array.isArray(question.options)) return answer
+  const opts = question.options
+  const findIndexFor = (val: any) => {
+    const key = getOptionKey(val)
+    for (let i = 0; i < opts.length; i++) {
+      if (getOptionKey(opts[i]) === key) return i
+    }
+    return null
+  }
+  if (Array.isArray(answer)) {
+    return answer.map(a => {
+      const idx = findIndexFor(a)
+      return idx !== null ? idx : a
+    })
+  }
+  const idx = findIndexFor(answer)
+  return idx !== null ? idx : answer
+}
+
 const fetchBattle = async () => {
   try {
     loading.value = true
@@ -318,8 +388,8 @@ const fetchBattle = async () => {
     const json = await resp.json().catch(() => null)
     const data = json?.data ?? json as Battle
     battle.value = data
-    // Normalize questions for QuestionCard component
-    const qList: any[] = []
+  // Normalize questions for QuestionCard component
+  let qList: any[] = []
     for (const qItem of (data.questions || [])) {
       const q = qItem as any
       qList.push({
@@ -330,6 +400,22 @@ const fetchBattle = async () => {
         media_path: q.media_url // Also set media_path for compatibility
       })
     }
+
+    // Generate a shuffle seed for this battle display and shuffle questions/options
+    try {
+      battleShuffleSeed = cryptoRandomHex(6)
+    } catch (e) {
+      battleShuffleSeed = String(Date.now())
+    }
+
+    // Shuffle options per-question and question order deterministically
+    for (let i = 0; i < qList.length; i++) {
+      const q = qList[i]
+      if (q.options && Array.isArray(q.options) && q.options.length) {
+        q.options = seededShuffle(q.options, `${battleShuffleSeed}::${q.id}`)
+      }
+    }
+    qList = seededShuffle(qList, battleShuffleSeed)
 
     // If backend provided per-question seconds, use it; otherwise derive from total seconds
     // (some admin UIs/setups set total seconds instead of per-question seconds)
@@ -539,13 +625,16 @@ const saveToBackend = async () => {
     const answersStoreArray = ((answerStore.allAnswers as any)?.value ?? []) as any[]
     const answersPayload: any[] = []
     for (const a of answersStoreArray) {
-      answersPayload.push({ question_id: a.question_id, answer: a.answer })
+      const q = questions.value.find(qi => String(qi.id) === String(a.question_id))
+      const mapped = mapAnswerToIndex(q as any, a.answer)
+      answersPayload.push({ question_id: a.question_id, answer: mapped })
     }
 
     await api.postJson(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}/draft`, {
       answers: answersPayload,
       current_question_index: currentQuestionIndex.value,
-      time_remaining: timeRemaining.value
+      time_remaining: timeRemaining.value,
+      shuffle_seed: battleShuffleSeed
     })
 
     lastAutoSaveTime = Date.now()
@@ -751,7 +840,8 @@ const submitBattle = async () => {
     // Post final answers and score to backend using API composable
     await api.postJson(`/api/tournaments/${route.params.id}/battles/${route.params.battleId}/submit`, {
       answers: answersPayload,
-      score: computedScore
+      score: computedScore,
+      shuffle_seed: battleShuffleSeed
     })
 
   router.push(`/quizee/tournaments/${route.params.id}/battles/${route.params.battleId}/results`)
@@ -807,14 +897,17 @@ function restoreProgress() {
       })
     }
     if (typeof parsed.currentQuestionIndex === 'number') currentQuestionIndex.value = parsed.currentQuestionIndex
-  if (typeof parsed.timeRemaining === 'number' && parsed.timeRemaining > 0) timeRemaining.value = parsed.timeRemaining
-  if (typeof parsed.questionRemaining === 'number' && parsed.questionRemaining > 0) questionRemaining.value = parsed.questionRemaining
-  // Start per-question timer for restored question (only when numeric)
+    if (typeof parsed.timeRemaining === 'number' && parsed.timeRemaining > 0) timeRemaining.value = parsed.timeRemaining
+    if (typeof parsed.questionRemaining === 'number' && parsed.questionRemaining > 0) {
+      questionRemaining.value = parsed.questionRemaining
+    }
+    
+    // Start per-question timer for restored question (only when numeric)
     try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
     if (typeof timePerQuestion.value === 'number' && Number.isFinite(timePerQuestion.value) && timePerQuestion.value > 0) {
       const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) ? questionRemaining.value : undefined
       startQuestionTimer(timePerQuestion.value, remainingForSchedule)
-  schedulePerQuestionLimit(timePerQuestion.value, () => {
+      schedulePerQuestionLimit(timePerQuestion.value, () => {
         if (currentQuestion.value && typeof selectedAnswerId.value === 'undefined') {
           answerStore.setAnswer(Number(String(currentQuestion.value.id)), '' as any)
           selectedAnswers.value[currentQuestion.value.id] = ''

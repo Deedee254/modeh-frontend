@@ -366,10 +366,10 @@ const opponentScore = computed(() => {
 // Match Podium.vue's resolvedAvatar pattern for consistency
 function resolveAvatar(v) {
   try {
-    // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
+    // Backend returns avatar_url (primary DB column) and avatar (accessor)
     let val = null
     if (v && typeof v === 'object') {
-      val = v.avatar_url || v.avatar || v.photo || v.profile_image || null
+      val = v.avatar_url || v.avatar || null
     } else {
       val = v
     }

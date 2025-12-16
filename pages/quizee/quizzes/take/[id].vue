@@ -13,8 +13,10 @@
     :show-meta="true"
     :alert-message="countdownAlert.show ? countdownAlert.message : ''"
     :alert-class="countdownAlert.show ? (countdownAlert.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' : countdownAlert.type === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-brand-100 text-brand-800 border border-brand-300') : ''"
-    :show-previous="currentQuestion > 0"
+    :show-previous="!Q.use_per_question_timer && currentQuestion > 0"
     :disable-previous="currentQuestion === 0"
+    :show-exit="Q.use_per_question_timer"
+    @exit="handleExit"
     :show-next="currentQuestion < Q.questions.length - 1"
     :disable-next="false"
     :show-submit="currentQuestion === Q.questions.length - 1"
@@ -290,6 +292,12 @@ watch(currentQuestion, () => {
 }, { immediate: false })
 
 // Wrap navigation to record question time and manage per-question timers
+function handleExit() {
+  if (confirm('Are you sure you want to exit? Your progress is saved locally.')) {
+    router.push('/quizee/quizzes')
+  }
+}
+
 function nextQuestion() {
   // record time for current
   const qid = currentQuestionData.value.id

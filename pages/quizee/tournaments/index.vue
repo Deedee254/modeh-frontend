@@ -65,6 +65,10 @@
           >
             {{ tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1) }}
           </div>
+          <div v-if="tournament.entry_fee && Number(tournament.entry_fee) > 0" class="absolute top-14 right-4 px-3 py-1 rounded-full bg-primary text-white text-sm font-medium shadow-md border border-white/10">
+            <Icon name="mdi:cash" class="inline-block mr-2" />
+            {{ formatPrize(tournament.entry_fee) }}
+          </div>
         </div>
 
         <div class="p-6">
@@ -220,12 +224,15 @@ const formatDate = (date: string) => {
   })
 }
 
-// Format prize helper
+// Format prize helper (display as Kenyan shillings: "Ksh <amount>")
 const formatPrize = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
+  const n = Number(amount) || 0
+  // use en-KE locale for number grouping, but display prefix "Ksh"
+  const formatted = new Intl.NumberFormat('en-KE', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n)
+  return `Ksh ${formatted}`
 }
 
 // Strip HTML tags from text

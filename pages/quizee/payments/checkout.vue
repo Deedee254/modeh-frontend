@@ -222,12 +222,12 @@
     
   <ReviewAnswers :open="showReview" :loading="reviewLoading" :error="reviewError" :details="reviewDetails" @close="showReview = false"></ReviewAnswers>
 
-  <PaymentAwaitingModal :tx="checkout.tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed"></PaymentAwaitingModal>
+  <PaymentAwaitingModal :tx="(checkout as any).tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed"></PaymentAwaitingModal>
   </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import useApi from '~/composables/useApi'
 import { useSubscription } from '~/composables/useSubscription'
@@ -258,13 +258,14 @@ const hasInstitution = ref(false)
 const institutionName = ref('')
 const institutionIsActive = ref(false)
 const showAwaitingModal = ref(false)
-const selectedPackage = ref(null)
+const lastPaymentReference = ref<string | null>(null)
+const selectedPackage = ref<Record<string, any> | null>(null)
 const limitRefreshing = ref(false)
 const activeSubscriptionType = ref('personal') // 'personal' or 'institution-{id}'
-const institutionSubscriptions = ref([])
-const personalLimit = ref(null)
+const institutionSubscriptions = ref<Record<string, any>[]>([])
+const personalLimit = ref<number | null>(null)
 const personalUsed = ref(0)
-const personalRemaining = ref(null)
+const personalRemaining = ref<number | null>(null)
 
 const showReview = ref(false)
 const isTournamentCheckout = computed(() => type === 'tournament' && !!id)
@@ -272,12 +273,12 @@ const tournamentJoinAttempted = ref(false)
 const tournamentJoinSucceeded = ref(false)
 const reviewLoading = ref(false)
 const reviewError = ref('')
-const reviewDetails = ref([])
+const reviewDetails = ref<Record<string, any>[]>([])
 
-const phones = ref([])
-const packages = ref([])
-const item = ref(null)
-const itemPrice = ref(null)
+const phones = ref<string[]>([])
+const packages = ref<Record<string, any>[]>([])
+const item = ref<Record<string, any> | null>(null)
+const itemPrice = ref<number | null>(null)
 
 const selectedPhonePreset = ref('')
 const phoneInputLocal = ref('')
@@ -299,12 +300,14 @@ const activePackageName = ref('')
 const phoneForPayment = computed(() => selectedPhonePreset.value || phoneInputLocal.value)
 
 // Limit info: prefer explicit query params (redirect), otherwise fall back to server-provided usage
-const limitState = ref(null)
+const limitState = ref<Record<string, any> | null>(null)
 const limitInfo = computed(() => {
   // 1) Query params (explicit redirect from results page)
   const reason = q.reason
-  const qLimit = q.limit ? parseInt(q.limit) : null
-  const qRemaining = q.remaining ? parseInt(q.remaining) : null
+  const qLimitRaw = q.limit
+  const qRemainingRaw = q.remaining
+  const qLimit = typeof qLimitRaw === 'string' ? parseInt(qLimitRaw, 10) : Array.isArray(qLimitRaw) && qLimitRaw[0] ? parseInt(qLimitRaw[0], 10) : null
+  const qRemaining = typeof qRemainingRaw === 'string' ? parseInt(qRemainingRaw, 10) : Array.isArray(qRemainingRaw) && qRemainingRaw[0] ? parseInt(qRemainingRaw[0], 10) : null
   const qLimitType = q.limit_type || q.type || 'reveals'
   if (reason === 'limit' || reason === 'result_limit') {
     return {
@@ -353,9 +356,9 @@ async function fetchLimitInfo() {
 async function loadPackages() {
   try {
     await subscriptionsStore.fetchPackages()
-    const allPackages = subscriptionsStore.packages || []
-    packages.value = allPackages.filter(pkg => !pkg.audience || pkg.audience === 'quizee')
-    if (Array.isArray(packages.value) && packages.value.length) selectedPackage.value = packages.value[0]
+    const allPackages = (subscriptionsStore.packages as Record<string, any>[] || [])
+    packages.value = allPackages.filter((pkg: Record<string, any>) => !pkg.audience || pkg.audience === 'quizee')
+    if (Array.isArray(packages.value) && packages.value.length) selectedPackage.value = packages.value[0] as Record<string, any>
   } catch (e) {
     packages.value = []
   }
@@ -388,7 +391,7 @@ async function checkSubscription() {
       
       if (instSubs.length > 0) {
         // Use the first institution as primary display
-        const primaryInst = instSubs[0]
+        const primaryInst = instSubs[0] as Record<string, any>
         institutionName.value = primaryInst.institution_name || 'Your Institution'
         institutionIsActive.value = primaryInst.status === 'active'
         
@@ -413,22 +416,56 @@ async function checkSubscription() {
   }
 }
 
-function selectPackage(pkg) { selectedPackage.value = pkg }
+function selectPackage(pkg: Record<string, any>) { selectedPackage.value = pkg }
 
-async function initiatePayment(type, details) {
+async function initiatePayment(type: 'subscription' | 'one-off', details: Record<string, any>) {
   if (!phoneForPayment.value) {
-    checkout.setError('Please provide a phone number.');
+    ;(checkout as any).setError('Please provide a phone number.');
     return;
   }
-  checkout.startProcessing();
+  ;(checkout as any).startProcessing();
 
   try {
     const cfg = useRuntimeConfig();
     let res
+    
+    // Get affiliate code from localStorage if saved during signup
+    const getAffiliateCode = () => {
+      try {
+        const stored = localStorage.getItem('modeh:referral_code')
+        if (stored) return stored
+      } catch (e) {}
+      return null
+    }
+    
+    const affiliateCode = getAffiliateCode()
+    
     if (type === 'subscription') {
-      res = await api.postJson(`/api/packages/${details.id}/subscribe`, { phone: phoneForPayment.value })
+      // Determine if this is a personal or institution subscription based on activeSubscriptionType
+      const payload: Record<string, any> = { phone: phoneForPayment.value }
+      
+      if (activeSubscriptionType.value && activeSubscriptionType.value.startsWith('institution-')) {
+        // Institution subscription
+        const institutionId = activeSubscriptionType.value.replace('institution-', '')
+        payload.owner_type = 'institution'
+        payload.owner_id = institutionId
+      }
+      // else: personal subscription (no owner_type needed, defaults to user)
+      
+      // Add affiliate code if available
+      if (affiliateCode) {
+        payload.ref = affiliateCode
+      }
+      
+      res = await api.postJson(`/api/packages/${details.id}/subscribe`, payload)
     } else {
-      const payload = { item_type: q.type || 'quiz', item_id: details.id, amount: details.price, phone: phoneForPayment.value }
+      const payload: Record<string, any> = { item_type: q.type || 'quiz', item_id: details.id, amount: details.price, phone: phoneForPayment.value }
+      
+      // Add affiliate code if available
+      if (affiliateCode) {
+        payload.ref = affiliateCode
+      }
+      
       res = await api.postJson('/api/one-off-purchases', payload)
     }
 
@@ -438,22 +475,27 @@ async function initiatePayment(type, details) {
     }
 
     // If backend returned a structured limit error, navigate user to subscription flow
-    if (res.code === 'limit_reached') {
-      const qs = new URLSearchParams({ reason: 'limit', type: res.limit?.type || 'unknown', value: String(res.limit?.value || '') })
+    const resData = res as Record<string, any>
+    if (resData.code === 'limit_reached') {
+      const qs = new URLSearchParams({ reason: 'limit', type: resData.limit?.type || 'unknown', value: String(resData.limit?.value || '') })
       router.push('/quizee/subscription?' + qs.toString())
       return
     }
 
-    const body = res
-    const tx = body?.tx || body?.purchase?.gateway_meta?.tx
-    if (tx) {
-      checkout.setTx(tx)
-      showAwaitingModal.value = true
-    } else {
-      throw new Error(body?.message || 'Failed to initiate payment.')
-    }
+    const body = resData
+      const tx = body?.tx || body?.purchase?.gateway_meta?.tx
+      // preference: use purchase id (stable server reference), fall back to gateway tx
+      lastPaymentReference.value = body?.purchase?.id || tx || null
+      if (tx) {
+        // keep existing behavior for the awaiting modal
+        if (typeof (checkout as any).setTx === 'function') (checkout as any).setTx(tx)
+        else (checkout as any).tx = tx
+        showAwaitingModal.value = true
+      } else {
+        throw new Error(body?.message || 'Failed to initiate payment.')
+      }
   } catch (e) {
-    checkout.setError(e.data?.message || e.message || 'An unexpected error occurred.');
+    ;(checkout as any).setError((e as any).data?.message || (e as any).message || 'An unexpected error occurred.');
   }
 }
 
@@ -462,16 +504,36 @@ async function joinTournamentAfterPayment() {
   if (tournamentJoinAttempted.value) return tournamentJoinSucceeded.value
   tournamentJoinAttempted.value = true
   try {
-    const res = await api.postJson(`/api/tournaments/${id}/join`, {})
+    const payload: Record<string, any> = {}
+    if (lastPaymentReference.value) payload.payment_reference = lastPaymentReference.value
+    const res = await api.postJson(`/api/tournaments/${id}/join`, payload)
     if (api.handleAuthStatus(res)) return false
-    if (res?.ok || res?.status === 204) {
+
+    // Success responses
+    if (res?.ok || res?.status === 204 || res?.status === 200) {
       tournamentJoinSucceeded.value = true
       return true
     }
     if (res?.status === 409) {
+      // conflict (eg. already participating) - treat as success for UX
       tournamentJoinSucceeded.value = true
       return true
     }
+
+    // Pending payment (server returns 202 with code 'pending_payment')
+    if (res?.status === 202) {
+      try {
+        const data = typeof res.json === 'function' ? await res.json() : res
+        if (data?.code === 'pending_payment' || data?.status === 'pending_payment') {
+          // Let caller know join is pending payment
+          return 'pending'
+        }
+      } catch (e) {
+        // fall through
+      }
+    }
+
+    // Try to parse 'already_registered' fallback from JSON body
     if (res && typeof res.json === 'function') {
       try {
         const data = await res.json()
@@ -496,15 +558,27 @@ function openPayment() {
 async function onPaymentAttemptClosed() {
   const joined = await joinTournamentAfterPayment()
   await checkSubscription()
-  if (joined) {
+  // If join returned a success boolean
+  if (joined === true) {
     checkout.status = 'success'
-  }
-  if(isActive.value) checkout.status = 'success'
-  showAwaitingModal.value = false
-  if (joined) {
+    showAwaitingModal.value = false
     router.push(`/quizee/tournaments/${id}`)
     return
   }
+
+  // If join returned 'pending' it means registration recorded but payment confirmation is pending
+  if (joined === 'pending') {
+    checkout.status = 'error'
+    checkout.pendingMessage = 'Registration recorded — awaiting payment confirmation. Your entry will be activated once payment is confirmed. If you do not see confirmation within a minute, check your Purchases page or try joining again from the tournament page.'
+    showAwaitingModal.value = false
+    // navigate back to tournament page so user sees pending state there too
+    router.push(`/quizee/tournaments/${id}`)
+    return
+  }
+
+  // Fallback: join failed or could not be completed automatically
+  if (isActive.value) checkout.status = 'success'
+  showAwaitingModal.value = false
   if (isTournamentCheckout.value) {
     checkout.status = 'error'
     checkout.pendingMessage = 'Unable to register for the tournament automatically. Please try joining from the tournament page.'
@@ -520,12 +594,7 @@ async function openAnswerReview() {
   let retries = 3;
   while (retries > 0) {
     try {
-      const res = await api.get(`/api/quiz-attempts/${attemptId}/review`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
+      const res = await api.get(`/api/quiz-attempts/${attemptId}/review`);
 
       if (res?.ok) {
         const data = await res.json();
@@ -538,13 +607,13 @@ async function openAnswerReview() {
             if (quizRes?.ok) {
               const quizData = await quizRes.json();
               const quiz = quizData.quiz || quizData;
-              const questionMap = {};
-              (quiz.questions || []).forEach(q => {
+              const questionMap: Record<string, any> = {};
+              (quiz.questions || []).forEach((q: Record<string, any>) => {
                 questionMap[q.id] = q;
               });
               
               // Merge answers with question details
-              const enriched = answers.map(ans => ({
+              const enriched = answers.map((ans: Record<string, any>) => ({
                 ...ans,
                 question_id: ans.question_id,
                 body: questionMap[ans.question_id]?.body || questionMap[ans.question_id]?.question || 'Question',
@@ -559,7 +628,7 @@ async function openAnswerReview() {
             }
           } catch (quizErr) {
             // If quiz fetch fails, still show answers without question text
-            const enriched = answers.map(ans => ({
+            const enriched = answers.map((ans: Record<string, any>) => ({
               ...ans,
               body: 'Question',
               provided: ans.selected || null
@@ -600,7 +669,9 @@ async function openAnswerReview() {
 }
 
 function seeResults() {
-  checkout.markResults({ type, id, attemptId })
+  const idVal = Array.isArray(id) ? id[0] : id
+  const attemptIdVal = Array.isArray(attemptId) ? attemptId[0] : attemptId
+  checkout.markResults({ type: String(type), id: idVal ? Number(idVal) || String(idVal) : undefined, attemptId: attemptIdVal ? Number(attemptIdVal) || String(attemptIdVal) : undefined })
 }
 
 async function refreshLimit() {

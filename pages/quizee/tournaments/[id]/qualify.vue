@@ -67,7 +67,7 @@
             </div>
             <div class="text-sm text-gray-600">
               <div class="text-xs">This Question</div>
-              <div class="font-medium text-lg" :class="currentQuestionPoints > 0 ? 'text-green-600' : 'text-gray-500'">
+              <div class="font-medium text-lg" :class="currentQuestionPoints > 0 ? 'text-primary-600' : 'text-gray-500'">
                 <span v-if="questionPoints[currentQuestion.id] !== undefined">{{ currentQuestionPoints }}/{{ currentQuestionMaxMarks }}</span>
                 <span v-else>0/{{ currentQuestionMaxMarks }}</span>
               </div>
@@ -95,7 +95,7 @@
             <span 
               :class="[
                 'px-3 py-1 rounded-full text-xs font-semibold',
-                getDifficultyLevel(currentQuestion.difficulty) === 'easy' ? 'bg-green-100 text-green-700' :
+                getDifficultyLevel(currentQuestion.difficulty) === 'easy' ? 'bg-primary-50 text-primary-600' :
                 getDifficultyLevel(currentQuestion.difficulty) === 'hard' ? 'bg-red-100 text-red-700' :
                 'bg-yellow-100 text-yellow-700'
               ]"
@@ -109,7 +109,7 @@
             <div v-if="showingFeedback && currentQuestion" class="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
               <!-- Answer result header -->
               <div class="mb-4 pb-3 border-b border-blue-200">
-                <div v-if="currentQuestionPoints > 0" class="font-semibold text-green-600 text-lg">
+                <div v-if="currentQuestionPoints > 0" class="font-semibold text-primary-600 text-lg">
                   ✅ Correct! +{{ currentQuestionPoints }} point{{ currentQuestionPoints !== 1 ? 's' : '' }}
                 </div>
                 <div v-else class="font-semibold text-red-600 text-lg">
@@ -590,9 +590,10 @@ async function submitQualifier() {
         .filter(([_, answer]) => answer !== null && answer !== undefined)
         .map(([qId, answer]) => ({
           question_id: parseInt(qId),
-          answer: answer ?? null
+          answer: mapAnswerToIndex(questions.value.find(q => q.id === parseInt(qId)), answer)
         })),
-      duration_seconds: Math.round(durationSeconds)
+      duration_seconds: Math.round(durationSeconds),
+      shuffle_seed: tournament.value?.shuffle_seed ?? null
     }
     
     const res = await api.postJson(`/api/tournaments/${route.params.id}/qualify/submit`, submitData)
@@ -639,6 +640,37 @@ async function submitQualifier() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+function getOptionKey(opt) {
+  if (opt === null || opt === undefined) return null
+  if (typeof opt === 'string' || typeof opt === 'number') return String(opt)
+  return String(opt.id ?? opt.text ?? opt.body ?? JSON.stringify(opt))
+}
+
+function mapAnswerToIndex(question, answer) {
+  if (!question || !question.options || !Array.isArray(question.options)) return answer
+
+  const opts = question.options
+  // helper to find index by option key
+  const findIndexFor = (val) => {
+    const key = getOptionKey(val)
+    for (let i = 0; i < opts.length; i++) {
+      if (getOptionKey(opts[i]) === key) return i
+    }
+    return null
+  }
+
+  if (Array.isArray(answer)) {
+    const mapped = answer.map(a => {
+      const idx = findIndexFor(a)
+      return idx !== null ? idx : a
+    })
+    return mapped
+  }
+
+  const idx = findIndexFor(answer)
+  return idx !== null ? idx : answer
 }
 
 // Lifecycle

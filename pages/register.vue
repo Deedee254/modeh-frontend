@@ -73,6 +73,13 @@
 
           <!-- Registration Form -->
       <div class="bg-white py-8 px-10 shadow rounded-lg">
+        <!-- Referral info banner (if coming from affiliate link) -->
+        <div v-if="referralCode" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-sm text-blue-900">
+            <span class="font-semibold">You're joining via a referral link!</span> After you sign up and make your first purchase, you'll help your referrer earn a commission.
+          </p>
+        </div>
+
         <form @submit.prevent="submit" class="space-y-6">
           <!-- quizee Form -->
           <template v-if="role === 'quizee'">
@@ -313,7 +320,7 @@ definePageMeta({
 })
 
 import { ref, reactive, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '../stores/auth'
 import useApi from '~/composables/useApi'
@@ -322,7 +329,26 @@ import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
 
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
+
+// Extract referral code from URL query parameters
+const referralCode = ref(null)
+const referrerName = ref('')
+
+onMounted(() => {
+  // Get ?ref= from query params
+  const ref = route.query.ref
+  if (ref) {
+    referralCode.value = ref
+    // Save to localStorage so it can be used in payment flow
+    try {
+      localStorage.setItem('modeh:referral_code', String(ref))
+    } catch (e) {
+      console.error('Failed to save referral code to localStorage', e)
+    }
+  }
+})
 
 // modal for already-signed-in users
 const showSignedInModal = ref(Boolean(auth.user))
@@ -521,6 +547,11 @@ async function submit() {
         email: form.email,
         password: form.password,
       }
+    
+    // Add referral code if present
+    if (referralCode.value) {
+      payload.ref = referralCode.value
+    }
     
     // Add optional institution field
     if (form.institution) payload.institution = form.institution

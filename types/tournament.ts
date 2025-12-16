@@ -24,6 +24,9 @@ export interface Tournament {
     sponsor?: Sponsor;
     subject?: Subject;
     grade?: Grade;
+    grade_id?: number;
+    level_id?: number;
+    access_type?: 'public' | 'grade' | 'level';
     topic?: Topic;
     participants?: User[];
     battles?: TournamentBattle[];
@@ -129,6 +132,8 @@ export interface TournamentCreateRequest {
     subject_id: number;
     topic_id?: number;
     grade_id: number;
+    level_id?: number;
+    access_type?: 'public' | 'grade' | 'level';
     requires_approval?: boolean;
     is_featured?: boolean;
 }

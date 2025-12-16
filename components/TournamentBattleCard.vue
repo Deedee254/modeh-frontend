@@ -72,22 +72,30 @@
         <NuxtLink
           v-else-if="battle.status === 'in_progress' && canParticipate"
           :to="`/quizee/tournaments/${$route.params.id}/battles/${battle.id}`"
-          class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+          class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
         >
-          Join Battle
+          Start Battle
         </NuxtLink>
+        <button
+          v-else-if="battle.status === 'in_progress' && !canParticipate"
+          disabled
+          class="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed font-medium"
+        >
+          Not Your Battle
+        </button>
         <div 
           v-else-if="battle.status === 'completed'" 
-          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg"
+          class="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium"
         >
-          {{ battle.winner?.name || 'Draw' }}
+          ✓ Completed
         </div>
-        <div 
-          v-else 
-          class="text-sm text-gray-500 px-4 py-2"
+        <button
+          v-else
+          disabled
+          class="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed font-medium"
         >
           {{ statusMessage }}
-        </div>
+        </button>
       </div>
     </div>
   </div>
@@ -164,13 +172,13 @@ const totalPoints = computed(() =>
 
 const player1Avatar = computed(() => {
   const p1 = (props.battle?.player1) as any
-  const avatar = p1?.avatarUrl || p1?.avatar || p1?.avatar_url || p1?.profile?.avatar
+  const avatar = p1?.avatar_url || p1?.avatar
   return resolveAssetUrl(avatar) || null
 })
 
 const player2Avatar = computed(() => {
   const p2 = (props.battle?.player2) as any
-  const avatar = p2?.avatarUrl || p2?.avatar || p2?.avatar_url || p2?.profile?.avatar
+  const avatar = p2?.avatar_url || p2?.avatar
   return resolveAssetUrl(avatar) || null
 })
 

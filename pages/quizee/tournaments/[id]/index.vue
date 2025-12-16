@@ -43,7 +43,7 @@
             </div>
             <div class="flex items-center gap-2">
               <Icon name="mdi:trophy" class="text-yellow-400" />
-              <span>{{ formatPrize(tournament.prize_pool) }}</span>
+              <span>{{ formatPrizeKES(tournament.prize_pool) }}</span>
             </div>
             <div class="mt-3">
               <div
@@ -193,6 +193,11 @@
             <h2 class="text-xl font-bold mb-4">Rules & Requirements</h2>
             <ul class="list-disc list-inside text-gray-600 space-y-2">
               <li v-for="rule in tournament.rules" :key="rule">{{ rule }}</li>
+              <li v-if="tournament.access_type === 'grade' && tournament.grade && tournament.grade.name">Only learners in grade {{ tournament.grade.name }} may join this tournament.</li>
+              <li v-else-if="tournament.access_type === 'level' && tournament.level && tournament.level.name">Only learners at level {{ tournament.level.name }} may join this tournament.</li>
+              <li v-else-if="(tournament.access_type === 'public' || !tournament.access_type)">Open to all learners.</li>
+              <li v-if="tournament.entry_fee && Number(tournament.entry_fee) > 0">Entry fee: {{ formatPrizeKES(tournament.entry_fee) }}</li>
+              <li v-if="eligibility.reason && !eligibility.can_join && eligibility.reason !== 'authentication_required'">Note: {{ eligibility.reason }}</li>
             </ul>
           </div>
 
@@ -246,6 +251,17 @@
               />
             </div>
           </div>
+        
+        <!-- Entry fee badge (top-right of hero) -->
+        <div class="absolute top-4 right-6">
+          <div v-if="tournament.entry_fee && Number(tournament.entry_fee) > 0" class="inline-flex items-center gap-3 bg-primary text-white px-3 py-1 rounded-full shadow-lg border border-white/10">
+            <Icon name="mdi:cash" class="text-white" />
+            <div class="text-right leading-tight">
+              <div class="text-xs opacity-90">Entry</div>
+              <div class="text-sm font-semibold">{{ formatPrizeKES(tournament.entry_fee) }}</div>
+            </div>
+          </div>
+        </div>
         </div>
 
         <!-- Sidebar (right column) -->
@@ -260,11 +276,20 @@
                 </p>
                 <button
                   @click="registerForTournament"
-                  :disabled="loading || !canRegister"
+                  :disabled="loading || !canRegisterComputed"
                   class="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark disabled:bg-gray-300"
                 >
-                  Register Now
+                  {{ registerLabel }}
                 </button>
+
+                <div v-if="!canRegisterComputed && eligibility.reason" class="mt-3 text-sm text-yellow-700">
+                  <p v-if="eligibility.reason === 'authentication_required'">
+                    Please <NuxtLink :to="`/register?next=/quizee/tournaments/${tournament.id}`" class="underline">sign in</NuxtLink> to check eligibility.
+                  </p>
+                  <p v-else>
+                    {{ eligibility.reason }}
+                  </p>
+                </div>
               </template>
               <template v-else-if="registrationStatus === 'pending'">
                 <div class="text-yellow-600 font-medium mb-4">
@@ -300,6 +325,7 @@
                   :fullWidth="true"
                 />
               </div>
+              <!-- Payment handled via checkout redirect -->
             </div>
 
             <!-- Leaderboard Preview -->
@@ -394,6 +420,7 @@ import { useAppAlert } from '~/composables/useAppAlert';
 import AffiliateShareButton from "~/components/AffiliateShareButton.vue";
 import { resolveAssetUrl } from "~/composables/useAssets";
 const api = useApi();
+// Payment handled via checkout redirect
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 
@@ -406,6 +433,7 @@ type Tournament = {
   end_date: string;
   participants_count: number;
   prize_pool: number;
+  entry_fee?: number;
   description: string;
   rules: string[];
   timeline: {
@@ -420,6 +448,11 @@ type Tournament = {
   // optional winner object may be attached by the API envelope
   winner?: { avatar?: string; avatar_url?: string; name?: string } | null;
   sponsor?: { name?: string; logo?: string } | null;
+  grade?: { id?: number; name?: string } | null;
+  grade_id?: number;
+  level?: { id?: number; name?: string } | null;
+  level_id?: number;
+  access_type?: 'public' | 'grade' | 'level';
 };
 
 type Player = {
@@ -437,12 +470,34 @@ type Player = {
 // client immediately shows a loading spinner.
 const loading = ref(true);
 const tournament = ref<Tournament | null>(null);
+const eligibility = ref<{ can_join: boolean; reason: string | null }>({ can_join: false, reason: null });
 const battles = ref<any[]>([]);
 const nextRoundAt = ref<string | null>(null);
 const isRegistered = ref(false);
 const registrationStatus = ref<string | null>(null); // 'pending' | 'approved' | 'rejected' | null
 const topPlayers = ref<Player[]>([]);
 const canRegister = ref(true);
+// Prevent infinite retry loops when attempting to refresh a stale session
+const _retryAuthAttempted = ref(false);
+
+// computed helper for whether the current user can register (used by the UI)
+const canRegisterComputed = computed(() => {
+  if (!tournament.value) return false;
+  // If user already registered or awaiting approval, they shouldn't register again
+  if (isRegistered.value || registrationStatus.value === 'pending') return false;
+  // Only allow registration when tournament is upcoming or active
+  if (!['upcoming', 'active'].includes((tournament.value.status || '').toString())) return false;
+  // Use eligibility metadata from API; default to false when missing
+  return Boolean(eligibility.value?.can_join);
+});
+
+const registerLabel = computed(() => {
+  if (!tournament.value) return 'Register';
+  if (!canRegisterComputed.value) return (eligibility.value?.reason && eligibility.value?.reason !== 'authentication_required') ? 'Not eligible' : 'Register';
+  const fee = Number(tournament.value.entry_fee || 0);
+  if (fee > 0) return `Pay ${formatPrizeKES(fee)} & Register`;
+  return 'Register Now';
+});
 
 const route = useRoute();
 const router = useRouter();
@@ -467,13 +522,90 @@ const fetchTournament = async () => {
     loading.value = true;
     // Use useApi composable for authenticated API call
     const response = await api.get(`/api/tournaments/${route.params.id}`);
-    const json: any = await response.json();
+    if (api.handleAuthStatus(response)) return;
+    const json: any = await response.json().catch(() => null);
 
     // Defensive: backend may return { tournament: {...}, winner: ... }, or { data: {...} }, or the model directly.
-    const payload = json?.tournament ?? json?.data ?? json;
-    const data = payload?.tournament ?? payload ?? null;
+  const payload = json?.tournament ?? json?.data ?? json;
+  const data = payload?.tournament ?? payload ?? null;
 
-    tournament.value = data
+  // capture eligibility metadata returned by the API (added server-side)
+  eligibility.value = json?.eligibility ?? payload?.eligibility ?? { can_join: false, reason: null };
+
+    // If backend says authentication is required but our client still has a user
+    // (e.g. client-side store from a previous session), attempt one one-time
+    // session revalidation (/api/me) so we can refresh cookies/session state and
+    // immediately re-fetch eligibility. This helps when cookies weren't sent on
+    // the first request (cross-site cookie issues) but the client store still
+    // believes the user is logged in.
+    try {
+      if (
+        eligibility.value &&
+        eligibility.value.reason === 'authentication_required' &&
+        auth.user &&
+        !_retryAuthAttempted.value
+      ) {
+        _retryAuthAttempted.value = true;
+        // Ensure CSRF cookie is fetched (no-op if already present)
+        await api.ensureCsrf().catch(() => {});
+        const meRes = await api.get('/api/me');
+        // If handleAuthStatus redirects (401/419), it will return true and we've done all we can
+        if (!api.handleAuthStatus(meRes) && meRes.ok) {
+          const meJson = await meRes.json().catch(() => null);
+          if (meJson) {
+            // update auth store and refetch tournament once to pick up eligibility
+            try { await auth.setUser ? auth.setUser(meJson) : (auth.fetchUser && await auth.fetchUser()) } catch (e) {}
+            // Re-run fetchTournament once to pick up refreshed eligibility
+            await fetchTournament();
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore revalidation errors — we'll render the unauthenticated state below
+    }
+
+    // Fallback: if server reports authentication required but we have a cached
+    // user in the client store (localStorage / pinia), try to infer eligibility
+    // from the user's profile. This mirrors behavior on other pages that show
+    // profile-specific UI based on the locally-stored session.
+    try {
+      if (
+        eligibility.value &&
+        eligibility.value.reason === 'authentication_required' &&
+        auth.user
+      ) {
+        // Read user grade/level (support both camelCase and snake_case shapes)
+        const userObj: any = auth.user as any;
+        const userGradeId = userObj?.grade?.id ?? userObj?.grade_id ?? null;
+        const userLevelId = userObj?.level?.id ?? userObj?.level_id ?? null;
+
+        const tourGradeId = tournament.value?.grade?.id ?? tournament.value?.grade_id ?? null;
+        const tourLevelId = tournament.value?.level?.id ?? tournament.value?.level_id ?? null;
+
+        // If the tournament has a grade requirement and the user grade doesn't match,
+        // deny; otherwise allow. Same for level. If the tournament doesn't require a
+        // grade/level, treat that requirement as satisfied.
+        let inferredCanJoin = true;
+        if (tourGradeId && userGradeId) inferredCanJoin = inferredCanJoin && Number(userGradeId) === Number(tourGradeId);
+        if (tourGradeId && !userGradeId) inferredCanJoin = false;
+        if (tourLevelId && userLevelId) inferredCanJoin = inferredCanJoin && Number(userLevelId) === Number(tourLevelId);
+        if (tourLevelId && !userLevelId) inferredCanJoin = false;
+
+        // Only override eligibility with an "inferred" result — keep the
+        // original authentication_required reason when we couldn't infer.
+        if (inferredCanJoin) {
+          eligibility.value = { can_join: true, reason: 'inferred' };
+        } else if (!inferredCanJoin && (tourGradeId || tourLevelId)) {
+          // If we could infer a denial based on profile mismatch, show that reason
+          eligibility.value = { can_join: false, reason: 'Your profile does not meet the tournament grade/level requirements.' };
+        }
+      }
+    } catch (e) {
+      // swallow any errors from inference and proceed with server-provided eligibility
+    }
+
+  tournament.value = data
       ? ({
           id: data.id,
           // prefer banner field but fallback to sponsor_banner for backward compatibility
@@ -485,6 +617,9 @@ const fetchTournament = async () => {
           prize_pool: data.prize_pool ?? data.prize ?? data.prize_amount ?? 0,
           description: data.description ?? data.about ?? "",
           rules: data.rules || [],
+          entry_fee: data.entry_fee ?? 0,
+          grade: data.grade ?? null,
+          level: data.level ?? null,
           // timeline items may use different keys for date; keep raw array and format when rendering
           timeline: data.timeline || data.phases || [],
           registration_end_date:
@@ -563,7 +698,8 @@ const checkQualificationStatus = async () => {
     const response = await api.get(
       `/api/tournaments/${route.params.id}/qualification-status`,
     )
-    const json: any = await response.json()
+    if (api.handleAuthStatus(response)) return;
+    const json: any = await response.json().catch(() => null)
     userHasQualified.value = !!(json?.qualified ?? false)
   } catch (error) {
     console.warn('Error checking qualification status:', error)
@@ -590,7 +726,8 @@ const checkRegistrationStatus = async () => {
     const response = await api.get(
       `/api/tournaments/${route.params.id}/registration-status`,
     );
-    const json: any = await response.json();
+    if (api.handleAuthStatus(response)) return;
+    const json: any = await response.json().catch(() => null);
     // Accept { isRegistered: true } or { data: { isRegistered: true } }
     const isReg = !!(json?.data?.isRegistered ?? json?.isRegistered);
     isRegistered.value = isReg;
@@ -616,8 +753,9 @@ const adminRoundInfo = ref<any>(null);
 const fetchAdminRoundInfo = async () => {
   if (!auth.user || !(auth.user.role === 'quiz-master' || auth.user.role === 'admin')) return;
   try {
-    const res = await api.get(`/api/tournaments/${route.params.id}/tree`);
-    const json = await res.json().catch(() => null);
+  const res = await api.get(`/api/tournaments/${route.params.id}/tree`);
+  if (api.handleAuthStatus(res)) return;
+  const json = await res.json().catch(() => null);
     const bracket = json?.bracket ?? json?.data?.bracket ?? null;
     if (!bracket) return;
     // find current round
@@ -672,7 +810,8 @@ const fetchLeaderboard = async () => {
     const response = await api.get(
       `/api/tournaments/${route.params.id}/leaderboard`,
     );
-    const json: any = await response.json();
+    if (api.handleAuthStatus(response)) return;
+    const json: any = await response.json().catch(() => null);
     // Backend returns { tournament: {...}, leaderboard: [...] }
     const list = json?.leaderboard ?? json?.data ?? json ?? [];
     topPlayers.value = Array.isArray(list)
@@ -710,60 +849,60 @@ const advanceRound = async () => {
 // Register for tournament
 const registerForTournament = async () => {
   try {
+    const fee = Number(tournament.value?.entry_fee || 0);
+  const openToSubscribers = Boolean((tournament.value as any)?.open_to_subscribers);
+
+    // If the user is not authenticated, redirect to sign-in first
+    if (eligibility.value?.reason === 'authentication_required') {
+      router.push(`/register?next=/quizee/tournaments/${route.params.id}`);
+      return;
+    }
+
+    // If tournament requires entry fee, redirect to checkout for the one-off purchase
+    if (fee > 0) {
+      const qs: Record<string, string> = { type: 'tournament', id: String(route.params.id) };
+      if (fee) qs['amount'] = String(fee);
+      router.push({ path: '/quizee/payments/checkout', query: qs });
+      return;
+    }
+
+    // If tournament requires premium/subscription and user isn't eligible, redirect to subscription/checkout
+    if (openToSubscribers && !eligibility.value?.can_join) {
+      const qs: Record<string, string> = { type: 'subscription', next: `/quizee/tournaments/${route.params.id}` };
+      router.push({ path: '/quizee/payments/checkout', query: qs });
+      return;
+    }
+
+    // Otherwise attempt to join immediately (free tournament or user already paid/subscribed)
     loading.value = true;
-    const res = await api.postJson(
-      `/api/tournaments/${route.params.id}/join`,
-      {},
-    );
+    const res = await api.postJson(`/api/tournaments/${route.params.id}/join`, {});
     if (api.handleAuthStatus(res)) return;
 
-    // If registration succeeded
     if (res.ok) {
       isRegistered.value = true;
       await fetchTournament();
       return;
     }
 
-    // Try to parse structured JSON response for special cases
     let body = null;
-    try {
-      body = await res.json();
-    } catch (e) {
-      body = null;
-    }
+    try { body = await res.json(); } catch (e) { body = null }
 
-    // Backend indicates the user must pay an entry fee to join
-    if (res.status === 402 && body && body.code === "payment_required") {
-      // Redirect to checkout page with type=tournament and id so user can pay once for the whole tournament
-      const qs: Record<string, string> = {
-        type: "tournament",
-        id: String(route.params.id),
-      };
-      // include amount when available so checkout can pre-fill price
-      if (body.amount) qs["amount"] = String(body.amount);
-      router.push({ path: "/quizee/payments/checkout", query: qs });
+    // Handle structured errors like plan limits
+    if (res.status === 403 && body && body.code === 'limit_reached') {
+      const qs = new URLSearchParams({ reason: 'limit', type: body.limit?.type || 'unknown', value: String(body.limit?.value || '') });
+      router.push('/quizee/subscription?' + qs.toString());
       return;
     }
 
-    // Handle known structured errors like limit_reached (403) if present
-    if (res.status === 403 && body && body.code === "limit_reached") {
-      const qs = new URLSearchParams({
-        reason: "limit",
-        type: body.limit?.type || "unknown",
-        value: String(body.limit?.value || ""),
-      });
-      router.push("/quizee/subscription?" + qs.toString());
-      return;
-    }
-
-    // Fallback: log and show generic error
-    console.error("Registration failed", res.status, body);
+    console.error('Registration failed', res.status, body);
   } catch (error) {
-    console.error("Error registering for tournament:", error);
+    console.error('Error registering for tournament:', error);
   } finally {
     loading.value = false;
   }
 };
+
+// Payment finalization handled by the checkout flow; no in-page handler required.
 
 // View battles
 const viewBattles = () => {
@@ -821,6 +960,13 @@ const formatPrize = (amount: number) => {
     style: "currency",
     currency: "USD",
   }).format(amount);
+};
+
+// Replace USD display with Kenyan shillings label
+const formatPrizeKES = (amount: number) => {
+  const n = Number(amount) || 0;
+  const formatted = new Intl.NumberFormat('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
+  return `Ksh ${formatted}`;
 };
 
 // Fetch data on component mount
