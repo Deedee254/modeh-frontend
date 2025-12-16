@@ -186,11 +186,6 @@ watch(localAnswers, (nv) => {
   emit('update:modelValue', nv)
   emit('select', nv)
 }, { deep: true })
-
-function partLabel(i) {
-  // label like 1a, 1b, ... or Part 1.1
-  return props.question && props.question.base_label ? `${props.question.base_label}${String.fromCharCode(97 + i)}` : `Part ${i + 1}`
-}
 </script>
 
 <style scoped>
