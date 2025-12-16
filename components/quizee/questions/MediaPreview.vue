@@ -54,9 +54,6 @@ const hasMedia = computed(() => !!(props.youtubeUrl || props.mediaUrl))
 const isImageMedia = computed(() => props.mediaType === 'image' && !!props.mediaUrl)
 const isAudioMedia = computed(() => props.mediaType === 'audio' && !!props.mediaUrl)
 
-const isImage = computed(() => isImageMedia.value)
-const isAudio = computed(() => isAudioMedia.value)
-
 function getYoutubeEmbedUrl(url: string): string {
   if (!url) return ''
   let videoId = ''
