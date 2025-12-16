@@ -339,8 +339,18 @@
             >
               Reset
             </button>
+            <!-- Show "Submit" when all required fields are filled (auto-filled from URL params or user selected) -->
             <button
-              v-if="currentStep < steps.length - 1"
+              v-if="canDirectSubmit"
+              type="button"
+              @click="submit"
+              class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+            >
+              Done
+            </button>
+            <!-- Show "Next" button when not all fields are filled yet -->
+            <button
+              v-else-if="currentStep < steps.length - 1"
               type="button"
               @click="nextStep"
               :disabled="!canGoNext"
@@ -348,19 +358,12 @@
             >
               Next
             </button>
+            <!-- Show "Done" on final step -->
             <button
-              v-else-if="!props.multiSelectSubjects || currentStep > 2"
+              v-else
               type="button"
               @click="submit"
-              class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
-            >
-              Done
-            </button>
-            <button
-              v-else-if="props.multiSelectSubjects && currentStep === 2"
-              type="button"
-              @click="submit"
-              :disabled="!Array.isArray(selections.subject) || selections.subject.length === 0"
+              :disabled="!isCurrentStepComplete"
               class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
             >
               Done
@@ -441,6 +444,7 @@ const topics = ref<TaxonomyItem[]>([])
 
 const currentTopicPage = ref(1)
 const itemsPerPage = computed(() => props.itemsPerPage)
+const isAutoFilledFromUrl = ref(false)
 
 // Steps configuration
 const steps = computed(() => {
@@ -500,6 +504,40 @@ const canGoNext = computed(() => {
       return Array.isArray(selections.value.subject) && selections.value.subject.length > 0
     }
     return selections.value.subject !== null
+  }
+  return false
+})
+
+// Check if all required fields are filled (can submit directly without stepping through)
+const canDirectSubmit = computed(() => {
+  const hasLevel = selections.value.level !== null
+  const hasGrade = selections.value.grade !== null
+  const hasSubject = props.multiSelectSubjects
+    ? (Array.isArray(selections.value.subject) && selections.value.subject.length > 0)
+    : (selections.value.subject !== null)
+  
+  // If topics are not required, we can submit with level/grade/subject
+  if (!props.includeTopics) {
+    return hasLevel && hasGrade && hasSubject
+  }
+  
+  // If topics are required, check all four
+  const hasTopic = selections.value.topic !== null
+  return hasLevel && hasGrade && hasSubject && hasTopic
+})
+
+// Check if current step is complete
+const isCurrentStepComplete = computed(() => {
+  if (currentStep.value === 0) return selections.value.level !== null
+  if (currentStep.value === 1) return selections.value.grade !== null
+  if (currentStep.value === 2) {
+    if (props.multiSelectSubjects) {
+      return Array.isArray(selections.value.subject) && selections.value.subject.length > 0
+    }
+    return selections.value.subject !== null
+  }
+  if (currentStep.value === 3) {
+    return selections.value.topic !== null
   }
   return false
 })
@@ -748,6 +786,11 @@ watch(
             }
           }
         }
+        // Mark as auto-filled when modelValue prop is provided with complete data
+        // (e.g., when editing an existing quiz)
+        if (newValue.level && newValue.grade && newValue.subject) {
+          isAutoFilledFromUrl.value = true
+        }
       }
     }
   },
@@ -900,6 +943,11 @@ onMounted(async () => {
         }
         selections.value.topic = foundTopic ?? { id: topicIdStr, name: `Topic #${topicIdStr}`, subject_id: (Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id) }
         currentStep.value = steps.value.length - 1
+      }
+
+      // Mark that we auto-filled from URL params - this indicates all available fields are populated
+      if (levelId || gradeId || subjectId || topicId) {
+        isAutoFilledFromUrl.value = true
       }
 
       // update parent with derived selections

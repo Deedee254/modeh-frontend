@@ -26,10 +26,31 @@
         <UInput v-model="local.youtube_url" placeholder="YouTube link" class="col-span-2 sm:col-span-1" size="sm" />
       </div>
       <div v-if="uploading" class="text-sm text-gray-500">Uploading...</div>
-      <div v-if="mediaUrl" class="mt-2">
-        <img v-if="local.media_type === 'image'" :src="mediaUrl" class="max-w-full h-auto rounded-lg" />
-        <audio v-if="local.media_type === 'audio'" :src="mediaUrl" controls class="w-full"></audio>
-        <UButton size="xs" color="red" variant="ghost" @click="mediaUrl = null; local.media_url = null; local.media_type = null">Remove</UButton>
+      
+      <!-- Media Previews -->
+      <div class="space-y-2">
+        <!-- Uploaded Image Preview -->
+        <div v-if="mediaUrl && local.media_type === 'image'" class="mt-2">
+          <img :src="mediaUrl" class="max-w-full h-auto rounded-lg max-h-48" />
+          <UButton size="xs" color="red" variant="ghost" @click="mediaUrl = null; local.media_url = null; local.media_type = null" class="mt-2">Remove</UButton>
+        </div>
+        
+        <!-- Uploaded Audio Preview -->
+        <div v-if="mediaUrl && local.media_type === 'audio'" class="mt-2">
+          <audio :src="mediaUrl" controls class="w-full"></audio>
+          <UButton size="xs" color="red" variant="ghost" @click="mediaUrl = null; local.media_url = null; local.media_type = null" class="mt-2">Remove</UButton>
+        </div>
+        
+        <!-- YouTube Preview -->
+        <div v-if="local.youtube_url && isValidYoutubeUrl(local.youtube_url)" class="mt-2 rounded-lg overflow-hidden bg-gray-900">
+          <iframe 
+            :src="getYoutubeEmbedUrl(local.youtube_url)" 
+            class="w-full aspect-video rounded-lg" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen
+          ></iframe>
+          <UButton size="xs" color="red" variant="ghost" @click="local.youtube_url = null" class="mt-2">Remove</UButton>
+        </div>
       </div>
     </div>
 
@@ -50,20 +71,32 @@
       </template>
     </div>
 
+    <!-- Option Type Selector (for MCQ, Multi, FillBlanks) -->
+    <div v-if="isOptionType && canToggleOptionMode" class="space-y-2">
+      <div class="flex items-center gap-2">
+        <UButton
+          v-for="mode in optionModes"
+          :key="mode"
+          :variant="local.option_mode === mode ? 'soft' : 'ghost'"
+          :color="local.option_mode === mode ? 'primary' : 'gray'"
+          size="xs"
+          @click="switchOptionMode(mode as 'single' | 'multi')"
+          class="text-xs"
+        >
+          {{ mode === 'single' ? 'Single Select' : 'Multi Select' }}
+        </UButton>
+      </div>
+    </div>
+
     <div v-if="isOptionType" class="space-y-2">
       <h4 class="text-sm font-semibold text-slate-700">Options</h4>
       <div v-for="(opt, i) in local.options" :key="i" class="space-y-1 pb-2 border-b last:border-b-0">
         <UTextarea :model-value="getOptionText(opt)" @update:model-value="(v) => setOptionText(i, v)" placeholder="Option text" :rows="2" v-autosize />
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex items-center gap-2">
-            <template v-if="isSingleChoiceType">
-              <UCheckbox :model-value="(local.answers || []).includes(i.toString())"
-                @update:model-value="(v) => toggleAnswer(i.toString(), v)" label="Correct" />
-            </template>
-            <template v-else>
-              <UCheckbox :model-value="(local.answers || []).includes(i.toString())"
-                @update:model-value="(v) => toggleAnswer(i.toString(), v)" label="Correct" />
-            </template>
+            <UCheckbox :model-value="(local.answers || []).includes(i.toString())"
+              @update:model-value="(v) => toggleAnswer(i.toString(), v)" 
+              :label="local.option_mode === 'single' ? 'Correct' : 'Correct'" />
           </div>
           <UButton size="xs" color="red" variant="ghost" @click="$emit('remove-option', i)">Remove</UButton>
         </div>
@@ -77,6 +110,73 @@
       <UFormGroup label="Correct Answer">
         <UInput v-model="local.answers[0]" placeholder="Enter the correct answer" size="sm" />
       </UFormGroup>
+    </div>
+
+    <!-- Math Parts Editor -->
+    <div v-if="local.type === 'math'" class="space-y-3 border-t pt-3">
+      <div class="flex items-center justify-between">
+        <h4 class="text-sm font-semibold text-slate-700">Parts</h4>
+        <UButton size="xs" color="gray" variant="soft" @click="addMathPart" class="text-xs">+ Add Part</UButton>
+      </div>
+      
+      <div v-for="(part, idx) in (local.parts || [])" :key="idx" class="p-3 rounded-lg border border-gray-200 bg-gray-50 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-sm font-medium">Part {{ String.fromCharCode(97 + idx) }}</div>
+          <UButton size="xs" color="red" variant="ghost" @click="removeMathPart(idx)">Remove</UButton>
+        </div>
+        
+        <!-- Part text -->
+        <UTextarea 
+          :model-value="part.text || ''" 
+          @update:model-value="(v) => updateMathPart(idx, { text: v })"
+          placeholder="Part question text" 
+          :rows="2" 
+        />
+        
+        <!-- Part marks -->
+        <div class="grid grid-cols-2 gap-2">
+          <UInput 
+            :model-value="part.marks || '1'" 
+            @update:model-value="(v) => updateMathPart(idx, { marks: Number(v) || 1 })"
+            type="number" 
+            placeholder="Marks" 
+            size="sm" 
+          />
+          
+          <!-- Part type selector -->
+          <USelect 
+            :model-value="part.part_type || 'text'" 
+            @update:model-value="(v) => updateMathPart(idx, { part_type: v })"
+            :options="[
+              { label: 'Text Answer', value: 'text' },
+              { label: 'MCQ', value: 'mcq' },
+              { label: 'Multi Select', value: 'multi' }
+            ]"
+            size="sm"
+          />
+        </div>
+        
+        <!-- Part options (for MCQ/Multi) -->
+        <div v-if="part.part_type === 'mcq' || part.part_type === 'multi'" class="space-y-2 border-t pt-2">
+          <div class="text-xs font-medium text-gray-600">Options</div>
+          <div v-for="(opt, oidx) in (part.options || [])" :key="oidx" class="flex gap-2 items-start">
+            <UTextarea 
+              :model-value="typeof opt === 'string' ? opt : opt.text" 
+              @update:model-value="(v) => updateMathPartOption(idx, oidx, v)"
+              placeholder="Option text" 
+              :rows="1"
+              class="flex-1"
+            />
+            <UCheckbox 
+              :model-value="part.answers && part.answers.includes(String(oidx))"
+              @update:model-value="(v) => toggleMathPartAnswer(idx, String(oidx), v)"
+              label="Correct"
+            />
+            <UButton size="xs" color="red" variant="ghost" @click="removeMathPartOption(idx, oidx)">X</UButton>
+          </div>
+          <UButton size="xs" color="gray" variant="soft" @click="addMathPartOption(idx)" class="w-full text-xs">+ Add Option</UButton>
+        </div>
+      </div>
     </div>
 
     <div>
@@ -209,6 +309,15 @@ function toggleAnswer(answer: string, v: boolean) {
   local.value.answers = arr
 }
 
+function switchOptionMode(mode: 'single' | 'multi') {
+  local.value.option_mode = mode
+  // When switching from single to multi, answers array already exists
+  // When switching from multi to single, keep only first answer if multiple selected
+  if (mode === 'single' && local.value.answers && local.value.answers.length > 1) {
+    local.value.answers = [local.value.answers[0]]
+  }
+}
+
 function getOptionText(opt: any): string {
   if (typeof opt === 'string') return opt
   if (typeof opt === 'object' && opt !== null) return opt.text || ''
@@ -224,19 +333,101 @@ function setOptionText(i: number, text: string) {
   }
 }
 
+// Math part management functions
+function addMathPart() {
+  if (!Array.isArray(local.value.parts)) local.value.parts = []
+  local.value.parts.push({
+    text: '',
+    marks: 1,
+    part_type: 'text',
+    options: [],
+    answers: []
+  })
+}
+
+function removeMathPart(index: number) {
+  if (Array.isArray(local.value.parts)) {
+    local.value.parts.splice(index, 1)
+  }
+}
+
+function updateMathPart(index: number, updates: Record<string, any>) {
+  if (Array.isArray(local.value.parts) && local.value.parts[index]) {
+    Object.assign(local.value.parts[index], updates)
+  }
+}
+
+function addMathPartOption(partIndex: number) {
+  if (Array.isArray(local.value.parts) && local.value.parts[partIndex]) {
+    const part = local.value.parts[partIndex]
+    if (!Array.isArray(part.options)) part.options = []
+    part.options.push({ text: '', is_correct: false })
+  }
+}
+
+function removeMathPartOption(partIndex: number, optionIndex: number) {
+  if (Array.isArray(local.value.parts) && local.value.parts[partIndex]) {
+    const part = local.value.parts[partIndex]
+    if (Array.isArray(part.options) && part.options.length > 1) {
+      part.options.splice(optionIndex, 1)
+    }
+  }
+}
+
+function updateMathPartOption(partIndex: number, optionIndex: number, text: string) {
+  if (Array.isArray(local.value.parts) && local.value.parts[partIndex]) {
+    const part = local.value.parts[partIndex]
+    if (Array.isArray(part.options) && part.options[optionIndex]) {
+      if (typeof part.options[optionIndex] === 'string') {
+        part.options[optionIndex] = { text, is_correct: false }
+      } else {
+        part.options[optionIndex].text = text
+      }
+    }
+  }
+}
+
+function toggleMathPartAnswer(partIndex: number, answerIndex: string, isCorrect: boolean) {
+  if (Array.isArray(local.value.parts) && local.value.parts[partIndex]) {
+    const part = local.value.parts[partIndex]
+    if (!Array.isArray(part.answers)) part.answers = []
+    
+    const pos = part.answers.indexOf(answerIndex)
+    if (isCorrect && pos === -1) {
+      // For single select MCQ, clear previous answer
+      if (part.part_type === 'mcq') {
+        part.answers = [answerIndex]
+      } else {
+        part.answers.push(answerIndex)
+      }
+    } else if (!isCorrect && pos !== -1) {
+      part.answers.splice(pos, 1)
+    }
+  }
+}
+
 const isOptionType = computed(() => optionTypes.includes(local.value.type))
 const isSingleChoiceType = computed(() => singleChoiceTypes.includes(local.value.type))
+const canToggleOptionMode = computed(() => {
+  // Can toggle option mode for MCQ, Multi, and FillBlanks
+  return ['mcq', 'multi', 'fill_blank'].includes(local.value.type)
+})
+const optionModes = ['single', 'multi']
 const fillBlankCount = computed(() => (local.value.text || '').match(blankPattern)?.length || 0)
 
 watch(() => local.value.type, (type) => {
   if (optionTypes.includes(type)) {
+    // Initialize option_mode if not set
+    if (!local.value.option_mode) {
+      local.value.option_mode = type === 'mcq' ? 'single' : 'multi'
+    }
     if (!Array.isArray(local.value.options) || local.value.options.length < 2) {
       local.value.options = [
         { text: '', is_correct: false },
         { text: '', is_correct: false }
       ]
       // Set first option as correct for single choice
-      if (singleChoiceTypes.includes(type)) {
+      if (local.value.option_mode === 'single') {
         local.value.answers = ['0']
       } else {
         local.value.answers = []
@@ -259,7 +450,7 @@ watch(() => local.value.type, (type) => {
         })
       }
     }
-    if (singleChoiceTypes.includes(type)) {
+    if (local.value.option_mode === 'single') {
       if (!Array.isArray(local.value.answers) || local.value.answers.length === 0) {
         local.value.answers = ['0']
         // Also set first option as correct
@@ -276,11 +467,15 @@ watch(() => local.value.type, (type) => {
     }
   } else {
     local.value.options = []
-    local.value.answers = []
   }
 
   if (type === 'short' || type === 'numeric') {
     if (!Array.isArray(local.value.answers) || local.value.answers.length === 0) local.value.answers = ['']
+  } else if (type === 'code') {
+    // Code type: initialize answer as empty string
+    if (!local.value.answers || local.value.answers.length === 0) {
+      local.value.answers = ['']
+    }
   } else if (!optionTypes.includes(type)) {
     local.value.answers = []
   }
@@ -314,6 +509,39 @@ function triggerImageInput() {
 
 function triggerAudioInput() {
   audioInput.value?.click()
+}
+
+function getYoutubeEmbedUrl(url: string): string {
+  if (!url) return ''
+  // Extract YouTube video ID from various URL formats
+  let videoId = ''
+  
+  // Handle youtu.be/VIDEOID format
+  if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0] || ''
+  }
+  // Handle youtube.com/watch?v=VIDEOID format
+  else if (url.includes('youtube.com/watch')) {
+    try {
+      videoId = new URL(url).searchParams.get('v') || ''
+    } catch (e) {
+      // If URL parsing fails, try string extraction
+      const match = url.match(/[?&]v=([^&]+)/)
+      videoId = match?.[1] || ''
+    }
+  }
+  // Handle embed format youtube.com/embed/VIDEOID
+  else if (url.includes('youtube.com/embed/')) {
+    videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || ''
+  }
+  
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : url
+}
+
+function isValidYoutubeUrl(url: string): boolean {
+  if (!url) return false
+  // Simple validation: must contain youtube or youtu.be
+  return url.includes('youtube.com') || url.includes('youtu.be')
 }
 
 </script>

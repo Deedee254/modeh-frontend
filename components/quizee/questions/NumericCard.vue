@@ -1,5 +1,13 @@
 <template>
-  <div>
+  <div class="space-y-3">
+    <!-- Media Preview -->
+    <MediaPreview 
+      :youtube-url="question?.youtube_url" 
+      :media-url="question?.media_url" 
+      :media-type="question?.media_type"
+    />
+    
+    <!-- Number Input -->
     <input
       type="number"
       :value="modelValue ?? ''"
@@ -12,6 +20,8 @@
 </template>
 
 <script setup>
+import MediaPreview from './MediaPreview.vue'
+
 const props = defineProps({ question: { type: Object, required: true }, modelValue: null })
 const emit = defineEmits(['update:modelValue','select'])
 
@@ -22,7 +32,6 @@ function onInput(v) {
 }
 
 function onEnter() {
-  // Notify parent that user pressed Enter and would like to continue to next question
   emit('request-next')
 }
 </script>

@@ -1,7 +1,11 @@
 <template>
   <div :class="compact ? 'space-y-1' : 'space-y-2'">
     <div v-for="(opt, i) in question.options || []" :key="i">
-      <button @click="select(opt)" :class="[btnClass(opt), compact ? 'px-2 py-1.5 rounded-md gap-1 text-xs' : 'p-2 rounded-lg gap-2 text-sm sm:p-2 sm:gap-2']" class="w-full text-left border-2 transition-all duration-150 flex items-start">
+      <button 
+        @click="select(opt)" 
+        :class="[btnClass(opt), compact ? 'px-2 py-1.5 rounded-md gap-1 text-xs' : 'p-2 rounded-lg gap-2 text-sm sm:p-2 sm:gap-2']" 
+        class="w-full text-left border-2 transition-all duration-150 flex items-start"
+      >
         <span :class="compact ? 'font-medium mr-0.5 mt-0.5 text-xs flex-shrink-0' : 'font-medium mr-1 mt-0.5 text-sm flex-shrink-0'">{{ String.fromCharCode(65 + i) }}.</span>
         <div class="flex-1 min-w-0">
           <div v-if="optionMedia(opt)" :class="compact ? 'mb-0.5' : 'mb-1'">
@@ -21,7 +25,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
 
 const props = defineProps({ question: { type: Object, required: true }, modelValue: null, compact: { type: Boolean, default: false } })
@@ -29,7 +32,10 @@ const emit = defineEmits(['update:modelValue','select'])
 
 const { isImage, isAudio, isYouTube, formatYouTubeUrl } = useQuizMedia()
 
-function select(opt){ emit('update:modelValue', opt); emit('select', opt) }
+function select(opt){ 
+  emit('update:modelValue', opt)
+  emit('select', opt) 
+}
 
 function display(opt) { return opt?.body || opt?.text || opt }
 

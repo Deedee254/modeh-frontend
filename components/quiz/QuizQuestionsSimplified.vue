@@ -83,8 +83,31 @@
           >
             <div v-show="q.open" class="border-t border-gray-100">
               <!-- Question Text Preview -->
-              <div class="p-3 sm:p-4 bg-white">
+              <div class="p-3 sm:p-4 bg-white space-y-3">
                 <div class="text-xs sm:text-sm text-gray-700 line-clamp-3" v-html="q.text || '<em>No question text</em>'"></div>
+                
+                <!-- Media Preview Section -->
+                <div v-if="q.youtube_url || q.media_url || q.media_type" class="space-y-2">
+                  <!-- YouTube Video Preview -->
+                  <div v-if="q.youtube_url" class="rounded-lg overflow-hidden bg-gray-900">
+                    <iframe 
+                      :src="getYoutubeEmbedUrl(q.youtube_url)" 
+                      class="w-full aspect-video rounded-lg" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen
+                    ></iframe>
+                  </div>
+                  
+                  <!-- Image Preview -->
+                  <div v-if="q.media_type === 'image' && q.media_url" class="rounded-lg overflow-hidden">
+                    <img :src="q.media_url" :alt="`Question media`" class="w-full h-auto max-h-64 object-cover rounded-lg" />
+                  </div>
+                  
+                  <!-- Audio Preview -->
+                  <div v-if="q.media_type === 'audio' && q.media_url" class="rounded-lg bg-gray-100 p-2">
+                    <audio :src="q.media_url" controls class="w-full"></audio>
+                  </div>
+                </div>
                 
                 <!-- Options Preview (if multiple choice) -->
                 <div v-if="['mcq', 'multi'].includes(q.type) && q.options?.length" class="mt-3 space-y-1.5">
@@ -238,6 +261,27 @@ function difficultyColor(difficulty) {
   if (difficulty === 1) return 'green'
   if (difficulty === 2) return 'yellow'
   return 'red'
+}
+
+function getYoutubeEmbedUrl(url) {
+  if (!url) return ''
+  // Extract YouTube video ID from various URL formats
+  let videoId = ''
+  
+  // Handle youtu.be/VIDEOID format
+  if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0] || ''
+  }
+  // Handle youtube.com/watch?v=VIDEOID format
+  else if (url.includes('youtube.com/watch')) {
+    videoId = new URL(url).searchParams.get('v') || ''
+  }
+  // Handle embed format youtube.com/embed/VIDEOID
+  else if (url.includes('youtube.com/embed/')) {
+    videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || ''
+  }
+  
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : url
 }
 
 function removeQuestion(idx) {

@@ -331,6 +331,51 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       ]
     }
 
+    // Normalize option_mode for flexible option-based types
+    if (question.type === 'mcq' || question.type === 'multi' || question.type === 'fill_blanks') {
+      if (!question.option_mode) {
+        // Set default based on type if not explicitly set
+        question.option_mode = question.type === 'multi' ? 'multi' : 'single'
+      }
+    }
+
+    // Normalize math parts: ensure part_type, options, and answers structure
+    if (question.type === 'math' && Array.isArray(question.parts)) {
+      question.parts = question.parts.map((p: any) => {
+        const part: any = {
+          text: typeof p === 'string' ? p : (p.text || ''),
+          marks: typeof p === 'string' ? 1 : (p.marks || 1),
+          part_type: (typeof p === 'string' ? 'text' : p.part_type) || 'text'  // text | mcq | multi
+        }
+
+        // If part has options, normalize them
+        if (part.part_type !== 'text' && Array.isArray(p.options)) {
+          part.options = p.options.map((opt: any) => {
+            if (typeof opt === 'string') {
+              return { text: opt, is_correct: false }
+            }
+            return {
+              text: opt.text || opt.value || '',
+              is_correct: !!opt.is_correct
+            }
+          })
+        } else {
+          part.options = []
+        }
+
+        // If part has answers, normalize them
+        if (part.part_type !== 'text' && (Array.isArray(p.answers) || p.answers)) {
+          part.answers = Array.isArray(p.answers) 
+            ? p.answers.filter((a: any) => a !== null && typeof a !== 'undefined').map((a: any) => String(a))
+            : []
+        } else {
+          part.answers = []
+        }
+
+        return part
+      })
+    }
+
     return question
   }
   function sanitizeQuestionForPayload(q: any) {
@@ -382,6 +427,15 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       if (q.media_metadata) copy.media_metadata = { ...q.media_metadata }
     }
 
+    // Handle option_mode by converting to appropriate type
+    // MCQ with option_mode='multi' should be saved as type 'multi'
+    // This reuses existing type field instead of adding new column
+    if ((q.type === 'mcq' || q.type === 'multi') && q.option_mode === 'multi') {
+      copy.type = 'multi'  // Convert to multi type when option_mode is multi
+    } else if (q.type === 'multi' && q.option_mode === 'single') {
+      copy.type = 'mcq'    // Convert to mcq type when option_mode is single
+    }
+
     if (Array.isArray(q.options)) {
       copy.options = q.options.map((opt: any) => {
         if (typeof opt === 'string') return { text: opt, is_correct: false }
@@ -394,8 +448,29 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
 
     if (Array.isArray(q.parts)) {
-      if (q.type === 'math' || q.type === 'code') {
-        copy.parts = q.parts.map((p: any) => ({ text: typeof p === 'string' ? p : (p.text || ''), marks: q.type === 'math' ? (p.marks ? Number(p.marks) : 1) : undefined })).filter((p: any) => (p.text || '').trim())
+      if (q.type === 'math') {
+        // Math parts now support options and answers per part
+        copy.parts = q.parts.map((p: any) => {
+          const part: any = {
+            text: typeof p === 'string' ? p : (p.text || ''),
+            marks: p.marks ? Number(p.marks) : 1,
+            part_type: p.part_type || 'text'
+          }
+          // If part has options, include them
+          if (p.part_type !== 'text' && Array.isArray(p.options)) {
+            part.options = p.options.map((opt: any) => {
+              if (typeof opt === 'string') return { text: opt, is_correct: false }
+              return { text: opt.text || '', is_correct: !!opt.is_correct }
+            })
+            // Include answers for MCQ/Multi parts
+            if (Array.isArray(p.answers)) {
+              part.answers = p.answers.filter((a: any) => a !== null && typeof a !== 'undefined').map((a: any) => String(a))
+            }
+          }
+          return part
+        }).filter((p: any) => (p.text || '').trim())
+      } else if (q.type === 'code') {
+        copy.parts = q.parts.map((p: any) => ({ text: typeof p === 'string' ? p : (p.text || ''), marks: p.marks ? Number(p.marks) : undefined })).filter((p: any) => (p.text || '').trim())
       } else if (q.type === 'fill_blank') {
         copy.parts = q.parts.filter((p: any) => typeof p === 'string' && p.trim() !== '')
       }
