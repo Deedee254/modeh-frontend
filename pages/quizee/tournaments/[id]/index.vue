@@ -78,7 +78,7 @@
             <div v-if="auth.user && (auth.user.role === 'quiz-master' || auth.user.role === 'admin')" class="ml-4">
               <button
                 @click="advanceRound"
-                class="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
+                class="px-3 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary-dark"
               >
                 Advance Round
               </button>
@@ -100,7 +100,7 @@
             </p>
             <button
               @click="router.push(`/quizee/tournaments/${tournament.id}/qualify`)"
-              class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
+              class="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark"
             >
               Take Qualifier
             </button>
@@ -114,7 +114,7 @@
             </p>
             <button
               @click="router.push(`/quizee/tournaments/${tournament.id}/battles`)"
-              class="w-full bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700"
+              class="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark"
             >
               View Battles
             </button>
@@ -186,6 +186,27 @@
             <p class="text-gray-600 whitespace-pre-line">
               {{ cleanDescription || "No description provided." }}
             </p>
+          </div>
+
+          <!-- Sponsor Information -->
+          <div v-if="tournament.sponsor?.name || tournament.sponsor_details?.message" class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-6 shadow-sm border border-primary/20">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <Icon name="mdi:handshake" class="text-primary" />
+              Sponsored by
+            </h2>
+            <div class="space-y-4">
+              <div v-if="tournament.sponsor?.name" class="flex items-center gap-4">
+                <div v-if="tournament.sponsor?.logo" class="flex-shrink-0">
+                  <img :src="tournament.sponsor.logo" :alt="tournament.sponsor.name" class="h-12 w-12 object-contain" />
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-900">{{ tournament.sponsor.name }}</p>
+                </div>
+              </div>
+              <div v-if="tournament.sponsor_details?.message" class="bg-white rounded-lg p-4 text-gray-700 border border-primary/10">
+                <p>{{ tournament.sponsor_details.message }}</p>
+              </div>
+            </div>
           </div>
 
           <!-- Rules & Requirements -->
@@ -448,6 +469,7 @@ type Tournament = {
   // optional winner object may be attached by the API envelope
   winner?: { avatar?: string; avatar_url?: string; name?: string } | null;
   sponsor?: { name?: string; logo?: string } | null;
+  sponsor_details?: { message?: string } | null;
   grade?: { id?: number; name?: string } | null;
   grade_id?: number;
   level?: { id?: number; name?: string } | null;
