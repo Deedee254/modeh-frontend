@@ -13,7 +13,7 @@
     
     <!-- Image Preview -->
     <img 
-      v-if="isImage && mediaUrl" 
+      v-if="isImageMedia && mediaUrl" 
       :src="mediaUrl" 
       class="w-full h-auto rounded-lg max-h-64 object-contain"
       :alt="alt || 'Question media'"
@@ -21,7 +21,7 @@
     
     <!-- Audio Preview -->
     <audio 
-      v-if="isAudio && mediaUrl" 
+      v-if="isAudioMedia && mediaUrl" 
       controls 
       class="w-full rounded-lg"
     >

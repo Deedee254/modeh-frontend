@@ -15,6 +15,29 @@
     </div>
 
     <template v-else-if="tournament">
+      <!-- Registration redirect banner (shown when redirected from checkout) -->
+      <div v-if="registeredQuery === '1'" class="mb-6 p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <strong>You're registered!</strong>
+            <div class="text-sm">Great — you're now registered for this tournament. Ready to take the qualifier?</div>
+          </div>
+          <div>
+            <button @click="startQualifier" class="ml-4 px-4 py-2 bg-emerald-600 text-white rounded">Start qualifier</button>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="registeredQuery === 'pending'" class="mb-6 p-4 rounded-md bg-amber-50 border border-amber-200 text-amber-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <strong>Registration pending</strong>
+            <div class="text-sm">We've recorded your registration but payment is still pending. It will be confirmed shortly.</div>
+          </div>
+          <div>
+            <button @click="clearRegisteredQuery" class="ml-4 px-4 py-2 bg-amber-600 text-white rounded">View tournament</button>
+          </div>
+        </div>
+      </div>
       <!-- Tournament Header -->
       <div class="relative mb-8">
         <img
@@ -991,10 +1014,29 @@ const formatPrizeKES = (amount: number) => {
   return `Ksh ${formatted}`;
 };
 
+// Read registered query param (used when redirected from checkout)
+const registeredQuery = computed(() => {
+  const q = route.query?.registered
+  if (!q) return null
+  return String(q)
+})
+
 // Fetch data on component mount
-onMounted(() => {
-  fetchTournament();
+onMounted(async () => {
+  await fetchTournament();
   fetchAdminRoundInfo();
+
+  // If we were redirected here from the checkout flow, the query param can
+  // provide an immediate UI hint before the backend reflects the registration
+  // in its registration-status endpoint. Honor that hint so users see the
+  // qualifier CTA right away.
+  const reg = registeredQuery.value
+  if (reg === '1') {
+    isRegistered.value = true
+    registrationStatus.value = 'approved'
+  } else if (reg === 'pending') {
+    registrationStatus.value = 'pending'
+  }
 });
 
 // Ensure timeline shows standard phases when some are missing.
@@ -1038,4 +1080,19 @@ const displayTimeline = computed(() => {
 
   return ordered;
 });
+
+// Clear the registered query and navigate to the qualifier
+const startQualifier = async () => {
+  const id = tournament.value?.id ?? route.params.id
+  // remove the registered query param so the banner doesn't persist on refresh
+  await router.replace({ path: `/quizee/tournaments/${id}`, query: {} })
+  // navigate to qualifier
+  router.push(`/quizee/tournaments/${id}/qualify`)
+}
+
+// Clear only the registered query (stay on tournament page)
+const clearRegisteredQuery = async () => {
+  const id = tournament.value?.id ?? route.params.id
+  await router.replace({ path: `/quizee/tournaments/${id}`, query: {} })
+}
 </script>

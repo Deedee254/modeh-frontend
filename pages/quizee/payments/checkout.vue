@@ -1,237 +1,324 @@
 <template>
-  <div class="bg-slate-50 dark:bg-slate-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-700">
-      <h2 class="text-2xl font-bold mb-3 text-slate-900 dark:text-slate-100">Unlock Your Results</h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">You need an active subscription to view detailed results. Choose a package or pay only for this quiz/battle.</p>
-
-      <div v-if="attemptId" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg flex items-center justify-between">
-        <p class="text-sm text-slate-600 dark:text-slate-300">Double-check your answers before paying.</p>
-        <button @click="openAnswerReview" class="px-4 py-2 text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">Review Answers</button>
+  <div class="bg-slate-50 dark:bg-slate-900 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <template v-if="isTournamentCheckout">
+          <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Tournament Registration</h1>
+          <p class="text-slate-600 dark:text-slate-400 mt-2">Secure your spot and join the competition</p>
+        </template>
+        <template v-else-if="type === 'battle'">
+          <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Unlock Your Battle Results</h1>
+          <p class="text-slate-600 dark:text-slate-400 mt-2">View your battle performance and opponent analysis</p>
+        </template>
+        <template v-else>
+          <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Unlock Your Quiz Results</h1>
+          <p class="text-slate-600 dark:text-slate-400 mt-2">View detailed performance insights and answer reviews</p>
+        </template>
       </div>
 
-      <div v-if="loading" class="p-4 text-sm text-slate-600 dark:text-slate-300">Checking subscription status...</div>
-
-      <div v-else>
-        <!-- Limit Info Alert (if provided in query params or fetched from server) -->
-        <div v-if="limitInfo" class="mb-6 p-4 rounded-lg border-2" :class="limitInfo.reached ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-300 dark:border-amber-800'">
-          <div class="flex items-start gap-3">
-            <div :class="['w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0', limitInfo.reached ? 'bg-red-200' : 'bg-amber-200']">
-              <svg v-if="limitInfo.reached" class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              <svg v-else class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0 4v.01M7.08 6.47A9.001 9.001 0 1020.92 17.53M9.76 17H14m-2.5-4h5"></path></svg>
-            </div>
-            <div class="flex-1">
-              <h4 v-if="limitInfo.reached" class="font-semibold text-red-900 dark:text-red-100">Daily Limit Reached</h4>
-              <h4 v-else class="font-semibold text-amber-900 dark:text-amber-100">Approaching Limit</h4>
-              <p v-if="limitInfo.reached" class="text-sm text-red-700 dark:text-red-200 mt-1">You've used all {{ limitInfo.limit }} {{ limitInfo.type || 'reveals' }} for today. Upgrade to continue.</p>
-              <p v-else class="text-sm text-amber-700 dark:text-amber-200 mt-1">{{ limitInfo.remaining || 0 }} of {{ limitInfo.limit }} {{ limitInfo.type || 'reveals' }} remaining today.</p>
-            </div>
-            <div class="flex items-start gap-2 ml-4">
-              <button @click="refreshLimit" :disabled="limitRefreshing" class="px-3 py-1 text-xs rounded-md border" :class="limitRefreshing ? 'opacity-60 cursor-wait' : 'hover:bg-slate-100 dark:hover:bg-slate-700'">
-                <svg v-if="limitRefreshing" class="w-4 h-4 animate-spin inline-block mr-1" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="2"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                Refresh
-              </button>
-            </div>
-          </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="flex items-center justify-center py-12">
+        <div class="text-center">
+          <svg class="w-8 h-8 animate-spin text-brand-600 mx-auto mb-3" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+          <p class="text-slate-600 dark:text-slate-400">Checking subscription status...</p>
         </div>
+      </div>
 
-        <!-- Subscription Selection (Personal vs Institution) -->
-        <div v-if="isActive || (institutionSubscriptions && institutionSubscriptions.length > 0)" class="mb-6 space-y-3">
-          <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Your Subscriptions</h3>
-          
-          <!-- Personal Subscription Option -->
-          <div v-if="isActive" @click="activeSubscriptionType = 'personal'" :class="['p-4 rounded-lg border-2 cursor-pointer transition-all', activeSubscriptionType === 'personal' ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500']">
-            <div class="flex items-start gap-3">
-              <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" :class="activeSubscriptionType === 'personal' ? 'border-emerald-600 bg-emerald-600' : 'border-slate-400'">
-                <svg v-if="activeSubscriptionType === 'personal'" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+      <!-- Two-Column Layout -->
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- RIGHT COLUMN: Payment & Subscription Options (now on LEFT) -->
+        <div class="lg:col-span-2">
+          <!-- Subscription Status Cards -->
+          <div v-if="isActive || institutionSubscriptions.length > 0" class="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-6">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Your Active Subscriptions</h3>
+            <div class="space-y-3">
+              <!-- Personal Subscription -->
+              <div v-if="isActive" @click="selectActiveSubscription('personal')" :class="['p-4 rounded-lg border-2 cursor-pointer transition-all', activeSubscriptionType === 'personal' ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'border-emerald-200 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500']">
+                <div class="flex items-start gap-3">
+                  <div class="flex-shrink-0">
+                    <div v-if="activeSubscriptionType === 'personal'" class="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <svg v-else class="w-6 h-6 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  </div>
+                  <div class="flex-1">
+                    <p class="font-semibold text-emerald-800 dark:text-emerald-200">{{ activePackageName }} (Personal)</p>
+                    <p class="text-sm text-emerald-700 dark:text-emerald-300">{{ personalRemaining ?? 'Unlimited' }} reveals remaining today</p>
+                  </div>
+                </div>
               </div>
-              <div class="flex-1">
-                <h4 class="font-semibold text-slate-900 dark:text-slate-100">Personal: {{ activePackageName }}</h4>
-                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                  You have <strong>{{ personalRemaining ?? 'unlimited' }}</strong> reveals remaining today
-                  <span v-if="personalLimit" class="text-xs text-slate-500"> ({{ personalUsed }}/{{ personalLimit }})</span>
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Institution Subscription Options -->
-          <div v-for="instSub in institutionSubscriptions" :key="instSub.id" @click="activeSubscriptionType = 'institution-' + instSub.institution_id" :class="['p-4 rounded-lg border-2 cursor-pointer transition-all', activeSubscriptionType === ('institution-' + instSub.institution_id) ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500']">
-            <div class="flex items-start gap-3">
-              <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" :class="activeSubscriptionType === ('institution-' + instSub.institution_id) ? 'border-blue-600 bg-blue-600' : 'border-slate-400'">
-                <svg v-if="activeSubscriptionType === ('institution-' + instSub.institution_id)" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              </div>
-              <div class="flex-1">
-                <h4 class="font-semibold text-slate-900 dark:text-slate-100">🏢 {{ instSub.institution_name }}: {{ instSub.package?.title || 'Institutional' }}</h4>
-                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                  You have <strong>{{ instSub.remaining ?? 'unlimited' }}</strong> reveals remaining today
-                  <span v-if="instSub.limit" class="text-xs text-slate-500"> ({{ instSub.used }}/{{ instSub.limit }})</span>
-                </p>
+
+              <!-- Institution Subscriptions -->
+              <div v-for="instSub in institutionSubscriptions" :key="instSub.id" @click="selectActiveSubscription('institution-' + instSub.institution_id, instSub)" :class="['p-4 rounded-lg border-2 cursor-pointer transition-all', activeSubscriptionType === ('institution-' + instSub.institution_id) ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500']">
+                <div class="flex items-start gap-3">
+                  <div class="flex-shrink-0">
+                    <div v-if="activeSubscriptionType === ('institution-' + instSub.institution_id)" class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <svg v-else class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                  </div>
+                  <div class="flex-1">
+                    <p class="font-semibold text-blue-800 dark:text-blue-200">🏢 {{ instSub.institution_name }}</p>
+                    <p class="text-sm text-blue-700 dark:text-blue-300">{{ instSub.remaining ?? 'Unlimited' }} reveals remaining today</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Personal Subscription Status -->
-        <div v-if="!isActive && !institutionIsActive" class="mb-6 p-4 rounded-lg border-2 bg-amber-50 dark:bg-amber-900/10 border-amber-300 dark:border-amber-800">
-          <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-200">
-              <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0 4v.01M7.08 6.47A9.001 9.001 0 1020.92 17.53"></path></svg>
-            </div>
-            <div class="flex-1">
-              <h4 class="font-semibold text-amber-900 dark:text-amber-100">No Active Subscription</h4>
-              <p class="text-sm text-amber-700 dark:text-amber-200 mt-1">
-                You need either a personal subscription or institutional access to view results.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Personal Subscription Status (when user has one) -->
-        <div v-if="isActive && !institutionIsActive" class="mb-4 p-4 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <div>
-              <div class="text-emerald-700 dark:text-emerald-200 font-semibold">Personal Subscription Active 🎉</div>
-              <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">Active package: <strong>{{ activePackageName }}</strong>
-                <span v-if="limitInfo" class="block text-sm text-slate-600 dark:text-slate-300 mt-1">You have <strong>{{ limitInfo.remaining ?? 0 }}</strong> of <strong>{{ limitInfo.limit }}</strong> {{ limitInfo.type || 'reveals' }} left today.</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Both Active Status -->
-        <div v-if="isActive && institutionIsActive" class="mb-4 p-4 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <div>
-              <div class="text-emerald-700 dark:text-emerald-200 font-semibold">Multiple Subscriptions Active 🎉</div>
-              <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                Personal: <strong>{{ activePackageName }}</strong> | Institution: <strong>{{ institutionName }}</strong>
-              </p>
-              <p v-if="limitInfo" class="text-sm text-slate-600 dark:text-slate-300 mt-1">Remaining: <strong>{{ limitInfo.remaining ?? 0 }}</strong> / <strong>{{ limitInfo.limit }}</strong> {{ limitInfo.type || 'reveals' }} today.</p>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="canSeeResults" class="mt-6 flex justify-center">
-          <button @click="seeResults" class="px-8 py-3 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors">View My Results</button>
-        </div>
-
-        <div v-if="!isActive" class="space-y-6">
-          <div class="p-4 rounded-md bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800">
-            <div class="text-amber-700 dark:text-amber-200 font-medium">No Active Subscription</div>
-            <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">Subscribe for unlimited access or pay only for this item.</p>
+          <!-- Can View Results Button -->
+          <div v-if="canSeeResults && !isTournamentCheckout" class="bg-gradient-to-r from-brand-600 to-brand-700 dark:from-brand-700 dark:to-brand-800 rounded-xl shadow-md p-6 text-white">
+            <h3 class="text-lg font-bold mb-2">Ready to See Your Results?</h3>
+            <p class="text-brand-100 mb-4">You have access to view your detailed performance report</p>
+            <button @click="seeResults" class="w-full px-6 py-3 bg-white text-brand-600 font-semibold rounded-lg hover:bg-brand-50 transition-colors">
+              View My Results
+            </button>
           </div>
 
-          <!-- Phone input / selection -->
-          <div class="mb-4">
-            <label for="phone-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Phone number for M-Pesa</label>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <select v-if="phones.length" v-model="selectedPhonePreset" class="border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full sm:w-auto focus:ring-brand-600 focus:border-brand-600">
-                <option value="">Enter a new number</option>
-                <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
-              </select>
-              <input id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-brand-600 focus:border-brand-600" />
-            </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">We'll use this phone to initiate an STK push. Make sure it's in international format.</p>
-          </div>
-
-          <!-- Payment Options -->
-          <div>
-            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Choose Your Payment Option</h3>
-            
-            <!-- One-off Payment: Free -->
-            <div v-if="itemPrice === 0" class="mb-4 p-4 border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-between gap-4">
+          <!-- Payment Section -->
+          <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-6">
+            <!-- Heading -->
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+              <template v-if="isTournamentCheckout">Complete Your Registration</template>
+              <template v-else-if="type === 'battle'">Get Battle Insights</template>
+              <template v-else>Access Quiz Results</template>
+            </h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-6">
+              <template v-if="isTournamentCheckout">Secure your tournament spot with a subscription or one-time payment</template>
+              <template v-else-if="type === 'battle'">Unlock detailed battle analytics and opponent performance metrics</template>
+              <template v-else>View your answer breakdown and performance analysis</template>
+            </p>
+            <!-- Prominent fee near the pay button for tournaments -->
+              <div v-if="isTournamentCheckout && tournamentEntryFee !== null" class="mb-4 flex items-center justify-between">
               <div>
-                <div class="font-medium text-emerald-900 dark:text-emerald-100">This {{ type }} is Free!</div>
-                <div class="text-sm text-emerald-700 dark:text-emerald-200">No payment needed. View your results immediately.</div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 uppercase">Entry Fee</p>
+                <p class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{ tournament?.currency || 'KES' }} {{ Number(tournamentEntryFee).toFixed(2) }}</p>
               </div>
-              <button @click="viewFreeResults" :disabled="checkout.processing" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
+              <div v-if="isFreeForSubscribers">
+                <span class="inline-flex items-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 text-sm font-medium border border-emerald-200">Free for subscribers</span>
+              </div>
+            </div>
+
+            <!-- If tournament is open to subscribers and user already has a usable subscription
+                 we should not force them to pick or buy a package. Show a clear banner and
+                 allow direct registration. -->
+            <div v-if="isTournamentCheckout && isFreeForSubscribers && hasUsableSubscriptionForTournament()" class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="font-semibold">You're eligible to register</p>
+                  <p class="text-sm">This tournament is open to subscribers and our records show you have an active subscription — you can register without paying.</p>
+                </div>
+                <div class="flex-shrink-0">
+                  <button @click="registerForTournamentDirect" :disabled="checkout.processing" class="px-4 py-2 bg-emerald-600 text-white rounded-lg">
+                    <template v-if="checkout.processing">Processing...</template>
+                    <template v-else>Register for Tournament</template>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phone Input: show when not active OR when this is a tournament that requires a one-off payment and the user doesn't have a usable subscription -->
+            <div v-if="(!isActive) || (isTournamentCheckout && (!hasUsableSubscriptionForTournament() && tournamentEntryFee && tournamentEntryFee > 0))" class="mb-6">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">M-Pesa Phone Number</label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <select v-if="phones.length" v-model="selectedPhonePreset" class="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent">
+                  <option value="">Enter a new number</option>
+                  <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
+                </select>
+                <input v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent" />
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">We'll send an STK push to complete payment</p>
+            </div>
+
+            <!-- Free Item Option -->
+            <div v-if="itemPrice === 0 && !isTournamentCheckout" class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
+              <p class="font-semibold text-emerald-900 dark:text-emerald-100">This {{ type }} is Free!</p>
+              <p class="text-sm text-emerald-700 dark:text-emerald-300 mt-1">No payment needed. View results immediately.</p>
+              <button @click="viewFreeResults" :disabled="checkout.processing" class="w-full mt-3 px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                 View Results
               </button>
             </div>
 
-            <!-- One-off Payment: Paid -->
-            <div v-else-if="itemPrice && itemPrice > 0" class="mb-4 p-4 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between gap-4">
-              <div>
-                <div class="font-medium text-slate-800 dark:text-slate-200">Pay for this item only</div>
-                <div class="text-sm text-slate-500 dark:text-slate-400">One-time payment to unlock results for this {{ type }}.</div>
+            <!-- Paid One-Off Option -->
+            <div v-else-if="itemPrice && itemPrice > 0 && !isTournamentCheckout" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <p class="font-semibold text-slate-900 dark:text-slate-100">Pay for this item only</p>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">One-time payment to unlock results</p>
+                </div>
+                <p class="text-2xl font-bold text-brand-600">{{ item?.currency || 'KES' }} {{ itemPrice }}</p>
               </div>
-              <div class="flex items-center gap-4">
-                <div class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ item?.currency || 'KES' }} {{ itemPrice }}</div>
-                <button @click="payForThisItem" :disabled="!phoneForPayment || checkout.processing" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
-                  Pay Now
-                </button>
-              </div>
+              <button @click="payForThisItem" :disabled="!phoneForPayment || checkout.processing" class="w-full px-4 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors">
+                <template v-if="checkout.processing">Processing...</template>
+                <template v-else>Pay Now</template>
+              </button>
             </div>
 
             <!-- Subscription Packages -->
-            <div class="space-y-3">
-              <h4 class="font-medium text-slate-800 dark:text-slate-200">Or, Subscribe for Unlimited Access</h4>
-              <div v-for="pkg in packages" :key="pkg.id" @click="selectPackage(pkg)" :class="['p-4 rounded-lg border cursor-pointer transition-all', selectedPackage && selectedPackage.id === pkg.id ? 'border-brand-600 bg-brand-600/10 dark:bg-brand-600/20 ring-2 ring-brand-600' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600']">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center gap-3">
-                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="selectedPackage && selectedPackage.id === pkg.id ? 'border-brand-600' : 'border-slate-400'">
-                      <div v-if="selectedPackage && selectedPackage.id === pkg.id" class="w-2.5 h-2.5 rounded-full bg-brand-600"></div>
-                    </div>
-                    <div>
-                      <div class="font-semibold text-slate-900 dark:text-slate-100">{{ pkg.title || pkg.name }}</div>
-                      <div class="text-sm text-slate-500 dark:text-slate-400">{{ pkg.description || pkg.subtitle || '' }}</div>
-                    </div>
+            <div v-if="showPackages" class="space-y-4 mb-6">
+              <h4 class="font-semibold text-slate-900 dark:text-slate-100">
+                <template v-if="isTournamentCheckout">Subscribe to Participate</template>
+                <template v-else-if="type === 'battle'">Subscribe for Battle Analytics</template>
+                <template v-else>Subscribe for Full Access</template>
+              </h4>
+              <div v-for="pkg in packages" :key="pkg.id" @click="selectPackage(pkg)" :class="['p-4 rounded-lg border-2 cursor-pointer transition-all', selectedPackage && selectedPackage.id === pkg.id ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300']">
+                <div class="flex items-start gap-3">
+                  <div class="w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5" :class="selectedPackage && selectedPackage.id === pkg.id ? 'border-brand-600 bg-brand-600' : 'border-slate-400'">
+                    <svg v-if="selectedPackage && selectedPackage.id === pkg.id" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
                   </div>
-                  <div class="text-right">
-                    <div class="font-bold text-slate-900 dark:text-slate-100">{{ pkg.currency || 'KES' }} {{ pkg.price }}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">/ month</div>
+                  <div class="flex-1">
+                    <p class="font-semibold text-slate-900 dark:text-slate-100">{{ pkg.title || pkg.name }}</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ pkg.description || '' }}</p>
+                    <p class="text-lg font-bold text-brand-600 dark:text-brand-400 mt-2">{{ pkg.currency || 'KES' }} {{ pkg.price }}<span class="text-xs text-slate-600 dark:text-slate-400">/mo</span></p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="mt-6 flex justify-end">
-              <button @click="openPayment" :disabled="!phoneForPayment || !selectedPackage || checkout.processing" class="w-full sm:w-auto px-6 py-3 font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-950 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
-                Subscribe with {{ selectedPackage?.name }}
+            <!-- Subscription / Tournament Action Button -->
+            <div v-if="isTournamentCheckout || !isActive" class="pt-4 border-t border-slate-200 dark:border-slate-700">
+              <!-- Badge: show when tournament explicitly allows subscribers free entry -->
+              <div v-if="isTournamentCheckout && isFreeForSubscribers" class="mb-3">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">Free for subscribers</span>
+              </div>
+              <button @click="isTournamentCheckout ? attemptTournamentRegistration() : openPayment()"
+                :disabled="checkout.processing || (isTournamentCheckout ? false : (!phoneForPayment || !selectedPackage))"
+                class="w-full px-6 py-3 font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-700 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                <template v-if="checkout.processing">
+                  <svg class="w-4 h-4 animate-spin inline-block mr-2" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+                  Processing...
+                </template>
+                <template v-else>
+                  <template v-if="isTournamentCheckout">
+                    <template v-if="hasUsableSubscriptionForTournament()">Register for Tournament</template>
+                    <template v-else-if="tournamentEntryFee && tournamentEntryFee > 0">Pay & Register (KES {{ tournamentEntryFee }})</template>
+                    <template v-else>Complete Registration</template>
+                  </template>
+                  <template v-else>Subscribe with {{ selectedPackage?.name }}</template>
+                </template>
+              </button>
+            </div>
+
+            <!-- Payment Status Messages -->
+            <div v-if="checkout.pendingMessage" class="mt-6 p-4 rounded-lg text-sm" :class="checkout.status === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800' : 'bg-yellow-50 dark:bg-yellow-900/10 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800'">
+              {{ checkout.pendingMessage }}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-6 flex gap-3 justify-end">
+              <button v-if="checkout.status === 'error'" @click="retry" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                Retry
+              </button>
+              <button v-if="canRedo" @click="redo" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                Try Another
               </button>
             </div>
           </div>
         </div>
 
-        <!-- General Actions & Status -->
-        <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6">
-          <div v-if="checkout.processing" class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-            <svg class="w-5 h-5 animate-spin text-brand-600" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-            <span>Processing payment... please wait. A prompt should appear on your phone.</span>
-          </div>
+        <!-- LEFT COLUMN: Order Summary (now on RIGHT) -->
+        <div class="lg:col-span-1">
+          <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-6 sticky top-6 space-y-6">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Order Summary</h2>
 
-          <div v-if="checkout.pendingMessage" class="mt-3 p-3 rounded-lg text-sm" :class="checkout.status === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800' : 'bg-yellow-50 dark:bg-yellow-900/10 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800'">
-            {{ checkout.pendingMessage }}
-          </div>
+            <!-- Item Details -->
+            <div v-if="!isTournamentCheckout" class="pb-6 border-b border-slate-200 dark:border-slate-700">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">{{ type }} Results</p>
+                  <p v-if="item?.title || item?.name" class="text-sm text-slate-600 dark:text-slate-400 mt-2">{{ item.title || item.name }}</p>
+                </div>
+                <span v-if="itemPrice && itemPrice > 0" class="text-sm font-semibold text-brand-600 dark:text-brand-400 whitespace-nowrap">{{ item?.currency || 'KES' }} {{ itemPrice }}</span>
+                <span v-else class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Free</span>
+              </div>
+            </div>
 
-          <div class="flex gap-3 justify-end mt-4">
-            <button v-if="checkout.status === 'error'" @click="retry" class="px-4 py-2 border rounded-lg text-sm">Retry Payment</button>
-            <button v-if="canRedo" @click="redo" class="px-4 py-2 border rounded-lg text-sm">Take Another Quiz</button>
+            <!-- Tournament Details -->
+            <div v-else class="pb-6 border-b border-slate-200 dark:border-slate-700">
+              <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tournament Entry</p>
+              <p v-if="item?.title || item?.name" class="text-sm text-slate-600 dark:text-slate-400">{{ item.title || item.name }}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-500 mt-2">Secures your participation for the entire tournament</p>
+              <!-- Prominent entry fee display -->
+              <div v-if="tournamentEntryFee !== null" class="mt-4 flex items-center justify-between">
+                <div>
+                  <p class="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Entry Fee</p>
+                  <p class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ tournament?.currency || 'KES' }} {{ Number(tournamentEntryFee).toFixed(2) }}</p>
+                </div>
+                <div v-if="isFreeForSubscribers" class="text-right">
+                  <span class="inline-flex items-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 text-sm font-medium border border-emerald-200">Free for subscribers</span>
+                </div>
+              </div>
+              <div v-else class="mt-4">
+                <p class="text-sm text-emerald-700 dark:text-emerald-300 font-semibold">No entry fee</p>
+              </div>
+            </div>
+
+            <!-- Selected Package -->
+            <div v-if="displaySelectedPackage" :key="packageVersion" class="pb-6 border-b border-slate-200 dark:border-slate-700">
+              <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Selected Plan</p>
+              <div class="p-4 bg-brand-50 dark:bg-brand-900/20 rounded-lg border border-brand-200 dark:border-brand-700">
+                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ displaySelectedPackage.title || displaySelectedPackage.name }}</p>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ displaySelectedPackage.description || '' }}</p>
+                <p class="text-2xl font-bold text-brand-600 dark:text-brand-400 mt-3">{{ displaySelectedPackage.currency || 'KES' }} {{ displaySelectedPackage.price }}<span class="text-sm text-slate-600 dark:text-slate-400">/mo</span></p>
+                
+                <!-- Subscription Context -->
+                <div class="mt-4 pt-4 border-t border-brand-200 dark:border-brand-600">
+                  <p class="text-xs text-slate-600 dark:text-slate-400 mb-2">Using: <span class="font-semibold text-slate-900 dark:text-slate-100">{{ subscriptionContext.type }}</span></p>
+                  <p class="text-xs text-slate-600 dark:text-slate-400">{{ subscriptionContext.remaining }} reveals remaining today</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Referral Code Section -->
+            <div class="pb-6 border-b border-slate-200 dark:border-slate-700">
+              <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Referral Code</p>
+              <div v-if="referralCodeStored" class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                <p class="font-mono font-semibold text-emerald-800 dark:text-emerald-200 text-lg">{{ referralCodeStored }}</p>
+                <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-2">✓ Referrer will earn commission</p>
+              </div>
+              <div v-else-if="showReferralInput" class="space-y-2">
+                <input 
+                  v-model="referralCodeInput" 
+                  type="text" 
+                  placeholder="Enter referral code"
+                  class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                />
+                <p class="text-xs text-slate-500 dark:text-slate-400">Support a referrer and help them earn rewards</p>
+              </div>
+              <button 
+                v-else 
+                @click="showReferralInput = true"
+                class="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
+                + Add Referral Code
+              </button>
+            </div>
+
+            <!-- Limit Info Alert -->
+            <div v-if="limitInfo" class="p-4 rounded-lg" :class="limitInfo.reached ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700' : 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700'">
+              <p v-if="limitInfo.reached" class="font-semibold text-red-800 dark:text-red-200">Daily Limit Reached</p>
+              <p v-else class="font-semibold text-amber-800 dark:text-amber-200">Approaching Limit</p>
+              <p v-if="limitInfo.reached" class="text-sm text-red-700 dark:text-red-300 mt-1">You've used all {{ limitInfo.limit }} {{ limitInfo.type || 'reveals' }} today</p>
+              <p v-else class="text-sm text-amber-700 dark:text-amber-300 mt-1">{{ limitInfo.remaining || 0 }} of {{ limitInfo.limit }} remaining</p>
+              <button @click="refreshLimit" :disabled="limitRefreshing" class="text-xs text-slate-600 dark:text-slate-400 hover:underline mt-2 font-medium">
+                <svg v-if="limitRefreshing" class="w-3 h-3 animate-spin inline-block mr-1" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="2"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
-
       </div>
     </div>
     
-  <ReviewAnswers :open="showReview" :loading="reviewLoading" :error="reviewError" :details="reviewDetails" @close="showReview = false"></ReviewAnswers>
-
-  <PaymentAwaitingModal :tx="(checkout as any).tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed"></PaymentAwaitingModal>
-  </div>
+    <ReviewAnswers :open="showReview" :loading="reviewLoading" :error="reviewError" :details="reviewDetails" @close="showReview = false"></ReviewAnswers>
+    <PaymentAwaitingModal :tx="(checkout as any).tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed"></PaymentAwaitingModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import useApi from '~/composables/useApi'
-import { useSubscription } from '~/composables/useSubscription'
-const api = useApi()
 import { useRoute, useRouter } from 'vue-router'
 import PaymentAwaitingModal from '~/components/PaymentAwaitingModal.vue'
 import { useSubscriptionsStore } from '~/stores/subscriptions'
@@ -247,6 +334,7 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const q = route.query
+const api = useApi()
 
 const type = (q.type || 'quiz')
 const id = q.id || null
@@ -254,18 +342,30 @@ const attemptId = q.attempt_id || null
 
 const loading = ref(true)
 const isActive = ref(false)
-const hasInstitution = ref(false)
 const institutionName = ref('')
 const institutionIsActive = ref(false)
 const showAwaitingModal = ref(false)
 const lastPaymentReference = ref<string | null>(null)
 const selectedPackage = ref<Record<string, any> | null>(null)
+// small version counter to force re-rendering of the Selected Plan card when
+// the user picks another package. Incrementing this will change the
+// component key and Vue will re-render the card contents immediately.
+const packageVersion = ref(0)
 const limitRefreshing = ref(false)
-const activeSubscriptionType = ref('personal') // 'personal' or 'institution-{id}'
+const activeSubscriptionType = ref('personal')
 const institutionSubscriptions = ref<Record<string, any>[]>([])
-const personalLimit = ref<number | null>(null)
-const personalUsed = ref(0)
 const personalRemaining = ref<number | null>(null)
+const currentActivePackage = ref<Record<string, any> | null>(null)
+const tournament = ref<Record<string, any> | null>(null)
+const tournamentEntryFee = ref<number | null>(null)
+const tournamentFreeForSubscribers = ref<boolean | null>(null)
+// Computed boolean that normalizes tournament open/free flags so template
+// and script can check a plain boolean (avoids comparing a Ref to a boolean)
+const isFreeForSubscribers = computed(() => {
+  return Boolean(tournament.value?.open_to_subscribers) || tournamentFreeForSubscribers.value === true
+})
+const tournamentRequiresSubscription = ref<boolean | null>(null)
+const tournamentIntent = ref(false)
 
 const showReview = ref(false)
 const isTournamentCheckout = computed(() => type === 'tournament' && !!id)
@@ -283,12 +383,17 @@ const itemPrice = ref<number | null>(null)
 const selectedPhonePreset = ref('')
 const phoneInputLocal = ref('')
 
+// Referral code state
+const referralCodeStored = ref('')
+const showReferralInput = ref(false)
+const referralCodeInput = ref('')
+
 const checkout = useCheckoutStore()
 const subscriptionsStore = useSubscriptionsStore()
 const ui = useUiStore()
 
 const canRedo = ref(false)
-const canSeeResults = computed(() => { // Check personal subscription OR institution subscription
+const canSeeResults = computed(() => {
   const hasPersonalSubscription = isActive.value
   const hasInstitutionSubscription = institutionSubscriptions.value && institutionSubscriptions.value.length > 0
   const hasAnySubscription = hasPersonalSubscription || hasInstitutionSubscription
@@ -296,13 +401,10 @@ const canSeeResults = computed(() => { // Check personal subscription OR institu
 })
 
 const activePackageName = ref('')
-
 const phoneForPayment = computed(() => selectedPhonePreset.value || phoneInputLocal.value)
 
-// Limit info: prefer explicit query params (redirect), otherwise fall back to server-provided usage
 const limitState = ref<Record<string, any> | null>(null)
 const limitInfo = computed(() => {
-  // 1) Query params (explicit redirect from results page)
   const reason = q.reason
   const qLimitRaw = q.limit
   const qRemainingRaw = q.remaining
@@ -318,7 +420,6 @@ const limitInfo = computed(() => {
     }
   }
 
-  // 2) Fallback to usage fetched from API during mount
   if (limitState.value) {
     return {
       reached: !!(limitState.value.remaining !== null && limitState.value.remaining <= 0),
@@ -331,13 +432,49 @@ const limitInfo = computed(() => {
   return null
 })
 
-// Fetch remaining quota/usage from backend using subscriptions/mine endpoint
+const subscriptionContext = computed(() => {
+  // Force re-computation when selectedPackage or activeSubscriptionType changes
+  const pkg = selectedPackage.value
+  const subType = activeSubscriptionType.value
+  
+  return {
+    type: subType === 'personal' ? 'Personal Subscription' : subType.startsWith('institution-') ? 'Institution Subscription' : 'New Subscription',
+    remaining: subType === 'personal' ? (personalRemaining.value ?? 'Unlimited') : subType.startsWith('institution-') ? (institutionSubscriptions.value.find(s => subType === ('institution-' + s.institution_id))?.remaining ?? 'Unlimited') : 'Unlimited'
+  }
+})
+
+// Create a display package object that forces re-renders when selectedPackage changes
+const displaySelectedPackage = computed(() => {
+  if (!selectedPackage.value) return null
+  // Return a new object reference each time to force Vue to update
+  return Object.assign({}, selectedPackage.value)
+})
+
+// Decide whether to show subscription packages in the UI
+const showPackages = computed(() => {
+  // For tournament checkout, only show packages when:
+  // - the tournament explicitly allows subscribers OR requires a subscription,
+  // AND
+  // - the current user does NOT already have a usable subscription for the tournament.
+  if (isTournamentCheckout.value) {
+    const hasTournament = !!tournament.value
+    const openToSubscribers = isFreeForSubscribers.value
+    const requiresSub = tournamentRequiresSubscription.value === true
+    // If the tournament is open to subscribers but the user already has a usable
+    // subscription, they don't need to pick a package — hide the package list.
+    if (openToSubscribers && hasUsableSubscriptionForTournament()) return false
+    return hasTournament && (openToSubscribers || requiresSub)
+  }
+
+  // For regular (non-tournament) checkouts, show packages when user has no active subscription
+  return !isActive.value
+})
+
 async function fetchLimitInfo() {
   try {
     const res = await api.get('/api/subscriptions/mine')
     if (res?.ok) {
       const data = await res.json()
-      // possible shapes: { subscription: { usage: { limit, remaining, type } } }
       const usage = data?.subscription?.usage || data?.usage || data?.limit || null
       if (usage) {
         limitState.value = {
@@ -348,7 +485,6 @@ async function fetchLimitInfo() {
       }
     }
   } catch (e) {
-    // nothing we can do - leave limitState null
     console.debug('Could not fetch usage info:', e)
   }
 }
@@ -358,7 +494,7 @@ async function loadPackages() {
     await subscriptionsStore.fetchPackages()
     const allPackages = (subscriptionsStore.packages as Record<string, any>[] || [])
     packages.value = allPackages.filter((pkg: Record<string, any>) => !pkg.audience || pkg.audience === 'quizee')
-    if (Array.isArray(packages.value) && packages.value.length) selectedPackage.value = packages.value[0] as Record<string, any>
+    if (Array.isArray(packages.value) && packages.value.length) selectedPackage.value = Object.assign({}, packages.value[0] as Record<string, any>)
   } catch (e) {
     packages.value = []
   }
@@ -367,38 +503,33 @@ async function loadPackages() {
 async function checkSubscription() {
   loading.value = true
   try {
-    // Check personal and institution subscriptions
     const res = await api.get('/api/subscriptions/mine')
     if (res?.ok) {
       const data = await res.json()
       
-      // Personal subscription
       const sub = data?.subscription || data?.data?.subscription || null
       isActive.value = !!(sub && (sub.status === 'active' || sub.status === 'paid'))
       activePackageName.value = sub?.package?.title || sub?.package?.name || ''
       
-      // Extract personal subscription limits
       if (sub) {
-        personalLimit.value = sub.limit
-        personalUsed.value = sub.used || 0
-        personalRemaining.value = sub.remaining
+          personalRemaining.value = sub.remaining
+          // remember the active package object if provided by the API
+          currentActivePackage.value = sub.package || null
       }
       
-      // Institution subscriptions
       const instSubs = data?.institution_subscriptions || []
       institutionSubscriptions.value = instSubs
-      hasInstitution.value = !!data?.has_institution
       
       if (instSubs.length > 0) {
-        // Use the first institution as primary display
         const primaryInst = instSubs[0] as Record<string, any>
         institutionName.value = primaryInst.institution_name || 'Your Institution'
         institutionIsActive.value = primaryInst.status === 'active'
         
-        // If institution is active, prefer it for results view
         if (institutionIsActive.value) {
           activeSubscriptionType.value = 'institution-' + primaryInst.institution_id
         }
+        // if institution subscription includes package info, keep it as active package
+        if (!currentActivePackage.value && primaryInst?.package) currentActivePackage.value = primaryInst.package
       }
     } else {
       throw new Error('Failed to fetch subscription status')
@@ -407,7 +538,6 @@ async function checkSubscription() {
     console.error('Subscription check failed:', e)
     isActive.value = false
     activePackageName.value = ''
-    hasInstitution.value = false
     institutionName.value = ''
     institutionIsActive.value = false
     institutionSubscriptions.value = []
@@ -416,21 +546,68 @@ async function checkSubscription() {
   }
 }
 
-function selectPackage(pkg: Record<string, any>) { selectedPackage.value = pkg }
+function selectActiveSubscription(typeStr: string, instSub?: Record<string, any>) {
+  activeSubscriptionType.value = typeStr
+  // If we have a package object for the active subscription, show it
+  if (typeStr === 'personal') {
+    if (currentActivePackage.value) {
+      selectedPackage.value = Object.assign({}, currentActivePackage.value)
+    } else if (packages.value && packages.value.length) {
+      // fallback to the first available package
+      selectedPackage.value = Object.assign({}, packages.value[0])
+    }
+  } else if (typeStr.startsWith('institution-')) {
+    if (instSub && instSub.package) {
+      selectedPackage.value = Object.assign({}, instSub.package)
+    } else if (packages.value && packages.value.length) {
+      selectedPackage.value = Object.assign({}, packages.value[0])
+    }
+  }
+  packageVersion.value = (packageVersion.value || 0) + 1
+}
+
+function selectPackage(pkg: Record<string, any>) { 
+  // update selected package and bump version to force Selected Plan re-render
+  // assign a shallow clone so Vue sees a new object reference
+  selectedPackage.value = Object.assign({}, pkg)
+  // bump the version counter to force a key-based re-render where used
+  packageVersion.value = (packageVersion.value || 0) + 1
+  // keep a short debug log (can be removed later)
+  try { console.debug('selectedPackage ->', pkg?.title || pkg?.name, 'packageVersion=', packageVersion.value) } catch (e) {}
+}
+
+// Load and manage referral code
+function loadReferralCode() {
+  try {
+    const stored = localStorage.getItem('modeh:referral_code')
+    if (stored) {
+      referralCodeStored.value = stored
+    }
+  } catch (e) {
+    console.debug('Could not load referral code from storage', e)
+  }
+}
 
 async function initiatePayment(type: 'subscription' | 'one-off', details: Record<string, any>) {
   if (!phoneForPayment.value) {
-    ;(checkout as any).setError('Please provide a phone number.');
+    // surface the error via the checkout store state
+    checkout.processing = false
+    checkout.status = 'error'
+    checkout.pendingMessage = 'Please provide a phone number.'
     return;
   }
-  ;(checkout as any).startProcessing();
+  // mark as processing using the checkout store
+  checkout.processing = true
+  checkout.status = 'processing'
+  checkout.pendingMessage = 'Initiating payment...'
 
   try {
-    const cfg = useRuntimeConfig();
     let res
     
-    // Get affiliate code from localStorage if saved during signup
-    const getAffiliateCode = () => {
+    // Get referral code (stored or from input)
+    const getReferralCode = () => {
+      if (referralCodeStored.value) return referralCodeStored.value
+      if (referralCodeInput.value) return referralCodeInput.value
       try {
         const stored = localStorage.getItem('modeh:referral_code')
         if (stored) return stored
@@ -438,43 +615,43 @@ async function initiatePayment(type: 'subscription' | 'one-off', details: Record
       return null
     }
     
-    const affiliateCode = getAffiliateCode()
+    const referralCode = getReferralCode()
     
     if (type === 'subscription') {
-      // Determine if this is a personal or institution subscription based on activeSubscriptionType
       const payload: Record<string, any> = { phone: phoneForPayment.value }
       
       if (activeSubscriptionType.value && activeSubscriptionType.value.startsWith('institution-')) {
-        // Institution subscription
         const institutionId = activeSubscriptionType.value.replace('institution-', '')
         payload.owner_type = 'institution'
         payload.owner_id = institutionId
       }
-      // else: personal subscription (no owner_type needed, defaults to user)
       
-      // Add affiliate code if available
-      if (affiliateCode) {
-        payload.ref = affiliateCode
+      // Add referral code if available
+      if (referralCode) {
+        payload.ref = referralCode
       }
       
       res = await api.postJson(`/api/packages/${details.id}/subscribe`, payload)
     } else {
-      const payload: Record<string, any> = { item_type: q.type || 'quiz', item_id: details.id, amount: details.price, phone: phoneForPayment.value }
+      // Build one-off purchase payload. Allow explicit item_type/item_id in details
+      const payload: Record<string, any> = {
+        item_type: (details && (details.item_type || details.type)) || (isTournamentCheckout.value ? 'tournament' : (q.type || 'quiz')),
+        item_id: (details && (details.item_id || details.id)) || id,
+        amount: (details && (details.amount || details.price)) || details?.price || 0,
+        phone: phoneForPayment.value
+      }
       
-      // Add affiliate code if available
-      if (affiliateCode) {
-        payload.ref = affiliateCode
+      if (referralCode) {
+        payload.ref = referralCode
       }
       
       res = await api.postJson('/api/one-off-purchases', payload)
     }
 
-    // `api.postJson` now returns parsed JSON (or a structured error), not a Response
     if (!res) {
       throw new Error('Failed to initiate payment.')
     }
 
-    // If backend returned a structured limit error, navigate user to subscription flow
     const resData = res as Record<string, any>
     if (resData.code === 'limit_reached') {
       const qs = new URLSearchParams({ reason: 'limit', type: resData.limit?.type || 'unknown', value: String(resData.limit?.value || '') })
@@ -483,19 +660,19 @@ async function initiatePayment(type: 'subscription' | 'one-off', details: Record
     }
 
     const body = resData
-      const tx = body?.tx || body?.purchase?.gateway_meta?.tx
-      // preference: use purchase id (stable server reference), fall back to gateway tx
-      lastPaymentReference.value = body?.purchase?.id || tx || null
-      if (tx) {
-        // keep existing behavior for the awaiting modal
-        if (typeof (checkout as any).setTx === 'function') (checkout as any).setTx(tx)
-        else (checkout as any).tx = tx
-        showAwaitingModal.value = true
-      } else {
-        throw new Error(body?.message || 'Failed to initiate payment.')
-      }
+    const tx = body?.tx || body?.purchase?.gateway_meta?.tx
+    lastPaymentReference.value = body?.purchase?.id || tx || null
+    if (tx) {
+      if (typeof (checkout as any).setTx === 'function') (checkout as any).setTx(tx)
+      else (checkout as any).tx = tx
+      showAwaitingModal.value = true
+    } else {
+      throw new Error(body?.message || 'Failed to initiate payment.')
+    }
   } catch (e) {
-    ;(checkout as any).setError((e as any).data?.message || (e as any).message || 'An unexpected error occurred.');
+    checkout.processing = false
+    checkout.status = 'error'
+    checkout.pendingMessage = (e as any)?.data?.message || (e as any)?.message || 'An unexpected error occurred.'
   }
 }
 
@@ -509,31 +686,24 @@ async function joinTournamentAfterPayment() {
     const res = await api.postJson(`/api/tournaments/${id}/join`, payload)
     if (api.handleAuthStatus(res)) return false
 
-    // Success responses
     if (res?.ok || res?.status === 204 || res?.status === 200) {
       tournamentJoinSucceeded.value = true
       return true
     }
     if (res?.status === 409) {
-      // conflict (eg. already participating) - treat as success for UX
       tournamentJoinSucceeded.value = true
       return true
     }
 
-    // Pending payment (server returns 202 with code 'pending_payment')
     if (res?.status === 202) {
       try {
         const data = typeof res.json === 'function' ? await res.json() : res
         if (data?.code === 'pending_payment' || data?.status === 'pending_payment') {
-          // Let caller know join is pending payment
           return 'pending'
         }
-      } catch (e) {
-        // fall through
-      }
+      } catch (e) {}
     }
 
-    // Try to parse 'already_registered' fallback from JSON body
     if (res && typeof res.json === 'function') {
       try {
         const data = await res.json()
@@ -549,6 +719,125 @@ async function joinTournamentAfterPayment() {
   return false
 }
 
+// Direct join (no payment) for tournaments
+async function registerForTournamentDirect() {
+  if (!isTournamentCheckout.value) return false
+  try {
+    checkout.processing = true
+    checkout.status = 'processing'
+    checkout.pendingMessage = 'Registering for tournament...'
+
+    const payload: Record<string, any> = {}
+    const res = await api.postJson(`/api/tournaments/${id}/join`, payload)
+    if (api.handleAuthStatus(res)) {
+      checkout.processing = false
+      checkout.status = 'error'
+      checkout.pendingMessage = 'Authentication required.'
+      return false
+    }
+
+    if (res?.ok || res?.status === 204 || res?.status === 200) {
+      // joined
+      checkout.processing = false
+      checkout.status = 'success'
+      checkout.pendingMessage = 'Successfully registered for the tournament.'
+      // Redirect to tournament details with a flag indicating recent registration
+      router.push({ path: `/quizee/tournaments/${id}`, query: { registered: '1' } })
+      return true
+    }
+
+    if (res?.status === 409) {
+      // already registered
+      checkout.processing = false
+      checkout.status = 'success'
+      checkout.pendingMessage = 'You are already registered for this tournament.'
+      router.push({ path: `/quizee/tournaments/${id}`, query: { registered: '1' } })
+      return true
+    }
+
+    if (res?.status === 202) {
+      try {
+        const data = typeof res.json === 'function' ? await res.json() : res
+        if (data?.code === 'pending_payment' || data?.status === 'pending_payment') {
+          checkout.processing = false
+          checkout.status = 'error'
+          checkout.pendingMessage = 'Registration recorded — awaiting payment confirmation.'
+          return 'pending'
+        }
+      } catch (e) {}
+    }
+
+    if (res && typeof res.json === 'function') {
+      try {
+        const data = await res.json()
+        checkout.processing = false
+        if (data?.code === 'already_registered' || data?.isRegistered) {
+          checkout.status = 'success'
+          router.push({ path: `/quizee/tournaments/${id}`, query: { registered: '1' } })
+          return true
+        }
+        // surface backend message
+        checkout.status = 'error'
+        checkout.pendingMessage = data?.message || 'Failed to register for the tournament.'
+        return false
+      } catch (e) {
+        checkout.processing = false
+      }
+    }
+  } catch (err: any) {
+    checkout.processing = false
+    checkout.status = 'error'
+    checkout.pendingMessage = (err && err.message) ? err.message : 'An error occurred while registering.'
+    return false
+  }
+}
+
+function hasUsableSubscriptionForTournament() {
+  // If the active subscription (personal) has remaining > 0
+  if (activeSubscriptionType.value === 'personal') {
+    if (personalRemaining.value !== null && personalRemaining.value > 0) return true
+    // personalRemaining null means unlimited
+    if (personalRemaining.value === null) return true
+  }
+
+  if (activeSubscriptionType.value && activeSubscriptionType.value.startsWith('institution-')) {
+    const inst = institutionSubscriptions.value.find(s => activeSubscriptionType.value === ('institution-' + s.institution_id))
+    if (inst) {
+      if (inst.remaining !== null && inst.remaining > 0) return true
+      if (inst.remaining === null) return true
+    }
+  }
+
+  return false
+}
+
+// Decides whether to attempt free registration or open payment modal for tournament
+function attemptTournamentRegistration() {
+  // If tournament is free for subscribers and user has usable subscription, register directly
+  if (isFreeForSubscribers.value && hasUsableSubscriptionForTournament()) {
+    registerForTournamentDirect()
+    return
+  }
+
+  // If user already has a usable subscription, allow direct join (no payment)
+  if (hasUsableSubscriptionForTournament()) {
+    registerForTournamentDirect()
+    return
+  }
+
+  // If this tournament has an entry fee, open payment flow
+  if (tournamentEntryFee.value && tournamentEntryFee.value > 0) {
+    // mark intent so onPaymentAttemptClosed can handle join
+    tournamentIntent.value = true
+    // initiate a one-off purchase for the tournament
+    initiatePayment('one-off', { item_type: 'tournament', item_id: tournament.value?.id ?? id, amount: tournamentEntryFee.value, price: tournamentEntryFee.value })
+    return
+  }
+
+  // Fallback: if no subscription and no fee, try to register directly
+  registerForTournamentDirect()
+}
+
 function openPayment() {
   if (selectedPackage.value) {
     initiatePayment('subscription', selectedPackage.value);
@@ -556,27 +845,24 @@ function openPayment() {
 }
 
 async function onPaymentAttemptClosed() {
-  const joined = await joinTournamentAfterPayment()
+  // Refresh subscription state first so active subscriptions are visible to the join endpoint
   await checkSubscription()
-  // If join returned a success boolean
+  const joined = await joinTournamentAfterPayment()
   if (joined === true) {
     checkout.status = 'success'
     showAwaitingModal.value = false
-    router.push(`/quizee/tournaments/${id}`)
+    router.push({ path: `/quizee/tournaments/${id}`, query: { registered: '1' } })
     return
   }
 
-  // If join returned 'pending' it means registration recorded but payment confirmation is pending
   if (joined === 'pending') {
     checkout.status = 'error'
     checkout.pendingMessage = 'Registration recorded — awaiting payment confirmation. Your entry will be activated once payment is confirmed. If you do not see confirmation within a minute, check your Purchases page or try joining again from the tournament page.'
     showAwaitingModal.value = false
-    // navigate back to tournament page so user sees pending state there too
-    router.push(`/quizee/tournaments/${id}`)
+    router.push({ path: `/quizee/tournaments/${id}`, query: { registered: 'pending' } })
     return
   }
 
-  // Fallback: join failed or could not be completed automatically
   if (isActive.value) checkout.status = 'success'
   showAwaitingModal.value = false
   if (isTournamentCheckout.value) {
@@ -595,13 +881,10 @@ async function openAnswerReview() {
   while (retries > 0) {
     try {
       const res = await api.get(`/api/quiz-attempts/${attemptId}/review`);
-
       if (res?.ok) {
         const data = await res.json();
-        // Backend returns 'answers' array in attempt
         const answers = data?.attempt?.answers || data?.attempt?.details || [];
         if (Array.isArray(answers)) {
-          // Fetch quiz to get question details
           try {
             const quizRes = await api.get(`/api/quizzes/${data.attempt.quiz_id}`);
             if (quizRes?.ok) {
@@ -612,7 +895,6 @@ async function openAnswerReview() {
                 questionMap[q.id] = q;
               });
               
-              // Merge answers with question details
               const enriched = answers.map((ans: Record<string, any>) => ({
                 ...ans,
                 question_id: ans.question_id,
@@ -627,7 +909,6 @@ async function openAnswerReview() {
               throw new Error('Could not fetch quiz');
             }
           } catch (quizErr) {
-            // If quiz fetch fails, still show answers without question text
             const enriched = answers.map((ans: Record<string, any>) => ({
               ...ans,
               body: 'Question',
@@ -639,16 +920,13 @@ async function openAnswerReview() {
           }
         }
       } else if (res?.status === 404) {
-        // Review endpoint doesn't exist for this attempt — don't retry
         reviewError.value = 'Review not available for this attempt.';
         break;
       } else if (res && res.status >= 400 && res.status < 500) {
-        // Other client errors are likely non-retryable (e.g., unauthorized, forbidden)
         reviewError.value = 'Unable to fetch review: ' + (res.statusText || 'Client error');
         break;
       }
       
-      // If we got a response but no details, show specific error
       if (retries === 1) {
         reviewError.value = "No answers found for this attempt. Please try again later.";
       }
@@ -681,7 +959,6 @@ async function refreshLimit() {
   } catch (e) {
     console.debug('refreshLimit failed', e)
   } finally {
-    // add tiny delay so spinner is visible
     await new Promise(r => setTimeout(r, 250))
     limitRefreshing.value = false
   }
@@ -697,18 +974,43 @@ function payForThisItem() {
 }
 
 async function viewFreeResults() {
-  // Free items still need to be marked on the backend to award points and achievements
-  // Just call seeResults() which will handle the marking via checkout.markResults()
   await seeResults()
 }
 
 onMounted(async () => {
   checkout.reset();
+  loadReferralCode()
   await loadPackages()
-  // Fetch the latest usage/quota information so checkout can show remaining uses
   await fetchLimitInfo()
   await checkSubscription()
-  // fetch quiz or battle to display one_off_price if available
+  // If this is a tournament checkout, fetch tournament details
+  if (isTournamentCheckout.value && id) {
+    try {
+      const res = await api.get(`/api/tournaments/${id}`)
+      if (res?.ok) {
+        const data = await res.json()
+        tournament.value = data.tournament || data || null
+        // heuristics for entry fee and rules
+        tournamentEntryFee.value = tournament.value?.entry_fee ?? tournament.value?.fee ?? tournament.value?.price ?? tournament.value?.one_off_price ?? null
+        // Normalize the API field into a tri-state ref. If the API explicitly
+        // provides free_for_subscribers (true/false) use it, otherwise leave
+        // as null so the computed `isFreeForSubscribers` can use other flags.
+        if (typeof tournament.value?.free_for_subscribers === 'boolean') {
+          tournamentFreeForSubscribers.value = tournament.value.free_for_subscribers
+        } else {
+          tournamentFreeForSubscribers.value = null
+        }
+        tournamentRequiresSubscription.value = tournament.value?.requires_subscription ?? null
+        // if tournament provides an explicit price, set item and itemPrice for order summary
+        if (tournamentEntryFee.value !== null) {
+          item.value = tournament.value
+          itemPrice.value = tournamentEntryFee.value
+        }
+      }
+    } catch (e) {
+      console.debug('Could not fetch tournament details', e)
+    }
+  }
   try {
     if (id) {
       const res = await api.get(`/api/${type === 'quiz' ? 'quizzes' : 'battles'}/${id}`)
@@ -722,9 +1024,7 @@ onMounted(async () => {
     item.value = null
     itemPrice.value = null
   }
-  // basic perms
   canRedo.value = !!(id && type === 'quiz')
-  // try to extract phone presets from user profile or local storage
   try {
     const res = await api.get('/api/me')
     if (res?.ok) {
