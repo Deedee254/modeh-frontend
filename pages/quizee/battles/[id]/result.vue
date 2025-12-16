@@ -286,25 +286,22 @@ onMounted(async () => {
   try {
     // Call /mark endpoint which handles marking and returns full result
     // This follows the same pattern as quiz marking
-    const resp = await api.post(`/api/battles/${battleId}/mark`, {})
+    const res = await api.postJson(`/api/battles/${battleId}/mark`, {})
     
-    if (resp.status === 401 || resp.status === 419) {
-      api.handleAuthStatus(resp)
+    if (!res) {
       result.value = null
       loading.value = false
       return
     }
     
-    const res = await api.parseResponse(resp)
-    
-    if (resp.status === 403 && res && res.code === 'limit_reached') {
+    if (res?.status === 403 && res?.code === 'limit_reached') {
       console.error('Subscription limit reached:', res.message)
       errorMessage.value = res.message || 'You have reached your subscription limit. Please upgrade to view results.'
       return
     }
     
-    if (!resp.ok) {
-      throw new Error(`Failed to fetch battle results: ${resp.status} ${resp.statusText}`)
+    if (res?.error) {
+      throw new Error(res.message || `Failed to fetch battle results`)
     }
     
     // mark() returns { ok: true, result: {...}, awarded_achievements: [...] }

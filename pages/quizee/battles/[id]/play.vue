@@ -391,19 +391,27 @@ async function submitBattle() {
       })
     }
 
-    const res = await api.postJson(`/api/battles/${id}/submit`, payload)
-    if (api.handleAuthStatus(res)) { loading.value = false; return }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      console.error('submit failed', err)
+    const body = await api.postJson(`/api/battles/${id}/submit`, payload)
+    
+    if (!body) {
+      console.error('submit failed: no response')
       submissionMessage.value = ''
       lastSubmitFailed.value = true
       submitting.value = false
       loading.value = false
       return
     }
+    
+    if (body?.error) {
+      console.error('submit failed', body)
+      submissionMessage.value = ''
+      lastSubmitFailed.value = true
+      submitting.value = false
+      loading.value = false
+      return
+    }
+    
     try {
-      const body = await res.json().catch(() => ({}))
       if (body?.user) {
         auth.setUser(body.user)
       } else if (body?.awarded_achievements && body.awarded_achievements.length) {
