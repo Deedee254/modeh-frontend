@@ -217,6 +217,8 @@ const { answers, initializeAnswers, toggleMulti: rawToggleMulti } = useQuizAnswe
 // Initialize timer with default 30s per question (will be updated from tournament settings)
 let timePerQuestion_ = ref(30)
 const { timePerQuestion, questionRemaining, displayTime, timerColorClass, startTimer, stopTimer, resetTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(30)
+let globalTimerInterval = null
+let feedbackTimer = null
 
 useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
 
@@ -357,14 +359,19 @@ async function fetchTournament() {
     qualifierStartTime.value = Date.now()
     
     // Start the global timer
+    // Start question timer and reset its state
     recordAndReset()
-    startTimer(() => {
-      timeRemaining.value -= 0.1
-      // Persist every 5 seconds
+    startTimer(perQuestionSeconds)
+
+    // Start a separate global interval to decrement the overall quiz timeRemaining
+    if (globalTimerInterval) clearInterval(globalTimerInterval)
+    globalTimerInterval = setInterval(() => {
+      timeRemaining.value = Math.max(0, +(timeRemaining.value - 0.1).toFixed(1))
+      // Persist every ~5 seconds (when integer seconds % 5 === 0)
       if (Math.floor(timeRemaining.value) % 5 === 0) {
         persistProgress()
       }
-    })
+    }, 100)
 
     // Restore any previous progress from this session
     restoreProgress()
@@ -404,12 +411,22 @@ async function fetchQualificationStatus() {
 }
 
 function nextQuestion() {
+  // Clear any pending feedback auto-advance timer so we don't double-advance
+  if (feedbackTimer) { clearTimeout(feedbackTimer); feedbackTimer = null }
+
+  // Clear per-question authoritative timeout and stop the running interval before changing question
+  clearPerQuestionLimit()
+  stopTimer()
+
   if (currentQuestionIndex.value < totalQuestions.value - 1) {
     currentQuestionIndex.value++
-    clearPerQuestionLimit()
     persistProgress()
     // Re-schedule per-question timer for new question with configured time
     const perQuestionSeconds = tournament.value?.qualifier_per_question_seconds ?? 30
+    // Reset the question timer to full per-question duration and start it
+    resetTimer(perQuestionSeconds)
+    startTimer(perQuestionSeconds)
+    // Schedule the authoritative per-question expiry
     schedulePerQuestionLimit(perQuestionSeconds, () => {
       // Auto-advance when per-question time is up
       if (!isLastQuestion.value) {
@@ -455,11 +472,13 @@ function markAnswer(question, answer) {
   
   // Handle MCQ
   if (question.type === 'mcq') {
-    if (!is_null(question.correct) && String(question.correct) === String(answer)) {
+    // Map answer to index when possible (answers may be option objects)
+    const mapped = mapAnswerToIndex(question, answer)
+    if (!is_null(question.correct) && String(question.correct) === String(mapped)) {
       isCorrect = true
       points = maxPoints
-    } else if (typeof answer === 'string') {
-      // Try matching by option text
+    } else {
+      // Fallback: try matching by option text
       const correctIdx = findOptionIndexByText(question, answer)
       if (!is_null(correctIdx) && String(correctIdx) === String(question.correct)) {
         isCorrect = true
@@ -469,22 +488,34 @@ function markAnswer(question, answer) {
   }
   // Handle multi-select
   else if (question.type === 'multi') {
-    const givenArr = Array.isArray(answer) ? answer : (typeof answer === 'string' ? JSON.parse(answer).catch(() => []) : [])
-    const correctsArr = Array.isArray(question.corrects) ? question.corrects : []
-    
-    if (Array.isArray(givenArr) && Array.isArray(correctsArr)) {
-      const corrects = correctsArr.map(String).sort()
-      const given = givenArr.map(String).sort()
-      if (JSON.stringify(corrects) === JSON.stringify(given)) {
-        isCorrect = true
-        points = maxPoints
+    // Ensure we compare indices (answers may be option objects or indices)
+    let givenArr = Array.isArray(answer) ? answer : []
+    try {
+      // If a stringified JSON was passed, try to parse it
+      if (typeof answer === 'string' && answer.trim().length > 0) {
+        const parsed = JSON.parse(answer)
+        if (Array.isArray(parsed)) givenArr = parsed
       }
+    } catch (e) {
+      // ignore parse errors and fall back to array-check above
+    }
+
+    // Map given answers to indices when possible
+    const mappedGiven = Array.isArray(givenArr) ? mapAnswerToIndex(question, givenArr) : []
+    const given = Array.isArray(mappedGiven) ? mappedGiven.map(String).sort() : []
+    const correctsArr = Array.isArray(question.corrects) ? question.corrects : []
+    const corrects = correctsArr.map(String).sort()
+
+    if (JSON.stringify(corrects) === JSON.stringify(given)) {
+      isCorrect = true
+      points = maxPoints
     }
   }
   // Handle numeric/text/fill-blank
   else {
     const expectedAnswers = question.answers || []
-    if (Array.isArray(expectedAnswers) && expectedAnswers.includes(String(answer))) {
+    const ansStr = typeof answer === 'string' || typeof answer === 'number' ? String(answer) : ''
+    if (Array.isArray(expectedAnswers) && expectedAnswers.map(String).map(s => s.trim().toLowerCase()).includes(ansStr.trim().toLowerCase())) {
       isCorrect = true
       points = maxPoints
     }
@@ -503,7 +534,9 @@ function markAnswer(question, answer) {
   showingFeedback.value = true
   
   // Auto-advance after delay if not on last question
-  setTimeout(() => {
+  // clear any existing feedback timer to avoid double-advances
+  if (feedbackTimer) { clearTimeout(feedbackTimer); feedbackTimer = null }
+  feedbackTimer = setTimeout(() => {
     if (!isLastQuestion.value) {
       nextQuestion()
       showingFeedback.value = false
@@ -511,6 +544,7 @@ function markAnswer(question, answer) {
       // On last question, just clear the flag
       showingFeedback.value = false
     }
+    feedbackTimer = null
   }, feedbackDelay.value)
 }
 
@@ -681,6 +715,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopTimer()
   persistProgress() // Save state before leaving
+  if (globalTimerInterval) { clearInterval(globalTimerInterval); globalTimerInterval = null }
 })
 
 // Helper function to convert difficulty number to text

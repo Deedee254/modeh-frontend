@@ -23,7 +23,7 @@
             <div class="text-sm">Great — you're now registered for this tournament. Ready to take the qualifier?</div>
           </div>
           <div>
-            <button @click="startQualifier" class="ml-4 px-4 py-2 bg-emerald-600 text-white rounded">Start qualifier</button>
+            <button @click="startQualifier" class="ml-4 px-4 py-2 bg-[#891f21] text-white rounded">Start qualifier</button>
           </div>
         </div>
       </div>
@@ -38,106 +38,98 @@
           </div>
         </div>
       </div>
-      <!-- Tournament Header -->
-      <div class="relative mb-8">
-        <img
-          :src="tournament.banner || '/images/tournament-default.jpg'"
-          alt="Tournament banner"
-          class="w-full h-40 sm:h-64 object-cover rounded-xl"
-        />
-        <div
-          class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl"
-        ></div>
-        <div class="absolute bottom-6 left-6 text-white">
-          <h1 class="text-4xl font-bold mb-2">{{ tournament.name }}</h1>
-          <div class="flex items-center gap-6">
-            <div class="flex items-center gap-2">
-              <Icon name="mdi:calendar" />
-              <span
-                >{{ formatDate(tournament.start_date) }}
-                <span v-if="tournament.end_date"
-                  >- {{ formatDate(tournament.end_date) }}</span
-                ></span
+      <!-- Tournament Header (refactored): image left, details + CTAs right -->
+      <div class="mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <!-- Image column -->
+          <div class="lg:col-span-2">
+            <img
+              :src="tournament.banner || '/images/tournament-default.jpg'"
+              alt="Tournament banner"
+              class="w-full h-64 sm:h-80 object-cover rounded-xl"
+            />
+          </div>
+
+          <!-- Details & CTAs column -->
+          <div class="lg:col-span-1 bg-[#891f21]/10 rounded-xl p-6 shadow-sm">
+            <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-gray-900">{{ tournament.name }}</h1>
+            <p class="text-sm text-gray-600 mb-4">
+              <Icon name="mdi:calendar" class="inline-block mr-2" />
+              {{ formatDate(tournament.start_date) }}
+              <span v-if="tournament.end_date"> - {{ formatDate(tournament.end_date) }}</span>
+            </p>
+
+            <div class="flex items-center gap-4 mb-4">
+              <div class="flex items-center gap-2">
+                <Icon name="mdi:account-group" />
+                <span class="text-sm">{{ tournament.participants_count }} participants</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <Icon name="mdi:trophy" class="text-yellow-400" />
+                <span class="text-sm">{{ formatPrizeKES(tournament.prize_pool) }}</span>
+              </div>
+            </div>
+
+            <!-- Entry fee moved into details -->
+            <div class="mb-4">
+              <div v-if="tournament.entry_fee && Number(tournament.entry_fee) > 0" class="text-sm text-gray-600">Entry fee</div>
+              <div v-if="tournament.entry_fee && Number(tournament.entry_fee) > 0" class="text-2xl font-bold text-[#891f21]">{{ formatPrizeKES(tournament.entry_fee) }}</div>
+              <div v-else class="text-sm text-gray-600">No entry fee</div>
+            </div>
+
+            <!-- Primary CTA and secondary actions -->
+            <div class="space-y-3">
+              <button
+                @click="heroPrimaryClick"
+                :disabled="heroPrimaryDisabled"
+                class="w-full text-white px-4 py-3 rounded-lg font-medium"
+                :class="heroPrimaryClass"
               >
-            </div>
-            <div class="flex items-center gap-2">
-              <Icon name="mdi:account-group" />
-              <span>{{ tournament.participants_count }} participants</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <Icon name="mdi:trophy" class="text-yellow-400" />
-              <span>{{ formatPrizeKES(tournament.prize_pool) }}</span>
-            </div>
-            <div class="mt-3">
-              <div
-                v-if="nextRoundAt"
-                class="inline-flex items-center gap-2 px-3 py-1 bg-black/40 text-white rounded"
-              >
-                <Icon name="mdi:clock-outline" />
-                <span>Next round: {{ formatDate(nextRoundAt) }}</span>
+                {{ heroPrimaryLabel }}
+              </button>
+
+              <button v-if="isRegistered && (tournament.status === 'upcoming' && !userHasQualified && !currentBattle) === false" @click="viewBattles" class="w-full border px-4 py-2 rounded-lg text-sm">
+                View Battles
+              </button>
+
+              <div class="mt-2">
+                <AffiliateShareButton
+                  itemType="Tournament"
+                  :itemId="tournament.id"
+                  :baseUrl="baseUrl"
+                  :btnClass="'inline-flex items-center justify-center rounded-lg bg-[#891f21] px-4 py-2 text-sm font-medium text-white hover:bg-[#6f1718]'"
+                  :fullWidth="true"
+                />
               </div>
             </div>
-            <!-- Sponsor (if provided) -->
-            <div v-if="tournament.sponsor?.name || tournament.sponsor?.logo" class="ml-3 flex items-center gap-3">
-              <img v-if="tournament.sponsor?.logo" :src="tournament.sponsor.logo" alt="sponsor logo" class="w-10 h-10 rounded-md object-contain bg-white/10 p-1" />
-              <div class="text-sm">
-                <div class="text-xs text-gray-200">Sponsored by</div>
-                <div class="font-medium">{{ tournament.sponsor?.name }}</div>
-              </div>
-            </div>
-            <div v-if="tournament.winner" class="ml-4 flex items-center gap-3">
-              <Icon name="mdi:trophy-outline" class="text-yellow-300" />
-              <img
-                :src="resolveAssetUrl(tournament.winner.avatar_url || tournament.winner.avatar) || tournament.winner.avatar_url || tournament.winner.avatar || '/logo/avatar-placeholder.png'"
-                alt="winner avatar"
-                class="w-10 h-10 rounded-full object-cover"
-              />
-              <div class="text-sm">
-                <div class="font-semibold">Winner</div>
-                <div class="text-sm">{{ tournament.winner.name }}</div>
-              </div>
-            </div>
-            <!-- Admin: Advance Round Button -->
-            <div v-if="auth.user && (auth.user.role === 'quiz-master' || auth.user.role === 'admin')" class="ml-4">
+
+            <!-- Admin: Advance Round (kept in details) -->
+            <div v-if="auth.user && (auth.user.role === 'quiz-master' || auth.user.role === 'admin')" class="mt-4">
               <button
                 @click="advanceRound"
-                class="px-3 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary-dark"
+                class="px-3 py-2 bg-[#891f21] text-white rounded-md text-sm hover:bg-[#6f1718]"
               >
                 Advance Round
               </button>
             </div>
           </div>
-        
         </div>
       </div>
-
       <!-- Tournament Content -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Main Content (left: spans 2 cols on large screens) -->
         <div class="lg:col-span-2 space-y-8">
-          <!-- Qualification Phase: "Take Qualifier" Button -->
-          <div v-if="tournament.status === 'upcoming' && isRegistered && !userHasQualified && !currentBattle" class="bg-blue-50 rounded-xl p-6 shadow-sm border border-blue-200">
-            <h2 class="text-xl font-bold mb-4 text-blue-900">Qualification Round</h2>
-            <p class="text-blue-800 mb-4">
-              This tournament starts with a qualification round. Answer questions to earn a spot in the bracket!
-            </p>
-            <button
-              @click="router.push(`/quizee/tournaments/${tournament.id}/qualify`)"
-              class="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark"
-            >
-              Take Qualifier
-            </button>
-          </div>
+          <!-- Qualification Phase block removed: UI consolidated into hero CTAs -->
 
           <!-- Qualification Closed -->
-          <div v-else-if="tournament.status === 'active' && isRegistered" class="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
+          <div v-if="tournament.status === 'active' && isRegistered" class="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
             <h2 class="text-xl font-bold mb-4 text-gray-900">Qualification Closed</h2>
             <p class="text-gray-700 mb-4">
               The qualification round has ended. Tournament battles are now underway.
             </p>
             <button
               @click="router.push(`/quizee/tournaments/${tournament.id}/battles`)"
-              class="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark"
+              class="w-full bg-[#891f21] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6f1718]"
             >
               View Battles
             </button>
@@ -163,7 +155,7 @@
                         `/quizee/tournaments/${tournament.id}/battles/${currentBattle.id}`,
                       )
                     "
-                    class="bg-primary text-white px-4 py-2 rounded"
+                    class="bg-[#891f21] text-white px-4 py-2 rounded"
                   >
                     Open Battle Details
                   </button>
@@ -171,7 +163,7 @@
               </div>
               <div v-else class="text-gray-600">
                 Questions for this battle are not yet available.
-                <button @click="viewBattles" class="text-primary underline">
+                <button @click="viewBattles" class="text-[#891f21] underline">
                   Go to Battles
                 </button>
               </div>
@@ -214,7 +206,7 @@
           <!-- Sponsor Information -->
           <div v-if="tournament.sponsor?.name || tournament.sponsor_details?.message" class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-6 shadow-sm border border-primary/20">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-              <Icon name="mdi:handshake" class="text-primary" />
+              <Icon name="mdi:handshake" class="text-[#891f21]" />
               Sponsored by
             </h2>
             <div class="space-y-4">
@@ -245,30 +237,7 @@
             </ul>
           </div>
 
-          <!-- Timeline -->
-          <div class="bg-white rounded-xl p-6 shadow-sm">
-            <h2 class="text-xl font-bold mb-4">Tournament Timeline</h2>
-            <div class="relative">
-              <div
-                class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"
-              ></div>
-              <div class="space-y-6">
-                <div
-                  v-for="(phase, index) in displayTimeline"
-                  :key="index"
-                  class="relative pl-10"
-                >
-                  <div
-                    class="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary"
-                  ></div>
-                  <h3 class="font-medium">{{ phase.name || phase.title }}</h3>
-                  <p class="text-sm text-gray-600">
-                    {{ phase.date ? formatDate(phase.date) : "TBD" }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- Timeline integrated into TournamentBracket; removed standalone Timeline section -->
 
           <!-- Bracket -->
           <div class="bg-white rounded-xl p-6 shadow-sm mt-6">
@@ -277,6 +246,7 @@
             <TournamentBracket
               :tournamentId="tournamentIdStr"
               :initialRounds="battlesAsRounds"
+              :timeline="displayTimeline"
             />
           </div>
 
@@ -296,81 +266,13 @@
             </div>
           </div>
         
-        <!-- Entry fee badge (top-right of hero) -->
-        <div class="absolute top-4 right-6">
-          <div v-if="tournament.entry_fee && Number(tournament.entry_fee) > 0" class="inline-flex items-center gap-3 bg-primary text-white px-3 py-1 rounded-full shadow-lg border border-white/10">
-            <Icon name="mdi:cash" class="text-white" />
-            <div class="text-right leading-tight">
-              <div class="text-xs opacity-90">Entry</div>
-              <div class="text-sm font-semibold">{{ formatPrizeKES(tournament.entry_fee) }}</div>
-            </div>
-          </div>
-        </div>
+        <!-- Entry fee moved into hero details; badge removed -->
         </div>
 
         <!-- Sidebar (right column) -->
         <div class="space-y-6 lg:self-start">
           <div class="space-y-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-auto">
-            <!-- Registration Status -->
-            <div class="bg-white rounded-xl p-6 shadow-sm">
-              <h2 class="text-xl font-bold mb-4">Registration</h2>
-              <template v-if="!isRegistered && registrationStatus !== 'pending'">
-                <p class="text-gray-600 mb-4">
-                  Join this tournament to compete with other participants!
-                </p>
-                <button
-                  @click="registerForTournament"
-                  :disabled="loading || !canRegisterComputed"
-                  class="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark disabled:bg-gray-300"
-                >
-                  {{ registerLabel }}
-                </button>
-
-                <div v-if="!canRegisterComputed && eligibility.reason" class="mt-3 text-sm text-yellow-700">
-                  <p v-if="eligibility.reason === 'authentication_required'">
-                    Please <NuxtLink :to="`/register?next=/quizee/tournaments/${tournament.id}`" class="underline">sign in</NuxtLink> to check eligibility.
-                  </p>
-                  <p v-else>
-                    {{ eligibility.reason }}
-                  </p>
-                </div>
-              </template>
-              <template v-else-if="registrationStatus === 'pending'">
-                <div class="text-yellow-600 font-medium mb-4">
-                  <Icon name="mdi:clock-outline" class="inline-block mr-2" />
-                  Registration pending approval
-                </div>
-                <button
-                  disabled
-                  class="w-full bg-gray-200 text-gray-600 px-6 py-3 rounded-lg font-medium"
-                >
-                  Awaiting approval
-                </button>
-              </template>
-              <template v-else>
-                <div style="color: #891f21" class="font-medium mb-4">
-                  <Icon name="mdi:check-circle" class="inline-block mr-2" />
-                  You're registered!
-                </div>
-                <button
-                  @click="viewBattles"
-                  class="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark"
-                >
-                  View Battles
-                </button>
-              </template>
-              <!-- Share / invite button: placed inside registration card and responsive -->
-              <div class="mt-4">
-                <AffiliateShareButton
-                  itemType="Tournament"
-                  :itemId="tournament.id"
-                  :baseUrl="baseUrl"
-                  :btnClass="'inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-dark'"
-                  :fullWidth="true"
-                />
-              </div>
-              <!-- Payment handled via checkout redirect -->
-            </div>
+            <!-- Registration moved into hero details (mobile-first) -->
 
             <!-- Leaderboard Preview -->
             <div class="bg-white rounded-xl p-6 shadow-sm">
@@ -650,6 +552,26 @@ const fetchTournament = async () => {
       // swallow any errors from inference and proceed with server-provided eligibility
     }
 
+  // Normalize rules to always be an array of strings. The backend may return
+  // rules as an array, a JSON-encoded array string, or a plain newline
+  // separated string. If we accidentally assign a raw string to
+  // `tournament.rules`, Vue's `v-for` will iterate characters.
+  let _rulesRaw: any = data?.rules ?? [];
+  let _rulesNorm: string[] = [];
+  if (Array.isArray(_rulesRaw)) {
+    _rulesNorm = _rulesRaw.map((r: any) => String(r));
+  } else if (typeof _rulesRaw === 'string') {
+    try {
+      const parsed = JSON.parse(_rulesRaw);
+      if (Array.isArray(parsed)) _rulesNorm = parsed.map((r: any) => String(r));
+      else _rulesNorm = _rulesRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    } catch (e) {
+      _rulesNorm = _rulesRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    }
+  } else {
+    _rulesNorm = [];
+  }
+
   tournament.value = data
       ? ({
           id: data.id,
@@ -661,7 +583,7 @@ const fetchTournament = async () => {
           participants_count: data.participants_count ?? 0,
           prize_pool: data.prize_pool ?? data.prize ?? data.prize_amount ?? 0,
           description: data.description ?? data.about ?? "",
-          rules: data.rules || [],
+          rules: _rulesNorm,
           entry_fee: data.entry_fee ?? 0,
           grade: data.grade ?? null,
           level: data.level ?? null,
@@ -1021,6 +943,47 @@ const registeredQuery = computed(() => {
   return String(q)
 })
 
+// Hero CTA helpers: determine label, disabled state and styling for the primary
+// CTA rendered in the hero details. This consolidates register / qualifier /
+// view actions into one prominent button.
+const heroPrimaryLabel = computed(() => {
+  if (registrationStatus.value === 'pending') return 'Awaiting approval'
+  if (!isRegistered.value) return registerLabel.value
+  // If registered but not qualified and qualification is available, prompt to take qualifier
+  if (tournament.value && tournament.value.status === 'upcoming' && !userHasQualified.value && !currentBattle.value) return 'Take Qualifier'
+  // If user currently has an active battle, show 'View Battle'
+  if (currentBattle.value) return 'View Battle'
+  return 'View Battles'
+})
+
+const heroPrimaryDisabled = computed(() => {
+  if (registrationStatus.value === 'pending') return true
+  if (!isRegistered.value) return !canRegisterComputed.value
+  return false
+})
+
+const heroPrimaryClass = computed(() => {
+  // Use explicit burgundy color for hero CTAs to match the site style
+  return heroPrimaryDisabled.value
+    ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
+    : 'bg-[#891f21] hover:bg-[#6f1718]'
+})
+
+function heroPrimaryClick() {
+  if (heroPrimaryDisabled.value) return
+  if (!isRegistered.value) {
+    return registerForTournament()
+  }
+
+  // Registered: if qualifier is available, go to qualifier
+  if (tournament.value && tournament.value.status === 'upcoming' && !userHasQualified.value && !currentBattle.value) {
+    return router.push(`/quizee/tournaments/${tournament.value.id}/qualify`)
+  }
+
+  // Otherwise go to battles / battle view
+  return viewBattles()
+}
+
 // Fetch data on component mount
 onMounted(async () => {
   await fetchTournament();
@@ -1040,11 +1003,97 @@ onMounted(async () => {
 });
 
 // Ensure timeline shows standard phases when some are missing.
-// Build an ordered timeline: for each standard phase, use the existing item if present (matching name/title), else a placeholder.
+// Build an ordered timeline: prefer explicit timeline from the API, but when
+// missing or empty try to infer ranges from server-created battles. The
+// backend's scheduling logic uses the latest scheduled_at for a round as the
+// round start and then advances the next round by `round_delay_days` — we
+// mirror that here so the UI can display accurate ranges without requiring
+// an explicit `timeline` field.
 const displayTimeline = computed(() => {
   const existing = Array.isArray(tournament.value?.timeline)
     ? (tournament.value!.timeline as any[])
     : [];
+
+  // Helper to extract a start/end date range from different possible keys
+  const extractRange = (item: any) => {
+    const start = item?.start_date ?? item?.start ?? item?.date ?? item?.scheduled_at ?? null;
+    const end = item?.end_date ?? item?.end ?? item?.ends_at ?? null;
+    return {
+      name: item?.name ?? item?.title ?? 'Phase',
+      start_date: start ? String(start) : null,
+      end_date: end ? String(end) : null,
+      raw: item,
+    };
+  };
+
+  // If the backend supplied an explicit timeline, normalize and return it
+  if (Array.isArray(existing) && existing.length > 0) {
+    const normalized = existing.map((it: any) => extractRange(it));
+    return normalized;
+  }
+
+  // Otherwise, attempt to infer timeline from battles (if available)
+  try {
+    if (Array.isArray(battles.value) && battles.value.length) {
+      const byRound: Record<number, any[]> = {};
+      for (const b of battles.value) {
+        const r = Number(b.round || 1);
+        byRound[r] = byRound[r] || [];
+        byRound[r].push(b);
+      }
+
+      const rounds = Object.keys(byRound)
+        .map((k) => Number(k))
+        .sort((a, b) => a - b);
+
+      const out: any[] = [];
+
+      // Registration phase (use tournament start/registration_end when available)
+      out.push({
+        name: 'Registration',
+        start_date: tournament.value?.start_date ?? null,
+        end_date: tournament.value?.registration_end_date ?? null,
+        raw: null,
+      });
+
+  // For each round compute start as the latest scheduled_at among its battles
+  // and end as start + round_delay_days (mirrors server behavior)
+  const roundDelay = Number((tournament.value as any)?.round_delay_days ?? 0);
+      for (const r of rounds) {
+        const list = byRound[r] || [];
+        const scheduledDates = list
+          .map((x: any) => x?.scheduled_at)
+          .filter(Boolean)
+          .map((s: any) => new Date(s));
+
+        let startIso: string | null = null;
+        let endIso: string | null = null;
+        if (scheduledDates.length) {
+          // server uses the latest scheduled_at as round start
+          const latest = scheduledDates.reduce((a: Date, b: Date) => (a.getTime() > b.getTime() ? a : b));
+          startIso = latest.toISOString();
+          if (roundDelay && !Number.isNaN(roundDelay)) {
+            const endDate = new Date(latest.getTime());
+            endDate.setDate(endDate.getDate() + Math.max(1, roundDelay));
+            endIso = endDate.toISOString();
+          }
+        }
+
+        out.push({
+          name: `Round ${r}`,
+          start_date: startIso,
+          end_date: endIso,
+          raw: { round: r, battles: list },
+        });
+      }
+
+      return out;
+    }
+  } catch (e) {
+    // fall through to return a minimal default timeline
+  }
+
+  // Last resort: return a few standard placeholders
   const standard = [
     "Registration",
     "Group Stage",
@@ -1052,33 +1101,7 @@ const displayTimeline = computed(() => {
     "Semifinals",
     "Final",
   ];
-
-  const lowered = existing.reduce(
-    (acc: Record<string, any>, item: any) => {
-      const key = (item.name || item.title || "").toString().toLowerCase();
-      if (key) acc[key] = item;
-      return acc;
-    },
-    {} as Record<string, any>,
-  );
-
-  const ordered: any[] = [];
-  for (const s of standard) {
-    const key = s.toLowerCase();
-    if (lowered[key]) {
-      ordered.push(lowered[key]);
-    } else {
-      ordered.push({ name: s, date: null });
-    }
-  }
-
-  // Append any non-standard existing phases (preserve original order)
-  for (const item of existing) {
-    const key = (item.name || item.title || "").toString().toLowerCase();
-    if (!standard.map((s) => s.toLowerCase()).includes(key)) ordered.push(item);
-  }
-
-  return ordered;
+  return standard.map((s) => ({ name: s, start_date: null, end_date: null }));
 });
 
 // Clear the registered query and navigate to the qualifier

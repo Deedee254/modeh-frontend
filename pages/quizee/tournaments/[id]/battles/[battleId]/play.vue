@@ -561,16 +561,19 @@ watch(timeRemaining, (val) => {
   updateCountdownAlert()
 }, { immediate: false })
 
-const selectAnswer = async (optionId: string | number) => {
+const selectAnswer = async (optionId: string | number | any) => {
   if (answerSubmitted.value || !currentQuestion.value) return
 
   // Lock to prevent double submits locally
   answerSubmitted.value = true
 
+  // Map option (object/string) to index when possible so stored answers match backend expectations
+  const mapped = mapAnswerToIndex(currentQuestion.value, optionId)
+
   // Persist immediately to local answer store
   try {
-  answerStore.setAnswer(Number(String(currentQuestion.value.id)), optionId as any)
-    selectedAnswers.value[currentQuestion.value.id] = optionId
+    answerStore.setAnswer(Number(String(currentQuestion.value.id)), mapped as any)
+    selectedAnswers.value[currentQuestion.value.id] = mapped
     persistProgress()
     // Trigger auto-save to backend after a short delay (only if connected)
     triggerAutoSave()
@@ -578,8 +581,8 @@ const selectAnswer = async (optionId: string | number) => {
     console.warn('Failed to persist answer locally', e)
   }
 
-  // Mark answer and show feedback
-  markAnswer(currentQuestion.value, optionId)
+  // Mark answer and show feedback (pass mapped index/value)
+  markAnswer(currentQuestion.value, mapped)
 
   // Optimistic local-only: do not require connection for per-question submits.
   // We'll submit all answers in bulk on `submitBattle()` so skip network call here.
@@ -652,6 +655,7 @@ function markAnswer(question: Question | undefined, answer: string | number) {
   let isCorrect = false
   
   if (question.type === 'mcq' && question.correct_option_id !== undefined) {
+    // answers passed in are mapped to index when possible
     isCorrect = String(question.correct_option_id) === String(answer)
   }
   

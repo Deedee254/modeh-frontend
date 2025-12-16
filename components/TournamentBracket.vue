@@ -51,6 +51,43 @@
         <button @click="manualRefresh" class="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-50">Refresh</button>
       </div>
 
+      <!-- Compact timeline (when provided by parent) -->
+      <div v-if="hasTimeline" class="compact-timeline mb-4">
+        <div class="relative">
+          <!-- Today marker: positioned across the timeline span -->
+          <div v-if="timelineHasSpan" :style="{ left: currentPercent + '%' }" class="pointer-events-none absolute inset-y-0">
+            <div class="absolute top-0 bottom-0 left-0" style="transform: translateX(-50%);">
+              <div class="w-px bg-[#891f21]/60 h-full"></div>
+              <div class="-mt-2 w-3 h-3 rounded-full bg-[#891f21] mx-auto"></div>
+            </div>
+          </div>
+
+          <div class="flex items-stretch gap-3 overflow-x-auto py-2">
+            <div
+              v-for="(phase, idx) in timelineProp"
+              :key="idx"
+              :class="['flex-shrink-0 border rounded-lg px-3 py-2 min-w-[160px]', idx === activePhaseIndex ? 'bg-[#891f21]/10 border-[#891f21]' : 'bg-white']"
+            >
+              <div class="flex items-start gap-3">
+                <div :class="['mt-1 w-3 h-3 rounded-full flex-shrink-0', idx === activePhaseIndex ? 'bg-[#891f21]' : 'bg-gray-300']"></div>
+                <div>
+                  <div class="text-xs text-gray-500 mb-1">{{ phase.name }}</div>
+                  <div class="text-sm font-semibold text-gray-900">
+                    <template v-if="phase.start_date">
+                      {{ formatDateShort(phase.start_date) }}
+                      <span v-if="phase.end_date"> — {{ formatDateShort(phase.end_date) }}</span>
+                    </template>
+                    <template v-else>
+                      <span class="text-gray-400">TBD</span>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Qualifier Phase: Display Standings/Leaderboard -->
       <template v-if="isQualifierPhase && (qualifierResults && qualifierResults.length > 0)">
         <div class="qualifier-standings mb-6">
@@ -134,7 +171,7 @@
               :style="{ width: `${100 / displayRounds.length}%` }"
             >
               <div class="round-header">
-                <h3 class="round-title">{{ getRoundName(roundIndex) }}</h3>
+                <h3 class="round-title">{{ roundsData[roundIndex]?.phase_name ?? getRoundName(roundIndex) }}</h3>
                 
                 <!-- Round Status from Enhanced API -->
                 <div v-if="roundsData[roundIndex]" class="round-status text-xs">
@@ -190,7 +227,7 @@
                         class="w-8 h-8 rounded-full object-cover"
                       />
                       <span class="player-name">{{ match?.player1?.name || 'TBD' }}</span>
-                      <span class="player-score">{{ match?.player1_score ?? '-' }}</span>
+                      <span class="player-score">{{ (match?.player1?.score ?? match?.player1_score) ?? '-' }}</span>
                     </div>
                     <div :class="['player', 'player2', match?.winner_id === match?.player2_id ? 'winner' : '']">
                       <img 
@@ -199,7 +236,7 @@
                         class="w-8 h-8 rounded-full object-cover"
                       />
                       <span class="player-name">{{ match?.player2?.name || 'TBD' }}</span>
-                      <span class="player-score">{{ match?.player2_score ?? '-' }}</span>
+                      <span class="player-score">{{ (match?.player2?.score ?? match?.player2_score) ?? '-' }}</span>
                     </div>
                   </div>
                   <!-- small status icon -->
@@ -334,7 +371,7 @@
                       />
                       {{ match?.player2?.name || 'TBD' }}
                     </div>
-                    <div class="text-xs text-gray-500">{{ match?.player1_score ?? '-' }} - {{ match?.player2_score ?? '-' }}</div>
+                    <div class="text-xs text-gray-500">{{ (match?.player1?.score ?? match?.player1_score) ?? '-' }} - {{ (match?.player2?.score ?? match?.player2_score) ?? '-' }}</div>
                   </div>
                   <div class="ml-3 relative">
                     <button class="text-gray-400" :aria-label="`Match info ${match?.id || ''}`">
@@ -392,7 +429,7 @@
                   <img :src="getPlayerAvatar(selectedMatch?.player1 || matchDetails?.initiator)" class="w-12 h-12 rounded-full object-cover" />
                   <div>
                     <div class="font-semibold">{{ selectedMatch?.player1?.name || matchDetails?.initiator?.name || 'TBD' }}</div>
-                    <div class="text-sm text-gray-500">Score: <span class="font-bold">{{ selectedMatch?.player1_score ?? matchDetails?.initiator_score ?? '-' }}</span></div>
+                    <div class="text-sm text-gray-500">Score: <span class="font-bold">{{ (selectedMatch?.player1?.score ?? selectedMatch?.player1_score) ?? matchDetails?.initiator_score ?? '-' }}</span></div>
                   </div>
                 </div>
               </div>
@@ -409,7 +446,7 @@
 
             <div class="mb-4">
               <div class="text-sm font-semibold mb-2">Summary</div>
-              <div class="text-sm text-gray-700">{{ selectedMatch?.summary || matchDetails?.summary || (selectedMatch?.player1_score != null || selectedMatch?.player2_score != null ? `${selectedMatch?.player1_score ?? '-'} - ${selectedMatch?.player2_score ?? '-'}` : 'No summary available') }}</div>
+              <div class="text-sm text-gray-700">{{ selectedMatch?.summary || matchDetails?.summary || ((selectedMatch?.player1?.score != null || selectedMatch?.player2?.score != null) || (selectedMatch?.player1_score != null || selectedMatch?.player2_score != null) ? `${(selectedMatch?.player1?.score ?? selectedMatch?.player1_score) ?? '-'} - ${(selectedMatch?.player2?.score ?? selectedMatch?.player2_score) ?? '-'}` : 'No summary available') }}</div>
             </div>
 
             <!-- Per-question breakdown (if available) -->
@@ -459,6 +496,47 @@ const props = defineProps({
   tournamentId: { type: [String, Number], required: true },
   // optional initial rounds (array of arrays of matches) provided by parent to avoid extra API requests
   initialRounds: { type: Array, required: false, default: null },
+  // optional timeline provided by parent: array of { name, start_date, end_date, raw }
+  timeline: { type: Array, required: false, default: null },
+});
+
+// Whether the timeline from parent provides a valid date span we can map 'today' onto
+const timelineHasSpan = computed(() => {
+  try {
+    const items = timelineProp.value || [];
+    const starts = items
+      .map((p: any) => Date.parse(p.round_start_date || p.start_date || p.start || ''))
+      .filter((v: number) => !isNaN(v));
+    const ends = items
+      .map((p: any) => Date.parse(p.round_end_date || p.end_date || p.end || ''))
+      .filter((v: number) => !isNaN(v));
+    if (!starts.length || !ends.length) return false;
+    return Math.min(...starts) < Math.max(...ends);
+  } catch (e) {
+    return false;
+  }
+});
+
+// Percentage position of current date between earliest phase start and latest phase end
+const currentPercent = computed(() => {
+  try {
+    if (!timelineHasSpan.value) return 0;
+    const items = timelineProp.value || [];
+    const starts = items
+      .map((p: any) => Date.parse(p.round_start_date || p.start_date || p.start || ''))
+      .filter((v: number) => !isNaN(v));
+    const ends = items
+      .map((p: any) => Date.parse(p.round_end_date || p.end_date || p.end || ''))
+      .filter((v: number) => !isNaN(v));
+    const earliest = Math.min(...starts);
+    const latest = Math.max(...ends);
+    const now = Date.now();
+    if (now <= earliest) return 0;
+    if (now >= latest) return 100;
+    return Math.round(((now - earliest) / (latest - earliest)) * 100);
+  } catch (e) {
+    return 0;
+  }
 });
 const rounds = ref<any[][]>([]);
 const roundsData = ref<any[]>([]); // Complete round data with progress, end dates, etc.
@@ -525,10 +603,13 @@ const fetchTree = async () => {
       summary.value = json.summary;
       roundsData.value = json.bracket || [];
       qualifierResults.value = json.qualifier_results || []; // Populate qualifier standings
-      
+
+      // merge timeline (if provided by parent) into roundsData to surface dates
+      mergeTimelineIntoRounds();
+
       // Extract matches from bracket rounds for rendering
-  const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
-  rounds.value = matchesFromBracket;
+      const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
+      rounds.value = matchesFromBracket;
   // record last updated timestamp for UI
   lastUpdated.value = new Date().toISOString();
 
@@ -575,9 +656,12 @@ const startBracketRefreshPolling = () => {
         summary.value = json.summary;
         roundsData.value = json.bracket || [];
         qualifierResults.value = json.qualifier_results || []; // Update qualifier standings
-        
+
+        // merge timeline into roundsData if timeline provided
+        mergeTimelineIntoRounds();
+
         const matchesFromBracket = roundsData.value.map((roundData: any) => roundData.matches || []);
-  rounds.value = matchesFromBracket;
+        rounds.value = matchesFromBracket;
   lastUpdated.value = new Date().toISOString();
         
         // Stop polling if tournament is complete (no current round and not in qualifiers)
@@ -723,6 +807,142 @@ const isViewerParticipant = computed(() => {
 
 onMounted(fetchTree);
 
+// Expose timeline passed from parent (normalized)
+const timelineProp = computed(() => {
+  try {
+    if (!props.timeline) return [];
+    if (Array.isArray(props.timeline)) return props.timeline.map((t: any) => ({
+      name: t?.name ?? t?.title ?? 'Phase',
+      start_date: t?.start_date ?? t?.start ?? t?.date ?? t?.scheduled_at ?? null,
+      end_date: t?.end_date ?? t?.end ?? t?.ends_at ?? null,
+      raw: t,
+    }));
+  } catch (e) {
+    return [];
+  }
+  return [];
+});
+
+const hasTimeline = computed(() => Array.isArray(timelineProp.value) && timelineProp.value.length > 0);
+
+// Determine active phase index in timelineProp. Prefer roundsData.is_current mapping when available.
+const activePhaseIndex = computed(() => {
+  try {
+    if (!hasTimeline.value) return -1;
+    const t = timelineProp.value || [];
+    // If roundsData has a current round, map it to timeline index using registration offset heuristic
+    const currentIdx = (roundsData.value || []).findIndex((r: any) => r && r.is_current);
+    if (currentIdx !== -1) {
+      const offset = (t[0] && String(t[0].name || '').toLowerCase().includes('registration')) ? 1 : 0;
+      const ph = currentIdx + offset;
+      if (ph >= 0 && ph < t.length) return ph;
+    }
+
+    // Fallback: pick first phase whose end_date is in the future and start_date <= now
+    const now = Date.now();
+    for (let i = 0; i < t.length; i++) {
+      const p = t[i];
+      const start = p?.start_date ? new Date(p.start_date).getTime() : null;
+      const end = p?.end_date ? new Date(p.end_date).getTime() : null;
+      if (start && end && now >= start && now <= end) return i;
+      if (!start && end && now <= end) return i;
+    }
+
+    return -1;
+  } catch (e) { return -1; }
+});
+
+// Merge timeline phases into roundsData so each round has round_start_date, round_end_date, and phase_name
+const mergeTimelineIntoRounds = () => {
+  try {
+    if (!Array.isArray(roundsData.value) || roundsData.value.length === 0) return;
+    const t = Array.isArray(timelineProp.value) ? timelineProp.value : [];
+    if (!t.length) return;
+
+    // If parent provided an explicit timeline, merge directly (with optional registration offset)
+    let offset = 0;
+    if (t[0] && String(t[0].name || '').toLowerCase().includes('registration')) offset = 1;
+
+    if (t.length) {
+      for (let i = 0; i < roundsData.value.length; i++) {
+        const phase = t[i + offset];
+        if (!phase) continue;
+        roundsData.value[i] = roundsData.value[i] || {};
+        if (phase.start_date) roundsData.value[i].round_start_date = phase.start_date;
+        if (phase.end_date) roundsData.value[i].round_end_date = phase.end_date;
+        if (phase.name) roundsData.value[i].phase_name = phase.name;
+      }
+      // refresh countdowns to pick up new end dates
+      updateCountdowns();
+      return;
+    }
+
+    // No explicit timeline provided: infer exact dates from battles and tournament scheduling rules
+    // Backend scheduling pattern (observed):
+    // - Round start = latest scheduled_at among its battles
+    // - Round end = round start + round_delay_days
+    // - Next round scheduled_at (when created) = previous round end + round_delay_days
+    // So if some rounds lack scheduled_at, we can estimate using previous round start + 2*round_delay_days
+  const roundDelay = Number((tournament.value as any)?.round_delay_days ?? (tournament.value as any)?.roundDelay ?? 0) || 0;
+    let prevStart: Date | null = null;
+
+    for (let i = 0; i < roundsData.value.length; i++) {
+      const rd = roundsData.value[i] || {};
+      const matches = Array.isArray(rd.matches) ? rd.matches : [];
+
+      // collect scheduled_at dates for this round
+      const scheduledDates = matches
+        .map((m: any) => m?.scheduled_at)
+        .filter(Boolean)
+        .map((s: any) => new Date(s));
+
+      let startDate: Date | null = null;
+      if (scheduledDates.length) {
+        // use latest scheduled_at as round start
+        startDate = scheduledDates.reduce((a: Date, b: Date) => (a.getTime() > b.getTime() ? a : b));
+      } else if (prevStart) {
+        // estimate next round start using backend pattern: prevStart + 2*roundDelay days
+        const est: Date = new Date(prevStart.getTime());
+        est.setDate(est.getDate() + Math.max(1, roundDelay) * 2);
+        startDate = est;
+      } else if (tournament.value?.start_date && i === 0) {
+        // fallback: first round may use tournament.start_date
+        try { startDate = new Date(tournament.value.start_date); } catch (e) { startDate = null }
+      }
+
+      let endDate: Date | null = null;
+      if (startDate) {
+        const ed = new Date(startDate.getTime());
+        // round end is start + roundDelay days (minimum 1)
+        ed.setDate(ed.getDate() + Math.max(1, roundDelay));
+        endDate = ed;
+      }
+
+      // write normalized ISO strings back to roundsData
+      try {
+        roundsData.value[i] = roundsData.value[i] || {};
+        if (startDate) roundsData.value[i].round_start_date = startDate.toISOString();
+        if (endDate) roundsData.value[i].round_end_date = endDate.toISOString();
+        if (!roundsData.value[i].phase_name) roundsData.value[i].phase_name = `Round ${i + 1}`;
+      } catch (e) {
+        // ignore assignment errors
+      }
+
+      prevStart = startDate ?? prevStart;
+    }
+
+    // refresh countdowns with newly computed end dates
+    updateCountdowns();
+  } catch (e) {
+    // no-op
+  }
+};
+
+// re-run merge when timeline changes
+watch(timelineProp, () => {
+  mergeTimelineIntoRounds();
+});
+
 // Human-friendly round names: when rounds correspond to elimination stages
 const getRoundName = (roundIndex: number) => {
   // Use displayRounds to account for placeholders
@@ -761,6 +981,8 @@ const matchStatus = (m: any) => {
   if (m.status === "active" || m.status === "live") return "live";
   if (m.status === "scheduled" || m.scheduled_at) return "scheduled";
   if (
+    (m.player1?.score != null) ||
+    (m.player2?.score != null) ||
     m.player1_score != null ||
     m.player2_score != null ||
     m.status === "completed"
