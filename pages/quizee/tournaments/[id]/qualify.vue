@@ -118,7 +118,7 @@
               </div>
 
               <!-- Show correct answer only if wrong -->
-              <div v-if="currentQuestionPoints === 0 && currentQuestion.correct !== undefined" class="mb-4 pb-4 border-b border-blue-200">
+              <div v-if="currentQuestionPoints === 0 && (currentQuestion.correct !== undefined || (currentQuestion.corrects && currentQuestion.corrects.length) || (currentQuestion.answers && currentQuestion.answers.length) || currentQuestion.answer !== undefined)" class="mb-4 pb-4 border-b border-blue-200">
                 <div class="font-semibold text-red-600 mb-2">Correct Answer:</div>
                 <div class="text-sm bg-white p-2 rounded border border-red-100">
                   {{ getCorrectAnswerDisplay() }}
@@ -472,15 +472,18 @@ function markAnswer(question, answer) {
   
   // Handle MCQ
   if (question.type === 'mcq') {
-    // Map answer to index when possible (answers may be option objects)
+    // Normalize correct answer spec and map chosen answer to index when possible
+    const norm = normalizeCorrect(question)
     const mapped = mapAnswerToIndex(question, answer)
-    if (!is_null(question.correct) && String(question.correct) === String(mapped)) {
+    const chosenIndex = Array.isArray(mapped) ? mapped[0] : mapped
+
+    if (norm.type === 'mcq' && !is_null(norm.correctIndex) && String(norm.correctIndex) === String(chosenIndex)) {
       isCorrect = true
       points = maxPoints
     } else {
       // Fallback: try matching by option text
       const correctIdx = findOptionIndexByText(question, answer)
-      if (!is_null(correctIdx) && String(correctIdx) === String(question.correct)) {
+      if (!is_null(correctIdx) && (norm.type !== 'mcq' || String(correctIdx) === String(norm.correctIndex))) {
         isCorrect = true
         points = maxPoints
       }
@@ -501,9 +504,10 @@ function markAnswer(question, answer) {
     }
 
     // Map given answers to indices when possible
-    const mappedGiven = Array.isArray(givenArr) ? mapAnswerToIndex(question, givenArr) : []
-    const given = Array.isArray(mappedGiven) ? mappedGiven.map(String).sort() : []
-    const correctsArr = Array.isArray(question.corrects) ? question.corrects : []
+  const mappedGiven = Array.isArray(givenArr) ? mapAnswerToIndex(question, givenArr) : []
+  const given = Array.isArray(mappedGiven) ? mappedGiven.map(String).sort() : []
+  // allow backend to supply either `corrects` (array) or `correct` (single index) in some payloads
+  const correctsArr = Array.isArray(question.corrects) ? question.corrects : (Array.isArray(question.correct) ? question.correct : [])
     const corrects = correctsArr.map(String).sort()
 
     if (JSON.stringify(corrects) === JSON.stringify(given)) {
@@ -558,34 +562,70 @@ function findOptionIndexByText(question, text) {
   return idx >= 0 ? idx : null
 }
 
-// Display correct answer based on question type
+// Normalize a question's canonical correct answer(s) into a predictable shape
+function normalizeCorrect(question) {
+  if (!question) return { type: null }
+  // MCQ single-correct
+  if (question.correct !== undefined && question.correct !== null) {
+    return { type: 'mcq', correctIndex: Number(question.correct) }
+  }
+
+  // Multi-select corrects array
+  if (Array.isArray(question.corrects) && question.corrects.length > 0) {
+    return { type: 'multi', correctIndices: question.corrects.map(String) }
+  }
+
+  // Alternate payloads: answers array or single answer
+  if (Array.isArray(question.answers) && question.answers.length > 0) {
+    return { type: 'text', answers: question.answers.map(String) }
+  }
+  if (question.answer !== undefined && question.answer !== null) {
+    return { type: 'text', answers: [String(question.answer)] }
+  }
+
+  return { type: null }
+}
+
+// Display correct answer based on question type (uses normalized canonical data)
 function getCorrectAnswerDisplay() {
   const q = currentQuestion.value
   if (!q) return 'N/A'
-  
-  if (q.type === 'mcq') {
-    // For MCQ, show the correct option text
-    if (q.options && Array.isArray(q.options) && q.correct !== undefined) {
-      const option = q.options[q.correct]
-      return typeof option === 'string' ? option : option?.text || option?.label || `Option ${parseInt(q.correct) + 1}`
+
+  const norm = normalizeCorrect(q)
+
+  if (norm.type === 'mcq') {
+    const idx = norm.correctIndex
+    if (q.options && Array.isArray(q.options) && typeof idx !== 'undefined' && idx !== null) {
+      const option = q.options[idx]
+      return typeof option === 'string' ? option : option?.text || option?.label || `Option ${parseInt(idx) + 1}`
     }
-    return `Option ${parseInt(q.correct) + 1}`
-  } else if (q.type === 'multi') {
-    // For multi-select, show all correct options
-    if (q.options && Array.isArray(q.options) && q.corrects && Array.isArray(q.corrects)) {
-      return q.corrects.map(idx => {
-        const option = q.options[idx]
-        return typeof option === 'string' ? option : option?.text || option?.label || `Option ${parseInt(idx) + 1}`
+    return `Option ${parseInt(idx) + 1}`
+  }
+
+  if (norm.type === 'multi') {
+    const idxs = norm.correctIndices || []
+    if (q.options && Array.isArray(q.options) && idxs.length) {
+      return idxs.map(i => {
+        const option = q.options[i]
+        return typeof option === 'string' ? option : option?.text || option?.label || `Option ${parseInt(i) + 1}`
       }).join(', ')
     }
-    return q.corrects?.join(', ') || 'N/A'
-  } else {
-    // For text/numeric/fill-blank, show expected answers
-    if (q.answers && Array.isArray(q.answers)) {
-      return q.answers.join(' / ')
-    }
-    return q.answers || 'N/A'
+    return idxs.join(', ') || 'N/A'
   }
+
+  if (norm.type === 'text') {
+    return (norm.answers || []).join(' / ') || 'N/A'
+  }
+
+  // Fallbacks if normalization missed anything
+  if (q.correct !== undefined && q.options && Array.isArray(q.options)) {
+    const option = q.options[q.correct]
+    return typeof option === 'string' ? option : option?.text || option?.label || `Option ${parseInt(q.correct) + 1}`
+  }
+  if (q.corrects && Array.isArray(q.corrects)) return q.corrects.join(', ')
+  if (q.answers && Array.isArray(q.answers)) return q.answers.join(' / ')
+
+  return 'N/A'
 }
 
 // Null check helper
@@ -679,7 +719,8 @@ async function submitQualifier() {
 function getOptionKey(opt) {
   if (opt === null || opt === undefined) return null
   if (typeof opt === 'string' || typeof opt === 'number') return String(opt)
-  return String(opt.id ?? opt.text ?? opt.body ?? JSON.stringify(opt))
+  // include common label/text fields used across different question payloads
+  return String(opt.id ?? opt.text ?? opt.label ?? opt.body ?? JSON.stringify(opt))
 }
 
 function mapAnswerToIndex(question, answer) {
@@ -699,7 +740,7 @@ function mapAnswerToIndex(question, answer) {
     const mapped = answer.map(a => {
       const idx = findIndexFor(a)
       return idx !== null ? idx : a
-    })
+    }).filter(v => v !== null && typeof v !== 'undefined')
     return mapped
   }
 
