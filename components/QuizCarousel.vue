@@ -24,14 +24,14 @@
     <div
       v-else
       :style="animationStyle"
-      class="animate-scroll-up flex flex-col gap-5 py-4"
+      class="animate-scroll-up flex flex-col gap-5 py-4 w-full min-w-0 max-w-full overflow-hidden"
       @mouseenter="pauseAnimation"
       @mouseleave="resumeAnimation"
     >
       <div 
         v-for="(quiz, idx) in displayQuizzes" 
         :key="`${quiz.id}-${idx}`" 
-        class="flex-shrink-0 w-full px-2"
+        class="flex-shrink-0 w-full px-2 min-w-0"
       >
           <QuizCard
           :quiz="quiz"
@@ -160,6 +160,10 @@ const resumeAnimation = () => {
   animation-iteration-count: infinite;
   /* default duration; will be overridden by inline style from Vue */
   animation-duration: 25s;
+  /* Force GPU compositing and hide backface to reduce subpixel overflow on mobile */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .animate-scroll-up:hover {

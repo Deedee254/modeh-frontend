@@ -72,7 +72,8 @@ import { useInstitutionsStore } from '~/stores/institutions'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 
-const props = defineProps({ compact: { type: Boolean, default: false } })
+const props = defineProps({ compact: { type: Boolean, default: false }, suppressRedirect: { type: Boolean, default: false } })
+const emit = defineEmits(['success'])
 
 const email = ref('')
 const password = ref('')
@@ -116,6 +117,12 @@ async function submit() {
     
     const res = await auth.login(email.value, password.value, remember.value)
     const user = auth.user // Use the store's user state directly
+
+    // If parent requested suppressing LoginForm's redirect, emit success and let parent handle navigation
+    if (props.suppressRedirect) {
+      try { emit('success', user) } catch (e) {}
+      return
+    }
 
     // Handle `next` param safely and prefer same-role area
     const nextParam = route.query?.next

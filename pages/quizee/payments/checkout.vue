@@ -27,8 +27,8 @@
 
       <!-- Two-Column Layout -->
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- RIGHT COLUMN: Payment & Subscription Options (now on LEFT) -->
-        <div class="lg:col-span-2">
+  <!-- RIGHT COLUMN: Payment & Subscription Options (now on LEFT) -->
+  <div class="lg:col-span-2 order-2 lg:order-1">
           <!-- Subscription Status Cards -->
           <div v-if="isActive || institutionSubscriptions.length > 0" class="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-6">
             <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Your Active Subscriptions</h3>
@@ -200,6 +200,31 @@
               </button>
             </div>
 
+            <!-- Referral Code Section (moved here so it's next to the action button) -->
+            <div class="mt-4">
+              <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Referral Code</p>
+              <div v-if="referralCodeStored" class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                <p class="font-mono font-semibold text-emerald-800 dark:text-emerald-200 text-lg">{{ referralCodeStored }}</p>
+                <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-2">✓ Referrer will earn commission</p>
+              </div>
+              <div v-else-if="showReferralInput" class="space-y-2">
+                <input 
+                  v-model="referralCodeInput" 
+                  type="text" 
+                  placeholder="Enter referral code"
+                  class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                />
+                <p class="text-xs text-slate-500 dark:text-slate-400">Support a referrer and help them earn rewards</p>
+                <div class="flex items-center justify-end gap-2">
+                  <button @click="applyReferralCode" :disabled="!referralCodeInput" class="px-3 py-2 bg-brand-600 text-white rounded-lg disabled:opacity-50">Apply</button>
+                  <button @click="showReferralInput = false" class="px-3 py-2 border rounded-lg">Cancel</button>
+                </div>
+              </div>
+              <button v-else @click="showReferralInput = true" class="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+                + Add Referral Code
+              </button>
+            </div>
+
             <!-- Payment Status Messages -->
             <div v-if="checkout.pendingMessage" class="mt-6 p-4 rounded-lg text-sm" :class="checkout.status === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800' : 'bg-yellow-50 dark:bg-yellow-900/10 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800'">
               {{ checkout.pendingMessage }}
@@ -217,8 +242,8 @@
           </div>
         </div>
 
-        <!-- LEFT COLUMN: Order Summary (now on RIGHT) -->
-        <div class="lg:col-span-1">
+  <!-- LEFT COLUMN: Order Summary (now on RIGHT) -->
+  <div class="lg:col-span-1 order-1 lg:order-2">
           <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-6 sticky top-6 space-y-6">
             <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Order Summary</h2>
 
@@ -270,30 +295,7 @@
               </div>
             </div>
 
-            <!-- Referral Code Section -->
-            <div class="pb-6 border-b border-slate-200 dark:border-slate-700">
-              <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Referral Code</p>
-              <div v-if="referralCodeStored" class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
-                <p class="font-mono font-semibold text-emerald-800 dark:text-emerald-200 text-lg">{{ referralCodeStored }}</p>
-                <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-2">✓ Referrer will earn commission</p>
-              </div>
-              <div v-else-if="showReferralInput" class="space-y-2">
-                <input 
-                  v-model="referralCodeInput" 
-                  type="text" 
-                  placeholder="Enter referral code"
-                  class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent"
-                />
-                <p class="text-xs text-slate-500 dark:text-slate-400">Support a referrer and help them earn rewards</p>
-              </div>
-              <button 
-                v-else 
-                @click="showReferralInput = true"
-                class="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-              >
-                + Add Referral Code
-              </button>
-            </div>
+            <!-- Referral Code was moved to payment column to appear near the action button -->
 
             <!-- Limit Info Alert -->
             <div v-if="limitInfo" class="p-4 rounded-lg" :class="limitInfo.reached ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700' : 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700'">
@@ -586,6 +588,17 @@ function loadReferralCode() {
   } catch (e) {
     console.debug('Could not load referral code from storage', e)
   }
+}
+
+function applyReferralCode() {
+  if (!referralCodeInput.value) return
+  try {
+    localStorage.setItem('modeh:referral_code', referralCodeInput.value)
+  } catch (e) {
+    console.debug('Could not save referral code', e)
+  }
+  referralCodeStored.value = referralCodeInput.value
+  showReferralInput.value = false
 }
 
 async function initiatePayment(type: 'subscription' | 'one-off', details: Record<string, any>) {

@@ -228,6 +228,13 @@
 
   
   </div>
+
+  <UModal v-model="showLoginModal" :ui="{ width: 'sm:max-w-md' }">
+    <div class="p-4">
+      <LoginForm :compact="true" :suppressRedirect="true" @success="onLoginSuccess" />
+    </div>
+  </UModal>
+
 </template>
 
 <script setup>
@@ -240,10 +247,16 @@ import VideoPlayer from '~/components/media/VideoPlayer.vue'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import useApi from '~/composables/useApi'
 import { resolveAssetUrl } from '~/composables/useAssets'
+import UModal from '~/components/ui/UModal.vue'
+import LoginForm from '~/components/Auth/LoginForm.vue'
+import { useAuthStore } from '~/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
+const auth = useAuthStore()
+const isLoggedIn = computed(() => !!auth.user && !!auth.user.id)
+const showLoginModal = ref(false)
 
 const baseUrl = computed(() => {
   const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
@@ -425,11 +438,35 @@ function getDifficultyEmoji(level) {
 
 // Actions
 function startQuiz() {
-  router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
+  // Only allow direct start for logged-in quizees; otherwise open login modal
+  if (isLoggedIn.value) {
+    const role = auth.user?.role
+    if (role === 'quizee') {
+      return router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
+    }
+    if (role === 'quiz-master') {
+      // quiz-masters: send to their management/preview page
+      return router.push(`/quiz-master/quizzes/${quiz.value.slug}`)
+    }
+    // fallback for other roles
+    return router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
+  }
+
+  // Not logged in: open login modal (for quizee sign-in)
+  showLoginModal.value = true
 }
 
 function showPreview() {
   router.push(`/quizzes/${quiz.value.slug}/preview`)
+}
+
+function onLoginSuccess(user) {
+  showLoginModal.value = false
+  // prefer role from emitted user payload, fallback to auth store
+  const role = user?.role || auth.user?.role
+  if (role === 'quizee') router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
+  else if (role === 'quiz-master') router.push(`/quiz-master/quizzes/${quiz.value.slug}`)
+  else router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
 }
 
 // Update head reactively when quizData becomes available
