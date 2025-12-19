@@ -18,7 +18,7 @@
             Browse all topics
           </NuxtLink>
           <NuxtLink
-            :to="`/quizee/quizzes?subject=${encodeURIComponent(subject?.slug || subject?.id)}`"
+            :to="`/quizee/quizzes?subject=${encodeURIComponent(subject?.slug)}`"
             class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
             Explore assessments
@@ -81,7 +81,7 @@
               :key="t.id"
               :title="t.name"
               :slug="t.slug"
-              :to="`/quizee/topics/${t.slug || t.id}`"
+              :to="`/quizee/topics/${t.slug}`"
               :quizzes-count="t.quizzes_count || 0"
               :subject="subject?.name || subject?.id"
             />
@@ -99,6 +99,7 @@ import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
+import useSeo from '~/composables/useSeo'
 import PageHero from '~/components/ui/PageHero.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
@@ -115,8 +116,9 @@ const route = useRoute()
 const auth = useAuthStore()
 const api = useApi()
 const taxonomy = useTaxonomy()
+const seo = useSeo()
 
-const subjectId = computed(() => route.params.id)
+const slug = computed(() => route.params.slug)
 const loading = ref(false)
 const error = ref(false)
 const subject = ref<any>(null)
@@ -171,16 +173,16 @@ async function fetchSubjectAndTopics() {
   loading.value = true
   error.value = false
   try {
-    const subjectRes = await api.get(`/api/subjects/${subjectId.value}`)
+    const subjectRes = await api.get(`/api/subjects?slug=${slug.value}`)
     if (!subjectRes.ok) {
       error.value = true
       loading.value = false
       return
     }
     const subjectData = await subjectRes.json()
-    subject.value = (subjectData && subjectData.subject) ? subjectData.subject : (subjectData.data || subjectData)
+    subject.value = (subjectData && subjectData.subjects && subjectData.subjects[0]) ? subjectData.subjects[0] : ((subjectData && subjectData.subject) ? subjectData.subject : (subjectData.data || subjectData))
 
-    const topicsRes = await api.get(`/api/subjects/${subjectId.value}/topics`)
+    const topicsRes = await api.get(`/api/subjects/${subject.value?.id || slug.value}/topics`)
     if (topicsRes.ok) {
       const topicsData = await topicsRes.json()
       topics.value = topicsData.data || topicsData.topics || []
@@ -195,7 +197,7 @@ async function fetchSubjectAndTopics() {
 // search was removed; no-op
 
 onMounted(() => {
-  if (subjectId.value) {
+  if (slug.value) {
     fetchSubjectAndTopics()
   }
   ;(async () => {
@@ -206,6 +208,20 @@ onMounted(() => {
       else if (taxonomy.fetchGrades) await taxonomy.fetchGrades()
       const gid = subject.value?.grade?.id || subject.value?.grade_id || null
       if (gid && taxonomy.fetchSubjectsByGrade) await taxonomy.fetchSubjectsByGrade(gid)
+      
+      // Setup SEO for subject page
+      if (subject.value?.id && subject.value?.slug) {
+        seo.setupPageSeo(
+          {
+            id: subject.value.id,
+            name: subject.value.name || 'Subject',
+            slug: subject.value.slug,
+            description: subject.value.description || subject.value.summary
+          },
+          'subject',
+          window.location.origin
+        )
+      }
     } catch (e) {
     }
   })()

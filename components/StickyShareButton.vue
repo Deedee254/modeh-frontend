@@ -100,6 +100,7 @@ import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 interface Props {
   itemType?: string
   itemId?: number | string
+  itemSlug?: string
   itemTitle?: string
   baseUrl?: string
   disabled?: boolean
@@ -117,9 +118,9 @@ const isVisible = ref(false)
 
 // Determine the share URL
 const shareUrl = computed(() => {
-  if (!props.itemId) return props.baseUrl
+  if (!props.itemId && !props.itemSlug) return props.baseUrl
   const path = props.itemType.toLowerCase() === 'quiz'
-    ? `/quizzes/${props.itemId}`
+    ? `/quizzes/${props.itemSlug || props.itemId}`
     : `/tournaments/${props.itemId}`
   return `${props.baseUrl}${path}`
 })

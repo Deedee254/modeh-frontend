@@ -167,7 +167,7 @@
               <NuxtLink
                 v-for="qm in quizMasters.slice(0, 10)"
                 :key="qm.id"
-                :to="`/quizee/quiz-masters/${qm.id}`"
+                :to="`/quizee/quiz-masters/${qm.slug}`"
                 class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100"
               >
                 <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold flex-shrink-0">

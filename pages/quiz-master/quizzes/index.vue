@@ -133,7 +133,7 @@
                   :showEdit="true"
                   :editLink="quiz.editLink"
                   @approve="toggleApprove(quiz)"
-                  @edit="() => router.push(`/quiz-master/quizzes/${quiz?.id || ''}/edit`)"
+                  @edit="() => router.push(`/quiz-master/quizzes/${quiz?.slug}/edit`)"
                 />
               </div>
 
@@ -198,7 +198,7 @@ const normalizedQuizzes = computed(() => {
   const quizzes = paginator.value?.data || []
   return quizzes
     .filter(q => q && q.id) // Ensure quiz and quiz.id exist
-    .map(quiz => ({
+      .map(quiz => ({
       ...quiz, // Pass through original properties like is_approved
       id: quiz.id,
       title: quiz.title || quiz.name || 'Untitled Quiz',
@@ -212,8 +212,9 @@ const normalizedQuizzes = computed(() => {
       questionsCount: quiz.questions_count ?? quiz.questions?.length ?? 0,
       attemptsCount: quiz.attempts_count ?? 0,
       likes: quiz.likes_count ?? quiz.likes ?? 0,
-      startLink: `/quiz-master/quizzes/${quiz.id}`,
-      editLink: `/quiz-master/quizzes/${quiz.id}/edit`,
+      // Use slug-only routes for quiz navigation
+      startLink: `/quiz-master/quizzes/${quiz.slug}`,
+      editLink: `/quiz-master/quizzes/${quiz.slug}/edit`,
     }))
 })
 

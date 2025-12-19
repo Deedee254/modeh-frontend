@@ -1,102 +1,14 @@
 <template>
   <div>
-    <!-- Hero -->
-    <section class="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-slate-900">
-      <!-- Background Image with Overlay -->
-      <div class="absolute inset-0 z-0 w-full h-full">
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-900/75 via-slate-900/65 to-slate-900/75 z-10"></div>
-        <img 
-          src="/hero-banner.jpg" 
-          alt="Learning background" 
-          class="w-full h-full object-cover"
-        />
-      </div>
+      <HeroSection
+      :current-message-index="currentMessageIndex"
+      :rotating-messages="rotatingMessages"
+      :hero-headings="heroHeadings"
+        :featured-quizzes="latestQuizzes"
+        :loading="quizzesLoading"
+    />
 
-      <div class="relative z-20 w-full px-4 sm:px-6 py-20 flex items-center justify-center">
-        <div class="w-full max-w-7xl mx-auto">
-          <!-- Authenticated: Welcome section -->
-          <template v-if="auth.user">
-              <div class="text-center max-w-3xl mx-auto px-4">
-                <h1 class="text-5xl sm:text-6xl font-bold text-white mb-2">Welcome back, {{ auth.user.name }}! 👋</h1>
-              <div class="h-20 flex items-center justify-center">
-                <p class="text-xl sm:text-2xl text-brand-100 font-semibold transition-all duration-700">
-                  {{ rotatingMessages[currentMessageIndex] }}
-                </p>
-              </div>
-              
-              <div class="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <!-- Quizee Dashboard -->
-                <template v-if="auth.user.role === 'quizee'">
-                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
-                    <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
-                    Dashboard
-                  </NuxtLink>
-                  <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
-                    <Icon name="heroicons:sparkles-20-solid" class="h-5 w-5" />
-                    Explore Quizzes
-                  </NuxtLink>
-                </template>
-
-                <!-- Quiz Master Dashboard -->
-                <template v-else-if="auth.user.role === 'quiz-master'">
-                  <NuxtLink to="/quiz-master/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
-                    <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
-                    Dashboard
-                  </NuxtLink>
-                  <NuxtLink to="/quiz-master/quizzes/create" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
-                    <Icon name="heroicons:pencil-square-20-solid" class="h-5 w-5" />
-                    Create Quiz
-                  </NuxtLink>
-                </template>
-
-                <!-- Default Dashboard for other roles -->
-                <template v-else>
-                  <NuxtLink to="/quizee/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
-                    <Icon name="heroicons:chart-bar-20-solid" class="h-5 w-5" />
-                    Dashboard
-                  </NuxtLink>
-                  <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
-                    <Icon name="heroicons:sparkles-20-solid" class="h-5 w-5" />
-                    Explore
-                  </NuxtLink>
-                </template>
-              </div>
-            </div>
-          </template>
-
-          <!-- Not Authenticated: Featured quizzes and CTA -->
-          <template v-else>
-            <div class="text-center max-w-4xl mx-auto">
-              <div class="h-32 flex items-center justify-center">
-                <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-white transition-all duration-700">
-                  {{ heroHeadings[currentMessageIndex] }}
-                </h1>
-              </div>
-              <div class="h-24 flex items-center justify-center">
-                <p class="text-lg sm:text-xl text-brand-100 font-medium transition-all duration-700">
-                  {{ rotatingMessages[currentMessageIndex] }}
-                </p>
-              </div>
-              
-              <div class="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <NuxtLink to="/quizzes" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105">
-                  <Icon name="heroicons:squares-2x2-20-solid" class="h-5 w-5" />
-                  Explore Quizzes
-                </NuxtLink>
-                <NuxtLink to="/register" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-950 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105">
-                  <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5" />
-                  Create Account
-                </NuxtLink>
-              </div>
-              
-              <div class="mt-8 text-sm text-brand-100">
-                Already have an account? Sign in using the <span class="font-semibold">Login</span> button in the header.
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-    </section>
+  <!-- Learn/Create/Manage CTAs removed from here and placed after Topics section -->
 
     <!-- Page Content Wrapper -->
     <div class="bg-gray-50">
@@ -113,10 +25,11 @@
         <div class="mt-14 md:hidden">
           <div class="relative space-y-8">
             <div class="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-600 via-accent-500 to-brand-950"></div>
-            <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative pl-24 animate-fade-in" :style="{ '--animation-delay': `${index * 0.15}s` }">
-              <div class="absolute left-0 top-2 h-16 w-16 flex items-center justify-center rounded-full border-4 border-white bg-gradient-to-br" :class="step.badge">
-                <UIcon :name="step.icon" class="text-white text-xl" />
-              </div>
+            <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative pl-24 animate-fade-in group" :style="{ '--animation-delay': `${index * 0.15}s` }">
+              <div class="absolute left-0 top-2 h-16 w-16 flex items-center justify-center rounded-full border-4 border-white bg-gradient-to-br transform transition-transform duration-300 group-hover:scale-110 group-hover:shadow-lg" :class="step.badge">
+                  <span class="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" :class="step.glow"></span>
+                  <UIcon :name="step.icon" class="text-white text-xl relative z-10 transform transition-transform duration-300 group-hover:rotate-6" />
+                </div>
               <div>
                 <h3 class="text-lg font-semibold text-slate-900">{{ step.title }}</h3>
                 <p class="mt-2 text-sm text-slate-600">{{ step.description }}</p>
@@ -127,10 +40,10 @@
 
         <!-- Desktop Grid (4 columns) -->
         <div class="mt-14 hidden md:grid grid-cols-2 gap-8 lg:grid-cols-4">
-          <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="text-center animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
-            <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl transition-transform duration-300 hover:scale-110" :class="step.badge">
-              <span class="absolute inset-0.5 rounded-2xl" :class="step.glow"></span>
-              <UIcon :name="step.icon" class="relative text-white text-2xl" />
+          <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="text-center animate-fade-in group" :style="{ '--animation-delay': `${index * 0.1}s` }">
+            <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl transition-transform duration-300 group hover:scale-105 hover:shadow-xl" :class="step.badge">
+              <span class="absolute inset-0.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" :class="step.glow"></span>
+              <UIcon :name="step.icon" class="relative text-white text-2xl z-10 transform transition-transform duration-300 group-hover:scale-110" />
             </div>
             <h3 class="mt-5 text-lg font-semibold text-slate-900">{{ step.title }}</h3>
             <p class="mt-2 text-sm text-slate-600">{{ step.description }}</p>
@@ -139,26 +52,14 @@
       </div>
     </section>
 
-    <!-- Quizzes section -->
-    <section class="py-12">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <header class="text-center max-w-2xl mx-auto">
-          <h2 class="text-3xl font-bold text-slate-900">Featured Quizzes</h2>
-          <p class="mt-3 text-slate-600">Explore quizzes curated by our community. Find new challenges, top-rated content, and featured picks to test your knowledge.</p>
-        </header>
-
-        <div class="mt-10">
-          <div v-if="safeArray(displayedQuizzesByGrade).length" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <UiQuizCard v-for="quiz in safeArray(displayedQuizzesByGrade).slice(0,8)" :key="quiz.id" :to="`/quizee/quizzes/${quiz.id || ''}`" :startLink="`/quizee/quizzes/${quiz.id || ''}`" :takeLink="`/quizee/quizzes/take/${quiz.id || ''}`" :title="quiz.title" :topic="quiz.topic?.name || quiz.topic_name" :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name" :grade="quiz.grade || quiz.grade_id" :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count" :cover="quiz.cover_image || quiz.cover" :palette="pickPaletteClass(quiz.topic?.id || quiz.id)" :likes="quiz.likes_count ?? quiz.likes ?? 0" :quiz-id="quiz.id" :liked="quiz.liked" :description="quiz.description || quiz.summary || ''" @like="onQuizLike(quiz, $event)" />
-          </div>
-          <div v-else class="text-center text-rose-700/70 text-sm">No quizzes yet for this filter. Check back soon.</div>
-        </div>
-
-        <div class="mt-8 text-center">
-          <NuxtLink to="/quizzes" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all quizzes</NuxtLink>
-        </div>
-      </div>
-    </section>
+    <!-- Quizzes section (componentized) -->
+    <QuizzesSection
+      :quizzes="safeArray(displayedQuizzesByGrade)"
+      v-model:selectedTab="selectedTab"
+      :pick-palette-class="pickPaletteClass"
+      :on-quiz-like="onQuizLike"
+      :loading="quizzesLoading"
+    />
 
     <section class="py-12">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -168,12 +69,12 @@
           <p class="mt-3 text-slate-600">Explore subject tracks with aligned quizzes and topic roadmaps to guide learning and progression.</p>
         </header>
 
-<div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
           <SubjectCard
             v-for="subject in randomSubjects"
             :key="subject.id"
             :subject="subject"
-            :to="`/subjects/${subject.slug || subject.id}`"
+            :to="`/subjects/${subject.slug}`"
             :title="subject.name"
             :subtitle="`Grades ${ Array.isArray(subject.grades) ? subject.grades.map(g => g.name || g.id).join(', ') : subject.grade?.name || subject.grade_id || 'All' }`"
             :image="subject.image"
@@ -192,65 +93,11 @@
       </div>
     </section>
 
-    <!-- Levels section -->
-    <section class="py-12">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <header class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Levels</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Learning levels</h3>
-          <p class="mt-3 text-slate-600">Navigate content organized by learning level — Early Years, Primary, Secondary, and Tertiary — to find age-appropriate material and pathways.</p>
-        </header>
+  <!-- Levels section replaced with LevelQuizzes component -->
+  <LevelQuizzes :levels="safeArray(levels)" :loading="quizzesLoading" />
 
-        <!-- Carousel for all screen sizes -->
-        <ClientOnly>
-          <div class="mt-10">
-            <Carousel :items="safeArray(levels)" :perViewXs="2" :perViewSm="2" :perViewMd="4" :perViewLg="5" :perView="6" :auto="false">
-              <template #item="{ item }">
-                <div class="px-1 sm:px-2">
-                  <LevelCard
-                    :to="`/levels/${item.id}`"
-                    :title="item.name"
-                    :level="item"
-                    :subtitle="item.description || ''"
-                    :grades_count="(Array.isArray(item.grades) ? item.grades.length : 0)"
-                    :actionLink="`/levels/${item.id}`"
-                    actionLabel="Explore level"
-                  />
-                </div>
-              </template>
-            </Carousel>
-          </div>
-        </ClientOnly>
-
-        <div class="mt-6 text-center">
-          <NuxtLink to="/levels" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">View all levels</NuxtLink>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-12 bg-gradient-to-br from-white to-brand-600/10">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <header class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Grades</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Grades</h3>
-          <p class="mt-3 text-slate-600">Find quizzes and resources organized by grade so learners and educators can match content to curriculum standards.</p>
-        </header>
-
-<div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <GradeCard
-            v-for="grade in safeArray(GRADES).slice(0,6)"
-            :key="grade.id"
-            :to="`/grades/${grade.id}`"
-            :title="grade.name || grade.id"
-            :grade="grade"
-            :quizzes_count="grade.quizzes_count || 0"
-            :subjects_count="grade.subjects_count || 0"
-            actionLabel="Explore Grade"
-            :actionLink="`/grades/${grade.id}`"
-          />
-        </div>
-      </div>
-    </section>
+  <!-- New CategoryBanner: replaces separate Grades and Courses sections -->
+  <CategoryBanner :grades="safeArray(GRADES)" :courses="safeArray(randomCourses)" />
 
     <section class="py-12">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -264,7 +111,7 @@
           <div v-for="(topic, index) in randomTopics" :key="topic.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
             <TopicCard
               :topic="topic"
-              :to="`/topics/${topic.id}`"
+              :to="`/topics/${topic.slug}`"
               :title="topic.name"
               :image="topic.image || topic.cover_image || ''"
               :grade="getTopicGradeLabel(topic)"
@@ -282,6 +129,10 @@
       </div>
     </section>
 
+    <!-- Learn/Create/Manage CTAs (shown only to unauthenticated users) -->
+    <LearnCreateManagePills />
+
+
     <!-- Tertiary Courses Section -->
     <section class="py-12 bg-gradient-to-br from-brand-600/10 to-brand-950/10">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -295,11 +146,11 @@
           <div v-for="(course, index) in randomCourses" :key="course.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
             <GradeCard
               :grade="course"
-              :to="`/courses/${course.id}`"
+              :to="`/courses/${course.slug}`"
               :title="course.name"
               :description="course.description || course.summary || ''"
               :quizzes_count="course.quizzes_count || 0"
-              :actionLink="`/courses/${course.id}`"
+              :actionLink="`/courses/${course.slug}`"
               :actionLabel="'Explore Course'"
               class="h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02] compact-view"
             />
@@ -433,7 +284,11 @@ import SubjectCard from '~/components/ui/SubjectCard.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
 import LevelCard from '~/components/ui/LevelCard.vue'
+import LevelQuizzes from '~/components/LevelQuizzes.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
+import HeroSection from '~/components/HeroSection.vue'
+import QuizzesSection from '~/components/QuizzesSection.vue'
+import CategoryBanner from '~/components/CategoryBanner.vue'
 
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
@@ -494,20 +349,18 @@ function safeArray(input) {
   return []
 }
 
-// tabs
-const selectedTab = ref('all')
-
-// data fetches - non-blocking
-// All data fetching is now async and won't block hero section rendering
+// quiz data refs used across the page
+const latestQuizzes = ref([])
+const featuredQuiz = ref(null)
+const featuredQuizMasters = ref([])
 let quizzesData = null
 let quizMastersData = null
 let testimonialsData = null
 let sponsorsData = null
 
-// Initialize with empty arrays - will be populated by async fetches
-const latestQuizzes = ref([])
-const featuredQuiz = ref(null)
-const featuredQuizMasters = ref([])
+// Loading flags
+const quizzesLoading = ref(true)
+
 const testimonials = ref([])
 const sponsors = ref([])
 
@@ -528,6 +381,9 @@ const loadDynamicData = async () => {
       latestQuizzes.value = safeArray(quizzesData?.quizzes?.data || quizzesData?.quizzes || quizzesData).slice(0, 12)
       featuredQuiz.value = latestQuizzes.value.length ? latestQuizzes.value[0] : null
     }
+
+    // mark quizzes loading complete (whether ok or empty)
+    quizzesLoading.value = false
 
     // Process quiz masters
     if (quizMastersRes.ok) {
@@ -553,6 +409,7 @@ const loadDynamicData = async () => {
     }
   } catch (error) {
     console.error('Error loading dynamic data:', error)
+    quizzesLoading.value = false
   }
 }
 
@@ -575,24 +432,38 @@ const GRADES_BY_ID = computed(() => {
 })
 
 const displayedQuizzes = computed(() => {
-  if (selectedTab.value === 'featured' && featuredQuiz) {
-    const rest = latestQuizzes.filter(q => q.id !== (featuredQuiz?.id ?? null))
-    return [featuredQuiz, ...rest]
+  const quizzesArray = safeArray(latestQuizzes)
+  const featured = unref(featuredQuiz)
+
+  if (selectedTab.value === 'featured' && featured) {
+    const rest = quizzesArray.filter(q => q.id !== (featured?.id ?? null))
+    return [featured, ...rest]
   }
+
   if (selectedTab.value === 'new') {
-    return latestQuizzes
+    return quizzesArray
       .slice()
       .sort((a, b) => new Date(b.created_at || b.published_at || 0) - new Date(a.created_at || a.published_at || 0))
   }
+
   if (selectedTab.value === 'top') {
-    return latestQuizzes.slice().sort((a, b) => {
+    return quizzesArray.slice().sort((a, b) => {
       const aPop = a.attempts || a.attempt_count || a.play_count || a.plays || 0
       const bPop = b.attempts || b.attempt_count || b.play_count || b.plays || 0
       if (bPop !== aPop) return bPop - aPop
       return (b.difficulty || 0) - (a.difficulty || 0)
     })
   }
-  return latestQuizzes
+
+  if (selectedTab.value === 'liked') {
+    return quizzesArray.slice().sort((a, b) => {
+      const aLikes = a.likes_count || a.likes || 0
+      const bLikes = b.likes_count || b.likes || 0
+      return bLikes - aLikes
+    })
+  }
+
+  return quizzesArray
 })
 
 function pickPaletteClass(id){
@@ -658,6 +529,9 @@ function getTopicSubjectLabel(topic) {
 
 // Homepage should show quizzes across grades by default. Keep grade selector available but start unfiltered.
 const selectedGrade = ref(null)
+
+// Selected tab for quiz sorting (new | top | liked | featured)
+const selectedTab = ref('new')
 
 // Helper function to shuffle and pick random items
 function getRandomItems(arr, count = 4) {

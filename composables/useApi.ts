@@ -67,8 +67,10 @@ export function useApi() {
         // XSRF-TOKEN cookie to appear. If it appears earlier we return immediately.
         if (typeof document !== 'undefined') {
           const start = Date.now()
-          const timeout = 1000
-          const interval = 50
+          // Shorter poll window: usually the cookie is set immediately; keep
+          // a brief poll for rare races but don't block the UI for 1s in dev.
+          const timeout = 200
+          const interval = 25
           while (Date.now() - start < timeout) {
             const xs = getXsrfFromCookie()
             if (xs) {

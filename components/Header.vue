@@ -28,17 +28,28 @@
         </NuxtLink>
       </div>
 
-      <!-- Search bar -->
-  <div class="flex-1 flex justify-center px-6 hidden md:flex">
+      <!-- Search bar (desktop) -->
+  <form @submit.prevent="submitSearch" class="flex-1 flex justify-center px-6 hidden md:flex">
         <div class="w-full max-w-md">
           <div class="relative">
-            <input type="search" placeholder="Search for quizzes, topics..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" />
-            <div class="absolute left-3 top-1/2 -translate-y-1/2">
-              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input v-model="searchQuery" @keydown.enter.prevent="submitSearch" type="search" placeholder="Search for quizzes, topics..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" />
+            <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </button>
+            <!-- Suggestions dropdown (desktop) -->
+            <div v-if="showSuggestions && suggestions.length" class="absolute left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-800 border rounded-md shadow-lg overflow-hidden">
+              <ul class="divide-y">
+                <li v-for="(item, idx) in suggestions" :key="item.id || idx">
+                  <button @click.prevent="submitSuggestion(item)" class="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <div class="text-sm font-medium text-slate-900 dark:text-white">{{ item.title }}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ item.subtitle }}</div>
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-      </div>
+      </form>
 
       <!-- Right side -->
   <div class="flex items-center gap-3">
@@ -55,7 +66,7 @@
                         <div class="max-h-64 overflow-auto">
                           <ul class="space-y-1">
                             <li v-for="lvl in headerLevels" :key="lvl.id">
-                              <NuxtLink :to="`/levels/${lvl.id}`" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="showQuizzesDropdown=false">{{ lvl.name }}</NuxtLink>
+                              <NuxtLink :to="`/levels/${lvl.slug}`" class="block px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" @click="showQuizzesDropdown=false">{{ lvl.name }}</NuxtLink>
                             </li>
                             <li v-if="!headerLevels || headerLevels.length === 0" class="text-sm text-slate-500 px-2 py-1">No levels found</li>
                           </ul>
@@ -94,8 +105,9 @@
                         </transition>
                       </div>
 
+          <NuxtLink to="/tournaments" class="hover:text-brand-600 dark:hover:text-brand-400 py-2">Tournaments</NuxtLink>
           <NuxtLink to="/quiz-masters" class="hover:text-brand-600 dark:hover:text-brand-400 py-2">Quiz Masters</NuxtLink>
-          <NuxtLink to="/pricing" class="hover:text-brand-600 dark:hover:text-brand-400 py-2">Pricing</NuxtLink>
+          <NuxtLink v-if="!isAuthed" to="/pricing" class="hover:text-brand-600 dark:hover:text-brand-400 py-2">Pricing</NuxtLink>
         </nav>
 
         <!-- Auth buttons and User menu (hidden on institution-manager pages to avoid duplicate profile controls) -->
@@ -108,22 +120,29 @@
       <button @click="showSearch = !showSearch" class="mr-3">
         <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
       </button>
-      <button @click="showMobileMenu = !showMobileMenu" class="relative z-60">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-      </button>
-    </div>
       </div>
     </div>
 
-    <!-- Mobile Search -->
-    <div v-if="showSearch" class="md:hidden px-4 pb-4">
-        <div class="relative">
-            <input type="search" placeholder="Search..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" />
-            <div class="absolute left-3 top-1/2 -translate-y-1/2">
-                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </div>
-        </div>
-    </div>
+  <!-- Mobile Search -->
+  <div v-if="showSearch" class="md:hidden px-4 pb-4">
+    <form @submit.prevent="submitSearch" class="relative">
+      <input v-model="searchQuery" type="search" placeholder="Search..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" />
+      <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </button>
+      <!-- Suggestions dropdown (mobile) -->
+      <div v-if="showSuggestions && suggestions.length" class="absolute left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-800 border rounded-md shadow-lg overflow-hidden">
+        <ul class="divide-y">
+          <li v-for="(item, idx) in suggestions" :key="item.id || idx">
+            <button @click.prevent="submitSuggestion(item)" class="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700">
+              <div class="text-sm font-medium text-slate-900 dark:text-white">{{ item.title }}</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400">{{ item.subtitle }}</div>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </form>
+  </div>
 
     <!-- Mobile Menu -->
     <transition name="fade">
@@ -142,6 +161,10 @@
               <NuxtLink to="/quizzes" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
                 <div class="font-semibold">Quizzes</div>
                 <div class="text-xs text-slate-500">All quizzes</div>
+              </NuxtLink>
+              <NuxtLink to="/tournaments" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
+                <div class="font-semibold">Tournaments</div>
+                <div class="text-xs text-slate-500">Live events</div>
               </NuxtLink>
               <NuxtLink v-if="!isAuthed" to="/levels" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
                 <div class="font-semibold">Levels</div>
@@ -179,7 +202,7 @@
                 <div class="font-semibold">Quiz Masters</div>
                 <div class="text-xs text-slate-500">Our creators</div>
               </NuxtLink>
-              <NuxtLink to="/pricing" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
+              <NuxtLink v-if="!isAuthed" to="/pricing" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
                 <div class="font-semibold">Pricing</div>
                 <div class="text-xs text-slate-500">Plans & pricing</div>
               </NuxtLink>
@@ -190,18 +213,20 @@
               <NuxtLink to="/login" class="flex-1 text-center px-4 py-3 border rounded text-sm">Login</NuxtLink>
               <NuxtLink to="/register?role=quizee" class="flex-1 text-center px-4 py-3 bg-brand-600 text-white rounded-full font-medium hover:bg-brand-700">Register</NuxtLink>
             </div>
-          </div>
-        </div>
       </div>
+    </div>
+    </div>
     </transition>
+  </div>
   </header>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import AccountMenu from '~/components/AccountMenu.vue'
 import { useRoute } from '#imports'
 import useTaxonomy from '~/composables/useTaxonomy'
+import { useApi } from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
 import { useInstitutionsStore } from '~/stores/institutions'
 
@@ -213,7 +238,95 @@ const showQuizzesDropdown = ref(false)
 const showCategoriesDropdown = ref(false)
 const showMobileCategoriesDropdown = ref(false)
 const showSearch = ref(false)
+const searchQuery = ref('')
 const route = useRoute()
+const api = useApi()
+
+// Search suggestions state
+const suggestions = ref([])
+const showSuggestions = ref(false)
+const loadingSuggestions = ref(false)
+let suggestionsTimer = null
+
+function clearSuggestions() {
+  suggestions.value = []
+  showSuggestions.value = false
+  if (suggestionsTimer) {
+    clearTimeout(suggestionsTimer)
+    suggestionsTimer = null
+  }
+}
+
+function submitSuggestion(item) {
+  try {
+    clearSuggestions()
+  const path = item.path || (item.type === 'quiz' && item.slug ? `/quizzes/${item.slug}` : null)
+    if (path) {
+      navigateTo(path)
+      return
+    }
+    // fallback to search results
+    const q = item.title || ''
+    if (q) navigateTo({ path: '/quizzes', query: { q } })
+  } catch (e) {
+    console.error('Error navigating to suggestion', e)
+  }
+}
+
+async function fetchSuggestions(term) {
+  try {
+    const q = (term || '').trim()
+    if (!q || q.length < 2) {
+      clearSuggestions()
+      return
+    }
+    loadingSuggestions.value = true
+    const res = await api.get(`/api/search?q=${encodeURIComponent(q)}&limit=6`)
+    if (!res.ok) {
+      loadingSuggestions.value = false
+      suggestions.value = []
+      showSuggestions.value = false
+      return
+    }
+    const json = await res.json()
+    // normalize possible payload shapes
+    const items = json.results || json.items || json.data || json || []
+    const normalized = (Array.isArray(items) ? items : []).map(it => {
+      const id = it.id || it._id || it.quiz_id || it.topic_id || it.slug || null
+      const title = it.title || it.name || it.question || it.label || it.headline || ''
+      const type = it.type || it.item_type || (it.quiz_id || it.questions_count ? 'quiz' : (it.topic_name || it.topic ? 'topic' : (it.subject_name ? 'subject' : 'unknown')))
+      let path = null
+      if (it.path) path = it.path
+      else if (it.url) path = it.url
+  else if (type === 'quiz' && id) path = `/quizzes/${it.slug}`
+  else if (type === 'topic' && id) path = `/topics/${it.slug}`
+  else if (type === 'subject' && id) path = `/subjects/${it.slug}`
+      return { id, title, type, subtitle: it.subtitle || it.summary || it.topic_name || it.subject_name || '', raw: it, path }
+    })
+    suggestions.value = normalized.slice(0,6)
+    showSuggestions.value = suggestions.value.length > 0
+  } catch (e) {
+    console.error('Search suggestions error', e)
+    suggestions.value = []
+    showSuggestions.value = false
+  } finally {
+    loadingSuggestions.value = false
+  }
+}
+
+// watch searchQuery and debounce suggestions
+watch(searchQuery, (val) => {
+  if (suggestionsTimer) clearTimeout(suggestionsTimer)
+  if (!val || String(val).trim().length < 2) {
+    clearSuggestions()
+    return
+  }
+  suggestionsTimer = setTimeout(() => fetchSuggestions(val), 250)
+})
+
+onBeforeUnmount(() => {
+  if (suggestionsTimer) clearTimeout(suggestionsTimer)
+})
 // account menu functionality moved into AccountMenu component
 
 // preload taxonomy levels so unauthenticated users can navigate to levels/filters
@@ -250,6 +363,16 @@ const profileLink = computed(() => {
 
 function closeMobileMenu() {
   showMobileMenu.value = false
+}
+
+function submitSearch() {
+  const q = (searchQuery.value || '').trim()
+  if (!q) return
+  // navigate to quizzes search results
+  closeMobileMenu()
+  showSearch.value = false
+  // Use navigateTo to keep history handling consistent with Nuxt
+  navigateTo({ path: '/quizzes', query: { q } })
 }
 
 watch(

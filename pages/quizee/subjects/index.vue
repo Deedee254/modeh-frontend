@@ -90,7 +90,7 @@
             :title="subject.name"
             :description="subject.description || subject.summary"
             :slug="subject.slug"
-            :to="`/quizee/subjects/${subject.slug || subject.id}`"
+            :to="`/quizee/subjects/${subject.slug}`"
             :grade="subject.grade || subject.grade_id || ''"
           />
         </div>
@@ -129,6 +129,12 @@ const allCourses = ref<any[]>([])
 const selectedGradeId = ref<number | null>(null)
 const selectedLevelId = ref<number | null>(null)
 const sortOption = ref('newest')
+
+function extractId(val: any) {
+  if (val === null || val === undefined) return null
+  if (typeof val === 'object') return val.id ?? val.value ?? null
+  return val
+}
 
 // Get user profile with proper fallbacks
 const userProfile = computed(() => {

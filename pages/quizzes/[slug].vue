@@ -255,12 +255,24 @@ const baseUrl = computed(() => {
 // Avoid `await` here so `definePageMeta` and computed getters can react to the
 // `quizData` ref safely without causing server-side timing/500 errors.
 const api = useApi()
-const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizzes/${route.params.id}`, {
+const slug = computed(() => route.params.slug)
+
+// Fetch quiz by slug - API still returns data with ID
+const { data: quizData, pending } = useFetch(() => {
+  if (!slug.value) return null
+  return config.public.apiBase + `/api/quizzes?slug=${slug.value}`
+}, {
   credentials: 'include',
   headers: computed(() => ({
     'X-Requested-With': 'XMLHttpRequest',
     ...(api.getXsrfFromCookie() ? { 'X-XSRF-TOKEN': api.getXsrfFromCookie() } : {})
-  }))
+  })),
+  transform: (data) => {
+    // API returns { quizzes: [...] } or { quiz: {...} }
+    if (data?.quiz) return { quiz: data.quiz }
+    if (data?.quizzes?.length > 0) return { quiz: data.quizzes[0] }
+    return { quiz: null }
+  }
 })
 
 // Make `quiz` a computed ref so its value is derived from `quizData` reactively.
@@ -268,8 +280,9 @@ const { data: quizData, pending } = useFetch(config.public.apiBase + `/api/quizz
 // server to render placeholders while the client immediately had data,
 // producing hydration mismatches).
 const quiz = computed(() => (
-  quizData?.value?.quiz || quizData?.value || {
-    id: route.params.id,
+  quizData?.value?.quiz || {
+    id: null,
+    slug: route.params.slug,
     title: 'Loading...',
     description: '',
     questions: []
@@ -285,11 +298,11 @@ const pageDescription = computed(() => {
 })
 
 const structuredData = computed(() => {
-  if (!quiz.value || !quiz.value.id || pending.value) {
+  if (!quiz.value || !quiz.value.slug || pending.value) {
     return null;
   }
 
-  const quizUrl = `${baseUrl.value}/${quiz.value.id}`;
+  const quizUrl = `${baseUrl.value}/${quiz.value.slug}`;
   const orgUrl = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
 
   const data = {
@@ -412,11 +425,11 @@ function getDifficultyEmoji(level) {
 
 // Actions
 function startQuiz() {
-  router.push(`/quizee/quizzes/take/${quiz.value.id}`)
+  router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
 }
 
 function showPreview() {
-  router.push(`/quizzes/${quiz.value.id}/preview`)
+  router.push(`/quizzes/${quiz.value.slug}/preview`)
 }
 
 // Update head reactively when quizData becomes available

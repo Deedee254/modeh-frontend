@@ -32,13 +32,13 @@
           <GradeCard
             v-for="g in levelGradesWithCounts"
             :key="g.id"
-            :to="`/grades/${g.id}`"
-            :title="g.name || g.title || g.id"
+            :to="`/grades/${g.slug}`"
+            :title="g.name || g.title || g.slug"
             :grade="g"
             :quizzes_count="g.quizzes_count"
             :subjects_count="g.subjects_count"
             actionLabel="Explore Grade"
-            :actionLink="`/grades/${g.id}`"
+            :actionLink="`/grades/${g.slug}`"
           />
         </div>
 
@@ -56,7 +56,7 @@ import GradeCard from '~/components/ui/GradeCard.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 const route = useRoute()
-const id = route.params.id
+const slug = computed(() => route.params.slug)
 const config = useRuntimeConfig()
 
 const level = ref({})
@@ -72,19 +72,21 @@ function onSearch() { /* no-op: PageHero search not used here */ }
 onMounted(async () => {
   loading.value = true
   try {
-    // fetch level metadata from API if available
+    // fetch level metadata from API using slug
     try {
-      const res = await $fetch(`${config.public.apiBase}/api/levels/${id}`)
-      level.value = (res && res.level) ? res.level : (res || {})
+      const res = await $fetch(`${config.public.apiBase}/api/levels?slug=${slug.value}`)
+      const levelData = (res && res.levels && res.levels[0]) ? res.levels[0] : ((res && res.level) ? res.level : (res || {}))
+      level.value = levelData
     } catch (e) {
       // ignore level fetch error; we will still try to render grades from taxonomy
-      level.value = { id }
+      level.value = { slug: slug.value }
     }
 
     // ensure taxonomy grades are loaded only if the server didn't return nested grades
     try {
       if (!Array.isArray(level.value?.grades) || !level.value.grades.length) {
-        await fetchGradesByLevel(id)
+        const levelId = level.value?.id
+        if (levelId) await fetchGradesByLevel(levelId)
       }
     } catch (e) {}
   } catch (e) {

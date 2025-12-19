@@ -215,7 +215,7 @@ async function loadTopics() {
 }
 
 const handleTopicClick = (topic) => {
-  router.push(`/quiz-master/topics/${topic.id}`)
+  router.push(`/quiz-master/topics/${topic.slug}`)
 }
 
 async function handlePageChange(newPage) {

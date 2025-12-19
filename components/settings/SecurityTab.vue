@@ -1,5 +1,12 @@
 <template>
   <form @submit.prevent="save" class="p-4 space-y-4 max-w-lg">
+    <div v-if="auth.user?.social_provider" class="mb-6 p-4 bg-blue-50 text-blue-700 rounded border border-blue-100">
+      <div class="flex items-center gap-2">
+        <span class="font-medium capitalize">Connected with {{ auth.user.social_provider }}</span>
+      </div>
+      <p class="text-sm mt-1">Your account is linked to your {{ auth.user.social_provider }} account.</p>
+    </div>
+
     <div>
       <label for="current-password" class="block text-sm font-medium">Current password</label>
       <input id="current-password" v-model="form.current" type="password" autocomplete="current-password" class="mt-1 block w-full border rounded px-3 py-2 text-sm" />
@@ -31,8 +38,11 @@ import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 
+import { useAuthStore } from '~/stores/auth'
+
 const alert = useAppAlert()
 const api = useApi()
+const auth = useAuthStore()
 const form = ref({ current: '', password: '', password_confirm: '' })
 const submitting = ref(false)
 

@@ -55,7 +55,7 @@
                       </div>
                     </div>
                     <div class="pt-4">
-                      <NuxtLink :to="`/quizzes/${quiz.id}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
+                      <NuxtLink :to="`/quizzes/${quiz.slug}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                         View Full Quiz
                         <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                       </NuxtLink>
@@ -111,7 +111,7 @@
                     </div>
                   </div>
                   <div class="mt-6 flex flex-col gap-4">
-                    <NuxtLink :to="`/quizzes/${quiz.id}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
+                    <NuxtLink :to="`/quizzes/${quiz.slug}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                       Start Quiz
                       <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                     </NuxtLink>
@@ -150,7 +150,7 @@
                   <p class="text-sm md:text-base leading-relaxed text-gray-700">This quiz might not have public preview content enabled yet, or it might have been removed. You can return to the quiz details or explore other quizzes instead.</p>
 
                   <div class="flex flex-col gap-4 pt-4 sm:flex-row">
-                    <NuxtLink :to="`/quizzes/${id}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
+                    <NuxtLink :to="`/quizzes/${quiz.slug}`" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-sm md:text-base font-semibold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">
                       Back to Quiz
                     </NuxtLink>
                     <NuxtLink to="/quizzes" class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-6 py-3 text-sm md:text-base font-semibold text-gray-700 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2">

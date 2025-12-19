@@ -99,7 +99,7 @@
             :title="grade.name"
             :description="grade.description || grade.summary"
             :slug="grade.slug"
-            :to="`/quizee/grades/${grade.slug || grade.id}`"
+            :to="`/quizee/grades/${grade.slug}`"
             :icon="grade.icon"
           />
         </div>

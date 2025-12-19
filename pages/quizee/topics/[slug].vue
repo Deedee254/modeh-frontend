@@ -12,14 +12,14 @@
       <template #actions>
         <div class="flex flex-wrap items-center gap-3">
           <NuxtLink
-            :to="`/quizee/subjects/${topic?.subject?.slug || topic?.subject_id}`"
-            v-if="topic?.subject?.id || topic?.subject_id"
+            :to="`/quizee/subjects/${topic?.subject?.slug}`"
+            v-if="topic?.subject?.slug"
             class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
           >
             Back to subject
           </NuxtLink>
           <NuxtLink
-            :to="`/quizee/quizzes?topic=${encodeURIComponent(topic?.slug || topic?.id)}`"
+            :to="`/quizee/quizzes?topic=${encodeURIComponent(topic?.slug)}`"
             class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
             Take a quiz
@@ -85,7 +85,7 @@
               No quizzes found for this topic yet.
             </div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <QuizCard
+                <QuizCard
                 v-for="quiz in displayQuizzes"
                 :key="quiz.id"
                 :quiz-id="quiz.id"
@@ -95,7 +95,7 @@
                 :questions-count="quiz.questions_count"
                 :difficulty="quiz.difficulty"
                 :cover="quiz.cover_image"
-                :to="`/quizee/quizzes/${quiz.id}`"
+                :to="`/quizee/quizzes/${quiz.slug}`"
                 :quiz="quiz"
               />
             </div>
@@ -112,6 +112,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import useSeo from '~/composables/useSeo'
 import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
@@ -127,8 +128,9 @@ definePageMeta({
 const route = useRoute()
 const auth = useAuthStore()
 const api = useApi()
+const seo = useSeo()
 
-const topicId = computed(() => route.params.id)
+const slug = computed(() => route.params.slug)
 const loading = ref(false)
 const error = ref(false)
 const topic = ref<any>(null)
@@ -143,14 +145,14 @@ async function fetchTopic() {
   loading.value = true
   error.value = false
   try {
-    const res = await api.get(`/api/topics/${topicId.value}`)
+    const res = await api.get(`/api/topics?slug=${slug.value}`)
     if (!res.ok) {
       error.value = true
       loading.value = false
       return
     }
     const data = await res.json()
-    topic.value = data.topic || data.data || data
+    topic.value = (Array.isArray(data.data) ? data.data[0] : data.data) || data.topic || data
   } catch (e) {
     error.value = true
   } finally {
@@ -159,12 +161,12 @@ async function fetchTopic() {
 }
 
 async function fetchQuizzes(page = 1) {
-  if (!topicId.value) return
+  if (!topic.value?.id) return
   quizzesLoading.value = true
   quizzesError.value = false
   try {
     const query = new URLSearchParams({ page: page.toString() })
-    const res = await api.get(`/api/topics/${topicId.value}/quizzes?${query}`)
+    const res = await api.get(`/api/topics/${topic.value.id}/quizzes?${query}`)
     if (!res.ok) {
       quizzesError.value = true
       return
@@ -202,10 +204,24 @@ const displayQuizzes = computed(() => {
 })
 
 onMounted(async () => {
-  if (topicId.value) {
+  if (slug.value) {
     await fetchTopic()
     if (topic.value) {
       fetchQuizzes()
+      
+      // Setup SEO for topic page
+      if (topic.value?.id && topic.value?.slug) {
+        seo.setupPageSeo(
+          {
+            id: topic.value.id,
+            name: topic.value.name || 'Topic',
+            slug: topic.value.slug,
+            description: topic.value.description || topic.value.summary
+          },
+          'topic',
+          window.location.origin
+        )
+      }
     }
   }
 })

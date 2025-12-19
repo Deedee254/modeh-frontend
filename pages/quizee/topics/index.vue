@@ -89,7 +89,7 @@
                   :key="topic.id"
                   :title="topic.name"
                   :slug="topic.slug"
-                  :to="`/quizee/topics/${topic.slug || topic.id}`"
+                  :to="`/quizee/topics/${topic.slug}`"
                   :quizzes-count="topic.quizzes_count"
                   :subject="topic.subject?.name || topic.subject_name || ''"
                   :grade="getGradeName(topic)"
@@ -133,6 +133,12 @@ const allLevels = ref<any[]>([])
 const allCourses = ref<any[]>([])
 const selectedGradeId = ref<number | null>(null)
 const selectedLevelId = ref<number | null>(null)
+
+function extractId(val: any) {
+  if (val === null || val === undefined) return null
+  if (typeof val === 'object') return val.id ?? val.value ?? null
+  return val
+}
 
 // Wrap auth.user in a computed to ensure reactivity
 const userProfile = computed(() => {
@@ -185,8 +191,9 @@ async function loadTopicsByLevel() {
   error.value = false
   try {
     // Use selected values if available, otherwise fall back to user profile
-    const levelId = selectedLevelId.value || userProfile.value?.level?.id || userProfile.value?.level_id
-    const gradeId = selectedGradeId.value || userProfile.value?.grade?.id || userProfile.value?.grade_id
+    // Safely extract IDs using helper to handle both objects and primitives
+    const levelId = extractId(selectedLevelId.value) || extractId(userProfile.value?.level) || extractId(userProfile.value?.level_id)
+    const gradeId = extractId(selectedGradeId.value) || extractId(userProfile.value?.grade) || extractId(userProfile.value?.grade_id)
     
     if (!levelId || !gradeId) {
       // fallback: fetch all topics so page shows content for browsing
@@ -272,12 +279,11 @@ onMounted(async () => {
   }
 
   // Initialize selected grade/level from user profile
-  if (userProfile.value?.grade?.id) {
-    selectedGradeId.value = userProfile.value.grade.id
-  }
-  if (userProfile.value?.level?.id) {
-    selectedLevelId.value = userProfile.value.level.id
-  }
+  const pGrade = extractId(userProfile.value?.grade) || extractId(userProfile.value?.grade_id)
+  if (pGrade) selectedGradeId.value = pGrade
+  
+  const pLevel = extractId(userProfile.value?.level) || extractId(userProfile.value?.level_id)
+  if (pLevel) selectedLevelId.value = pLevel
 
   loadTopicsByLevel()
 })

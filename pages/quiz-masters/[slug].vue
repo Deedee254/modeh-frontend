@@ -58,7 +58,7 @@
                 <h3 class="font-semibold text-gray-800">{{ quiz.title }}</h3>
                 <p class="text-sm text-gray-500 mt-1">{{ quiz.topic_name || 'General' }}</p>
                 <div class="mt-3">
-                  <NuxtLink :to="`/quizee/quizzes/${quiz.id}`" class="text-brand-600 font-medium text-sm hover:underline">
+                  <NuxtLink :to="`/quizee/quizzes/${quiz.slug}`" class="text-brand-600 font-medium text-sm hover:underline">
                     View Quiz
                   </NuxtLink>
                 </div>
@@ -83,11 +83,12 @@
 <script setup>
 const route = useRoute()
 const config = useRuntimeConfig()
-const quizMasterId = route.params.id
+const quizMasterSlug = route.params.slug
 
+// Fetch by slug; backend returns either { data: [...] } or object
 const { data: quizMasterData, pending, error } = await useAsyncData(
-  `quiz-master-${quizMasterId}`,
-  () => $fetch(config.public.apiBase + `/api/quiz-masters/${quizMasterId}`)
+  `quiz-master-${quizMasterSlug}`,
+  () => $fetch(config.public.apiBase + `/api/quiz-masters?slug=${encodeURIComponent(quizMasterSlug)}`)
 )
 
 import { ref } from 'vue'
@@ -117,6 +118,13 @@ const following = ref(false)
 const loadingFollow = ref(false)
 let followInFlight = false
 
+// derive numeric id after data loads
+const quizMasterId = _computed(() => {
+  const qm = quizMaster.value
+  if (!qm) return route.params.id || null
+  return qm.id || qm._id || null
+})
+
 // initialize following based on returned payload (if API includes) - defensive
 if (quizMasterData.value && (quizMasterData.value.data?.is_following || quizMasterData.value.is_following)) {
   following.value = !!(quizMasterData.value.data?.is_following || quizMasterData.value.is_following)
@@ -126,7 +134,7 @@ async function followHandler() {
   if (!auth.user) return router.push('/login')
   if (followInFlight) return
   followInFlight = true
-  const id = quizMasterId
+  const id = quizMasterId.value
   const current = following.value
   following.value = !current
   loadingFollow.value = true
@@ -158,7 +166,7 @@ async function followHandler() {
 // Attach Echo listener for follow events
 if (process.client && typeof window !== 'undefined' && window.Echo) {
   try {
-    const ch = window.Echo.private(`quiz-master.${quizMasterId}`)
+  const ch = window.Echo.private(`quiz-master.${quizMasterId.value}`)
     ch.listen('.App\\Events\\QuizMasterFollowed', (payload) => {
       if (!payload || !payload.quizMaster) return
       const id = payload.quizMaster.id

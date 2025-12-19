@@ -83,7 +83,7 @@
             <div v-else>
               <div v-if="(!filtered || filtered.length === 0)" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">0 results returned</div>
               <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-3">
-                <TopicCard
+                  <TopicCard
                   v-for="t in filtered"
                   :key="t.id"
                   :title="t.name"
@@ -92,8 +92,8 @@
                   :subject="t.subject?.name || t.subject_name || ''"
                   :description="t.description || t.summary || ''"
                   :quizzesCount="t.quizzes_count || 0"
-                  :startLink="`/topics/${t.id}`"
-                  :to="`/topics/${encodeURIComponent(t.slug || t.id)}`"
+                  :startLink="`/topics/${t.slug}`"
+                  :to="`/topics/${encodeURIComponent(t.slug)}`"
                   startLabel="View Assessments"
                 />
               </div>

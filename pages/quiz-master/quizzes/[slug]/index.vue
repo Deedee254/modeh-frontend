@@ -13,7 +13,7 @@
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-gray-800">{{ quiz.title || 'Quiz Details' }}</h1>
         <div class="space-x-2">
-          <NuxtLink :to="`/quiz-master/quizzes/${quiz.id}/edit`" class="px-3 py-2 bg-brand-600 text-white rounded text-sm">Edit Quiz</NuxtLink>
+          <NuxtLink :to="`/quiz-master/quizzes/${quiz.slug}/edit`" class="px-3 py-2 bg-brand-600 text-white rounded text-sm">Edit Quiz</NuxtLink>
         </div>
       </div>
 
@@ -203,6 +203,7 @@
 import { ref, onMounted } from 'vue'
 import { useRuntimeConfig, useRoute } from '#imports'
 import useApi from '~/composables/useApi'
+import useSeo from '~/composables/useSeo'
 import { computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -211,7 +212,7 @@ definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noin
 
 const config = useRuntimeConfig()
 const route = useRoute()
-const id = route.params.id
+const slug = route.params.slug
 
 const quiz = ref({})
 const activeTab = ref('details')
@@ -222,6 +223,7 @@ const alert = useAppAlert()
 // taxonomy: load levels so we can display quiz.level properly and link into edit flow
 const { fetchLevels, levels } = useTaxonomy()
 const api = useApi()
+const seo = useSeo()
 
 const youtubeEmbedUrl = computed(() => {
   const url = quiz.value?.youtube_url
@@ -272,11 +274,12 @@ async function loadQuiz() {
     // ensure levels are loaded first so we can map level ids to names
     try { await fetchLevels() } catch (e) {}
     // Use the canonical quiz details endpoint which returns full relations for owners
-    const res = await api.get('/api/quizzes/' + encodeURIComponent(id))
+    // Try fetching by slug first, fallback to id if needed
+    const res = await api.get(`/api/quizzes?slug=${encodeURIComponent(slug)}`)
     if (api.handleAuthStatus(res)) return
     if (res && res.ok) {
       const json = await res.json()
-      const serverQuiz = json.quiz || json || {}
+      const serverQuiz = (Array.isArray(json?.data) ? json.data[0] : json?.data) || json?.quiz || {}
 
       // Normalize into UI-friendly shape
       const loaded = { ...serverQuiz }
@@ -339,6 +342,21 @@ async function loadQuiz() {
       })) : []
 
       quiz.value = loaded
+      
+      // Setup SEO for quiz detail page after loading
+      if (loaded?.id && loaded?.slug) {
+        seo.setupPageSeo(
+          {
+            id: loaded.id,
+            name: loaded.title || loaded.name || 'Quiz',
+            slug: loaded.slug,
+            description: loaded.description || loaded.summary,
+            image: loaded.cover_image
+          },
+          'quiz',
+          window.location.origin
+        )
+      }
     }
   } catch (e) {
     console.error('Failed to load quiz', e)

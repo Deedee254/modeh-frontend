@@ -1,7 +1,7 @@
 <template>
   <div>
     <PageHero
-      :title="`Grade ${gradeMeta?.name || gradeId}`"
+      :title="`Grade ${gradeMeta?.name || slug}`"
       :description="gradeMeta?.description || 'Subjects for this grade'"
       :showSearch="true"
       :flush="true"
@@ -20,7 +20,7 @@
             View all subjects
           </NuxtLink>
           <NuxtLink
-            :to="`/quizzes?grade=${encodeURIComponent(gradeId)}`"
+            :to="`/quizzes?grade=${encodeURIComponent(slug || '')}`"
             class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
           >
             Browse quizzes
@@ -73,8 +73,8 @@
           :image="resolveIcon(s)"
           :badgeText="(s.name || '').charAt(0).toUpperCase()"
           :topicsCount="s.topics_count || (s.topics ? (Array.isArray(s.topics) ? s.topics.length : (s.topics.length || 0)) : 0)"
-          :to="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
-          :startLink="`/subjects/${s.slug || s.id}`"
+          :to="`/subjects/${encodeURIComponent(s.slug)}`"
+          :startLink="`/subjects/${s.slug}`"
           :description="s.description || s.summary || ''"
           :grade="s.grade?.name || s.grade_id || ''"
           startLabel="Explore Topics"
@@ -94,12 +94,13 @@ import { ref, computed, onMounted } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 
 const route = useRoute()
-const gradeId = route.params.id
+const slug = computed(() => route.params.slug)
 const config = useRuntimeConfig()
 
 const { subjects, fetchSubjectsByGrade } = useTaxonomy()
 const query = ref('')
 const gradeMeta = ref({})
+const gradeId = computed(() => gradeMeta.value?.id)
 const topicCount = ref(0)
 const quizCount = ref(0)
 
@@ -119,8 +120,9 @@ function resolveIcon(s) {
 
 async function fetchGradeMeta() {
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/grades/${gradeId}`)
-    gradeMeta.value = res?.grade || res || {}
+    const res = await $fetch(`${config.public.apiBase}/api/grades?slug=${slug.value}`)
+    const grade = res?.grades?.[0] || res?.grade || res || {}
+    gradeMeta.value = grade
   } catch (e) {
     gradeMeta.value = {}
   }
@@ -130,7 +132,7 @@ async function fetchGradeMeta() {
 
 async function fetchTopicCount() {
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: { grade: gradeId } })
+    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: { grade: gradeId.value } })
     const list = res?.topics?.data || res?.topics || res || []
     topicCount.value = Array.isArray(list) ? list.length : 0
   } catch (e) {
@@ -140,7 +142,7 @@ async function fetchTopicCount() {
 
 async function fetchQuizCount() {
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/quizzes`, { params: { grade: gradeId, per_page: 1 } })
+    const res = await $fetch(`${config.public.apiBase}/api/quizzes`, { params: { grade: gradeId.value, per_page: 1 } })
     quizCount.value = res?.quizzes?.total || res?.total || 0
   } catch (e) {
     quizCount.value = 0
@@ -152,7 +154,9 @@ const error = ref(null)
 
 onMounted(async () => {
   try {
-    await Promise.all([fetchGradeMeta(), fetchSubjectsByGrade(gradeId), fetchTopicCount(), fetchQuizCount()])
+    await fetchGradeMeta()
+    await fetchSubjectsByGrade(slug.value)
+    await Promise.all([fetchTopicCount(), fetchQuizCount()])
   } catch (e) {
     error.value = e
   } finally {

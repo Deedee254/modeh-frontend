@@ -76,9 +76,9 @@
           <QuizCard
             v-for="qitem in (paginator?.data || [])"
             :key="qitem.id"
-            :to="`/quizee/quizzes/${qitem.id}`"
-            :startLink="`/quizee/quizzes/${qitem.id}`"
-            :takeLink="`/quizee/quizzes/take/${qitem.id}`"
+            :to="`/quizee/quizzes/${qitem.slug}`"
+            :startLink="`/quizee/quizzes/${qitem.slug}`"
+            :takeLink="`/quizee/quizzes/take/${qitem.slug}`"
             :title="qitem.title"
             :topic="qitem.topic?.name"
             :cover="qitem.cover_image || ''"

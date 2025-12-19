@@ -89,7 +89,7 @@
             </p>
             <div class="mt-4">
               <div class="flex items-center gap-3 justify-center">
-                <NuxtLink :to="`/quiz-masters/${quizMaster.id}`" class="text-brand-600 font-medium text-sm hover:underline">
+                <NuxtLink :to="`/quiz-masters/${quizMaster.slug}`" class="text-brand-600 font-medium text-sm hover:underline">
                   View Profile
                 </NuxtLink>
                 <button @click="() => toggleFollow(quizMaster)" :disabled="followLoading[quizMaster.id]" class="px-3 py-1 text-sm rounded-md border" :class="following[quizMaster.id] ? 'bg-brand-600/10 text-brand-600 dark:bg-brand-600/20' : 'text-gray-700 dark:text-gray-300'">

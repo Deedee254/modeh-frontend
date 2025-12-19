@@ -164,7 +164,7 @@
                   <p class="text-sm text-gray-500 dark:text-gray-400">No recommendations yet</p>
                   <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Try browsing quizzes to get personalized suggestions</p>
                 </div>
-                <NuxtLink v-for="q in recQuizzes" :key="q.id" :to="`/quizee/quizzes/${q.id}`" class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 border border-gray-200 dark:border-slate-600 p-5 hover:border-brand-400 dark:hover:border-brand-500 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <NuxtLink v-for="q in recQuizzes" :key="q.id" :to="`/quizee/quizzes/${q.slug}`" class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 border border-gray-200 dark:border-slate-600 p-5 hover:border-brand-400 dark:hover:border-brand-500 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   <div class="absolute inset-0 bg-gradient-to-br from-brand-600/0 to-brand-600/0 group-hover:from-brand-600/5 group-hover:to-brand-600/10 transition-all duration-300"></div>
                   <div class="relative z-10">
                     <div class="flex items-start justify-between mb-3">
@@ -492,7 +492,13 @@ const recQuizzes = ref([])
 async function fetchRecommendations() {
   try {
     // prefer explicit grade param to ensure backend filters recommendations to user's grade
-    const forGrade = (auth.user && auth.user.quizeeProfile && auth.user.quizeeProfile.grade_id) ? auth.user.quizeeProfile.grade_id : (auth.user && auth.user.grade ? auth.user.grade : null)
+    let forGrade = (auth.user && auth.user.quizeeProfile && auth.user.quizeeProfile.grade_id) ? auth.user.quizeeProfile.grade_id : (auth.user && auth.user.grade ? auth.user.grade : null)
+    
+    // Handle object grade (extract id or name) - fixes bug where [object Object] was sent to API
+    if (forGrade && typeof forGrade === 'object') {
+      forGrade = forGrade.id || forGrade.name || null
+    }
+
     const url = forGrade ? `/api/recommendations/quizzes?per_page=5&for_grade=${encodeURIComponent(forGrade)}` : '/api/recommendations/quizzes?per_page=5'
     const res = await api.get(url)
     if (api.handleAuthStatus(res)) {

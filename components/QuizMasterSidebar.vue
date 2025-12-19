@@ -40,7 +40,10 @@
       <div class="mt-6">
         <template v-if="user && user.id">
           <NuxtLink to="/quiz-master/profile" class="flex items-center gap-3">
-            <img :src="userAvatar" class="w-8 h-8 rounded-full" />
+            <div class="relative">
+              <img :src="userAvatar" class="w-8 h-8 rounded-full" />
+              <VerifiedBadge v-if="isVerified" :show-label="false" size="xs" class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm" />
+            </div>
             <div>
               <div class="font-medium">{{ user.name }}</div>
               <div class="text-sm text-gray-500">View profile</div>
@@ -61,6 +64,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
+import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
 // Heroicons outline
 import { HomeIcon, BookOpenIcon, RectangleStackIcon, ClipboardDocumentListIcon, PlusIcon, QuestionMarkCircleIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon, CreditCardIcon, CogIcon, LinkIcon, UserGroupIcon, BuildingLibraryIcon } from '@heroicons/vue/24/outline'
 
@@ -69,6 +73,12 @@ const ui = useUiStore()
 const user = computed(() => auth.user || {})
 import { resolveAssetUrl } from '~/composables/useAssets'
 const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatarUrl || auth.user?.avatar || auth.user?.avatar_url || '/logo/avatar-placeholder.png') || '/logo/avatar-placeholder.png')
+
+const isVerified = computed(() => {
+  const u = auth.user
+  if (!u) return false
+  return !!u.email_verified_at || (u.institutions && u.institutions.length > 0)
+})
 
 const route = useRoute()
 

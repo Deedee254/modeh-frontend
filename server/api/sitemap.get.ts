@@ -50,11 +50,12 @@ export default defineEventHandler(async (event) => {
     const quizzesRes = await $fetch(`${config.public.apiBase}/api/quizzes?per_page=1000`).catch(() => null)
     const quizzes = extractList(quizzesRes)
     for (const q of quizzes) {
-      const id = q?.id || q?.quiz_id || q?.uid
-      if (!id) continue
+      // prefer slug-based URLs only; skip items without slug to avoid id-based routes
+      const slug = q?.slug
+      if (!slug) continue
       const lastmod = q?.updated_at || q?.updatedAt || q?.published_at || undefined
-      urls.set(`/quizzes/${id}`, { lastmod, priority: '0.8' })
-      urls.set(`/quizee/quizzes/${id}`, { lastmod, priority: '0.8' })
+      urls.set(`/quizzes/${slug}`, { lastmod, priority: '0.8' })
+      urls.set(`/quizee/quizzes/${slug}`, { lastmod, priority: '0.8' })
     }
   } catch (e) {
     // ignore; sitemap remains with static pages
@@ -65,11 +66,11 @@ export default defineEventHandler(async (event) => {
     const qmsRes = await $fetch(`${config.public.apiBase}/api/quiz-masters?per_page=1000`).catch(() => null)
     const qms = extractList(qmsRes)
     for (const m of qms) {
-      const id = m?.id || m?.user_id || m?.uid
-      if (!id) continue
+      const slug = m?.slug
+      if (!slug) continue
       const lastmod = m?.updated_at || m?.updatedAt || m?.published_at || undefined
-      urls.set(`/quiz-masters/${id}`, { lastmod, priority: '0.7' })
-      urls.set(`/quizee/quiz-masters/${id}`, { lastmod, priority: '0.7' })
+      urls.set(`/quiz-masters/${slug}`, { lastmod, priority: '0.7' })
+      urls.set(`/quizee/quiz-masters/${slug}`, { lastmod, priority: '0.7' })
     }
   } catch (e) {}
 
@@ -78,10 +79,10 @@ export default defineEventHandler(async (event) => {
     const topicsRes = await $fetch(`${config.public.apiBase}/api/topics?per_page=1000`).catch(() => null)
     const topics = extractList(topicsRes)
     for (const t of topics) {
-      const id = t?.id || t?.topic_id
-      if (!id) continue
+      const slug = t?.slug
+      if (!slug) continue
       const lastmod = t?.updated_at || t?.updatedAt || undefined
-      urls.set(`/topics/${id}`, { lastmod, priority: '0.6' })
+      urls.set(`/topics/${slug}`, { lastmod, priority: '0.6' })
     }
   } catch (e) {}
 

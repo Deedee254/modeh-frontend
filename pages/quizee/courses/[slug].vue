@@ -1,24 +1,24 @@
 <template>
   <div>
     <PageHero
-      :title="grade?.name || 'Grade'"
-      :description="grade?.description || grade?.summary || `Topics for ${grade?.name || ''}`"
+      :title="course?.name || 'Course'"
+      :description="course?.description || course?.summary || `Topics in ${course?.name || ''}`"
       :flush="true"
     >
       <template #eyebrow>
-        Grade detail
+        Course topics
       </template>
 
       <template #actions>
         <div class="flex flex-wrap items-center gap-3">
           <NuxtLink
-            to="/quizee/topics"
+            to="/quizee/courses"
             class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
           >
-            Browse all topics
+            Back to courses
           </NuxtLink>
           <NuxtLink
-            :to="`/quizees/quizzes?grade=${encodeURIComponent(grade?.slug || grade?.id)}`"
+            :to="`/quizee/quizzes?subject=${encodeURIComponent(course?.slug)}`"
             class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
             Explore assessments
@@ -28,9 +28,9 @@
 
       <template #highlight>
         <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Topic coverage</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ topics.length || 0 }} topics available</p>
-          <p v-if="grade?.level?.name" class="mt-2 text-sm text-white/70">Aligned to {{ grade.level.name }}</p>
+          <p class="text-xs uppercase tracking-wide text-white/70">Topics in this course</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ displayTopics.length || 0 }}</p>
+          <p v-if="course?.grade?.name" class="mt-2 text-sm text-white/70">{{ course.grade.name }} field</p>
         </div>
       </template>
 
@@ -44,11 +44,11 @@
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
-        <div v-else-if="error" class="mt-6 text-red-600">Failed to load topics for this grade.</div>
+        <div v-else-if="error" class="mt-6 text-red-600">Failed to load topics for this course.</div>
 
         <div v-else>
           <div v-if="displayTopics.length === 0" class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">
-            No topics found for this grade.
+            No topics found for this course.
           </div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <TopicCard
@@ -56,7 +56,7 @@
               :key="t.id"
               :title="t.name"
               :slug="t.slug"
-              :to="`/quizee/topics/${t.slug || t.id}`"
+              :to="`/quizee/topics/${t.slug}`"
             />
           </div>
         </div>
@@ -71,6 +71,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
+import useSeo from '~/composables/useSeo'
 import PageHero from '~/components/ui/PageHero.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
@@ -79,7 +80,7 @@ definePageMeta({
   layout: 'quizee',
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
-    { name: 'description', content: 'Explore topics within this grade level.' }
+    { name: 'description', content: 'Explore topics within this course.' }
   ]
 })
 
@@ -87,17 +88,13 @@ const route = useRoute()
 const auth = useAuthStore()
 const api = useApi()
 const taxonomy = useTaxonomy()
+const seo = useSeo()
 
-const gradeId = computed(() => route.params.id)
+const slug = computed(() => route.params.slug)
 const loading = ref(false)
 const error = ref(false)
-const grade = ref<any>(null)
+const course = ref<any>(null)
 const topics = ref<any[]>([])
-
-const userProfile = computed(() => {
-  const u = (auth as any).user
-  return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
-})
 
 const displayTopics = computed(() => {
   let list = topics.value || []
@@ -105,25 +102,27 @@ const displayTopics = computed(() => {
   return list
 })
 
-async function fetchGradeAndTopics() {
+async function fetchCourseAndTopics() {
   loading.value = true
   error.value = false
   try {
-    // Fetch grade detail
-    const gradeRes = await api.get(`/api/grades/${gradeId.value}`)
-    if (!gradeRes.ok) {
+    // Fetch course detail (using subjects API since courses are subjects for tertiary)
+    const courseRes = await api.get(`/api/subjects?slug=${slug.value}`)
+    if (!courseRes.ok) {
       error.value = true
       loading.value = false
       return
     }
-    const gradeData = await gradeRes.json()
-    grade.value = gradeData.data || gradeData
+    const courseData = await courseRes.json()
+    course.value = (Array.isArray(courseData.data) ? courseData.data[0] : courseData.data) || courseData
 
-    // Fetch topics for this grade
-    const topicsRes = await api.get(`/api/grades/${gradeId.value}/topics`)
-    if (topicsRes.ok) {
-      const topicsData = await topicsRes.json()
-      topics.value = topicsData.data || topicsData.topics || []
+    // Fetch topics for this course using course ID
+    if (course.value?.id) {
+      const topicsRes = await api.get(`/api/subjects/${course.value.id}/topics`)
+      if (topicsRes.ok) {
+        const topicsData = await topicsRes.json()
+        topics.value = topicsData.data || topicsData.topics || []
+      }
     }
   } catch (e) {
     error.value = true
@@ -135,8 +134,22 @@ async function fetchGradeAndTopics() {
 // search removed for this page
 
 onMounted(() => {
-  if (gradeId.value) {
-    fetchGradeAndTopics()
+  if (slug.value) {
+    fetchCourseAndTopics()
+    
+    // Setup SEO for course page
+    if (course.value?.id && course.value?.slug) {
+      seo.setupPageSeo(
+        {
+          id: course.value.id,
+          name: course.value.name || 'Course',
+          slug: course.value.slug,
+          description: course.value.description || course.value.summary
+        },
+        'subject',
+        window.location.origin
+      )
+    }
   }
 })
 </script>

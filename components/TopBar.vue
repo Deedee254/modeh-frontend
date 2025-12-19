@@ -91,9 +91,12 @@
               <ActionMenu>
                 <template #trigger>
                   <button class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full" aria-label="User menu">
-                    <span class="relative flex shrink-0 overflow-hidden rounded-full h-8 w-8">
-                      <img class="aspect-square h-full w-full object-cover" :alt="userName" :src="userAvatar" />
-                    </span>
+                    <div class="relative">
+                      <span class="relative flex shrink-0 overflow-hidden rounded-full h-8 w-8">
+                        <img class="aspect-square h-full w-full object-cover" :alt="userName" :src="userAvatar" />
+                      </span>
+                      <VerifiedBadge v-if="isVerified" :show-label="false" size="xs" class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm" />
+                    </div>
                   </button>
                 </template>
 
@@ -218,6 +221,7 @@ import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ChatDrawer from '~/components/ChatDrawer.vue'
 import { useApi } from '~/composables/useApi'
 import { resolveAssetUrl } from '~/composables/useAssets'
+import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
 import ProfileProgress from '~/components/ui/ProfileProgress.vue'
 
 // Standard runtime config reference
@@ -487,6 +491,13 @@ const userLevel = computed(() => {
     return auth.user.level.name
   }
   return null
+})
+
+const isVerified = computed(() => {
+  const user = auth.user
+  if (!user) return false
+  // Verified if email is verified OR belongs to an institution
+  return !!user.email_verified_at || (user.institutions && user.institutions.length > 0)
 })
 
 </script>

@@ -98,19 +98,19 @@ const recentQuizzes = ref([])
 
 // Handler functions
 const handleTopicClick = (topic) => {
-  router.push(`/quiz-master/topics/${topic.id}`)
+  router.push(`/quiz-master/topics/${topic.slug}`)
 }
 
 const handleGradeClick = (grade) => {
-  router.push(`/quiz-master/grades/${grade.id}`)
+  router.push(`/quiz-master/grades/${grade.slug}`)
 }
 
 const handleSubjectClick = (subject) => {
-  router.push(`/quiz-master/subjects/${subject.id}`)
+  router.push(`/quiz-master/subjects/${subject.slug}`)
 }
 
 const handleQuizClick = (quiz) => {
-  router.push(`/quiz-master/quizzes/${quiz.id}`)
+  router.push(`/quiz-master/quizzes/${quiz.slug}`)
 }
 
 // Fetch data

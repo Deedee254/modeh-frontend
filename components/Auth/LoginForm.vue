@@ -30,7 +30,11 @@
 
         <div class="flex items-center justify-between">
           <label class="inline-flex items-center text-sm text-gray-600"><input type="checkbox" v-model="remember" class="mr-2" /> Remember me</label>
-          <NuxtLink to="/register" class="text-sm text-brand-600 underline">Register</NuxtLink>
+          <NuxtLink to="/forgot-password" class="text-sm text-brand-600 underline">Forgot password?</NuxtLink>
+        </div>
+
+        <div>
+          <NuxtLink to="/register" class="text-sm text-brand-600 underline">Don't have an account? Register</NuxtLink>
         </div>
 
         <div>

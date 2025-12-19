@@ -89,7 +89,7 @@
               :image="resolveIcon(s)"
               :badgeText="(s.name || '').charAt(0).toUpperCase()"
               :topicsCount="s.topics_count || s.topics?.length || 0"
-              :startLink="`/subjects/${s.id}`"
+                :startLink="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
               :description="s.description || s.summary || ''"
               :grade="s.grade?.name || s.grade_id || ''"
               startLabel="Explore Topics"

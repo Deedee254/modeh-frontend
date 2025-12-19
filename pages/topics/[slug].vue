@@ -17,12 +17,12 @@
             <UiQuizCard
               v-for="qz in displayQuizzes"
               :key="qz.id"
-              :to="`/quizee/quizzes/${qz.id}`"
+              :to="`/quizee/quizzes/${qz.slug}`"
               :quiz-id="qz.id"
               :liked="qz.liked"
               :likes="qz.likes_count ?? qz.likes ?? 0"
               :title="qz.title"
-              :startLink="`/quizee/quizzes/${qz.id}`"
+              :startLink="`/quizee/quizzes/${qz.slug}`"
               :grade="qz.grade"
               :subject="qz.subject"
               :topic="qz.topic"
@@ -49,7 +49,7 @@ import useApi from '~/composables/useApi'
 import { getHeroClass } from '~/utils/heroPalettes'
 
 const route = useRoute()
-const topicId = route.params.id
+const slug = computed(() => route.params.slug)
 const config = useRuntimeConfig()
 const quizzes = ref([])
 const query = ref('')
@@ -67,10 +67,10 @@ onMounted(async () => {
   try {
   // fetch topic metadata using shared API composable (preserves auth/session)
   const api = useApi()
-  const topicRes = await api.get(`/api/topics/${topicId}`)
+  const topicRes = await api.get(`/api/topics?slug=${slug.value}`)
   if (!topicRes.ok) throw topicRes
   const t = await topicRes.json()
-  topic.value = (t && t.topic) ? t.topic : (t || {})
+  topic.value = (t && t.topics && t.topics[0]) ? t.topics[0] : ((t && t.topic) ? t.topic : (t || {}))
 
     // fetch quizzes for this topic and normalize paginator vs array
     // prefer numeric topic_id (from fetched topic) otherwise fall back to the route param
@@ -78,9 +78,9 @@ onMounted(async () => {
     if (topic.value && topic.value.id) {
       quizParams.topic_id = topic.value.id
     } else {
-      const tid = Number(topicId)
-      if (!Number.isNaN(tid) && tid > 0) quizParams.topic_id = topicId
-      else quizParams.topic = topicId
+      const tid = Number(slug.value)
+      if (!Number.isNaN(tid) && tid > 0) quizParams.topic_id = slug.value
+      else quizParams.topic = slug.value
     }
 
   // Build query string and fetch quizzes through the shared API (includes cookies)
@@ -90,7 +90,7 @@ onMounted(async () => {
   if (!quizzesRes.ok) throw quizzesRes
   const res = await quizzesRes.json()
   const raw = (res && res.quizzes && Array.isArray(res.quizzes.data)) ? res.quizzes.data : (Array.isArray(res?.quizzes) ? res.quizzes : (Array.isArray(res) ? res : []))
-    quizzes.value = raw.map(q => ({
+  quizzes.value = raw.map(q => ({
       ...q,
       // normalize nested topic/subject/grade
       topic: q.topic && (q.topic.name || q.topic.title) ? q.topic.name || q.topic.title : (typeof q.topic === 'string' ? q.topic : ''),
@@ -99,9 +99,9 @@ onMounted(async () => {
       questions_count: q.questions_count || q.questions || 0,
       likes_count: q.likes_count || q.likes || 0,
       liked: !!q.liked,
-      // explicit links (fallback to id-based routes)
-      takeLink: q.take_path || q.take_link || `/quizee/quizzes/take/${q.id}`,
-      startLink: q.view_path || q.view_link || `/quizee/quizzes/${q.id}`
+      // explicit links (use slug-based routes)
+      takeLink: q.take_path || q.take_link || `/quizee/quizzes/take/${q.slug}`,
+      startLink: q.view_path || q.view_link || `/quizee/quizzes/${q.slug}`
     }))
   } catch (e) {
     error.value = e

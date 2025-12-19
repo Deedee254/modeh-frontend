@@ -1,0 +1,101 @@
+<template>
+  <div class="relative rounded-2xl overflow-hidden shadow-sm transition-shadow duration-200 hover:shadow-lg" :style="{ background: bgGradient }">
+    <!-- watermark/icon -->
+    <div class="absolute right-4 top-4 opacity-10 pointer-events-none" v-html="iconSvg"></div>
+
+    <div class="p-6 flex flex-col justify-between h-full text-white">
+      <div>
+        <div class="text-sm uppercase tracking-wide opacity-90">{{ label }}</div>
+        <h3 class="mt-2 text-2xl font-bold">{{ title }}</h3>
+        <p v-if="description" class="mt-2 text-sm opacity-90">{{ description }}</p>
+
+        <!-- Grades: pills -->
+        <div class="mt-4" v-if="variant === 'grades'">
+          <div class="flex flex-wrap gap-2">
+            <template v-for="(g, i) in shownItems" :key="g.id || i">
+              <NuxtLink :to="itemLink(g)" class="inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-light transition" :style="pillStyle">{{ g.name || g.id }}</NuxtLink>
+            </template>
+
+            <template v-if="extraCount > 0">
+              <NuxtLink :to="moreLink" class="inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-light transition" :style="morePillStyle">+{{ extraCount }} more</NuxtLink>
+            </template>
+          </div>
+        </div>
+
+        <!-- Courses: stacked small rows -->
+        <div class="mt-4 space-y-3" v-if="variant === 'courses'">
+          <template v-for="(c, idx) in shownItems" :key="c.id || idx">
+            <NuxtLink :to="itemLink(c)" class="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 transition">
+              <template v-if="c.image || c.cover">
+                <img :src="c.image || c.cover" alt="" class="h-12 w-12 rounded-md object-cover" />
+              </template>
+              <template v-else>
+                <div :style="{ background: courseBg(idx) }" class="h-12 w-12 rounded-md flex items-center justify-center text-white font-semibold">{{ initials(c) }}</div>
+              </template>
+
+              <div>
+                <div class="font-medium">{{ c.name || c.title }}</div>
+                <div v-if="c.quizzes_count !== undefined" class="text-sm opacity-90">{{ c.quizzes_count }} quizzes</div>
+              </div>
+            </NuxtLink>
+          </template>
+        </div>
+      </div>
+
+      <div class="mt-6 text-left">
+        <NuxtLink :to="moreLink" class="inline-flex items-center gap-2 px-4 py-2 rounded-md shadow-sm" :style="buttonStyle">{{ buttonText }}</NuxtLink>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  label: { type: String, default: '' },
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  items: { type: Array, default: () => [] },
+  variant: { type: String, default: 'grades' },
+  moreLink: { type: [String, Object], default: '/' },
+  buttonText: { type: String, default: 'View all' },
+  colors: { type: Array, default: () => [] },
+  iconSvg: { type: String, default: '' },
+  bgGradient: { type: String, default: 'linear-gradient(135deg,#891f21,#b23a3f)' }
+})
+
+// Brand burgundy
+const burgundy = '#891f21'
+
+const showCount = computed(() => props.variant === 'grades' ? 6 : 4)
+const shownItems = computed(() => (Array.isArray(props.items) ? props.items.slice(0, showCount.value) : []))
+const extraCount = computed(() => Math.max(0, (Array.isArray(props.items) ? props.items.length : 0) - showCount.value))
+
+const labelClass = computed(() => 'font-semibold')
+// white text on gradient panels; button becomes white with burgundy text for contrast
+const buttonStyle = computed(() => ({ backgroundColor: 'white', color: burgundy }))
+const pillStyle = computed(() => ({ backgroundColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }))
+const morePillStyle = computed(() => ({ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.9)' }))
+
+function itemLink(it) {
+  if (!it) return props.moreLink
+  if (props.variant === 'grades') return `/grades/${it.slug || it.id}`
+  return `/courses/${it.slug || it.id}`
+}
+
+function courseBg(idx) {
+  const palette = props.colors && props.colors.length ? props.colors : ['linear-gradient(135deg,#6f0f12,#a83435)','linear-gradient(135deg,#0f4c81,#17679a)','linear-gradient(135deg,#8b2ddb,#b55ef0)']
+  return palette[idx % palette.length]
+}
+
+function initials(item) {
+  const name = item && (item.name || item.title || '')
+  if (!name) return ''
+  return name.split(' ').map(s => s.charAt(0)).slice(0,2).join('').toUpperCase()
+}
+</script>
+
+<style scoped>
+.rounded-2xl:hover { transform: translateZ(0) }
+</style>

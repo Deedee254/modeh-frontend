@@ -58,7 +58,7 @@
     :subjects_count="grade?.subjects_count ?? (Array.isArray(grade?.subjects) ? grade.subjects.length : 0)"
         :description="grade?.description || ''"
         :cover="grade?.image || grade?.cover_image || ''"
-        :actionLink="`/quiz-master/subjects?grade=${grade?.id}`"
+  :actionLink="`/quiz-master/subjects?grade=${grade?.slug}`"
         actionLabel="Explore subjects"
         @click="grade && handleGradeClick(grade)"
       />
@@ -132,7 +132,7 @@ const filteredGrades = computed(() => {
 })
 
 const handleGradeClick = (grade) => {
-  router.push(`/quiz-master/grades/${grade.id}`)
+  router.push(`/quiz-master/grades/${grade.slug}`)
 }
 
 function handlePageChange(newPage) {

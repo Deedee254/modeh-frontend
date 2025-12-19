@@ -322,6 +322,7 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
   }
 
   async function fetchGradesByLevel(levelId: any) {
+    levelId = extractId(levelId)
     if (!levelId) {
       grades.value = []
       return
@@ -403,6 +404,7 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
   }
 
   async function fetchSubjectsByGrade(gradeId: any) {
+    gradeId = extractId(gradeId)
     if (!gradeId) {
       subjects.value = []
       return
@@ -602,6 +604,7 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
   }
 
   async function fetchTopicsBySubject(subjectId: any) {
+    subjectId = extractId(subjectId)
     if (!subjectId) {
       topics.value = []
       return

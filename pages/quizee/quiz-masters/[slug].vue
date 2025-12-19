@@ -127,7 +127,7 @@
               <div class="space-y-3">
                 <div v-for="quiz in quizMaster.quizzes.slice(0, 6)" :key="quiz.id" class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition border border-slate-100">
                   <div class="flex-1">
-                    <NuxtLink :to="`/quizee/quizzes/${quiz.id}`" class="text-sm font-medium text-slate-900 hover:text-brand-600">
+                    <NuxtLink :to="`/quizee/quizzes/${quiz.slug}`" class="text-sm font-medium text-slate-900 hover:text-brand-600">
                       {{ quiz.title }}
                     </NuxtLink>
                     <p class="text-xs text-slate-500 mt-1">{{ quiz.topic_name || 'General' }}</p>
@@ -217,116 +217,80 @@
 
 <script setup>
 import ChatModal from '~/components/ChatModal.vue'
+import { ref, computed, watchEffect } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useHead } from '#imports'
+import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
+import { resolveAssetUrl } from '~/composables/useAssets'
 
 definePageMeta({ layout: 'quizee' })
 
-
-
 const route = useRoute()
+const router = useRouter()
 const config = useRuntimeConfig()
-const quizMasterId = route.params.id
+const quizMasterSlug = route.params.slug
 
-import { resolveAssetUrl } from '~/composables/useAssets'
-import { computed as _computed } from 'vue'
-
+// Fetch quiz-master by slug (API may return a list or object)
 const { data: quizMasterData, pending, error } = await useAsyncData(
-  `quiz-master-${quizMasterId}`,
-  () => $fetch(config.public.apiBase + `/api/quiz-masters/${quizMasterId}`)
+  `quiz-master-${quizMasterSlug}`,
+  () => $fetch(config.public.apiBase + `/api/quiz-masters?slug=${encodeURIComponent(quizMasterSlug)}`)
 )
 
 const quizMaster = computed(() => {
-    if (!quizMasterData.value) return null
-    // API might return quiz-master object nested under a 'data' key
-    return quizMasterData.value.data || quizMasterData.value
+  if (!quizMasterData.value) return null
+  const raw = quizMasterData.value.data || quizMasterData.value
+  if (Array.isArray(raw)) return raw[0] || null
+  return raw
 })
 
-const resolvedAvatar = _computed(() => {
+const resolvedAvatar = computed(() => {
   const qm = quizMaster.value
   if (!qm) return null
   const v = qm.avatar_url || qm.avatar
   return resolveAssetUrl(v) || (v || null)
 })
 
-// Update head/meta reactively once quizMaster resolves
-watchEffect(() => {
-  try {
-    useHead({
-      title: quizMaster?.value?.name ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh',
-      meta: [
-        { name: 'description', content: (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) },
-        { property: 'og:title', content: quizMaster?.value?.name ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh' },
-        { property: 'og:description', content: (quizMaster?.value?.headline || quizMaster?.value?.bio || `Profile of ${quizMaster?.value?.name || 'Quiz Master'} on Modeh`) },
-  { property: 'og:image', content: quizMaster?.value?.avatar_url || quizMaster?.value?.avatar || '/social-share.png' }
-      ]
-    })
-  } catch (e) {
-    // ignore head update errors
-  }
-})
-
-import { ref, computed, watchEffect } from 'vue'
-import { useHead } from '#imports'
-import { useAuthStore } from '~/stores/auth'
-import { useRouter } from 'vue-router'
-import useApi from '~/composables/useApi'
-import { useAppAlert } from '~/composables/useAppAlert'
-
 const auth = useAuthStore()
-const router = useRouter()
+const api = useApi()
+const alert = useAppAlert()
 const following = ref(false)
 const loadingFollow = ref(false)
 const chatModalOpen = ref(false)
-const api = useApi()
-const alert = useAppAlert()
 
-// Initialize following state from API response when data loads
+// initialize following when data loads
 watchEffect(() => {
-  if (quizMasterData.value) {
-    const qm = quizMasterData.value.data || quizMasterData.value
-    following.value = !!(qm?.is_following || qm?.isFollowing || qm?.is_following_by_current_user)
+  if (quizMaster.value) {
+    following.value = !!(quizMaster.value.is_following || quizMaster.value.isFollowing || quizMaster.value.is_following_by_current_user)
   }
 })
 
+const quizMasterId = computed(() => quizMaster.value?.id || quizMaster.value?._id || null)
+
 // Computed properties for stats and info
-const quizzesCount = _computed(() => {
-  return quizMaster.value?.quizzes?.length || 0
-})
-
-const followersCount = _computed(() => {
-  return quizMaster.value?.followers_count || quizMaster.value?.follower_count || 0
-})
-
-const averageRating = _computed(() => {
-  const rating = quizMaster.value?.average_rating || quizMaster.value?.rating || 0
-  return Number(rating).toFixed(1)
-})
-
-const memberSince = _computed(() => {
+const quizzesCount = computed(() => quizMaster.value?.quizzes?.length || 0)
+const followersCount = computed(() => quizMaster.value?.followers_count || quizMaster.value?.follower_count || 0)
+const averageRating = computed(() => Number(quizMaster.value?.average_rating || quizMaster.value?.rating || 0).toFixed(1))
+const memberSince = computed(() => {
   const createdAt = quizMaster.value?.created_at
   if (!createdAt) return 'N/A'
   const date = new Date(createdAt)
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
 })
-
-const joinedDate = _computed(() => {
+const joinedDate = computed(() => {
   const createdAt = quizMaster.value?.created_at
   if (!createdAt) return 'N/A'
   const date = new Date(createdAt)
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 })
-
-const totalQuizTakers = _computed(() => {
-  return quizMaster.value?.total_quiz_takers || 0
-})
-
-const avgQuestions = _computed(() => {
-  const count = quizMaster.value?.avg_questions_per_quiz || 0
-  return Number(count).toFixed(0)
-})
+const totalQuizTakers = computed(() => quizMaster.value?.total_quiz_takers || 0)
+const avgQuestions = computed(() => Number(quizMaster.value?.avg_questions_per_quiz || 0).toFixed(0))
 
 async function followHandler() {
   if (!auth.user) return router.push('/login')
-  const id = quizMasterId
+  if (loadingFollow.value) return
+  const id = quizMasterId.value
   const current = following.value
   following.value = !current
   loadingFollow.value = true
@@ -347,20 +311,41 @@ async function followHandler() {
   }
 }
 
+// Echo listener for follow events (attach if client-side)
+if (process.client && typeof window !== 'undefined' && window.Echo) {
+  try {
+    const ch = window.Echo.private(`quiz-master.${quizMasterId.value}`)
+    ch.listen('.App\\Events\\QuizMasterFollowed', (payload) => {
+      if (!payload || !payload.quizMaster) return
+      const id = payload.quizMaster.id
+      if (String(id) !== String(quizMasterId.value)) return
+
+      if (payload.quizMaster.followers_count !== undefined && quizMaster.value) {
+        quizMaster.value.followers_count = payload.quizMaster.followers_count
+      } else if (quizMaster.value) {
+        quizMaster.value.followers_count = (quizMaster.value.followers_count || 0) + 1
+      }
+    })
+  } catch (e) {
+    console.error('Echo attach failed for quiz-master follow', e)
+  }
+}
+
+// Set head tags for SEO
+useHead({
+  title: () => quizMaster.value ? `${quizMaster.value.name} — Quiz Master | Modeh` : 'Quiz Master — Modeh',
+  meta: [
+    { name: 'description', content: () => quizMaster.value ? (quizMaster.value.headline || quizMaster.value.bio || `Profile of ${quizMaster.value.name}`) : 'Quiz master profile' }
+  ]
+})
+
 function openChatModal() {
   if (!auth.user) return router.push('/login')
   chatModalOpen.value = true
 }
 
 function onMessageSent(messageData) {
-  // Successfully sent message - could trigger chat widget update here
-  alert.push({
-    type: 'success',
-    message: 'Message sent successfully!'
-  })
-  // Optionally, emit event to update chat widget or other components
-  if (window.__messageSent) {
-    window.__messageSent(messageData)
-  }
+  alert.push({ type: 'success', message: 'Message sent successfully!' })
+  if (window.__messageSent) window.__messageSent(messageData)
 }
 </script>

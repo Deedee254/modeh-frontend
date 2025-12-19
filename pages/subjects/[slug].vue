@@ -20,7 +20,7 @@
             Browse all topics
           </NuxtLink>
           <NuxtLink
-            :to="`/quizzes?subject=${encodeURIComponent(subject.slug || subject.id)}`"
+            :to="`/quizzes?subject=${encodeURIComponent(subject.slug)}`"
             class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
           >
             Explore assessments
@@ -73,7 +73,7 @@
           <main class="w-full">
             <div v-if="paginator?.data?.length === 0" class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">No topics found for this subject.</div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <TopicCard
+                <TopicCard
                 v-for="t in displayTopics"
                 :key="t.id"
                 :title="t.name"
@@ -82,8 +82,8 @@
                 :subject="t.subject?.name || t.subject_name || ''"
                 :description="t.description || t.summary || ''"
                 :quizzesCount="t.quizzes_count || 0"
-                :startLink="`/topics/${t.id}`"
-                :to="`/topics/${encodeURIComponent(t.slug || t.id)}`"
+                :startLink="`/topics/${t.slug}`"
+                :to="`/topics/${encodeURIComponent(t.slug)}`"
                 startLabel="View Assessments"
               />
             </div>
@@ -111,7 +111,7 @@ import { getHeroClass } from '~/utils/heroPalettes'
 import useApi from '~/composables/useApi'
 
 const route = useRoute()
-const subjectId = route.params.id
+const slug = computed(() => route.params.slug)
 const config = useRuntimeConfig()
 const topics = ref([])
 const paginator = ref(null)
@@ -119,7 +119,7 @@ const query = ref('')
 const perPage = ref(12)
 const page = ref(1)
 const gradeFilter = ref('')
-const subjectFilter = ref(subjectId)
+const subjectFilter = computed(() => slug.value)
 const filterTopic = ref('')
 // Local search handler used by PageHero
 function onSearch(q) { query.value = String(q || '').toLowerCase().trim() }
@@ -158,12 +158,12 @@ async function fetchTopics(params = {}) {
     if (subject.value && (subject.value.id || subject.value.slug || subject.value.name)) {
       if (subject.value.id) baseParams.subject_id = subject.value.id
       else if (subject.value.slug) baseParams.subject = subject.value.slug
-      else baseParams.subject = subject.value.name || subjectId
+      else baseParams.subject = subject.value.name || slug.value
     } else {
-      // fallback to the route param: treat numeric as id
-      const sid = Number(subjectId)
-      if (!Number.isNaN(sid) && sid > 0) baseParams.subject_id = subjectId
-      else baseParams.subject = subjectId
+      // fallback to the route param: treat numeric as id, otherwise as slug
+      const sid = Number(slug.value)
+      if (!Number.isNaN(sid) && sid > 0) baseParams.subject_id = slug.value
+      else baseParams.subject = slug.value
     }
 
     // grade filter: send grade_id when numeric
@@ -202,10 +202,10 @@ onMounted(async () => {
     // fetch subject metadata using shared API composable (preserves auth/session)
     try {
       const api = useApi()
-      const subjectRes = await api.get(`/api/subjects/${subjectId}`)
+      const subjectRes = await api.get(`/api/subjects?slug=${slug.value}`)
       if (subjectRes && subjectRes.ok) {
         const s = await subjectRes.json()
-        subject.value = (s && s.subject) ? s.subject : (s || {})
+        subject.value = (s && s.subjects && s.subjects[0]) ? s.subjects[0] : ((s && s.subject) ? s.subject : (s || {}))
       }
     } catch (e) {
       // ignore subject fetch error here

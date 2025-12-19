@@ -4,10 +4,10 @@ definePageMeta({ layout: 'quiz-master', title: 'Edit Quiz', meta: [ { name: 'rob
 import { useRouter, useRoute } from '#imports'
 const router = useRouter()
 const route = useRoute()
-// Redirect to the create page but include ?id= so it loads in edit mode
-const id = route.params.id
-if (id) {
-  router.replace({ path: '/quiz-master/quizzes/create', query: { id } })
+// Redirect to the create page but include ?slug= so it loads in edit mode
+const slug = route.params.slug
+if (slug) {
+  router.replace({ path: '/quiz-master/quizzes/create', query: { slug } })
 } else {
   router.replace({ path: '/quiz-master/quizzes/create' })
 }

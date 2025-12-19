@@ -6,7 +6,7 @@
     >
       <template #eyebrow>
         <NuxtLink to="/quiz-master/quizzes" class="hover:underline">Quiz Management</NuxtLink> /
-        <NuxtLink v-if="topic?.subject?.id" :to="`/quiz-master/subjects/${topic.subject.id}`" class="hover:underline">{{ topic?.subject?.name }}</NuxtLink>
+        <NuxtLink v-if="topic?.subject?.slug" :to="`/quiz-master/subjects/${topic.subject.slug}`" class="hover:underline">{{ topic?.subject?.name }}</NuxtLink>
         <span v-else>Subject</span> / Topic
       </template>
 
@@ -107,7 +107,7 @@
         <QuizCard
           v-for="quiz in filteredQuizzes"
           :key="quiz?.id || idx"
-          :to="`/quiz-master/quizzes/${quiz.id}`"
+          :to="`/quiz-master/quizzes/${quiz.slug}`"
           :title="quiz.title"
           :description="quiz.description"
           :subject="quiz.subject"
@@ -120,11 +120,11 @@
           :quizId="quiz.id"
           :show-approval="true"
           :showEdit="true"
-          :editLink="`/quiz-master/quizzes/${quiz.id}/edit`"
+          :editLink="`/quiz-master/quizzes/${quiz.slug}/edit`"
           :is_approved="quiz.is_approved"
           :approval_requested_at="quiz.approval_requested_at"
           @approve="() => {}"
-          @edit="() => navigateToEdit(quiz.id)"
+          @edit="() => navigateToEdit(quiz.slug)"
         />
       </div>
 
@@ -143,6 +143,7 @@ definePageMeta({ layout: 'quiz-master' })
 import { ref, onMounted, computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
+import useSeo from '~/composables/useSeo'
 import { useRoute, useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
@@ -152,8 +153,9 @@ import { useAppAlert } from '~/composables/useAppAlert'
 const route = useRoute()
 const router = useRouter()
 const alert = useAppAlert()
+const seo = useSeo()
 
-const topicId = ref(route.params.id)
+const slug = computed(() => route.params.slug)
 const topic = ref(null)
 const quizzes = ref([])
 const loading = ref(true)
@@ -295,7 +297,7 @@ const config = useRuntimeConfig()
 async function fetchTopicDetails() {
   try {
     const api = useApi()
-    const endpoint = `/api/topics/${topicId.value}`
+    const endpoint = `/api/topics?slug=${slug.value}`
     console.log('[fetchTopicDetails] fetching from:', endpoint)
     const res = await api.get(endpoint)
     console.log('[fetchTopicDetails] response status:', res.status)
@@ -309,7 +311,7 @@ async function fetchTopicDetails() {
       return
     }
     const data = await res.json().catch(() => null)
-    topic.value = data?.topic || data?.data || null
+    topic.value = (Array.isArray(data?.data) ? data.data[0] : data?.data) || data?.topic || null
     console.log('[fetchTopicDetails] loaded topic:', topic.value?.name, 'raw topic data:', topic.value)
     // warm related taxonomy caches so we can look up grade/level info
     try {
@@ -355,8 +357,10 @@ async function fetchTopicDetails() {
 async function fetchQuizzesForTopic() {
   try {
     const api = useApi()
+    // Use topic ID if available, otherwise fall back to querying by topic slug
+    const topicIdToUse = topic.value?.id || slug.value
     const params = new URLSearchParams({ 
-      topic_id: topicId.value,
+      topic_id: topicIdToUse,
       per_page: 100 
     })
     const endpoint = `/api/quizzes?${params.toString()}`
@@ -384,8 +388,8 @@ async function fetchQuizzesForTopic() {
 // optionally warm taxonomy caches for related subjects/grades used in the UI
 const { fetchLevels, fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject, subjects, grades, levels } = useTaxonomy()
 
-function navigateToEdit(quizId) {
-  router.push(`/quiz-master/quizzes/${quizId}/edit`)
+function navigateToEdit(quizSlug) {
+  router.push(`/quiz-master/quizzes/${quizSlug}/edit`)
 }
 
 onMounted(async () => {
@@ -399,6 +403,21 @@ onMounted(async () => {
     fetchTopicDetails(),
     fetchQuizzesForTopic()
   ])
+  
+  // Setup SEO for topic page
+  if (topic.value?.id && topic.value?.slug) {
+    seo.setupPageSeo(
+      {
+        id: topic.value.id,
+        name: topic.value.name || 'Topic',
+        slug: topic.value.slug,
+        description: topic.value.description || topic.value.summary
+      },
+      'topic',
+      window.location.origin
+    )
+  }
+  
   loading.value = false
 })
 </script>

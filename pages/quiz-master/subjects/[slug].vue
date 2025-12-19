@@ -30,7 +30,7 @@
         <NuxtLink
           v-for="(topic, idx) in (Array.isArray(topics) ? topics.filter(Boolean) : [])"
           :key="topic?.id || idx"
-          :to="`/quiz-master/topics/${topic?.id}`"
+          :to="`/quiz-master/topics/${topic?.slug}`"
           class="group relative block p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-100 transition-all duration-200"
         >
           <!-- Topic Icon -->
@@ -70,6 +70,7 @@ definePageMeta({ layout: 'quiz-master' })
 
 import { ref, onMounted } from 'vue'
 import useApi from '~/composables/useApi'
+import useSeo from '~/composables/useSeo'
 import { useRoute } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -80,8 +81,9 @@ const route = useRoute()
 const alert = useAppAlert()
 const store = useTaxonomyStore()
 const { print: printMetrics } = useMetricsDebug()
+const seo = useSeo()
 
-const subjectId = route.params.id
+const slug = route.params.slug
 const subject = ref(null)
 const topics = ref([])
 const loading = ref(true)
@@ -99,11 +101,11 @@ const { data } = await useTaxonomyHydration({
 async function fetchSubjectDetails() {
   try {
     const api = useApi()
-    const res = await api.get(`/api/subjects/${subjectId}`)
+    const res = await api.get(`/api/subjects?slug=${slug}`)
     if (api.handleAuthStatus(res)) return
     if (!res || !res.ok) throw new Error('Failed to fetch subject details.')
     const data = await res.json()
-    subject.value = data.subject || data.data
+    subject.value = (Array.isArray(data?.data) ? data.data[0] : data?.data) || data.subject || data
   } catch (e) {
     error.value = e.message
     alert.push({ type: 'error', message: e.message })
@@ -114,7 +116,8 @@ async function fetchTopicsForSubject() {
   try {
     // Prefer store cache if available
     const storeTopics = store.topics || []
-    if (Array.isArray(storeTopics) && storeTopics.length) {
+    const subjectId = subject.value?.id
+    if (Array.isArray(storeTopics) && storeTopics.length && subjectId) {
       const filtered = storeTopics.filter(t => String(t.subject_id || t.subjectId) === String(subjectId))
       if (filtered.length) {
         topics.value = filtered
@@ -122,10 +125,13 @@ async function fetchTopicsForSubject() {
       }
     }
 
-    // fallback to direct fetch
+    // fallback to direct fetch using subject ID if available
     const params = new URLSearchParams({ approved: 1, per_page: 100 })
     const api = useApi()
-    const res = await api.get(`/api/subjects/${subjectId}/topics?${params.toString()}`)
+    const endpoint = subjectId 
+      ? `/api/subjects/${subjectId}/topics?${params.toString()}`
+      : `/api/topics?subject_slug=${slug}&${params.toString()}`
+    const res = await api.get(endpoint)
     if (api.handleAuthStatus(res)) return
     if (!res || !res.ok) throw new Error('Failed to fetch topics for this subject.')
     const data = await res.json()
@@ -154,6 +160,21 @@ onMounted(async () => {
     fetchSubjectDetails(),
     fetchTopicsForSubject()
   ])
+  
+  // Setup SEO for subject page
+  if (subject.value?.id && subject.value?.slug) {
+    seo.setupPageSeo(
+      {
+        id: subject.value.id,
+        name: subject.value.name || 'Subject',
+        slug: subject.value.slug,
+        description: subject.value.description || subject.value.summary
+      },
+      'subject',
+      window.location.origin
+    )
+  }
+  
   loading.value = false
   if (process.env.NODE_ENV === 'development') {
     setTimeout(() => printMetrics(), 2000)
