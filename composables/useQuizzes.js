@@ -11,6 +11,7 @@ export default function useQuizzes(initial = {}) {
     if (!item || typeof item !== 'object') return null
     return {
       id: item.id ?? null,
+      slug: item.slug ?? null,
       title: item.title ?? 'Untitled',
       description: item.description ?? '',
       topic_id: item.topic_id ?? item.topic?.id ?? null,

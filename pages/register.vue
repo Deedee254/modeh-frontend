@@ -1,645 +1,450 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="w-full max-w-2xl">
-      <!-- Header/Branding -->
-      <div class="text-center mb-8">
-        <img class="mx-auto h-16 w-auto" src="/logo/modeh-logo.png" alt="Modeh" />
-        <h2 class="mt-6 text-3xl font-bold tracking-tight text-gray-900">Create Your Account</h2>
-        <p class="mt-2 text-lg text-gray-600">Join Modeh to practice, compete, and improve</p>
-        <p class="mt-2 text-sm text-gray-500">Already have an account? <NuxtLink to="/login" class="text-brand-600">Login</NuxtLink></p>
-      </div>
+  <div class="h-screen w-full flex overflow-hidden">
+    <!-- Left Side: Features Panel (Hidden on mobile) -->
+    <div class="hidden lg:block lg:w-1/2 h-full">
+      <AuthFeaturesPanel />
+    </div>
 
-      <UModal v-model="showSignedInModal">
-        <template #default>
-          <div class="p-4">
-            <h3 class="text-lg font-semibold text-gray-900">You're already signed in</h3>
-            <p class="mt-2 text-sm text-slate-600">You are signed in as <strong>{{ auth.user?.name || auth.user?.email || 'User' }}</strong> ({{ auth.user?.role || 'user' }}).</p>
-            <div class="mt-4 flex flex-col sm:flex-row gap-3">
-              <button @click="goToDashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Go to dashboard</button>
-              <button @click="handleLogout" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Log out</button>
-            </div>
+    <!-- Right Side: Registration Wizard -->
+    <div class="w-full lg:w-1/2 h-full overflow-y-auto bg-gray-50 flex flex-col">
+      <div class="min-h-full py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div class="w-full max-w-xl">
+           <!-- Mobile Header -->
+          <div class="lg:hidden text-center mb-6">
+            <NuxtLink to="/">
+              <img class="mx-auto h-10 w-auto" src="/logo/modeh-logo.png" alt="Modeh" />
+            </NuxtLink>
+           </div>
+          
+          <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold tracking-tight text-gray-900">Create an account</h2>
+            <p class="mt-2 text-sm text-gray-600">
+              Already have an account? <NuxtLink to="/login" class="font-medium text-brand-600 hover:text-brand-500">Log in</NuxtLink>
+            </p>
           </div>
-        </template>
-      </UModal>
 
-      <!-- Role Selection -->
-      <div class="mb-8">
-        <div class="flex justify-center space-x-4">
-          <button 
-            @click="role = 'quizee'" 
-            :class="[
-              'px-6 py-3 text-sm font-medium rounded-lg flex items-center justify-center',
-              role === 'quizee' 
-                ? 'bg-brand-600 text-white' 
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-brand-100'
-            ]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
-            </svg>
-            I am a quizee
-          </button>
-          <button 
-            @click="role = 'quiz-master'" 
-            :class="[
-              'px-6 py-3 text-sm font-medium rounded-lg flex items-center justify-center',
-              role === 'quiz-master' 
-                ? 'bg-brand-600 text-white' 
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-brand-100'
-            ]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
-            </svg>
-            I am a quiz-master
-          </button>
-          <button
-            @click="role = 'institution-manager'"
-            :class="[
-              'px-6 py-3 text-sm font-medium rounded-lg flex items-center justify-center',
-              role === 'institution-manager'
-                ? 'bg-brand-600 text-white'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-brand-100'
-            ]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
-              <path d="M6 20v-1a4 4 0 014-4h4a4 4 0 014 4v1" />
-            </svg>
-            I manage an institution
-          </button>
+          <!-- Wizard Progress -->
+          <div class="mb-8" v-if="!showSignedInModal">
+             <div class="flex items-center justify-between relative">
+                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gray-200 -z-10"></div>
+                <!-- Step 1 -->
+                <div class="flex flex-col items-center bg-gray-50 px-2 cursor-pointer" @click="canGoToStep(1) && (step = 1)">
+                   <div :class="`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${step >= 1 ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-gray-300 text-gray-400'}`">1</div>
+                   <span class="text-xs font-medium mt-1" :class="step >= 1 ? 'text-brand-600' : 'text-gray-400'">Role</span>
+                </div>
+                <!-- Step 2 -->
+                <div class="flex flex-col items-center bg-gray-50 px-2 cursor-pointer" @click="canGoToStep(2) && (step = 2)">
+                   <div :class="`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${step >= 2 ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-gray-300 text-gray-400'}`">2</div>
+                   <span class="text-xs font-medium mt-1" :class="step >= 2 ? 'text-brand-600' : 'text-gray-400'">Account</span>
+                </div>
+                <!-- Step 3 -->
+                <div class="flex flex-col items-center bg-gray-50 px-2 cursor-pointer" @click="canGoToStep(3) && (step = 3)">
+                   <div :class="`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${step >= 3 ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-gray-300 text-gray-400'}`">3</div>
+                   <span class="text-xs font-medium mt-1" :class="step >= 3 ? 'text-brand-600' : 'text-gray-400'">Details</span>
+                </div>
+             </div>
+          </div>
+
+          <div class="bg-white py-8 px-6 sm:px-10 shadow-xl rounded-2xl border border-gray-100 relative min-h-[400px]">
+            <!-- Referral banner -->
+            <div v-if="referralCode" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-3">
+              <Icon name="heroicons:information-circle" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <p class="text-sm text-blue-900">
+                <span class="font-semibold">You're joining via a referral link!</span>
+              </p>
+            </div>
+
+            <form @submit.prevent="submit">
+                <!-- STEP 1: Role Selection -->
+                <div v-if="step === 1" class="animate-fade-in-right">
+                  <h3 class="text-xl font-bold text-gray-900 mb-6">Who are you?</h3>
+                  <div class="grid grid-cols-1 gap-4">
+                    <button type="button" 
+                      @click="selectRole('quizee')" 
+                      :class="['p-4 rounded-xl border-2 text-left transition-all hover:shadow-md group flex items-start gap-4', role === 'quizee' ? 'border-brand-600 bg-brand-50/50' : 'border-gray-200 hover:border-brand-300']"
+                    >
+                       <div class="p-3 bg-white rounded-lg shadow-sm group-hover:bg-brand-50 transition-colors">
+                          <Icon name="heroicons:academic-cap" class="w-8 h-8 text-brand-600" />
+                       </div>
+                       <div>
+                          <span class="block font-bold text-gray-900">Learner / Student</span>
+                          <span class="text-sm text-gray-500">I want to take quizzes, join battles, and track my progress.</span>
+                       </div>
+                    </button>
+                    
+                    <button type="button" 
+                      @click="selectRole('quiz-master')" 
+                      :class="['p-4 rounded-xl border-2 text-left transition-all hover:shadow-md group flex items-start gap-4', role === 'quiz-master' ? 'border-brand-600 bg-brand-50/50' : 'border-gray-200 hover:border-brand-300']"
+                    >
+                       <div class="p-3 bg-white rounded-lg shadow-sm group-hover:bg-brand-50 transition-colors">
+                          <Icon name="heroicons:pencil-square" class="w-8 h-8 text-brand-600" />
+                       </div>
+                       <div>
+                          <span class="block font-bold text-gray-900">Educator / Quiz Master</span>
+                          <span class="text-sm text-gray-500">I want to create quizzes, host tournaments, and manage students.</span>
+                       </div>
+                    </button>
+                    
+                    <button type="button" 
+                      @click="selectRole('institution-manager')" 
+                      :class="['p-4 rounded-xl border-2 text-left transition-all hover:shadow-md group flex items-start gap-4', role === 'institution-manager' ? 'border-brand-600 bg-brand-50/50' : 'border-gray-200 hover:border-brand-300']"
+                    >
+                       <div class="p-3 bg-white rounded-lg shadow-sm group-hover:bg-brand-50 transition-colors">
+                          <Icon name="heroicons:building-library" class="w-8 h-8 text-brand-600" />
+                       </div>
+                       <div>
+                          <span class="block font-bold text-gray-900">Institution Manager</span>
+                          <span class="text-sm text-gray-500">I represent a school or organization and want to manage members.</span>
+                       </div>
+                    </button>
+                  </div>
+                  <p v-if="validationError" class="mt-4 text-sm text-red-600 text-center">{{ validationError }}</p>
+                </div>
+
+                <!-- STEP 2: Account Details -->
+                <div v-else-if="step === 2" class="animate-fade-in-right space-y-4">
+                   <h3 class="text-xl font-bold text-gray-900 mb-6">Create your login</h3>
+                   
+                   <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                    <input v-model="form.name" type="text" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" placeholder="John Doe" />
+                    <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600">{{ fieldErrors.name }}</p>
+                   </div>
+
+                   <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                    <input v-model="form.email" type="email" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" placeholder="john@example.com" />
+                    <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
+                   </div>
+
+                   <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input v-model="form.phone" type="tel" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" placeholder="+1234567890" />
+                   </div>
+
+                   <!-- Password fields -->
+                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                           <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 pr-10 focus:ring-brand-500 focus:border-brand-500" />
+                           <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                             <Icon :name="showPassword ? 'heroicons:eye-slash' : 'heroicons:eye'" class="w-5 h-5" />
+                           </button>
+                        </div>
+                        <p v-if="fieldErrors.password" class="mt-1 text-sm text-red-600">{{ fieldErrors.password }}</p>
+                     </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Confirm <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                           <input v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 pr-10 focus:ring-brand-500 focus:border-brand-500" />
+                           <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                             <Icon :name="showConfirmPassword ? 'heroicons:eye-slash' : 'heroicons:eye'" class="w-5 h-5" />
+                           </button>
+                        </div>
+                        <p v-if="fieldErrors.confirmPassword" class="mt-1 text-sm text-red-600">{{ fieldErrors.confirmPassword }}</p>
+                     </div>
+                   </div>
+                   <p v-if="validationError" class="mt-2 text-sm text-red-600">{{ validationError }}</p>
+                </div>
+
+                <!-- STEP 3: Check & Finish -->
+                <div v-else-if="step === 3" class="animate-fade-in-right space-y-5">
+                   <h3 class="text-xl font-bold text-gray-900 mb-6">Complete your profile</h3>
+                   
+                   <!-- Quizee Specific -->
+                   <template v-if="role === 'quizee'">
+                      <div class="bg-brand-50/50 p-5 rounded-xl border border-brand-100">
+                        <label class="block text-sm font-bold text-gray-900 mb-3">Education Journey <span class="text-red-600">*</span></label>
+                        <TaxonomyFlowPicker
+                          v-model="taxonomySelection"
+                          :includeTopics="false"
+                          :multiSelectSubjects="true"
+                          @submit="onTaxonomyComplete"
+                        />
+                         <p v-if="fieldErrors.level_id || fieldErrors.grade_id || fieldErrors.subjects" class="mt-1 text-sm text-red-600">Please complete the selection above.</p>
+                      </div>
+                      
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">School / Institution</label>
+                        <input v-model="form.institution" type="text" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" placeholder="Optional" />
+                      </div>
+
+                      <div>
+                         <label class="block text-sm font-medium text-gray-700 mb-1">Parent Email (Optional)</label>
+                         <input v-model="form.parentEmail" type="email" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" />
+                      </div>
+                   </template>
+
+                   <!-- Quiz Master Specific -->
+                   <template v-else-if="role === 'quiz-master'">
+                      <div class="bg-brand-50/50 p-5 rounded-xl border border-brand-100">
+                        <label class="block text-sm font-bold text-gray-900 mb-3">Areas of Expertise <span class="text-red-600">*</span></label>
+                        <TaxonomyFlowPicker
+                          v-model="taxonomySelection"
+                          :includeTopics="false"
+                          :multiSelectSubjects="true"
+                          @submit="onTaxonomyComplete"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+                        <input v-model="form.institution" type="text" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" />
+                      </div>
+                      
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                        <textarea v-model="form.bio" rows="3" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-brand-500 focus:border-brand-500"></textarea>
+                      </div>
+                   </template>
+
+                   <!-- Institution Manager Specific -->
+                   <template v-else-if="role === 'institution-manager'">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Institution</label>
+                        <select v-model="form.institution_id" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500">
+                          <option value="">Create new later...</option>
+                          <option v-for="inst in institutions" :key="inst.id" :value="inst.id">{{ inst.name }}</option>
+                        </select>
+                      </div>
+                   </template>
+                   
+                   <p v-if="error" class="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{{ error }}</p>
+                </div>
+
+                <!-- Footer Navigation Buttons -->
+                <div class="mt-8 flex justify-between items-center gap-4 pt-4 border-t border-gray-100">
+                   <button 
+                     v-if="step > 1"
+                     type="button" 
+                     @click="step--"
+                     class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-colors"
+                   >
+                     Back
+                   </button>
+                   <div v-else></div> <!-- Spacer -->
+
+                   <button 
+                     v-if="step < 3"
+                     type="button" 
+                     @click="nextStep"
+                     class="px-6 py-2.5 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-lg shadow-brand-600/20 transition-all hover:-translate-y-0.5"
+                   >
+                     Next Step
+                   </button>
+                   <button 
+                     v-else
+                     type="submit"
+                     :disabled="isLoading"
+                     class="px-8 py-2.5 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-lg shadow-brand-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+                   >
+                     <Icon v-if="isLoading" name="heroicons:arrow-path" class="animate-spin w-5 h-5" />
+                     {{ isLoading ? 'Creating Account...' : 'Complete Registration' }}
+                   </button>
+                </div>
+            </form>
+          </div>
         </div>
-      </div>
-
-          <!-- Registration Form -->
-      <div class="bg-white py-8 px-10 shadow rounded-lg">
-        <!-- Referral info banner (if coming from affiliate link) -->
-        <div v-if="referralCode" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p class="text-sm text-blue-900">
-            <span class="font-semibold">You're joining via a referral link!</span> After you sign up and make your first purchase, you'll help your referrer earn a commission.
-          </p>
-        </div>
-
-        <form @submit.prevent="submit" class="space-y-6">
-          <!-- quizee Form -->
-          <template v-if="role === 'quizee'">
-            <div class="grid grid-cols-1 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
-                <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600">{{ fieldErrors.name }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Institution / School</label>
-                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
-                <p v-if="fieldErrors.institution" class="mt-1 text-sm text-red-600">{{ fieldErrors.institution }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Education Journey <span class="text-red-600">*</span></label>
-                <TaxonomyFlowPicker
-                  v-model="taxonomySelection"
-                  :includeTopics="false"
-                  :multiSelectSubjects="true"
-                  @submit="onTaxonomyComplete"
-                />
-                <p v-if="fieldErrors.level_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.level_id }}</p>
-                <p v-if="fieldErrors.grade_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.grade_id }}</p>
-                <p v-if="fieldErrors.subjects" class="mt-1 text-sm text-red-600">{{ fieldErrors.subjects }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input v-model="form.email" type="email" autocomplete="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
-                <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
-                <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Short Bio</label>
-                <textarea v-model="form.bio" rows="3" placeholder="Optional - a short bio" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"></textarea>
-                <p v-if="fieldErrors.bio" class="mt-1 text-sm text-red-600">{{ fieldErrors.bio }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Parent/Guardian Email</label>
-                <input v-model="form.parentEmail" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" placeholder="Optional but recommended for minors" />
-                <p v-if="fieldErrors.parentEmail" class="mt-1 text-sm text-red-600">{{ fieldErrors.parentEmail }}</p>
-              </div>
-            </div>
-          </template>
-
-          <!-- quiz-master Form -->
-          <template v-else-if="role === 'quiz-master'">
-            <div class="grid grid-cols-1 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Institution</label>
-                <input v-model="form.institution" type="text" placeholder="Optional - enter your school name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Education Journey <span class="text-red-600">*</span></label>
-                <TaxonomyFlowPicker
-                  v-model="taxonomySelection"
-                  :includeTopics="false"
-                  :multiSelectSubjects="true"
-                  @submit="onTaxonomyComplete"
-                />
-                <p v-if="fieldErrors.level_id" class="mt-1 text-sm text-red-600">{{ fieldErrors.level_id }}</p>
-                <p v-if="fieldErrors.subjects" class="mt-1 text-sm text-red-600">{{ fieldErrors.subjects }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
-                <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
-                <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Bio / Headline</label>
-                <textarea v-model="form.bio" rows="3" placeholder="Optional - tell students about your expertise" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"></textarea>
-                <p v-if="fieldErrors.bio" class="mt-1 text-sm text-red-600">{{ fieldErrors.bio }}</p>
-              </div>
-            </div>
-          </template>
-
-          <!-- institution-manager Form -->
-          <template v-else-if="role === 'institution-manager'">
-            <div class="grid grid-cols-1 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input v-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Institution</label>
-                <p class="text-xs text-gray-600 mb-2">Select an existing institution or skip to create one later</p>
-                <select v-model="form.institution_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" :disabled="loadingInstitutions">
-                  <option value="">{{ loadingInstitutions ? 'Loading institutions...' : 'Select an institution (optional)' }}</option>
-                  <option v-for="inst in institutions" :key="inst.id" :value="inst.id">
-                    {{ inst.name }}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input v-model="form.email" type="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" required />
-                <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input v-model="form.phone" type="tel" placeholder="Optional" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" />
-                <p v-if="fieldErrors.phone" class="mt-1 text-sm text-red-600">{{ fieldErrors.phone }}</p>
-              </div>
-            </div>
-          </template>
-
-          <!-- Common Fields (Password) -->
-          <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Password</label>
-                <div class="relative">
-                <input 
-                  v-model="form.password" 
-                  :type="showPassword ? 'text' : 'password'" 
-                  autocomplete="new-password"
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" 
-                  required 
-                />
-                <button 
-                  type="button"
-                  @click="showPassword = !showPassword" 
-                  class="absolute inset-y-0 right-0 mt-1 pr-3 flex items-center text-gray-600 hover:text-gray-800"
-                >
-                  <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-              </div>
-                <p v-if="fieldErrors.password" class="mt-1 text-sm text-red-600">{{ fieldErrors.password }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
-              <div class="relative">
-                <input 
-                  v-model="form.confirmPassword" 
-                  :type="showConfirmPassword ? 'text' : 'password'" 
-                  autocomplete="new-password"
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600" 
-                  required 
-                />
-                <button 
-                  type="button"
-                  @click="showConfirmPassword = !showConfirmPassword" 
-                  class="absolute inset-y-0 right-0 mt-1 pr-3 flex items-center text-gray-600 hover:text-gray-800"
-                >
-                  <svg v-if="showConfirmPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-              </div>
-                <p v-if="fieldErrors.confirmPassword" class="mt-1 text-sm text-red-600">{{ fieldErrors.confirmPassword }}</p>
-            </div>
-          </div>
-
-          <div>
-            <button 
-              type="submit" 
-              class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 disabled:opacity-75"
-              :disabled="isLoading"
-            >
-              <svg 
-                v-if="isLoading" 
-                class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24"
-              >
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ isLoading ? 'Creating Account...' : 'Create Account' }}
-            </button>
-          </div>
-
-          <div v-if="error" class="rounded-md bg-red-50 p-4">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800">{{ error }}</h3>
-              </div>
-            </div>
-          </div>
-        </form>
       </div>
     </div>
+    
+    <!-- Signed In Modal -->
+    <UModal v-model="showSignedInModal">
+        <template #default>
+            <div class="p-6 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                  <Icon name="heroicons:check" class="h-6 w-6 text-green-600" />
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">You're already signed in</h3>
+                <p class="mt-2 text-sm text-slate-600">You are signed in as <strong>{{ auth.user?.name }}</strong>.</p>
+                <div class="mt-6 flex justify-center gap-3">
+                  <button @click="goToDashboard" class="btn-primary">Dashboard</button>
+                  <button @click="handleLogout" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </template>
+    </UModal>
   </div>
 </template>
 
 <script setup>
-// SEO meta for Register page
-definePageMeta({
-  title: 'Register — Modeh',
-  meta: [
-    { name: 'description', content: 'Create a Modeh account to start practicing quizzes, track progress, and join tournaments. Choose to register as a quizee or quiz-master.' },
-    { property: 'og:title', content: 'Register — Modeh' },
-    { property: 'og:description', content: 'Create a Modeh account to start practicing quizzes, track progress, and join tournaments. Choose to register as a quizee or quiz-master.' }
-  ]
-})
-
-import { ref, reactive, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useRuntimeConfig } from '#app'
-import { useAuthStore } from '../stores/auth'
-import useApi from '~/composables/useApi'
-import useTaxonomy from '~/composables/useTaxonomy'
+import AuthFeaturesPanel from '~/components/Auth/AuthFeaturesPanel.vue'
 import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
-
+import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
 
 const router = useRouter()
-const route = useRoute()
 const auth = useAuthStore()
+const api = useApi()
 
-// Extract referral code from URL query parameters
+// Logic State
+const step = ref(1)
+const role = ref(null)
+const isLoading = ref(false)
+const error = ref(null)
 const referralCode = ref(null)
-const referrerName = ref('')
 
-onMounted(() => {
-  // Get ?ref= from query params
-  const ref = route.query.ref
-  if (ref) {
-    referralCode.value = ref
-    // Save to localStorage so it can be used in payment flow
-    try {
-      localStorage.setItem('modeh:referral_code', String(ref))
-    } catch (e) {
-      console.error('Failed to save referral code to localStorage', e)
-    }
-  }
+// Form Data
+const form = reactive({
+  name: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  institution: '',
+  bio: '',
+  parentEmail: '',
+  institution_id: '',
 })
 
-// modal for already-signed-in users
-const showSignedInModal = ref(Boolean(auth.user))
-watch(() => auth.user, (val) => { showSignedInModal.value = Boolean(val) })
+// Validation State
+const fieldErrors = reactive({})
+const validationError = ref('')
+const taxonomySelection = ref({})
+
+// --- Step 1: Role ---
+function selectRole(r) {
+  role.value = r
+  validationError.value = ''
+  // Auto advance if clicking a role
+  setTimeout(() => nextStep(), 200)
+}
+
+// --- Step 2: Account ---
+// --- Step 3: Details ---
+
+function validateStep1() {
+  if (!role.value) {
+    validationError.value = "Please select a role to continue."
+    return false
+  }
+  return true
+}
+
+function validateStep2() {
+  fieldErrors.name = !form.name ? 'Name is required' : ''
+  fieldErrors.email = !form.email || !/^\S+@\S+\.\S+$/.test(form.email) ? 'Valid email is required' : ''
+  fieldErrors.password = !form.password || form.password.length < 6 ? 'Password must be at least 6 chars' : ''
+  fieldErrors.confirmPassword = form.password !== form.confirmPassword ? 'Passwords do not match' : ''
+  
+  if (fieldErrors.name || fieldErrors.email || fieldErrors.password || fieldErrors.confirmPassword) {
+    validationError.value = "Please fix errors before continuing."
+    return false
+  }
+  validationError.value = ''
+  return true
+}
+
+function validateStep3() {
+   // Validate taxonomy for quizee/master
+   if (role.value === 'quizee' || role.value === 'quiz-master') {
+      if (!taxonomySelection.value.levelId) {
+         error.value = "Please select your education level."
+         return false
+      }
+      if (role.value === 'quizee' && !taxonomySelection.value.gradeId) {
+         error.value = "Please select your grade."
+         return false
+      }
+   }
+   return true
+}
+
+function nextStep() {
+  if (step.value === 1 && validateStep1()) step.value = 2
+  else if (step.value === 2 && validateStep2()) step.value = 3
+}
+
+// Allow clicking wizard steps if valid
+function canGoToStep(s) {
+  if (s === 1) return true
+  if (s === 2) return validateStep1()
+  if (s === 3) return validateStep1() && validateStep2()
+  return false
+}
+
+// --- Submission ---
+async function submit() {
+  if (!validateStep3()) return
+  
+  isLoading.value = true
+  error.value = null
+  
+  try {
+     const payload = { ...form, role: role.value, referral_code: referralCode.value }
+     
+     // Merge taxonomy
+     if (taxonomySelection.value) {
+        payload.level_id = taxonomySelection.value.levelId
+        payload.grade_id = taxonomySelection.value.gradeId
+        payload.sub_grade_id = taxonomySelection.value.subGradeId
+        payload.subjects = taxonomySelection.value.subjects // Array of IDs
+     }
+
+     const res = await auth.register(payload)
+     if (res.error) throw new Error(res.error)
+     
+     // Success - redirect handled by auth store or we force it:
+     if (auth.user) goToDashboard()
+     else router.push('/login?registered=true')
+  } catch (e) {
+     error.value = e.message || "Registration failed."
+  } finally {
+     isLoading.value = false
+  }
+}
+
+// --- Utils ---
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+const showSignedInModal = ref(false)
+const institutions = ref([])
+
+function onTaxonomyComplete(data) {
+  taxonomySelection.value = data
+}
 
 function goToDashboard() {
   const r = auth.user?.role
   if (r === 'quiz-master') router.push('/quiz-master/dashboard')
   else if (r === 'quizee') router.push('/quizee/dashboard')
   else if (r === 'institution-manager') router.push('/institution-manager/dashboard')
-  else if (r === 'admin') window.location.href = `${useRuntimeConfig().public.apiBase}/admin`
   else router.push('/')
 }
 
 async function handleLogout() {
-  try { await auth.logout() } catch (e) {}
+  await auth.logout()
   showSignedInModal.value = false
-  router.push('/')
-}
-
-// Form state
-const role = ref('quizee')
-const isLoading = ref(false)
-const error = ref(null)
-const showPassword = ref(false)
-const showConfirmPassword = ref(false)
-
-// Institutions for manager dropdown
-const institutions = ref([])
-const loadingInstitutions = ref(false)
-
-const form = reactive({
-  name: '',
-  institution: '',
-  institution_id: '',
-  grade_id: '',
-  level_id: '',
-  email: '',
-  parentEmail: '',
-  phone: '',
-  bio: '',
-  subjects: [],
-  password: '',
-  confirmPassword: ''
-})
-
-// Taxonomy selection state
-const taxonomySelection = ref({
-  level: null,
-  grade: null,
-  subject: null,
-  topic: null
-})
-
-const onTaxonomyComplete = (selection) => {
-  form.level_id = selection.level?.id
-  form.grade_id = selection.grade?.id
-  
-  // Handle both single subject and multiple subjects
-  if (selection.subject) {
-    if (Array.isArray(selection.subject)) {
-      form.subjects = selection.subject.map(s => s.id)
-    } else {
-      form.subjects = [selection.subject.id]
-    }
-  } else {
-    form.subjects = []
-  }
-}
-
-// field-level errors from server-side validation
-const fieldErrors = reactive({
-  name: '',
-  institution: '',
-  email: '',
-  parentEmail: '',
-  phone: '',
-  bio: '',
-  password: '',
-  confirmPassword: ''
-})
-
-// Preselect role from query if provided
-  if (process.client) {
-  const qRole = new URLSearchParams(window.location.search).get('role')
-  if (qRole === 'quiz-master' || qRole === 'quizee' || qRole === 'institution-manager') {
-    role.value = qRole
-  }
-}
-
-const validateForm = () => {
-  // Required fields for all roles
-  const requiredFields = ['name', 'email', 'password', 'confirmPassword']
-  
-  // Taxonomy is required for Quizee and Quiz Master
-  if (role.value === 'quizee') {
-    requiredFields.push('level_id', 'grade_id', 'subjects')
-  } else if (role.value === 'quiz-master') {
-    requiredFields.push('level_id', 'subjects')
-  }
-
-  for (const field of requiredFields) {
-    if (Array.isArray(form[field])) {
-      if (form[field].length === 0) {
-        error.value = `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required`
-        return false
-      }
-    } else if (!form[field]?.trim() && form[field] !== '') {
-      error.value = `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required`
-      return false
-    }
-  }
-
-  // Password match validation
-  if (form.password !== form.confirmPassword) {
-    error.value = 'Passwords do not match'
-    return false
-  }
-
-  // Password strength validation
-  if (form.password.length < 6) {
-    error.value = 'Password must be at least 6 characters long'
-    return false
-  }
-
-  // Email format validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(form.email)) {
-    error.value = 'Please enter a valid email address'
-    return false
-  }
-
-  if (form.parentEmail && !emailRegex.test(form.parentEmail)) {
-    error.value = 'Please enter a valid parent/guardian email address'
-    return false
-  }
-
-  // Phone number validation - optional but validate if provided
-  if (form.phone) {
-    const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/
-    if (!phoneRegex.test(form.phone)) {
-      error.value = 'Please enter a valid phone number'
-      return false
-    }
-  }
-
-  return true
-}
-
-// taxonomy: load levels for education level select
-const { levels, fetchLevels, loadingLevels } = useTaxonomy()
-
-// Fetch institutions for institution manager registration
-const fetchInstitutions = async () => {
-  try {
-    loadingInstitutions.value = true
-    const api = useApi()
-    const response = await api.get('/api/institutions')
-    if (api.handleAuthStatus(response)) return
-    const data = await response.json().catch(() => null)
-    if (response.ok && Array.isArray(data)) {
-      institutions.value = data
-    }
-  } catch (e) {
-    console.error('Failed to load institutions:', e)
-  } finally {
-    loadingInstitutions.value = false
-  }
 }
 
 onMounted(async () => {
-  try { await fetchLevels() } catch (e) {}
-  try { await fetchInstitutions() } catch (e) {}
+   if (auth.user) showSignedInModal.value = true
+   
+   // Check referral
+   const route = useRoute()
+   if (route.query.ref) referralCode.value = route.query.ref
+   if (route.query.role) role.value = route.query.role
+   
+   // Load institutions
+   try {
+     const res = await api.get('/api/institutions')
+     if (res.ok) {
+       const data = await res.json()
+       institutions.value = data.institutions || data
+     }
+   } catch (e) {}
 })
-
-async function submit() {
-  if (isLoading.value) return
-  // reset errors
-  error.value = null
-  for (const k in fieldErrors) fieldErrors[k] = ''
-
-  if (!validateForm()) return
-
-  isLoading.value = true
-
-  try {
-  const api = useApi()
-  // Backend exposes role-specific registration endpoints. Choose the correct one based on selected role.
-  let endpoint = '/api/register/quiz-master'
-  if (role.value === 'quizee') endpoint = '/api/register/quizee'
-  if (role.value === 'institution-manager') endpoint = '/api/register/institution-manager'
-    
-    // Build payload - include common fields and role-specific fields
-      const payload = {
-        name: form.name,
-        email: form.email,
-        password: form.password,
-      }
-    
-    // Add referral code if present
-    if (referralCode.value) {
-      payload.ref = referralCode.value
-    }
-    
-    // Add optional institution field
-    if (form.institution) payload.institution = form.institution
-    
-    // Add phone if provided
-    if (form.phone) payload.phone = form.phone
-    
-    // Add bio if provided (quizee and quiz-master)
-    if (form.bio) payload.bio = form.bio
-    
-    // Add taxonomy fields for Quizee and Quiz Master
-    if (role.value === 'quizee') {
-      payload.level_id = form.level_id
-      payload.grade_id = form.grade_id
-      payload.subjects = form.subjects
-      if (form.parentEmail) payload.parentEmail = form.parentEmail
-    } else if (role.value === 'quiz-master') {
-      payload.level_id = form.level_id
-      if (form.grade_id) payload.grade_id = form.grade_id
-      payload.subjects = form.subjects
-    } else if (role.value === 'institution-manager') {
-      // Send institution_id if selected
-      if (form.institution_id) payload.institution_id = form.institution_id
-    }
-
-    const response = await api.postJson(endpoint, payload)
-    if (api.handleAuthStatus(response)) return
-    const data = await response.json().catch(() => null)
-    if (!response.ok) {
-      // Map validation errors to fields if present
-      if (data?.errors) {
-        for (const key of Object.keys(data.errors)) {
-          const v = data.errors[key]
-          const msg = Array.isArray(v) ? v[0] : v
-          if (key in fieldErrors) {
-            fieldErrors[key] = msg
-          } else if (key === 'institution' && 'institution' in fieldErrors) {
-            fieldErrors['institution'] = msg
-          } else {
-            // fallback to top-level error
-            error.value = msg
-          }
-        }
-      } else {
-        error.value = data?.message || 'Registration failed. Please try again.'
-      }
-      isLoading.value = false
-      return
-    }
-    const body = data
-    // Attempt to log the user in to establish a session cookie for subsequent authenticated requests.
-    try {
-      await auth.login(form.email, form.password)
-    } catch (loginErr) {
-      // If auto-login fails, fall back to setting the user object returned by registration
-      // Merge any returned profile objects into the user payload so UI has the profile data
-      const returnedUser = body.user || body || {}
-      if (body.quizee) returnedUser.quizeeProfile = body.quizee
-      if (body.quizMaster) returnedUser.quizMasterProfile = body.quizMaster
-      // ensure institutions from response are attached when present
-      if (body.user && body.user.institutions) returnedUser.institutions = body.user.institutions
-      auth.setUser(returnedUser)
-    }
-
-    // Redirect based on role
-    if (role.value === 'quizee') {
-      router.push('/quizee/dashboard')
-    } else if (role.value === 'quiz-master') {
-      router.push('/quiz-master/dashboard')
-    } else if (role.value === 'institution-manager') {
-      // after institution-manager registration, go to institution-manager dashboard
-      router.push('/institution-manager/dashboard')
-    }
-  } catch (e) {
-    // Fallback error handling
-    const data = e?.data || e?.response || null
-    if (data?.errors) {
-      for (const key of Object.keys(data.errors)) {
-        const v = data.errors[key]
-        const msg = Array.isArray(v) ? v[0] : v
-        if (key in fieldErrors) fieldErrors[key] = msg
-        else error.value = msg
-      }
-    } else {
-      error.value = data?.message || 'Registration failed. Please try again.'
-    }
-  } finally {
-    isLoading.value = false
-  }
-}
 </script>
+
+<style scoped>
+.animate-fade-in-right {
+  animation: fadeInRight 0.3s ease-out forwards;
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+</style>

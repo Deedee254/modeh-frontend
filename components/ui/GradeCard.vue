@@ -1,73 +1,62 @@
 <template>
-  <div class="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/20 bg-white shadow-sm transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
-    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
+  <div class="group relative flex w-full flex-col rounded-lg overflow-hidden transition-all duration-300 h-full bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900">
+    
+    <!-- Hero Image (Aspect Ratio 16:9) -->
+    <div class="relative w-full aspect-video bg-slate-100 overflow-hidden">
+       <!-- Gradient Overlay for Image fallback if no image -->
+       <div v-if="!resolvedCover" class="absolute inset-0 bg-gradient-to-br from-[#891f21] to-[#a83435] flex items-center justify-center">
+          <Icon :name="isCourse ? 'heroicons:academic-cap' : 'heroicons:book-open'" class="h-12 w-12 text-white/50" />
+       </div>
+       <img v-else :src="resolvedCover" :alt="displayTitle" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
 
-  <!-- TOP SECTION (Gradient with grade/course info) -->
-  <div :class="['flex flex-col justify-between text-white', isCompact ? 'w-full p-4' : 'w-full p-6']" style="background: linear-gradient(to bottom right, #891f21, #a83435)">
-      <!-- Badge -->
-      <div>
-        <p :class="['uppercase tracking-wider mb-2', isCompact ? 'text-xs font-medium' : 'text-xs font-semibold mb-3']" style="color: rgba(255, 255, 255, 0.8)">
-          {{ isCourse ? 'COURSE' : 'GRADE' }}
-        </p>
-        <h3 :class="['leading-tight', isCompact ? 'text-base font-semibold' : 'text-base sm:text-lg font-semibold']">{{ displayTitle }}</h3>
-      </div>
+       <!-- Badge Top Left -->
+       <div class="absolute top-2 left-2">
+         <div class="px-2 py-0.5 bg-white/95 backdrop-blur-sm rounded text-[10px] font-bold uppercase tracking-wide text-slate-800 shadow-sm border border-black/5">
+            {{ isCourse ? 'COURSE' : 'GRADE' }}
+         </div>
+       </div>
     </div>
 
-  <!-- BOTTOM SECTION (Content area) -->
-  <div :class="['flex flex-col', isCompact ? 'w-full p-4' : 'w-full p-6']">
-      <!-- Description Title -->
-      <h4 :class="['text-slate-900 dark:text-slate-50 mb-2', isCompact ? 'text-sm font-semibold' : 'text-lg font-semibold']">About this {{ isCourse ? 'course' : 'grade' }}</h4>
+    <!-- Content Section -->
+    <div class="flex flex-col flex-1 p-4">
+       <!-- Title -->
+       <h3 class="text-[16px] leading-[22px] font-semibold text-[#1f1f1f] dark:text-white line-clamp-2 mb-2 transition-colors">
+         {{ displayTitle }}
+       </h3>
 
-      <!-- Description/Intro -->
-      <p v-if="displayDescription" :class="['text-slate-600 dark:text-slate-400 mb-4', isCompact ? 'text-xs line-clamp-2' : 'text-sm mb-6 line-clamp-2']">
-        {{ displayDescription }}
-      </p>
+       <!-- Description -->
+       <p v-if="displayDescription" class="text-[13px] text-[#6a6f73] line-clamp-2 mb-4 leading-relaxed">
+         {{ displayDescription }}
+       </p>
+       <div v-else class="mb-4"></div>
 
-      <!-- Subjects Pills -->
-      <div v-if="displaySubjects && displaySubjects.length > 0" :class="['flex flex-wrap gap-2 mb-4', isCompact ? 'mb-3' : 'mb-6']">
-        <template v-for="(subject, index) in displaySubjectsLimited" :key="`subject-${index}`">
-          <span :class="['inline-block rounded-full px-2 py-1', isCompact ? 'text-xs font-medium' : 'px-3 py-1.5 text-xs font-medium']" style="background-color: rgba(137, 31, 33, 0.1); color: #891f21">
-            {{ typeof subject === 'string' ? subject : (subject.name || subject.title || 'Subject') }}
-          </span>
-        </template>
-        
-        <!-- +More button if subjects exceed limit -->
-        <button v-if="hasMoreSubjects" :class="['relative z-10 inline-block rounded-full transition', isCompact ? 'px-2 py-1 text-xs font-medium' : 'px-3 py-1.5 text-xs font-medium']" style="background-color: rgba(137, 31, 33, 0.1); color: #891f21" :style="{ 'background-color': 'rgba(137, 31, 33, 0.15)' }">
-          +{{ moreSubjectsCount }} more
-        </button>
-      </div>
-
-      <!-- Quiz Count and Subject Count -->
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 mb-6">
-        <div class="flex items-center gap-2">
-          <Icon name="heroicons:document-text" class="h-5 w-5" :style="{ color: '#891f21' }" />
-          <div class="flex flex-col">
-            <span :class="['text-slate-600 dark:text-slate-400', isCompact ? 'text-xs' : 'text-sm']">{{ quizzes_count }}</span>
-            <span :class="['font-semibold text-slate-900 dark:text-slate-50', isCompact ? 'text-xs' : 'text-sm']">{{ quizzes_count === 1 ? 'Quiz' : 'Quizzes' }}</span>
+       <!-- Footer Area -->
+       <div class="mt-auto">
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 gap-2 mb-4">
+             <div class="flex items-center gap-1.5 text-[11px] text-[#6a6f73] bg-slate-50 p-1.5 rounded border border-slate-100">
+                <Icon name="heroicons:document-text" class="h-3.5 w-3.5 text-slate-400" />
+                <span class="font-bold text-slate-700">{{ quizzes_count }}</span> Qs
+             </div>
+             <div class="flex items-center gap-1.5 text-[11px] text-[#6a6f73] bg-slate-50 p-1.5 rounded border border-slate-100">
+                <Icon name="heroicons:squares-2x2" class="h-3.5 w-3.5 text-slate-400" />
+                <span class="font-bold text-slate-700">{{ subjects_count }}</span> Subj
+             </div>
           </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <Icon name="heroicons:squares-2x2" class="h-5 w-5" :style="{ color: '#891f21' }" />
-          <div class="flex flex-col">
-            <span :class="['text-slate-600 dark:text-slate-400', isCompact ? 'text-xs' : 'text-sm']">{{ subjects_count }}</span>
-            <span :class="['font-semibold text-slate-900 dark:text-slate-50', isCompact ? 'text-xs' : 'text-sm']">{{ subjects_count === 1 ? 'Subject' : 'Subjects' }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- View all subjects Button -->
-      <div class="mt-auto">
-        <NuxtLink 
-          v-if="to"
-          :to="to"
-          :class="['relative z-10 w-full inline-flex items-center justify-center gap-2 rounded-full text-white transition', isCompact ? 'px-4 py-2 text-xs font-semibold' : 'px-6 py-3 text-sm font-semibold']"
-          :style="{ backgroundColor: '#891f21' }"
-        >
-          <span>View all subjects</span>
-          <Icon name="heroicons:arrow-right" class="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </NuxtLink>
-      </div>
+          <!-- Action Button -->
+          <NuxtLink 
+            v-if="to" 
+            :to="to" 
+            class="w-full inline-flex items-center justify-center rounded px-4 py-2 text-[13px] font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors relative z-10 shadow-sm"
+          >
+            Explore
+          </NuxtLink>
+       </div>
     </div>
+
+    <!-- Full Clickable Overlay -->
+    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-label="Explore"></NuxtLink>
   </div>
 </template>
 

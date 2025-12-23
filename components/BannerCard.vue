@@ -22,23 +22,17 @@
           </div>
         </div>
 
-        <!-- Courses: stacked small rows -->
-        <div class="mt-4 space-y-3" v-if="variant === 'courses'">
-          <template v-for="(c, idx) in shownItems" :key="c.id || idx">
-            <NuxtLink :to="itemLink(c)" class="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 transition">
-              <template v-if="c.image || c.cover">
-                <img :src="c.image || c.cover" alt="" class="h-12 w-12 rounded-md object-cover" />
-              </template>
-              <template v-else>
-                <div :style="{ background: courseBg(idx) }" class="h-12 w-12 rounded-md flex items-center justify-center text-white font-semibold">{{ initials(c) }}</div>
-              </template>
+        <!-- Courses: pills in a line -->
+        <div class="mt-4" v-if="variant === 'courses'">
+          <div class="flex flex-wrap gap-2">
+            <template v-for="(c, idx) in shownItems" :key="c.id || idx">
+              <NuxtLink :to="itemLink(c)" class="inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-light transition" :style="pillStyle">{{ c.name || c.title }}</NuxtLink>
+            </template>
 
-              <div>
-                <div class="font-medium">{{ c.name || c.title }}</div>
-                <div v-if="c.quizzes_count !== undefined" class="text-sm opacity-90">{{ c.quizzes_count }} quizzes</div>
-              </div>
-            </NuxtLink>
-          </template>
+            <template v-if="extraCount > 0">
+              <NuxtLink :to="moreLink" class="inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-light transition" :style="morePillStyle">+{{ extraCount }} more</NuxtLink>
+            </template>
+          </div>
         </div>
       </div>
 

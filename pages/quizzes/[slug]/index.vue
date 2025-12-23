@@ -142,23 +142,38 @@
           <!-- Action Card - Fixed bottom on mobile -->
           <div class="bg-white rounded-xl shadow-sm p-6 sticky top-6">
             <div class="space-y-6">
-              <!-- Progress if attempted -->
-              <div v-if="lastAttempt" class="border-b pb-4">
-                <div class="text-sm text-gray-500">Last attempt</div>
-                <div class="mt-1 font-medium">Score: {{ lastAttempt.score }}%</div>
-                <div class="mt-2 text-sm">
-                  <span style="color: #891f21">{{ lastAttempt.correct || 0 }} correct</span>
-                  <span class="mx-2">•</span>
-                  <span class="text-red-600">{{ lastAttempt.incorrect || 0 }} incorrect</span>
+              <!-- Guest Quiz Results -->
+              <div v-if="lastAttempt" class="border-b pb-4 space-y-3">
+                <div class="text-sm font-semibold text-slate-700">Your Results</div>
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-3xl font-bold text-brand-600">{{ Math.round(lastAttempt.score) }}%</div>
+                    <div class="text-xs text-slate-500 mt-1">Score</div>
+                  </div>
+                  <div class="text-right space-y-1">
+                    <div class="text-sm">
+                      <span class="font-semibold text-green-600">{{ lastAttempt.correct }} correct</span>
+                    </div>
+                    <div class="text-sm">
+                      <span class="font-semibold text-red-600">{{ lastAttempt.incorrect }} incorrect</span>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="lastAttempt.time_taken" class="text-xs text-slate-500">
+                  Time taken: {{ formatTimeTaken(lastAttempt.time_taken) }}
                 </div>
               </div>
 
               <!-- Action buttons - Full width on mobile -->
               <div class="flex flex-col gap-3">
-                <button @click="startQuiz" class="w-full px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-950 text-white rounded-lg hover:from-brand-700 hover:to-brand-900 transition-colors">
+                <button 
+                  v-if="!lastAttempt"
+                  @click="startQuiz" 
+                  class="w-full px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-950 text-white rounded-lg hover:from-brand-700 hover:to-brand-900 transition-colors"
+                >
                   Begin Assessment
                 </button>
-                <div class="flex gap-3">
+                <div v-if="!lastAttempt" class="flex gap-3">
                   <button @click="showPreview" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                     Preview Questions
                   </button>
@@ -167,6 +182,27 @@
                     :itemId="quiz.id"
                     :baseUrl="baseUrl"
                   />
+                </div>
+              </div>
+
+              <!-- Sign in prompt if guest completed -->
+              <div v-if="lastAttempt && !isLoggedIn" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p class="text-sm text-blue-900 mb-2">
+                  <strong>Save your results!</strong> Create an account to access your score history and track progress.
+                </p>
+                <div class="flex gap-2">
+                  <button 
+                    @click="showLoginModal = true"
+                    class="flex-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Sign In
+                  </button>
+                  <NuxtLink 
+                    to="/register"
+                    class="flex-1 px-3 py-1.5 bg-white border border-blue-600 text-blue-600 text-xs font-semibold rounded hover:bg-blue-50 transition-colors text-center"
+                  >
+                    Register
+                  </NuxtLink>
                 </div>
               </div>
 
@@ -222,6 +258,47 @@
               </div>
             </div>
           </div>
+
+          <!-- Detailed Results (Guest Quiz) - Only show if quiz taken -->
+          <div v-if="lastAttempt && lastAttempt.results" class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+            <h3 class="font-semibold text-slate-900">Detailed Results</h3>
+            
+            <!-- Results Summary Stats -->
+            <div class="grid grid-cols-3 gap-2">
+              <div class="bg-green-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-green-600">{{ lastAttempt.correct }}</div>
+                <div class="text-xs text-green-700 mt-1">Correct</div>
+              </div>
+              <div class="bg-red-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-red-600">{{ lastAttempt.incorrect }}</div>
+                <div class="text-xs text-red-700 mt-1">Incorrect</div>
+              </div>
+              <div class="bg-slate-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-slate-600">{{ lastAttempt.total_questions || 0 }}</div>
+                <div class="text-xs text-slate-700 mt-1">Total</div>
+              </div>
+            </div>
+
+            <!-- Question Results -->
+            <div class="space-y-2 max-h-96 overflow-y-auto">
+              <div v-for="(result, idx) in lastAttempt.results" :key="idx" class="p-3 rounded-lg border" :class="result.is_correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
+                <div class="flex items-start gap-2">
+                  <div :class="['flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold', result.is_correct ? 'bg-green-600' : 'bg-red-600']">
+                    {{ result.is_correct ? '✓' : '✗' }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-slate-900 mb-1">{{ result.question_body }}</p>
+                    <div v-if="result.explanation" class="text-xs text-slate-700 mb-1">
+                      <strong>Explanation:</strong> {{ result.explanation }}
+                    </div>
+                    <div v-if="!result.is_correct && result.correct_answer" class="text-xs text-slate-700">
+                      <strong>Correct answer:</strong> {{ result.correct_answer }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -250,11 +327,13 @@ import { resolveAssetUrl } from '~/composables/useAssets'
 import UModal from '~/components/ui/UModal.vue'
 import LoginForm from '~/components/Auth/LoginForm.vue'
 import { useAuthStore } from '~/stores/auth'
+import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
 
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
 const auth = useAuthStore()
+const guestQuizStore = useGuestQuizStore()
 const isLoggedIn = computed(() => !!auth.user && !!auth.user.id)
 const showLoginModal = ref(false)
 
@@ -403,6 +482,25 @@ const related = ref([
 // Mock last attempt (replace with actual API call)
 const lastAttempt = ref(null)
 
+// Watch for guest quiz attempts
+watch(() => quiz.value?.id, (quizId) => {
+  if (quizId) {
+    guestQuizStore.initializeStore()
+    const guestResult = guestQuizStore.getQuizResult(quizId)
+    if (guestResult) {
+      lastAttempt.value = {
+        score: guestResult.score,
+        percentage: guestResult.percentage,
+        correct: guestResult.correct_count,
+        incorrect: guestResult.incorrect_count,
+        time_taken: guestResult.time_taken,
+        attempted_at: guestResult.attempted_at,
+        results: guestResult.results
+      }
+    }
+  }
+}, { immediate: true })
+
 // Format time limit for display
 function formatTimeLimit(limit) {
   if (!limit) return '∞'
@@ -410,6 +508,18 @@ function formatTimeLimit(limit) {
   const hours = Math.floor(limit / 60)
   const mins = limit % 60
   return mins ? `${hours}h ${mins}m` : `${hours}h`
+}
+
+// Format time taken (in seconds) to readable format
+function formatTimeTaken(seconds) {
+  if (!seconds) return 'N/A'
+  const minutes = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (minutes === 0) return `${secs}s`
+  if (minutes < 60) return `${minutes}m ${secs}s`
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours}h ${mins}m`
 }
 
 // Get difficulty level text
@@ -438,22 +548,8 @@ function getDifficultyEmoji(level) {
 
 // Actions
 function startQuiz() {
-  // Only allow direct start for logged-in quizees; otherwise open login modal
-  if (isLoggedIn.value) {
-    const role = auth.user?.role
-    if (role === 'quizee') {
-      return router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
-    }
-    if (role === 'quiz-master') {
-      // quiz-masters: send to their management/preview page
-      return router.push(`/quiz-master/quizzes/${quiz.value.slug}`)
-    }
-    // fallback for other roles
-    return router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
-  }
-
-  // Not logged in: open login modal (for quizee sign-in)
-  showLoginModal.value = true
+  // For both logged-in and guest users, navigate to the public take page
+  router.push(`/quizzes/${quiz.value.slug}/take`)
 }
 
 function showPreview() {

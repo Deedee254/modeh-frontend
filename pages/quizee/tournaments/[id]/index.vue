@@ -718,9 +718,12 @@ const fetchTournament = async () => {
       }
     } catch (e) {}
 
-    await checkRegistrationStatus();
-    await fetchLeaderboard();
-    await checkQualificationStatus();
+    // Make parallel requests for status checks and leaderboard
+    await Promise.all([
+      checkRegistrationStatus(),
+      fetchLeaderboard(),
+      checkQualificationStatus()
+    ]);
   } catch (error) {
     console.error("Error fetching tournament:", error);
   } finally {
@@ -927,8 +930,12 @@ function statusColor(status: string) {
 }
 
 onMounted(async () => {
-  await fetchTournament();
-  fetchAdminRoundInfo();
+  // Run initial fetch and admin info in parallel
+  await Promise.all([
+    fetchTournament(),
+    fetchAdminRoundInfo()
+  ]);
+  
   const reg = registeredQuery.value
   if (reg === '1') {
     isRegistered.value = true

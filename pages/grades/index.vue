@@ -84,8 +84,8 @@
                 :title="g.display_name || g.name || `Grade ${g.id}`"
                 :subtitle="`${g.quizzes_count || 0} quizzes available`"
                 :badgeText="`G${g.id}`"
-                :to="`/grades/${g.id}`"
-                :actionLink="`/grades/${g.id}`"
+                :to="`/grades/${g.slug || g.id}`"
+                :actionLink="`/grades/${g.slug || g.id}`"
                 actionLabel="Explore Subjects"
               />
             </div>

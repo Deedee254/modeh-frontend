@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import useApi from '~/composables/useApi'
 import { useInstitutionsStore } from '~/stores/institutions'
+import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
 import type { User } from '~/types'
 
 let notificationsModule: any = null
@@ -30,6 +31,7 @@ function convertToCamelCase(obj: any): any {
 export const useAuthStore = defineStore('auth', () => {
   const user: Ref<User | null> = ref(null)
   const role: Ref<string | null> = ref(null)
+  const guestPlayed = ref(false)
   const api = useApi()
 
   async function login(email: string, password: string, remember: boolean = false) {
@@ -46,16 +48,16 @@ export const useAuthStore = defineStore('auth', () => {
             if (vals.length) message = vals.join('; ')
           } else if (typeof errBody === 'string') message = errBody
         } catch (e) {
-          try { const txt = await res.text(); if (txt) message = txt } catch (e) {}
+          try { const txt = await res.text(); if (txt) message = txt } catch (e) { }
         }
         throw new Error(message)
       }
-      
+
       // Set initial user data from login response
       const json = await res.json()
       const returnedUser = json && (json.user || json.data || json)
       if (returnedUser) setUser(returnedUser)
-      
+
       // CRITICAL: Fetch full user data from /api/me to get complete profile
       // This ensures we have name, email, role, and all profile data
       try {
@@ -68,12 +70,19 @@ export const useAuthStore = defineStore('auth', () => {
         // Log but don't throw—use the data from login response if /api/me fails
         console.warn('Failed to fetch full user data from /api/me', fetchMeError)
       }
-      
-      try { if (typeof window !== 'undefined') (window as any).__modeh_auth_redirected = false } catch (e) {}
+
+      try { if (typeof window !== 'undefined') (window as any).__modeh_auth_redirected = false } catch (e) { }
       if (typeof window !== 'undefined' && import.meta && import.meta.client) {
-        try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) {}
-        try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })) } catch (e) {}
-        try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => {}) } catch (err) {} } } catch (e) {}
+        try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) { }
+        try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })) } catch (e) { }
+        try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => { }) } catch (err) { } } } catch (e) { }
+        
+        // Sync guest quiz results to user account
+        try {
+          await syncGuestQuizResults()
+        } catch (syncError) {
+          console.warn('Failed to sync guest quiz results', syncError)
+        }
       }
       return { data: json, ok: true }
     } catch (error) {
@@ -83,9 +92,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     if (typeof window !== 'undefined' && import.meta && import.meta.client) {
-      try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) {}
+      try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) { }
     }
-    
+
     // Call backend logout first to invalidate the session
     // NOTE: This happens BEFORE we clear the local cache, so it uses the current valid CSRF token
     try {
@@ -94,10 +103,10 @@ export const useAuthStore = defineStore('auth', () => {
       // Log but continue: logout should clear state even if POST fails
       console.error('Logout API call failed (continuing with local clear)', error)
     }
-    
+
     // Now clear the local auth state AFTER the backend logout completes
     clear()
-    
+
     // Clear any persisted auth-related data from localStorage/sessionStorage
     if (typeof window !== 'undefined') {
       try {
@@ -111,7 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
         // ignore storage clearing errors
       }
     }
-    
+
     // CRITICAL: Force a fresh CSRF token fetch for the next login
     // We must do this AFTER clear() so the store doesn't have stale user data
     // This happens synchronously before any UI redirects
@@ -136,8 +145,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (!res.ok) throw new Error('Failed to fetch user')
       setUser(await res.json())
       if (typeof window !== 'undefined' && import.meta && import.meta.client) {
-        try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) {}
-        try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => {}) } catch (err) {} } } catch (e) {}
+        try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) { }
+        try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => { }) } catch (err) { } } } catch (e) { }
       }
     } catch (error) {
       clear()
@@ -162,10 +171,10 @@ export const useAuthStore = defineStore('auth', () => {
         if (newUser.institutions && Array.isArray(newUser.institutions) && newUser.institutions.length) {
           (instStore.institution as any) = newUser.institutions[0]
         } else if (newUser.institution_id) {
-          instStore.fetchInstitution(newUser.institution_id).catch(() => {})
+          instStore.fetchInstitution(newUser.institution_id).catch(() => { })
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     try {
       if (typeof window !== 'undefined' && newUser && newUser.is_profile_completed === false) {
         const skipped = (() => { try { return localStorage.getItem('modeh:onboarding:skipped') === '1' } catch (e) { return false } })()
@@ -176,11 +185,11 @@ export const useAuthStore = defineStore('auth', () => {
               const isSocial = Boolean(newUser.social_provider || newUser.social_id)
               if (isSocial) router.push('/onboarding')
               else router.push('/complete-profile')
-            } catch (e) {}
+            } catch (e) { }
           }, 50)
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   function clear(): void {
@@ -196,19 +205,64 @@ export const useAuthStore = defineStore('auth', () => {
           if (e.key === 'modeh:auth:event' && e.newValue) {
             const payload = JSON.parse(e.newValue)
             if (payload && payload.type === 'logout') clear()
-            else if (payload && payload.type === 'login') fetchUser().catch(() => {})
+            else if (payload && payload.type === 'login') fetchUser().catch(() => { })
+            else if (payload && payload.type === 'guest_played') guestPlayed.value = true
             return
           }
-        } catch (err) {}
+        } catch (err) { }
       }
       window.addEventListener('storage', _auth_storage_handler!)
       _auth_beforeunload = () => {
-        try { window.removeEventListener('storage', _auth_storage_handler!) } catch (e) {}
-        try { window.removeEventListener('beforeunload', _auth_beforeunload!) } catch (e) {}
+        try { window.removeEventListener('storage', _auth_storage_handler!) } catch (e) { }
+        try { window.removeEventListener('beforeunload', _auth_beforeunload!) } catch (e) { }
       }
       window.addEventListener('beforeunload', _auth_beforeunload!)
     }
+
+    // Initialize guestPlayed
+    try {
+      if (localStorage.getItem('modeh:guest:played') === 'true') {
+        guestPlayed.value = true
+      }
+    } catch (e) { }
   }
 
-  return { user, role, login, logout, fetchUser, setUser, clear }
+  function setGuestPlayed() {
+    guestPlayed.value = true
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('modeh:guest:played', 'true')
+        localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'guest_played', ts: Date.now() }))
+      } catch (e) { }
+    }
+  }
+
+  async function syncGuestQuizResults() {
+    if (typeof window === 'undefined' || !import.meta.client) return
+    
+    try {
+      const guestQuizStore = useGuestQuizStore()
+      guestQuizStore.initializeStore()
+      
+      const guestResults = guestQuizStore.getAllResults()
+      if (!guestResults || guestResults.length === 0) return
+      
+      // For now, we're just transferring the data to localStorage
+      // The actual backend sync would happen via an endpoint
+      // that creates QuizAttempt records for the authenticated user
+      console.log('Guest quiz results available for sync:', guestResults)
+      
+      // In a full implementation, you would:
+      // 1. Call POST /api/quizzes/sync-guest-attempts with the results
+      // 2. Backend would create QuizAttempt records for the user
+      // 3. Clear the guest store after successful sync
+      
+      // For now, results remain in localStorage and can be accessed by the user
+    } catch (error) {
+      console.error('Error syncing guest quiz results:', error)
+    }
+  }
+
+  return { user, role, guestPlayed, setGuestPlayed, login, logout, fetchUser, setUser, clear, syncGuestQuizResults }
 })
+

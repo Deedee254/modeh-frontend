@@ -17,12 +17,12 @@
             <UiQuizCard
               v-for="qz in displayQuizzes"
               :key="qz.id"
-              :to="`/quizee/quizzes/${qz.slug}`"
+              :to="`/quizzes/${qz.slug}`"
               :quiz-id="qz.id"
               :liked="qz.liked"
               :likes="qz.likes_count ?? qz.likes ?? 0"
               :title="qz.title"
-              :startLink="`/quizee/quizzes/${qz.slug}`"
+              :startLink="`/quizzes/${qz.slug}`"
               :grade="qz.grade"
               :subject="qz.subject"
               :topic="qz.topic"
@@ -100,8 +100,8 @@ onMounted(async () => {
       likes_count: q.likes_count || q.likes || 0,
       liked: !!q.liked,
       // explicit links (use slug-based routes)
-      takeLink: q.take_path || q.take_link || `/quizee/quizzes/take/${q.slug}`,
-      startLink: q.view_path || q.view_link || `/quizee/quizzes/${q.slug}`
+      takeLink: q.take_path || q.take_link || `/quizzes/${q.slug}`,
+      startLink: q.view_path || q.view_link || `/quizzes/${q.slug}`
     }))
   } catch (e) {
     error.value = e

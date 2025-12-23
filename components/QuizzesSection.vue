@@ -1,112 +1,121 @@
 <template>
-  <section class="py-12">
+  <section class="py-12 bg-white">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <!-- Big rounded burgundy panel similar to attached image -->
-      <div class="rounded-2xl" :class="['ring-1 ring-slate-200/20']">
-        <div class="flex flex-col lg:flex-row items-stretch bg-gradient-to-r from-[#6f0f12] via-[#8a1a1f] to-[#b23a3f] p-6 lg:p-8 rounded-2xl text-white">
+      <!-- Main Burgundy Panel -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#6f0f12] via-[#8a1a1f] to-[#b23a3f] shadow-xl p-6 lg:p-10 border border-white/5">
+        
+        <!-- Section Header: Title + Sorting UI in line -->
+        <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 lg:mb-12">
+          <div class="flex-1">
+            <h3 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Browse Quizzes</h3>
+            <p class="mt-2 text-slate-100/80 text-sm max-w-xl hidden sm:block">
+              Discover handpicked quizzes across all subjects. Filter by popularity, newness, or featured status.
+            </p>
+          </div>
 
-          <!-- Left: intro + filters (inside the panel) -->
-          <aside class="w-full lg:w-1/3 pr-0 lg:pr-6 mb-6 lg:mb-0">
-            <div class="h-full flex flex-col justify-between">
-              <div>
-                <h3 class="text-2xl lg:text-3xl font-extrabold">Browse Quizzes</h3>
-                <p class="mt-3 text-slate-100/90">Discover quizzes and control how they appear using the sort and filter controls. Results update live as you change the selection.</p>
+          <!-- Sorting Tabs (Horizontal) -->
+          <div class="flex items-center gap-1 bg-black/10 p-1 rounded-full overflow-x-auto no-scrollbar -mx-2 px-2 lg:mx-0 lg:px-1">
+            <button
+              @click="setSelectedTab('new')"
+              :class="['whitespace-nowrap px-4 py-1.5 rounded-full transition-all duration-200 text-xs font-bold uppercase tracking-wide', tabClasses('new')]"
+              :aria-pressed="props.selectedTab === 'new'"
+            >
+              Latest
+            </button>
+            <button
+              @click="setSelectedTab('top')"
+              :class="['whitespace-nowrap px-4 py-1.5 rounded-full transition-all duration-200 text-xs font-bold uppercase tracking-wide', tabClasses('top')]"
+              :aria-pressed="props.selectedTab === 'top'"
+            >
+              Top
+            </button>
+            <button
+              @click="setSelectedTab('liked')"
+              :class="['whitespace-nowrap px-4 py-1.5 rounded-full transition-all duration-200 text-xs font-bold uppercase tracking-wide', tabClasses('liked')]"
+              :aria-pressed="props.selectedTab === 'liked'"
+            >
+              Most Liked
+            </button>
+            <button
+              @click="setSelectedTab('featured')"
+              :class="['whitespace-nowrap px-4 py-1.5 rounded-full transition-all duration-200 text-xs font-bold uppercase tracking-wide', tabClasses('featured')]"
+              :aria-pressed="props.selectedTab === 'featured'"
+            >
+              Featured
+            </button>
+          </div>
+        </header>
 
-                <div class="mt-6" role="tablist" aria-label="Sort quizzes">
-                  <div class="flex flex-col gap-2">
-                    <button
-                      @click="setSelectedTab('new')"
-                      :class="['w-full text-left px-4 py-2 rounded-full transition text-sm font-medium', tabClasses('new')]"
-                      :aria-pressed="props.selectedTab === 'new'"
-                    >
-                      Latest
-                    </button>
+        <!-- Carousel Area -->
+        <div class="relative">
+          <div v-if="props.loading" class="flex items-center justify-center py-24">
+            <div class="relative">
+               <div class="w-12 h-12 rounded-full border-4 border-white/10 border-t-white animate-spin"></div>
+            </div>
+          </div>
 
-                    <button
-                      @click="setSelectedTab('top')"
-                      :class="['w-full text-left px-4 py-2 rounded-full transition text-sm font-medium', tabClasses('top')]"
-                      :aria-pressed="props.selectedTab === 'top'"
-                    >
-                      Most attempted
-                    </button>
+          <div v-else>
+            <!-- Scroll container with snap points for better mobile feel -->
+            <div 
+              ref="carouselRef" 
+              class="overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth relative z-10 -mx-4 px-4 lg:-mx-2 lg:px-2"
+            >
+              <div class="flex items-stretch gap-4 lg:gap-6 py-4">
+                <!-- Card Width optimized: slightly visible next card on mobile -->
+                <div 
+                  v-for="quiz in visibleQuizzes" 
+                  :key="quiz.id" 
+                  class="flex-shrink-0 w-[260px] sm:w-[280px] lg:w-72 snap-start first:ml-0"
+                >
+                  <UiQuizCard
+                    :to="'/quizzes/' + (quiz.slug || quiz.id)"
+                    :title="quiz.title"
+                    :topic="quiz.topic?.name || quiz.topic_name"
+                    :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name"
+                    :grade="quiz.grade || quiz.grade_id"
+                    :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count"
+                    :cover="quiz.cover_image || quiz.cover"
+                    :palette="props.pickPaletteClass(quiz.topic?.id || quiz.id)"
+                    :likes="quiz.likes_count ?? quiz.likes ?? 0"
+                    :quiz-id="quiz.id"
+                    :liked="quiz.liked"
+                    :description="quiz.description || quiz.summary || ''"
+                    @like="props.onQuizLike && props.onQuizLike(quiz, $event)"
+                    class="h-full bg-white shadow-lg border-0 hover:translate-y-[-4px] transition-transform"
+                  ></UiQuizCard>
+                </div>
 
-                    <button
-                      @click="setSelectedTab('liked')"
-                      :class="['w-full text-left px-4 py-2 rounded-full transition text-sm font-medium', tabClasses('liked')]"
-                      :aria-pressed="props.selectedTab === 'liked'"
-                    >
-                      Most liked
-                    </button>
-
-                    <button
-                      @click="setSelectedTab('featured')"
-                      :class="['w-full text-left px-4 py-2 rounded-full transition text-sm font-medium', tabClasses('featured')]"
-                      :aria-pressed="props.selectedTab === 'featured'"
-                    >
-                      Featured
-                    </button>
-                  </div>
+                <!-- End Spacer/CTA Card? -->
+                <div class="flex-shrink-0 w-[260px] sm:w-72 snap-start h-full">
+                  <NuxtLink to="/quizzes" class="h-full min-h-[300px] flex flex-col items-center justify-center gap-4 rounded-lg bg-white/5 border-2 border-dashed border-white/20 text-white hover:bg-white/10 transition-all p-6 text-center group">
+                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Icon name="heroicons:arrow-right" class="h-6 w-6" />
+                    </div>
+                    <div>
+                      <span class="block font-bold">View all quizzes</span>
+                      <span class="text-xs text-slate-100/60 mt-1">Discover more content</span>
+                    </div>
+                  </NuxtLink>
                 </div>
               </div>
-
-              <!-- Replace 'Showing' with a prominent button to view all quizzes -->
-              <div class="mt-6">
-                <NuxtLink to="/quizzes" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-white text-sm font-medium">
-                  View all quizzes
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </NuxtLink>
-              </div>
-            </div>
-          </aside>
-
-          <!-- Right: carousel area -->
-          <div class="w-full lg:w-2/3 relative">
-            <div v-if="props.loading" class="flex items-center justify-center py-12">
-              <svg class="h-10 w-10 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-              </svg>
             </div>
 
-            <div v-else>
-              <!-- Scroll container: horizontal carousel, no dots -->
-              <div ref="carouselRef" class="overflow-x-auto no-scrollbar scroll-smooth">
-                <div class="flex items-stretch gap-4 py-3 px-2">
-                  <div v-for="quiz in visibleQuizzes" :key="quiz.id" class="flex-shrink-0 w-72">
-                    <UiQuizCard
-                      :to="'/quizee/quizzes/' + (quiz.slug || quiz.id)"
-                      :startLink="'/quizee/quizzes/' + (quiz.slug || quiz.id)"
-                      :takeLink="'/quizee/quizzes/take/' + (quiz.slug || quiz.id)"
-                      :title="quiz.title"
-                      :topic="quiz.topic?.name || quiz.topic_name"
-                      :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name"
-                      :grade="quiz.grade || quiz.grade_id"
-                      :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count"
-                      :cover="quiz.cover_image || quiz.cover"
-                      :palette="props.pickPaletteClass(quiz.topic?.id || quiz.id)"
-                      :likes="quiz.likes_count ?? quiz.likes ?? 0"
-                      :quiz-id="quiz.id"
-                      :liked="quiz.liked"
-                      :description="quiz.description || quiz.summary || ''"
-                      @like="props.onQuizLike && props.onQuizLike(quiz, $event)"
-                    ></UiQuizCard>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Arrows (placed outside the scroll container so they don't move with scroll) -->
-              <button @click="scrollPrev" aria-label="Previous" class="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/20 p-2 rounded-full text-white shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
+            <!-- Navigation Arrows (Hidden on small mobile where swipe is king, but shown above that) -->
+            <div class="hidden sm:block">
+              <button 
+                @click="scrollPrev" 
+                aria-label="Previous" 
+                class="absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-brand-700 hover:bg-slate-50 transition-all"
+              >
+                <Icon name="heroicons:chevron-left" class="h-6 w-6" />
               </button>
 
-              <button @click="scrollNext" aria-label="Next" class="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/20 p-2 rounded-full text-white shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
+              <button 
+                @click="scrollNext" 
+                aria-label="Next" 
+                class="absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-brand-700 hover:bg-slate-50 transition-all"
+              >
+                <Icon name="heroicons:chevron-right" class="h-6 w-6" />
               </button>
             </div>
           </div>

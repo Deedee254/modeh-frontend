@@ -132,9 +132,16 @@ function resolvedAvatar(v) {
     } else {
       val = v
     }
-    return resolveAssetUrl(val) || val || props.placeholder
+    
+    if (!val) return props.placeholder
+    
+    // Always resolve the asset URL to ensure we get the full correct path
+    const resolved = resolveAssetUrl(val)
+    
+    // Return resolved URL if it's valid, otherwise return placeholder
+    return resolved && String(resolved).trim() ? resolved : props.placeholder
   } catch {
-    return (typeof v === 'string' ? v : null) || props.placeholder
+    return props.placeholder
   }
 }
 </script>

@@ -303,24 +303,26 @@ const fetchTournament = async () => {
       const j = await res.json().catch(() => null)
       tournament.value = j?.tournament ?? j?.data ?? j
       
-      // SEO Setup
-      try {
-        const seo = useSeo()
-        if (tournament.value && tournament.value.id) {
-          seo.setupPageSeo(
-            {
-              id: tournament.value.id,
-              name: tournament.value.name || 'Tournament',
-              slug: tournament.value.slug || String(tournament.value.id),
-              description: tournament.value.description || '' ,
-              image: tournament.value.banner || undefined,
-              start_date: tournament.value.start_date || tournament.value.created_at || undefined
-            },
-            'tournament',
-            window.location.origin
-          )
-        }
-      } catch (e) {}
+      // SEO Setup (non-blocking - runs in background)
+      Promise.resolve().then(() => {
+        try {
+          const seo = useSeo()
+          if (tournament.value && tournament.value.id) {
+            seo.setupPageSeo(
+              {
+                id: tournament.value.id,
+                name: tournament.value.name || 'Tournament',
+                slug: tournament.value.slug || String(tournament.value.id),
+                description: tournament.value.description || '' ,
+                image: tournament.value.banner || undefined,
+                start_date: tournament.value.start_date || tournament.value.created_at || undefined
+              },
+              'tournament',
+              window.location.origin
+            )
+          }
+        } catch (e) {}
+      })
     }
   } catch (e) {
     console.error('Failed to fetch tournament', e)

@@ -169,8 +169,14 @@ const colspan = computed(() => {
 function resolvePlayerAvatar(player) {
   try {
     // Backend returns avatar_url (primary DB column) and avatar (accessor)
-    const val = player?.avatar_url || player?.avatar || null
-    return resolveAssetUrl(val) || val || props.placeholder
+    const avatarUrl = player?.avatar_url || player?.avatar || null
+    if (!avatarUrl) return props.placeholder
+    
+    // Always resolve the asset URL to ensure we get the full correct path
+    const resolved = resolveAssetUrl(avatarUrl)
+    
+    // Return resolved URL if it's valid, otherwise return placeholder
+    return resolved && String(resolved).trim() ? resolved : props.placeholder
   } catch {
     return props.placeholder
   }

@@ -1,58 +1,68 @@
 <template>
-  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700/50" :style="{ 'border-color': 'rgba(137, 31, 33, 0.2)' }">
-    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
+  <div class="group relative flex w-full flex-col rounded-lg overflow-hidden transition-all duration-300 h-full bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900">
+    
+    <!-- Hero Section (Aspect Ratio 16:9) -->
+    <div class="relative w-full aspect-video bg-slate-100 overflow-hidden">
+       <!-- Gradient Overlay for Topic if no image -->
+       <div v-if="!image" class="absolute inset-0 bg-gradient-to-br from-brand-50 to-brand-100/50 flex items-center justify-center opacity-60">
+          <Icon name="heroicons:document-text" class="h-12 w-12 text-brand-700/50" />
+       </div>
+       <img v-else :src="image" :alt="displayTitle" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
 
-    <!-- Hero Section with Icon -->
-    <div class="relative h-32" :style="{ background: 'linear-gradient(to bottom right, rgba(137, 31, 33, 0.05), rgba(247, 185, 50, 0.05))' }">
-      <!-- Decorative icon -->
-      <div class="absolute inset-0 flex items-center justify-center opacity-50 dark:opacity-30">
-        <Icon name="heroicons:document-text" class="h-16 w-16" :style="{ color: '#891f21' }" />
-      </div>
-
-      <!-- Check mark - Top Right -->
-      <div class="absolute right-4 top-4 z-10 flex h-7 w-7 items-center justify-center rounded-full" :style="{ backgroundColor: '#891f21' }">
-        <Icon name="heroicons:check-solid" class="h-4 w-4 text-white" />
-      </div>
+       <!-- Badge Top Left -->
+       <div class="absolute top-2 left-2">
+         <div class="px-2 py-0.5 bg-white/95 backdrop-blur-sm rounded text-[10px] font-bold uppercase tracking-wide text-slate-800 shadow-sm border border-black/5">
+            TOPIC
+         </div>
+       </div>
     </div>
 
     <!-- Content Section -->
-    <div class="flex flex-1 flex-col p-5">
-      <!-- Topic Badge -->
-      <p class="uppercase tracking-wider text-xs font-semibold mb-2" :style="{ color: '#891f21' }">
-        Topic
-      </p>
+    <div class="flex flex-col flex-1 p-4">
+       <!-- Organization / Subject Name -->
+       <div class="flex items-center gap-1.5 mb-2">
+          <span class="text-[13px] font-medium text-[#6a6f73] truncate">{{ displaySubject || 'Learning Resource' }}</span>
+       </div>
 
-      <!-- Title in Burgundy -->
-      <h3 class="text-base sm:text-base font-semibold" :style="{ color: '#891f21' }">
-        {{ displayTitle }}
-      </h3>
+       <!-- Title -->
+       <h3 class="text-[16px] leading-[22px] font-semibold text-[#1f1f1f] dark:text-white line-clamp-2 mb-2 transition-colors">
+         {{ displayTitle }}
+       </h3>
 
-      <!-- Subject Tag -->
-          <!-- Meta Tags (Subject / Grade / Course) -->
-          <div class="mt-2 flex flex-wrap gap-2 items-center">
-            <span v-if="displaySubject" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Subject: {{ displaySubject }}
-            </span>
-            <span v-if="displayGrade" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Grade: {{ displayGrade }}
-            </span>
-            <span v-if="displayCourse" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Course: {{ displayCourse }}
-            </span>
+       <!-- Description -->
+       <p v-if="displayDescription" class="text-[13px] text-[#6a6f73] line-clamp-2 mb-4 leading-relaxed">
+         {{ displayDescription }}
+       </p>
+       <div v-else class="mb-4"></div>
+
+       <!-- Tags -->
+       <div class="flex flex-wrap gap-2 mb-4">
+          <span v-if="displayGrade" class="px-2 py-0.5 bg-[#f1f3f4] text-[#6a6f73] text-[11px] font-medium rounded-full border border-slate-100">
+            {{ displayGrade }}
+          </span>
+          <span v-if="displayCourse" class="px-2 py-0.5 bg-[#f1f3f4] text-[#6a6f73] text-[11px] font-medium rounded-full border border-slate-100">
+            {{ displayCourse }}
+          </span>
+       </div>
+
+       <!-- Footer: Meta -->
+       <div class="mt-auto flex items-center justify-between">
+          <div class="flex items-center gap-1 text-[12px] text-[#6a6f73]">
+             <span class="font-bold text-slate-700">{{ quizzesCount }}</span> 
+             <span>{{ quizzesCount === 1 ? 'Quiz' : 'Quizzes' }}</span>
           </div>
 
-      <!-- Description -->
-      <p v-if="displayDescription" class="mt-3 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-        {{ displayDescription }}
-      </p>
-
-      <!-- Quiz Count - Bottom -->
-      <div class="mt-auto pt-4">
-        <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          <span :style="{ color: '#891f21' }">{{ quizzesCount }}</span> {{ quizzesCount === 1 ? 'quiz' : 'quizzes' }}
-        </p>
-      </div>
+          <NuxtLink 
+            :to="to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')" 
+            class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
+          >
+            Open
+          </NuxtLink>
+       </div>
     </div>
+
+    <!-- Full Clickable Overlay -->
+    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-label="View Topic Details"></NuxtLink>
   </div>
 </template>
 

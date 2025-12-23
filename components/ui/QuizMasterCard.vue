@@ -1,64 +1,70 @@
 <template>
-  <NuxtLink :to="profileUrl" class="group relative flex h-full flex-col rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] dark:border-slate-800 dark:bg-slate-900 active:scale-[0.98] overflow-hidden">
-    <!-- Top area: avatar overlaps card for a modern look -->
-    <div class="relative bg-gradient-to-br from-slate-50 to-slate-100 h-20 flex items-center justify-center">
-      <div class="absolute -top-8 left-4">
-        <div class="h-16 w-16 rounded-full ring-2 ring-white overflow-hidden bg-white shadow-sm">
-          <img v-if="avatarSrc" :src="avatarSrc" :alt="quizMaster.name" class="h-full w-full object-cover" />
-          <div v-else class="h-full w-full grid place-items-center bg-slate-200 text-xl font-bold text-slate-700">{{ (quizMaster.name || '').charAt(0).toUpperCase() }}</div>
+  <NuxtLink :to="profileUrl" class="group relative flex flex-col items-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+    <!-- Top Gradient Decoration -->
+    <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+    <!-- Avatar -->
+    <div class="relative mb-4">
+      <div class="h-24 w-24 rounded-full p-1 bg-white border border-slate-100 shadow-sm group-hover:border-brand-100 transition-colors">
+        <img 
+          v-if="avatarSrc" 
+          :src="avatarSrc" 
+          :alt="quizMaster.name" 
+          class="h-full w-full rounded-full object-cover" 
+        />
+        <div 
+          v-else 
+          class="h-full w-full rounded-full bg-slate-50 flex items-center justify-center text-3xl font-bold text-slate-400 group-hover:text-brand-500 transition-colors"
+        >
+          {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
         </div>
       </div>
-
-      <!-- Follow button (top right) -->
+      
+      <!-- Follow Button (absolute to avatar) -->
       <button
         @click.prevent.stop="$emit('follow', quizMaster.id)"
         :disabled="loading"
         :title="isFollowing ? 'Unfollow' : 'Follow'"
-        :class="[
-          'absolute right-3 top-3 z-10 inline-flex items-center justify-center rounded-full p-2 transition-all duration-200 shadow-sm',
-          isFollowing
-            ? 'bg-rose-500/90 text-white hover:bg-rose-600'
-            : 'bg-white/95 text-[#891f21] border border-white/30 hover:bg-white'
-        ]"
+        class="absolute bottom-0 right-0 p-1.5 rounded-full bg-white shadow-md border border-slate-100 hover:scale-110 transition-transform"
+        :class="isFollowing ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'"
       >
-        <Icon :name="isFollowing ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-4 w-4" />
+         <Icon :name="isFollowing ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-4 w-4" />
       </button>
     </div>
 
-    <!-- Content section -->
-    <div class="flex flex-1 flex-col p-4 pt-6">
-      <div class="flex items-start justify-between gap-3">
-        <div class="flex-1 min-w-0">
-          <h3 class="text-sm sm:text-base font-semibold text-slate-900 dark:text-white truncate">{{ quizMaster.name }}</h3>
-          <div v-if="displayInstitution" class="mt-1 text-xs text-slate-500">{{ displayInstitution }}</div>
-        </div>
-      </div>
+    <!-- Info -->
+    <div class="text-center w-full">
+       <h3 class="text-lg font-bold text-slate-900 group-hover:text-brand-700 transition-colors mb-1 truncate px-2">
+         {{ quizMaster.name }}
+       </h3>
+       
+       <div v-if="displayInstitution" class="text-xs font-semibold text-brand-600 uppercase tracking-wide mb-3 truncate px-4">
+         {{ displayInstitution }}
+       </div>
+       <div v-else class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+         Quiz Master
+       </div>
 
-      <!-- Headline -->
-      <p v-if="quizMaster.headline" class="mt-3 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{{ quizMaster.headline }}</p>
+       <!-- Bio/Headline -->
+       <p class="text-sm text-slate-500 line-clamp-2 h-10 mb-4 px-2 leading-relaxed">
+         {{ quizMaster.headline || 'Passionate educator creating engaging quizzes.' }}
+       </p>
 
-      <!-- Subject tags and meta -->
-      <div class="mt-3 flex items-center justify-between gap-3">
-        <div class="flex flex-wrap gap-2">
-          <span v-for="subject in displaySubjects" :key="subject.id || subject" class="inline-flex items-center rounded-md bg-[#fff4f4] px-2 py-0.5 text-xs font-medium text-[#891f21]">
+       <!-- Stats / Tags -->
+       <div class="flex flex-wrap justify-center gap-2 mb-6">
+          <span 
+            v-for="subject in displaySubjects" 
+            :key="subject.id || subject"
+            class="px-2 py-1 bg-slate-50 text-slate-600 text-xs rounded-md border border-slate-100"
+          >
             {{ subject.name || subject.title || subject.label || subject.slug || subject }}
           </span>
-          <span v-if="quizMaster.subjects.length > maxDisplaySubjects" class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
-            +{{ quizMaster.subjects.length - maxDisplaySubjects }}
-          </span>
-        </div>
+       </div>
 
-        <div class="text-xs text-slate-500">
-          <span v-if="displayGradeName">{{ isCourse ? 'Course ' + displayGradeName : 'Grade ' + displayGradeName }}</span>
-        </div>
-      </div>
-
-      <!-- CTA: View Profile -->
-      <div class="mt-auto pt-4">
-        <NuxtLink :to="profileUrl" class="inline-flex items-center justify-center w-full rounded-md px-3 py-2 text-sm font-semibold text-white" :style="{ backgroundColor: '#891f21' }">
-          View Profile
-        </NuxtLink>
-      </div>
+       <!-- Action -->
+       <span class="inline-flex items-center text-sm font-bold text-brand-600 group-hover:text-brand-700">
+         View Profile <Icon name="heroicons:arrow-right" class="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1" />
+       </span>
     </div>
   </NuxtLink>
 </template>

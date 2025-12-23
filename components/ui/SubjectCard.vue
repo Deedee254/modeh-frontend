@@ -1,70 +1,63 @@
 <template>
-  <div class="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-all duration-300 hover:shadow-xl dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800/20">
-    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-hidden="true"></NuxtLink>
+  <div class="group relative flex w-full flex-col rounded-lg overflow-hidden transition-all duration-300 h-full bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900">
+    
+    <!-- Hero Image (Aspect Ratio 16:9) -->
+    <div class="relative w-full aspect-video bg-slate-100 overflow-hidden">
+       <!-- Use Icon/Image fallback logic -->
+       <div v-if="!image && !iconName" class="absolute inset-0 bg-gradient-to-br from-brand-50 to-brand-100/50 flex items-center justify-center">
+          <span class="text-2xl font-bold text-brand-800">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
+       </div>
+       <div v-else-if="iconName" class="absolute inset-0 bg-slate-50 flex items-center justify-center">
+          <Icon :name="iconName" class="h-12 w-12 text-slate-400" />
+       </div>
+       <img v-else :src="image" :alt="displayTitle" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
 
-    <!-- Content Section -->
-    <div class="flex flex-1 flex-col p-5">
-      <!-- Header: Icon and Title with Check Mark -->
-      <div class="flex flex-col sm:flex-row items-start justify-between gap-3 mb-3">
-        <div class="flex flex-col sm:flex-row items-start gap-3 flex-1">
-          <!-- Icon/Image -->
-          <div class="flex-shrink-0">
-            <template v-if="image">
-              <img :src="image" alt="" class="h-12 w-12 rounded-lg object-cover" />
-            </template>
-            <template v-else>
-              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
-                <template v-if="iconName">
-                  <Icon :name="iconName" class="h-6 w-6 text-slate-600 dark:text-slate-400" />
-                </template>
-                <template v-else>
-                  <span class="text-sm font-bold text-slate-600 dark:text-slate-400">{{ (displayTitle || '').charAt(0).toUpperCase() }}</span>
-                </template>
-              </div>
-            </template>
-          </div>
-
-          <!-- Title -->
-          <div class="flex-1">
-            <h3 class="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-50">
-              {{ displayTitle }}
-            </h3>
-            <!-- Grade pill below title -->
-            <div v-if="displayGrade" class="mt-2 inline-block">
-              <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                {{ isCourse ? 'Course' : 'Grade' }} {{ displayGrade }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Check Mark - Top Right (hidden on mobile) -->
-        <div class="hidden sm:flex flex-shrink-0">
-          <div class="flex h-7 w-7 items-center justify-center rounded-full" style="background-color: #891f21">
-            <Icon name="heroicons:check-solid" class="h-4 w-4 text-white" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Description -->
-      <p v-if="displayDescription" class="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
-        {{ displayDescription }}
-      </p>
-
-      <!-- Stats -->
-      <div class="mt-auto pt-2 flex items-center gap-3 text-sm">
-        <span class="text-slate-600 dark:text-slate-400">
-          <span class="font-semibold text-slate-900 dark:text-slate-100">{{ topicsCount }}</span> topics
-        </span>
-        <span class="text-slate-400 dark:text-slate-600">·</span>
-        <span class="text-slate-600 dark:text-slate-400">
-          <span class="font-semibold text-slate-900 dark:text-slate-100">{{ quizzes_count }}</span> quizzes
-        </span>
-      </div>
+       <!-- Badge Top Left -->
+       <div class="absolute top-2 left-2" v-if="displayGrade">
+         <div class="px-2 py-0.5 bg-white/95 backdrop-blur-sm rounded text-[10px] font-bold uppercase tracking-wide text-slate-800 shadow-sm border border-black/5">
+            {{ isCourse ? 'COURSE' : 'GRADE' }} {{ displayGrade }}
+         </div>
+       </div>
     </div>
 
-    <!-- Bottom accent (burgundy strip similar to GradeCard) -->
-    <div class="h-8 w-full rounded-b-2xl" style="background: linear-gradient(to bottom right, #891f21, #a83435)"></div>
+    <!-- Content Section -->
+    <div class="flex flex-col flex-1 p-4">
+       <!-- Title -->
+       <h3 class="text-[16px] leading-[22px] font-semibold text-[#1f1f1f] dark:text-white line-clamp-2 mb-2 transition-colors">
+         {{ displayTitle }}
+       </h3>
+
+       <!-- Description -->
+       <p v-if="displayDescription" class="text-[13px] text-[#6a6f73] line-clamp-2 mb-4 leading-relaxed">
+         {{ displayDescription }}
+       </p>
+       <div v-else class="mb-4"></div>
+
+       <!-- Footer Area -->
+       <div class="mt-auto flex items-center justify-between">
+          <!-- Stats Grid -->
+          <div class="flex items-center gap-3 text-[12px] text-[#6a6f73]">
+             <div class="flex items-center gap-1">
+                <span class="font-bold text-slate-700">{{ topicsCount }}</span> Topics
+             </div>
+             <span class="text-slate-300">|</span>
+             <div class="flex items-center gap-1">
+                <span class="font-bold text-slate-700">{{ quizzes_count }}</span> Quizzes
+             </div>
+          </div>
+
+          <NuxtLink 
+            v-if="to" 
+            :to="to" 
+            class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
+          >
+            Explore
+          </NuxtLink>
+       </div>
+    </div>
+
+    <!-- Full Clickable Overlay -->
+    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-label="Explore Subject"></NuxtLink>
   </div>
 </template>
 

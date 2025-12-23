@@ -69,7 +69,7 @@
               <button @click="setFilter('featured')" :class="filterBtnClass('featured')" :aria-pressed="activeFilter === 'featured'">Featured</button>
               <button @click="setFilter('new')" :class="filterBtnClass('new')" :aria-pressed="activeFilter === 'new'">New</button>
             </div>
-            <div class="ml-auto text-sm text-gray-500">Showing {{ filtered.length }} subjects</div>
+            <div class="ml-auto text-sm text-gray-500">Showing {{ paginatedSubjects.length }} of {{ filtered.length }} subjects</div>
           </div>
         </div>
 
@@ -79,26 +79,64 @@
             <div v-else-if="error" class="mt-6 text-red-600 dark:text-red-400">Failed to load subjects.</div>
             <div v-else class="mt-6">
               <div v-if="filtered.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 rounded-xl shadow-sm border-slate-200 dark:border-slate-800">No subjects found.</div>
-              <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-3">
-              <SubjectCard
-                v-for="s in filtered"
-                :key="s.id"
-                :title="s.name"
-                :subtitle="`${s.quizzes_count || 0} quizzes available`"
-                :image="resolveIcon(s)"
-                :badgeText="(s.name || '').charAt(0).toUpperCase()"
-                :to="`/subjects/${encodeURIComponent(s.slug)}`"
-                :topicsCount="(s.topics_count ?? (Array.isArray(s.topics) ? s.topics.length : (s.topics?.data && Array.isArray(s.topics.data) ? s.topics.data.length : 0))) || 0"
-                :startLink="`/subjects/${encodeURIComponent(s.slug)}`"
-                :description="s.description || s.summary || ''"
-                :grade="s.grade?.name || s.grade_id || ''"
-                startLabel="Explore Topics"
-              >
-                <div class="text-sm text-brand-600">
-                  <span>Grades {{ Array.isArray(s.grades) ? s.grades.map(g => g.name || g.id).join(', ') : s.grade?.name || s.grade_id || 'All' }}</span>
+              <div v-else class="space-y-6">
+                <!-- Subjects Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-3">
+                  <SubjectCard
+                    v-for="s in paginatedSubjects"
+                    :key="s.id"
+                    :title="s.name"
+                    :subtitle="`${s.quizzes_count || 0} quizzes available`"
+                    :image="resolveIcon(s)"
+                    :badgeText="(s.name || '').charAt(0).toUpperCase()"
+                    :to="`/subjects/${encodeURIComponent(s.slug)}`"
+                    :topicsCount="(s.topics_count ?? (Array.isArray(s.topics) ? s.topics.length : (s.topics?.data && Array.isArray(s.topics.data) ? s.topics.data.length : 0))) || 0"
+                    :startLink="`/subjects/${encodeURIComponent(s.slug)}`"
+                    :description="s.description || s.summary || ''"
+                    :grade="s.grade?.name || s.grade_id || ''"
+                    startLabel="Explore Topics"
+                  >
+                    <div class="text-sm text-brand-600">
+                      <span>Grades {{ Array.isArray(s.grades) ? s.grades.map(g => g.name || g.id).join(', ') : s.grade?.name || s.grade_id || 'All' }}</span>
+                    </div>
+                  </SubjectCard>
                 </div>
-              </SubjectCard>
-            </div>
+
+                <!-- Pagination Controls -->
+                <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-8 pb-8">
+                  <button 
+                    @click="currentPage = Math.max(1, currentPage - 1)"
+                    :disabled="currentPage === 1"
+                    class="px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  <div class="flex items-center gap-1">
+                    <button 
+                      v-for="page in visiblePages"
+                      :key="page"
+                      @click="currentPage = page"
+                      :class="[
+                        'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        page === currentPage
+                          ? 'bg-[#800020] text-white'
+                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      ]"
+                    >
+                      {{ page }}
+                    </button>
+                  </div>
+
+                  <button 
+                    @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                    :disabled="currentPage === totalPages"
+                    class="px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
           </div>
         </main>
       </div>
@@ -153,6 +191,8 @@ const subjectsForFilters = computed(() => (store.subjects || []).map(s => ({
 const query = ref('')
 const gradeFilter = ref('')
 const subjectFilter = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 12
 
 const allGrades = computed(() => Array.isArray(store.grades) ? store.grades.slice() : [])
 
@@ -180,6 +220,33 @@ const filtered = computed(() => {
   })
   if (subjectFilter.value) list = list.filter(s => String(s.id) === String(subjectFilter.value) || String(s.slug || s.id) === String(subjectFilter.value))
   return list
+})
+
+const totalPages = computed(() => Math.ceil(filtered.value.length / itemsPerPage))
+
+const paginatedSubjects = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filtered.value.slice(start, end)
+})
+
+const visiblePages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  const halfVisible = Math.floor(maxVisible / 2)
+  
+  let startPage = Math.max(1, currentPage.value - halfVisible)
+  let endPage = Math.min(totalPages.value, startPage + maxVisible - 1)
+  
+  if (endPage - startPage < maxVisible - 1) {
+    startPage = Math.max(1, endPage - maxVisible + 1)
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i)
+  }
+  
+  return pages
 })
 
 // Dev: Print cache metrics after a short delay

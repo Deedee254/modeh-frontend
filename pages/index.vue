@@ -13,44 +13,92 @@
     <!-- Page Content Wrapper -->
     <div class="bg-gray-50">
     <!-- How It Works -->
-    <section class="relative py-12">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="text-center">
-          <p class="text-sm font-semibold tracking-wide text-brand-600 uppercase">How it works</p>
-          <h2 class="mt-3 text-3xl font-bold text-slate-900">Start learning in four simple steps</h2>
-          <p class="mt-3 text-base text-slate-600">A learning workflow designed for clarity and steady progress — pick a learning path, practice with targeted quizzes, review instant feedback, and track improvement over time.</p>
-        </div>
+    <!-- How It Works & Quick Play -->
+    <section class="relative py-24 bg-white overflow-hidden">
+      <!-- Background Elements -->
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-[#800020]/5 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-[#800020]/5 rounded-full blur-3xl"></div>
+      </div>
 
-        <!-- Mobile Timeline (vertical) -->
-        <div class="mt-14 md:hidden">
-          <div class="relative space-y-8">
-            <div class="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-600 via-accent-500 to-brand-950"></div>
-            <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative pl-24 animate-fade-in group" :style="{ '--animation-delay': `${index * 0.15}s` }">
-              <div class="absolute left-0 top-2 h-16 w-16 flex items-center justify-center rounded-full border-4 border-white bg-gradient-to-br transform transition-transform duration-300 group-hover:scale-110 group-hover:shadow-lg" :class="step.badge">
-                  <span class="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" :class="step.glow"></span>
-                  <UIcon :name="step.icon" class="text-white text-xl relative z-10 transform transition-transform duration-300 group-hover:rotate-6" />
-                </div>
-              <div>
-                <h3 class="text-lg font-semibold text-slate-900">{{ step.title }}</h3>
-                <p class="mt-2 text-sm text-slate-600">{{ step.description }}</p>
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-start">
+           
+           <!-- Left Column: Steps -->
+           <div class="flex flex-col h-full">
+              <div class="mb-8">
+                <span class="inline-block py-1 px-3 rounded-full bg-[#800020]/10 text-[#800020] text-sm font-bold tracking-wide uppercase mb-4">
+                  Simple Process
+                </span>
+                <h2 class="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+                  How It Works
+                </h2>
+                <p class="text-base text-slate-600 leading-relaxed">
+                  A streamlined workflow designed for steady progress.
+                </p>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Desktop Grid (4 columns) -->
-        <div class="mt-14 hidden md:grid grid-cols-2 gap-8 lg:grid-cols-4">
-          <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="text-center animate-fade-in group" :style="{ '--animation-delay': `${index * 0.1}s` }">
-            <div class="relative mx-auto h-16 w-16 flex items-center justify-center rounded-2xl transition-transform duration-300 group hover:scale-105 hover:shadow-xl" :class="step.badge">
-              <span class="absolute inset-0.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" :class="step.glow"></span>
-              <UIcon :name="step.icon" class="relative text-white text-2xl z-10 transform transition-transform duration-300 group-hover:scale-110" />
-            </div>
-            <h3 class="mt-5 text-lg font-semibold text-slate-900">{{ step.title }}</h3>
-            <p class="mt-2 text-sm text-slate-600">{{ step.description }}</p>
-          </div>
+              <div class="space-y-8 relative pl-8 border-l-2 border-slate-100 ml-4 flex-1">
+                 <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative pl-8 group">
+                    <!-- Dot -->
+                    <div class="absolute -left-[45px] top-0 w-8 h-8 rounded-full bg-white border-4 border-slate-100 flex items-center justify-center group-hover:border-[#800020]/30 transition-colors">
+                       <div class="w-2.5 h-2.5 rounded-full bg-[#800020]"></div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 group-hover:shadow-md transition-all">
+                       <div class="flex items-center gap-4 mb-4">
+                          <div class="w-12 h-12 rounded-xl bg-[#800020]/10 flex items-center justify-center text-[#800020]">
+                             <UIcon :name="step.icon" class="text-xl" />
+                          </div>
+                          <div>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Step {{ step.number }}</span>
+                            <h3 class="text-lg font-bold text-slate-900">{{ step.title }}</h3>
+                          </div>
+                       </div>
+                       <p class="text-slate-600 text-sm">{{ step.description }}</p>
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           <!-- Right Column: Interactive Guest Play -->
+           <div class="relative lg:sticky lg:top-24">
+              <!-- Right Side Header -->
+              <div class="mb-8 md:pl-4">
+                 <span class="inline-block py-1 px-3 rounded-full bg-brand-50 text-brand-600 text-sm font-bold tracking-wide uppercase mb-4">
+                    Try It Now
+                 </span>
+                 <h2 class="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+                    Start Learning Instantly
+                 </h2>
+                 <p class="text-base text-slate-600 leading-relaxed">
+                    No account needed. Jump straight into a battle.
+                 </p>
+              </div>
+
+              <!-- Decorative Blob -->
+              <div class="absolute inset-0 bg-gradient-to-tr from-[#800020]/5 to-brand-50 rounded-3xl transform rotate-3 scale-105 -z-10 top-24"></div>
+              
+              <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden h-[600px] relative z-10">
+                 <HomeGuestQuickPlay />
+              </div>
+
+              <!-- Trust Badge -->
+              <div class="mt-6 flex items-center justify-center gap-2 text-sm text-slate-500">
+                 <UIcon name="heroicons:shield-check" class="text-green-500" />
+                 <span>No sign-up required to try</span>
+              </div>
+           </div>
         </div>
       </div>
     </section>
+
+    <!-- Member Benefits Section -->
+    <MemberBenefits />
+
+    <!-- Institution Benefits Section -->
+    <InstitutionBenefits />
 
     <!-- Quizzes section (componentized) -->
     <QuizzesSection
@@ -61,106 +109,24 @@
       :loading="quizzesLoading"
     />
 
-    <section class="py-12">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <header class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Subjects</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Subjects & learning paths</h3>
-          <p class="mt-3 text-slate-600">Explore subject tracks with aligned quizzes and topic roadmaps to guide learning and progression.</p>
-        </header>
+    <!-- Show quizzes for a few random subjects (reuse CategorizedQuizzes component) -->
+    <CategorizedQuizzes :levels="randomSubjects" :loading="quizzesLoading" type="subject" :columns="4" title="Subject quizzes" subtitle="Try quizzes from these subjects" />
 
-  <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-          <SubjectCard
-            v-for="subject in randomSubjects"
-            :key="subject.id"
-            :subject="subject"
-            :to="`/subjects/${subject.slug}`"
-            :title="subject.name"
-            :subtitle="`Grades ${ Array.isArray(subject.grades) ? subject.grades.map(g => g.name || g.id).join(', ') : subject.grade?.name || subject.grade_id || 'All' }`"
-            :image="subject.image"
-            :badgeText="(subject.name || '').charAt(0).toUpperCase()"
-            :topicsCount="subject.topics_count || subject.topics?.length || 0"
-            :quizzes_count="subject.quizzes_count || subject.count || 0"
-            :description="subject.description || subject.summary || ''"
-            :grade="subject.grade?.name || subject.grade_id || ''"
-            startLabel="Explore Topics"
-            class="group"
-          />
-        </div>
-        <div class="mt-6 text-center">
-          <NuxtLink to="/subjects" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all subjects</NuxtLink>
-        </div>
-      </div>
-    </section>
-
-  <!-- Levels section replaced with LevelQuizzes component -->
-  <LevelQuizzes :levels="safeArray(levels)" :loading="quizzesLoading" />
+  <!-- Levels section replaced with CategorizedQuizzes component -->
+  <CategorizedQuizzes :levels="safeArray(levels)" :loading="quizzesLoading" />
 
   <!-- New CategoryBanner: replaces separate Grades and Courses sections -->
   <CategoryBanner :grades="safeArray(GRADES)" :courses="safeArray(randomCourses)" />
 
-    <section class="py-12">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-rose-500 font-semibold">Topics</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Topics & contextual quizzes</h3>
-          <p class="mt-3 text-slate-600">Dive into topics with rich context — linked subjects, quiz counts, and summaries to help you pick focused practice areas.</p>
-        </div>
-
-        <div class="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4 auto-rows-max">
-          <div v-for="(topic, index) in randomTopics" :key="topic.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
-            <TopicCard
-              :topic="topic"
-              :to="`/topics/${topic.slug}`"
-              :title="topic.name"
-              :image="topic.image || topic.cover_image || ''"
-              :grade="getTopicGradeLabel(topic)"
-              :subject="getTopicSubjectLabel(topic)"
-              :quizzesCount="topic.quizzes_count || 0"
-              :description="topic.description || topic.summary || ''"
-              startLabel="View Quizzes"
-              class="h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
-            />
-          </div>
-        </div>
-        <div class="mt-6 text-center">
-          <NuxtLink to="/topics" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all topics</NuxtLink>
-        </div>
-      </div>
-    </section>
+    <!-- Show quizzes for a few random topics (reuse CategorizedQuizzes component) -->
+    <CategorizedQuizzes :levels="randomTopics" :loading="quizzesLoading" type="topic" :columns="4" title="Topic quizzes" subtitle="Practice quizzes tied to these topics" />
 
     <!-- Learn/Create/Manage CTAs (shown only to unauthenticated users) -->
     <LearnCreateManagePills />
 
 
-    <!-- Tertiary Courses Section -->
-    <section class="py-12 bg-gradient-to-br from-brand-600/10 to-brand-950/10">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-purple-500 font-semibold">Tertiary Level</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Courses & higher education</h3>
-          <p class="mt-3 text-slate-600">Explore university and tertiary-level courses with specialized content, advanced topics, and professional assessments.</p>
-        </div>
-
-        <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 auto-rows-max">
-          <div v-for="(course, index) in randomCourses" :key="course.id" class="animate-fade-in" :style="{ '--animation-delay': `${index * 0.1}s` }">
-            <GradeCard
-              :grade="course"
-              :to="`/courses/${course.slug}`"
-              :title="course.name"
-              :description="course.description || course.summary || ''"
-              :quizzes_count="course.quizzes_count || 0"
-              :actionLink="`/courses/${course.slug}`"
-              :actionLabel="'Explore Course'"
-              class="h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02] compact-view"
-            />
-          </div>
-        </div>
-        <div class="mt-6 text-center">
-          <NuxtLink to="/courses" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-brand-600/10 text-brand-600 rounded-lg hover:bg-brand-600/20 transition-colors">Show all courses</NuxtLink>
-        </div>
-      </div>
-    </section>
+    <!-- Tournaments Section -->
+    <TournamentSection />
 
     <!-- Quiz Masters -->
     <section class="py-12">
@@ -212,30 +178,42 @@
     <!-- Testimonials -->
     <section class="py-12 bg-gradient-to-br from-brand-600/10 to-white">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-  <h3 class="text-2xl font-bold text-brand-900 mb-4 text-center">Success Stories</h3>
-        <ClientOnly>
-        <Carousel :items="safeArray(testimonials)" :perViewLg="3" :perViewMd="2" :perViewSm="1" auto>
-          <template #item="{ item }">
-            <div class="p-3">
-              <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm hover:shadow-xl">
-                <div class="flex gap-1 mb-4">
-                  <template v-for="n in 5" :key="n">
-                    <svg class="w-5 h-5" :class="n <= (item.rating || 5) ? 'text-yellow-400' : 'text-gray-200'" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                  </template>
-                </div>
-                <blockquote class="text-lg text-gray-700 mb-4">"{{ item.quote || 'Great experience with Modeh!' }}"</blockquote>
-                <div class="flex items-center gap-3">
-                  <div class="h-12 w-12 rounded-full bg-brand-600/10 grid place-items-center text-brand-600 font-semibold">{{ (item.name || 'A').charAt(0) }}</div>
-                  <div>
-                    <div class="font-semibold text-gray-900">{{ item.name || 'Anonymous' }}</div>
-                    <div class="text-sm text-brand-600">{{ item.role || 'User' }}</div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <!-- Left: Image -->
+          <div class="order-2 lg:order-1">
+            <img 
+              src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=600&fit=crop" 
+              alt="Success Stories" 
+              class="w-full rounded-2xl shadow-lg object-cover aspect-square"
+            />
+          </div>
+
+          <!-- Right: Testimonials -->
+          <div class="order-1 lg:order-2">
+            <h3 class="text-3xl font-bold text-brand-900 mb-8">Success Stories</h3>
+            <ClientOnly>
+              <div class="space-y-6">
+                <template v-for="(item, idx) in safeArray(testimonials).slice(0, 3)" :key="idx">
+                  <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm hover:shadow-xl transition-shadow">
+                    <div class="flex gap-1 mb-4">
+                      <template v-for="n in 5" :key="n">
+                        <svg class="w-5 h-5" :class="n <= (item.rating || 5) ? 'text-yellow-400' : 'text-gray-200'" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                      </template>
+                    </div>
+                    <blockquote class="text-lg text-gray-700 mb-4">"{{ item.quote || 'Great experience with Modeh!' }}"</blockquote>
+                    <div class="flex items-center gap-3">
+                      <div class="h-12 w-12 rounded-full bg-brand-600/10 grid place-items-center text-brand-600 font-semibold flex-shrink-0">{{ (item.name || 'A').charAt(0) }}</div>
+                      <div>
+                        <div class="font-semibold text-gray-900">{{ item.name || 'Anonymous' }}</div>
+                        <div class="text-sm text-brand-600">{{ item.role || 'User' }}</div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </template>
               </div>
-            </div>
-          </template>
-  </Carousel>
-  </ClientOnly>
+            </ClientOnly>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -278,17 +256,20 @@
 import { computed, ref, unref, watch, onMounted } from 'vue'
 import Carousel from '~/components/ui/Carousel.vue'
 import UiCard from '~/components/ui/UiCard.vue'
+import MemberBenefits from '~/components/MemberBenefits.vue'
+import InstitutionBenefits from '~/components/InstitutionBenefits.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 import UiQuizCard from '~/components/ui/QuizCard.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import ParallaxBanner from '~/components/ui/ParallaxBanner.vue'
 import LevelCard from '~/components/ui/LevelCard.vue'
-import LevelQuizzes from '~/components/LevelQuizzes.vue'
+import CategorizedQuizzes from '~/components/CategorizedQuizzes.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
 import HeroSection from '~/components/HeroSection.vue'
 import QuizzesSection from '~/components/QuizzesSection.vue'
 import CategoryBanner from '~/components/CategoryBanner.vue'
+import TournamentSection from '~/components/TournamentSection.vue'
 
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
