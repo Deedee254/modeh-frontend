@@ -24,9 +24,9 @@
     <!-- Main Content Container -->
     <div class="container relative mx-auto px-4 py-12 lg:py-20">
       <!-- Grid: Left content (42%), Right carousel (58%) -->
-      <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <!-- LEFT SIDE: Value Proposition -->
-        <div class="flex flex-col space-y-8">
+      <div class="grid items-center gap-8 sm:gap-12 lg:grid-cols-2 lg:gap-16">
+  <!-- LEFT SIDE: Value Proposition -->
+  <div class="flex flex-col space-y-8 order-1 sm:order-1">
           <!-- Badge -->
           <div
             class="inline-flex w-fit items-center gap-2 rounded-full bg-brand-600/15 px-4 py-2 text-sm font-medium text-brand-300 opacity-0 animate-fade-in"
@@ -39,7 +39,7 @@
           <!-- Headline -->
           <div class="space-y-4">
             <h1
-              class="text-4xl font-extrabold leading-tight tracking-tight text-white opacity-0 animate-fade-in sm:text-5xl lg:text-6xl"
+              class="text-3xl font-extrabold leading-tight tracking-tight text-white opacity-0 animate-fade-in sm:text-4xl lg:text-5xl xl:text-6xl"
               style="animation-delay: 0.2s"
             >
               Master Any Subject
@@ -48,7 +48,7 @@
               </span>
             </h1>
             <p
-              class="max-w-lg text-lg leading-relaxed text-slate-300 opacity-0 animate-fade-in sm:text-xl"
+              class="max-w-lg text-base leading-relaxed text-slate-300 opacity-0 animate-fade-in sm:text-lg"
               style="animation-delay: 0.3s"
             >
               Transform your learning experience with interactive quizzes designed
@@ -122,7 +122,7 @@
 
         <!-- RIGHT SIDE: Vertical Carousel -->
         <div
-          class="relative opacity-0 animate-slide-in-right lg:pl-8"
+          class="relative w-full opacity-0 animate-slide-in-right order-2 sm:order-2 lg:pl-8"
           style="animation-delay: 0.3s"
         >
           <QuizCarousel

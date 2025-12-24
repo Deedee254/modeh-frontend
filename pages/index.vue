@@ -110,7 +110,7 @@
     />
 
     <!-- Show quizzes for a few random subjects (reuse CategorizedQuizzes component) -->
-    <CategorizedQuizzes :levels="randomSubjects" :loading="quizzesLoading" type="subject" :columns="4" title="Subject quizzes" subtitle="Try quizzes from these subjects" />
+  <CategorizedQuizzes :levels="randomSubjects" :loading="quizzesLoading" type="subject" :columns="4" title="Subject quizzes" subtitle="Try quizzes from these subjects" bg-class="bg-white" />
 
   <!-- Levels section replaced with CategorizedQuizzes component -->
   <CategorizedQuizzes :levels="safeArray(levels)" :loading="quizzesLoading" />
@@ -182,7 +182,7 @@
           <!-- Left: Image -->
           <div class="order-2 lg:order-1">
             <img 
-              src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=600&fit=crop" 
+              src="/images/success-stories.png" 
               alt="Success Stories" 
               class="w-full rounded-2xl shadow-lg object-cover aspect-square"
             />

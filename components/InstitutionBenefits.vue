@@ -1,5 +1,5 @@
 <template>
-  <section class="py-24 bg-background">
+   <section class="py-24 bg-gradient-to-tr from-[#800020]/8 via-white to-[#800020]/4 relative overflow-hidden">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         <!-- Left Side: Content -->

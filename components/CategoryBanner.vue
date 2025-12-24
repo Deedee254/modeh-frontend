@@ -9,7 +9,7 @@
           :items="propsGrades"
           variant="grades"
           more-link="/grades"
-          :icon-svg="gradesIcon"
+          :svg-src="'/Grades-cuate.svg'"
           :bg-gradient="colors[0]"
           button-text="View all grades"
         />
@@ -21,7 +21,7 @@
           :items="propsCourses"
           variant="courses"
           more-link="/courses"
-          :icon-svg="coursesIcon"
+          :svg-src="'/Happy%20student-pana.svg'"
           :colors="colors"
           :bg-gradient="colors[2]"
           button-text="View all courses"
@@ -47,17 +47,6 @@ const colors = ['linear-gradient(135deg,#891f21,#b23a3f)','linear-gradient(135de
 const propsGrades = computed(() => Array.isArray(props.grades) ? props.grades : [])
 const propsCourses = computed(() => Array.isArray(props.courses) ? props.courses : [])
 
-const gradesIcon = `
-<svg width="84" height="84" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M3 5a2 2 0 012-2h8l4 4v12a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M7 7h6M7 11h6M7 15h3" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`
-
-const coursesIcon = `
-<svg width="84" height="84" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M12 2l7 4v6a6 6 0 01-6 6H11a6 6 0 01-6-6V6l7-4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M7 10h10" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`
 </script>
 
 <style scoped>

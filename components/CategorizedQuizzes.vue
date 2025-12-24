@@ -1,5 +1,5 @@
 <template>
-  <section class="relative py-20 bg-slate-50/50 overflow-hidden">
+  <section :class="['relative py-20 overflow-hidden', bgClass]">
     <!-- Decorative background elements -->
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
        <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand-50/40 rounded-full blur-3xl"></div>
@@ -38,16 +38,16 @@
           v-else 
           v-for="level in visibleLevels" 
           :key="level.id || level.slug || level.name" 
-          class="group flex flex-col rounded-xl bg-white/90 backdrop-blur-md p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-100 transition-all duration-300"
+          class="group flex flex-col rounded-xl bg-white overflow-hidden border border-slate-300 shadow-md hover:shadow-lg transition-all duration-300"
         >
           <!-- Category Header -->
-          <div class="flex items-center justify-between mb-5">
-            <h4 class="font-bold text-slate-900 group-hover:text-brand-700 transition-colors truncate pr-2">
+          <div class="flex items-center justify-between mb-0 p-5 bg-[#800020] rounded-t-lg">
+            <h4 class="font-bold text-white group-hover:text-white/90 transition-colors truncate pr-2">
                {{ level.name }}
             </h4>
             <NuxtLink 
               :to="itemPrefix + (level.slug || level.id)" 
-              class="flex-shrink-0 text-[11px] font-bold uppercase tracking-tighter text-brand-600 hover:text-brand-800 flex items-center gap-1 group/link"
+              class="flex-shrink-0 text-[11px] font-bold uppercase tracking-tighter text-white/80 hover:text-white flex items-center gap-1 group/link"
             >
               All
               <Icon name="heroicons:arrow-right" class="h-3 w-3 transition-transform group-hover/link:translate-x-0.5" />
@@ -55,12 +55,12 @@
           </div>
 
           <!-- Quiz Loading State -->
-          <div v-if="loading" class="space-y-4">
+          <div v-if="loading" class="space-y-4 p-5">
             <div v-for="n in 3" :key="n" class="h-16 rounded-lg bg-slate-50 animate-pulse"></div>
           </div>
 
           <!-- Quiz Content -->
-          <div v-else class="flex-1">
+          <div v-else class="flex-1 p-5">
             <div v-if="(levelQuizzes(level) || []).length === 0" class="h-40 flex items-center justify-center text-xs text-slate-400 font-medium italic">
                No quizzes yet
             </div>
@@ -70,7 +70,7 @@
                 v-for="(quiz, idx) in (levelQuizzes(level) || []).slice(0, 3)"
                 :key="quiz.id || quiz.slug"
                 :horizontal="true"
-                :clean="true"
+                :clean="false"
                 :hide-image="true"
                 :to="'/quizzes/' + (quiz.slug || quiz.id)"
                 :title="quiz.title"
@@ -78,13 +78,13 @@
                 :likes="quiz.likes_count ?? quiz.likes ?? 0"
                 :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count"
                 :quiz-id="quiz.id"
-                class="bg-transparent hover:translate-x-1 transition-transform"
+                class="hover:translate-x-1 transition-transform"
               />
             </div>
           </div>
 
           <!-- Action Footer inside card -->
-          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <div class="mt-0 p-5 pt-4 border-t border-slate-200 flex items-center justify-between">
              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 {{ (levelQuizzes(level) || []).length }}+ Quizzes
              </span>
@@ -118,6 +118,8 @@ const props = defineProps({
   // title/subtitle overrides for reuse
   title: { type: String, default: 'Learning levels with quizzes' },
   subtitle: { type: String, default: 'Explore popular learning levels and jump straight into quizzes curated for each level.' }
+  ,
+  bgClass: { type: String, default: 'bg-gradient-to-tr from-[#800020]/8 via-white to-[#800020]/4' }
 })
 
 // Expose props as a safe array

@@ -1,8 +1,8 @@
 <template>
   <!-- Horizontal variant (Mobile/List view) -->
   <div v-if="props.horizontal" :class="[
-      'group relative w-full flex flex-row rounded-lg bg-white overflow-hidden transition-all duration-200',
-      props.clean ? 'shadow-none border-0' : 'shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-800 dark:bg-slate-900'
+      'group relative w-full flex flex-row rounded-lg bg-white overflow-hidden transition-all duration-300',
+      props.clean ? 'shadow-none border-0' : 'shadow-md hover:shadow-xl hover:shadow-slate-300/50 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 dark:hover:shadow-slate-900/50'
     ]">
     <!-- Image Left (Fixed width 96-112px per spec) -->
     <div v-if="!props.hideImage" class="relative w-24 sm:w-28 flex-shrink-0 bg-slate-100">

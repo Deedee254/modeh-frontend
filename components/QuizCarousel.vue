@@ -1,7 +1,7 @@
 <template>
   <!-- Framed carousel: rounded container that clips content. Use white fades at
        the top/bottom to create a soft glow effect over the hero image. -->
-  <div class="relative h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-3xl ring-1 ring-white/5">
+  <div class="relative w-full h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-3xl ring-1 ring-white/5">
     <!-- White gradient overlays for soft glow at ends -->
     <div class="pointer-events-none absolute left-0 right-0 top-0 z-10 h-24 bg-gradient-to-b from-white/50 to-transparent" />
     <div class="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-24 bg-gradient-to-t from-white/50 to-transparent" />
@@ -24,14 +24,14 @@
     <div
       v-else
       :style="animationStyle"
-      class="animate-scroll-up flex flex-col gap-5 py-4 w-full min-w-0 max-w-full overflow-hidden"
+      class="animate-scroll-up flex flex-col gap-3 sm:gap-5 py-4 w-full min-w-0 max-w-full overflow-hidden"
       @mouseenter="pauseAnimation"
       @mouseleave="resumeAnimation"
     >
       <div 
         v-for="(quiz, idx) in displayQuizzes" 
         :key="`${quiz.id}-${idx}`" 
-        class="flex-shrink-0 w-full px-2 min-w-0"
+        class="flex-shrink-0 w-full px-2 sm:px-3 min-w-0 max-w-full"
       >
           <QuizCard
           :quiz="quiz"
@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 
 interface Quiz {
@@ -93,11 +93,21 @@ if (process.client) {
     isDesktop.value = e ? e.matches : mq.matches
   }
   onMounted(() => {
+    // Initial check
     update()
-    try { mq.addEventListener('change', update) } catch (e) { mq.addListener(update) }
+    // Listen for changes
+    try { 
+      mq.addEventListener('change', update) 
+    } catch (e) { 
+      mq.addListener(update) 
+    }
   })
   onUnmounted(() => {
-    try { mq.removeEventListener('change', update) } catch (e) { mq.removeListener(update) }
+    try { 
+      mq.removeEventListener('change', update) 
+    } catch (e) { 
+      mq.removeListener(update) 
+    }
   })
 }
 
@@ -116,6 +126,17 @@ const displayQuizzes = computed(() => {
   // Duplicate for seamless infinite scroll
   return [...slice, ...slice]
 })
+
+// Watch for changes in quizzes data to restart animation properly
+watch(() => props.quizzes, (newQuizzes) => {
+  if (Array.isArray(newQuizzes) && newQuizzes.length > 0) {
+    // Briefly pause and resume animation to reset carousel state
+    isAnimating.value = false
+    setTimeout(() => {
+      isAnimating.value = true
+    }, 100)
+  }
+}, { deep: false })
 
 // Calculate scroll duration based on number of cards
 const scrollDuration = computed(() => {
@@ -164,9 +185,19 @@ const resumeAnimation = () => {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: translateZ(0);
+  /* Ensure proper rendering on low-end devices */
+  contain: layout style paint;
 }
 
 .animate-scroll-up:hover {
   animation-play-state: paused;
+}
+
+/* Ensure proper sizing on mobile when cards are horizontal */
+@media (max-width: 767px) {
+  .animate-scroll-up {
+    /* Tighter spacing on mobile */
+    gap: 0.75rem !important;
+  }
 }
 </style>

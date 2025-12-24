@@ -239,16 +239,18 @@ watch(mode, (newMode) => {
         fetchQuizzes()
      }
   }
-})
+}, { immediate: true })
 
 async function fetchQuizzes() {
    loadingQuizzes.value = true
    try {
       // Fetch public quizzes (limit to 5-10 for the widget)
-      const res = await api.get('/api/quizzes?limit=10')
+   const res = await api.get('/api/quizzes?limit=10&is_paid=0')
       if (res.ok) {
          const data = await res.json()
-         quizzes.value = data.data || data.quizzes || []
+         // controller returns { quizzes: <paginate-result> }
+         // prefer quizzes.data (the array) then data.data then data.quizzes (fallback)
+         quizzes.value = (data.quizzes && data.quizzes.data) || data.data || data.quizzes || []
       }
    } catch (e) {
       console.error('Failed to fetch inline quizzes', e)

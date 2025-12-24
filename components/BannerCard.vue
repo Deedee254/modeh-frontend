@@ -1,9 +1,11 @@
 <template>
   <div class="relative rounded-2xl overflow-hidden shadow-sm transition-shadow duration-200 hover:shadow-lg" :style="{ background: bgGradient }">
-    <!-- watermark/icon -->
-    <div class="absolute right-4 top-4 opacity-10 pointer-events-none" v-html="iconSvg"></div>
+    <!-- SVG Illustration (external only) -->
+    <div v-if="svgSrc" class="absolute right-0 bottom-0 w-48 h-48 opacity-90 pointer-events-none">
+      <img :src="svgSrc" alt="" class="w-full h-full object-contain opacity-90 pointer-events-none" />
+    </div>
 
-    <div class="p-6 flex flex-col justify-between h-full text-white">
+    <div class="p-6 flex flex-col justify-between h-full text-white relative z-10">
       <div>
         <div class="text-sm uppercase tracking-wide opacity-90">{{ label }}</div>
         <h3 class="mt-2 text-2xl font-bold">{{ title }}</h3>
@@ -55,7 +57,7 @@ const props = defineProps({
   moreLink: { type: [String, Object], default: '/' },
   buttonText: { type: String, default: 'View all' },
   colors: { type: Array, default: () => [] },
-  iconSvg: { type: String, default: '' },
+  svgSrc: { type: String, default: '' },
   bgGradient: { type: String, default: 'linear-gradient(135deg,#891f21,#b23a3f)' }
 })
 
