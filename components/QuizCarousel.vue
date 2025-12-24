@@ -1,7 +1,7 @@
 <template>
   <!-- Framed carousel: rounded container that clips content. Use white fades at
        the top/bottom to create a soft glow effect over the hero image. -->
-  <div class="relative w-full h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-3xl ring-1 ring-white/5">
+  <div class="relative w-full h-[260px] sm:h-[420px] lg:h-[600px] overflow-hidden rounded-3xl ring-1 ring-white/5">
     <!-- White gradient overlays for soft glow at ends -->
     <div class="pointer-events-none absolute left-0 right-0 top-0 z-10 h-24 bg-gradient-to-b from-white/50 to-transparent" />
     <div class="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-24 bg-gradient-to-t from-white/50 to-transparent" />
@@ -31,15 +31,18 @@
       <div 
         v-for="(quiz, idx) in displayQuizzes" 
         :key="`${quiz.id}-${idx}`" 
-        class="flex-shrink-0 w-full px-2 sm:px-3 min-w-0 max-w-full"
+        :class="[
+          'flex-shrink-0 w-full px-2 sm:px-3 min-w-0 max-w-full',
+          isDesktop ? 'h-auto' : 'h-28'
+        ]"
       >
-          <QuizCard
+        <QuizCard
           :quiz="quiz"
           :title="quiz.title || 'Untitled'"
           :quizId="quiz.id"
           :cover="quiz.cover_image || ''"
-          :to="`/quizzes/${quiz.slug || quiz.id}`"
-            :horizontal="isDesktop"
+    :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
+          :horizontal="!isDesktop"
           :difficulty="quiz.difficulty"
           :level="quiz.level_name"
           :subject="quiz.subject_name"

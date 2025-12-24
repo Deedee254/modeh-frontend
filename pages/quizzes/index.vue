@@ -157,6 +157,7 @@ import FiltersSidebar from '~/components/FiltersBar.vue'
 import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import useQuizzes from '~/composables/useQuizzes'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
@@ -194,9 +195,22 @@ const PAGE_SIZE = 12
 
 
 // on mount, fetch initial data (composable will normalize)
+const route = useRoute()
 onMounted(async () => {
-  // fetch quizzes/topics first (already hydrated store in top-level await)
-  await Promise.all([fetchItems(), fetchTopics()])
+  // fetch topics first (already hydrated store in top-level await)
+  await fetchTopics()
+
+  // If the page was opened with query params (subject_id/topic_id/level_id)
+  // apply them to the initial fetch so links like /quizzes?topic_id=123 work.
+  const q = route.query || {}
+  const params = {}
+  if (q.topic_id) params.topic_id = String(q.topic_id)
+  if (q.subject_id) params.subject_id = String(q.subject_id)
+  if (q.level_id) params.level_id = String(q.level_id)
+
+  // Fetch quizzes with any query params present; otherwise fetch default listing
+  await fetchItems(Object.keys(params).length ? params : undefined)
+
   if (process.env.NODE_ENV === 'development') {
     setTimeout(() => printMetrics(), 2000)
   }

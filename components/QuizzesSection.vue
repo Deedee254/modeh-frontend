@@ -67,8 +67,10 @@
                   :key="quiz.id" 
                   class="flex-shrink-0 w-[260px] sm:w-[280px] lg:w-72 snap-start first:ml-0"
                 >
-                  <UiQuizCard
-                    :to="'/quizzes/' + (quiz.slug || quiz.id)"
+                      <UiQuizCard
+                        :to="{ path: `/quizzes/${quiz.slug || quiz.id}/take` }"
+                        :startLink="{ path: `/quizzes/${quiz.slug || quiz.id}/take` }"
+                        :takeLink="{ path: `/quizzes/${quiz.slug || quiz.id}/take` }"
                     :title="quiz.title"
                     :topic="quiz.topic?.name || quiz.topic_name"
                     :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name"

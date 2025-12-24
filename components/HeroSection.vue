@@ -36,9 +36,40 @@
             <span>The #1 Quiz Platform for Learners</span>
           </div>
 
+          <!-- Role / Grade badge: show Grade for quizees, role badge for others -->
+          <div v-if="isQuizee && userGradeName" class="inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-sm font-semibold text-white/90 opacity-0 animate-fade-in" style="animation-delay: 0.15s">
+            <Icon name="heroicons:bookmark-20-solid" class="h-4 w-4 text-white/90" />
+            <span>Quizzes for: <span class="ml-1 font-bold">{{ userGradeName }}</span></span>
+          </div>
+
+          <div v-else-if="isQuizMaster" class="inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-sm font-semibold text-white/90 opacity-0 animate-fade-in" style="animation-delay: 0.15s">
+            <Icon name="heroicons:academic-cap-20-solid" class="h-4 w-4 text-white/90" />
+            <span>Instructor</span>
+          </div>
+
+          <div v-else-if="isInstitutionManager" class="inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-sm font-semibold text-white/90 opacity-0 animate-fade-in" style="animation-delay: 0.15s">
+            <Icon name="heroicons:building-20-solid" class="h-4 w-4 text-white/90" />
+            <span>Institution Manager</span>
+          </div>
+
           <!-- Headline -->
           <div class="space-y-4">
             <h1
+              v-if="isLoggedIn"
+              class="text-3xl font-extrabold leading-tight tracking-tight text-white opacity-0 animate-fade-in sm:text-4xl lg:text-5xl xl:text-6xl"
+              style="animation-delay: 0.2s"
+            >
+              <template v-if="userGradeName">
+                Practice quizzes for
+                <span class="bg-gradient-to-r from-brand-500 to-brand-600/70 bg-clip-text text-transparent"> {{ userGradeName }} </span>
+              </template>
+              <template v-else>
+                Welcome back — continue learning
+              </template>
+            </h1>
+
+            <h1
+              v-else
               class="text-3xl font-extrabold leading-tight tracking-tight text-white opacity-0 animate-fade-in sm:text-4xl lg:text-5xl xl:text-6xl"
               style="animation-delay: 0.2s"
             >
@@ -47,12 +78,18 @@
                 One Quiz at a Time
               </span>
             </h1>
+
             <p
               class="max-w-lg text-base leading-relaxed text-slate-300 opacity-0 animate-fade-in sm:text-lg"
               style="animation-delay: 0.3s"
             >
-              Transform your learning experience with interactive quizzes designed
-              by experts. Build knowledge, track progress, and achieve your goals.
+              <template v-if="isLoggedIn">
+                Access personalized quizzes, track your progress, and pick up where you left off.
+              </template>
+              <template v-else>
+                Transform your learning experience with interactive quizzes designed
+                by experts. Build knowledge, track progress, and achieve your goals.
+              </template>
             </p>
           </div>
 
@@ -79,12 +116,23 @@
             style="animation-delay: 0.5s"
           >
             <NuxtLink
+              v-if="isLoggedIn"
+              :to="dashboardLink"
+              class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105 group"
+            >
+              {{ ctaLabel }}
+              <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </NuxtLink>
+
+            <NuxtLink
+              v-else
               to="/register"
               class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105 group"
             >
               Start Learning Free
               <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </NuxtLink>
+
             <NuxtLink
               to="/quizzes"
               class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/10 backdrop-blur-sm px-8 py-3 font-semibold text-white hover:bg-white/20 transition-all transform hover:scale-105"
@@ -143,9 +191,63 @@ import { useAuthStore } from '~/stores/auth'
 import QuizCarousel from '~/components/QuizCarousel.vue'
 
 const authStore = useAuthStore()
-const auth = computed(() => ({
-  user: authStore.user
-}))
+
+// Normalize user profile access similar to other pages
+const userProfile = computed(() => {
+  const u = authStore.user
+  return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
+})
+
+const userGradeName = computed(() => {
+  const up: any = userProfile.value || {}
+  return up?.quizeeProfile?.grade?.name || up?.grade_name || up?.grade?.name || null
+})
+
+const isLoggedIn = computed(() => {
+  // Consider the user logged in if a normalized profile has an id or email
+  const up: any = userProfile.value || {}
+  return Boolean(up && (up.id || up.email))
+})
+
+const userRole = computed(() => {
+  // Try common places for role information
+  const up: any = userProfile.value || {}
+  const r = up.role || up.role_name || null
+  return (typeof r === 'string') ? r.toLowerCase() : r
+})
+
+// Role helpers
+const isQuizMaster = computed(() => {
+  const up: any = userProfile.value || {}
+  return Boolean(up.quizMasterProfile || up.quiz_master_profile) || (userRole.value && String(userRole.value).includes('quiz'))
+})
+const isInstitutionManager = computed(() => {
+  const up: any = userProfile.value || {}
+  const hasInstitutions = Array.isArray(up.institutions) && up.institutions.length > 0
+  return hasInstitutions || (userRole.value && String(userRole.value).includes('institution'))
+})
+const isQuizee = computed(() => {
+  return !isQuizMaster.value && !isInstitutionManager.value
+})
+
+const dashboardLink = computed(() => {
+  // Priority: quiz-master -> institution-manager -> quizee
+  try {
+    // Quiz master detection
+    if (isQuizMaster.value) return '/quiz-master/dashboard'
+    if (isInstitutionManager.value) return '/institution-manager/dashboard'
+    return '/quizee/dashboard'
+  } catch (e) {
+    return '/quizee/dashboard'
+  }
+})
+
+const ctaLabel = computed(() => {
+  if (!isLoggedIn.value) return 'Start Learning Free'
+  if (isQuizMaster.value) return 'Open Instructor Dashboard'
+  if (isInstitutionManager.value) return 'Open Institution Dashboard'
+  return 'Go to your dashboard'
+})
 
 // Feature items with icons
 const features = [

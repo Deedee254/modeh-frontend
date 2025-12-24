@@ -346,11 +346,32 @@ const testimonials = ref([])
 const sponsors = ref([])
 
 // Fetch data asynchronously without blocking
+// If a user is logged in and has a grade/level we request quizzes filtered to their profile
 const loadDynamicData = async () => {
   try {
+    // Determine user's grade/level from auth store (normalize shape like other pages)
+    const userProfile = (() => {
+      const u = auth.user
+      return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
+    })()
+    const userLevelId = userProfile?.quizeeProfile?.level?.id || userProfile?.level_id
+    const userGradeId = userProfile?.quizeeProfile?.grade?.id || userProfile?.grade_id
+
+    // Build quiz query string: prefer grade/level filters when available, otherwise use latest
+    const quizParams = new URLSearchParams()
+    // always ask for approved quizzes
+    quizParams.set('approved', '1')
+    // Request a page size similar to previous behaviour
+    quizParams.set('per_page', '12')
+    // If user has grade/level, include them so hero shows relevant quizzes
+    if (userLevelId) quizParams.set('level_id', String(userLevelId))
+    if (userGradeId) quizParams.set('grade_id', String(userGradeId))
+    // If no grade/level specified, fall back to latest listing
+    if (!userLevelId && !userGradeId) quizParams.set('latest', '1')
+
     // Fetch in parallel for better performance
     const [quizzesRes, quizMastersRes, testimonialsRes, sponsorsRes] = await Promise.all([
-      api.get('/api/quizzes?latest=1'),
+      api.get('/api/quizzes?' + quizParams.toString()),
       api.get('/api/quiz-masters'),
       api.get('/api/testimonials'),
       api.get('/api/sponsors')

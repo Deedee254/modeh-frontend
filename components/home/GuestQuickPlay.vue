@@ -165,34 +165,35 @@
                      <p class="text-slate-500 text-sm">No free quizzes available right now.</p>
                  </div>
                  <div v-else class="flex-1 overflow-y-auto space-y-3 p-1">
-                     <div 
-                        v-for="quiz in quizzes" 
-                        :key="quiz.id"
-                        class="p-3 bg-white border border-slate-200 rounded-xl hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer group"
-                        @click="navigateToQuiz(quiz.slug)"
-                     >
-                        <div class="flex gap-3">
-                           <div class="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
-                              <img v-if="quiz.cover" :src="quiz.cover" class="w-full h-full object-cover" />
-                              <div v-else class="w-full h-full flex items-center justify-center text-slate-300">
-                                 <UIcon name="heroicons:photo" class="text-xl" />
+                       <NuxtLink
+                              v-for="quiz in quizzes"
+                              :key="quiz.id"
+                              :to="{ path: `/quizzes/${quiz.slug}/take` }"
+                              class="p-3 bg-white border border-slate-200 rounded-xl hover:border-brand-300 hover:shadow-sm transition-all group block"
+                              aria-label="Start quiz"
+                           >
+                              <div class="flex gap-3 items-center">
+                                 <div class="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+                                    <img v-if="quiz.cover" :src="quiz.cover" class="w-full h-full object-cover" />
+                                    <div v-else class="w-full h-full flex items-center justify-center text-slate-300">
+                                       <UIcon name="heroicons:photo" class="text-xl" />
+                                    </div>
+                                 </div>
+                                 <div class="flex-1 min-w-0">
+                                    <h4 class="font-bold text-slate-900 text-sm truncate group-hover:text-brand-600 transition-colors">{{ quiz.title }}</h4>
+                                    <p class="text-xs text-slate-500 line-clamp-2 mt-1">{{ quiz.description || 'No description' }}</p>
+                                    <div class="flex items-center gap-3 mt-2 text-xs text-slate-400">
+                                       <span class="flex items-center gap-1"><UIcon name="heroicons:question-mark-circle" class="w-3 h-3" /> {{ quiz.questions_count || 0 }} Qs</span>
+                                       <span class="flex items-center gap-1"><UIcon name="heroicons:clock" class="w-3 h-3" /> {{ Math.floor((quiz.timer_seconds || 600) / 60) }}m</span>
+                                    </div>
+                                 </div>
+                                 <div class="self-center">
+                                    <span class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                                       <UIcon name="heroicons:play" class="ml-0.5" />
+                                    </span>
+                                 </div>
                               </div>
-                           </div>
-                           <div class="flex-1 min-w-0">
-                              <h4 class="font-bold text-slate-900 text-sm truncate group-hover:text-brand-600 transition-colors">{{ quiz.title }}</h4>
-                              <p class="text-xs text-slate-500 line-clamp-2 mt-1">{{ quiz.description || 'No description' }}</p>
-                              <div class="flex items-center gap-3 mt-2 text-xs text-slate-400">
-                                 <span class="flex items-center gap-1"><UIcon name="heroicons:question-mark-circle" class="w-3 h-3" /> {{ quiz.questions_count || 0 }} Qs</span>
-                                 <span class="flex items-center gap-1"><UIcon name="heroicons:clock" class="w-3 h-3" /> {{ Math.floor((quiz.timer_seconds || 600) / 60) }}m</span>
-                              </div>
-                           </div>
-                           <div class="self-center">
-                              <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
-                                 <UIcon name="heroicons:play" class="ml-0.5" />
-                              </button>
-                           </div>
-                        </div>
-                     </div>
+                           </NuxtLink>
                  </div>
               </div>
            </div>
@@ -260,7 +261,6 @@ async function fetchQuizzes() {
 }
 
 function navigateToQuiz(slug: string) {
-   router.push(`/quizzes/${slug}/take`)
 }
 
 function isQuizTaken(quizId: number): boolean {

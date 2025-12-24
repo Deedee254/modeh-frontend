@@ -46,7 +46,7 @@
                {{ level.name }}
             </h4>
             <NuxtLink 
-              :to="itemPrefix + (level.slug || level.id)" 
+              :to="makeQuizListRoute(level)"
               class="flex-shrink-0 text-[11px] font-bold uppercase tracking-tighter text-white/80 hover:text-white flex items-center gap-1 group/link"
             >
               All
@@ -72,7 +72,7 @@
                 :horizontal="true"
                 :clean="false"
                 :hide-image="true"
-                :to="'/quizzes/' + (quiz.slug || quiz.id)"
+                :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
                 :title="quiz.title"
                 :topic="quiz.topic?.name || quiz.topic_name"
                 :likes="quiz.likes_count ?? quiz.likes ?? 0"
@@ -89,7 +89,7 @@
                 {{ (levelQuizzes(level) || []).length }}+ Quizzes
              </span>
              <NuxtLink 
-               :to="itemPrefix + (level.slug || level.id)" 
+               :to="makeQuizListRoute(level)"
                class="text-xs font-bold text-brand-700 hover:text-brand-800"
              >
                 Explore
@@ -147,12 +147,16 @@ const gridClasses = computed(() => {
   return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6'
 })
 
-// route prefix per type
-const itemPrefix = computed(() => {
-  if (props.type === 'subject') return '/subjects/'
-  if (props.type === 'topic') return '/topics/'
-  return '/levels/'
-})
+// Build a route object that navigates to the quizzes listing filtered by the
+// current taxonomy item (level/subject/topic). Using route objects avoids
+// manual string concatenation and ensures proper encoding.
+function makeQuizListRoute(item) {
+  const id = item?.id ?? item?.slug ?? item?.name ?? null
+  if (!id) return { path: '/quizzes' }
+  if (props.type === 'subject') return { path: '/quizzes', query: { subject_id: String(id) } }
+  if (props.type === 'topic') return { path: '/quizzes', query: { topic_id: String(id) } }
+  return { path: '/quizzes', query: { level_id: String(id) } }
+}
 
 // Local cache mapping level id -> quizzes array (to avoid repeated network calls)
 const levelQuizzesMap = ref({})
