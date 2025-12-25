@@ -20,18 +20,18 @@
       </div>
     </div>
 
-    <!-- Scrolling Quiz Cards Container (horizontal on all viewports) -->
+    <!-- Scrolling Quiz Cards Container (vertical scroll of horizontal cards) -->
     <div
       v-else
       :style="animationStyle"
-      class="animate-scroll-left flex flex-row gap-3 sm:gap-5 py-4 w-full min-w-0 max-w-full overflow-hidden"
+  class="animate-scroll-vertical flex flex-col gap-1 sm:gap-2 md:gap-2 lg:gap-2 py-2 w-full min-w-0 max-w-full overflow-hidden"
       @mouseenter="pauseAnimation"
       @mouseleave="resumeAnimation"
     >
       <div 
         v-for="(quiz, idx) in displayQuizzes" 
         :key="`${quiz.id}-${idx}`" 
-  class="flex-shrink-0 w-[200px] sm:w-[240px] md:w-[260px] lg:w-72 px-2 sm:px-3 min-w-0"
+  class="flex-shrink-0 w-full px-2 sm:px-3 min-w-0 h-[96px] sm:h-[110px] md:h-[120px] lg:h-[120px]"
       >
         <QuizCard
           :quiz="quiz"
@@ -165,18 +165,18 @@ const resumeAnimation = () => {
 </script>
 
 <style>
-/* Infinite horizontal scroll animation */
-@keyframes scroll-left {
+/* Infinite vertical scroll animation */
+@keyframes scroll-vertical {
   0% {
-    transform: translateX(0);
+    transform: translateY(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateY(-50%);
   }
 }
 
-.animate-scroll-left {
-  animation-name: scroll-left;
+.animate-scroll-vertical {
+  animation-name: scroll-vertical;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   /* default duration; will be overridden by inline style from Vue */
@@ -189,7 +189,7 @@ const resumeAnimation = () => {
   contain: layout style paint;
 }
 
-.animate-scroll-left:hover {
+.animate-scroll-vertical:hover {
   animation-play-state: paused;
 }
 

@@ -389,8 +389,15 @@ const { data: quizData, pending } = useFetch(() => {
     ...(api.getXsrfFromCookie() ? { 'X-XSRF-TOKEN': api.getXsrfFromCookie() } : {})
   })),
   transform: (data) => {
-    // strict API shape: expect { quiz: { ... } }
+    // Accept multiple API shapes:
+    // 1. { quiz: { ... } } - single-quiz response
+    // 2. { quizzes: <paginated> } - index() returns paginated quizzes
     if (data?.quiz) return { quiz: data.quiz }
+    if (data?.quizzes) {
+      // Paginated shape: quizzes.data is array of items; prefer the first match
+      const maybe = (data.quizzes?.data && Array.isArray(data.quizzes.data)) ? data.quizzes.data[0] : (Array.isArray(data.quizzes) ? data.quizzes[0] : null)
+      return { quiz: maybe || null }
+    }
     return { quiz: null }
   }
 })
@@ -461,7 +468,15 @@ const level_name = computed(() => quiz.value.level?.name || null)
 const difficulty_level = computed(() => getDifficultyLevel(quiz.value.difficulty))
 
 // Author, likes and pricing (match API: quiz.created_by, quiz.likes_count, quiz.is_paid, quiz.price)
-const author = computed(() => quiz.value.created_by || null)
+// Backend provides `created_by` which may be an id or a user object. Normalize to an object
+// so template can safely read `.name` and `.avatar` without backend changes.
+const author = computed(() => {
+  const cb = quiz.value?.created_by
+  if (!cb) return null
+  if (typeof cb === 'object') return cb
+  // created_by is an id -> return minimal object with id only
+  return { id: cb, name: null, avatar: null, slug: null }
+})
 const likes_count = computed(() => Number(quiz.value.likes_count ?? 0))
 const isPaid = computed(() => Boolean(quiz.value.is_paid))
 const price = computed(() => quiz.value.price)
@@ -477,12 +492,13 @@ const priceDisplay = computed(() => {
   }
 })
 
-// Author link (use name -> slug) to quizee quiz-master profile
-const authorSlug = computed(() => {
-  const n = author.value?.name || ''
-  return n.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')
+// Author link (prefer canonical slug coming from API; fallback to id)
+const authorLink = computed(() => {
+  if (!author.value) return null
+  if (author.value.slug) return `/quizee/quiz-masters/${author.value.slug}`
+  if (author.value.id) return `/quizee/quiz-masters/${author.value.id}`
+  return null
 })
-const authorLink = computed(() => author.value ? `/quizee/quiz-masters/${authorSlug.value}` : null)
 
 const startButtonLabel = computed(() => isPaid.value ? `Buy & Begin — ${priceDisplay.value}` : 'Begin Assessment')
 

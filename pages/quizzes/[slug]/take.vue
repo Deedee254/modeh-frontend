@@ -89,7 +89,7 @@
               @click="selectAnswer(option)"
               :disabled="answered"
               class="w-full p-4 md:p-5 rounded-xl border-2 text-left transition-all duration-200 flex items-center justify-between group"
-              :class="getOptionClass(option)"
+              :class="[getOptionClass(option), { 'scale-105 transform': showVerdictAnim && option.id === selectedOption?.id }]"
             >
               <div class="flex items-center gap-3 flex-1">
                 <div 
@@ -97,13 +97,13 @@
                   :class="getOptionIndicatorClass(option)"
                 >
                   <span v-if="answered && option.id === selectedOption?.id" class="text-sm font-bold">
-                    {{ option.is_correct ? '✓' : '✗' }}
+                    {{ currentAnswer?.isCorrect ? '✓' : '✗' }}
                   </span>
                   <span v-else class="text-xs font-semibold text-slate-400">{{ String.fromCharCode(65 + idx) }}</span>
                 </div>
                 <span class="font-medium" :class="getOptionTextClass(option)">{{ option.text }}</span>
               </div>
-              <svg v-if="answered && option.is_correct" class="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <svg v-if="answered && option.id === selectedOption?.id && currentAnswer?.isCorrect" class="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
               </svg>
             </button>
@@ -247,6 +247,7 @@ const answered = ref(false)
 const quizCompleted = ref(false)
 const correctCount = ref(0)
 const userAnswers = ref([])
+const showVerdictAnim = ref(false)
 const timer = ref(0)
 const timerInterval = ref(null)
 const hasTimeLimit = ref(false)
@@ -261,7 +262,11 @@ const totalQuestions = computed(() => questions.value.length)
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value] || {})
 const isLastQuestion = computed(() => currentQuestionIndex.value === totalQuestions.value - 1)
 const progress = computed(() => ((currentQuestionIndex.value + 1) / totalQuestions.value) * 100)
-const isCorrect = computed(() => selectedOption.value?.is_correct || false)
+const isCorrect = computed(() => {
+  const ans = userAnswers.value[currentQuestionIndex.value]
+  if (ans && typeof ans.isCorrect !== 'undefined') return ans.isCorrect
+  return selectedOption.value?.is_correct || false
+})
 const showFeedback = computed(() => answered.value)
 
 const feedbackClass = computed(() => {
@@ -285,6 +290,8 @@ const timeWarning = computed(() => {
   return timer.value < 60 && hasTimeLimit.value
 })
 
+const currentAnswer = computed(() => userAnswers.value[currentQuestionIndex.value] || null)
+
 // Load quiz data
 async function loadQuiz() {
   try {
@@ -295,8 +302,9 @@ async function loadQuiz() {
     const quizRes = await api.get(`/api/quizzes?slug=${slug.value}`)
     if (!quizRes.ok) throw new Error('Failed to load quiz')
     
-    const quizData = await quizRes.json()
-    const quizDetail = quizData.quiz || quizData.quizzes?.[0]
+  const quizData = await quizRes.json()
+  // Accept both single-quiz and paginated-list shapes from the API
+  const quizDetail = quizData.quiz || (quizData.quizzes && (Array.isArray(quizData.quizzes.data) ? quizData.quizzes.data[0] : (Array.isArray(quizData.quizzes) ? quizData.quizzes[0] : null)))
     
     if (!quizDetail) throw new Error('Quiz not found')
     
@@ -338,9 +346,62 @@ async function loadQuiz() {
       return
     }
     
-    questions.value = questionsData.questions || questionsData.data || []
-    
-    if (questions.value.length === 0) {
+    // Normalise backend question shape to what the UI expects:
+    // - question.text (frontend) <- question.body (backend)
+    // - option.text <- option.text || option.body
+    // - ensure option.id exists and option.is_correct is boolean (guests won't receive correct flags)
+    const rawQuestions = questionsData.questions || questionsData.data || []
+    const normalized = (rawQuestions || []).map(q => {
+      const opts = Array.isArray(q.options) ? q.options.map(o => ({
+        id: o.id ?? o._id ?? null,
+        text: o.text ?? o.body ?? (typeof o === 'string' ? o : ''),
+        // guests should not get is_correct from backend; default to false
+        is_correct: !!(o.is_correct ?? false)
+      })) : []
+
+      return {
+        id: q.id ?? q._id ?? null,
+        type: q.type ?? null,
+        // frontend templates reference `text` for question body
+        text: q.body ?? q.text ?? '',
+        explanation: q.explanation ?? null,
+        marks: q.marks ?? 1,
+        media_path: q.media_path ?? null,
+        options: opts
+      }
+    })
+
+    questions.value = normalized
+    // Restore any in-progress verdicts so resuming mid-quiz shows server verdicts
+    const partial = guestQuizStore.getPartialResult(quizDetail.id)
+    if (partial && partial.answers) {
+      // Build userAnswers array from saved map
+      const answersArr = []
+      for (const qIndex in questions.value) {
+        const q = questions.value[qIndex]
+        const saved = partial.answers[q.id]
+        if (saved) {
+          answersArr[qIndex] = {
+            questionId: q.id,
+            selectedOptionId: saved.selectedOptionId,
+            isCorrect: !!saved.isCorrect
+          }
+          if (saved.isCorrect) correctCount.value++
+        }
+      }
+      userAnswers.value = answersArr
+      // If there's an unanswered question, jump to it; else stay at last
+      const firstUnanswered = questions.value.findIndex((_, i) => !userAnswers.value[i])
+      currentQuestionIndex.value = firstUnanswered === -1 ? Math.max(0, questions.value.length - 1) : firstUnanswered
+      // set selectedOption for current question if answered
+      const cur = userAnswers.value[currentQuestionIndex.value]
+      if (cur) {
+        selectedOption.value = questions.value[currentQuestionIndex.value].options.find(o => o.id === cur.selectedOptionId) || null
+        answered.value = true
+      }
+    }
+
+    if (!questions.value || questions.value.length === 0) {
       throw new Error('No questions available for this quiz')
     }
     
@@ -353,19 +414,60 @@ async function loadQuiz() {
 }
 
 // Select answer
-function selectAnswer(option) {
+async function selectAnswer(option) {
   if (answered.value) return
-  
+
   selectedOption.value = option
   answered.value = true
+
+  // Optimistically record selection; correctness will come from the server
   userAnswers.value[currentQuestionIndex.value] = {
     questionId: currentQuestion.value.id,
     selectedOptionId: option.id,
-    isCorrect: option.is_correct
+    isCorrect: false
   }
-  
-  if (option.is_correct) {
-    correctCount.value++
+
+  try {
+    const guestId = guestQuizStore.getGuestIdentifier()
+    const res = await api.post(`/api/quizzes/${quiz.value.id}/mark`, {
+      question_id: currentQuestion.value.id,
+      selected: option.id ?? option,
+      guest_identifier: guestId
+    })
+
+    if (!res.ok) {
+      console.warn('Marking request failed for question', currentQuestion.value.id)
+      return
+    }
+
+    const data = await res.json()
+    const correct = !!data.correct
+
+    // Update stored answer with server verdict
+    userAnswers.value[currentQuestionIndex.value].isCorrect = correct
+
+    if (correct) correctCount.value++
+
+    // Attach explanation to the question for UI display
+    const idx = currentQuestionIndex.value
+    if (questions.value[idx]) questions.value[idx].explanation = data.explanation ?? questions.value[idx].explanation
+
+    // Persist per-question verdict so resuming will restore server verdicts
+    try {
+      guestQuizStore.saveQuestionVerdict(quiz.value.id, {
+        questionId: currentQuestion.value.id,
+        selectedOptionId: option.id,
+        isCorrect: correct,
+        explanation: data.explanation ?? null
+      })
+    } catch (e) {}
+
+    // Animate verdict briefly
+    showVerdictAnim.value = true
+    setTimeout(() => { showVerdictAnim.value = false }, 700)
+
+  } catch (e) {
+    console.error('Error marking question:', e)
   }
 }
 
@@ -437,11 +539,35 @@ async function submitQuizAttempt() {
     }
     
     const data = await res.json()
+
+    // Enrich server attempt results with selected and correct option texts from local state
+    if (data.attempt && Array.isArray(data.attempt.results)) {
+      data.attempt.results = data.attempt.results.map(r => {
+        const selected = (formattedAnswers || []).find(a => a.question_id === r.question_id)
+        const qIndex = questions.value.findIndex(q => q.id === r.question_id)
+        const q = questions.value[qIndex]
+        let selected_text = null
+        if (selected && q) {
+          const opt = q.options.find(o => o.id == selected.selected)
+          selected_text = opt ? opt.text : null
+        }
+        return {
+          ...r,
+          // include the selected option id so the guest's exact choice is preserved
+          selected_option_id: selected ? selected.selected : null,
+          selected_option_text: selected_text,
+          correct_option_text: r.correct_answer ?? null
+        }
+      })
+    }
+
     quizAttempt.value = data.attempt
-    
+
     // Save result to guest store (localStorage)
     guestQuizStore.saveQuizResult(data.attempt)
-    
+    // Clear any in-progress partial for this quiz
+    guestQuizStore.clearPartialResult(quiz.value.id)
+
     quizCompleted.value = true
     
   } catch (error) {
@@ -502,16 +628,15 @@ function getOptionClass(option) {
   }
   
   // Answered state
+  const ans = userAnswers.value[currentQuestionIndex.value]
+
   if (option.id === selectedOption.value?.id) {
-    return option.is_correct 
+    return ans?.isCorrect 
       ? 'bg-green-50 border-green-500' 
       : 'bg-red-50 border-red-500'
   }
-  
-  if (option.is_correct) {
-    return 'bg-green-50 border-green-500 opacity-75'
-  }
-  
+
+  // Do not reveal correct options to guests; keep others neutral
   return 'bg-slate-50 border-slate-200 opacity-50'
 }
 
@@ -520,28 +645,24 @@ function getOptionIndicatorClass(option) {
     return 'border-slate-300'
   }
   
+  const ans = userAnswers.value[currentQuestionIndex.value]
   if (option.id === selectedOption.value?.id) {
-    return option.is_correct
+    return ans?.isCorrect
       ? 'border-green-500 bg-green-500 text-white'
       : 'border-red-500 bg-red-500 text-white'
   }
-  
-  if (option.is_correct) {
-    return 'border-green-500 bg-green-500 text-white'
-  }
-  
+
   return 'border-slate-300'
 }
 
 function getOptionTextClass(option) {
   if (!answered.value) return 'text-slate-700'
   
+  const ans = userAnswers.value[currentQuestionIndex.value]
   if (option.id === selectedOption.value?.id) {
-    return option.is_correct ? 'text-green-900' : 'text-red-900'
+    return ans?.isCorrect ? 'text-green-900' : 'text-red-900'
   }
-  
-  if (option.is_correct) return 'text-green-900'
-  
+
   return 'text-slate-500'
 }
 

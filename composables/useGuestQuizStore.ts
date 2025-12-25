@@ -29,6 +29,8 @@ const STORAGE_KEY = 'guest_quiz_results'
 export const useGuestQuizStore = () => {
   const guestId = ref<string | null>(null)
   const quizResults = ref<Map<number, GuestQuizResult>>(new Map())
+  // In-progress partial attempts (map of quizId -> partial data)
+  const inProgress = ref<Map<number, any>>(new Map())
 
   /**
    * Initialize store from localStorage
@@ -48,6 +50,11 @@ export const useGuestQuizStore = () => {
               item.result
             ])
           )
+
+          // Load any in-progress partials
+          if (data.inProgress) {
+            inProgress.value = new Map(Object.entries(data.inProgress).map(([k, v]) => [Number(k), v]))
+          }
         } catch (e) {
           console.error('Failed to parse guest quiz store:', e)
         }
@@ -150,10 +157,37 @@ export const useGuestQuizStore = () => {
         results: Array.from(quizResults.value.entries()).map(([quizId, result]) => ({
           quiz_id: quizId,
           result
-        }))
+        })),
+        inProgress: Object.fromEntries(Array.from(inProgress.value.entries()).map(([k, v]) => [String(k), v]))
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     }
+  }
+
+  /**
+   * Save a per-question verdict into an in-progress attempt for a quiz.
+   * verdict: { questionId, selectedOptionId, isCorrect, explanation }
+   */
+  const saveQuestionVerdict = (quizId: number, verdict: { questionId: number; selectedOptionId: any; isCorrect: boolean; explanation?: string }) => {
+    const existing = inProgress.value.get(quizId) || { answers: {} }
+    existing.answers = existing.answers || {}
+    existing.answers[verdict.questionId] = {
+      selectedOptionId: verdict.selectedOptionId,
+      isCorrect: verdict.isCorrect,
+      explanation: verdict.explanation ?? null,
+      updated_at: new Date().toISOString()
+    }
+    inProgress.value.set(quizId, existing)
+    persistToStorage()
+  }
+
+  const getPartialResult = (quizId: number) => {
+    return inProgress.value.get(quizId) || null
+  }
+
+  const clearPartialResult = (quizId: number) => {
+    inProgress.value.delete(quizId)
+    persistToStorage()
   }
 
   /**
@@ -182,20 +216,55 @@ export const useGuestQuizStore = () => {
    * Called when user registers or logs in
    */
   const getDataForAccountSync = (): Array<{
-    quiz_id: number
-    answers: Array<{ question_id: number; selected: any }>
-    score: number
-    total_time_seconds: number
+    quiz_id: number,
+    answers: Array<{ question_id: number; selected: any }>,
+    score: number,
+    total_time_seconds: number,
+    partial?: boolean
   }> => {
-    return Array.from(quizResults.value.values()).map(result => ({
-      quiz_id: result.quiz_id,
-      answers: result.results.map(r => ({
+    const out: Array<any> = []
+
+    // Completed attempts
+    Array.from(quizResults.value.values()).forEach(result => {
+      const answers = (result.results || []).map(r => ({
         question_id: r.question_id,
-        selected: r.is_correct ? 'correct' : 'incorrect' // Simplified - actual answers not stored in guest mode
-      })),
-      score: result.score,
-      total_time_seconds: result.time_taken
-    }))
+        // prefer explicit selected option id/text if available on saved result
+        selected: (r as any).selected_option_id ?? (r as any).selected_option_text ?? (r.is_correct ? 'correct' : 'incorrect')
+      }))
+
+      out.push({
+        quiz_id: result.quiz_id,
+        answers,
+        score: result.score,
+        total_time_seconds: result.time_taken,
+        partial: false
+      })
+    })
+
+    // In-progress partial attempts (merge if a full result isn't present)
+    Array.from(inProgress.value.entries()).forEach(([quizId, partial]) => {
+      // skip if already have a completed result for this quiz
+      const hasCompleted = Array.from(quizResults.value.values()).some(r => r.quiz_id === quizId)
+      if (hasCompleted) return
+
+      const answersArr: Array<{ question_id: number; selected: any }> = []
+      if (partial && partial.answers) {
+        Object.entries(partial.answers).forEach(([qIdStr, v]) => {
+          const qid = Number(qIdStr)
+          answersArr.push({ question_id: qid, selected: (v as any).selectedOptionId ?? (v as any).selected ?? null })
+        })
+      }
+
+      out.push({
+        quiz_id: quizId,
+        answers: answersArr,
+        score: 0,
+        total_time_seconds: 0,
+        partial: true
+      })
+    })
+
+    return out
   }
 
   return {
@@ -210,6 +279,10 @@ export const useGuestQuizStore = () => {
     getStats,
     clearAllData,
     clearQuizResult,
+    // in-progress APIs
+    saveQuestionVerdict,
+    getPartialResult,
+    clearPartialResult,
     persistToStorage,
     getDataForAccountSync
   }

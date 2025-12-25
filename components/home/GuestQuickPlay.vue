@@ -169,11 +169,16 @@
                               v-for="quiz in quizzes"
                               :key="quiz.id"
                               :to="{ path: `/quizzes/${quiz.slug}` }"
-                              class="p-3 bg-white border border-slate-200 rounded-xl hover:border-brand-300 hover:shadow-sm transition-all group block"
+                              class="relative p-3 bg-white border border-slate-200 rounded-xl hover:border-brand-300 hover:shadow-sm transition-all group block"
                               aria-label="View quiz details"
                            >
+                              <!-- Free / Premium badge (positioned top-right to match QuizCard) -->
+                              <span class="absolute top-3 right-3 z-20">
+                                 <span v-if="!quiz.is_paid" class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500 text-white">Free</span>
+                                 <span v-else class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-500 text-white">Premium</span>
+                              </span>
                               <div class="flex gap-3 items-center">
-                                 <div class="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+                                                 <div class="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                                     <img v-if="quiz.cover" :src="quiz.cover" class="w-full h-full object-cover" />
                                     <div v-else class="w-full h-full flex items-center justify-center text-slate-300">
                                        <UIcon name="heroicons:photo" class="text-xl" />
