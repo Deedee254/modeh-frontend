@@ -20,21 +20,18 @@
       </div>
     </div>
 
-    <!-- Scrolling Quiz Cards Container -->
+    <!-- Scrolling Quiz Cards Container (horizontal on all viewports) -->
     <div
       v-else
       :style="animationStyle"
-      class="animate-scroll-up flex flex-col gap-3 sm:gap-5 py-4 w-full min-w-0 max-w-full overflow-hidden"
+      class="animate-scroll-left flex flex-row gap-3 sm:gap-5 py-4 w-full min-w-0 max-w-full overflow-hidden"
       @mouseenter="pauseAnimation"
       @mouseleave="resumeAnimation"
     >
       <div 
         v-for="(quiz, idx) in displayQuizzes" 
         :key="`${quiz.id}-${idx}`" 
-        :class="[
-          'flex-shrink-0 w-full px-2 sm:px-3 min-w-0 max-w-full',
-          isDesktop ? 'h-auto' : 'h-28'
-        ]"
+  class="flex-shrink-0 w-[200px] sm:w-[240px] md:w-[260px] lg:w-72 px-2 sm:px-3 min-w-0"
       >
         <QuizCard
           :quiz="quiz"
@@ -42,7 +39,7 @@
           :quizId="quiz.id"
           :cover="quiz.cover_image || ''"
     :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
-          :horizontal="!isDesktop"
+          :horizontal="true"
           :difficulty="quiz.difficulty"
           :level="quiz.level_name"
           :subject="quiz.subject_name"
@@ -168,18 +165,18 @@ const resumeAnimation = () => {
 </script>
 
 <style>
-/* Infinite scroll animation */
-@keyframes scroll-up {
+/* Infinite horizontal scroll animation */
+@keyframes scroll-left {
   0% {
-    transform: translateY(0);
+    transform: translateX(0);
   }
   100% {
-    transform: translateY(-50%);
+    transform: translateX(-50%);
   }
 }
 
-.animate-scroll-up {
-  animation-name: scroll-up;
+.animate-scroll-left {
+  animation-name: scroll-left;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   /* default duration; will be overridden by inline style from Vue */
@@ -192,14 +189,13 @@ const resumeAnimation = () => {
   contain: layout style paint;
 }
 
-.animate-scroll-up:hover {
+.animate-scroll-left:hover {
   animation-play-state: paused;
 }
 
-/* Ensure proper sizing on mobile when cards are horizontal */
+/* Ensure proper spacing on small screens */
 @media (max-width: 767px) {
-  .animate-scroll-up {
-    /* Tighter spacing on mobile */
+  .animate-scroll-left {
     gap: 0.75rem !important;
   }
 }

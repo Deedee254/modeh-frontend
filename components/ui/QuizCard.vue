@@ -1,24 +1,44 @@
 <template>
-  <!-- Horizontal variant (Mobile/List view) -->
-  <div v-if="props.horizontal" :class="[
-      'group relative w-full flex flex-row rounded-lg bg-white overflow-hidden transition-all duration-300',
-      props.clean ? 'shadow-none border-0' : 'shadow-md hover:shadow-xl hover:shadow-slate-300/50 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 dark:hover:shadow-slate-900/50'
+  <!-- Single responsive card: horizontal on mobile (default), vertical on sm+; `horizontal` prop forces horizontal layout on all sizes -->
+  <div :class="[
+      props.horizontal ? 'flex-row' : 'flex-row sm:flex-col',
+      'group relative w-full flex rounded-lg overflow-hidden transition-all duration-300',
+      props.clean ? 'shadow-none border-0' : 'bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900'
     ]">
-    <!-- Image Left (Fixed width 96-112px per spec) -->
-    <div v-if="!props.hideImage" class="relative w-24 sm:w-28 flex-shrink-0 bg-slate-100">
-      <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover" />
-      <div v-else class="h-full w-full flex items-center justify-center text-slate-300">
-        <Icon name="heroicons:photo" class="h-8 w-8" />
+
+    <!-- Image / Media area: left on mobile, top on sm+ -->
+    <div v-if="!props.hideImage" class="relative bg-slate-100 flex-shrink-0 w-24 sm:w-full sm:aspect-video h-24 sm:h-auto overflow-hidden">
+      <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      <div v-else class="h-full w-full flex items-center justify-center text-white/50 bg-gradient-to-br from-[#800020] to-red-900">
+        <Icon name="heroicons:academic-cap" class="h-10 w-10 opacity-50" />
       </div>
-      
-      <!-- Difficulty Badge (mini) -->
-      <div v-if="difficultyLabel" class="absolute top-1 left-1">
+
+      <!-- Already Taken overlay (works in both layouts) -->
+      <div v-if="quizTaken" class="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-10">
+        <div class="text-center">
+          <div class="text-4xl mb-2">✓</div>
+          <span class="text-white font-semibold text-sm">Already Taken</span>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div v-if="difficultyLabel" class="absolute top-1 left-1 z-20">
          <div :class="['w-2 h-2 rounded-full shadow-sm', difficultyBgClass]" :title="difficultyLabel"></div>
       </div>
+      <div class="absolute top-1 right-1 z-20">
+        <span :class="['inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded', priceBadgeClass]">
+          {{ priceBadgeLabel }}
+        </span>
+      </div>
+
+    <!-- Like button: single responsive button positioned top-right -->
+    <button @click.stop="toggleLike" class="absolute top-2 right-2 p-1.5 rounded-full bg-white/95 text-slate-500 hover:text-rose-500 shadow-sm backdrop-blur-sm transition-colors z-20">
+      <Icon :name="localLiked ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-4 w-4" :class="localLiked ? 'text-rose-500' : ''" />
+    </button>
     </div>
 
-    <!-- Content Right -->
-    <div class="flex flex-col flex-1 min-w-0 p-3">
+    <!-- Content area -->
+    <div class="flex flex-col flex-1 min-w-0 p-3 sm:p-4">
       <div class="flex items-start justify-between gap-2">
          <div class="flex-1 min-w-0">
              <!-- Org / Topic Name -->
@@ -27,113 +47,45 @@
              </div>
              
              <!-- Title -->
-             <h4 class="text-[14px] leading-[18px] font-semibold text-[#1f1f1f] dark:text-slate-100 line-clamp-2 mb-1">
+             <h3 class="text-[16px] leading-[22px] font-semibold text-[#1f1f1f] dark:text-white line-clamp-2 mb-1 transition-colors">
                {{ displayTitle }}
-             </h4>
+             </h3>
          </div>
-         
-         <!-- Like Button -->
-         <button @click.stop="toggleLike" class="text-slate-400 hover:text-rose-500 transition-colors p-1 -mr-1 -mt-1 relative z-10">
-            <Icon :name="localLiked ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-4 w-4" :class="localLiked ? 'text-rose-500' : ''" />
-         </button>
+      <!-- (Like button is a single responsive control positioned in the image area) -->
       </div>
 
-      <!-- Meta / Footer -->
-      <div class="mt-auto flex items-center justify-between text-xs text-[#6a6f73]">
-         <div class="flex items-center gap-1">
-             <span class="text-[#6a6f73]">{{ localLikes }} likes</span>
+      <!-- Subtitle / Description -->
+      <p v-if="displaySubject" class="text-[12px] text-[#6a6f73] mb-3 sm:mb-4 truncate">
+        {{ displaySubject }} {{ displayLevel ? `• ${displayLevel}` : '' }}
+      </p>
+
+      <!-- Footer / Actions -->
+      <div class="mt-auto flex items-center justify-between">
+         <div class="flex items-center gap-2 text-[12px] text-[#6a6f73]">
+           <span class="font-medium text-slate-700">{{ localLikes }} likes</span>
+           <span class="border-l border-slate-300 h-3 mx-0.5" v-if="displayQuestions"></span>
+           <span v-if="displayQuestions" class="truncate">{{ displayQuestions }} Qs</span>
          </div>
-         <!-- Arrow for clickability hint -->
-         <Icon name="heroicons:chevron-right" class="h-4 w-4 text-slate-300" />
+
+         <div>
+           <button
+             v-if="quizTaken"
+             disabled
+             class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-slate-500 bg-slate-200 cursor-not-allowed"
+           >
+             ✓ Taken
+           </button>
+           <NuxtLink
+             v-else
+             :to="startLink || takeLink || to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')"
+             class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
+           >
+             Start
+           </NuxtLink>
+         </div>
       </div>
     </div>
-    
-    <NuxtLink :to="to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')" class="absolute inset-0 z-0" aria-label="View Details"></NuxtLink>
-  </div>
 
-  <!-- Vertical variant (Desktop/Standard) -->
-  <div v-else :class="[
-      'group relative flex w-full flex-col rounded-lg overflow-hidden transition-all duration-300 h-full',
-      props.clean ? 'shadow-none border-0' : 'bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900'
-    ]">
-    
-    <!-- Hero Image (Aspect Ratio 16:9 approx) - Only show if not hideImage -->
-    <div v-if="!props.hideImage" class="relative w-full aspect-video h-28 bg-[#800020] overflow-hidden">
-      <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-      <div v-else class="h-full w-full flex items-center justify-center text-white/50 bg-gradient-to-br from-[#800020] to-red-900">
-        <Icon name="heroicons:academic-cap" class="h-14 w-14 opacity-50" />
-      </div>
-
-      <!-- Already Taken Badge -->
-      <div v-if="quizTaken" class="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-10">
-        <div class="text-center">
-          <div class="text-4xl mb-2">✓</div>
-          <span class="text-white font-semibold text-sm">Already Taken</span>
-        </div>
-      </div>
-
-      <!-- Difficulty Label (Tag style) -->
-      <div v-if="difficultyLabel" class="absolute top-2 left-2 pb-px z-20">
-         <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-white/95 text-slate-700 shadow-sm backdrop-blur-sm border border-black/5">
-            {{ difficultyLabel }}
-         </span>
-      </div>
-
-      <!-- Like Button Overlay -->
-      <button @click.stop="toggleLike" class="absolute top-2 right-2 p-1.5 rounded-full bg-white/95 text-slate-500 hover:text-rose-500 shadow-sm backdrop-blur-sm transition-colors z-20">
-         <Icon :name="localLiked ? 'heroicons:heart-solid' : 'heroicons:heart'" class="h-4 w-4" :class="localLiked ? 'text-rose-500' : ''" />
-      </button>
-    </div>
-
-    <!-- Content Section -->
-    <div class="flex flex-col flex-1 p-4">
-       <!-- Header: Topic/Org -->
-       <div class="flex items-center justify-between mb-2">
-          <div v-if="displayTopic" class="flex items-center gap-1.5">
-             <div class="w-5 h-5 rounded overflow-hidden bg-brand-50 flex-shrink-0 flex items-center justify-center text-[10px] text-brand-700 font-bold">
-                 {{ displayTopic.charAt(0) }}
-             </div>
-             <span class="text-[13px] font-medium text-[#6a6f73] truncate max-w-[150px]">{{ displayTopic }}</span>
-          </div>
-          <span v-else class="text-[13px] font-medium text-[#6a6f73]">Quiz</span>
-       </div>
-
-       <!-- Title -->
-       <h3 class="text-[16px] leading-[22px] font-semibold text-[#1f1f1f] dark:text-white line-clamp-2 mb-1 transition-colors">
-         {{ displayTitle }}
-       </h3>
-
-       <!-- Subtitle / Description -->
-       <p v-if="displaySubject" class="text-[12px] text-[#6a6f73] mb-4 truncate">
-         {{ displaySubject }} {{ displayLevel ? `• ${displayLevel}` : '' }}
-       </p>
-       <div v-else class="mb-4"></div>
-
-       <!-- Footer Action -->
-       <div class="mt-auto flex items-center justify-between">
-          <div class="flex items-center gap-2 text-[12px] text-[#6a6f73]">
-            <span class="font-medium text-slate-700">{{ localLikes }} likes</span>
-            <span class="border-l border-slate-300 h-3 mx-0.5" v-if="displayQuestions"></span>
-            <span v-if="displayQuestions" class="truncate">{{ displayQuestions }} Qs</span>
-          </div>
-
-          <button
-            v-if="quizTaken"
-            disabled
-            class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-slate-500 bg-slate-200 cursor-not-allowed"
-          >
-            ✓ Taken
-          </button>
-          <NuxtLink 
-            v-else
-            :to="to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')" 
-            class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
-          >
-            Start
-          </NuxtLink>
-       </div>
-    </div>
-    
     <!-- Overall Link (z-0 to allow buttons to be clicked) -->
     <NuxtLink :to="to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')" class="absolute inset-0 z-0" aria-label="View Details"></NuxtLink>
   </div>
@@ -157,6 +109,7 @@ const baseUrl = computed(() => {
 })
 
 const props = defineProps({
+  isPaid: { type: Boolean, default: false },
   to: { type: [String, Object], default: null },
   horizontal: { type: Boolean, default: false },
   clean: { type: Boolean, default: false },
@@ -273,6 +226,14 @@ const difficultyBgClass = computed(() => {
   if (num <= 2.3) return 'bg-amber-500'
   return 'bg-rose-500'
 })
+
+const isPaidComputed = computed(() => {
+  // prefer explicit prop, otherwise check quiz object
+  return Boolean(props.isPaid || (props.quiz && (props.quiz.is_paid === true || props.quiz.is_paid === 1)))
+})
+
+const priceBadgeLabel = computed(() => isPaidComputed.value ? 'Premium' : 'Free')
+const priceBadgeClass = computed(() => isPaidComputed.value ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white')
 
 const emit = defineEmits(['like', 'edit'])
 const localLikes = ref(Number(props.likes) || 0)

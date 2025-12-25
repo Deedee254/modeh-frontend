@@ -168,9 +168,9 @@
                        <NuxtLink
                               v-for="quiz in quizzes"
                               :key="quiz.id"
-                              :to="{ path: `/quizzes/${quiz.slug}/take` }"
+                              :to="{ path: `/quizzes/${quiz.slug}` }"
                               class="p-3 bg-white border border-slate-200 rounded-xl hover:border-brand-300 hover:shadow-sm transition-all group block"
-                              aria-label="Start quiz"
+                              aria-label="View quiz details"
                            >
                               <div class="flex gap-3 items-center">
                                  <div class="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -188,9 +188,14 @@
                                     </div>
                                  </div>
                                  <div class="self-center">
-                                    <span class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                                    <button
+                                      @click.stop="onStartClick(quiz)"
+                                      class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors"
+                                      :aria-label="quiz.is_paid ? 'View details' : 'Start quiz'"
+                                      title="Start"
+                                    >
                                        <UIcon name="heroicons:play" class="ml-0.5" />
-                                    </span>
+                                    </button>
                                  </div>
                               </div>
                            </NuxtLink>
@@ -272,6 +277,15 @@ function resetAndFetchQuizzes() {
    previousAttempt.value = null
    quizzes.value = []
    fetchQuizzes()
+}
+
+function onStartClick(quiz: any) {
+   if (!quiz) return
+   if (!quiz.is_paid) {
+      router.push({ path: `/quizzes/${quiz.slug}/take` })
+   } else {
+      router.push({ path: `/quizzes/${quiz.slug}` })
+   }
 }
 
 // Game State

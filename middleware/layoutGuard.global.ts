@@ -5,8 +5,21 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const layout = to.meta?.layout as string | undefined
   if (!layout) return
 
+
+  // Map layout names to required roles. Add more mappings here if needed.
+  const layoutRoleMap: Record<string, string> = {
+    'quiz-master': 'quiz-master',
+    'quizee': 'quizee'
+  }
+
+  // If this layout does not require a special role, do not enforce auth.
+  const requiredRole = layoutRoleMap[layout]
+  if (!requiredRole) return
+
   const auth = useAuthStore()
 
+  // For layouts that do require auth/role, attempt to populate the auth store
+  // (server-side or client-side) and then enforce the role check.
   // On server-side requests, try to populate the auth store by forwarding
   // the incoming request cookie to the backend. This allows cookie-based
   // sessions (for example Laravel Sanctum) to be recognized during SSR.
@@ -58,15 +71,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Allow admins to access everything on the frontend
   if (role === 'admin') return
-
-  // Map layout names to required roles. Add more mappings here if needed.
-  const layoutRoleMap: Record<string, string> = {
-    'quiz-master': 'quiz-master',
-    'quizee': 'quizee'
-  }
-
-  const requiredRole = layoutRoleMap[layout]
-  if (!requiredRole) return // no specific role required for this layout
 
   if (role !== requiredRole) {
     // Redirect to login so the user can re-authenticate or sign in with the correct role.

@@ -142,6 +142,35 @@
           <!-- Action Card - Fixed bottom on mobile -->
           <div class="bg-white rounded-xl shadow-sm p-6 sticky top-6">
             <div class="space-y-6">
+                <!-- Creator / meta row -->
+                <div class="flex items-center gap-3">
+                  <div class="flex-shrink-0">
+                      <NuxtLink v-if="authorLink" :to="authorLink" class="block">
+                        <img v-if="author?.avatar" :src="author.avatar" alt="Creator avatar" class="w-10 h-10 rounded-full object-cover" />
+                        <div v-else class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM6 20v-1c0-2.21 3.582-4 6-4s6 1.79 6 4v1"></path></svg>
+                        </div>
+                      </NuxtLink>
+                      <div v-else>
+                        <img v-if="author?.avatar" :src="author.avatar" alt="Creator avatar" class="w-10 h-10 rounded-full object-cover" />
+                        <div v-else class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM6 20v-1c0-2.21 3.582-4 6-4s6 1.79 6 4v1"></path></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-semibold text-slate-800 truncate">
+                        <NuxtLink v-if="authorLink" :to="authorLink" class="hover:underline">{{ author?.name || 'Creator' }}</NuxtLink>
+                        <span v-else>{{ author?.name || 'Creator' }}</span>
+                      </div>
+                      <div class="text-xs text-slate-500">Quiz creator</div>
+                    </div>
+                  <div class="text-right">
+                    <div class="text-sm font-bold text-slate-800">{{ likes_count }} <span class="text-xs text-slate-400">likes</span></div>
+                    <div class="text-xs text-slate-500">{{ priceDisplay }}</div>
+                  </div>
+                </div>
+
               <!-- Guest Quiz Results -->
               <div v-if="lastAttempt" class="border-b pb-4 space-y-3">
                 <div class="text-sm font-semibold text-slate-700">Your Results</div>
@@ -171,7 +200,7 @@
                   @click="startQuiz" 
                   class="w-full px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-950 text-white rounded-lg hover:from-brand-700 hover:to-brand-900 transition-colors"
                 >
-                  Begin Assessment
+                  {{ startButtonLabel }}
                 </button>
                 <div v-if="!lastAttempt" class="flex gap-3">
                   <button @click="showPreview" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
@@ -360,9 +389,8 @@ const { data: quizData, pending } = useFetch(() => {
     ...(api.getXsrfFromCookie() ? { 'X-XSRF-TOKEN': api.getXsrfFromCookie() } : {})
   })),
   transform: (data) => {
-    // API returns { quizzes: [...] } or { quiz: {...} }
+    // strict API shape: expect { quiz: { ... } }
     if (data?.quiz) return { quiz: data.quiz }
-    if (data?.quizzes?.length > 0) return { quiz: data.quizzes[0] }
     return { quiz: null }
   }
 })
@@ -382,24 +410,18 @@ const quiz = computed(() => (
 ))
 
 // Dynamic page meta for quiz detail (uses server-fetched data when available)
-const pageTitle = computed(() => {
-  try { return (quizData?.value?.quiz?.title || quiz?.title) ? `${quizData?.value?.quiz?.title || quiz?.title} — Modeh` : 'Quiz — Modeh' } catch (e) { return 'Quiz — Modeh' }
-})
-const pageDescription = computed(() => {
-  try { return quizData?.value?.quiz?.description || quiz?.description || 'Practice and assess with Modeh quizzes.' } catch (e) { return 'Practice and assess with Modeh quizzes.' }
-})
+const pageTitle = computed(() => quiz.value?.title ? `${quiz.value.title} — Modeh` : 'Quiz — Modeh')
+const pageDescription = computed(() => quiz.value?.description || 'Practice and assess with Modeh quizzes.')
 
 const structuredData = computed(() => {
-  if (!quiz.value || !quiz.value.slug || pending.value) {
-    return null;
-  }
+  if (!quiz.value || !quiz.value.slug || pending.value) return null
 
-  const quizUrl = `${baseUrl.value}/${quiz.value.slug}`;
-  const orgUrl = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+  const quizUrl = `${baseUrl.value}/${quiz.value.slug}`
+  const orgUrl = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
 
   const data = {
     '@context': 'https://schema.org',
-    '@type': 'Quiz', // Using pending schema type
+    '@type': 'Quiz',
     name: quiz.value.title,
     description: quiz.value.description,
     url: quizUrl,
@@ -420,22 +442,49 @@ const structuredData = computed(() => {
       '@type': 'WebPage',
       '@id': quizUrl
     }
-  };
-
-  if (quiz.value.timer_seconds) {
-    const minutes = Math.floor(quiz.value.timer_seconds / 60);
-    data.timeRequired = `PT${minutes}M`;
   }
 
-  return data;
-});
+  if (quiz.value.timer_seconds) {
+    const minutes = Math.floor(quiz.value.timer_seconds / 60)
+    data.timeRequired = `PT${minutes}M`
+  }
+
+  return data
+})
 
 // Computed properties for nested taxonomy data
-const topic_name = computed(() => quiz.value.topic?.name)
-const subject_name = computed(() => quiz.value.topic?.subject?.name || quiz.value.subject?.name)
-const grade_name = computed(() => quiz.value.grade?.name || quiz.value.topic?.subject?.grade?.name || null)
-const level_name = computed(() => quiz.value.level?.name || quiz.value.grade?.level?.name || null)
+// Simplified: trust API shape { quiz: { topic, topic.subject, grade, level } }
+const topic_name = computed(() => quiz.value.topic?.name || null)
+const subject_name = computed(() => quiz.value.topic?.subject?.name || null)
+const grade_name = computed(() => quiz.value.grade?.name || null)
+const level_name = computed(() => quiz.value.level?.name || null)
 const difficulty_level = computed(() => getDifficultyLevel(quiz.value.difficulty))
+
+// Author, likes and pricing (match API: quiz.created_by, quiz.likes_count, quiz.is_paid, quiz.price)
+const author = computed(() => quiz.value.created_by || null)
+const likes_count = computed(() => Number(quiz.value.likes_count ?? 0))
+const isPaid = computed(() => Boolean(quiz.value.is_paid))
+const price = computed(() => quiz.value.price)
+const priceDisplay = computed(() => {
+  if (!isPaid.value) return 'Free'
+  const p = Number(price.value)
+  if (!isFinite(p)) return 'Paid'
+  try {
+    const currency = config.public?.currency || 'USD'
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(p)
+  } catch (e) {
+    return `${p}`
+  }
+})
+
+// Author link (use name -> slug) to quizee quiz-master profile
+const authorSlug = computed(() => {
+  const n = author.value?.name || ''
+  return n.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')
+})
+const authorLink = computed(() => author.value ? `/quizee/quiz-masters/${authorSlug.value}` : null)
+
+const startButtonLabel = computed(() => isPaid.value ? `Buy & Begin — ${priceDisplay.value}` : 'Begin Assessment')
 
 // Tab configuration
 const tabs = [
@@ -446,21 +495,17 @@ const tabs = [
 const activeTab = ref('overview')
 
 // Computed properties
-const questionCount = computed(() => {
-  if (Array.isArray(quiz.value.questions)) return quiz.value.questions.length
-  return quiz.value.questions_count || 0
-})
+const questionCount = computed(() => Array.isArray(quiz.value.questions) ? quiz.value.questions.length : 0)
 
-const hasVideo = computed(() => {
-  return Boolean(quiz.value.youtube_url || quiz.value.video_url || quiz.value.media || quiz.value.cover_video || quiz.value.video)
-})
+// Only consider explicit video URLs per API
+const hasVideo = computed(() => Boolean(quiz.value.youtube_url || quiz.value.video_url))
 
 // Safe no-op handlers for the hidden preload image above
 function onCoverLoaded() {}
 function onCoverError() {}
 
 const coverSrc = computed(() => {
-  const c = quiz.value.cover || quiz.value.cover_image || quiz.value.cover_image_url || null
+  const c = quiz.value.cover_image || null
   return typeof c === 'string' && c ? resolveAssetUrl(c) : null
 })
 
@@ -548,8 +593,19 @@ function getDifficultyEmoji(level) {
 
 // Actions
 function startQuiz() {
-  // For both logged-in and guest users, navigate to the public take page
-  router.push(`/quizzes/${quiz.value.slug}/take`)
+  // If paid quizzes require quizee login -> direct to quizee take route.
+  if (isPaid.value) {
+    const quizeeTake = `/quizee/quizzes/take/${quiz.value.slug}`
+    if (isLoggedIn.value) {
+      // logged-in users go straight to the quizee take route
+      router.push(quizeeTake)
+    } else {
+      // unauthenticated users should login first; send them to /login with next
+      router.push({ path: '/login', query: { next: quizeeTake } })
+    }
+  } else {
+    router.push(`/quizzes/${quiz.value.slug}/take`)
+  }
 }
 
 function showPreview() {

@@ -68,8 +68,8 @@
                   class="flex-shrink-0 w-[260px] sm:w-[280px] lg:w-72 snap-start first:ml-0"
                 >
                       <UiQuizCard
-                        :to="{ path: `/quizzes/${quiz.slug || quiz.id}/take` }"
-                        :startLink="{ path: `/quizzes/${quiz.slug || quiz.id}/take` }"
+                        :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
+                        :startLink="quiz.is_paid ? { path: `/quizzes/${quiz.slug || quiz.id}` } : { path: `/quizzes/${quiz.slug || quiz.id}/take` }"
                         :takeLink="{ path: `/quizzes/${quiz.slug || quiz.id}/take` }"
                     :title="quiz.title"
                     :topic="quiz.topic?.name || quiz.topic_name"
