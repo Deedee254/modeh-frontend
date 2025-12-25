@@ -429,7 +429,7 @@ async function selectAnswer(option) {
 
   try {
     const guestId = guestQuizStore.getGuestIdentifier()
-    const res = await api.post(`/api/quizzes/${quiz.value.id}/mark`, {
+    const res = await api.postJson(`/api/quizzes/${quiz.value.id}/mark`, {
       question_id: currentQuestion.value.id,
       selected: option.id ?? option,
       guest_identifier: guestId
@@ -520,7 +520,7 @@ async function submitQuizAttempt() {
     }))
     
     // Submit to backend for marking
-    const res = await api.post(`/api/quizzes/${quiz.value.id}/submit`, {
+    const res = await api.postJson(`/api/quizzes/${quiz.value.id}/submit`, {
       guest_identifier: guestId,
       time_taken: timeTaken,
       answers: formattedAnswers

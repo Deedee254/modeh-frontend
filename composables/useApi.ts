@@ -289,7 +289,11 @@ export function useApi() {
     _sessionRenewalPromise = null
   }
 
-  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, postJson, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  // Backwards-compatible aliases: many callers expect `api.post` rather than `postJson`.
+  const post = (...args: Parameters<typeof postJson>) => postJson(...args)
+  const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
+
+  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, post, postJson, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi
