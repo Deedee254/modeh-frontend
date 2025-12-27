@@ -86,8 +86,8 @@
             <button
               v-for="(option, idx) in currentQuestion.options"
               :key="option.id"
-              @click="selectAnswer(option)"
-              :disabled="answered"
+                @click="selectAnswer(option)"
+                :disabled="answered || markingPending"
               class="w-full p-4 md:p-5 rounded-xl border-2 text-left transition-all duration-200 flex items-center justify-between group"
               :class="[getOptionClass(option), { 'scale-105 transform': showVerdictAnim && option.id === selectedOption?.id }]"
             >
@@ -96,10 +96,17 @@
                   class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
                   :class="getOptionIndicatorClass(option)"
                 >
-                  <span v-if="answered && option.id === selectedOption?.id" class="text-sm font-bold">
-                    {{ currentAnswer?.isCorrect ? '✓' : '✗' }}
-                  </span>
-                  <span v-else class="text-xs font-semibold text-slate-400">{{ String.fromCharCode(65 + idx) }}</span>
+                    <!-- Show spinner while marking the selected option -->
+                    <span v-if="markingPending && option.id === selectedOption?.id" class="text-xs">
+                      <svg class="animate-spin h-4 w-4 text-slate-400" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                    </span>
+                    <span v-else-if="answered && option.id === selectedOption?.id" class="text-sm font-bold">
+                      {{ currentAnswer?.isCorrect ? '✓' : '✗' }}
+                    </span>
+                    <span v-else class="text-xs font-semibold text-slate-400">{{ String.fromCharCode(65 + idx) }}</span>
                 </div>
                 <span class="font-medium" :class="getOptionTextClass(option)">{{ option.text }}</span>
               </div>
@@ -244,6 +251,7 @@ const loading = ref(true)
 const currentQuestionIndex = ref(0)
 const selectedOption = ref(null)
 const answered = ref(false)
+const markingPending = ref(false)
 const quizCompleted = ref(false)
 const correctCount = ref(0)
 const userAnswers = ref([])
@@ -415,17 +423,78 @@ async function loadQuiz() {
 
 // Select answer
 async function selectAnswer(option) {
-  if (answered.value) return
+  if (answered.value || markingPending.value) return
 
+  // record selection (no verdict yet)
   selectedOption.value = option
-  answered.value = true
-
-  // Optimistically record selection; correctness will come from the server
   userAnswers.value[currentQuestionIndex.value] = {
     questionId: currentQuestion.value.id,
-    selectedOptionId: option.id,
-    isCorrect: false
+    selectedOptionId: option.id
   }
+
+  // Determine if this quiz payload already includes correct answers.
+  // If so, mark instantly from local data. Otherwise fall back to server mark.
+  const q = currentQuestion.value || {}
+  const hasLocalCorrectFlags = Array.isArray(q.options) && q.options.some(o => !!o.is_correct)
+  const hasLocalCorrectAnswerText = !!(q.correct_answer || q.correctAnswer)
+
+  if (hasLocalCorrectFlags || hasLocalCorrectAnswerText) {
+    // Instant local marking path (no spinner)
+    try {
+      // Determine correctness using option.is_correct if present, else try matching text
+      let correct = false
+      if (typeof option.is_correct !== 'undefined') {
+        correct = !!option.is_correct
+      } else if (hasLocalCorrectAnswerText) {
+        const correctText = String(q.correct_answer ?? q.correctAnswer ?? '').toLowerCase().trim()
+        const ot = String(option.text ?? option.body ?? '').toLowerCase().trim()
+        if (correctText.length > 0) {
+          const parts = correctText.split(',').map(s => s.trim()).filter(Boolean)
+          correct = parts.some(p => ot === p || ot.includes(p) || p.includes(ot))
+        }
+      }
+
+      userAnswers.value[currentQuestionIndex.value].isCorrect = correct
+      if (correct) correctCount.value++
+
+      // If question has explanation locally attach it (or keep existing)
+      const idx = currentQuestionIndex.value
+      if (questions.value[idx]) questions.value[idx].explanation = questions.value[idx].explanation ?? null
+
+      // Persist per-question verdict locally so resuming will restore verdicts
+      try {
+        guestQuizStore.saveQuestionVerdict(quiz.value.id, {
+          questionId: currentQuestion.value.id,
+          selectedOptionId: option.id,
+          isCorrect: correct,
+          explanation: questions.value[idx]?.explanation ?? null
+        })
+      } catch (e) {}
+
+      // Show answered state and animate
+      answered.value = true
+      showVerdictAnim.value = true
+      setTimeout(() => { showVerdictAnim.value = false }, 700)
+
+      // Fire-and-forget: optionally notify backend for analytics (do not block UI)
+      try {
+        const guestId = guestQuizStore.getGuestIdentifier()
+        api.postJson(`/api/quizzes/${quiz.value.id}/mark`, {
+          question_id: currentQuestion.value.id,
+          selected: option.id ?? option,
+          guest_identifier: guestId
+        }).catch(() => {})
+      } catch (e) {}
+
+    } catch (e) {
+      console.error('Error performing local mark:', e)
+    }
+
+    return
+  }
+
+  // Fallback to server-marking path (show spinner)
+  markingPending.value = true
 
   try {
     const guestId = guestQuizStore.getGuestIdentifier()
@@ -437,6 +506,7 @@ async function selectAnswer(option) {
 
     if (!res.ok) {
       console.warn('Marking request failed for question', currentQuestion.value.id)
+      markingPending.value = false
       return
     }
 
@@ -452,6 +522,22 @@ async function selectAnswer(option) {
     const idx = currentQuestionIndex.value
     if (questions.value[idx]) questions.value[idx].explanation = data.explanation ?? questions.value[idx].explanation
 
+    // Try to highlight the correct option(s) by matching returned correct_answer text
+    if (data.correct_answer) {
+      const correctText = String(data.correct_answer || '').toLowerCase().trim()
+      if (correctText.length > 0 && questions.value[idx] && Array.isArray(questions.value[idx].options)) {
+        const parts = correctText.split(',').map(s => s.trim()).filter(Boolean)
+        questions.value[idx].options.forEach(o => {
+          try {
+            const ot = String(o.text ?? o.body ?? '').toLowerCase().trim()
+            o.is_correct = parts.some(p => ot === p || ot.includes(p) || p.includes(ot))
+          } catch (e) {
+            o.is_correct = false
+          }
+        })
+      }
+    }
+
     // Persist per-question verdict so resuming will restore server verdicts
     try {
       guestQuizStore.saveQuestionVerdict(quiz.value.id, {
@@ -462,12 +548,15 @@ async function selectAnswer(option) {
       })
     } catch (e) {}
 
-    // Animate verdict briefly
+    // Now we can show answered state and animate
+    answered.value = true
     showVerdictAnim.value = true
     setTimeout(() => { showVerdictAnim.value = false }, 700)
 
   } catch (e) {
     console.error('Error marking question:', e)
+  } finally {
+    markingPending.value = false
   }
 }
 
@@ -630,13 +719,18 @@ function getOptionClass(option) {
   // Answered state
   const ans = userAnswers.value[currentQuestionIndex.value]
 
+  // If this option is marked correct by the server, highlight it green
+  if (option.is_correct) {
+    return 'bg-green-50 border-green-500'
+  }
+
   if (option.id === selectedOption.value?.id) {
     return ans?.isCorrect 
       ? 'bg-green-50 border-green-500' 
       : 'bg-red-50 border-red-500'
   }
 
-  // Do not reveal correct options to guests; keep others neutral
+  // Non-selected, non-correct options stay muted
   return 'bg-slate-50 border-slate-200 opacity-50'
 }
 
@@ -646,10 +740,16 @@ function getOptionIndicatorClass(option) {
   }
   
   const ans = userAnswers.value[currentQuestionIndex.value]
+  // Selected option indicator
   if (option.id === selectedOption.value?.id) {
     return ans?.isCorrect
       ? 'border-green-500 bg-green-500 text-white'
       : 'border-red-500 bg-red-500 text-white'
+  }
+
+  // Correct (but not selected) option indicator
+  if (option.is_correct) {
+    return 'border-green-500 bg-green-500 text-white'
   }
 
   return 'border-slate-300'
@@ -662,6 +762,8 @@ function getOptionTextClass(option) {
   if (option.id === selectedOption.value?.id) {
     return ans?.isCorrect ? 'text-green-900' : 'text-red-900'
   }
+
+  if (option.is_correct) return 'text-green-900'
 
   return 'text-slate-500'
 }

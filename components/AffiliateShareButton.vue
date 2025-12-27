@@ -68,6 +68,16 @@
                       >
                         Get Started
                       </button>
+                      <!-- Plain shareable URL (no affiliate code) -->
+                      <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Share this {{ itemType.toLowerCase() }} (direct URL)</label>
+                        <div class="flex gap-2">
+                          <input type="text" readonly :value="directLink" class="flex-1 block w-full rounded-md border-gray-300 bg-gray-50 px-3 py-2 text-sm" />
+                          <button @click="copyToClipboard(directLink)" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Copy
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -124,6 +134,16 @@
                       >
                         Facebook
                       </button>
+                    </div>
+                    <!-- Plain shareable URL (no affiliate code) -->
+                    <div class="mt-3">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Direct link (no affiliate)</label>
+                      <div class="flex gap-2">
+                        <input type="text" readonly :value="directLink" class="flex-1 block w-full rounded-md border-gray-300 bg-gray-50 px-3 py-2 text-sm" />
+                        <button @click="copyToClipboard(directLink)" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                          Copy
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -225,6 +245,13 @@ const affiliateLink = computed(() => {
   return `${base}${idPart}?ref=${encodeURIComponent(code)}`
 })
 
+// Compute a direct link (no affiliate query) for users who want to share the plain URL
+const directLink = computed(() => {
+  const base = computedBaseUrl.value
+  const idPart = props.itemId !== null && props.itemId !== undefined ? `/${props.itemId}` : ''
+  return `${base}${idPart}`
+})
+
 // When the modal opens, fetch the affiliate code if it's not already present on the user
 const fetchAffiliateIfMissing = async () => {
   try {
@@ -300,7 +327,7 @@ const shareToSocial = (platform) => {
   window.open(urls[platform], '_blank')
 }
 
-// Navigate to affiliate dashboard
+// Navigate to affiliate dashboard (or send unauthenticated users to login with next)
 const goToAffiliateDashboard = () => {
   showShareModal.value = false
 
@@ -312,6 +339,13 @@ const goToAffiliateDashboard = () => {
     dashboardPath = '/quizee/affiliate/'
   } else if (userRole === 'quiz-master') {
     dashboardPath = '/quiz-master/affiliate/'
+  }
+
+  // If user is not logged in, send them to login with a `next` param pointing to the affiliate dashboard
+  if (!auth.user || !auth.user.id) {
+    // Use navigateTo so Nuxt handles client-side routing; include affiliate flag for clarity
+    navigateTo({ path: '/login', query: { next: dashboardPath, affiliate: '1' } })
+    return
   }
 
   navigateTo(dashboardPath)

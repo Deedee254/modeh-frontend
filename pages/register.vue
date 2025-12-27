@@ -170,10 +170,7 @@
                         <input v-model="form.institution" type="text" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" placeholder="Optional" />
                       </div>
 
-                      <div>
-                         <label class="block text-sm font-medium text-gray-700 mb-1">Parent Email (Optional)</label>
-                         <input v-model="form.parentEmail" type="email" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500" />
-                      </div>
+                      <!-- Parent email removed to shorten registration flow -->
                    </template>
 
                    <!-- Quiz Master Specific -->
@@ -296,7 +293,7 @@ const form = reactive({
   confirmPassword: '',
   institution: '',
   bio: '',
-  parentEmail: '',
+  // parentEmail removed to shorten registration
   institution_id: '',
 })
 
