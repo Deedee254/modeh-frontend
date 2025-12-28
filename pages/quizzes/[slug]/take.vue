@@ -216,8 +216,15 @@ const premiumError = ref(false)
 
 // Computed properties
 const slug = computed(() => route.params.slug)
-const totalQuestions = computed(() => questions.value.length)
-const currentQuestion = computed(() => questions.value[currentQuestionIndex.value] || {})
+const totalQuestions = computed(() => (questions.value || []).length)
+// Ensure currentQuestion always has an `options` array so child components
+// that access `question.options.length` won't throw when questions are not loaded yet.
+const currentQuestion = computed(() => {
+  const q = questions.value?.[currentQuestionIndex.value]
+  if (!q) return { options: [] }
+  // If options missing, default to empty array
+  return { ...q, options: Array.isArray(q.options) ? q.options : [] }
+})
 const isLastQuestion = computed(() => currentQuestionIndex.value === totalQuestions.value - 1)
 const progress = computed(() => ((currentQuestionIndex.value + 1) / totalQuestions.value) * 100)
 

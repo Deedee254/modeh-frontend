@@ -2,7 +2,7 @@
   <section class="relative min-h-screen overflow-hidden bg-slate-950">
     <!-- Background Image with Overlay -->
     <div 
-      class="absolute left-1/2 -translate-x-1/2 w-screen inset-0 bg-cover bg-center bg-no-repeat"
+      class="absolute inset-0 bg-cover bg-center bg-no-repeat"
       :style="{ backgroundImage: 'url(/hero-banner.jpg)' }"
     >
       <!-- Left-side dark overlay for readability; fades to transparent on the right
