@@ -8,7 +8,8 @@ export function useQuizEnhancements(quiz: any, progressPercent: any, currentQues
   const achievements = ref<Achievement[]>([])
 
   const encouragementMessage = computed(() => {
-    const questionsLeft = quiz.value.questions.length - currentQuestion.value
+    const totalQuestions = Array.isArray(quiz.value?.questions) ? quiz.value.questions.length : 0
+    const questionsLeft = totalQuestions - (Number(currentQuestion.value) || 0)
     if (currentStreak.value >= 3) return "You're on fire!"
     if (progressPercent.value >= 90) return "Almost there!"
     if (progressPercent.value >= 75) return "You're doing great!"
@@ -36,14 +37,16 @@ export function useQuizEnhancements(quiz: any, progressPercent: any, currentQues
   }
 
   const calculateAchievements = () => {
-    const total = Array.isArray(quiz.value.questions) ? quiz.value.questions.length : 0
+    const total = Array.isArray(quiz.value?.questions) ? quiz.value.questions.length : 0
     let totalAnswered = 0
-    for (const q of quiz.value.questions) {
-      const val = answers.value[q.id]
-      if (val === null || val === undefined) continue
-      if (typeof val === 'string' && val === '') continue
-      if (Array.isArray(val) && val.length === 0) continue
-      totalAnswered++
+    if (Array.isArray(quiz.value?.questions)) {
+      for (const q of quiz.value.questions) {
+        const val = answers.value[q.id]
+        if (val === null || val === undefined) continue
+        if (typeof val === 'string' && val === '') continue
+        if (Array.isArray(val) && val.length === 0) continue
+        totalAnswered++
+      }
     }
     const correctCount = Object.values(answeredCorrectly.value).filter(Boolean).length
 
