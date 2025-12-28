@@ -170,7 +170,7 @@
 
         <!-- RIGHT SIDE: Vertical Carousel -->
         <div
-          class="relative w-full opacity-0 animate-slide-in-right order-2 sm:order-2 lg:pl-8"
+          class="relative w-full max-w-full overflow-hidden opacity-0 animate-slide-in-right order-2 lg:pl-8"
           style="animation-delay: 0.3s"
         >
           <QuizCarousel

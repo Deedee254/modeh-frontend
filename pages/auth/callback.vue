@@ -47,32 +47,61 @@ onMounted(async () => {
   if (!process.client) return
 
   try {
+    // Clean up URL params immediately for a cleaner UX
     window.history.replaceState({}, document.title, window.location.pathname)
     
-    // Small delay to allow browser to settle cookies after redirect
-    await new Promise(r => setTimeout(r, 500))
+    // 1. First, ensure we have a fresh CSRF state.
+    // The OAuth redirect back to the app might need a brief bridge to register cookies properly.
+    try {
+      await api.ensureCsrf()
+    } catch (e) {
+      console.warn('Callback: CSRF initialization failed, continuing anyway...', e)
+    }
 
-    // Attempt to fetch user profile using the session established during OAuth callback.
-    // We add a cache-busting timestamp to ensure we don't get a stale 401 from a service worker or browser cache.
-    const response = await api.get(`/api/me?t=${Date.now()}`)
+    // 2. Attempt to fetch user profile with a retry mechanism.
+    // Sometimes the browser takes an extra moment to fully settle cookies from the redirect.
+    let userResponse = null
+    const maxAttempts = 2
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await api.get(`/api/me?t=${Date.now()}`)
+        if (response.ok) {
+          userResponse = response
+          break
+        }
+        console.warn(`OAuth callback: /api/me attempt ${attempt} failed with status ${response.status}`)
+        if (attempt < maxAttempts) {
+          // Wait a bit longer before retrying
+          await new Promise(r => setTimeout(r, 800))
+        }
+      } catch (e) {
+        console.error(`OAuth callback: /api/me attempt ${attempt} threw:`, e)
+      }
+    }
 
-    if (!response.ok) {
-      console.warn(`OAuth callback: fetch /api/me failed with status ${response.status}`)
+    if (!userResponse) {
       error.value = 'Session could not be established.'
-      errorDetails.value = `Backend returned HTTP ${response.status} for /api/me. This usually means the session cookie was not accepted or the authentication state was lost.`
+      errorDetails.value = `Authentication was successful on the provider, but the secure session could not be established with our server (401 Unauthorized after ${maxAttempts} attempts). This usually means the browser blocked the session cookie.`
       return
     }
 
-    const user = await response.json()
+    const user = await userResponse.json()
     auth.setUser(user)
 
+    // 3. Routing logic based on profile completeness
     if (!user?.role) {
       return router.replace('/onboarding/new-user')
     }
 
     const missingFields = user.missing_profile_fields || []
     if (missingFields.length > 0) {
-      const stepMap = { institution: 'institution', grade: 'grade', subjects: 'subjects', role: 'new-user' }
+      const stepMap = { 
+        institution: 'institution', 
+        grade: 'grade', 
+        subjects: 'subjects', 
+        role: 'new-user' 
+      }
       const nextStep = stepMap[missingFields[0]] || 'new-user'
       return router.replace(`/onboarding/${nextStep}`)
     }
@@ -81,7 +110,7 @@ onMounted(async () => {
     return router.replace(dashboard)
 
   } catch (err) {
-    console.error('OAuth callback error:', err)
+    console.error('OAuth callback fatal error:', err)
     error.value = 'An unexpected error occurred during login.'
     errorDetails.value = err.message
   }

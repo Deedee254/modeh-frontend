@@ -349,29 +349,47 @@ const sponsors = ref([])
 // If a user is logged in and has a grade/level we request quizzes filtered to their profile
 const loadDynamicData = async () => {
   try {
-    // Determine user's grade/level from auth store (normalize shape like other pages)
-    const userProfile = (() => {
-      const u = auth.user
-      return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
-    })()
-    const userLevelId = userProfile?.quizeeProfile?.level?.id || userProfile?.level_id
-    const userGradeId = userProfile?.quizeeProfile?.grade?.id || userProfile?.grade_id
-
-    // Build quiz query string: prefer grade/level filters when available, otherwise use latest
+    // Build the correct quiz endpoint and parameters based on user role
+    const role = auth.role
+    let endpoint = '/api/quizzes'
     const quizParams = new URLSearchParams()
-    // always ask for approved quizzes
-    quizParams.set('approved', '1')
-    // Request a page size similar to previous behaviour
+    
+    // Default parameters
     quizParams.set('per_page', '12')
-    // If user has grade/level, include them so hero shows relevant quizzes
-    if (userLevelId) quizParams.set('level_id', String(userLevelId))
-    if (userGradeId) quizParams.set('grade_id', String(userGradeId))
-    // If no grade/level specified, fall back to latest listing
-    if (!userLevelId && !userGradeId) quizParams.set('latest', '1')
+
+    if (role === 'quizee') {
+      // For quizees, use the recommendations endpoint (shows grade-matched, randomized)
+      endpoint = '/api/recommendations/quizzes'
+      const userProfile = (auth.user && typeof auth.user === 'object' && 'value' in auth.user) ? auth.user.value : (auth.user || {})
+      const forGrade = userProfile?.quizeeProfile?.grade_id || userProfile?.grade_id
+      if (forGrade) quizParams.set('for_grade', String(forGrade))
+    } else if (role === 'quiz-master') {
+      // For quiz masters, show THEIR created quizzes (backend filters by created_by automatically)
+      endpoint = '/api/quizzes'
+    } else {
+      // For Institution Manager or Guest (unauthenticated)
+      // We use recommendations endpoint for IM to avoid the backend's 'created_by' filter for logged-in users
+      endpoint = role === 'institution-manager' ? '/api/recommendations/quizzes' : '/api/quizzes'
+      
+      const userProfile = (auth.user && typeof auth.user === 'object' && 'value' in auth.user) ? auth.user.value : (auth.user || {})
+      const userLevelId = userProfile?.quizeeProfile?.level?.id || userProfile?.level_id
+      const userGradeId = userProfile?.quizeeProfile?.grade?.id || userProfile?.grade_id
+      
+      quizParams.set('approved', '1')
+      if (userLevelId) quizParams.set('level_id', String(userLevelId))
+      if (userGradeId) {
+        // if using rec endpoint, use for_grade; if quizzes endpoint, use grade_id
+        const gradeKey = endpoint.includes('recommendations') ? 'for_grade' : 'grade_id'
+        quizParams.set(gradeKey, String(userGradeId))
+      }
+      
+      // If no grade/level specified, fall back to latest listing
+      if (!userLevelId && !userGradeId) quizParams.set('latest', '1')
+    }
 
     // Fetch in parallel for better performance
     const [quizzesRes, quizMastersRes, testimonialsRes, sponsorsRes] = await Promise.all([
-      api.get('/api/quizzes?' + quizParams.toString()),
+      api.get(`${endpoint}?${quizParams.toString()}`),
       api.get('/api/quiz-masters'),
       api.get('/api/testimonials'),
       api.get('/api/sponsors')
