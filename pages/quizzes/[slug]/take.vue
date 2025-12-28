@@ -57,14 +57,27 @@
           <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
             <div class="flex items-center justify-between mb-2">
               <h2 class="font-semibold text-slate-900">{{ quiz.title }}</h2>
+              <div v-if="encouragementMessage" class="text-sm mt-1" :class="encouragementStyle">{{ encouragementMessage }}</div>
               <div class="flex items-center gap-4">
                 <span class="text-sm font-medium text-slate-600">Question {{ currentQuestionIndex + 1 }} of {{ totalQuestions }}</span>
-                <!-- Timer -->
-                <div v-if="hasTimeLimit" :class="['flex items-center gap-2 px-3 py-1 rounded-lg font-semibold', timeWarning ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700']">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                  <span>{{ timeRemaining }}</span>
+                <!-- Timer (with per-question circle + textual remaining) -->
+                <div v-if="hasTimeLimit" class="flex items-center gap-3">
+                  <div class="w-10 h-10 flex items-center justify-center">
+                    <svg width="40" height="40" viewBox="0 0 40 40" class="w-10 h-10">
+                      <!-- background ring -->
+                      <circle cx="20" cy="20" r="18" class="text-slate-200" stroke="currentColor" stroke-width="3" fill="none" />
+                      <!-- animated foreground ring -->
+                      <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"
+                        :class="qTimerColorClass"
+                        :style="{ strokeDasharray: timerCircumference, strokeDashoffset: timerDashOffset }"
+                        class="transform -rotate-90 origin-center"
+                      />
+                    </svg>
+                  </div>
+
+                  <div :class="['px-3 py-1 rounded-lg font-semibold', timeWarning ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700']">
+                    <span>{{ timeRemaining }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -72,71 +85,19 @@
               <div class="h-full bg-brand-600 transition-all duration-300" :style="{ width: `${progress}%` }"></div>
             </div>
           </div>
+          <!-- Countdown alert banner (per-question or quiz-level warnings) -->
+          <div v-if="countdownAlert.show" :class="['mt-4 p-3 rounded-lg text-sm', countdownAlertClass]">
+            {{ countdownAlert.message }}
+          </div>
         </div>
 
-        <!-- Current Question -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-          <!-- Question Text -->
-          <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-8 leading-tight">
-            {{ currentQuestion.text }}
-          </h3>
-
-          <!-- Answer Options -->
-          <div class="space-y-3">
-            <button
-              v-for="(option, idx) in currentQuestion.options"
-              :key="option.id"
-                @click="selectAnswer(option)"
-                :disabled="answered || markingPending"
-              class="w-full p-4 md:p-5 rounded-xl border-2 text-left transition-all duration-200 flex items-center justify-between group"
-              :class="[getOptionClass(option), { 'scale-105 transform': showVerdictAnim && option.id === selectedOption?.id }]"
-            >
-              <div class="flex items-center gap-3 flex-1">
-                <div 
-                  class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
-                  :class="getOptionIndicatorClass(option)"
-                >
-                    <!-- Show spinner while marking the selected option -->
-                    <span v-if="markingPending && option.id === selectedOption?.id" class="text-xs">
-                      <svg class="animate-spin h-4 w-4 text-slate-400" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                      </svg>
-                    </span>
-                    <span v-else-if="answered && option.id === selectedOption?.id" class="text-sm font-bold">
-                      {{ currentAnswer?.isCorrect ? '✓' : '✗' }}
-                    </span>
-                    <span v-else class="text-xs font-semibold text-slate-400">{{ String.fromCharCode(65 + idx) }}</span>
-                </div>
-                <span class="font-medium" :class="getOptionTextClass(option)">{{ option.text }}</span>
-              </div>
-              <svg v-if="answered && option.id === selectedOption?.id && currentAnswer?.isCorrect" class="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- Feedback -->
-          <div v-if="answered && showFeedback" class="mt-6 p-4 rounded-xl" :class="feedbackClass">
-            <p class="font-semibold mb-2" :class="feedbackTextClass">
-              {{ isCorrect ? '✓ Correct!' : '✗ Incorrect' }}
-            </p>
-            <p v-if="currentQuestion.explanation" class="text-sm" :class="feedbackTextClass">
-              {{ currentQuestion.explanation }}
-            </p>
-          </div>
+        <!-- Current Question (use shared QuestionCard so all question types are supported) -->
+        <div class="mb-6">
+          <QuestionCard :key="currentQuestionIndex" :question="currentQuestion" v-model="answers[currentQuestion?.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)" />
         </div>
 
         <!-- Navigation Buttons -->
-        <div class="flex gap-3 justify-between">
-          <button 
-            @click="previousQuestion"
-            :disabled="currentQuestionIndex === 0"
-            class="px-6 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ← Previous
-          </button>
-          
+        <div class="flex gap-3 justify-end">
           <button 
             @click="nextQuestion"
             :disabled="!answered"
@@ -148,8 +109,8 @@
       </div>
     </div>
 
-    <!-- Quiz Completed Screen -->
-    <div v-else class="flex items-center justify-center min-h-screen py-6 px-4">
+    <!-- Results Modal -->
+    <div v-if="quizCompleted" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
         <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
           🎉
@@ -170,29 +131,9 @@
             <span class="text-slate-600">Incorrect:</span>
             <span class="font-semibold text-red-600">{{ quizAttempt?.incorrect_count || 0 }}/{{ totalQuestions }}</span>
           </div>
-          <div v-if="quizAttempt?.skipped_count > 0" class="flex justify-between text-sm">
-            <span class="text-slate-600">Skipped:</span>
-            <span class="font-semibold text-slate-600">{{ quizAttempt?.skipped_count }}/{{ totalQuestions }}</span>
-          </div>
           <div class="flex justify-between text-sm pt-2 border-t border-slate-200">
             <span class="text-slate-600">Time taken:</span>
             <span class="font-semibold text-slate-900">{{ formatTime(quizAttempt?.time_taken || 0) }}</span>
-          </div>
-        </div>
-
-        <!-- Detailed Results -->
-        <div v-if="quizAttempt?.results" class="mb-6 max-h-48 overflow-y-auto text-left bg-slate-50 rounded-lg p-4 space-y-3">
-          <div v-for="(result, idx) in quizAttempt.results" :key="idx" class="text-xs">
-            <div class="flex items-start gap-2 mb-1">
-              <span :class="['flex-shrink-0 text-sm font-bold', result.is_correct ? 'text-green-600' : 'text-red-600']">
-                {{ result.is_correct ? '✓' : '✗' }}
-              </span>
-              <span class="font-medium text-slate-900 flex-1">{{ result.question_text }}</span>
-            </div>
-            <div class="ml-6 space-y-1 text-slate-600">
-              <p v-if="!result.skipped">Your answer: <span class="font-medium">{{ result.selected_option_text || 'Not answered' }}</span></p>
-              <p v-if="!result.is_correct" class="text-green-700">Correct answer: <span class="font-medium">{{ result.correct_option_text }}</span></p>
-            </div>
           </div>
         </div>
 
@@ -213,7 +154,7 @@
         </div>
 
         <p class="text-xs text-slate-500 mt-4">
-          💡 Note: You've completed this quiz. Sign up to save your results and retake quizzes.
+          💡 Sign up to save your results and track progress.
         </p>
 
         <p class="text-xs text-slate-400 mt-2">
@@ -227,11 +168,16 @@
 <script setup>
 definePageMeta({ layout: 'default' })
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { onMounted } from 'vue'
 import useApi from '~/composables/useApi'
 import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
+import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
+import useQuestionTimer from '~/composables/useQuestionTimer'
+import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
+import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
+import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+import { formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
 
 const router = useRouter()
 const route = useRoute()
@@ -249,15 +195,19 @@ const quiz = ref({})
 const questions = ref([])
 const loading = ref(true)
 const currentQuestionIndex = ref(0)
-const selectedOption = ref(null)
-const answered = ref(false)
-const markingPending = ref(false)
 const quizCompleted = ref(false)
-const correctCount = ref(0)
-const userAnswers = ref([])
-const showVerdictAnim = ref(false)
-const timer = ref(0)
-const timerInterval = ref(null)
+// answers stored by question id (useQuizAnswers ensures every question id exists)
+const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, clearSavedAnswers } = useQuizAnswers(computed(() => ({ questions: questions.value })), '')
+
+// per-question timing & tracking
+const questionTimes = ref({})
+function recordQuestionTime(qid) {
+  try {
+    const elapsed = recordAndReset()
+    questionTimes.value[qid] = elapsed
+  } catch (e) {}
+}
+
 const hasTimeLimit = ref(false)
 const startTime = ref(null)
 const quizAttempt = ref(null)
@@ -270,35 +220,113 @@ const totalQuestions = computed(() => questions.value.length)
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value] || {})
 const isLastQuestion = computed(() => currentQuestionIndex.value === totalQuestions.value - 1)
 const progress = computed(() => ((currentQuestionIndex.value + 1) / totalQuestions.value) * 100)
-const isCorrect = computed(() => {
-  const ans = userAnswers.value[currentQuestionIndex.value]
-  if (ans && typeof ans.isCorrect !== 'undefined') return ans.isCorrect
-  return selectedOption.value?.is_correct || false
-})
-const showFeedback = computed(() => answered.value)
 
-const feedbackClass = computed(() => {
-  return isCorrect.value 
-    ? 'bg-green-50 border border-green-100' 
-    : 'bg-red-50 border border-red-100'
-})
+// per-question timer composable
+const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
 
-const feedbackTextClass = computed(() => {
-  return isCorrect.value ? 'text-green-800' : 'text-red-800'
-})
+// overall quiz timer composable (same as quizee)
+const { timeLeft, displayTime, startTimer: startQuizTimer, stopTimer: stopQuizTimer } = useQuizTimer(quiz, () => submitQuizAttempt())
 
+// enhancements (encouragement message only for guest flow)
+const { encouragementMessage, encouragementStyle } = useQuizEnhancements(quiz, progress, computed(() => currentQuestionIndex.value), answers)
+
+// Show per-question display when a per-question limit exists, else show overall timer
+// show per-question display when available, else overall timer display from useQuizTimer
 const timeRemaining = computed(() => {
-  const remaining = Math.max(0, timer.value)
-  const minutes = Math.floor(remaining / 60)
-  const seconds = remaining % 60
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  if (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) return qDisplayTime.value
+  return displayTime.value || '0:00'
 })
 
 const timeWarning = computed(() => {
-  return timer.value < 60 && hasTimeLimit.value
+  const per = typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0
+  return per || (timeLeft.value < 60 && hasTimeLimit.value)
 })
 
-const currentAnswer = computed(() => userAnswers.value[currentQuestionIndex.value] || null)
+// Timer circle SVG properties (for per-question visual)
+const timerCircleRadius = 18
+const timerCircumference = computed(() => 2 * Math.PI * timerCircleRadius)
+const timerDashOffset = computed(() => {
+  const remaining = Math.max(0, Math.ceil(questionRemaining.value || 0))
+  const limit = timePerQuestion.value || currentQuestionLimit() || 20
+  const frac = limit ? (remaining / limit) : 0
+  return timerCircumference.value * (1 - Math.max(0, Math.min(1, frac)))
+})
+
+// Countdown alert state (mirrors quizee)
+const countdownAlert = ref({ show: false, type: 'info', message: '', timeRemaining: 0 })
+
+const countdownAlertClass = computed(() => {
+  if (!countdownAlert.value.show) return ''
+  if (countdownAlert.value.type === 'error') return 'bg-red-100 text-red-800 border border-red-300'
+  if (countdownAlert.value.type === 'warning') return 'bg-amber-100 text-amber-800 border border-amber-300'
+  return 'bg-brand-100 text-brand-800 border border-brand-300'
+})
+
+function updateCountdownAlert() {
+  // per-question urgency first
+  if (typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = questionRemaining.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = Math.ceil(questionRemaining.value)
+    countdownAlert.value.message = `⏱️ Time for this question: ${formatTime(Math.ceil(questionRemaining.value))}`
+    return
+  }
+
+  // then overall quiz timer (use timeLeft from useQuizTimer)
+  if (typeof timeLeft.value === 'number' && timeLeft.value <= 5 && timeLeft.value > 0 && quiz.value?.timer_seconds) {
+    countdownAlert.value.show = true
+    countdownAlert.value.type = timeLeft.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = timeLeft.value
+    countdownAlert.value.message = `⏱️ Quiz time remaining: ${formatTime(timeLeft.value)}`
+    return
+  }
+
+  countdownAlert.value.show = false
+}
+
+// Watch timers to update countdown alert
+watch(() => questionRemaining.value, () => updateCountdownAlert())
+watch(timeLeft, () => updateCountdownAlert(), { immediate: false })
+
+// Selected option for the current question (derived from answers composable)
+const selectedOption = computed(() => {
+  const q = currentQuestion.value
+  if (!q || !q.id) return null
+  return answers.value[q.id] ?? null
+})
+
+// Whether the current question has been answered
+const answered = computed(() => {
+  const q = currentQuestion.value
+  if (!q || !q.id) return false
+  const val = answers.value[q.id]
+  if (q.type === 'multi') return Array.isArray(val) && val.length > 0
+  return val !== null && val !== undefined && val !== ''
+})
+
+// Determine per-question time limit (prefer question-specific, then quiz-level, then split overall)
+function currentQuestionLimit() {
+  const q = currentQuestion.value
+  if (q?.time_limit_seconds) return q.time_limit_seconds
+  if (quiz.value?.per_question_seconds) return quiz.value.per_question_seconds
+  if (!quiz.value?.use_per_question_timer && quiz.value?.timer_seconds && totalQuestions.value) {
+    const per = Math.floor(quiz.value.timer_seconds / Math.max(1, totalQuestions.value))
+    return per > 0 ? per : null
+  }
+  return null
+}
+
+function initializeQuestionTimer() {
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+  const limit = currentQuestionLimit()
+  if (limit) {
+    startQuestionTimer(limit, undefined)
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestionIndex.value < questions.value.length - 1) nextQuestion()
+      else submitQuizAttempt()
+    }, undefined)
+  }
+}
 
 // Load quiz data
 async function loadQuiz() {
@@ -323,7 +351,7 @@ async function loadQuiz() {
       return
     }
     
-    quiz.value = quizDetail
+  quiz.value = quizDetail
     
     // Check if user has already taken this quiz
     const previousResult = guestQuizStore.getQuizResult(quizDetail.id)
@@ -337,8 +365,9 @@ async function loadQuiz() {
     // Set up timer if quiz has time limit
     if (quizDetail.timer_seconds && quizDetail.timer_seconds > 0) {
       hasTimeLimit.value = true
-      timer.value = quizDetail.timer_seconds
-      startTimer()
+      // the useQuizTimer composable reads quiz.value to compute its timers; ensure quiz is set
+      // start the composable timer
+      try { startQuizTimer() } catch (e) {}
     }
     
     // Fetch questions
@@ -363,8 +392,9 @@ async function loadQuiz() {
       const opts = Array.isArray(q.options) ? q.options.map(o => ({
         id: o.id ?? o._id ?? null,
         text: o.text ?? o.body ?? (typeof o === 'string' ? o : ''),
-        // guests should not get is_correct from backend; default to false
-        is_correct: !!(o.is_correct ?? false)
+        // Guests should NEVER see correct answer flags - always set to false
+        // Marking happens server-side after quiz submission
+        is_correct: false
       })) : []
 
       return {
@@ -380,34 +410,11 @@ async function loadQuiz() {
     })
 
     questions.value = normalized
-    // Restore any in-progress verdicts so resuming mid-quiz shows server verdicts
-    const partial = guestQuizStore.getPartialResult(quizDetail.id)
-    if (partial && partial.answers) {
-      // Build userAnswers array from saved map
-      const answersArr = []
-      for (const qIndex in questions.value) {
-        const q = questions.value[qIndex]
-        const saved = partial.answers[q.id]
-        if (saved) {
-          answersArr[qIndex] = {
-            questionId: q.id,
-            selectedOptionId: saved.selectedOptionId,
-            isCorrect: !!saved.isCorrect
-          }
-          if (saved.isCorrect) correctCount.value++
-        }
-      }
-      userAnswers.value = answersArr
-      // If there's an unanswered question, jump to it; else stay at last
-      const firstUnanswered = questions.value.findIndex((_, i) => !userAnswers.value[i])
-      currentQuestionIndex.value = firstUnanswered === -1 ? Math.max(0, questions.value.length - 1) : firstUnanswered
-      // set selectedOption for current question if answered
-      const cur = userAnswers.value[currentQuestionIndex.value]
-      if (cur) {
-        selectedOption.value = questions.value[currentQuestionIndex.value].options.find(o => o.id === cur.selectedOptionId) || null
-        answered.value = true
-      }
-    }
+  // Initialize answers object (ensures every question id exists as null or [])
+  initializeAnswers()
+
+  // Initialize per-question timer for the first question if applicable
+  try { initializeQuestionTimer() } catch (e) {}
 
     if (!questions.value || questions.value.length === 0) {
       throw new Error('No questions available for this quiz')
@@ -421,174 +428,71 @@ async function loadQuiz() {
   }
 }
 
-// Select answer
-async function selectAnswer(option) {
-  if (answered.value || markingPending.value) return
+// Select answer - just store it, no marking during quiz
+// Select answer - use quiz answers composable, record time and auto-advance for mcq
+function selectAnswer(option) {
+  const q = currentQuestion.value
+  if (!q || !q.id) return
+  // prevent double selection while processing
+  const existing = answers.value[q.id]
+  if (existing !== null && existing !== undefined && !(Array.isArray(existing) && existing.length === 0)) return
 
-  // record selection (no verdict yet)
-  selectedOption.value = option
-  userAnswers.value[currentQuestionIndex.value] = {
-    questionId: currentQuestion.value.id,
-    selectedOptionId: option.id
-  }
+  // store the raw option (keeps option object for UI)
+  rawSelectMcq(q.id, option)
+  // record per-question time
+  try { recordQuestionTime(q.id) } catch (e) {}
 
-  // Determine if this quiz payload already includes correct answers.
-  // If so, mark instantly from local data. Otherwise fall back to server mark.
-  const q = currentQuestion.value || {}
-  const hasLocalCorrectFlags = Array.isArray(q.options) && q.options.some(o => !!o.is_correct)
-  const hasLocalCorrectAnswerText = !!(q.correct_answer || q.correctAnswer)
-
-  if (hasLocalCorrectFlags || hasLocalCorrectAnswerText) {
-    // Instant local marking path (no spinner)
-    try {
-      // Determine correctness using option.is_correct if present, else try matching text
-      let correct = false
-      if (typeof option.is_correct !== 'undefined') {
-        correct = !!option.is_correct
-      } else if (hasLocalCorrectAnswerText) {
-        const correctText = String(q.correct_answer ?? q.correctAnswer ?? '').toLowerCase().trim()
-        const ot = String(option.text ?? option.body ?? '').toLowerCase().trim()
-        if (correctText.length > 0) {
-          const parts = correctText.split(',').map(s => s.trim()).filter(Boolean)
-          correct = parts.some(p => ot === p || ot.includes(p) || p.includes(ot))
-        }
-      }
-
-      userAnswers.value[currentQuestionIndex.value].isCorrect = correct
-      if (correct) correctCount.value++
-
-      // If question has explanation locally attach it (or keep existing)
-      const idx = currentQuestionIndex.value
-      if (questions.value[idx]) questions.value[idx].explanation = questions.value[idx].explanation ?? null
-
-      // Persist per-question verdict locally so resuming will restore verdicts
-      try {
-        guestQuizStore.saveQuestionVerdict(quiz.value.id, {
-          questionId: currentQuestion.value.id,
-          selectedOptionId: option.id,
-          isCorrect: correct,
-          explanation: questions.value[idx]?.explanation ?? null
-        })
-      } catch (e) {}
-
-      // Show answered state and animate
-      answered.value = true
-      showVerdictAnim.value = true
-      setTimeout(() => { showVerdictAnim.value = false }, 700)
-
-      // Fire-and-forget: optionally notify backend for analytics (do not block UI)
-      try {
-        const guestId = guestQuizStore.getGuestIdentifier()
-        api.postJson(`/api/quizzes/${quiz.value.id}/mark`, {
-          question_id: currentQuestion.value.id,
-          selected: option.id ?? option,
-          guest_identifier: guestId
-        }).catch(() => {})
-      } catch (e) {}
-
-    } catch (e) {
-      console.error('Error performing local mark:', e)
+  // auto advance for single choice
+  setTimeout(() => {
+    if (currentQuestionIndex.value < questions.value.length - 1) {
+      currentQuestionIndex.value++
+    } else {
+      completeQuiz()
     }
+  }, 250)
+}
 
-    return
-  }
-
-  // Fallback to server-marking path (show spinner)
-  markingPending.value = true
-
-  try {
-    const guestId = guestQuizStore.getGuestIdentifier()
-    const res = await api.postJson(`/api/quizzes/${quiz.value.id}/mark`, {
-      question_id: currentQuestion.value.id,
-      selected: option.id ?? option,
-      guest_identifier: guestId
-    })
-
-    if (!res.ok) {
-      console.warn('Marking request failed for question', currentQuestion.value.id)
-      markingPending.value = false
-      return
-    }
-
-    const data = await res.json()
-    const correct = !!data.correct
-
-    // Update stored answer with server verdict
-    userAnswers.value[currentQuestionIndex.value].isCorrect = correct
-
-    if (correct) correctCount.value++
-
-    // Attach explanation to the question for UI display
-    const idx = currentQuestionIndex.value
-    if (questions.value[idx]) questions.value[idx].explanation = data.explanation ?? questions.value[idx].explanation
-
-    // Try to highlight the correct option(s) by matching returned correct_answer text
-    if (data.correct_answer) {
-      const correctText = String(data.correct_answer || '').toLowerCase().trim()
-      if (correctText.length > 0 && questions.value[idx] && Array.isArray(questions.value[idx].options)) {
-        const parts = correctText.split(',').map(s => s.trim()).filter(Boolean)
-        questions.value[idx].options.forEach(o => {
-          try {
-            const ot = String(o.text ?? o.body ?? '').toLowerCase().trim()
-            o.is_correct = parts.some(p => ot === p || ot.includes(p) || p.includes(ot))
-          } catch (e) {
-            o.is_correct = false
-          }
-        })
-      }
-    }
-
-    // Persist per-question verdict so resuming will restore server verdicts
-    try {
-      guestQuizStore.saveQuestionVerdict(quiz.value.id, {
-        questionId: currentQuestion.value.id,
-        selectedOptionId: option.id,
-        isCorrect: correct,
-        explanation: data.explanation ?? null
-      })
-    } catch (e) {}
-
-    // Now we can show answered state and animate
-    answered.value = true
-    showVerdictAnim.value = true
-    setTimeout(() => { showVerdictAnim.value = false }, 700)
-
-  } catch (e) {
-    console.error('Error marking question:', e)
-  } finally {
-    markingPending.value = false
+function onQuestionSelect(val) {
+  const q = currentQuestion.value
+  if (!q || !q.id) return
+  // set via answers v-model by child component - but ensure stored in answers object
+  answers.value[q.id] = val
+  // record per-question time
+  try { recordQuestionTime(q.id) } catch (e) {}
+  // auto-advance for mcq (single choice)
+  if (q.type === 'mcq') {
+    setTimeout(() => { if (currentQuestionIndex.value < questions.value.length - 1) nextQuestion(); else completeQuiz() }, 250)
   }
 }
 
 // Navigation
 function nextQuestion() {
-  if (!answered.value) return
-  
+  // record time for current
+  const qid = currentQuestion.value.id
+  if (qid) recordQuestionTime(qid)
+
+  // reset per-question timer and clear schedule
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+
   if (isLastQuestion.value) {
     completeQuiz()
   } else {
     currentQuestionIndex.value++
-    resetQuestionState()
+    // ensure question timer is started for new question
+    const limit = currentQuestionLimit()
+    if (limit) {
+      startQuestionTimer(limit, undefined)
+      schedulePerQuestionLimit(limit, () => {
+        if (currentQuestionIndex.value < questions.value.length - 1) nextQuestion()
+        else submitQuizAttempt()
+      }, undefined)
+    }
   }
-}
-
-function previousQuestion() {
-  if (currentQuestionIndex.value > 0) {
-    currentQuestionIndex.value--
-    resetQuestionState()
-  }
-}
-
-function resetQuestionState() {
-  const prevAnswer = userAnswers.value[currentQuestionIndex.value]
-  selectedOption.value = prevAnswer ? 
-    currentQuestion.value.options.find(o => o.id === prevAnswer.selectedOptionId) : 
-    null
-  answered.value = !!prevAnswer
 }
 
 function completeQuiz() {
-  stopTimer()
+  try { stopQuizTimer() } catch (e) {}
+  try { stopQuestionTimer() } catch (e) {}
   submitQuizAttempt()
 }
 
@@ -598,22 +502,24 @@ async function submitQuizAttempt() {
   submitting.value = true
   try {
     const timeTaken = Math.floor((Date.now() - startTime.value) / 1000)
-    
+
+    // Ensure latest per-question time recorded
+    try { recordQuestionTime(currentQuestion.value.id) } catch (e) {}
+
+    // Build answers payload using central helper so unanswered questions are included
+    const answersPayload = formatAnswersForSubmission(answers.value, questionTimes.value)
+
     // Get or generate guest identifier
     const guestId = guestQuizStore.getGuestIdentifier()
-    
-    // Format answers for submission
-    const formattedAnswers = userAnswers.value.map(answer => ({
-      question_id: answer.questionId,
-      selected: answer.selectedOptionId
-    }))
-    
-    // Submit to backend for marking
-    const res = await api.postJson(`/api/quizzes/${quiz.value.id}/submit`, {
+
+    const payload = {
       guest_identifier: guestId,
       time_taken: timeTaken,
-      answers: formattedAnswers
-    })
+      answers: answersPayload,
+    }
+
+    // Submit to backend for marking (do not defer marking for public path)
+    const res = await api.postJson(`/api/quizzes/${quiz.value.id}/submit`, payload)
     
     if (!res.ok) {
       const errorData = await res.json()
@@ -629,33 +535,11 @@ async function submitQuizAttempt() {
     
     const data = await res.json()
 
-    // Enrich server attempt results with selected and correct option texts from local state
-    if (data.attempt && Array.isArray(data.attempt.results)) {
-      data.attempt.results = data.attempt.results.map(r => {
-        const selected = (formattedAnswers || []).find(a => a.question_id === r.question_id)
-        const qIndex = questions.value.findIndex(q => q.id === r.question_id)
-        const q = questions.value[qIndex]
-        let selected_text = null
-        if (selected && q) {
-          const opt = q.options.find(o => o.id == selected.selected)
-          selected_text = opt ? opt.text : null
-        }
-        return {
-          ...r,
-          // include the selected option id so the guest's exact choice is preserved
-          selected_option_id: selected ? selected.selected : null,
-          selected_option_text: selected_text,
-          correct_option_text: r.correct_answer ?? null
-        }
-      })
-    }
+    // server should return an attempt with results; save and show modal
+    quizAttempt.value = data.attempt ?? data
 
-    quizAttempt.value = data.attempt
-
-    // Save result to guest store (localStorage)
-    guestQuizStore.saveQuizResult(data.attempt)
-    // Clear any in-progress partial for this quiz
-    guestQuizStore.clearPartialResult(quiz.value.id)
+  // Save result to guest store (localStorage) - used to gate free attempts
+  try { guestQuizStore.saveQuizResult(quizAttempt.value) } catch (e) {}
 
     quizCompleted.value = true
     
@@ -668,21 +552,19 @@ async function submitQuizAttempt() {
 }
 
 function retakeQuiz() {
-  stopTimer()
+  try { stopQuizTimer() } catch (e) {}
   currentQuestionIndex.value = 0
-  selectedOption.value = null
-  answered.value = false
+  // Clear selection and results for local retake
+  try { clearSavedAnswers() } catch (e) {}
+  questionTimes.value = {}
   quizCompleted.value = false
-  correctCount.value = 0
-  userAnswers.value = []
-  
-  // Clear this quiz's result from store to allow retake
-  guestQuizStore.clearQuizResult(quiz.value.id)
+
+  // Clear this quiz's saved result from guest store to allow retake
+  try { guestQuizStore.clearQuizResult(quiz.value.id) } catch (e) {}
   
   // Reset timer if quiz has time limit
   if (hasTimeLimit.value && quiz.value.timer_seconds) {
-    timer.value = quiz.value.timer_seconds
-    startTimer()
+    try { startQuizTimer() } catch (e) {}
   }
 }
 
@@ -690,83 +572,10 @@ function goBack() {
   router.push(`/quizzes/${slug.value}`)
 }
 
-function startTimer() {
-  if (timerInterval.value) clearInterval(timerInterval.value)
-  
-  timerInterval.value = setInterval(() => {
-    timer.value--
-    
-    // Time's up
-    if (timer.value <= 0) {
-      clearInterval(timerInterval.value)
-      completeQuiz()
-    }
-  }, 1000)
-}
+// Note: overall timer is handled by `useQuizTimer` (startQuizTimer / stopQuizTimer)
 
-function stopTimer() {
-  if (timerInterval.value) {
-    clearInterval(timerInterval.value)
-  }
-}
-
-// Option styling
-function getOptionClass(option) {
-  if (!answered.value) {
-    return 'bg-white border-slate-200 hover:border-brand-300 hover:bg-brand-50 cursor-pointer'
-  }
-  
-  // Answered state
-  const ans = userAnswers.value[currentQuestionIndex.value]
-
-  // If this option is marked correct by the server, highlight it green
-  if (option.is_correct) {
-    return 'bg-green-50 border-green-500'
-  }
-
-  if (option.id === selectedOption.value?.id) {
-    return ans?.isCorrect 
-      ? 'bg-green-50 border-green-500' 
-      : 'bg-red-50 border-red-500'
-  }
-
-  // Non-selected, non-correct options stay muted
-  return 'bg-slate-50 border-slate-200 opacity-50'
-}
-
-function getOptionIndicatorClass(option) {
-  if (!answered.value) {
-    return 'border-slate-300'
-  }
-  
-  const ans = userAnswers.value[currentQuestionIndex.value]
-  // Selected option indicator
-  if (option.id === selectedOption.value?.id) {
-    return ans?.isCorrect
-      ? 'border-green-500 bg-green-500 text-white'
-      : 'border-red-500 bg-red-500 text-white'
-  }
-
-  // Correct (but not selected) option indicator
-  if (option.is_correct) {
-    return 'border-green-500 bg-green-500 text-white'
-  }
-
-  return 'border-slate-300'
-}
-
-function getOptionTextClass(option) {
-  if (!answered.value) return 'text-slate-700'
-  
-  const ans = userAnswers.value[currentQuestionIndex.value]
-  if (option.id === selectedOption.value?.id) {
-    return ans?.isCorrect ? 'text-green-900' : 'text-red-900'
-  }
-
-  if (option.is_correct) return 'text-green-900'
-
-  return 'text-slate-500'
-}
+// Option styling - simple selection only (no correctness shown during quiz)
+// option helper functions removed — selection/rendering is handled by QuestionCard
 
 function formatTime(seconds) {
   const hours = Math.floor(seconds / 3600)

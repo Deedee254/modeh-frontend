@@ -21,6 +21,9 @@ onMounted(async () => {
 
   try {
     window.history.replaceState({}, document.title, window.location.pathname)
+    
+    // Ensure CSRF/session initialization before fetching user
+    try { await api.ensureCsrf() } catch (e) { console.warn('CSRF init failed', e) }
 
     const response = await api.get('/api/me')
 

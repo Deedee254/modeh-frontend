@@ -24,27 +24,29 @@
     <div
       v-else
       :style="animationStyle"
-  class="animate-scroll-vertical flex flex-col gap-1 sm:gap-2 md:gap-2 lg:gap-2 py-2 w-full min-w-0 max-w-full overflow-hidden"
+  class="animate-scroll-vertical flex flex-col gap-1 sm:gap-2 md:gap-2 lg:gap-2 py-2 w-full overflow-hidden"
       @mouseenter="pauseAnimation"
       @mouseleave="resumeAnimation"
     >
       <div 
         v-for="(quiz, idx) in displayQuizzes" 
         :key="`${quiz.id}-${idx}`" 
-  class="flex-shrink-0 w-full px-2 sm:px-3 min-w-0 h-[96px] sm:h-[110px] md:h-[120px] lg:h-[120px]"
+  class="flex-shrink-0 w-full px-2 sm:px-3 h-[96px] sm:h-[110px] md:h-[120px] lg:h-[120px] overflow-hidden"
       >
-        <QuizCard
-          :quiz="quiz"
-          :title="quiz.title || 'Untitled'"
-          :quizId="quiz.id"
-          :cover="quiz.cover_image || ''"
-    :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
-          :horizontal="true"
-          :difficulty="quiz.difficulty"
-          :level="quiz.level_name"
-          :subject="quiz.subject_name"
-          :topic="quiz.topic_name"
-        />
+        <div class="h-full w-full overflow-hidden">
+          <QuizCard
+            :quiz="quiz"
+            :title="quiz.title || 'Untitled'"
+            :quizId="quiz.id"
+            :cover="quiz.cover_image || ''"
+      :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
+            :horizontal="true"
+            :difficulty="quiz.difficulty"
+            :level="quiz.level_name"
+            :subject="quiz.subject_name"
+            :topic="quiz.topic_name"
+          />
+        </div>
       </div>
     </div>
   </div>

@@ -39,21 +39,21 @@
                 </p>
               </div>
 
-              <div class="space-y-8 relative pl-8 border-l-2 border-slate-100 ml-4 flex-1">
-                 <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative pl-8 group">
+              <div class="space-y-8 relative sm:pl-8 border-l-2 border-slate-100 sm:ml-4 flex-1">
+                 <div v-for="(step, index) in howItWorksSteps" :key="step.number" class="relative sm:pl-8 group">
                     <!-- Dot -->
-                    <div class="absolute -left-[45px] top-0 w-8 h-8 rounded-full bg-white border-4 border-slate-100 flex items-center justify-center group-hover:border-[#800020]/30 transition-colors">
+                    <div class="absolute sm:-left-[45px] -left-5 top-1 sm:top-0 w-8 h-8 rounded-full bg-white border-4 border-slate-100 flex items-center justify-center group-hover:border-[#800020]/30 transition-colors flex-shrink-0">
                        <div class="w-2.5 h-2.5 rounded-full bg-[#800020]"></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 group-hover:shadow-md transition-all">
-                       <div class="flex items-center gap-4 mb-4">
-                          <div class="w-12 h-12 rounded-xl bg-[#800020]/10 flex items-center justify-center text-[#800020]">
-                             <UIcon :name="step.icon" class="text-xl" />
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 group-hover:shadow-md transition-all">
+                       <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#800020]/10 flex items-center justify-center text-[#800020] flex-shrink-0">
+                             <UIcon :name="step.icon" class="text-lg sm:text-xl" />
                           </div>
-                          <div>
+                          <div class="min-w-0">
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Step {{ step.number }}</span>
-                            <h3 class="text-lg font-bold text-slate-900">{{ step.title }}</h3>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">{{ step.title }}</h3>
                           </div>
                        </div>
                        <p class="text-slate-600 text-sm">{{ step.description }}</p>
