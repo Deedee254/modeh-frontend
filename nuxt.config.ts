@@ -131,20 +131,8 @@ export default defineNuxtConfig({
             expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
             cacheableResponse: { statuses: [0, 200] }
           }
-        },
-
-        // API requests
-        {
-          urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'api-cache',
-            cacheableResponse: { statuses: [0, 200] }
-          }
         }
       ],
-
-      cleanupOutdatedCaches: true,
 
       manifestTransforms: [
         (entries: any) => {

@@ -346,6 +346,8 @@ async function loadQuiz() {
     if (!quizRes.ok) throw new Error('Failed to load quiz')
     
   const quizData = await quizRes.json()
+    // Debug: surface exact quiz API response shape
+    try { console.debug('[take.vue] quiz API response:', quizData) } catch (e) {}
   // Accept both single-quiz and paginated-list shapes from the API
   const quizDetail = quizData.quiz || (quizData.quizzes && (Array.isArray(quizData.quizzes.data) ? quizData.quizzes.data[0] : (Array.isArray(quizData.quizzes) ? quizData.quizzes[0] : null)))
     
@@ -382,6 +384,8 @@ async function loadQuiz() {
     if (!questionsRes.ok) throw new Error('Failed to load questions')
     
     const questionsData = await questionsRes.json()
+  // Debug: surface exact questions API response shape
+  try { console.debug('[take.vue] questions API response:', questionsData) } catch (e) {}
     
     // Check for premium quiz error response
     if (questionsData.code === 'PREMIUM_QUIZ') {
@@ -526,17 +530,18 @@ async function submitQuizAttempt() {
     }
 
     // Submit to backend for marking (do not defer marking for public path)
+    try { console.debug('[take.vue] submit payload:', payload) } catch (e) {}
     const res = await api.postJson(`/api/quizzes/${quiz.value.id}/submit`, payload)
     
     if (!res.ok) {
-      const errorData = await res.json()
-      
+      let errorData = null
+      try { errorData = await res.json() } catch (e) { errorData = null }
+      try { console.error('[take.vue] submit error response:', errorData || res) } catch (e) {}
       // Check if it's a premium quiz error
-      if (errorData.code === 'PREMIUM_QUIZ') {
+      if (errorData && errorData.code === 'PREMIUM_QUIZ') {
         premiumError.value = true
         return
       }
-      
       throw new Error('Failed to submit quiz')
     }
     

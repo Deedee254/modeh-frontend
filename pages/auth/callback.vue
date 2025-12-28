@@ -49,17 +49,12 @@ onMounted(async () => {
   try {
     window.history.replaceState({}, document.title, window.location.pathname)
     
-    // Ensure CSRF/session initialization before fetching user
-    try { 
-      await api.ensureCsrf() 
-    } catch (e) { 
-      console.warn('CSRF init failed', e)
-      error.value = 'Could not connect to the authentication server.'
-      errorDetails.value = e.message
-      return
-    }
+    // Small delay to allow browser to settle cookies after redirect
+    await new Promise(r => setTimeout(r, 500))
 
-    const response = await api.get('/api/me')
+    // Attempt to fetch user profile using the session established during OAuth callback.
+    // We add a cache-busting timestamp to ensure we don't get a stale 401 from a service worker or browser cache.
+    const response = await api.get(`/api/me?t=${Date.now()}`)
 
     if (!response.ok) {
       console.warn(`OAuth callback: fetch /api/me failed with status ${response.status}`)
