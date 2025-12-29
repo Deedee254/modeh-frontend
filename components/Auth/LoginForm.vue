@@ -168,7 +168,7 @@ async function submit() {
 
 function handleGoogle() {
   const cfg = useRuntimeConfig()
-  window.location.href = `${cfg.public.apiBase}/api/auth/google/redirect`
+  window.location.href = `${cfg.public.apiBase}/auth/google/redirect`
 }
 
 // expose some refs for parent usage if needed
