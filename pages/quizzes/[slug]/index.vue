@@ -388,11 +388,10 @@ const { data: quizData, pending } = useFetch(() => {
   const isId = /^[0-9]+$/.test(slug.value)
   return isId ? (config.public.apiBase + `/api/quizzes/${slug.value}`) : (config.public.apiBase + `/api/quizzes?slug=${safe}`)
 }, {
-  credentials: 'include',
-  headers: computed(() => ({
-    'X-Requested-With': 'XMLHttpRequest',
-    ...(api.getXsrfFromCookie() ? { 'X-XSRF-TOKEN': api.getXsrfFromCookie() } : {})
-  })),
+  credentials: 'omit',
+  headers: {
+    'X-Requested-With': 'XMLHttpRequest'
+  },
   transform: (data) => {
     // Accept multiple API shapes. If the API returned a direct quiz object (from /api/quizzes/{id})
     // prefer that. Otherwise inspect { quiz } or { quizzes } shapes and extract the quiz.

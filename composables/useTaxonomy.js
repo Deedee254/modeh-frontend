@@ -7,79 +7,20 @@ let _singleton = null
 
 function normalizeList(maybe) {
   if (!maybe) return []
-
-  // If caller passed a plain array of simple id-only objects (eg. [{id:1},{id:2}])
-  // treat it as a pass-through for compatibility with older callers/tests.
-  if (Array.isArray(maybe)) {
-    const allSimpleIdOnly = maybe.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-    if (allSimpleIdOnly) return maybe
-  }
-
-  function normalizeItem(it) {
-    if (it === null || it === undefined) return null
-    if (typeof it !== 'object') {
-      return { id: String(it), name: String(it) }
-    }
-    const rawId = it.id ?? it._id ?? it.value ?? null
-    const id = rawId == null ? null : String(rawId)
-    const gradeRaw = it.grade_id ?? it.grade ?? it.gradeId ?? null
-    const subjectRaw = it.subject_id ?? it.subject ?? it.subjectId ?? null
-    const grade_id = gradeRaw == null ? null : String(gradeRaw)
-    const subject_id = subjectRaw == null ? null : String(subjectRaw)
-    const name = it.name ?? it.title ?? it.label ?? it.text ?? ''
-    return { ...it, id, name, grade_id, subject_id }
-  }
-
-  if (Array.isArray(maybe)) return maybe.filter(Boolean).map(normalizeItem)
+  
+  // API Resource returns data wrapped in { data: [...] }
   if (maybe.data && Array.isArray(maybe.data)) {
-    // If the inner array is already simple id-only objects, return as-is for compatibility
-    const inner = maybe.data
-    const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-    if (allSimpleIdOnly) return inner
-    return inner.filter(Boolean).map(normalizeItem)
+    return maybe.data
   }
-  if (maybe.grades) {
-    if (Array.isArray(maybe.grades)) {
-      const inner = maybe.grades
-      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-      if (allSimpleIdOnly) return inner
-      return inner.filter(Boolean).map(normalizeItem)
-    }
-    if (maybe.grades.data && Array.isArray(maybe.grades.data)) {
-      const inner = maybe.grades.data
-      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-      if (allSimpleIdOnly) return inner
-      return inner.filter(Boolean).map(normalizeItem)
-    }
-  }
-  if (maybe.subjects) {
-    if (Array.isArray(maybe.subjects)) {
-      const inner = maybe.subjects
-      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-      if (allSimpleIdOnly) return inner
-      return inner.filter(Boolean).map(normalizeItem)
-    }
-    if (maybe.subjects.data && Array.isArray(maybe.subjects.data)) {
-      const inner = maybe.subjects.data
-      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-      if (allSimpleIdOnly) return inner
-      return inner.filter(Boolean).map(normalizeItem)
-    }
-  }
-  if (maybe.topics) {
-    if (Array.isArray(maybe.topics)) {
-      const inner = maybe.topics
-      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-      if (allSimpleIdOnly) return inner
-      return inner.filter(Boolean).map(normalizeItem)
-    }
-    if (maybe.topics.data && Array.isArray(maybe.topics.data)) {
-      const inner = maybe.topics.data
-      const allSimpleIdOnly = inner.every(it => it && typeof it === 'object' && Object.keys(it).length === 1 && Object.prototype.hasOwnProperty.call(it, 'id'))
-      if (allSimpleIdOnly) return inner
-      return inner.filter(Boolean).map(normalizeItem)
-    }
-  }
+  
+  if (Array.isArray(maybe)) return maybe
+
+  // Handle legacy shapes just in case
+  if (maybe.subjects) return Array.isArray(maybe.subjects) ? maybe.subjects : (maybe.subjects.data || [])
+  if (maybe.topics) return Array.isArray(maybe.topics) ? maybe.topics : (maybe.topics.data || [])
+  if (maybe.grades) return Array.isArray(maybe.grades) ? maybe.grades : (maybe.grades.data || [])
+  if (maybe.levels) return Array.isArray(maybe.levels) ? maybe.levels : (maybe.levels.data || [])
+
   return []
 }
 
@@ -197,21 +138,15 @@ export default function useTaxonomy() {
           try { console.error('useTaxonomy.fetchLevels: no data in response') } catch (e) {}
           return
         }
-        // data.levels expected to be an array
-        if (data.levels && Array.isArray(data.levels)) {
-          // Ensure level ids and nested grade ids are strings to avoid v-model/type mismatch
-          levels.value = data.levels.map(l => ({
-            ...l,
-            id: l.id ? String(l.id) : null,
-            grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null }))
-          }))
-          try { console.debug('useTaxonomy.fetchLevels: loaded', levels.value.length, 'levels with nested grades') } catch (e) {}
-        } else {
-          // fallback: if no .levels key, try treating data as the list directly
-          const list = normalizeList(data)
-          levels.value = list
-          try { console.debug('useTaxonomy.fetchLevels: loaded', levels.value.length, 'levels from flattened data') } catch (e) {}
-        }
+        
+        const list = data.data || data.levels || (Array.isArray(data) ? data : [])
+        
+        levels.value = list.map(l => ({
+          ...l,
+          id: l.id ? String(l.id) : null,
+          grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null }))
+        }))
+        try { console.debug('useTaxonomy.fetchLevels: loaded', levels.value.length, 'levels with nested grades') } catch (e) {}
       } catch (e) {
         try { console.error('useTaxonomy.fetchLevels error:', e) } catch (err) {}
       } finally {

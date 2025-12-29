@@ -388,11 +388,14 @@ const loadDynamicData = async () => {
     }
 
     // Fetch in parallel for better performance
+    const isGuest = !auth.user
+    const fetchFn = isGuest ? api.getPublic : api.get
+    
     const [quizzesRes, quizMastersRes, testimonialsRes, sponsorsRes] = await Promise.all([
-      api.get(`${endpoint}?${quizParams.toString()}`),
-      api.get('/api/quiz-masters'),
-      api.get('/api/testimonials'),
-      api.get('/api/sponsors')
+      fetchFn(`${endpoint}?${quizParams.toString()}`),
+      fetchFn('/api/quiz-masters'),
+      fetchFn('/api/testimonials'),
+      fetchFn('/api/sponsors')
     ])
 
     // Process quizzes
@@ -477,8 +480,8 @@ const displayedQuizzes = computed(() => {
 
   if (selectedTab.value === 'liked') {
     return quizzesArray.slice().sort((a, b) => {
-      const aLikes = a.likes_count || a.likes || 0
-      const bLikes = b.likes_count || b.likes || 0
+      const aLikes = a.likes_count || 0
+      const bLikes = b.likes_count || 0
       return bLikes - aLikes
     })
   }
@@ -672,10 +675,10 @@ function onQuizLike(quiz, payload) {
   try {
     if (!quiz) return
     if (payload && payload.liked === true) {
-      quiz.likes_count = (quiz.likes_count || quiz.likes || 0) + 1
+      quiz.likes_count = (quiz.likes_count || 0) + 1
       quiz.liked = true
     } else if (payload && payload.liked === false) {
-      quiz.likes_count = Math.max(0, (quiz.likes_count || quiz.likes || 0) - 1)
+      quiz.likes_count = Math.max(0, (quiz.likes_count || 0) - 1)
       quiz.liked = false
     }
   } catch (e) {

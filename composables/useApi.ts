@@ -144,6 +144,15 @@ export function useApi() {
     })
   }
 
+  async function getPublic(path: string) {
+    // Does not require session or CSRF
+    return fetch(config.public.apiBase + path, {
+      method: 'GET',
+      credentials: 'omit',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+  }
+
   async function postJson(path: string, body: any) {
     // Skip session renewal check for authentication endpoints (login/register/logout)
     const skipSession = typeof path === 'string' && (path === '/api/login' || path === '/login' || path === '/api/logout' || path.endsWith('/login'))
@@ -306,7 +315,7 @@ export function useApi() {
   const post = (...args: Parameters<typeof postJson>) => postJson(...args)
   const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
 
-  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, getPublic, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi

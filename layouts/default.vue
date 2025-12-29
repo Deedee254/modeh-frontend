@@ -7,7 +7,7 @@
       <ClientOnly>
         <PwaInstallButton />
       </ClientOnly>
-      <Header />
+      <Header v-if="!$route.meta.hideTopBar" />
       <main class="flex-1 w-full">
         <slot />
       </main>
@@ -20,7 +20,7 @@
 
     <!-- Public bottom navigation for unauthenticated users -->
     <BottomNav 
-      v-if="!isAuthed"
+      v-if="!isAuthed && !$route.meta.hideBottomNav"
       :onLeft="() => router.push('/quizzes')"
       :onCenter="() => router.push('/register')"
       :onRight="() => router.push('/login')"

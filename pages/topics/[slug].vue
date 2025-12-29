@@ -12,7 +12,7 @@
         <div v-else-if="error" class="mt-6 text-red-600">Failed to load quizzes for this topic.</div>
 
         <div v-else>
-          <div v-if="quizzes.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">No assessments found for this topic.</div>
+          <div v-if="normalizedQuizzes.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">No assessments found for this topic.</div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <UiQuizCard
               v-for="qz in displayQuizzes"
@@ -20,13 +20,13 @@
               :to="`/quizzes/${qz.slug}`"
               :quiz-id="qz.id"
               :liked="qz.liked"
-              :likes="qz.likes_count ?? qz.likes ?? 0"
+              :likes="qz.likes_count"
               :title="qz.title"
               :startLink="`/quizzes/${qz.slug}`"
-              :grade="qz.grade"
-              :subject="qz.subject"
-              :topic="qz.topic"
-              :description="qz.description || qz.summary || ''"
+              :grade="qz.grade_name"
+              :subject="qz.subject_name"
+              :topic="qz.topic_name"
+              :description="qz.description || ''"
               :show-grade="true"
               :show-subject="true"
               :show-topic="true"
@@ -41,86 +41,65 @@
 
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
-// HeroFilterBar removed — PageHero provides built-in search
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import UiQuizCard from '~/components/ui/QuizCard.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import useApi from '~/composables/useApi'
-import { getHeroClass } from '~/utils/heroPalettes'
+import useQuizzes from '~/composables/useQuizzes'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug)
-const config = useRuntimeConfig()
-const quizzes = ref([])
-const query = ref('')
+const { normalizedQuizzes, fetchItems, loading: quizzesLoading } = useQuizzes()
 
+const query = ref('')
 const displayQuizzes = computed(() => {
   const q = String(query.value || '').toLowerCase().trim()
-  if (!q) return quizzes.value
-  return (quizzes.value || []).filter(qz => (qz.title || '').toLowerCase().includes(q) || (qz.description || '').toLowerCase().includes(q) || String(qz.id || '').includes(q))
+  if (!q) return normalizedQuizzes.value
+  return (normalizedQuizzes.value || []).filter(qz => (qz.title || '').toLowerCase().includes(q) || (qz.description || '').toLowerCase().includes(q) || String(qz.id || '').includes(q))
 })
+
 const topic = ref({})
-const loading = ref(true)
+const topicLoading = ref(true)
 const error = ref(null)
+
+const loading = computed(() => topicLoading.value || quizzesLoading.value)
 
 onMounted(async () => {
   try {
-  // fetch topic metadata using shared API composable (preserves auth/session)
-  const api = useApi()
-  const topicRes = await api.get(`/api/topics?slug=${slug.value}`)
-  if (!topicRes.ok) throw topicRes
-  const t = await topicRes.json()
-  topic.value = (t && t.topics && t.topics[0]) ? t.topics[0] : ((t && t.topic) ? t.topic : (t || {}))
+    const api = useApi()
+    // fetch topic metadata
+    const topicRes = await api.get(`/api/topics?slug=${slug.value}`)
+    if (!topicRes.ok) throw topicRes
+    const t = await topicRes.json()
+    topic.value = (t && t.topics && t.topics[0]) ? t.topics[0] : ((t && t.topic) ? t.topic : (t || {}))
+    topicLoading.value = false
 
-    // fetch quizzes for this topic and normalize paginator vs array
-    // prefer numeric topic_id (from fetched topic) otherwise fall back to the route param
-    const quizParams = {}
+    // fetch quizzes for this topic using useQuizzes
+    const params = { public: true }
     if (topic.value && topic.value.id) {
-      quizParams.topic_id = topic.value.id
+      params.topic_id = topic.value.id
     } else {
       const tid = Number(slug.value)
-      if (!Number.isNaN(tid) && tid > 0) quizParams.topic_id = slug.value
-      else quizParams.topic = slug.value
+      if (!Number.isNaN(tid) && tid > 0) params.topic_id = slug.value
+      else params.topic = slug.value
     }
 
-  // Build query string and fetch quizzes through the shared API (includes cookies)
-  const qs = new URLSearchParams()
-  Object.keys(quizParams).forEach(k => { if (quizParams[k] !== undefined && quizParams[k] !== null) qs.set(k, String(quizParams[k])) })
-  const quizzesRes = await api.get(`/api/quizzes?${qs.toString()}`)
-  if (!quizzesRes.ok) throw quizzesRes
-  const res = await quizzesRes.json()
-  const raw = (res && res.quizzes && Array.isArray(res.quizzes.data)) ? res.quizzes.data : (Array.isArray(res?.quizzes) ? res.quizzes : (Array.isArray(res) ? res : []))
-  quizzes.value = raw.map(q => ({
-      ...q,
-      // normalize nested topic/subject/grade
-      topic: q.topic && (q.topic.name || q.topic.title) ? q.topic.name || q.topic.title : (typeof q.topic === 'string' ? q.topic : ''),
-      subject: q.topic && q.topic.subject && (q.topic.subject.name || q.topic.subject.title) ? (q.topic.subject.name || q.topic.subject.title) : (q.subject || ''),
-      grade: q.topic && q.topic.subject && q.topic.subject.grade_id ? q.topic.subject.grade_id : (q.grade || q.grade_id || ''),
-      questions_count: q.questions_count || q.questions || 0,
-      likes_count: q.likes_count || q.likes || 0,
-      liked: !!q.liked,
-      // explicit links (use slug-based routes)
-      takeLink: q.take_path || q.take_link || `/quizzes/${q.slug}`,
-      startLink: q.view_path || q.view_link || `/quizzes/${q.slug}`
-    }))
+    await fetchItems(params)
   } catch (e) {
     error.value = e
-  } finally {
-    loading.value = false
+    topicLoading.value = false
   }
 })
 
 function onQuizLike(q, payload) {
-  try {
-    if (!q) return
-    if (payload && payload.liked === true) {
-      q.likes_count = (q.likes_count || q.likes || 0) + 1
-      q.liked = true
-    } else if (payload && payload.liked === false) {
-      q.likes_count = Math.max(0, (q.likes_count || q.likes || 0) - 1)
-      q.liked = false
-    }
-  } catch (e) {}
+  if (!q) return
+  if (payload && payload.liked === true) {
+    q.likes_count = (q.likes_count || 0) + 1
+    q.liked = true
+  } else if (payload && payload.liked === false) {
+    q.likes_count = Math.max(0, (q.likes_count || 0) - 1)
+    q.liked = false
+  }
 }
 
 function onSearch(q) { query.value = q }

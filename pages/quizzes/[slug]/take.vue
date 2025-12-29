@@ -1,393 +1,738 @@
 <template>
-  <QuizLayoutWrapper
-    :title="Q.title || 'Quiz'"
-    :current-question="currentQuestionIndex"
-    :total-questions="totalQuestions"
-    :show-timer="hasTimeLimit"
-    :timer-display="timeRemaining"
-    :timer-color-class="qTimerColorClass"
-    :timer-circumference="timerCircumference"
-    :timer-dash-offset="timerDashOffset"
-    :encouragement="encouragementMessage"
-    :encouragement-class="encouragementStyle"
-    :show-meta="true"
-    :alert-message="countdownAlert.show ? countdownAlert.message : ''"
-    :alert-class="countdownAlertClass"
-    :show-previous="currentQuestionIndex > 0"
-    :disable-previous="currentQuestionIndex === 0"
-    :show-exit="false"
-    :show-next="currentQuestionIndex < totalQuestions - 1"
-    :disable-next="false"
-    :show-submit="currentQuestionIndex === totalQuestions - 1"
-    :submit-label="submitting ? 'Submitting...' : 'Complete Quiz'"
-    :disable-submit="submitting || !answered"
-    :is-submitting="submitting"
-    :show-confirmation="false"
-    @previous="previousQuestion"
-    @next="nextQuestion"
-    @submit="completeQuiz"
-  >
-    <template #meta-badges>
-      <div v-if="Q.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded text-xs">🔁 {{ Q.attempts_allowed === 'unlimited' ? 'Unlimited' : Q.attempts_allowed + ' attempts' }}</div>
-      <div v-if="Q.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded text-xs">🔀 Shuffled</div>
-    </template>
+  <div v-if="!alreadyAttempted || !showResultsModal">
+    <QuizLayoutWrapper
+      :title="Q.title || 'Quiz'"
+      :current-question="currentQuestion"
+      :total-questions="Q.questions.length"
+      :show-timer="true"
+      :timer-display="formatTime(Math.ceil(questionRemaining))"
+      :timer-color-class="qTimerColorClass"
+      :timer-circumference="timerCircumference"
+      :timer-dash-offset="timerDashOffset"
+      :encouragement="encouragementMessage"
+      :encouragement-class="encouragementStyle"
+      :show-meta="true"
+      :alert-message="countdownAlert.show ? countdownAlert.message : ''"
+      :alert-class="countdownAlert.show ? (countdownAlert.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' : countdownAlert.type === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-brand-100 text-brand-800 border border-brand-300') : ''"
+      :show-previous="!Q.use_per_question_timer && currentQuestion > 0"
+      :disable-previous="currentQuestion === 0"
+      :show-exit="Q.use_per_question_timer"
+      @exit="handleExit"
+      :show-next="currentQuestion < Q.questions.length - 1"
+      :disable-next="false"
+      :show-submit="currentQuestion === Q.questions.length - 1"
+      :submit-label="lastSubmitFailed ? 'Retry' : 'Submit Quiz'"
+      :disable-submit="submitting.value"
+      :is-submitting="submitting.value"
+      :show-confirmation="showConfirm"
+      :confirm-title="'Submit Quiz?'"
+      :confirm-message="'Are you sure you want to submit? You won\'t be able to change your answers.'"
+      :confirm-button-label="'Submit Quiz'"
+      @previous="previousQuestion"
+      @next="nextQuestion"
+      @submit="confirmSubmit"
+      @cancel-confirm="showConfirm = false"
+      @confirm-submit="submitAnswers"
+    >
+      <template #meta-badges>
+        <div v-if="Q.attempts_allowed" class="px-2 py-1 bg-gray-100 rounded text-xs">🔁 {{ Q.attempts_allowed === 'unlimited' ? 'Unlimited' : Q.attempts_allowed + ' attempts' }}</div>
+        <div v-if="Q.shuffle_questions" class="px-2 py-1 bg-gray-100 rounded text-xs">🔀 Shuffled</div>
+      </template>
 
-    <template #content>
-      <!-- Loading State -->
-      <div v-if="loading"><UiSkeleton :count="5" /></div>
+      <template #content>
+        <div v-if="loading"><UiSkeleton :count="5" /></div>
+        <div v-else-if="quiz.questions.length > 0">
+          <transition name="fade-slide" mode="out-in">
+            <QuestionCard :key="currentQuestion" :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />
+          </transition>
+        </div>
+      </template>
+    </QuizLayoutWrapper>
+  </div>
 
-      <!-- Premium Quiz Error -->
-      <div v-else-if="premiumError" class="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
-          🔒
-        </div>
-        <h2 class="text-2xl font-bold text-slate-900 mb-2">Premium Quiz</h2>
-        <p class="text-slate-600 mb-6"> This quiz requires authentication. Please create a free account or login to continue. </p>
-        <div class="space-y-3">
-          <NuxtLink to="/login" class="block w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition-colors"> Login to Your Account </NuxtLink>
-          <NuxtLink to="/register" class="block w-full py-3 border border-brand-600 text-brand-600 font-semibold rounded-xl hover:bg-brand-50 transition-colors"> Create Free Account </NuxtLink>
-          <NuxtLink :to="`/quizzes/${slug}`" class="block w-full py-3 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors"> Back to Quiz Details </NuxtLink>
-        </div>
-      </div>
-
-      <!-- Quiz Taking Interface -->
-      <div v-else-if="!quizCompleted">
-        <transition name="fade-slide" mode="out-in">
-          <QuestionCard 
-            :key="currentQuestionIndex" 
-            :question="currentQuestion" 
-            v-model="answers[currentQuestion?.id]" 
-            @select="onQuestionSelect" 
-            @toggle="(opt) => rawToggleMulti(currentQuestion.id, opt)" 
-          />
-        </transition>
-      </div>
-
-      <!-- Results Modal -->
-      <div v-if="quizCompleted" class="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl"> 🎉 </div>
-        <h2 class="text-2xl font-bold text-slate-900 mb-2">Quiz Complete!</h2>
-        <p class="text-slate-600 mb-6"> You scored <span class="font-bold text-brand-600">{{ quizAttempt?.percentage || 0 }}%</span> </p>
-        <div class="bg-slate-50 rounded-xl p-4 mb-6 space-y-2">
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-600">Correct:</span>
-            <span class="font-semibold text-green-600">{{ quizAttempt?.correct_count || 0 }}/{{ totalQuestions }}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-600">Incorrect:</span>
-            <span class="font-semibold text-red-600">{{ quizAttempt?.incorrect_count || 0 }}/{{ totalQuestions }}</span>
-          </div>
-          <div class="flex justify-between text-sm pt-2 border-t border-slate-200">
-            <span class="text-slate-600">Time taken:</span>
-            <span class="font-semibold text-slate-900">{{ formatTimeDisplay(quizAttempt?.time_taken || 0) }}</span>
-          </div>
-        </div>
-        <div class="space-y-3">
-          <NuxtLink to="/register" class="block w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition-colors"> Create Free Account to Save </NuxtLink>
-          <NuxtLink :to="`/quizzes/${quiz.slug}`" class="block w-full py-3 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors"> Back to Quiz Details </NuxtLink>
-        </div>
-        <p class="text-xs text-slate-500 mt-4"> 💡 Sign up to save your results and track progress. </p>
-      </div>
-    </template>
-  </QuizLayoutWrapper>
+  <!-- Results Modal -->
+  <GuestQuizResultsModal
+    :show="showResultsModal"
+    :results="quizResults"
+    :already-attempted="alreadyAttempted"
+    @close="handleResultsModalClose"
+    @signup="handleSignup"
+    @login="handleLogin"
+    @back="handleBackToQuizzes"
+    @retake="handleRetakeQuiz"
+  />
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import useApi from '~/composables/useApi'
-import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
-import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
-import useQuestionTimer from '~/composables/useQuestionTimer'
-import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
-import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
-import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+import UiTextarea from '~/components/ui/UiTextarea.vue'
 import QuizLayoutWrapper from '~/components/QuizLayoutWrapper.vue'
-import UiSkeleton from '~/components/ui/UiSkeleton.vue'
-import { formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
-
-definePageMeta({ 
+import GuestQuizResultsModal from '~/components/modals/GuestQuizResultsModal.vue'
+// set page layout meta for public quiz. This is an in-progress assessment page — do not index.
+definePageMeta({
   layout: 'default',
   hideBottomNav: true,
   hideTopBar: true,
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
-    { name: 'description', content: 'Take this quiz on Modeh. Answer all questions to get your score.' },
+    { name: 'description', content: 'Take this assessment on Modeh. Your progress will be saved automatically.' },
     { property: 'og:title', content: 'Take Quiz — Modeh' }
   ]
 })
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAppAlert } from '~/composables/useAppAlert'
+import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
+import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
+import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
+import { useQuizNavigation } from '~/composables/quiz/useQuizNavigation'
+import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
+import useQuestionTimer from '~/composables/useQuestionTimer'
+import QuestionCard from '~/components/quizee/questions/QuestionCard.vue'
+import resolveAssetUrl from '~/composables/useAssets'
 
-const router = useRouter()
 const route = useRoute()
-const api = useApi()
-const guestQuizStore = useGuestQuizStore()
+const router = useRouter()
+const slug = route.params.slug
+const quizId = ref(null) // Will be populated after fetching quiz by slug
 
-// State
+// --- Core State ---
+// Provide a defensive default shape so SSR/template rendering never reads properties
+// off an undefined `quiz` value.
 const quiz = ref({
+  id: null,
+  slug: slug || null,
   title: 'Loading...',
+  description: '',
   questions: [],
   timer_seconds: null,
   attempts_allowed: null,
   shuffle_questions: false,
+  shuffle_answers: false,
+  access: 'free',
+  use_per_question_timer: false,
+  per_question_seconds: null,
+  _started_at_ms: null
 })
 
-const Q = computed(() => quiz.value || {})
-const questions = ref([])
+// Template-safe alias that returns a plain object when `quiz.value` is undefined
+const Q = computed(() => quiz.value || { title: 'Loading...', description: '', questions: [], timer_seconds: null, attempts_allowed: null, shuffle_questions: false, shuffle_answers: false, access: 'free', use_per_question_timer: false, per_question_seconds: null })
 const loading = ref(true)
-const currentQuestionIndex = ref(0)
-const quizCompleted = ref(false)
 const submitting = ref(false)
-const premiumError = ref(false)
-const quizAttempt = ref(null)
-const startTime = ref(null)
+const lastSubmitFailed = ref(false)
+const submissionMessage = ref('')
+let submissionInterval = null
+const { push: pushAlert } = useAppAlert()
+// Generate or retrieve guest identifier for anonymous quiz submissions
+const guestIdentifier = ref('')
 
-// Answers
-const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, clearSavedAnswers } = useQuizAnswers(computed(() => ({ questions: questions.value })), '')
+import useApi from '~/composables/useApi'
+const api = useApi()
+const showConfirm = ref(false)
 
-// Logic
-const slugRaw = computed(() => String(route.params.slug ?? ''))
-const slug = computed(() => slugRaw.value.replace(/^\{+|\}+$/g, ''))
-const totalQuestions = computed(() => (questions.value || []).length)
-const currentQuestion = computed(() => {
-  const q = questions.value?.[currentQuestionIndex.value]
-  if (!q) return { options: [] }
-  return { ...q, options: Array.isArray(q.options) ? q.options : [] }
+// Results modal and guest quiz tracking
+import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
+import { useAuthStore } from '~/stores/auth'
+const guestQuizStore = useGuestQuizStore()
+const authStore = useAuthStore()
+const showResultsModal = ref(false)
+const quizResults = ref(null)
+const alreadyAttempted = ref(false)
+const lastVerdict = ref(null) // Stores server-side marking result for current question
+const isMarking = ref(false)
+
+import useDisableUserActions from '~/composables/useDisableUserActions'
+
+// Disable context menu, common shortcuts and text selection while this page is active
+useDisableUserActions({ contextmenu: true, shortcuts: true, selection: true })
+
+
+
+// Cache the quiz questions length to avoid recomputing
+const quizQuestionsLength = ref(0)
+watch(() => quiz.value?.questions?.length, len => {
+  quizQuestionsLength.value = len || 0
 })
 
-const answered = computed(() => {
-  const q = currentQuestion.value
-  if (!q || !q.id) return false
-  const val = answers.value[q.id]
-  if (q.type === 'multi') return Array.isArray(val) && val.length > 0
-  return val !== null && val !== undefined && val !== ''
+// Optimize progress calculation to use cached length
+const progressPercent = computed(() => {
+  const total = quizQuestionsLength.value
+  if (!total) return 0
+  let answered = 0
+  for (const q of quiz.value.questions) {
+    const val = answers.value[q.id]
+    if (val === null || val === undefined) continue
+    if (typeof val === 'string' && val === '') continue
+    if (Array.isArray(val) && val.length === 0) continue
+    answered++
+  }
+  return Math.round((answered / total) * 100)
 })
 
-// Timers
-const { timePerQuestion, questionRemaining, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
-const { timeLeft, displayTime: quizDisplayTime, startTimer: startQuizTimer, stopTimer: stopQuizTimer } = useQuizTimer(quiz, () => completeQuiz())
+// --- Composables ---
+const { isImage, isAudio, isYouTube, getAudioType, formatYouTubeUrl } = useQuizMedia()
+// Timer composable tracks overall quiz timer. We'll also track per-question times locally here.
+const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, startTimer, stopTimer } = useQuizTimer(quiz, () => submitAnswers())
+// per-question timer composable
+const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, resetTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
+const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, slug)
+import { normalizeAnswer, formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
 
-// Show a timer when there's a per-question or quiz timer; if none provided,
-// fall back to a sensible default of 20s per question so users always see a timer.
-const hasTimeLimit = computed(() => !!currentQuestionLimit())
-
-const timeRemaining = computed(() => {
-  if (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) return qDisplayTime.value
-  return quizDisplayTime.value || '0:00'
-})
-
-// Timer Dash Offset (for SVG)
+// Timer circle SVG properties
 const timerCircleRadius = 18
 const timerCircumference = computed(() => 2 * Math.PI * timerCircleRadius)
 const timerDashOffset = computed(() => {
-  const remaining = Math.max(0, Math.ceil(questionRemaining.value || 0))
-  const limit = timePerQuestion.value || currentQuestionLimit() || 20
+  const remaining = Math.max(0, Math.ceil(questionRemaining.value || 20))
+  const limit = timePerQuestion.value || 20
   const frac = limit ? (remaining / limit) : 0
   return timerCircumference.value * (1 - Math.max(0, Math.min(1, frac)))
 })
 
-// Enhancements
-const { encouragementMessage, encouragementStyle } = useQuizEnhancements(quiz, computed(() => ((currentQuestionIndex.value + 1) / totalQuestions.value) * 100), currentQuestionIndex, answers)
-
-// Alerts
-const countdownAlert = ref({ show: false, type: 'info', message: '' })
-const countdownAlertClass = computed(() => {
-  if (!countdownAlert.value.show) return ''
-  if (countdownAlert.value.type === 'error') return 'bg-red-100 text-red-800 border border-red-300'
-  if (countdownAlert.value.type === 'warning') return 'bg-amber-100 text-amber-800 border border-amber-300'
-  return 'bg-brand-100 text-brand-800 border border-brand-300'
+// Persistent countdown alert state (shows real-time countdown instead of discrete alerts)
+const countdownAlert = ref({
+  show: false,
+  type: 'info', // 'info', 'warning', 'error'
+  message: '',
+  timeRemaining: 0
 })
 
-function updateCountdownAlert() {
+// Update countdown alert based on which timer is critical
+const updateCountdownAlert = () => {
+  // Check per-question timer first (more urgent) - show when <= 5 seconds
   if (typeof questionRemaining.value === 'number' && questionRemaining.value <= 5 && questionRemaining.value > 0) {
     countdownAlert.value.show = true
     countdownAlert.value.type = questionRemaining.value <= 2 ? 'error' : 'warning'
-    countdownAlert.value.message = `⏱️ Time for this question: ${Math.ceil(questionRemaining.value)}s`
-  } else if (typeof timeLeft.value === 'number' && timeLeft.value <= 60 && timeLeft.value > 0 && hasTimeLimit.value) {
+    countdownAlert.value.timeRemaining = Math.ceil(questionRemaining.value)
+    countdownAlert.value.message = `⏱️ Time for this question: ${formatTime(Math.ceil(questionRemaining.value))}`
+  }
+  // Then check overall quiz timer if per-question is not critical - show when <= 5 seconds
+  else if (typeof timeLeft.value === 'number' && timeLeft.value <= 5 && timeLeft.value > 0 && quiz.value?.timer_seconds) {
     countdownAlert.value.show = true
-    countdownAlert.value.type = timeLeft.value <= 10 ? 'error' : 'warning'
-    countdownAlert.value.message = `⏱️ Quiz time remaining: ${quizDisplayTime.value}`
+    countdownAlert.value.type = timeLeft.value <= 2 ? 'error' : 'warning'
+    countdownAlert.value.timeRemaining = timeLeft.value
+    countdownAlert.value.message = `⏱️ Quiz time remaining: ${formatTime(timeLeft.value)}`
   } else {
     countdownAlert.value.show = false
   }
 }
 
-watch(questionRemaining, updateCountdownAlert)
-watch(timeLeft, updateCountdownAlert)
+// Watch timers to update countdown alert
+watch(timeLeft, () => updateCountdownAlert(), { immediate: false })
+watch(questionRemaining, () => updateCountdownAlert(), { immediate: false })
 
-// Methods
-function currentQuestionLimit() {
-  const q = currentQuestion.value
-  if (q?.time_limit_seconds) return q.time_limit_seconds
-  if (quiz.value?.per_question_seconds) return quiz.value.per_question_seconds
-  if (!quiz.value?.use_per_question_timer && quiz.value?.timer_seconds && totalQuestions.value) {
-    return Math.floor(quiz.value.timer_seconds / totalQuestions.value)
-  }
-  // If no explicit per-question or quiz timer is set, default to 20 seconds per question
-  return 20
+// Progress persistence helpers (include attempt_id so restore maps to server attempt)
+// Per-question timing state (declare early so functions/watchers below can reference it)
+const questionTimes = ref({})
+
+let persistTimeoutRef = { t: null }
+function progressKey() {
+  return `quiz:progress:${slug || 'unknown'}`
 }
 
-function initializeQuestionTimer() {
-  stopQuestionTimer()
-  clearPerQuestionLimit()
-  const limit = currentQuestionLimit()
-  if (limit) {
-    startQuestionTimer(limit)
-    schedulePerQuestionLimit(limit, () => {
-      if (currentQuestionIndex.value < questions.value.length - 1) nextQuestion()
-      else completeQuiz()
-    })
-  }
-}
-
-async function loadQuiz() {
+function restoreProgress() {
   try {
-    loading.value = true
-    startTime.value = Date.now()
-    // Support numeric id or slug param: if numeric treat as id endpoint
-    const isId = /^[0-9]+$/.test(slug.value)
-    const safe = encodeURIComponent(slug.value)
-    const res = await api.get(isId ? `/api/quizzes/${slug.value}` : `/api/quizzes?slug=${safe}`)
-    if (!res.ok) throw new Error('Failed to load quiz')
-    const data = await res.json()
-    // Prefer direct object, then exact slug match from paginated shape, then fallback
-    let quizDetail = null
-    if (data?.quiz) quizDetail = data.quiz
-    else if (data?.id || data?.slug) quizDetail = data
-    else if (data?.quizzes) {
-      const list = (data.quizzes?.data && Array.isArray(data.quizzes.data)) ? data.quizzes.data : (Array.isArray(data.quizzes) ? data.quizzes : [])
-      quizDetail = list.find(item => String(item.slug) === String(slug.value)) || list[0] || null
+    const raw = localStorage.getItem(progressKey())
+    if (!raw) {
+      // No attempt-specific saved progress yet. Try to migrate any existing 'draft' progress
+      try {
+        const legacyKey = `quiz:attempt:progress:${quiz.value?.id || id}:draft`
+        const legacyRaw = localStorage.getItem(legacyKey)
+        if (legacyRaw) {
+          // copy legacy to the new key so future saves use the server attempt id
+          localStorage.setItem(progressKey(), legacyRaw)
+          try { localStorage.removeItem(legacyKey) } catch (e) {}
+        } else {
+          return
+        }
+      } catch (e) { return }
     }
-    if (!quizDetail) throw new Error('Quiz not found')
-    if (quizDetail.is_paid) { premiumError.value = true; return }
-    
-    quiz.value = quizDetail
-    
-    const previousResult = guestQuizStore.getQuizResult(quizDetail.id)
-    if (previousResult) {
-      quizAttempt.value = previousResult
-      quizCompleted.value = true
-      return
+    const parsed = JSON.parse(localStorage.getItem(progressKey()) || '{}')
+    if (parsed?.answers && typeof parsed.answers === 'object') {
+      Object.keys(parsed.answers).forEach(k => { answers.value[k] = parsed.answers[k] })
     }
-
-    if (hasTimeLimit.value) startQuizTimer()
-
-    const qRes = await api.get(`/api/quizzes/${quizDetail.id}/questions`)
-    if (!qRes.ok) throw new Error('Failed to load questions')
-    const qData = await qRes.json()
-    if (qData.code === 'PREMIUM_QUIZ') { premiumError.value = true; return }
-
-    const rawQuestions = qData.questions || qData.data || []
-    questions.value = rawQuestions.map(q => ({
-      id: q.id ?? q._id,
-      type: q.type ?? q.question_type ?? 'mcq',
-      // resilient mapping for question body across API shapes
-      // `QuestionCard` expects the question text to be on `body`.
-      body: q.body ?? q.text ?? q.question ?? q.question_body ?? '',
-      explanation: q.explanation ?? q.explain ?? q.explanation_text ?? null,
-      // Media fields: support multiple API shapes (media_path, media, youtube_url, youtube)
-      media_path: q.media_path ?? q.mediaPath ?? q.media_url ?? q.image ?? q.image_url ?? q.media ?? null,
-      media: q.media ?? q.media_path ?? q.mediaUrl ?? null,
-      youtube_url: q.youtube_url ?? q.youtubeUrl ?? q.youtube ?? null,
-      youtube: q.youtube ?? q.youtube_url ?? null,
-      option_mode: q.option_mode ?? q.optionMode ?? null,
-      is_approved: q.is_approved ?? q.isApproved ?? null,
-      options: (q.options || []).map(o => ({
-  id: (o && (o.id ?? o._id)) ?? null,
-  // option text may be in several fields
-  text: ((o && (o.text ?? o.body ?? o.option_text ?? o.optionText)) ?? (typeof o === 'string' ? o : '')),
-  body: ((o && (o.body ?? o.text ?? o.option_text)) ?? (typeof o === 'string' ? o : '')),
-  // pass through any media on option objects
-  media: ((o && (o.media ?? o.media_path ?? o.mediaPath ?? o.youtube_url ?? o.youtube)) ?? null),
-  is_correct: false
-      }))
-    }))
-
-    initializeAnswers()
-    initializeQuestionTimer()
-  } catch (e) {
-    console.error(e)
-    router.push(`/quizzes/${slug.value}`)
-  } finally {
-    loading.value = false
-  }
+    if (parsed?.question_times && typeof parsed.question_times === 'object') {
+      questionTimes.value = parsed.question_times
+    }
+    if (typeof parsed.questionRemaining === 'number' && parsed.questionRemaining > 0) questionRemaining.value = parsed.questionRemaining
+    // If this quiz uses per-question limits, resume the per-question UI timer and schedule the authoritative expiry
+    try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+    const limit = currentQuestionLimit()
+    if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+      const remainingForSchedule = (typeof questionRemaining.value === 'number' && questionRemaining.value > 0 && questionRemaining.value < limit) ? questionRemaining.value : undefined
+      startQuestionTimer(limit, remainingForSchedule)
+      schedulePerQuestionLimit(limit, () => {
+        if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+        else {
+          submissionMessage.value = 'Time is over — submitting...'
+          submitAnswers()
+        }
+      }, remainingForSchedule)
+    }
+    if (!quiz.value._started_at_ms && parsed?.started_at) {
+      try { quiz.value._started_at_ms = new Date(parsed.started_at).getTime() } catch (e) {}
+    }
+  } catch (e) { /* ignore */ }
 }
 
-function onQuestionSelect(val) {
-  const q = currentQuestion.value
-  if (!q || !q.id) return
-  answers.value[q.id] = val
-  recordAndReset()
-  if (q.type === 'mcq') {
-    setTimeout(() => {
-      if (currentQuestionIndex.value < totalQuestions.value - 1) nextQuestion()
-      else completeQuiz()
-    }, 250)
+function persistProgress() {
+  try {
+    if (persistTimeoutRef.t) clearTimeout(persistTimeoutRef.t)
+    persistTimeoutRef.t = setTimeout(() => {
+      const payload = {
+        quiz_id: quiz.value?.id,
+        slug: slug,
+        started_at: quiz.value?._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : null,
+        answers: answers.value,
+        question_times: questionTimes.value,
+        questionRemaining: (typeof questionRemaining.value === 'number') ? questionRemaining.value : null
+      }
+      try { localStorage.setItem(progressKey(), JSON.stringify(payload)) } catch (e) {}
+    }, 400)
+  } catch (e) {}
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(progressKey()) } catch (e) {}
+}
+
+// Persist on changes
+watch(answers, () => persistProgress(), { deep: true })
+watch(questionTimes, () => persistProgress(), { deep: true })
+watch(() => quiz.value?._attempt_id, () => persistProgress())
+
+// Wrapped answer handlers to capture timing
+function selectMcq(qid, opt) {
+  rawSelectMcq(qid, opt)
+  // record time for this question when answered
+  recordQuestionTime(qid)
+  // automatically advance after a short delay for single-choice
+  setTimeout(() => { if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion() }, 250)
+}
+
+function toggleMulti(qid, opt) {
+  rawToggleMulti(qid, opt)
+  // record time for this question; don't auto-advance
+  recordQuestionTime(qid)
+}
+const { currentQuestion, nextQuestion: navNextQuestion, previousQuestion: navPreviousQuestion } = useQuizNavigation(computed(() => quiz.value.questions))
+
+// Watch question change to update countdown immediately for new question
+watch(currentQuestion, () => {
+  // Force alert update when changing questions
+  updateCountdownAlert()
+}, { immediate: false })
+
+// Wrap navigation to record question time and manage per-question timers
+function handleExit() {
+  if (confirm('Are you sure you want to exit? Your progress is saved locally.')) {
+    router.push('/quizee/quizzes')
   }
 }
 
 function nextQuestion() {
-  recordAndReset()
-  stopQuestionTimer()
-  clearPerQuestionLimit()
-  if (currentQuestionIndex.value < totalQuestions.value - 1) {
-    currentQuestionIndex.value++
-    initializeQuestionTimer()
+  // record time for current
+  const qid = currentQuestionData.value.id
+  if (qid) recordQuestionTime(qid)
+  
+  // Reset timer and clear any scheduled limits before moving
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+  
+  // Move to next question
+  navNextQuestion()
+  
+  // Reinitialize timer for new question using dynamic limit
+  const limit = currentQuestionLimit()
+  if (limit) {
+    startQuestionTimer(limit, undefined)
+    
+    // Schedule the expiry action (auto-next or submit)
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+      else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, undefined)
   } else {
-    completeQuiz()
+    stopQuestionTimer() 
+    clearPerQuestionLimit()
   }
+  
+  // Force update countdown alert for new question
+  updateCountdownAlert()
 }
 
 function previousQuestion() {
-  recordAndReset()
-  stopQuestionTimer()
-  clearPerQuestionLimit()
-  if (currentQuestionIndex.value > 0) {
-    currentQuestionIndex.value--
-    initializeQuestionTimer()
+  const qid = currentQuestionData.value.id
+  if (qid) recordQuestionTime(qid)
+  
+  // Reset timer and clear any scheduled limits before moving
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+  
+  // Move to previous question
+  navPreviousQuestion()
+  
+  // Reinitialize timer for previous question using dynamic limit
+  const limit = currentQuestionLimit()
+  if (limit) {
+    startQuestionTimer(limit, undefined)
+  
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion()
+      else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, undefined)
+  } else {
+    stopQuestionTimer()
+    clearPerQuestionLimit()
   }
+  
+  // Force update countdown alert for new question
+  updateCountdownAlert()
+}
+const { currentStreak, achievements, encouragementMessage, encouragementStyle, calculateAchievements, resetAchievements } = useQuizEnhancements(quiz, progressPercent, currentQuestion, answers)
+
+const currentQuestionData = computed(() => quiz.value.questions[currentQuestion.value] || {})
+
+// Per-question timing (uses composable)
+
+function recordQuestionTime(qid) {
+  // record elapsed time from composable and reset the per-question timer
+  const elapsed = recordAndReset()
+  questionTimes.value[qid] = elapsed
 }
 
-const questionTimes = ref({})
-async function completeQuiz() {
-  if (submitting.value) return
-  submitting.value = true
-  stopQuizTimer()
-  stopQuestionTimer()
-  try {
-    const timeTaken = Math.floor((Date.now() - startTime.value) / 1000)
-    const answersPayload = formatAnswersForSubmission(answers.value, questionTimes.value)
-    const guestId = guestQuizStore.getGuestIdentifier()
-
-    const res = await api.postJsonPublic(`/api/quizzes/${quiz.value.id}/submit`, {
-      guest_identifier: guestId,
-      time_taken: timeTaken,
-      answers: answersPayload,
-    })
-
-    if (res.ok) {
-      const data = await res.json()
-      quizAttempt.value = data.attempt ?? data
-      guestQuizStore.saveQuizResult(quizAttempt.value)
-      quizCompleted.value = true
-    }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    submitting.value = false
+// Respect per-question time limits if present (question.time_limit_seconds or quiz.per_question_seconds)
+function currentQuestionLimit() {
+  const q = currentQuestionData.value
+  // Prefer an explicit per-question limit on the question, then the quiz's per-question setting.
+  // If the quiz uses a quiz-level timer instead (timer_seconds), compute an approximate per-question
+  // limit by dividing total quiz timer by number of questions so each question gets an equal share.
+  if (q?.time_limit_seconds) return q.time_limit_seconds
+  if (quiz.value?.per_question_seconds) return quiz.value.per_question_seconds
+  // If quiz is not using per-question timer but has a timer_seconds, spread it across questions
+  if (!quiz.value?.use_per_question_timer && quiz.value?.timer_seconds && quizQuestionsLength.value) {
+    const per = Math.floor(quiz.value.timer_seconds / quizQuestionsLength.value)
+    return per > 0 ? per : null
   }
+  return null
 }
 
-function formatTimeDisplay(seconds) {
+// schedulePerQuestionLimit and clearPerQuestionLimit are provided by the composable
+// For short-answer questions, expose a computed value with getter/setter so v-model doesn't bind to a read-only expression
+const currentShortAnswer = computed({
+  get() {
+    const q = currentQuestionData.value
+    if (!q || !q.id) return ''
+    return answers.value[q.id] ?? ''
+  },
+  set(v) {
+    const q = currentQuestionData.value
+    if (!q || !q.id) return
+    answers.value[q.id] = v
+  }
+})
+// centralized checkout handles payments and result viewing
+
+// --- Methods ---
+
+// Timer formatting helper
+function formatTime(seconds) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
-  return `${mins}m ${secs}s`
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-onMounted(() => {
+async function onQuestionSelect(val) {
+  const q = currentQuestionData.value
+  if (!q || !q.id) return
+  console.log('Question selected:', { questionId: q.id, questionType: q.type, answer: val })
+  answers.value[q.id] = val
+  // record per-question time
+  recordQuestionTime(q.id)
+
+  // For guest quizzes, we can call the per-question mark endpoint if desired
+  // This provides immediate feedback or saves verdict to guest store
+  try {
+    isMarking.value = true
+    const res = await api.postJsonPublic(`/api/quizzes/${slug}/mark`, {
+      question_id: q.id,
+      selected: val,
+      guest_identifier: guestIdentifier.value
+    })
+    
+    if (res.ok) {
+      const verdict = await res.json()
+      lastVerdict.value = verdict
+      // Persist the verdict locally in case of refresh
+      guestQuizStore.saveQuestionVerdict(quiz.value?.id, {
+        questionId: q.id,
+        selectedOptionId: val,
+        isCorrect: verdict.correct,
+        explanation: verdict.explanation
+      })
+    }
+  } catch (e) {
+    console.error('Failed to mark question:', e)
+  } finally {
+    isMarking.value = false
+  }
+
+  if (q.type === 'mcq') {
+    setTimeout(() => { if (currentQuestion.value < quizQuestionsLength.value - 1) nextQuestion() }, 250)
+  }
+}
+
+// Initialize the question timer with proper quiz configuration
+function initializeQuestionTimer() {
+  try { stopQuestionTimer(); clearPerQuestionLimit() } catch (e) {}
+  
+  // Start with dynamic limit per question
+  const limit = currentQuestionLimit()
+  
+  if (limit) {
+    // Start the question timer explicitly
+    startQuestionTimer(limit, undefined)
+    
+    // Schedule the expiry callback
+    schedulePerQuestionLimit(limit, () => {
+      if (currentQuestion.value < quizQuestionsLength.value - 1) {
+        nextQuestion()
+      } else {
+        submissionMessage.value = 'Time is over — submitting...'
+        submitAnswers()
+      }
+    }, undefined)
+  }
+}
+
+onMounted(async () => {
+  const cfg = useRuntimeConfig()
+  
+  // Initialize guest quiz store
   guestQuizStore.initializeStore()
-  loadQuiz()
+  
+  // Generate or retrieve guest identifier for this session
+  const storageKey = `guest:${slug}:identifier`
+  let identifier = localStorage.getItem(storageKey)
+  if (!identifier) {
+    identifier = guestQuizStore.getGuestIdentifier()
+    localStorage.setItem(storageKey, identifier)
+  }
+  guestIdentifier.value = identifier
+  
+  try {
+    // Fetch quiz using slug (backend now supports slug resolution)
+    const res = await api.getPublic(`/api/quizzes/${slug}`)
+    if (res && res.ok) {
+      const body = await res.json()
+      quiz.value = body.quiz || body
+      quizId.value = quiz.value.id
+      
+      // Check if this quiz has already been attempted by this guest
+      const existingResult = guestQuizStore.getQuizResult(quiz.value.id)
+      if (existingResult) {
+        alreadyAttempted.value = true
+        quizResults.value = existingResult
+        showResultsModal.value = true
+        loading.value = false
+        return
+      }
+      
+      initializeAnswers()
+      
+      // For public quizzes, we don't create server-side attempts
+      // Just set a client-side timestamp
+      quiz.value._started_at_ms = Date.now()
+
+      // Start timers after establishing started_at
+      startTimer()
+      
+      // Initialize question timer AFTER quiz data is loaded
+      initializeQuestionTimer()
+      
+      try { restoreProgress() } catch (e) {}
+
+      // fill-blank handling is handled by the FillBlankCard component via v-model/select
+    } else {
+      // Handle quiz not found or other errors
+      console.error("Failed to load quiz", res.status)
+      pushAlert({ message: 'Quiz not found or not accessible', type: 'error' })
+    }
+  } catch (e) {
+    console.error('Error loading quiz:', e)
+    pushAlert({ message: 'Error loading quiz. Please try again.', type: 'error' })
+  }
+  loading.value = false
 })
+
+async function submitAnswers() {
+  if (submitting.value) return
+  submitting.value = true
+  lastSubmitFailed.value = false
+  // Calculate achievements before submitting
+  calculateAchievements()
+
+  // show a short saving message while answers persist; actual marking happens on server
+  submissionMessage.value = 'Saving answers...'
+  try {
+    const cfg = useRuntimeConfig()
+    // finalize timing
+    recordQuestionTime(currentQuestionData.value.id)
+    // clear per-question limit timer from composable
+    clearPerQuestionLimit()
+    stopTimer()
+    const totalTime = Math.floor((Date.now() - (quiz.value._started_at_ms || Date.now())) / 1000)
+
+    // Get the latest answers from memory and localStorage
+    let answersToSubmit = answers.value
+    try {
+      const saved = localStorage.getItem(progressKey())
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed?.answers && Object.keys(parsed.answers).length > 0) {
+          answersToSubmit = parsed.answers
+          console.log('Using saved answers from localStorage:', answersToSubmit)
+        }
+      }
+    } catch (e) {
+      console.log('Could not retrieve saved answers, using in-memory:', e)
+    }
+
+    // Build answers payload using central normalization helpers.
+    // This ensures consistent formatting between different quiz flows (battles, tournaments, normal quizzes).
+    const sanitizedAnswers = formatAnswersForSubmission(answersToSubmit, questionTimes.value)
+    
+    // Log for debugging
+    console.log('Raw answers object:', answersToSubmit)
+    console.log('Sanitized answers:', sanitizedAnswers)
+    console.log('Question times:', questionTimes.value)
+    
+    // Only filter out answers with question_id of 0 (completely invalid)
+    const finalAnswers = sanitizedAnswers.filter(a => {
+      const qid = Number(a.question_id)
+      return Number.isFinite(qid)
+    })
+
+    // Extract per-question times into a separate object for the backend
+    const perQuestionTimes = {}
+    for (const [qid, time] of Object.entries(questionTimes.value)) {
+      if (typeof time === 'number' && time > 0) {
+        perQuestionTimes[Number(qid)] = time
+      }
+    }
+
+    const payload = {
+      answers: finalAnswers,
+      time_taken: totalTime,
+      guest_identifier: guestIdentifier.value,
+    }
+
+    console.log('Final payload being sent to server:', payload)
+    console.log('Number of answers in payload:', finalAnswers.length)
+    console.log('First few answers detail:', finalAnswers.slice(0, 3))
+    
+    // Submit to public guest endpoint using api composable (handles baseUrl automatically)
+    const res = await api.postJsonPublic(`/api/quizzes/${slug}/submit`, payload)
+    console.log('Submission response status:', res.status)
+    
+    if (res.ok) {
+      // stop saving message
+      submissionMessage.value = ''
+      const body = await res.json()
+      console.log('Submission response body:', body)
+      stopTimer()
+      try { clearProgress() } catch (e) {}
+      clearSavedAnswers()
+
+      // For public submissions, store results and show modal
+      const attemptResult = body?.attempt
+      console.log('Extracted attempt result from response:', attemptResult)
+      
+      if (attemptResult) {
+        // Save the result to guest quiz store
+        guestQuizStore.saveQuizResult(attemptResult)
+        
+        // Store results for modal display
+        quizResults.value = attemptResult
+        
+        // Show results modal instead of redirecting
+        showResultsModal.value = true
+        return
+      }
+
+      // Fallback: show success alert
+      pushAlert({ message: 'Quiz submitted successfully!', type: 'success' })
+      return
+    } else {
+      // restore optimistic to null to indicate failure
+      console.error('Submission failed with status:', res.status)
+      if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
+      submissionMessage.value = ''
+      // ensure no inline result is shown — stay on page with answers preserved for retry
+      // show error alert and keep answers saved to allow retry
+      let errMsg = 'Failed to submit quiz. Please try again.'
+      try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message; console.error('Submission error response:', errBody) } catch(e) {}
+      pushAlert({ message: errMsg, type: 'error' })
+      // Keep answers in-place so user can retry; showConfirm dialog will be closed and user can press Retry
+    }
+  } catch (e) {
+    if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
+    submissionMessage.value = ''
+    // keep answers saved locally so user can retry
+    pushAlert({ message: 'Network error while submitting quiz. Your answers are still saved — try again.', type: 'error' })
+    lastSubmitFailed.value = true
+  } finally {
+    submitting.value = false
+    showConfirm.value = false
+  }
+}
+
+function confirmSubmit() { showConfirm.value = true }
+
+function cancel() { router.push('/quizzes') }
+
+function retakeQuiz() {
+  // Clear local storage and reload to retake
+  try { clearProgress() } catch (e) {}
+  clearSavedAnswers()
+  // Reset achievement tracking
+  resetAchievements()
+  window.location.reload()
+}
+
+// Results modal handlers
+function handleResultsModalClose() {
+  showResultsModal.value = false
+}
+
+function handleSignup() {
+  router.push('/register')
+}
+
+function handleLogin() {
+  router.push('/login')
+}
+
+function handleBackToQuizzes() {
+  router.push('/quizzes')
+}
+
+function handleRetakeQuiz() {
+  // Clear this specific quiz's progress and reload
+  try { clearProgress() } catch (e) {}
+  clearSavedAnswers()
+  resetAchievements()
+  showResultsModal.value = false
+  // Clear the attempted flag for local storage so they can try again
+  try { localStorage.removeItem(`guest:${slug}:identifier`) } catch (e) {}
+  window.location.reload()
+}
+
 </script>
+
+
 
 <style scoped>
 .fade-slide-enter-active, .fade-slide-leave-active {
@@ -396,5 +741,21 @@ onMounted(() => {
 .fade-slide-enter-from, .fade-slide-leave-to {
   opacity: 0;
   transform: translateY(8px) scale(0.995);
+}
+.fade-slide-enter-to, .fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.slide-down-enter-active, .slide-down-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.slide-down-enter-from, .slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.slide-down-enter-to, .slide-down-leave-from {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>

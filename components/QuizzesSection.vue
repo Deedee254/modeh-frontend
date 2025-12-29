@@ -82,7 +82,7 @@
                     :questions-count="quiz.questions_count ?? quiz.questions ?? quiz.items_count"
                     :cover="quiz.cover_image || quiz.cover"
                     :palette="props.pickPaletteClass(quiz.topic?.id || quiz.id)"
-                    :likes="quiz.likes_count ?? quiz.likes ?? 0"
+                    :likes="quiz.likes_count"
                     :quiz-id="quiz.id"
                     :liked="quiz.liked"
                     :description="quiz.description || quiz.summary || ''"
