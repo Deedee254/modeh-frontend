@@ -17,7 +17,7 @@
     :disable-previous="currentQuestionIndex === 0"
     :show-exit="false"
     :show-next="currentQuestionIndex < totalQuestions - 1"
-    :disable-next="!answered"
+    :disable-next="false"
     :show-submit="currentQuestionIndex === totalQuestions - 1"
     :submit-label="submitting ? 'Submitting...' : 'Complete Quiz'"
     :disable-submit="submitting || !answered"
@@ -110,6 +110,11 @@ definePageMeta({
   layout: 'default',
   hideBottomNav: true,
   hideTopBar: true,
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+    { name: 'description', content: 'Take this quiz on Modeh. Answer all questions to get your score.' },
+    { property: 'og:title', content: 'Take Quiz — Modeh' }
+  ]
 })
 
 const router = useRouter()
@@ -140,7 +145,8 @@ const startTime = ref(null)
 const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, clearSavedAnswers } = useQuizAnswers(computed(() => ({ questions: questions.value })), '')
 
 // Logic
-const slug = computed(() => route.params.slug)
+const slugRaw = computed(() => String(route.params.slug ?? ''))
+const slug = computed(() => slugRaw.value.replace(/^\{+|\}+$/g, ''))
 const totalQuestions = computed(() => (questions.value || []).length)
 const currentQuestion = computed(() => {
   const q = questions.value?.[currentQuestionIndex.value]
@@ -160,7 +166,9 @@ const answered = computed(() => {
 const { timePerQuestion, questionRemaining, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
 const { timeLeft, displayTime: quizDisplayTime, startTimer: startQuizTimer, stopTimer: stopQuizTimer } = useQuizTimer(quiz, () => completeQuiz())
 
-const hasTimeLimit = computed(() => !!(quiz.value?.timer_seconds && quiz.value.timer_seconds > 0))
+// Show a timer when there's a per-question or quiz timer; if none provided,
+// fall back to a sensible default of 20s per question so users always see a timer.
+const hasTimeLimit = computed(() => !!currentQuestionLimit())
 
 const timeRemaining = computed(() => {
   if (typeof questionRemaining.value === 'number' && questionRemaining.value > 0) return qDisplayTime.value
@@ -214,7 +222,8 @@ function currentQuestionLimit() {
   if (!quiz.value?.use_per_question_timer && quiz.value?.timer_seconds && totalQuestions.value) {
     return Math.floor(quiz.value.timer_seconds / totalQuestions.value)
   }
-  return null
+  // If no explicit per-question or quiz timer is set, default to 20 seconds per question
+  return 20
 }
 
 function initializeQuestionTimer() {
@@ -234,10 +243,20 @@ async function loadQuiz() {
   try {
     loading.value = true
     startTime.value = Date.now()
-    const res = await api.get(`/api/quizzes?slug=${slug.value}`)
+    // Support numeric id or slug param: if numeric treat as id endpoint
+    const isId = /^[0-9]+$/.test(slug.value)
+    const safe = encodeURIComponent(slug.value)
+    const res = await api.get(isId ? `/api/quizzes/${slug.value}` : `/api/quizzes?slug=${safe}`)
     if (!res.ok) throw new Error('Failed to load quiz')
     const data = await res.json()
-    const quizDetail = data.quiz || (data.quizzes?.data?.[0]) || (data.quizzes?.[0])
+    // Prefer direct object, then exact slug match from paginated shape, then fallback
+    let quizDetail = null
+    if (data?.quiz) quizDetail = data.quiz
+    else if (data?.id || data?.slug) quizDetail = data
+    else if (data?.quizzes) {
+      const list = (data.quizzes?.data && Array.isArray(data.quizzes.data)) ? data.quizzes.data : (Array.isArray(data.quizzes) ? data.quizzes : [])
+      quizDetail = list.find(item => String(item.slug) === String(slug.value)) || list[0] || null
+    }
     if (!quizDetail) throw new Error('Quiz not found')
     if (quizDetail.is_paid) { premiumError.value = true; return }
     
@@ -260,13 +279,26 @@ async function loadQuiz() {
     const rawQuestions = qData.questions || qData.data || []
     questions.value = rawQuestions.map(q => ({
       id: q.id ?? q._id,
-      type: q.type,
-      text: q.body ?? q.text,
-      explanation: q.explanation,
+      type: q.type ?? q.question_type ?? 'mcq',
+      // resilient mapping for question body across API shapes
+      // `QuestionCard` expects the question text to be on `body`.
+      body: q.body ?? q.text ?? q.question ?? q.question_body ?? '',
+      explanation: q.explanation ?? q.explain ?? q.explanation_text ?? null,
+      // Media fields: support multiple API shapes (media_path, media, youtube_url, youtube)
+      media_path: q.media_path ?? q.mediaPath ?? q.media_url ?? q.image ?? q.image_url ?? q.media ?? null,
+      media: q.media ?? q.media_path ?? q.mediaUrl ?? null,
+      youtube_url: q.youtube_url ?? q.youtubeUrl ?? q.youtube ?? null,
+      youtube: q.youtube ?? q.youtube_url ?? null,
+      option_mode: q.option_mode ?? q.optionMode ?? null,
+      is_approved: q.is_approved ?? q.isApproved ?? null,
       options: (q.options || []).map(o => ({
-        id: o.id ?? o._id,
-        text: o.text ?? o.body ?? (typeof o === 'string' ? o : ''),
-        is_correct: false
+  id: (o && (o.id ?? o._id)) ?? null,
+  // option text may be in several fields
+  text: ((o && (o.text ?? o.body ?? o.option_text ?? o.optionText)) ?? (typeof o === 'string' ? o : '')),
+  body: ((o && (o.body ?? o.text ?? o.option_text)) ?? (typeof o === 'string' ? o : '')),
+  // pass through any media on option objects
+  media: ((o && (o.media ?? o.media_path ?? o.mediaPath ?? o.youtube_url ?? o.youtube)) ?? null),
+  is_correct: false
       }))
     }))
 
@@ -326,7 +358,7 @@ async function completeQuiz() {
     const answersPayload = formatAnswersForSubmission(answers.value, questionTimes.value)
     const guestId = guestQuizStore.getGuestIdentifier()
 
-    const res = await api.postJson(`/api/quizzes/${quiz.value.id}/submit`, {
+    const res = await api.postJsonPublic(`/api/quizzes/${quiz.value.id}/submit`, {
       guest_identifier: guestId,
       time_taken: timeTaken,
       answers: answersPayload,

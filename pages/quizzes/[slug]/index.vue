@@ -376,12 +376,17 @@ const baseUrl = computed(() => {
 // Avoid `await` here so `definePageMeta` and computed getters can react to the
 // `quizData` ref safely without causing server-side timing/500 errors.
 const api = useApi()
-const slug = computed(() => route.params.slug)
+const slugRaw = computed(() => String(route.params.slug ?? ''))
+const slug = computed(() => slugRaw.value.replace(/^\{+|\}+$/g, ''))
 
 // Fetch quiz by slug - API still returns data with ID
 const { data: quizData, pending } = useFetch(() => {
   if (!slug.value) return null
-  return config.public.apiBase + `/api/quizzes?slug=${slug.value}`
+  // Ensure slug is URL-encoded and strip any accidental braces around the route param
+  const safe = encodeURIComponent(slug.value)
+  // If the route param is numeric, treat it as an ID and fetch by id; otherwise fetch by slug
+  const isId = /^[0-9]+$/.test(slug.value)
+  return isId ? (config.public.apiBase + `/api/quizzes/${slug.value}`) : (config.public.apiBase + `/api/quizzes?slug=${safe}`)
 }, {
   credentials: 'include',
   headers: computed(() => ({
@@ -389,13 +394,16 @@ const { data: quizData, pending } = useFetch(() => {
     ...(api.getXsrfFromCookie() ? { 'X-XSRF-TOKEN': api.getXsrfFromCookie() } : {})
   })),
   transform: (data) => {
-    // Accept multiple API shapes:
-    // 1. { quiz: { ... } } - single-quiz response
-    // 2. { quizzes: <paginated> } - index() returns paginated quizzes
+    // Accept multiple API shapes. If the API returned a direct quiz object (from /api/quizzes/{id})
+    // prefer that. Otherwise inspect { quiz } or { quizzes } shapes and extract the quiz.
+    if (!data) return { quiz: null }
+    if (data?.id || data?.slug) return { quiz: data }
     if (data?.quiz) return { quiz: data.quiz }
     if (data?.quizzes) {
-      // Paginated shape: quizzes.data is array of items; prefer the first match
-      const maybe = (data.quizzes?.data && Array.isArray(data.quizzes.data)) ? data.quizzes.data[0] : (Array.isArray(data.quizzes) ? data.quizzes[0] : null)
+      // Prefer an exact slug match from the paginated results when possible
+      const list = (data.quizzes?.data && Array.isArray(data.quizzes.data)) ? data.quizzes.data : (Array.isArray(data.quizzes) ? data.quizzes : [])
+      const exact = list.find(item => String(item.slug) === String(slug.value))
+      const maybe = exact || list[0] || null
       return { quiz: maybe || null }
     }
     return { quiz: null }

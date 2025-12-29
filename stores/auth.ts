@@ -90,6 +90,62 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Register a new user. Payload is expected to contain role and other fields
+  // (name, email, password, level_id, grade_id, subjects, etc.). We pick an
+  // endpoint based on role to match backend routes.
+  async function register(payload: Record<string, any>) {
+    try {
+      const roleStr = payload?.role ?? ''
+      let endpoint = '/api/register'
+      if (roleStr === 'quizee') endpoint = '/api/register/quizee'
+      else if (roleStr === 'quiz-master' || roleStr === 'quiz_master') endpoint = '/api/register/quiz-master'
+      else if (roleStr === 'institution-manager') endpoint = '/api/register/institution-manager'
+
+      const res = await api.postJson(endpoint, payload)
+      if (!res.ok) {
+        let message = 'Registration failed'
+        let parsedErrors: any = null
+        try {
+          const errBody = await res.json()
+          if (errBody && errBody.message) message = errBody.message
+          else if (errBody && errBody.errors) {
+            parsedErrors = errBody.errors
+            const vals = Object.values(errBody.errors).flat()
+            if (vals.length) message = vals.join('; ')
+          } else if (typeof errBody === 'string') message = errBody
+        } catch (e) {
+          try { const txt = await res.text(); if (txt) message = txt } catch (e) { }
+        }
+        const err = new Error(message)
+        try { ;(err as any).fields = parsedErrors } catch (e) { }
+        throw err
+      }
+
+      const json = await res.json().catch(() => null)
+      const returnedUser = json && (json.user || json.data || json)
+      if (returnedUser) setUser(returnedUser)
+
+      // Fetch full user data to ensure we have canonical profile
+      try {
+        const meRes = await api.get('/api/me')
+        if (meRes.ok) {
+          const fullUser = await meRes.json()
+          if (fullUser) setUser(fullUser)
+        }
+      } catch (e) {}
+
+      // Broadcast login event for cross-tab sync
+      try { if (typeof window !== 'undefined') localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })) } catch (e) {}
+
+      // Sync any guest quiz results
+      try { await syncGuestQuizResults() } catch (e) { console.warn('Failed to sync guest quiz results after register', e) }
+
+      return { data: json, ok: true }
+    } catch (error) {
+      throw error
+    }
+  }
+
   async function logout() {
     if (typeof window !== 'undefined' && import.meta && import.meta.client) {
       try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) { }
@@ -263,6 +319,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, role, guestPlayed, setGuestPlayed, login, logout, fetchUser, setUser, clear, syncGuestQuizResults }
+  return { user, role, guestPlayed, setGuestPlayed, login, register, logout, fetchUser, setUser, clear, syncGuestQuizResults }
 })
 

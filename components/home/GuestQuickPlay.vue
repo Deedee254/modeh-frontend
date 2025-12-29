@@ -156,7 +156,10 @@
 
                  <!-- Show quiz list if no previous attempt -->
                  <div v-else-if="loadingQuizzes" class="flex-1 flex items-center justify-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+                    <svg class="h-8 w-8 animate-spin text-brand-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
                  </div>
                  <div v-else-if="quizzes.length === 0" class="flex-1 flex flex-col justify-center items-center text-center p-4">
                      <div class="mb-4">

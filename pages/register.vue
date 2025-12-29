@@ -338,14 +338,19 @@ function validateStep2() {
 function validateStep3() {
    // Validate taxonomy for quizee/master
    if (role.value === 'quizee' || role.value === 'quiz-master') {
-      if (!taxonomySelection.value.levelId) {
-         error.value = "Please select your education level."
-         return false
-      }
-      if (role.value === 'quizee' && !taxonomySelection.value.gradeId) {
-         error.value = "Please select your grade."
-         return false
-      }
+    // Expect the TaxonomyFlowPicker selection object with nested objects
+    // (level, grade, subject). Use those nested ids directly.
+    const sel = taxonomySelection.value || {}
+    const levelId = sel.level?.id ?? null
+    const gradeId = sel.grade?.id ?? null
+    if (!levelId) {
+      error.value = "Please select your education level."
+      return false
+    }
+    if (role.value === 'quizee' && !gradeId) {
+      error.value = "Please select your grade."
+      return false
+    }
    }
    return true
 }
@@ -375,10 +380,17 @@ async function submit() {
      
      // Merge taxonomy
      if (taxonomySelection.value) {
-        payload.level_id = taxonomySelection.value.levelId
-        payload.grade_id = taxonomySelection.value.gradeId
-        payload.sub_grade_id = taxonomySelection.value.subGradeId
-        payload.subjects = taxonomySelection.value.subjects // Array of IDs
+        const sel = taxonomySelection.value
+        if (sel.level && sel.level.id) payload.level_id = sel.level.id
+        if (sel.grade && sel.grade.id) payload.grade_id = sel.grade.id
+        // sub-grade naming varies; check common keys on the grade object
+        if (sel.grade && (sel.grade.sub_grade_id || sel.grade.subGradeId || sel.grade.sub_grade)) {
+          payload.sub_grade_id = sel.grade.sub_grade_id ?? sel.grade.subGradeId ?? sel.grade.sub_grade
+        }
+        if (sel.subject) {
+          if (Array.isArray(sel.subject)) payload.subjects = sel.subject.map(s => s.id)
+          else if (sel.subject.id) payload.subjects = [sel.subject.id]
+        }
      }
 
      const res = await auth.register(payload)
@@ -388,7 +400,25 @@ async function submit() {
      if (auth.user) goToDashboard()
      else router.push('/login?registered=true')
   } catch (e) {
-     error.value = e.message || "Registration failed."
+     // If the auth store attached structured validation errors, map them into
+     // the reactive `fieldErrors` object so the form shows per-field messages.
+      try {
+        // Clear previous field errors
+        for (const k in fieldErrors) delete fieldErrors[k]
+        if (e && e.fields) {
+          const fields = e.fields
+          for (const [key, val] of Object.entries(fields)) {
+            // Join array messages into a single string
+            fieldErrors[key] = Array.isArray(val) ? val.join(' ') : val
+          }
+          // Also expose a general validation message
+          validationError.value = e.message || 'Please fix the highlighted errors.'
+        } else {
+          error.value = e.message || 'Registration failed.'
+        }
+      } catch (err) {
+        error.value = e.message || 'Registration failed.'
+      }
   } finally {
      isLoading.value = false
   }

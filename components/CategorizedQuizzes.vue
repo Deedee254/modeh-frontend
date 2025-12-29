@@ -26,7 +26,17 @@
       </header>
 
       <!-- Categories Grid -->
-      <div :class="gridClasses">
+      <div v-if="props.loading" class="flex items-center justify-center py-20">
+        <div class="flex flex-col items-center gap-3">
+          <svg class="h-8 w-8 animate-spin text-brand-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <p class="text-slate-600 text-sm font-medium">Loading quizzes...</p>
+        </div>
+      </div>
+
+      <div v-else :class="gridClasses">
         <template v-if="visibleLevels.length === 0">
           <div class="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-slate-200">
              <Icon name="heroicons:sparkles" class="h-12 w-12 text-slate-300 mx-auto mb-4" />
@@ -35,7 +45,7 @@
         </template>
         
         <div 
-          v-else 
+          v-else
           v-for="level in visibleLevels" 
           :key="level.id || level.slug || level.name" 
           class="group flex flex-col rounded-xl bg-white overflow-hidden border border-slate-300 shadow-md hover:shadow-lg transition-all duration-300"
@@ -54,13 +64,9 @@
             </NuxtLink>
           </div>
 
-          <!-- Quiz Loading State -->
-          <div v-if="loading" class="space-y-4 p-5">
-            <div v-for="n in 3" :key="n" class="h-16 rounded-lg bg-slate-50 animate-pulse"></div>
-          </div>
-
+          
           <!-- Quiz Content -->
-          <div v-else class="flex-1 p-5">
+          <div class="flex-1 p-5">
             <div v-if="(levelQuizzes(level) || []).length === 0" class="h-40 flex items-center justify-center text-xs text-slate-400 font-medium italic">
                No quizzes yet
             </div>
@@ -128,7 +134,7 @@ const propsLevels = computed(() => Array.isArray(props.levels) ? props.levels : 
 // Only show items that actually have quizzes. We prefer embedded quizzes but
 // also consult the local cache populated by `fetchQuizzesForLevel`.
 const visibleLevels = computed(() => {
-  return propsLevels.value.filter((item) => {
+  const filtered = propsLevels.value.filter((item) => {
     if (!item) return false
     const embedded = extractQuizzesFromLevel(item)
     if (Array.isArray(embedded) && embedded.length > 0) return true
@@ -136,6 +142,7 @@ const visibleLevels = computed(() => {
     const cached = levelQuizzesMap.value[id]
     return Array.isArray(cached) && cached.length > 0
   })
+  return filtered
 })
 
 // computed grid classes based on columns prop

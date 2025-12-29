@@ -159,6 +159,19 @@ export function useApi() {
     return resp
   }
 
+  // POST JSON without attempting CSRF or session initialization. Useful for
+  // public endpoints that don't require Sanctum/session cookies (guest-only APIs).
+  async function postJsonPublic(path: string, body: any) {
+    const resp = await fetch(config.public.apiBase + path, {
+      method: 'POST',
+      // Do NOT include credentials or CSRF headers for public guest endpoints.
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify(body),
+    })
+    return resp
+  }
+
   // POST JSON and include the current Echo socket id (if available) as X-Socket-Id
   async function postJsonWithSocket(path: string, body: any) {
     await ensureCsrf()
@@ -293,7 +306,7 @@ export function useApi() {
   const post = (...args: Parameters<typeof postJson>) => postJson(...args)
   const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
 
-  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, post, postJson, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi
