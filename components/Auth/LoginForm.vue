@@ -1,4 +1,4 @@
-<template>
+  <template>
   <div :class="wrapperClass">
     <div :class="cardClass">
       <h3 class="text-lg font-semibold text-gray-900" v-if="!compact">Sign in to Modeh</h3>
@@ -6,34 +6,10 @@
 
       <p class="text-sm text-slate-600 mb-4" v-if="!compact">Quick access for quizees — or <NuxtLink to="/register" class="text-brand-600 underline">create an account</NuxtLink></p>
 
-      <!-- Tab Navigation -->
-      <div v-if="!compact" class="flex gap-2 mb-6 border-b border-gray-200">
-        <button
-          @click="activeTab = 'password'"
-          :class="[
-            'px-4 py-2 text-sm font-medium transition-colors',
-            activeTab === 'password'
-              ? 'text-brand-600 border-b-2 border-brand-600 -mb-px'
-              : 'text-gray-600 hover:text-gray-900'
-          ]"
-        >
-          Password
-        </button>
-        <button
-          @click="activeTab = 'magic'"
-          :class="[
-            'px-4 py-2 text-sm font-medium transition-colors',
-            activeTab === 'magic'
-              ? 'text-brand-600 border-b-2 border-brand-600 -mb-px'
-              : 'text-gray-600 hover:text-gray-900'
-          ]"
-        >
-          Magic Link
-        </button>
-      </div>
+      <!-- Password login (magic link removed) -->
 
-      <!-- Password Login Tab -->
-      <form v-if="activeTab === 'password'" @submit.prevent="submit" class="space-y-3">
+  <!-- Password Login -->
+  <form @submit.prevent="submit" class="space-y-3">
         <div>
           <label class="block text-sm text-gray-700">Email</label>
           <input v-model="email" type="email" required autocomplete="email" placeholder="you@example.com" class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:border-brand-500 focus:ring-brand-600" />
@@ -71,28 +47,6 @@
             <svg v-if="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             <span>{{ isLoading ? 'Logging in...' : 'Log in' }}</span>
           </button>
-        </div>
-      </form>
-
-      <!-- Magic Link Tab -->
-      <form v-else @submit.prevent="sendMagicLink" class="space-y-3">
-        <div>
-          <label class="block text-sm text-gray-700">Email</label>
-          <input v-model="magicEmail" type="email" required autocomplete="email" placeholder="you@example.com" class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:border-brand-500 focus:ring-brand-600" />
-        </div>
-
-        <p class="text-sm text-gray-600">We'll send you a secure link to sign in. No password needed.</p>
-
-        <div>
-          <button type="submit" :disabled="isMagicLoading || magicLinkSent" class="w-full px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700 disabled:opacity-75 flex items-center justify-center">
-            <svg v-if="isMagicLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-            <span>{{ isMagicLoading ? 'Sending...' : (magicLinkSent ? 'Check your email' : 'Send magic link') }}</span>
-          </button>
-        </div>
-
-        <div v-if="magicLinkSent" class="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-          <p class="font-medium">✓ Link sent!</p>
-          <p class="mt-1">Check your email for the sign-in link. It expires in 24 hours.</p>
         </div>
       </form>
 
@@ -137,21 +91,21 @@ const emit = defineEmits(['success'])
 
 const email = ref('')
 const password = ref('')
-const magicEmail = ref('')
+// magic link removed - keep only password + oauth
 const remember = ref(false)
 const showPassword = ref(false)
 const isLoading = ref(false)
-const isMagicLoading = ref(false)
 const isGoogleLoading = ref(false)
-const magicLinkSent = ref(false)
 const error = ref(null)
-const activeTab = ref('password')
+// activeTab removed; only password login is supported here
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const api = useApi()
 const alert = useAppAlert()
+// Auth helper (signIn) provided by nuxt-auth / sidebase auto-import
+const { signIn } = useAuth()
 
 const compact = computed(() => props.compact || false)
 const wrapperClass = computed(() => compact.value ? 'mx-auto w-full max-w-md' : 'w-full')
@@ -206,30 +160,7 @@ async function submit() {
   }
 }
 
-async function sendMagicLink() {
-  if (isMagicLoading.value) return
-  isMagicLoading.value = true
-  error.value = null
-
-  try {
-    // Use NextAuth's email provider
-    await signIn('email', { 
-      email: magicEmail.value, 
-      redirect: false 
-    })
-    magicLinkSent.value = true
-    // Reset after 5 seconds so user can try again if needed
-    setTimeout(() => {
-      magicLinkSent.value = false
-      magicEmail.value = ''
-    }, 5000)
-  } catch (err) {
-    console.error('Magic link error:', err)
-    error.value = err?.message || 'Failed to send magic link. Please try again.'
-  } finally {
-    isMagicLoading.value = false
-  }
-}
+// sendMagicLink removed (magic link login is not supported here)
 
 async function signInGoogle() {
   if (isGoogleLoading.value) return

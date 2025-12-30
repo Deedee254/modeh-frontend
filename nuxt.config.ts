@@ -1,5 +1,11 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
+const stripTrailingSlash = (value?: string) => value?.replace(/\/$/, '') ?? ''
+const defaultPublicOrigin = process.env.NUXT_PUBLIC_BASE_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://modeh.co.ke')
+const publicBaseUrl = stripTrailingSlash(defaultPublicOrigin)
+const envAuthBaseUrl = process.env.NUXT_AUTH_BASE_URL ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL) : undefined
+const authBaseUrl = envAuthBaseUrl ?? `${publicBaseUrl}/api/auth`
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
   devtools: { enabled: true },
@@ -198,7 +204,8 @@ export default defineNuxtConfig({
     public: {
       // Backend API
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
-      baseUrl: process.env.NUXT_PUBLIC_BASE_URL ?? 'https://modeh.co.ke',
+      baseUrl: publicBaseUrl,
+      siteUrl: publicBaseUrl,
       
       // Pusher (for real-time features)
       pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? '5a6916ce972fd4a06074',
@@ -214,15 +221,15 @@ export default defineNuxtConfig({
   // Auth Configuration (sidebase/nuxt-auth with AuthJS provider)
   // -------................................. 
   // Defaults are production values
-  // For development, set AUTH_ORIGIN and AUTH_BASE_URL via .env file
+  // Set `NUXT_AUTH_BASE_URL` in development to point to the handler
   // -------................................. 
   auth: {
+    baseURL: authBaseUrl,
+    originEnvKey: 'NUXT_AUTH_BASE_URL',
     secret: process.env.NUXT_AUTH_SECRET ?? '+ETBM7kmRHoTlgfIjHRazzGqa+y+3n3gIFt3pEHAE8g=',
-    baseURL: process.env.AUTH_BASE_URL ?? 'https://admin.modeh.co.ke/api/auth',
-    originEnvKey: 'AUTH_ORIGIN',
     provider: {
       type: 'authjs',
-      trustHost: process.env.NODE_ENV === 'production' ? true : false,
+      trustHost: true,
       defaultProvider: 'google',
       addDefaultCallbackUrl: true
     }

@@ -23,73 +23,117 @@
 
       <!-- Bottom nav bar -->
       <div v-if="isMounted" class="flex h-16 w-full items-center justify-around bg-white/80 px-4 shadow-[0_-1px_10px_-2px_rgba(0,0,0,0.05)] backdrop-blur-md dark:bg-slate-800/80">
-        <div class="flex items-center justify-between gap-2 w-full">
-          <!-- Left: Explore Menu -->
-          <div class="flex-1 flex justify-start">
-            <BottomNavDropdown
-              ref="exploreDropdown"
-              button-label="Explore"
-              icon="heroicons:squares-2x2"
-              dropdown-align="left"
-              @open="closeOtherMenus('explore')"
-            >
-              <BottomNavMenuItem
-                v-for="item in currentRoleMenus.explore"
-                :key="item.id"
-                :label="item.label"
-                :icon="item.icon"
-                :to="item.to"
-                @click="closeAllMenus"
-              />
-            </BottomNavDropdown>
-          </div>
-
-          <!-- Center-Left: Messages -->
+        <div v-if="!auth.user?.id" class="flex items-center justify-between w-full gap-2">
+          <!-- Public: four uniform buttons -->
           <button
-            @click="goToMessages"
-            :aria-label="`Messages${unread > 0 ? ` (${unread} unread)` : ''}`"
-            class="group relative flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            @click="() => router.push('/')"
+            class="group flex-1 flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
           >
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition group-hover:bg-brand-50 dark:group-hover:bg-brand-900/30 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-              <Icon name="heroicons:chat-bubble-left" class="h-5 w-5" />
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition group-hover:bg-brand-50 group-hover:text-brand-600">
+              <Icon name="heroicons:magnifying-glass" class="h-5 w-5" />
             </div>
-            Messages
-            <span
-              v-if="unread > 0"
-              class="absolute -top-1 -right-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm"
-            >
-              {{ unread > 99 ? '99+' : unread }}
-            </span>
+            Explore
           </button>
 
-          <!-- Center: Create Action -->
           <button
-            @click="handleCenterAction"
-            aria-label="Create new"
-            class="group relative flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            @click="() => router.push('/quizzes')"
+            class="group flex-1 flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
           >
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition group-hover:bg-brand-100 dark:group-hover:bg-brand-900/30 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-              <Icon name="heroicons:plus" class="h-5 w-5" />
-            </div>
-            Create
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition group-hover:bg-brand-50 group-hover:text-brand-600">
+                <Icon name="heroicons:clipboard-document-list" class="h-5 w-5" />
+              </div>
+            Quizzes
           </button>
 
-          <!-- Right: Role-Specific Direct Link -->
-          <div class="flex-1 flex justify-end">
+          <button
+            @click="() => router.push('/pricing')"
+            class="group flex-1 flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
+          >
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition group-hover:bg-brand-50 group-hover:text-brand-600">
+              <Icon name="heroicons:credit-card" class="h-5 w-5" />
+            </div>
+            Subscribe
+          </button>
+
+          <button
+            @click="() => router.push('/login')"
+            class="group flex-1 flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
+          >
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition group-hover:bg-brand-50 group-hover:text-brand-600">
+              <Icon name="heroicons:arrow-right-on-rectangle" class="h-5 w-5" />
+            </div>
+            Login
+          </button>
+        </div>
+
+        <div v-else class="flex items-center justify-between gap-2 w-full">
+          <div class="flex items-center justify-between gap-2 w-full">
+            <!-- Left: Explore Menu -->
+            <div class="flex-1 flex justify-start">
+              <BottomNavDropdown
+                ref="exploreDropdown"
+                button-label="Explore"
+                icon="heroicons:squares-2x2"
+                dropdown-align="left"
+                @open="closeOtherMenus('explore')"
+              >
+                <BottomNavMenuItem
+                  v-for="item in currentRoleMenus.explore"
+                  :key="item.id"
+                  :label="item.label"
+                  :icon="item.icon"
+                  :to="item.to"
+                  @click="closeAllMenus"
+                />
+              </BottomNavDropdown>
+            </div>
+
+            <!-- Center-Left: Messages -->
             <button
-              @click="handleRightMenuClick"
-              :aria-label="rightMenuLabel"
+              @click="goToMessages"
+              :aria-label="`Messages${unread > 0 ? ` (${unread} unread)` : ''}`"
               class="group relative flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              <div :class="['flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-400 transition', rightMenuBgClass]">
-                <Icon :name="rightMenuIcon" class="h-5 w-5" />
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition group-hover:bg-brand-50 dark:group-hover:bg-brand-900/30 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                <Icon name="heroicons:chat-bubble-left" class="h-5 w-5" />
               </div>
-              {{ rightMenuLabel }}
+              Messages
+              <span
+                v-if="unread > 0"
+                class="absolute -top-1 -right-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm"
+              >
+                {{ unread > 99 ? '99+' : unread }}
+              </span>
             </button>
+
+            <!-- Center: Create Action -->
+            <button
+              @click="handleCenterAction"
+              aria-label="Create new"
+              class="group relative flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition group-hover:bg-brand-100 dark:group-hover:bg-brand-900/30 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                <Icon name="heroicons:plus" class="h-5 w-5" />
+              </div>
+              Create
+            </button>
+
+            <!-- Right: Role-Specific Direct Link -->
+            <div class="flex-1 flex justify-end">
+              <button
+                @click="handleRightMenuClick"
+                :aria-label="rightMenuLabel"
+                class="group relative flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <div :class="['flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-400 transition', rightMenuBgClass]">
+                  <Icon :name="rightMenuIcon" class="h-5 w-5" />
+                </div>
+                {{ rightMenuLabel }}
+              </button>
+            </div>
           </div>
         </div>
-      <slot name="right" />
-    </div>
+      </div>
     </nav>
 </template>
 

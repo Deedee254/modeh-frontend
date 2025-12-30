@@ -2,6 +2,10 @@ import { useAuthStore } from '~/stores/auth'
 import { useRuntimeConfig } from '#imports'
 
 export default defineNuxtPlugin(async (nuxtApp) => {
+  // Prevent recursion: skip if this is an internal auth request
+  const event = useRequestEvent()
+  if (event?.path.startsWith('/api/auth')) return
+
   // Only run on server
   try {
     const auth = useAuthStore()

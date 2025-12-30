@@ -1,32 +1,19 @@
 import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
-import EmailProvider from 'next-auth/providers/email'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { sendVerificationRequest } from '~/server/utils/email'
 
 export default NuxtAuthHandler({
   secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
   pages: {
     signIn: '/login',
+    // Custom error page for friendly messages
+    error: '/auth/error'
   },
   providers: [
     // @ts-expect-error Use .default here for it to work during SSR
     GoogleProvider.default({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || ''
-    }),
-    // @ts-expect-error Use .default here for it to work during SSR
-    EmailProvider.default({
-      server: {
-        host: process.env.EMAIL_SERVER_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.EMAIL_SERVER_PORT || '587'),
-        auth: {
-          user: process.env.EMAIL_SERVER_USER || '',
-          pass: process.env.EMAIL_SERVER_PASSWORD || ''
-        }
-      },
-      from: process.env.EMAIL_FROM || 'noreply@modeh.co.ke',
-      sendVerificationRequest
     }),
     // @ts-expect-error Use .default here for it to work during SSR
     CredentialsProvider.default({
