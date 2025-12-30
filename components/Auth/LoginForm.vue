@@ -129,23 +129,43 @@ async function submit() {
   error.value = null
 
   try {
-    const res = await signIn('credentials', {
+    // Perform client-side login so Laravel/Sanctum cookies are set in the browser.
+    // This ensures subsequent API calls include the session cookie and XSRF token.
+    await api.ensureCsrf()
+    const resp = await api.postJson('/api/login', {
       email: email.value,
       password: password.value,
-      redirect: false
+      remember: remember.value
     })
 
-    if (res?.error) {
-      throw new Error('Invalid email or password')
+    if (!resp || !resp.ok) {
+      // Try to parse a helpful message from the response
+      let msg = 'Invalid email or password'
+      try {
+        const body = await resp.json().catch(() => null)
+        if (body) {
+          if (body.message) msg = body.message
+          else if (body.errors) {
+            const vals = Object.values(body.errors).flat()
+            if (vals.length) msg = vals.join('; ')
+          }
+        }
+      } catch (e) {
+        // ignore parsing errors
+      }
+      throw new Error(msg)
     }
 
-    // Refresh the auth store/session
+    // Refresh the auth store/session from the API (now the browser has the session cookie)
     const authStore = useAuthStore()
     await authStore.fetchUser?.()
+    // Ensure we have up-to-date role information (backend may take a moment to populate)
+    await ensureUserRole(authStore)
     const user = authStore.user
 
     if (props.suppressRedirect) {
       try { emit('success', user) } catch (e) {}
+      try { emit('login-success', user) } catch (e) {}
       return
     }
 
@@ -172,8 +192,9 @@ async function signInGoogle() {
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     const authStore = useAuthStore()
-    await authStore.fetchUser?.()
-    const user = authStore.user
+      await authStore.fetchUser?.()
+      await ensureUserRole(authStore)
+      const user = authStore.user
 
     if (user) {
       await redirectAfterAuth(user)
@@ -188,20 +209,35 @@ async function signInGoogle() {
   }
 }
 
+// Sometimes the backend session/user record is updated slightly after sign-in
+// (e.g., role assigned). Retry fetching the user a few times before deciding.
+async function ensureUserRole(authStore, attempts = 3, delayMs = 300) {
+  try {
+    let tries = 0
+    while (tries < attempts) {
+      const u = authStore.user
+      if (u && u.role) return
+      // try to fetch latest user from API
+      try { await authStore.fetchUser?.() } catch (e) { /* ignore */ }
+      if (authStore.user && authStore.user.role) return
+      // wait before next attempt
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(r => setTimeout(r, delayMs))
+      tries++
+    }
+  } catch (e) {
+    // swallow - best-effort only
+  }
+}
+
 async function redirectAfterAuth(user) {
   const nextParam = route.query?.next
   const isLocalPath = typeof nextParam === 'string' && nextParam.startsWith('/') && !nextParam.startsWith('//')
 
+  // If a local `next` param is present prefer redirecting there (e.g., return to a quiz)
   if (isLocalPath && nextParam !== '/') {
-    const role = user?.role
-    const shouldNavigate =
-      (role === 'quiz-master' && nextParam.startsWith('/quiz-master')) ||
-      (role === 'quizee' && nextParam.startsWith('/quizee'))
-
-    if (shouldNavigate) {
-      await router.push(nextParam)
-      return
-    }
+    await router.push(nextParam)
+    return
   }
 
   const instStore = useInstitutionsStore()
@@ -218,7 +254,10 @@ async function redirectAfterAuth(user) {
       query: instSlug ? { institutionSlug: String(instSlug) } : {}
     })
   } else {
-    await router.push('/grades')
+    // If role not set or unknown, send user to the home page rather than /grades
+    // (previous behaviour redirected to /grades which could be unexpected).
+    console.warn('redirectAfterAuth: unknown role, redirecting to home', user)
+    await router.push('/')
   }
 }
 

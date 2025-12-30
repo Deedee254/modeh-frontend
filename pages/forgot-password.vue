@@ -70,6 +70,8 @@ const error = ref(null)
 const submitted = ref(false)
 
 const alert = useAppAlert()
+// Auth helper (signIn) provided by nuxt-auth / sidebase auto-import
+const { signIn } = useAuth()
 
 async function submit() {
   if (isLoading.value || submitted.value) return

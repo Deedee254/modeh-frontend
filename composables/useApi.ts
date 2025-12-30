@@ -69,10 +69,12 @@ export function useApi() {
         // XSRF-TOKEN cookie to appear. If it appears earlier we return immediately.
         if (typeof document !== 'undefined') {
           const start = Date.now()
-          // Shorter poll window: usually the cookie is set immediately; keep
-          // a brief poll for rare races but don't block the UI for 1s in dev.
-          const timeout = 200
-          const interval = 25
+          // Poll briefly for the cookie to appear. A slightly longer window
+          // helps in slow dev environments where the cookie may be set a
+          // little while after the fetch resolves. Keep this short enough
+          // to avoid blocking the UI but long enough to avoid flaky races.
+          const timeout = 1000 // ms
+          const interval = 50 // ms
           while (Date.now() - start < timeout) {
             const xs = getXsrfFromCookie()
             if (xs) {
@@ -84,7 +86,14 @@ export function useApi() {
             await new Promise((r) => setTimeout(r, interval))
           }
           // final attempt
-          if (getXsrfFromCookie()) _csrfFetchedAt = Date.now()
+          if (getXsrfFromCookie()) {
+            _csrfFetchedAt = Date.now()
+            return
+          }
+          // If we reach here, we failed to observe the XSRF cookie in the document
+          // even though the backend responded to /sanctum/csrf-cookie. Surface
+          // a clear, actionable error so callers can show a helpful message.
+          throw new Error('CSRF cookie not present after /sanctum/csrf-cookie. Ensure the backend sets XSRF-TOKEN (check SANCTUM_STATEFUL_DOMAINS, CORS and cookie settings: SESSION_DOMAIN, SESSION_SECURE_COOKIE, SESSION_SAME_SITE).')
         } else {
           // server / SSR: mark as fetched so subsequent calls don't refetch repeatedly
           _csrfFetchedAt = Date.now()

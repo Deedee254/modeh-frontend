@@ -286,6 +286,8 @@ import useApi from '~/composables/useApi'
 const router = useRouter()
 const auth = useAuthStore()
 const api = useApi()
+// Auth helper (signIn) provided by nuxt-auth / sidebase auto-import
+const { signIn } = useAuth()
 
 // Logic State
 const step = ref(1)
@@ -437,6 +439,12 @@ async function submit() {
   
   try {
      const payload = { ...form, role: role.value, referral_code: referralCode.value }
+     // Laravel expects password_confirmation for validation; convert confirmPassword -> password_confirmation
+     if (payload.confirmPassword !== undefined) {
+       payload.password_confirmation = payload.confirmPassword
+       // keep confirmPassword for local usage but remove to avoid unexpected backend fields
+       delete payload.confirmPassword
+     }
      
      // Merge taxonomy
      if (taxonomySelection.value) {

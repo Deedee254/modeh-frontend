@@ -37,6 +37,9 @@ export const useAuthStore = defineStore('auth', () => {
   const role: Ref<string | null> = ref(initialUser?.role || null)
   const guestPlayed = ref(false)
   const api = useApi()
+  const isFetchingUser = ref(false)
+  // Deduplicate concurrent fetchUser calls
+  let _fetchUserPromise: Promise<any> | null = null
 
   // Watch for session changes to update store state
   watch(data, (newData) => {
@@ -102,36 +105,51 @@ export const useAuthStore = defineStore('auth', () => {
       // useAuth is auto-imported by @sidebase/nuxt-auth
       const auth = useAuth()
       if (auth && typeof auth.signOut === 'function') {
-        await auth.signOut({ callbackUrl: '/login' })
+        // Redirect to homepage after sign out
+        await auth.signOut({ callbackUrl: '/' })
       } else {
-        // Fallback: just redirect
-        window.location.href = '/login'
+        // Fallback: just redirect to homepage
+        window.location.href = '/'
       }
     } catch (e) {
-      // Fallback: just redirect
-      window.location.href = '/login'
+      // Fallback: just redirect to homepage
+      window.location.href = '/'
     }
   }
 
   async function fetchUser() {
-    try {
-      const res = await api.get('/api/me')
+    // Avoid concurrent fetches: return the in-flight promise if present
+    if (_fetchUserPromise) return _fetchUserPromise
+    isFetchingUser.value = true
+
+    _fetchUserPromise = (async () => {
+      try {
+        const res = await api.get('/api/me')
       if (res.status === 401 || res.status === 419 || res.status === 403) {
         // If API says unauthorized but nuxt-auth says authorized, something is out of sync
         if (status.value === 'authenticated') {
            // We might want to signOut() here but let's just clear local state for now
         }
         clear()
-        return
+        _fetchUserPromise = null
+        return null
       }
       if (!res.ok) return
       
       const json = await res.json().catch(() => null)
       const userData = json && (json.user || json.data || json)
       if (userData) setUser(userData)
-    } catch (error) {
-      console.warn('Failed to fetch user:', error)
-    }
+      return user.value
+      } catch (error) {
+        console.warn('Failed to fetch user:', error)
+        return null
+      } finally {
+        _fetchUserPromise = null
+        isFetchingUser.value = false
+      }
+    })()
+
+    return _fetchUserPromise
   }
 
   function setUser(newUser: any): void {
@@ -199,6 +217,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, role, guestPlayed, setGuestPlayed, login, register, logout, fetchUser, setUser, clear, syncGuestQuizResults }
+  return { user, role, guestPlayed, setGuestPlayed, login, register, logout, fetchUser, setUser, clear, syncGuestQuizResults, isFetchingUser }
 })
 
