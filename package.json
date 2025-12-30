@@ -2,7 +2,7 @@
   "name": "nuxt-app",
   "type": "module",
   "private": true,
-    "scripts": {
+  "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "e2e": "playwright test",
@@ -39,6 +39,7 @@
     "nuxt-tiptap-editor": "^2.3.1",
     "papaparse": "^5.5.3",
     "pinia": "^3.0.3",
+    "typescript": "^5.9.3",
     "vue": "^3.5.21",
     "vue-router": "^4.5.1",
     "vuedraggable": "^4.1.0",
@@ -60,7 +61,7 @@
     "@vue/test-utils": "^2.2.3",
     "baseline-browser-mapping": "^2.9.11",
     "jsdom": "^27.0.0",
-  "laravel-echo": "^2.2.0",
+    "laravel-echo": "^2.2.0",
     "pusher-js": "^8.4.0",
     "sharp": "^0.34.4",
     "vite-tsconfig-paths": "^5.1.4",
