@@ -62,7 +62,6 @@
 
 <script setup>
 import { ref } from 'vue'
-import { signIn } from '#auth'
 import { useAppAlert } from '~/composables/useAppAlert'
 
 const email = ref('')

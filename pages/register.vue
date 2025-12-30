@@ -281,7 +281,6 @@ import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
-import { signIn } from '#auth'
 import useApi from '~/composables/useApi'
 
 const router = useRouter()

@@ -303,13 +303,30 @@ defineExpose({
 const copyToClipboard = async (text) => {
   try {
     if (!text) return
-    await navigator.clipboard.writeText(text)
+    
+    // Try modern API first
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      // Fallback for older browsers or non-secure contexts
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+    
     copied.value = true
     setTimeout(() => {
       copied.value = false
     }, 2000)
   } catch (err) {
     console.error('Failed to copy:', err)
+    // Show user-friendly fallback message
+    alert('Failed to copy. Please copy manually: ' + text)
   }
 }
 

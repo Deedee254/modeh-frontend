@@ -1,5 +1,4 @@
 import { useRuntimeConfig } from '#imports'
-import * as auth from '#auth'
 
 // Module-scoped memoization so all callers (and multiple composable instances)
 // share the same CSRF init state and avoid duplicate /sanctum/csrf-cookie calls.
@@ -228,31 +227,15 @@ export function useApi() {
         if (globalAny.__modeh_auth_redirected) return true
         globalAny.__modeh_auth_redirected = true
         
-        // Use nuxt-auth signOut which clears session and redirects to login
-        // Prefer an exported signOut or logout, fall back to useAuth() APIs or a hard redirect.
+        // Attempt to clear auth state and redirect to login
+        // We don't directly import #auth to avoid build-time resolution issues.
+        // Instead, we rely on the page/composable that calls handleAuthStatus to handle auth cleanup.
+        // The window.location redirect here signals the caller (via the 401/419 status check)
+        // that they should also clear their local auth state if needed.
         try {
-          const signOutCandidate = (auth as any).signOut ?? (auth as any).logout
-          if (typeof signOutCandidate === 'function') {
-            await signOutCandidate({ callbackUrl: '/login', redirect: true })
-          } else if (typeof (auth as any).useAuth === 'function') {
-            try {
-              const a = (auth as any).useAuth()
-              if (a && typeof a.signOut === 'function') {
-                await a.signOut({ callbackUrl: '/login', redirect: true })
-              } else if (a && typeof a.logout === 'function') {
-                await a.logout({ callbackUrl: '/login', redirect: true })
-              } else {
-                window.location.href = '/login'
-              }
-            } catch (_) {
-              window.location.href = '/login'
-            }
-          } else {
-            // final fallback
-            window.location.href = '/login'
-          }
-        } catch (e) {
-          try { window.location.href = '/login' } catch (_) {}
+          window.location.href = '/login'
+        } catch (_) {
+          // fallback: do nothing if window access fails
         }
       }
       return true

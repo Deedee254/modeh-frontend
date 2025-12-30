@@ -1,5 +1,4 @@
 import { useAuthStore } from '~/stores/auth'
-import { useAuth } from '#auth'
 import type { User } from '~/types'
 
 /**
@@ -69,8 +68,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
             return navigateTo('/onboarding')
         }
         
-        // Legacy check for isProfileCompleted flag
-        if (user.isProfileCompleted === false) {
+        // Legacy check for is_profile_completed flag
+        if (user.is_profile_completed === false) {
             return navigateTo('/complete-profile')
         }
     }
@@ -89,24 +88,5 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     if (requiredRole && requiredRole !== 'authenticated_any' && user.role !== requiredRole) {
         return navigateTo('/')
-    }
-
-    // 4. Institution Redirect Logic
-    const instStore = useInstitutionsStore()
-    let activeId = instStore?.activeInstitutionSlug
-
-    if (!activeId && user.institutions?.length) {
-        activeId = user.institutions[0].slug || String(user.institutions[0].id)
-    }
-
-    if (path === '/settings' || path === '/profile') {
-        if (user.role === 'institution-manager' && activeId) {
-            const target = path === '/settings' ? '/institution-manager/settings' : '/institution-manager/profile'
-            return navigateTo({ path: target, query: { institutionSlug: String(activeId) } })
-        }
-    }
-
-    if (path === '/' && user.role === 'institution-manager' && activeId) {
-        return navigateTo({ path: '/institution-manager/dashboard', query: { institutionSlug: String(activeId) } })
     }
 })

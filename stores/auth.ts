@@ -5,7 +5,6 @@ import useApi from '~/composables/useApi'
 import { useInstitutionsStore } from '~/stores/institutions'
 import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
 import type { User } from '~/types'
-import { useAuth, signOut } from '#auth'
 
 let notificationsModule: any = null
 if (typeof window !== 'undefined' && import.meta && import.meta.client) {
@@ -99,7 +98,19 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     clear()
-    await signOut({ callbackUrl: '/login' })
+    try {
+      // useAuth is auto-imported by @sidebase/nuxt-auth
+      const auth = useAuth()
+      if (auth && typeof auth.signOut === 'function') {
+        await auth.signOut({ callbackUrl: '/login' })
+      } else {
+        // Fallback: just redirect
+        window.location.href = '/login'
+      }
+    } catch (e) {
+      // Fallback: just redirect
+      window.location.href = '/login'
+    }
   }
 
   async function fetchUser() {
