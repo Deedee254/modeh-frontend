@@ -196,9 +196,15 @@ export default defineNuxtConfig({
   // -----------------------------
   runtimeConfig: {
     public: {
+      // Backend API
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL ?? 'https://modeh.co.ke',
+      
+      // Pusher (for real-time features)
       pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? '5a6916ce972fd4a06074',
       pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? 'ap2',
+      
+      // WebSocket (for Laravel Echo)
       wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'https://admin.modeh.co.ke',
       wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : 443,
       wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? 'wss'
@@ -207,10 +213,16 @@ export default defineNuxtConfig({
 
   // Auth Configuration (sidebase/nuxt-auth with AuthJS provider)
   // -------................................. 
+  // Defaults are production values
+  // For development, set AUTH_ORIGIN and AUTH_BASE_URL via .env file
+  // -------................................. 
   auth: {
+    secret: process.env.NUXT_AUTH_SECRET ?? '+ETBM7kmRHoTlgfIjHRazzGqa+y+3n3gIFt3pEHAE8g=',
+    baseURL: process.env.AUTH_BASE_URL ?? 'https://admin.modeh.co.ke/api/auth',
+    originEnvKey: 'AUTH_ORIGIN',
     provider: {
       type: 'authjs',
-      trustHost: false,
+      trustHost: process.env.NODE_ENV === 'production' ? true : false,
       defaultProvider: 'google',
       addDefaultCallbackUrl: true
     }
