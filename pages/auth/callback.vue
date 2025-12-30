@@ -50,92 +50,40 @@ onMounted(async () => {
   if (!process.client) return
 
   try {
-    // Clean up URL params immediately for a cleaner UX
-    window.history.replaceState({}, document.title, window.location.pathname)
+    // 1. Refresh the session to ensure nuxt-auth picks up the cookies set by the backend
+    const { getSession } = useAuth()
+    const session = await getSession()
     
-    // 1. Ensure CSRF token is available
-    // In social auth, the backend redirect has already set session and CSRF cookies.
-    // useApi.ensureCsrf() will now detect these and skip the fetch, making this instant.
-    try {
-      await api.ensureCsrf()
-    } catch (e) {
-      console.warn('Callback: CSRF initialization failed, continuing anyway...', e)
+    if (!session) {
+      // Fallback: Try fetching user manually to see if cookies are there but session isn't synced
+      await auth.fetchUser()
     }
 
-    // 2. Attempt to fetch user profile with a retry mechanism.
-    // The session cookie should be set by now, but we retry in case of timing issues.
-    let userResponse = null
-    const maxAttempts = 3
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const response = await api.get(`/api/me?t=${Date.now()}`)
-        if (response.ok) {
-          userResponse = response
-          break
-        }
-        console.warn(`OAuth callback: /api/me attempt ${attempt} failed with status ${response.status}`)
-        if (attempt < maxAttempts) {
-          // Wait progressively longer between retries
-          await new Promise(r => setTimeout(r, attempt * 500))
-        }
-      } catch (e) {
-        console.error(`OAuth callback: /api/me attempt ${attempt} threw:`, e)
-        if (attempt < maxAttempts) {
-          await new Promise(r => setTimeout(r, attempt * 500))
-        }
-      }
-    }
-
-    if (!userResponse || !userResponse.ok) {
+    if (!auth.user) {
       error.value = 'Session could not be established.'
-      errorDetails.value = `Authentication was successful on the provider, but the secure session could not be established with our server (${userResponse?.status || 'Unknown'} after ${maxAttempts} attempts). This usually means the browser blocked the session cookie or there was a server error. Please try logging in again.`
+      errorDetails.value = 'We could not verify your session. Please try logging in again.'
       return
     }
 
-    const json = await userResponse.json()
-    const user = json?.user || json?.data || json
+    // 2. Redirect to dashboard - the global middleware will take over 
+    // and handle onboarding/profile-completion redirects automatically.
+    const user = auth.user
+    let dashboard = '/'
     
-    if (!user || !user.id) {
-      error.value = 'User data could not be retrieved.'
-      errorDetails.value = 'The authentication was successful, but we could not retrieve your user information. Please try logging in again.'
-      return
-    }
-
-    auth.setUser(user)
-
-    // 4. Routing logic based on profile completeness
-    // New users (no role) go to role selection page
-    if (!user?.role) {
-      return router.replace('/onboarding/new-user')
-    }
-
-    // Existing users with missing profile fields go to main onboarding page
-    // The onboarding page will determine which step to show based on user state
-    const missingFields = user.missing_profile_fields || []
-    if (missingFields.length > 0) {
-      return router.replace('/onboarding')
-    }
-
-    // Complete users go to their dashboard
-    // Handle all role types properly
-    let dashboard = '/quizee/dashboard'
-    if (user.role === 'quiz-master') {
-      dashboard = '/quiz-master/dashboard'
-    } else if (user.role === 'admin') {
-      const config = useRuntimeConfig()
+    if (user.role === 'quiz-master') dashboard = '/quiz-master/dashboard'
+    else if (user.role === 'quizee') dashboard = '/quizee/dashboard'
+    else if (user.role === 'institution-manager') dashboard = '/institution-manager/dashboard'
+    else if (user.role === 'admin') {
       window.location.href = `${config.public.apiBase}/admin`
       return
-    } else if (user.role === 'institution-manager') {
-      dashboard = '/institution-manager/dashboard'
     }
-    
+
     return router.replace(dashboard)
 
   } catch (err) {
-    console.error('OAuth callback fatal error:', err)
-    error.value = 'An unexpected error occurred during login.'
-    errorDetails.value = err?.message || 'Unknown error occurred. Please try logging in again.'
+    console.error('OAuth callback error:', err)
+    error.value = 'An unexpected error occurred.'
+    errorDetails.value = err?.message || 'Unknown error occurred.'
   }
 })
 </script>

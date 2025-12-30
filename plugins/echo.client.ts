@@ -8,6 +8,7 @@
  */
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
+import useApi from '~/composables/useApi'
 
 declare global {
   interface Window {
@@ -59,54 +60,43 @@ export default defineNuxtPlugin(() => {
 
     window.Pusher = Pusher
 
-    // Custom authorizer function that uses our API composable to handle CORS properly
+    // Custom authorizer using the shared `useApi` composable for consistent CSRF and headers
     const authorizer = (channel: any, options: any) => {
       return {
         authorize: (socketId: string, callback: Function) => {
-          // Use $fetch or fetch with credentials to handle CORS properly
-          const url = `${config.public.apiBase}/api/broadcasting/auth`
-
-          // Get CSRF token from cookie (same as useApi)
-          const getXsrfFromCookie = () => {
+          // Run the async auth flow in a fire-and-forget IIFE and use the callback
+          ;(async () => {
+            const api = useApi()
+            const url = `${config.public.apiBase}/api/broadcasting/auth`
             try {
-              if (typeof document === 'undefined') return null
-              const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-              if (!match || typeof match[1] !== 'string') return null
-              return decodeURIComponent(match[1])
-            } catch (e) {
-              return null
-            }
-          }
+              // Ensure CSRF cookie is available (composable handles polling and timeouts)
+              await api.ensureCsrf()
 
-          const csrfToken = getXsrfFromCookie() || ''
+              // Use the composable to POST with credentials and standard headers
+              const resp = await api.postJson('/api/broadcasting/auth', {
+                socket_id: socketId,
+                channel_name: channel.name
+              })
 
-          // Use fetch with credentials to include cookies and handle CORS
-          fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-XSRF-TOKEN': csrfToken,
-              'X-Requested-With': 'XMLHttpRequest',
-              'Accept': 'application/json'
-            },
-            credentials: 'include', // Important: include cookies for authentication
-            body: JSON.stringify({
-              socket_id: socketId,
-              channel_name: channel.name
-            })
-          })
-            .then(response => {
-              if (!response.ok) {
-                throw new Error(`Auth failed: ${response.status}`)
+              if (!resp || !resp.ok) {
+                let bodyText = ''
+                try { bodyText = await resp?.text() ?? '' } catch (e) { bodyText = '<failed to read response body>' }
+                console.error('Pusher auth request failed', { url, status: resp?.status, statusText: resp?.statusText, body: bodyText, socketId, channel: channel.name })
+                return callback(new Error(`Auth failed: ${resp?.status} ${resp?.statusText} - ${bodyText}`), null)
               }
-              return response.json()
-            })
-            .then(data => {
-              callback(null, data)
-            })
-            .catch(error => {
-              callback(error, null)
-            })
+
+              const data = await resp.json()
+              if (!data || (typeof data.auth !== 'string' && !data.auth)) {
+                console.error('Pusher auth response missing `auth` field', { data, url, socketId, channel: channel.name })
+                return callback(new Error('Auth response missing auth info'), null)
+              }
+
+              return callback(null, data)
+            } catch (error) {
+              console.error('Pusher authorize error (useApi):', error)
+              return callback(error, null)
+            }
+          })()
         }
       }
     }

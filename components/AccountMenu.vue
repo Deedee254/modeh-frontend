@@ -3,12 +3,57 @@
     <template v-if="isMounted">
       <!-- Guest: Login Button -->
       <template v-if="!isAuthed">
-        <button
-          @click="showLoginModal = true"
-          class="px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
-        >
-          Login
-        </button>
+        <!-- Desktop: Login and Register buttons -->
+        <div class="hidden md:flex items-center gap-3">
+          <button
+            @click="showLoginModal = true"
+            class="px-4 py-2 text-sm font-semibold text-brand-600 bg-transparent hover:bg-brand-50 rounded-lg transition-colors"
+          >
+            Login
+          </button>
+          <NuxtLink
+            to="/register?role=quizee"
+            class="px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
+          >
+            Register
+          </NuxtLink>
+        </div>
+
+        <!-- Mobile: Icon button that shows popup -->
+        <div ref="mobileAuthMenuRef" class="relative">
+          <button
+            @click="showMobileAuthMenu = !showMobileAuthMenu"
+            class="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label="Authentication menu"
+          >
+            <svg class="w-5 h-5 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </button>
+
+          <!-- Mobile auth menu dropdown -->
+          <transition name="fade">
+            <div
+              v-if="showMobileAuthMenu"
+              class="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg z-50 border dark:border-slate-700 overflow-hidden"
+              @click.stop
+            >
+              <button
+                @click="showLoginModal = true; showMobileAuthMenu = false"
+                class="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border-b dark:border-slate-700"
+              >
+                Sign In
+              </button>
+              <NuxtLink
+                to="/register?role=quizee"
+                class="block px-4 py-3 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors"
+                @click="showMobileAuthMenu = false"
+              >
+                Create Account
+              </NuxtLink>
+            </div>
+          </transition>
+        </div>
       </template>
 
       <!-- Authenticated: Account Menu with Avatar -->
@@ -94,9 +139,11 @@ const emit = defineEmits(['logout'])
 
 const open = ref(false)
 const showLoginModal = ref(false)
+const showMobileAuthMenu = ref(false)
 const wrapper = ref(null)
 const menu = ref(null)
 const button = ref(null)
+const mobileAuthMenuRef = ref(null)
 const menuId = `account-menu-${Math.random().toString(36).slice(2, 9)}`
 const isMounted = ref(false)
 
@@ -117,12 +164,17 @@ function close() {
 
 function handleLoginSuccess() {
   showLoginModal.value = false
+  showMobileAuthMenu.value = false
 }
 
 function handleDocClick(e) {
   const target = e.target
   if (open.value && wrapper.value && !wrapper.value.contains(target)) {
     close()
+  }
+  // Close mobile auth menu when clicking outside
+  if (showMobileAuthMenu.value && mobileAuthMenuRef.value && !mobileAuthMenuRef.value.contains(target)) {
+    showMobileAuthMenu.value = false
   }
 }
 
@@ -182,6 +234,13 @@ function handleLogout() {
 .fade-scale-enter-to, .fade-scale-leave-from {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 150ms ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>
 

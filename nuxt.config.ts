@@ -22,7 +22,8 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     ['nuxt-tiptap-editor', { prefix: 'Tiptap' }],
     '@nuxt/ui',
-    '@vite-pwa/nuxt'
+    '@vite-pwa/nuxt',
+    '@sidebase/nuxt-auth'
   ],
 
   // -----------------------------
@@ -41,7 +42,10 @@ export default defineNuxtConfig({
   // PWA (Vite PWA Optimized for SSR)
   // -----------------------------
   pwa: {
-    registerType: 'autoUpdate',
+    // Use `prompt` so users aren't unexpectedly hard-refreshed when a new
+    // service worker is available. `autoUpdate` will activate and reload
+    // clients automatically which can cause the global refresh behaviour.
+    registerType: 'prompt',
 
     includeAssets: [
       'favicon.ico',
@@ -89,8 +93,11 @@ export default defineNuxtConfig({
     },
 
     workbox: {
-      skipWaiting: true,
-      clientsClaim: true,
+  // Do not force waiting SW to skip waiting and claim clients. Let the
+  // application control when to update (via updateServiceWorker) to
+  // avoid unexpected full-page reloads for users.
+  skipWaiting: false,
+  clientsClaim: false,
 
       // Nitro renders HTML dynamically → DO NOT fall back to index.html
       navigateFallback: null,
@@ -195,6 +202,17 @@ export default defineNuxtConfig({
       wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'https://admin.modeh.co.ke',
       wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : 443,
       wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? 'wss'
+    }
+  },
+
+  // Auth Configuration (sidebase/nuxt-auth with AuthJS provider)
+  // -------................................. 
+  auth: {
+    provider: {
+      type: 'authjs',
+      trustHost: false,
+      defaultProvider: 'google',
+      addDefaultCallbackUrl: true
     }
   }
 })

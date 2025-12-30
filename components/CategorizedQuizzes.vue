@@ -215,11 +215,36 @@ function levelQuizzes(level) {
 
 // Watch incoming levels prop and fetch a small number of quizzes for each level
 watch(propsLevels, (newVal) => {
-  if (!Array.isArray(newVal)) return
-  for (const level of newVal) {
-    // fire-and-forget: populate cache for UI to render
-    fetchQuizzesForLevel(level, 3).catch(() => {})
-  }
+  if (!Array.isArray(newVal) || newVal.length === 0) return
+
+  // Only fetch levels that don't already have embedded quizzes or a cached value.
+  const levelsToFetch = newVal.filter((level) => {
+    if (!level) return false
+    const embedded = extractQuizzesFromLevel(level)
+    if (Array.isArray(embedded) && embedded.length) return false
+    const id = String(level.id ?? level.slug ?? level.name ?? '')
+    const cached = levelQuizzesMap.value[id]
+    return !(Array.isArray(cached) && cached.length > 0)
+  })
+
+  if (levelsToFetch.length === 0) return
+
+  // Limit concurrency to avoid flooding the backend and improve perceived load time.
+  const batchSize = 4
+  const perPage = 3
+
+  ;(async () => {
+    try {
+      for (let i = 0; i < levelsToFetch.length; i += batchSize) {
+        const batch = levelsToFetch.slice(i, i + batchSize)
+        await Promise.all(batch.map(level => fetchQuizzesForLevel(level, perPage).catch(() => {})))
+        // small delay between batches can help in very slow networks / backends
+        // await new Promise(r => setTimeout(r, 50))
+      }
+    } catch (e) {
+      // ignore individual fetch errors; UI will render placeholders where needed
+    }
+  })()
 }, { immediate: true })
 
 onMounted(() => {

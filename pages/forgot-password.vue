@@ -1,8 +1,8 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
-      <h2 class="text-2xl font-bold text-gray-900 mb-2">Reset your password</h2>
-      <p class="text-gray-600 text-sm mb-6">Enter your email address and we'll send you a link to reset your password.</p>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Sign in with magic link</h2>
+      <p class="text-gray-600 text-sm mb-6">Enter your email and we'll send you a secure sign-in link. No password needed.</p>
 
       <form @submit.prevent="submit" class="space-y-4">
         <div>
@@ -26,7 +26,7 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
-          <span>{{ isLoading ? 'Sending...' : 'Send reset link' }}</span>
+          <span>{{ isLoading ? 'Sending...' : 'Send magic link' }}</span>
         </button>
       </form>
 
@@ -35,12 +35,26 @@
       </div>
 
       <div v-if="submitted" class="mt-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-        <p class="font-medium">Check your email</p>
-        <p class="mt-1">We've sent a password reset link to {{ email }}. It will expire in 1 hour.</p>
+        <div class="flex items-start gap-2">
+          <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          <div>
+            <p class="font-medium">Check your email</p>
+            <p class="mt-1 text-sm">We've sent a secure sign-in link to <strong>{{ email }}</strong>. Click the link in the email to sign in. It expires in 24 hours.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="mt-6 text-center">
-        <NuxtLink to="/login" class="text-sm text-brand-600 hover:underline">Back to login</NuxtLink>
+      <div class="mt-6 text-center space-y-3">
+        <div class="text-sm">
+          <span class="text-gray-600">Remember your password? </span>
+          <NuxtLink to="/login" class="text-brand-600 hover:underline font-medium">Sign in here</NuxtLink>
+        </div>
+        <div class="text-sm">
+          <span class="text-gray-600">Don't have an account? </span>
+          <NuxtLink to="/register" class="text-brand-600 hover:underline font-medium">Create one</NuxtLink>
+        </div>
       </div>
     </div>
   </div>
@@ -48,7 +62,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import useApi from '~/composables/useApi'
+import { signIn } from '#auth'
 import { useAppAlert } from '~/composables/useAppAlert'
 
 const email = ref('')
@@ -56,7 +70,6 @@ const isLoading = ref(false)
 const error = ref(null)
 const submitted = ref(false)
 
-const api = useApi()
 const alert = useAppAlert()
 
 async function submit() {
@@ -65,11 +78,15 @@ async function submit() {
   error.value = null
 
   try {
-    await api.post('/api/auth/forgot-password', { email: email.value })
+    // Use NextAuth's email provider for magic link
+    await signIn('email', { 
+      email: email.value, 
+      redirect: false 
+    })
     submitted.value = true
   } catch (e) {
-    console.error('Forgot password request failed', e)
-    const msg = e?.response?.data?.message || e?.message || 'Failed to send reset link. Please try again.'
+    console.error('Magic link request failed', e)
+    const msg = e?.message || 'Failed to send magic link. Please try again.'
     error.value = msg
     try { alert.push({ message: msg, type: 'error', icon: 'heroicons:exclamation-circle' }) } catch (err) {}
   } finally {

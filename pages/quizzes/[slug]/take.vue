@@ -717,7 +717,7 @@ function retakeQuiz() {
   clearSavedAnswers()
   // Reset achievement tracking
   resetAchievements()
-  window.location.reload()
+  router.go(0)
 }
 
 // Results modal handlers
@@ -745,7 +745,7 @@ function handleRetakeQuiz() {
   showResultsModal.value = false
   // Clear the attempted flag for local storage so they can try again
   try { localStorage.removeItem(`guest:${slug}:identifier`) } catch (e) {}
-  window.location.reload()
+  router.go(0)
 }
 
 </script>

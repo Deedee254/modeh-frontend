@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from '#imports'
+import { signOut } from '#auth'
 
 // Module-scoped memoization so all callers (and multiple composable instances)
 // share the same CSRF init state and avoid duplicate /sanctum/csrf-cookie calls.
@@ -7,9 +8,6 @@ let _csrfFetchedAt = 0
 // cache XSRF token reads briefly to avoid repeated document.cookie parsing
 let _lastXsrf: string | null = null
 let _lastXsrfAt = 0
-// Session renewal tracking
-let _lastSessionRenewal = 0
-let _sessionRenewalPromise: Promise<void> | null = null
 
 export function useApi() {
   const config = useRuntimeConfig()
@@ -115,15 +113,6 @@ export function useApi() {
     return _ensureCsrfPromise
   }
 
-  // Previously this function attempted to renew the session by calling /api/me
-  // on a timer. That behavior caused login and other auth flows to fail when
-  // the renewal returned 401 and threw before the intended request ran.
-  // To avoid those issues we make ensureSession a no-op; CSRF initialization
-  // is still performed when needed via ensureCsrf().
-  async function ensureSession() {
-    return
-  }
-
   // Build common non-JSON headers (GET, DELETE, form-data)
   function commonHeaders() {
     const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
@@ -140,7 +129,6 @@ export function useApi() {
   }
 
   async function get(path: string) {
-    await ensureSession()
     // Does not require ensureCsrf() for GET requests
     return fetch(config.public.apiBase + path, {
       method: 'GET',
@@ -159,9 +147,6 @@ export function useApi() {
   }
 
   async function postJson(path: string, body: any) {
-    // Skip session renewal check for authentication endpoints (login/register/logout)
-    const skipSession = typeof path === 'string' && (path === '/api/login' || path === '/login' || path === '/api/logout' || path.endsWith('/login'))
-    if (!skipSession) await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
@@ -214,7 +199,6 @@ export function useApi() {
   }
 
   async function postFormData(path: string, formData: FormData) {
-    await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
@@ -226,7 +210,6 @@ export function useApi() {
   }
 
   async function del(path: string) {
-    await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'DELETE',
@@ -236,39 +219,18 @@ export function useApi() {
     return resp
   }
 
-  // Handle authentication-related response codes. Returns true if handled (redirect initiated).
-  function handleAuthStatus(resp: Response) {
+  // Handle authentication-related response codes via nuxt-auth
+  async function handleAuthStatus(resp: Response) {
     if (!resp) return false
     if (resp.status === 419 || resp.status === 401) {
-      // would surface as SSR warnings in the devtools. Only log on the client.
-      try { if (typeof window !== 'undefined') console.warn('[useApi] auth error', resp.status) } catch (e) { }
-      // Simple router-based redirect to login. Use a global flag to avoid
-      // duplicate redirects when multiple requests fail at once.
-      try {
-        if (typeof window !== 'undefined') {
-          const globalAny: any = window as any
-          if (globalAny.__modeh_auth_redirected) return true
-          // If we're already on the login page, don't redirect again
-          const isLoginPath = window.location && window.location.pathname && window.location.pathname.startsWith('/login')
-          if (isLoginPath) return true
-
-          // Attempt to use the app router for SPA navigation. If unavailable,
-          // fall back to a hard navigation (very rare in a Nuxt client).
-          try {
-            const router = (typeof useRouter === 'function') ? useRouter() : null
-            globalAny.__modeh_auth_redirected = true
-            if (router && typeof router.push === 'function') {
-              // Simple push to login (no returnTo query)
-              router.push('/login')
-            } else {
-              window.location.href = '/login'
-            }
-          } catch (e) {
-            // If router usage fails, do a direct navigation.
-            try { globalAny.__modeh_auth_redirected = true; window.location.href = '/login' } catch (err) { }
-          }
-        }
-      } catch (e) { }
+      if (typeof window !== 'undefined') {
+        const globalAny = window as any
+        if (globalAny.__modeh_auth_redirected) return true
+        globalAny.__modeh_auth_redirected = true
+        
+        // Use nuxt-auth signOut which clears session and redirects to login
+        await signOut({ callbackUrl: '/login', redirect: true })
+      }
       return true
     }
     return false
@@ -295,7 +257,6 @@ export function useApi() {
   }
 
   async function patchJson(path: string, body: any) {
-    await ensureSession()
     await ensureCsrf()
     const resp = await fetch(config.public.apiBase + path, {
       method: 'PATCH',
@@ -312,15 +273,13 @@ export function useApi() {
     _lastXsrfAt = 0
     _csrfFetchedAt = 0
     _ensureCsrfPromise = null
-    _lastSessionRenewal = 0
-    _sessionRenewalPromise = null
   }
 
   // Backwards-compatible aliases: many callers expect `api.post` rather than `postJson`.
   const post = (...args: Parameters<typeof postJson>) => postJson(...args)
   const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
 
-  return { ensureCsrf, ensureSession, getXsrfFromCookie, get, getPublic, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  return { ensureCsrf, getXsrfFromCookie, get, getPublic, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi

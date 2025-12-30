@@ -648,7 +648,7 @@ function retakeQuiz() {
   clearSavedAnswers()
   // Reset achievement tracking
   resetAchievements()
-  window.location.reload()
+  router.go(0)
 }
 
 </script>

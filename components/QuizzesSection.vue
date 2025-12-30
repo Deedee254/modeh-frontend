@@ -59,17 +59,17 @@
           </div>
 
           <div v-else>
-            <!-- Scroll container with snap points for better mobile feel -->
+            <!-- Responsive container: grid/list on mobile/sm/md, horizontal carousel only on lg+ -->
             <div 
               ref="carouselRef" 
-              class="overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth relative z-10 -mx-4 px-4 lg:-mx-2 lg:px-2"
+              class="no-scrollbar relative z-10 -mx-4 px-4 lg:-mx-2 lg:px-2 lg:overflow-x-auto lg:scroll-smooth"
             >
-              <div class="flex items-stretch gap-4 lg:gap-6 py-4">
+              <div class="py-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:flex lg:items-stretch lg:gap-6">
                 <!-- Card Width optimized: slightly visible next card on mobile -->
                 <div 
                   v-for="quiz in visibleQuizzes" 
                   :key="quiz.id" 
-                  class="flex-shrink-0 w-[260px] sm:w-[280px] lg:w-72 snap-start first:ml-0"
+                  class="flex-shrink-0 w-full lg:w-[260px] lg:snap-start first:ml-0"
                 >
                       <UiQuizCard
                         :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
@@ -92,7 +92,7 @@
                 </div>
 
                 <!-- End Spacer/CTA Card? -->
-                <div class="flex-shrink-0 w-[260px] sm:w-72 snap-start h-full">
+                <div class="flex-shrink-0 w-full lg:w-[260px] lg:snap-start h-full">
                   <NuxtLink to="/quizzes" class="h-full min-h-[300px] flex flex-col items-center justify-center gap-4 rounded-lg bg-white/5 border-2 border-dashed border-white/20 text-white hover:bg-white/10 transition-all p-6 text-center group">
                     <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Icon name="heroicons:arrow-right" class="h-6 w-6" />
@@ -107,7 +107,7 @@
             </div>
 
             <!-- Navigation Arrows (Hidden on small mobile where swipe is king, but shown above that) -->
-            <div class="hidden sm:block">
+            <div class="hidden lg:block">
               <button 
                 @click="scrollPrev" 
                 aria-label="Previous" 

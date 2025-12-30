@@ -977,7 +977,7 @@ async function refreshLimit() {
   }
 }
 
-function retry() { window.location.reload() }
+function retry() { router.go(0) }
 function redo() { router.push(type === 'quiz' && id ? `/quizee/quizzes/take/${id}` : '/quizee') }
 
 function payForThisItem() {
