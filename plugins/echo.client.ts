@@ -11,8 +11,10 @@ import Pusher from 'pusher-js'
 
 declare global {
   interface Window {
-    Echo: Echo<any>;
-    Pusher: typeof Pusher;
+    // Use `any` here to avoid conflicts with other ambient declarations
+    // in the codebase that type `window.Echo`/`window.Pusher` as `any`.
+    Echo: any;
+    Pusher: any;
   }
 }
 
@@ -205,9 +207,11 @@ export default defineNuxtPlugin(() => {
   }
 
   // On the server provide a null echo to avoid undefined injections
+  // Cast to `any` so the provided shape is compatible with the client
+  // branch and with other ambient typings in the project.
   return {
     provide: {
-      echo: null
+      echo: null as any
     }
   }
 })
