@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import type { Ref } from 'vue'
 import useApi from '~/composables/useApi'
 import { useInstitutionsStore } from '~/stores/institutions'
@@ -37,6 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
   const role: Ref<string | null> = ref(initialUser?.role || null)
   const guestPlayed = ref(false)
   const api = useApi()
+  const router = useRouter()
   const isFetchingUser = ref(false)
   // Deduplicate concurrent fetchUser calls
   let _fetchUserPromise: Promise<any> | null = null
@@ -105,15 +107,18 @@ export const useAuthStore = defineStore('auth', () => {
       // useAuth is auto-imported by @sidebase/nuxt-auth
       const auth = useAuth()
       if (auth && typeof auth.signOut === 'function') {
-        // Redirect to homepage after sign out
-        await auth.signOut({ callbackUrl: '/' })
+        // Use client-side redirect so router state is consistent and so
+        // we avoid a full page reload when possible. Ask the server not to
+        // perform a redirect by passing redirect: false, then navigate.
+        await auth.signOut({ redirect: false })
+        try { await router.push('/') } catch (e) { window.location.href = '/' }
       } else {
         // Fallback: just redirect to homepage
-        window.location.href = '/'
+        try { await router.push('/') } catch (e) { window.location.href = '/' }
       }
     } catch (e) {
       // Fallback: just redirect to homepage
-      window.location.href = '/'
+      try { await router.push('/') } catch (err) { window.location.href = '/' }
     }
   }
 

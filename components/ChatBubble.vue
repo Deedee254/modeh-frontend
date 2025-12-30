@@ -37,6 +37,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 const open = ref(false)
 const threads = ref([])
 
@@ -63,7 +64,16 @@ async function loadThreads() {
 
 function openThread(t) {
   // navigate to full chat page with user_id or group_id
-  if (typeof window !== 'undefined') {
+  try {
+    const router = useRouter()
+    if (String(t.other_user_id).startsWith('group-')) {
+      const gid = String(t.other_user_id).replace('group-', '')
+      router.push({ path: '/quizee/chat', query: { group_id: gid } })
+    } else {
+      router.push({ path: '/quizee/chat', query: { user_id: String(t.other_user_id) } })
+    }
+  } catch (e) {
+    // Fallback to full navigation if router is not available or push fails
     if (String(t.other_user_id).startsWith('group-')) {
       const gid = String(t.other_user_id).replace('group-', '')
       window.location.href = '/quizee/chat?group_id=' + gid

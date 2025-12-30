@@ -242,7 +242,17 @@ export function useApi() {
         // The window.location redirect here signals the caller (via the 401/419 status check)
         // that they should also clear their local auth state if needed.
         try {
-          window.location.href = '/login'
+          try {
+            // Prefer client-side navigation via the router when available
+            const rt = (typeof useRouter === 'function') ? useRouter() : null
+            if (rt && typeof rt.push === 'function') {
+              rt.push('/login')
+            } else {
+              window.location.href = '/login'
+            }
+          } catch (_) {
+            window.location.href = '/login'
+          }
         } catch (_) {
           // fallback: do nothing if window access fails
         }

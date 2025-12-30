@@ -1,15 +1,19 @@
-import { onMounted, watch } from 'vue'
+import { watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 // Ensure we only run on client
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
+  // Ensure we only run on client
   if (process.client === false) return
 
   try {
     const auth = useAuth()
     const authStore = useAuthStore()
 
-    onMounted(async () => {
+    // Use Nuxt's app mounted hook instead of Vue's onMounted to avoid the
+    // "no active component instance" warning when installing lifecycle hooks
+    // from a plugin context.
+    nuxtApp.hook('app:mounted', async () => {
       try {
         // If already authenticated according to nuxt-auth, fetch the full user
         if (auth?.status?.value === 'authenticated') {
