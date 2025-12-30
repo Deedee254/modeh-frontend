@@ -1,5 +1,5 @@
 import { useRuntimeConfig } from '#imports'
-import { signOut } from '#auth'
+import * as auth from '#auth'
 
 // Module-scoped memoization so all callers (and multiple composable instances)
 // share the same CSRF init state and avoid duplicate /sanctum/csrf-cookie calls.
@@ -229,7 +229,31 @@ export function useApi() {
         globalAny.__modeh_auth_redirected = true
         
         // Use nuxt-auth signOut which clears session and redirects to login
-        await signOut({ callbackUrl: '/login', redirect: true })
+        // Prefer an exported signOut or logout, fall back to useAuth() APIs or a hard redirect.
+        try {
+          const signOutCandidate = (auth as any).signOut ?? (auth as any).logout
+          if (typeof signOutCandidate === 'function') {
+            await signOutCandidate({ callbackUrl: '/login', redirect: true })
+          } else if (typeof (auth as any).useAuth === 'function') {
+            try {
+              const a = (auth as any).useAuth()
+              if (a && typeof a.signOut === 'function') {
+                await a.signOut({ callbackUrl: '/login', redirect: true })
+              } else if (a && typeof a.logout === 'function') {
+                await a.logout({ callbackUrl: '/login', redirect: true })
+              } else {
+                window.location.href = '/login'
+              }
+            } catch (_) {
+              window.location.href = '/login'
+            }
+          } else {
+            // final fallback
+            window.location.href = '/login'
+          }
+        } catch (e) {
+          try { window.location.href = '/login' } catch (_) {}
+        }
       }
       return true
     }
