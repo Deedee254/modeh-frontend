@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
     <!-- Skeleton Loading State -->
-    <div v-if="pending" class="max-w-7xl mx-auto px-4 py-6 animate-pulse">
+    <div v-if="pending && !quizData" class="max-w-7xl mx-auto px-4 py-6 animate-pulse">
       <!-- New Integrated Hero Section -->
       <div class="mb-6">
         <div class="h-6 w-24 bg-gray-200 rounded-md mb-4"></div>
@@ -214,21 +214,23 @@
                 </div>
               </div>
 
-              <!-- Sign in prompt if guest completed -->
-              <div v-if="lastAttempt && !isLoggedIn" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p class="text-sm text-blue-900 mb-2">
+              <!-- Sign in prompt if guest completed (uses theme primary / buttons.brand styling) -->
+              <div v-if="lastAttempt && !isLoggedIn" class="rounded-lg p-4" :class="['bg-primary/10', 'border', 'border-primary/20']">
+                <p class="text-sm mb-3" :class="['text-primary']">
                   <strong>Save your results!</strong> Create an account to access your score history and track progress.
                 </p>
-                <div class="flex gap-2">
-                  <button 
+                <div class="flex gap-3">
+                  <button
                     @click="showLoginModal = true"
-                    class="flex-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
+                    class="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold transition"
+                    :class="['bg-primary', 'text-primary-foreground', 'hover:opacity-95']"
                   >
                     Sign In
                   </button>
-                  <NuxtLink 
+                  <NuxtLink
                     to="/register"
-                    class="flex-1 px-3 py-1.5 bg-white border border-blue-600 text-blue-600 text-xs font-semibold rounded hover:bg-blue-50 transition-colors text-center"
+                    class="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold transition text-center"
+                    :class="['bg-white', 'border', 'border-primary', 'text-primary', 'hover:bg-primary/5']"
                   >
                     Register
                   </NuxtLink>
@@ -379,33 +381,19 @@ const api = useApi()
 const slugRaw = computed(() => String(route.params.slug ?? ''))
 const slug = computed(() => slugRaw.value.replace(/^\{+|\}+$/g, ''))
 
-// Fetch quiz by slug - API still returns data with ID
+// Fetch quiz by slug or ID - singular show endpoint handles both via route model binding
 const { data: quizData, pending } = useFetch(() => {
   if (!slug.value) return null
-  // Ensure slug is URL-encoded and strip any accidental braces around the route param
   const safe = encodeURIComponent(slug.value)
-  // If the route param is numeric, treat it as an ID and fetch by id; otherwise fetch by slug
-  const isId = /^[0-9]+$/.test(slug.value)
-  return isId ? (config.public.apiBase + `/api/quizzes/${slug.value}`) : (config.public.apiBase + `/api/quizzes?slug=${safe}`)
+  return config.public.apiBase + `/api/quizzes/${safe}`
 }, {
-  credentials: 'omit',
+  credentials: isLoggedIn.value ? 'include' : 'omit',
   headers: {
     'X-Requested-With': 'XMLHttpRequest'
   },
   transform: (data) => {
-    // Accept multiple API shapes. If the API returned a direct quiz object (from /api/quizzes/{id})
-    // prefer that. Otherwise inspect { quiz } or { quizzes } shapes and extract the quiz.
-    if (!data) return { quiz: null }
-    if (data?.id || data?.slug) return { quiz: data }
-    if (data?.quiz) return { quiz: data.quiz }
-    if (data?.quizzes) {
-      // Prefer an exact slug match from the paginated results when possible
-      const list = (data.quizzes?.data && Array.isArray(data.quizzes.data)) ? data.quizzes.data : (Array.isArray(data.quizzes) ? data.quizzes : [])
-      const exact = list.find(item => String(item.slug) === String(slug.value))
-      const maybe = exact || list[0] || null
-      return { quiz: maybe || null }
-    }
-    return { quiz: null }
+    // Singular show endpoint returns { quiz: { ... } }
+    return { quiz: data?.quiz || data || null }
   }
 })
 
@@ -467,12 +455,13 @@ const structuredData = computed(() => {
 })
 
 // Computed properties for nested taxonomy data
-// Simplified: trust API shape { quiz: { topic, topic.subject, grade, level } }
-const topic_name = computed(() => quiz.value.topic?.name || null)
-const subject_name = computed(() => quiz.value.topic?.subject?.name || null)
-const grade_name = computed(() => quiz.value.grade?.name || null)
-const level_name = computed(() => quiz.value.level?.name || null)
+// Use flattened names from API (unified show endpoint)
+const topic_name = computed(() => quiz.value.topic_name || quiz.value.topic?.name || null)
+const subject_name = computed(() => quiz.value.subject_name || quiz.value.subject?.name || quiz.value.topic?.subject?.name || null)
+const grade_name = computed(() => quiz.value.grade_name || quiz.value.grade?.name || null)
+const level_name = computed(() => quiz.value.level_name || quiz.value.level?.name || null)
 const difficulty_level = computed(() => getDifficultyLevel(quiz.value.difficulty))
+const isLiked = computed(() => Boolean(quiz.value.liked))
 
 // Author, likes and pricing (match API: quiz.created_by, quiz.likes_count, quiz.is_paid, quiz.price)
 // Backend provides `created_by` which may be an id or a user object. Normalize to an object

@@ -178,19 +178,6 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { resolveAssetUrl } from '~/composables/useAssets'
-import { useQuizeeProfile } from '~/composables/useQuizeeProfile'
-import ChatModal from '~/components/ChatModal.vue'
-import { useAppAlert } from '~/composables/useAppAlert'
-
-definePageMeta({
-  layout: 'quiz-master',
-  middleware: ['auth'],
-  meta: [
-    { name: 'robots', content: 'noindex, nofollow' }
-  ]
-})
-
-const route = useRoute()
 const router = useRouter()
 
 // Extract the name from the route parameter

@@ -2,11 +2,10 @@
   "name": "nuxt-app",
   "type": "module",
   "private": true,
-  "scripts": {
+    "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "e2e": "playwright test",
-    "echo": "npx laravel-echo-server start",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
@@ -61,8 +60,7 @@
     "@vue/test-utils": "^2.2.3",
     "baseline-browser-mapping": "^2.9.11",
     "jsdom": "^27.0.0",
-    "laravel-echo": "^2.2.0",
-    "laravel-echo-server": "^1.6.3",
+  "laravel-echo": "^2.2.0",
     "pusher-js": "^8.4.0",
     "sharp": "^0.34.4",
     "vite-tsconfig-paths": "^5.1.4",

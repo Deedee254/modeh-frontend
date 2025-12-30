@@ -205,7 +205,6 @@ import useApi from '~/composables/useApi'
 // Page meta: use the authenticated layout and require auth middleware
 definePageMeta({
   layout: 'auth',
-  middleware: ['auth']
 })
 
 const message = ref(null)

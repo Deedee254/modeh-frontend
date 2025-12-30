@@ -20,10 +20,13 @@ export default defineEventHandler(async (event) => {
     { path: '/faq', priority: '0.5' },
     { path: '/terms', priority: '0.3' },
     { path: '/privacy', priority: '0.3' },
-    { path: '/quizee/quizzes', priority: '0.7' },
-    { path: '/quizee/tournaments', priority: '0.6' },
+    { path: '/tournaments', priority: '0.6' },
     { path: '/quiz-masters', priority: '0.6' },
-    { path: '/quizzes', priority: '0.7' }
+    { path: '/quizzes', priority: '0.7' },
+     { path: '/topics', priority: '0.7' },
+      { path: '/subjects', priority: '0.7' },
+       { path: '/grades', priority: '0.7' },
+        { path: '/levels', priority: '0.7' }
   ]
 
   for (const p of staticPages) urls.set(p.path, { lastmod: now, priority: p.priority })

@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800">
-    <!-- Hero Section - Full Width -->
+    <!-- Hero Section - Full Bleed -->
     <div class="w-full bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 text-white overflow-hidden relative">
       <div class="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full -mr-40 -mt-40 blur-3xl"></div>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div class="relative z-10 flex items-center gap-8">
           <div class="flex-1">
             <div class="text-sm font-medium opacity-90 uppercase tracking-wider">Welcome back</div>
@@ -11,15 +11,15 @@
             <p class="mt-3 text-base opacity-95 leading-relaxed max-w-md">Quick access to quizzes, challenges and your progress. Keep your streak going and unlock your potential!</p>
 
             <div class="mt-6 flex flex-wrap gap-3">
-              <NuxtLink to="/quizee/quizzes" class="inline-flex items-center gap-2 px-5 py-3 bg-white text-brand-600 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5">
+              <NuxtLink to="/quizee/quizzes" class="inline-flex items-center gap-2 px-6 py-3 bg-accent-500 text-slate-900 font-semibold rounded-xl hover:bg-accent-600 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path></svg>
                 Browse Quizzes
               </NuxtLink>
-              <NuxtLink to="/quizee/battles" class="inline-flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 rounded-lg text-white font-semibold transition-all duration-200 border border-white/30">
+              <NuxtLink to="/quizee/battles" class="inline-flex items-center gap-2 px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl text-white font-semibold transition-all duration-200 border border-white/30">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 Start a Battle
               </NuxtLink>
-              <NuxtLink to="/quizee/subscription" class="inline-flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 rounded-lg text-white font-semibold transition-all duration-200 border border-white/30">
+              <NuxtLink to="/quizee/subscription" class="inline-flex items-center gap-2 px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl text-white font-semibold transition-all duration-200 border border-white/30">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Subscription
               </NuxtLink>

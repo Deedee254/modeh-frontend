@@ -30,10 +30,10 @@
             <h3 class="text-lg font-bold text-emerald-900">Premium Access Active</h3>
             <p class="text-emerald-800 mt-2">Your <span class="font-semibold">{{ activePackageName }}</span> subscription is active. Enjoy unlimited quizzes, detailed analytics, and tournament access!</p>
             <div class="mt-4 flex flex-wrap gap-3">
-              <button @click="navigateTo('/quizee/dashboard')" class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition">
+              <button @click="navigateTo('/quizee/dashboard')" class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition">
                 Go to Dashboard
               </button>
-              <NuxtLink to="/quizee/profile" class="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg font-semibold hover:bg-emerald-50 transition">
+              <NuxtLink to="/quizee/profile" class="px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl font-semibold hover:bg-emerald-50 transition">
                 View Subscription Details
               </NuxtLink>
             </div>
@@ -237,6 +237,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useSubscriptionsStore } from '~/stores/subscriptions'
 import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
 import PageHero from '~/components/ui/PageHero.vue'
 import PaymentModal from '~/components/PaymentModal.vue'
 
@@ -245,6 +246,7 @@ definePageMeta({ layout: 'quizee' })
 const alert = useAppAlert()
 const subscriptionsStore = useSubscriptionsStore()
 const authStore = useAuthStore()
+const api = useApi()
 const config = useRuntimeConfig()
 const router = useRouter()
 
@@ -276,7 +278,14 @@ const quizeePackages = computed(() => {
 async function checkSubscription() {
   loading.value = true
   try {
-    const data = await $fetch(config.public.apiBase + '/api/subscriptions/mine', { credentials: 'include' })
+    const res = await api.get('/api/subscriptions/mine')
+    if (res.status === 401 || res.status === 419) {
+      // If unauthenticated, don't necessarily log out the whole app here
+      // but acknowledge we are not active
+      isActive.value = false
+      return
+    }
+    const data = await res.json().catch(() => null)
     const sub = data?.subscription || data?.data?.subscription || null
     isActive.value = !!(sub && (sub.status === 'active' || sub.status === 'paid'))
     activePackageName.value = sub?.package?.name || ''

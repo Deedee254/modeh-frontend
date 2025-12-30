@@ -245,31 +245,18 @@
         </div>
       </div>
     </div>
-    
-    <!-- Signed In Modal -->
-    <UModal v-model="showSignedInModal">
-        <template #default>
-            <div class="p-6 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                  <Icon name="heroicons:check" class="h-6 w-6 text-green-600" />
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900">You're already signed in</h3>
-                <p class="mt-2 text-sm text-slate-600">You are signed in as <strong>{{ auth.user?.name }}</strong>.</p>
-                <div class="mt-6 flex justify-center gap-3">
-                  <button @click="goToDashboard" class="btn-primary">Dashboard</button>
-                  <button @click="handleLogout" class="btn-secondary">Logout</button>
-                </div>
-            </div>
-        </template>
-    </UModal>
   </div>
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ['guest']
+})
+
 import AuthFeaturesPanel from '~/components/Auth/AuthFeaturesPanel.vue'
 import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 
@@ -427,7 +414,6 @@ async function submit() {
 // --- Utils ---
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-const showSignedInModal = ref(false)
 const institutions = ref([])
 
 function onTaxonomyComplete(data) {
@@ -442,14 +428,7 @@ function goToDashboard() {
   else router.push('/')
 }
 
-async function handleLogout() {
-  await auth.logout()
-  showSignedInModal.value = false
-}
-
 onMounted(async () => {
-   if (auth.user) showSignedInModal.value = true
-   
    // Check referral
    const route = useRoute()
    if (route.query.ref) referralCode.value = route.query.ref

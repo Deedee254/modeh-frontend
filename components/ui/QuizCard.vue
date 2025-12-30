@@ -158,11 +158,13 @@ import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
+import { useAuthStore } from '~/stores/auth'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import { useRuntimeConfig } from '#app'
 
 const config = useRuntimeConfig()
 const guestQuizStore = useGuestQuizStore()
+const auth = useAuthStore()
 const baseUrl = computed(() => {
   const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
   if (!base) return ''
@@ -316,6 +318,8 @@ function _updateMobile(e) {
   }
 }
 
+let echoChannel = null
+
 onMounted(() => {
   guestQuizStore.initializeStore()
   const quizId = props.quizId || (props.quiz && props.quiz.id)
@@ -333,12 +337,45 @@ onMounted(() => {
       // ignore
     }
   }
+
+  // Subscribe to Echo channel for quiz updates (only if user is logged in)
+  // Guests don't need real-time updates, so we skip subscription for them
+  if (process.client && typeof window !== 'undefined' && window.Echo && quizId && auth.user) {
+    try {
+      echoChannel = window.Echo.private(`quiz.${quizId}`)
+      echoChannel.listen('.App\\Events\\QuizLiked', (payload) => {
+        if (payload && payload.quiz && payload.quiz.id == quizId) {
+          if (!props.liked || (props.liked && payload.user && payload.user.id !== props.liked)) {
+            localLikes.value = (localLikes.value || 0) + 1
+          }
+        }
+      })
+    } catch (e) {
+      // Silently fail if Echo subscription fails
+      echoChannel = null
+    }
+  }
 })
 
 onUnmounted(() => {
   if (_mq) {
     if (_mq.removeEventListener) _mq.removeEventListener('change', _updateMobile)
     else if (_mq.removeListener) _mq.removeListener(_updateMobile)
+  }
+
+  // Clean up Echo channel subscription
+  if (echoChannel) {
+    try {
+      if (typeof echoChannel.stopListening === 'function') {
+        echoChannel.stopListening('.App\\Events\\QuizLiked')
+      }
+      if (typeof echoChannel.leave === 'function') {
+        echoChannel.leave()
+      }
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    echoChannel = null
   }
 })
 
@@ -379,24 +416,6 @@ async function toggleLike(e) {
       likeInFlight = false
     }
   }, 180)
-}
-
-if (process.client && typeof window !== 'undefined' && window.Echo) {
-  const quizId = props.quizId || null
-  if (quizId) {
-    try {
-      const ch = window.Echo.private(`quiz.${quizId}`)
-      ch.listen('.App\\Events\\QuizLiked', (payload) => {
-        if (payload && payload.quiz && payload.quiz.id == quizId) {
-          if (!props.liked || (props.liked && payload.user && payload.user.id !== props.liked)) {
-            localLikes.value = (localLikes.value || 0) + 1
-          }
-        }
-      })
-    } catch (e) {
-      console.error('Echo attach failed for quiz liked', e)
-    }
-  }
 }
 
 const resolvedCover = computed(() => {

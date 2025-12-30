@@ -10,7 +10,7 @@
           </ClientOnly>
         </div>
         <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
-        <div class="flex-1 flex flex-col transition-all duration-300 lg:ml-0" :style="{ marginLeft: contentMargin }">
+        <div class="flex-1 flex flex-col transition-all duration-300 lg:pl-[var(--sidebar-width,256px)]">
           <main :class="['flex-1 overflow-y-auto min-h-0', !route.meta.hideBottomNav && 'pb-20 md:pb-6']">
             <slot></slot>
           </main>
@@ -54,23 +54,9 @@ const route = useRoute()
 const auth = useAuthStore()
 const ui = useUiStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
-const isLargeScreen = ref(false)
 
 onMounted(() => {
-  // Check if screen is large on mount
-  isLargeScreen.value = window.innerWidth >= 1024
-  
-  // Update on resize
-  const handleResize = () => {
-    isLargeScreen.value = window.innerWidth >= 1024
-  }
-  
-  window.addEventListener('resize', handleResize)
-  return () => window.removeEventListener('resize', handleResize)
-})
-
-const contentMargin = computed(() => {
-  return isLargeScreen.value ? 'var(--sidebar-width, 0)' : '0'
+  // Screen logic moved to CSS classes for better hydration stability
 })
 </script>
 

@@ -29,10 +29,20 @@ function convertToCamelCase(obj: any): any {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const user: Ref<User | null> = ref(null)
-  const role: Ref<string | null> = ref(null)
+  // Hydrate from localStorage immediately if available (fast load)
+  const storedUser = (typeof window !== 'undefined' && localStorage.getItem('modeh:auth:user'))
+    ? JSON.parse(localStorage.getItem('modeh:auth:user')!)
+    : null
+
+  const user: Ref<User | null> = ref(storedUser)
+  const role: Ref<string | null> = ref(storedUser?.role || null)
   const guestPlayed = ref(false)
   const api = useApi()
+
+  // Ensure role and user refs are synced if hydration happened
+  if (storedUser && storedUser.role) {
+    role.value = storedUser.role
+  }
 
   async function login(email: string, password: string, remember: boolean = false) {
     const payload = { email, password, remember }
@@ -76,7 +86,7 @@ export const useAuthStore = defineStore('auth', () => {
         try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) { }
         try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })) } catch (e) { }
         try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => { }) } catch (err) { } } } catch (e) { }
-        
+
         // Sync guest quiz results to user account
         try {
           await syncGuestQuizResults()
@@ -117,7 +127,7 @@ export const useAuthStore = defineStore('auth', () => {
           try { const txt = await res.text(); if (txt) message = txt } catch (e) { }
         }
         const err = new Error(message)
-        try { ;(err as any).fields = parsedErrors } catch (e) { }
+        try { ; (err as any).fields = parsedErrors } catch (e) { }
         throw err
       }
 
@@ -132,10 +142,10 @@ export const useAuthStore = defineStore('auth', () => {
           const fullUser = await meRes.json()
           if (fullUser) setUser(fullUser)
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // Broadcast login event for cross-tab sync
-      try { if (typeof window !== 'undefined') localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })) } catch (e) {}
+      try { if (typeof window !== 'undefined') localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'login', ts: Date.now() })) } catch (e) { }
 
       // Sync any guest quiz results
       try { await syncGuestQuizResults() } catch (e) { console.warn('Failed to sync guest quiz results after register', e) }
@@ -147,21 +157,31 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    // 1. Immediately clear local state to update UI synchronously
+    // This prevents any "flash" of logged-in state if the user navigates away or reloads immediately
+    clear()
+
     if (typeof window !== 'undefined' && import.meta && import.meta.client) {
       try { localStorage.setItem('modeh:auth:event', JSON.stringify({ type: 'logout', ts: Date.now() })) } catch (e) { }
     }
 
-    // Call backend logout first to invalidate the session
-    // NOTE: This happens BEFORE we clear the local cache, so it uses the current valid CSRF token
+    // 2. Call backend logout to invalidate session
     try {
       await api.postJson('/api/logout', {})
     } catch (error) {
-      // Log but continue: logout should clear state even if POST fails
-      console.error('Logout API call failed (continuing with local clear)', error)
+      // Log but continue
+      console.error('Logout API call failed', error)
     }
 
-    // Now clear the local auth state AFTER the backend logout completes
-    clear()
+    // 3. Clear storage again just to be safe (in case clear() missed something or hydration re-populated)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('modeh:auth:user')
+        localStorage.removeItem('modeh:auth:token')
+        sessionStorage.removeItem('modeh:auth:user')
+        sessionStorage.removeItem('modeh:auth:token')
+      } catch (e) { }
+    }
 
     // Clear any persisted auth-related data from localStorage/sessionStorage
     if (typeof window !== 'undefined') {
@@ -198,14 +218,26 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     try {
       const res = await api.get('/api/me')
-      if (!res.ok) throw new Error('Failed to fetch user')
-      setUser(await res.json())
+      if (res.status === 401 || res.status === 419 || res.status === 403) {
+        clear()
+        return
+      }
+      if (!res.ok) {
+        // Log error but don't clear session yet — could be a temporary server/network issue
+        console.warn('Non-auth error fetching user:', res.status)
+        return
+      }
+      const json = await res.json().catch(() => null)
+      const userData = json && (json.user || json.data || json)
+      if (userData) setUser(userData)
+
       if (typeof window !== 'undefined' && import.meta && import.meta.client) {
         try { const notif = notificationsModule && notificationsModule.useNotificationsStore && notificationsModule.useNotificationsStore(); if (notif && notif.attachEchoListeners) notif.attachEchoListeners() } catch (e) { }
         try { const nuxtApp = useNuxtApp(); if (nuxtApp && typeof nuxtApp.$processPostLoginIntent === 'function') { try { nuxtApp.$processPostLoginIntent().catch(() => { }) } catch (err) { } } } catch (e) { }
       }
     } catch (error) {
-      clear()
+      // Network error or fetch failed — do NOT clear session, as it might just be offline/glitch
+      console.warn('Failed to fetch user (network/other error):', error)
     }
   }
 
@@ -214,7 +246,19 @@ export const useAuthStore = defineStore('auth', () => {
     if (newUser) {
       newUser = convertToCamelCase(newUser)
     }
+
+    // CRITICAL: Prevent setting empty or invalid user objects
+    // This fixes the "You are signed in as User (user)" issue where an empty object was being stored
+    if (!newUser || typeof newUser !== 'object' || !newUser.id) {
+      return
+    }
+
     user.value = newUser
+    // Persist to localStorage for fast rehydration
+    if (typeof window !== 'undefined' && newUser) {
+      try { localStorage.setItem('modeh:auth:user', JSON.stringify(newUser)) } catch (e) { }
+    }
+
     // Ensure role is accessible as a property on user for useUserRole composable
     if (newUser && newUser.role) {
       role.value = newUser.role
@@ -232,13 +276,13 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (e) { }
     try {
-      if (typeof window !== 'undefined' && newUser && newUser.is_profile_completed === false) {
+      if (typeof window !== 'undefined' && newUser && newUser.isProfileCompleted === false) {
         const skipped = (() => { try { return localStorage.getItem('modeh:onboarding:skipped') === '1' } catch (e) { return false } })()
         if (!skipped) {
           const router = useRouter()
           setTimeout(() => {
             try {
-              const isSocial = Boolean(newUser.social_provider || newUser.social_id)
+              const isSocial = Boolean(newUser.socialProvider || newUser.socialId)
               if (isSocial) router.push('/onboarding')
               else router.push('/complete-profile')
             } catch (e) { }
@@ -251,6 +295,9 @@ export const useAuthStore = defineStore('auth', () => {
   function clear(): void {
     user.value = null
     role.value = null
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('modeh:auth:user')
+    }
   }
 
   // Cross-tab auth sync: listen for storage events to handle token changes or explicit auth events
@@ -295,24 +342,24 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function syncGuestQuizResults() {
     if (typeof window === 'undefined' || !import.meta.client) return
-    
+
     try {
       const guestQuizStore = useGuestQuizStore()
       guestQuizStore.initializeStore()
-      
+
       const guestResults = guestQuizStore.getAllResults()
       if (!guestResults || guestResults.length === 0) return
-      
+
       // For now, we're just transferring the data to localStorage
       // The actual backend sync would happen via an endpoint
       // that creates QuizAttempt records for the authenticated user
       console.log('Guest quiz results available for sync:', guestResults)
-      
+
       // In a full implementation, you would:
       // 1. Call POST /api/quizzes/sync-guest-attempts with the results
       // 2. Backend would create QuizAttempt records for the user
       // 3. Clear the guest store after successful sync
-      
+
       // For now, results remain in localStorage and can be accessed by the user
     } catch (error) {
       console.error('Error syncing guest quiz results:', error)

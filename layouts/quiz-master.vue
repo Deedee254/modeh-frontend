@@ -14,7 +14,7 @@
         <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
 
         <!-- Main content area -->
-        <div class="flex-1 flex flex-col transition-all duration-300 lg:ml-0" :style="{ marginLeft: contentMargin }">
+        <div class="flex-1 flex flex-col transition-all duration-300 lg:pl-[var(--sidebar-width,256px)]">
           <main class="flex-1 overflow-y-auto pb-20 md:pb-6 min-h-0">
             <slot></slot>
           </main>
@@ -61,28 +61,10 @@ const auth = useAuthStore()
 const route = useRoute()
 const ui = useUiStore()
 const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
-const isLargeScreen = ref(false)
 
 onMounted(() => {
-  // Check if screen is large on mount
-  isLargeScreen.value = window.innerWidth >= 1024
-  
-  // Update on resize
-  const handleResize = () => {
-    isLargeScreen.value = window.innerWidth >= 1024
-  }
-  
-  window.addEventListener('resize', handleResize)
-  return () => window.removeEventListener('resize', handleResize)
+  // Screen logic handled by CSS for hydration stability
 })
-
-const contentMargin = computed(() => {
-  return isLargeScreen.value ? 'var(--sidebar-width, 0)' : '0'
-})
-
-if (auth && typeof auth.fetchUser === 'function') {
-  auth.fetchUser()
-}
 </script>
 
 <style scoped>

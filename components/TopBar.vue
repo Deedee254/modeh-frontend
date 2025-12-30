@@ -450,8 +450,6 @@ onMounted(() => {
       let userId = auth.user?.id
       if (userId) {
         bindEcho(userId)
-      } else {
-        auth.fetchUser().then(() => { if (auth.user?.id) bindEcho(auth.user.id) })
       }
       if (auth.user) notifications.attachEchoListeners()
     } catch (e) {}

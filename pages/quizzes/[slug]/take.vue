@@ -115,7 +115,22 @@ const quiz = ref({
 })
 
 // Template-safe alias that returns a plain object when `quiz.value` is undefined
-const Q = computed(() => quiz.value || { title: 'Loading...', description: '', questions: [], timer_seconds: null, attempts_allowed: null, shuffle_questions: false, shuffle_answers: false, access: 'free', use_per_question_timer: false, per_question_seconds: null })
+// Template-safe alias that returns a plain object when `quiz.value` is undefined
+const Q = computed(() => {
+  const base = quiz.value || {}
+  return {
+    title: base.title || 'Loading...',
+    description: base.description || '',
+    questions: Array.isArray(base.questions) ? base.questions : [],
+    timer_seconds: base.timer_seconds || null,
+    attempts_allowed: base.attempts_allowed || null,
+    shuffle_questions: !!base.shuffle_questions,
+    shuffle_answers: !!base.shuffle_answers,
+    access: base.access || 'free',
+    use_per_question_timer: !!base.use_per_question_timer,
+    per_question_seconds: base.per_question_seconds || null
+  }
+})
 const loading = ref(true)
 const submitting = ref(false)
 const lastSubmitFailed = ref(false)
@@ -393,7 +408,10 @@ function previousQuestion() {
 }
 const { currentStreak, achievements, encouragementMessage, encouragementStyle, calculateAchievements, resetAchievements } = useQuizEnhancements(quiz, progressPercent, currentQuestion, answers)
 
-const currentQuestionData = computed(() => quiz.value.questions[currentQuestion.value] || {})
+const currentQuestionData = computed(() => {
+  const qs = Q.value.questions
+  return (qs && qs[currentQuestion.value]) ? qs[currentQuestion.value] : {}
+})
 
 // Per-question timing (uses composable)
 
@@ -456,7 +474,7 @@ async function onQuestionSelect(val) {
   // This provides immediate feedback or saves verdict to guest store
   try {
     isMarking.value = true
-    const res = await api.postJsonPublic(`/api/quizzes/${slug}/mark`, {
+    const res = await api.postJsonPublic(`/api/guest/quizzes/${slug}/mark`, {
       question_id: q.id,
       selected: val,
       guest_identifier: guestIdentifier.value
@@ -524,7 +542,7 @@ onMounted(async () => {
   
   try {
     // Fetch quiz using slug (backend now supports slug resolution)
-    const res = await api.getPublic(`/api/quizzes/${slug}`)
+    const res = await api.getPublic(`/api/guest/quizzes/${slug}/questions`)
     if (res && res.ok) {
       const body = await res.json()
       quiz.value = body.quiz || body
@@ -634,7 +652,7 @@ async function submitAnswers() {
     console.log('First few answers detail:', finalAnswers.slice(0, 3))
     
     // Submit to public guest endpoint using api composable (handles baseUrl automatically)
-    const res = await api.postJsonPublic(`/api/quizzes/${slug}/submit`, payload)
+    const res = await api.postJsonPublic(`/api/guest/quizzes/${slug}/submit`, payload)
     console.log('Submission response status:', res.status)
     
     if (res.ok) {

@@ -17,9 +17,10 @@ export function useApi() {
   function getXsrfFromCookie() {
     try {
       if (typeof document === 'undefined') return null
-      // if we recently parsed the cookie, reuse the cached token for 30s (not 5s)
-      // to avoid re-parsing during logout->login flow
-      if (_lastXsrf && Date.now() - _lastXsrfAt < 30_000) return _lastXsrf
+      // if we recently parsed the cookie, reuse the cached token briefly (100ms)
+      // to avoid repeated parsing in tight loops, but don't hold it long enough
+      // to miss a token refresh (e.g. after login).
+      if (_lastXsrf && Date.now() - _lastXsrfAt < 100) return _lastXsrf
       const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
       if (!match || typeof match[1] !== 'string') return null
       _lastXsrf = decodeURIComponent(match[1])
@@ -34,12 +35,16 @@ export function useApi() {
 
   async function ensureCsrf() {
     // Avoid repeated network calls: if an ensure is in-flight, reuse its promise.
-    // Also skip a new fetch if we recently fetched and the cookie appears present.
-    // Note: After logout clears the cache (_csrfFetchedAt = 0), we MUST fetch fresh.
+    // Also skip a new fetch if the cookie is already present (e.g. from a backend redirect).
     try {
-      if (typeof document !== 'undefined' && _csrfFetchedAt > 0) {
+      if (typeof document !== 'undefined') {
         const xsrf = getXsrfFromCookie()
-        if (xsrf && Date.now() - _csrfFetchedAt < 30_000) return
+        if (xsrf) {
+          // If we have a cookie, we consider CSRF initialized. 
+          // We don't strictly need the 30s check here if we just want to avoid the redundant call.
+          _csrfFetchedAt = Date.now()
+          return
+        }
       }
     } catch (e) {
       // ignore cookie read errors and fall through to fetch
@@ -55,7 +60,7 @@ export function useApi() {
       // Use an AbortController to avoid hanging forever if the backend is unreachable.
       const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null
       // Give the backend a bit more time for slow dev environments
-      const timeoutMs = 10000
+      const timeoutMs = 15000
       let timeoutId: any = null
       try {
         if (controller) {
@@ -93,11 +98,11 @@ export function useApi() {
         try {
           if (e && e.name === 'AbortError') {
             // console.warn instead of console.error to reduce noise during dev
-            try { console.warn('CSRF fetch aborted (timeout).') } catch (_) {}
+            try { console.warn('CSRF fetch aborted (timeout).') } catch (_) { }
           } else {
-            try { console.error('Failed to fetch CSRF cookie', e) } catch (err) {}
+            try { console.error('Failed to fetch CSRF cookie', e) } catch (err) { }
           }
-        } catch (err) {}
+        } catch (err) { }
         // Re-throw a friendly error message for callers to handle.
         throw new Error('Unable to reach API to initialize CSRF token. Please check that the backend is running and reachable.');
       } finally {
@@ -133,7 +138,7 @@ export function useApi() {
     if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     return headers
   }
-  
+
   async function get(path: string) {
     await ensureSession()
     // Does not require ensureCsrf() for GET requests
@@ -185,7 +190,7 @@ export function useApi() {
   async function postJsonWithSocket(path: string, body: any) {
     await ensureCsrf()
     const headers = defaultJsonHeaders()
-    
+
     // Add Echo socket ID if available
     try {
       if (typeof window !== 'undefined' && (window as any).Echo) {
@@ -236,7 +241,7 @@ export function useApi() {
     if (!resp) return false
     if (resp.status === 419 || resp.status === 401) {
       // would surface as SSR warnings in the devtools. Only log on the client.
-      try { if (typeof window !== 'undefined') console.warn('[useApi] auth error', resp.status) } catch (e) {}
+      try { if (typeof window !== 'undefined') console.warn('[useApi] auth error', resp.status) } catch (e) { }
       // Simple router-based redirect to login. Use a global flag to avoid
       // duplicate redirects when multiple requests fail at once.
       try {
@@ -260,10 +265,10 @@ export function useApi() {
             }
           } catch (e) {
             // If router usage fails, do a direct navigation.
-            try { globalAny.__modeh_auth_redirected = true; window.location.href = '/login' } catch (err) {}
+            try { globalAny.__modeh_auth_redirected = true; window.location.href = '/login' } catch (err) { }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       return true
     }
     return false

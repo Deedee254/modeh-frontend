@@ -1,7 +1,7 @@
 <template>
   <nav
-    v-if="isMobile && !ui.sidebarOpen"
-    class="fixed inset-x-0 bottom-0 z-50 safe-area-bottom"
+    v-if="!ui.sidebarOpen"
+    class="fixed inset-x-0 bottom-0 z-50 safe-area-bottom md:hidden"
     role="navigation"
     aria-label="Primary mobile navigation"
   >
@@ -22,9 +22,8 @@
       </Transition>
 
       <!-- Bottom nav bar -->
-      <div class="relative w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-700/60 shadow-lg z-40">
-      <div class="max-w-7xl mx-auto px-4 py-4">
-        <div class="flex items-center justify-between gap-2">
+      <div v-if="isMounted" class="flex h-16 w-full items-center justify-around bg-white/80 px-4 shadow-[0_-1px_10px_-2px_rgba(0,0,0,0.05)] backdrop-blur-md dark:bg-slate-800/80">
+        <div class="flex items-center justify-between gap-2 w-full">
           <!-- Left: Explore Menu -->
           <div class="flex-1 flex justify-start">
             <BottomNavDropdown
@@ -89,7 +88,7 @@
             </button>
           </div>
         </div>
-      </div>
+      <slot name="right" />
     </div>
     </nav>
 </template>
@@ -108,6 +107,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const ui = useUiStore()
 const { currentRoleMenus } = useBottomNavMenus()
+const isMounted = ref(false)
 
 const width = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
 const isMobile = computed(() => width.value < 768)
@@ -203,6 +203,7 @@ function handleLogout() {
 }
 
 onMounted(() => {
+  isMounted.value = true
   updateWidth()
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', updateWidth)

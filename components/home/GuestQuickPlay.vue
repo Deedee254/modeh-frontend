@@ -239,21 +239,41 @@ const quizzes = ref<any[]>([])
 const loadingQuizzes = ref(false)
 const previousAttempt = ref<any>(null)
 
-// Fetch Quizzes when switching to quiz mode
-watch(mode, (newMode) => {
-  if (newMode === 'quiz') {
-     // Check if guest has any quiz attempts
-     guestQuizStore.initializeStore()
-     const allResults = guestQuizStore.getAllResults()
-     
-     if (allResults && allResults.length > 0) {
+// Fetch Quizzes when component mounts (client-only)
+onMounted(() => {
+  if (mode.value === 'quiz') {
+    // Check if guest has any quiz attempts
+    if (typeof window !== 'undefined') {
+      guestQuizStore.initializeStore()
+      const allResults = guestQuizStore.getAllResults()
+      
+      if (allResults && allResults.length > 0) {
         // Show the most recent result
         previousAttempt.value = allResults[allResults.length - 1]
-     } else if (quizzes.value.length === 0) {
+      } else if (quizzes.value.length === 0) {
         fetchQuizzes()
-     }
+      }
+    }
   }
-}, { immediate: true })
+})
+
+// Watch mode changes after mount
+watch(mode, (newMode) => {
+  if (typeof window === 'undefined') return // Skip on server
+  
+  if (newMode === 'quiz') {
+    // Check if guest has any quiz attempts
+    guestQuizStore.initializeStore()
+    const allResults = guestQuizStore.getAllResults()
+    
+    if (allResults && allResults.length > 0) {
+      // Show the most recent result
+      previousAttempt.value = allResults[allResults.length - 1]
+    } else if (quizzes.value.length === 0) {
+      fetchQuizzes()
+    }
+  }
+})
 
 async function fetchQuizzes() {
    loadingQuizzes.value = true

@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-2">
-    <!-- Guest: Login Button -->
-    <ClientOnly>
+    <template v-if="isMounted">
+      <!-- Guest: Login Button -->
       <template v-if="!isAuthed">
         <button
           @click="showLoginModal = true"
@@ -50,33 +50,30 @@
           </transition>
         </div>
       </template>
-    </ClientOnly>
+    </template>
 
     <!-- Login Modal -->
-    <ClientOnly>
-      <Teleport to="body">
-        <div
-          v-if="showLoginModal"
-          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          @click.self="showLoginModal = false"
-        >
-          <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div class="flex items-center justify-between p-6 border-b dark:border-slate-700">
-              <h2 class="text-xl font-bold text-slate-900 dark:text-white">Sign In</h2>
-              <button
-                @click="showLoginModal = false"
-                class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-              >
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-            </div>
-            <div class="p-6">
-              <LoginForm :compact="true" @login-success="handleLoginSuccess" />
-            </div>
+    <Teleport to="body" v-if="isMounted && showLoginModal">
+      <div
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        @click.self="showLoginModal = false"
+      >
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div class="flex items-center justify-between p-6 border-b dark:border-slate-700">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Sign In</h2>
+            <button
+              @click="showLoginModal = false"
+              class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+          <div class="p-6">
+            <LoginForm :compact="true" @login-success="handleLoginSuccess" />
           </div>
         </div>
-      </Teleport>
-    </ClientOnly>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -100,7 +97,8 @@ const showLoginModal = ref(false)
 const wrapper = ref(null)
 const menu = ref(null)
 const button = ref(null)
-const menuId = `account-menu-${Math.random().toString(36).slice(2,9)}`
+const menuId = `account-menu-${Math.random().toString(36).slice(2, 9)}`
+const isMounted = ref(false)
 
 const auth = useAuthStore()
 
@@ -155,6 +153,7 @@ watch(open, (val) => {
 })
 
 onMounted(() => {
+  isMounted.value = true
   // Ensure listeners are attached when component mounts
 })
 

@@ -140,7 +140,6 @@ import useTaxonomy from '~/composables/useTaxonomy'
 
 definePageMeta({
   layout: 'auth',
-  middleware: ['auth']
 })
 
 const router = useRouter()

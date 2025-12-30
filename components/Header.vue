@@ -112,8 +112,8 @@
 
         <!-- Auth buttons and User menu (hidden on institution-manager pages to avoid duplicate profile controls) -->
         <div class="flex items-center gap-3">
-                  <AccountMenu v-if="!route.path.startsWith('/institution-manager')" :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileLink" @logout="logout" />
-                </div>
+          <AccountMenu v-if="!route.path.startsWith('/institution-manager')" :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileLink" @logout="logout" />
+        </div>
 
         <!-- Mobile menu button -->
     <div class="flex items-center md:hidden">
@@ -202,7 +202,7 @@
                 <div class="font-semibold">Quiz Masters</div>
                 <div class="text-xs text-slate-500">Our creators</div>
               </NuxtLink>
-              <NuxtLink v-if="!isAuthed" to="/pricing" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
+                <NuxtLink v-if="!isAuthed" to="/pricing" class="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-center" @click="closeMobileMenu">
                 <div class="font-semibold">Pricing</div>
                 <div class="text-xs text-slate-500">Plans & pricing</div>
               </NuxtLink>
@@ -231,7 +231,8 @@ import { useAuthStore } from '~/stores/auth'
 import { useInstitutionsStore } from '~/stores/institutions'
 
 const auth = useAuthStore()
-const isAuthed = computed(() => !!(auth && auth.user && Object.keys(auth.user).length))
+const isAuthed = computed(() => !!auth?.user?.id)
+const isMounted = ref(false)
 const showDropdown = ref(false)
 const showMobileMenu = ref(false)
 const showQuizzesDropdown = ref(false)
@@ -332,6 +333,7 @@ onBeforeUnmount(() => {
 // preload taxonomy levels so unauthenticated users can navigate to levels/filters
 const { fetchLevels, levels, headerLevels } = useTaxonomy()
 onMounted(async () => {
+  isMounted.value = true
   try {
     await fetchLevels()
   } catch (e) {
