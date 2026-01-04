@@ -102,26 +102,13 @@ const error = ref(null)
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
-const api = useApi()
 const alert = useAppAlert()
-// Auth helper (signIn) provided by nuxt-auth / sidebase auto-import
+// Auth helpers from nuxt-auth / sidebase
 const { signIn } = useAuth()
 
 const compact = computed(() => props.compact || false)
 const wrapperClass = computed(() => compact.value ? 'mx-auto w-full max-w-md' : 'w-full')
 const cardClass = computed(() => compact.value ? 'rounded-2xl bg-white p-6 shadow-lg' : 'w-full max-w-md bg-white rounded-lg shadow p-8')
-
-async function ensureCsrfReady() {
-  try {
-    await api.ensureCsrf?.()
-  } catch (e) {
-    console.warn('CSRF pre-fetch failed, will retry on submit', e)
-  }
-}
-
-onMounted(async () => {
-  await ensureCsrfReady()
-})
 
 async function submit() {
   if (isLoading.value) return
@@ -129,36 +116,29 @@ async function submit() {
   error.value = null
 
   try {
-    // Perform client-side login so Laravel/Sanctum cookies are set in the browser.
-    // This ensures subsequent API calls include the session cookie and XSRF token.
-    await api.ensureCsrf()
-    const resp = await api.postJson('/api/login', {
+    // Use Nuxt-Auth signIn with credentials provider instead of direct API calls
+    // This handles session initialization, CSRF tokens, and cookies automatically
+    const result = await signIn('credentials', {
       email: email.value,
       password: password.value,
-      remember: remember.value
+      redirect: false
     })
 
-    if (!resp || !resp.ok) {
-      // Try to parse a helpful message from the response
-      let msg = 'Invalid email or password'
-      try {
-        const body = await resp.json().catch(() => null)
-        if (body) {
-          if (body.message) msg = body.message
-          else if (body.errors) {
-            const vals = Object.values(body.errors).flat()
-            if (vals.length) msg = vals.join('; ')
-          }
-        }
-      } catch (e) {
-        // ignore parsing errors
-      }
+    // Check for authentication errors from NextAuth
+    if (!result || !result.ok) {
+      const msg = result?.error || 'Invalid email or password'
+      console.error('[LoginForm] signIn failed:', result)
       throw new Error(msg)
     }
 
-    // Refresh the auth store/session from the API (now the browser has the session cookie)
+    // Refresh the auth store/session from the API
     const authStore = useAuthStore()
-    await authStore.fetchUser?.()
+    try {
+      await authStore.fetchUser?.()
+    } catch (e) {
+      console.warn('[LoginForm] fetchUser failed, but session may still be valid:', e)
+    }
+    
     // Ensure we have up-to-date role information (backend may take a moment to populate)
     await ensureUserRole(authStore)
     const user = authStore.user
@@ -188,13 +168,27 @@ async function signInGoogle() {
   error.value = null
 
   try {
-    await signIn('google', { redirect: false })
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Use Nuxt-Auth signIn with google provider
+    const result = await signIn('google', { redirect: false })
+    
+    if (!result || !result.ok) {
+      const msg = result?.error || 'Google sign-in failed'
+      console.error('[LoginForm] Google signIn failed:', result)
+      throw new Error(msg)
+    }
+    
+    // Brief wait for session to be fully established
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     const authStore = useAuthStore()
+    try {
       await authStore.fetchUser?.()
-      await ensureUserRole(authStore)
-      const user = authStore.user
+    } catch (e) {
+      console.warn('[LoginForm] fetchUser failed after Google signin, but session may be valid:', e)
+    }
+    
+    await ensureUserRole(authStore)
+    const user = authStore.user
 
     if (user) {
       await redirectAfterAuth(user)

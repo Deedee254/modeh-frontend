@@ -495,10 +495,8 @@ function pickPaletteClass(id){
 }
 
 onMounted(() => {
-  // Do CSRF prefetch first
-  api.ensureCsrf().catch(() => {})
-
-  // Then fetch other data in parallel
+  // Fetch data in parallel
+  // No CSRF prefetch needed - we use Bearer tokens for authenticated requests
   Promise.all([
     fetchGrades(),
     fetchAllSubjects(),

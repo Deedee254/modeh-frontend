@@ -5,6 +5,7 @@ const defaultPublicOrigin = process.env.NUXT_PUBLIC_BASE_URL ?? (process.env.NOD
 const publicBaseUrl = stripTrailingSlash(defaultPublicOrigin)
 const envAuthBaseUrl = process.env.NUXT_AUTH_BASE_URL ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL) : undefined
 const authBaseUrl = envAuthBaseUrl ?? `${publicBaseUrl}/api/auth`
+const defaultApiBase = stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://admin.modeh.co.ke'))
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
@@ -203,7 +204,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       // Backend API
-      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'https://admin.modeh.co.ke',
+      apiBase: defaultApiBase,
       baseUrl: publicBaseUrl,
       siteUrl: publicBaseUrl,
       

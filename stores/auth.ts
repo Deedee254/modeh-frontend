@@ -57,12 +57,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }, { immediate: true })
 
-  async function login(email: string, password: string, remember: boolean = false) {
-    // Legacy shim - components should use signIn('credentials', ...)
-    const { signIn } = useAuth()
-    return signIn('credentials', { email, password, redirect: false })
-  }
-
   async function register(payload: Record<string, any>) {
     try {
       const roleStr = payload?.role ?? ''
@@ -71,7 +65,9 @@ export const useAuthStore = defineStore('auth', () => {
       else if (roleStr === 'quiz-master' || roleStr === 'quiz_master') endpoint = '/api/register/quiz-master'
       else if (roleStr === 'institution-manager') endpoint = '/api/register/institution-manager'
 
-      const res = await api.postJson(endpoint, payload)
+      // Use postJsonPublic for registration since it's a public endpoint (unauthenticated flow)
+      // Don't require CSRF token - registration doesn't need session state
+      const res = await api.postJsonPublic(endpoint, payload)
       if (!res.ok) {
         let message = 'Registration failed'
         let parsedErrors: any = null
@@ -91,14 +87,25 @@ export const useAuthStore = defineStore('auth', () => {
         throw err
       }
 
-      // After successful registration, log them in via credentials if possible or just fetch session
+      // After successful registration, fetch the session
       await getSession()
-      await fetchUser()
+      // Try to fetch user from API
+      try {
+        await fetchUser()
+      } catch (e) {
+        // User fetch might fail if not auto-logged in; continue
+      }
 
       return { ok: true }
     } catch (error) {
       throw error
     }
+  }
+
+  async function login(email: string, password: string, remember: boolean = false) {
+    // Shim for any code that might still call this directly
+    const { signIn } = useAuth()
+    return signIn('credentials', { email, password, redirect: false })
   }
 
   async function logout() {
@@ -222,6 +229,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, role, guestPlayed, setGuestPlayed, login, register, logout, fetchUser, setUser, clear, syncGuestQuizResults, isFetchingUser }
+  return { user, role, guestPlayed, setGuestPlayed, logout, fetchUser, setUser, clear, syncGuestQuizResults, isFetchingUser }
 })
 

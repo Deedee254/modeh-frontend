@@ -465,7 +465,7 @@ function formatTime(seconds) {
 async function onQuestionSelect(val) {
   const q = currentQuestionData.value
   if (!q || !q.id) return
-  console.log('Question selected:', { questionId: q.id, questionType: q.type, answer: val })
+
   answers.value[q.id] = val
   // record per-question time
   recordQuestionTime(q.id)
@@ -492,7 +492,7 @@ async function onQuestionSelect(val) {
       })
     }
   } catch (e) {
-    console.error('Failed to mark question:', e)
+
   } finally {
     isMarking.value = false
   }
@@ -575,11 +575,11 @@ onMounted(async () => {
       // fill-blank handling is handled by the FillBlankCard component via v-model/select
     } else {
       // Handle quiz not found or other errors
-      console.error("Failed to load quiz", res.status)
+
       pushAlert({ message: 'Quiz not found or not accessible', type: 'error' })
     }
   } catch (e) {
-    console.error('Error loading quiz:', e)
+
     pushAlert({ message: 'Error loading quiz. Please try again.', type: 'error' })
   }
   loading.value = false
@@ -611,21 +611,18 @@ async function submitAnswers() {
         const parsed = JSON.parse(saved)
         if (parsed?.answers && Object.keys(parsed.answers).length > 0) {
           answersToSubmit = parsed.answers
-          console.log('Using saved answers from localStorage:', answersToSubmit)
+
         }
       }
     } catch (e) {
-      console.log('Could not retrieve saved answers, using in-memory:', e)
+
     }
 
     // Build answers payload using central normalization helpers.
     // This ensures consistent formatting between different quiz flows (battles, tournaments, normal quizzes).
     const sanitizedAnswers = formatAnswersForSubmission(answersToSubmit, questionTimes.value)
     
-    // Log for debugging
-    console.log('Raw answers object:', answersToSubmit)
-    console.log('Sanitized answers:', sanitizedAnswers)
-    console.log('Question times:', questionTimes.value)
+
     
     // Only filter out answers with question_id of 0 (completely invalid)
     const finalAnswers = sanitizedAnswers.filter(a => {
@@ -647,26 +644,24 @@ async function submitAnswers() {
       guest_identifier: guestIdentifier.value,
     }
 
-    console.log('Final payload being sent to server:', payload)
-    console.log('Number of answers in payload:', finalAnswers.length)
-    console.log('First few answers detail:', finalAnswers.slice(0, 3))
+
     
     // Submit to public guest endpoint using api composable (handles baseUrl automatically)
     const res = await api.postJsonPublic(`/api/guest/quizzes/${slug}/submit`, payload)
-    console.log('Submission response status:', res.status)
+
     
     if (res.ok) {
       // stop saving message
       submissionMessage.value = ''
       const body = await res.json()
-      console.log('Submission response body:', body)
+
       stopTimer()
       try { clearProgress() } catch (e) {}
       clearSavedAnswers()
 
       // For public submissions, store results and show modal
       const attemptResult = body?.attempt
-      console.log('Extracted attempt result from response:', attemptResult)
+
       
       if (attemptResult) {
         // Save the result to guest quiz store
@@ -685,13 +680,13 @@ async function submitAnswers() {
       return
     } else {
       // restore optimistic to null to indicate failure
-      console.error('Submission failed with status:', res.status)
+
       if (submissionInterval) { clearInterval(submissionInterval); submissionInterval = null }
       submissionMessage.value = ''
       // ensure no inline result is shown — stay on page with answers preserved for retry
       // show error alert and keep answers saved to allow retry
       let errMsg = 'Failed to submit quiz. Please try again.'
-      try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message; console.error('Submission error response:', errBody) } catch(e) {}
+      try { const errBody = await res.json(); if (errBody?.message) errMsg = errBody.message; } catch(e) {}
       pushAlert({ message: errMsg, type: 'error' })
       // Keep answers in-place so user can retry; showConfirm dialog will be closed and user can press Retry
     }

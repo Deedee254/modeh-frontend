@@ -10,6 +10,30 @@ let _lastXsrfAt = 0
 
 export function useApi() {
   const config = useRuntimeConfig()
+  // useAuth is auto-imported by Nuxt
+  const auth = useAuth()
+
+  function getAuthToken() {
+    try {
+      // Get the API token from Nuxt-Auth session (set by the backend during login)
+      if (auth && typeof auth.data !== 'undefined') {
+        const session = auth.data
+        if (typeof session === 'object' && session !== null) {
+          const sessionVal = 'value' in session ? session.value : session
+          if (sessionVal && sessionVal.user) {
+            const user = sessionVal.user as any
+            if (typeof user === 'object' && user?.apiToken) {
+              console.debug('[useApi] Using Bearer token from Nuxt-Auth session')
+              return user.apiToken
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.debug('[useApi] Error getting auth token:', e)
+    }
+    return null
+  }
 
   function getXsrfFromCookie() {
     try {
@@ -63,9 +87,25 @@ export function useApi() {
         if (controller) {
           timeoutId = setTimeout(() => controller.abort(), timeoutMs)
         }
-        await fetch(config.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include', signal: controller?.signal })
+        const fetchResp = await fetch(config.public.apiBase + '/sanctum/csrf-cookie', { credentials: 'include', signal: controller?.signal })
+        console.debug('[useApi] /sanctum/csrf-cookie response status:', fetchResp.status)
+        console.debug('[useApi] /sanctum/csrf-cookie response headers:', {
+          'content-type': fetchResp.headers.get('content-type'),
+          'set-cookie': fetchResp.headers.get('set-cookie'),
+          'access-control-allow-credentials': fetchResp.headers.get('access-control-allow-credentials')
+        })
 
-        // If we're in a browser, wait up to 1s, checking every 50ms for the
+        // Check for non-200 responses (404, 500, etc.)
+        if (!fetchResp.ok) {
+          let bodyMsg = ''
+          try {
+            const body = await fetchResp.text()
+            if (body) bodyMsg = `: ${body.substring(0, 200)}`
+          } catch (_) { }
+          throw new Error(`CSRF endpoint returned ${fetchResp.status}${bodyMsg}`)
+        }
+
+        // If we're in a browser, wait up to 2s, checking every 100ms for the
         // XSRF-TOKEN cookie to appear. If it appears earlier we return immediately.
         if (typeof document !== 'undefined') {
           const start = Date.now()
@@ -73,11 +113,12 @@ export function useApi() {
           // helps in slow dev environments where the cookie may be set a
           // little while after the fetch resolves. Keep this short enough
           // to avoid blocking the UI but long enough to avoid flaky races.
-          const timeout = 1000 // ms
-          const interval = 50 // ms
+          const timeout = 2000 // ms (increased from 1000)
+          const interval = 100 // ms (increased from 50)
           while (Date.now() - start < timeout) {
             const xs = getXsrfFromCookie()
             if (xs) {
+              console.debug('[useApi] XSRF-TOKEN found:', xs.substring(0, 10) + '...')
               _csrfFetchedAt = Date.now()
               return
             }
@@ -86,10 +127,13 @@ export function useApi() {
             await new Promise((r) => setTimeout(r, interval))
           }
           // final attempt
-          if (getXsrfFromCookie()) {
+          const finalXsrf = getXsrfFromCookie()
+          if (finalXsrf) {
+            console.debug('[useApi] XSRF-TOKEN found (final):', finalXsrf.substring(0, 10) + '...')
             _csrfFetchedAt = Date.now()
             return
           }
+          console.warn('[useApi] XSRF-TOKEN not found in document.cookie after polling. Available cookies:', document.cookie)
           // If we reach here, we failed to observe the XSRF cookie in the document
           // even though the backend responded to /sanctum/csrf-cookie. Surface
           // a clear, actionable error so callers can show a helpful message.
@@ -101,16 +145,26 @@ export function useApi() {
       } catch (e: any) {
         // If the fetch was aborted (timeout), don't log the raw AbortError stack to the console
         // — surface a friendlier, catchable error instead so callers can show an appropriate UI message.
+        let errorMsg = 'Unable to reach API to initialize CSRF token. Please check that the backend is running and reachable.'
         try {
           if (e && e.name === 'AbortError') {
-            // console.warn instead of console.error to reduce noise during dev
-            try { console.warn('CSRF fetch aborted (timeout).') } catch (_) { }
+            errorMsg = `CSRF token request timed out (${timeoutMs}ms). Backend may be unreachable or slow.`
+            try { console.warn(errorMsg) } catch (_) { }
+          } else if (e && e.message) {
+            try { 
+              console.error('[useApi] CSRF fetch failed:', {
+                error: e.message,
+                status: e.status || 'unknown',
+                type: e.name || 'unknown'
+              })
+            } catch (err) { }
+            errorMsg = `CSRF initialization failed: ${e.message}. Check backend health and CORS configuration.`
           } else {
             try { console.error('Failed to fetch CSRF cookie', e) } catch (err) { }
           }
         } catch (err) { }
         // Re-throw a friendly error message for callers to handle.
-        throw new Error('Unable to reach API to initialize CSRF token. Please check that the backend is running and reachable.');
+        throw new Error(errorMsg);
       } finally {
         if (timeoutId) clearTimeout(timeoutId)
         // allow a subsequent call to create a new promise if needed
@@ -124,15 +178,25 @@ export function useApi() {
   // Build common non-JSON headers (GET, DELETE, form-data)
   function commonHeaders() {
     const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
-    const xsrf = getXsrfFromCookie()
-    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    const token = getAuthToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    } else {
+      const xsrf = getXsrfFromCookie()
+      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    }
     return headers
   }
 
   function defaultJsonHeaders() {
-    const xsrf = getXsrfFromCookie()
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    const token = getAuthToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    } else {
+      const xsrf = getXsrfFromCookie()
+      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    }
     return headers
   }
 
@@ -155,7 +219,7 @@ export function useApi() {
   }
 
   async function postJson(path: string, body: any) {
-    await ensureCsrf()
+    // No longer need ensureCsrf() since we use Bearer token authentication
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
@@ -181,7 +245,7 @@ export function useApi() {
 
   // POST JSON and include the current Echo socket id (if available) as X-Socket-Id
   async function postJsonWithSocket(path: string, body: any) {
-    await ensureCsrf()
+    // No longer need ensureCsrf() since we use Bearer token authentication
     const headers = defaultJsonHeaders()
 
     // Add Echo socket ID if available
@@ -207,7 +271,7 @@ export function useApi() {
   }
 
   async function postFormData(path: string, formData: FormData) {
-    await ensureCsrf()
+    // No longer need ensureCsrf() since we use Bearer token authentication
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
@@ -218,7 +282,7 @@ export function useApi() {
   }
 
   async function del(path: string) {
-    await ensureCsrf()
+    // No longer need ensureCsrf() since we use Bearer token authentication
     const resp = await fetch(config.public.apiBase + path, {
       method: 'DELETE',
       credentials: 'include',
@@ -283,7 +347,7 @@ export function useApi() {
   }
 
   async function patchJson(path: string, body: any) {
-    await ensureCsrf()
+    // No longer need ensureCsrf() since we use Bearer token authentication
     const resp = await fetch(config.public.apiBase + path, {
       method: 'PATCH',
       credentials: 'include',
@@ -305,7 +369,7 @@ export function useApi() {
   const post = (...args: Parameters<typeof postJson>) => postJson(...args)
   const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
 
-  return { ensureCsrf, getXsrfFromCookie, get, getPublic, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  return { ensureCsrf, getXsrfFromCookie, getAuthToken, get, getPublic, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi

@@ -116,12 +116,22 @@
         </div>
 
         <!-- Mobile menu button -->
-    <div class="flex items-center md:hidden">
-      <button @click="showSearch = !showSearch" class="mr-3">
-        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-      </button>
+        <div class="flex items-center md:hidden gap-2">
+          <!-- Search button -->
+          <button @click="showSearch = !showSearch" class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition" aria-label="Search">
+            <svg class="w-5 h-5 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </button>
+          <!-- Hamburger menu button -->
+          <button @click="showMobileMenu = !showMobileMenu" class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition" aria-label="Toggle mobile menu">
+            <svg v-if="!showMobileMenu" class="w-5 h-5 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+            <svg v-else class="w-5 h-5 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
       </div>
-    </div>
 
   <!-- Mobile Search -->
   <div v-if="showSearch" class="md:hidden px-4 pb-4">

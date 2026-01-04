@@ -64,6 +64,19 @@ async function submit() {
   submitting.value = true
   try {
     const api = useApi()
+    const { data, getSession } = useAuth()
+    
+    // Ensure session is fresh (especially after Google OAuth)
+    const session = await getSession()
+    console.log('[new-user] Current session:', { email: session?.user?.email, hasToken: !!session?.user?.apiToken })
+    
+    // If we don't have a token yet, we might not be authenticated properly
+    if (!session || !session.user || !session.user.apiToken) {
+      error.value = 'Authentication error. Please try logging in again.'
+      submitting.value = false
+      return
+    }
+    
     const stepName = role.value === 'quiz-master' ? 'role_quiz-master' : 'role_quizee'
     const resp = await api.postJson('/api/onboarding/step', {
       step: stepName,

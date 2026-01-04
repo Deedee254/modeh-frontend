@@ -144,6 +144,7 @@ import PageHero from '~/components/ui/PageHero.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import useQuizzes from '~/composables/useQuizzes'
+import useApi from '~/composables/useApi'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
@@ -194,8 +195,50 @@ async function doFetch() {
     per_page: 12
   }
   if (query.value) params.q = query.value
-  if (filterTopic.value) params.topic_id = filterTopic.value
-  if (subjectFilter.value) params.subject_id = subjectFilter.value
+  // Resolve topic/subject slugs to numeric ids when possible (backend filters expect ids)
+  const api = useApi()
+  if (filterTopic.value) {
+    const t = Number(filterTopic.value)
+    if (!Number.isNaN(t) && t > 0) params.topic_id = filterTopic.value
+    else {
+      // try local store first
+      const found = (store.topics || []).find(x => String(x?.slug) === String(filterTopic.value) || String(x?.name) === String(filterTopic.value))
+      if (found && found.id) params.topic_id = String(found.id)
+      else {
+        // fallback: try API lookup
+        try {
+          const res = await api.get(`/api/topics?per_page=20`)
+          if (res.ok) {
+            const json = await res.json()
+            const list = json?.topics || json?.data || []
+            const candidate = (Array.isArray(list) && list.find(ti => String(ti.slug) === String(filterTopic.value))) || null
+            if (candidate && candidate.id) params.topic_id = String(candidate.id)
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
+  if (subjectFilter.value) {
+    const s = Number(subjectFilter.value)
+    if (!Number.isNaN(s) && s > 0) params.subject_id = subjectFilter.value
+    else {
+      const found = (store.subjects || []).find(x => String(x?.slug) === String(subjectFilter.value) || String(x?.name) === String(subjectFilter.value))
+      if (found && found.id) params.subject_id = String(found.id)
+      else {
+        try {
+          const res = await api.get(`/api/subjects?per_page=20`)
+          if (res.ok) {
+            const json = await res.json()
+            const list = json?.subjects || json?.data || []
+            const candidate = (Array.isArray(list) && list.find(si => String(si.slug) === String(subjectFilter.value))) || null
+            if (candidate && candidate.id) params.subject_id = String(candidate.id)
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
   if (gradeFilter.value) params.grade_id = gradeFilter.value
   
   await fetchItems(params)

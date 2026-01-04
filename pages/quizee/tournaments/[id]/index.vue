@@ -622,7 +622,7 @@ const fetchTournament = async () => {
   try {
     loading.value = true;
     const response = await api.get(`/api/tournaments/${route.params.id}`);
-    if (api.handleAuthStatus(response)) return;
+    if (await api.handleAuthStatus(response)) return;
     const json: any = await response.json().catch(() => null);
 
     const payload = json?.tournament ?? json?.data ?? json;
@@ -633,7 +633,7 @@ const fetchTournament = async () => {
     try {
       if (eligibility.value?.reason === 'authentication_required' && auth.user && !_retryAuthAttempted.value) {
         _retryAuthAttempted.value = true;
-        await api.ensureCsrf().catch(() => {});
+        // GET /api/me doesn't need CSRF token - uses Bearer token instead
         const meRes = await api.get('/api/me');
         if (!api.handleAuthStatus(meRes) && meRes.ok) {
           const meJson = await meRes.json().catch(() => null);
@@ -734,7 +734,7 @@ const fetchTournament = async () => {
 const checkQualificationStatus = async () => {
   try {
     const response = await api.get(`/api/tournaments/${route.params.id}/qualification-status`)
-    if (api.handleAuthStatus(response)) return;
+    if (await api.handleAuthStatus(response)) return;
     const json: any = await response.json().catch(() => null)
     userHasQualified.value = !!(json?.qualified ?? false)
   } catch (error) {
@@ -745,7 +745,7 @@ const checkQualificationStatus = async () => {
 const checkRegistrationStatus = async () => {
   try {
     const response = await api.get(`/api/tournaments/${route.params.id}/registration-status`);
-    if (api.handleAuthStatus(response)) return;
+    if (await api.handleAuthStatus(response)) return;
     const json: any = await response.json().catch(() => null);
     const isReg = !!(json?.data?.isRegistered ?? json?.isRegistered);
     isRegistered.value = isReg;
@@ -758,7 +758,7 @@ const checkRegistrationStatus = async () => {
 const fetchLeaderboard = async () => {
   try {
     const response = await api.get(`/api/tournaments/${route.params.id}/leaderboard`);
-    if (api.handleAuthStatus(response)) return;
+    if (await api.handleAuthStatus(response)) return;
     const json: any = await response.json().catch(() => null);
     const list = json?.leaderboard ?? json?.data ?? json ?? [];
     topPlayers.value = Array.isArray(list) ? (list as Player[]).slice(0, 5) : [];
@@ -772,7 +772,7 @@ const fetchAdminRoundInfo = async () => {
   if (!auth.user || !(auth.user.role === 'quiz-master' || auth.user.role === 'admin')) return;
   try {
     const res = await api.get(`/api/tournaments/${route.params.id}/tree`);
-    if (api.handleAuthStatus(res)) return;
+    if (await api.handleAuthStatus(res)) return;
     const json = await res.json().catch(() => null);
     const bracket = json?.bracket ?? json?.data?.bracket ?? null;
     if (!bracket) return;
@@ -835,7 +835,7 @@ const registerForTournament = async () => {
 
     loading.value = true;
     const res = await api.postJson(`/api/tournaments/${route.params.id}/join`, {});
-    if (api.handleAuthStatus(res)) return;
+    if (await api.handleAuthStatus(res)) return;
 
     if (res.ok) {
       isRegistered.value = true;

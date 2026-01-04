@@ -69,8 +69,7 @@ export default defineNuxtPlugin(() => {
             const api = useApi()
             const url = `${config.public.apiBase}/api/broadcasting/auth`
             try {
-              // Ensure CSRF cookie is available (composable handles polling and timeouts)
-              await api.ensureCsrf()
+              // Broadcasting auth uses Bearer token auth, no CSRF needed
 
               // Use the composable to POST with credentials and standard headers
               const resp = await api.postJson('/api/broadcasting/auth', {
@@ -81,19 +80,19 @@ export default defineNuxtPlugin(() => {
               if (!resp || !resp.ok) {
                 let bodyText = ''
                 try { bodyText = await resp?.text() ?? '' } catch (e) { bodyText = '<failed to read response body>' }
-                console.error('Pusher auth request failed', { url, status: resp?.status, statusText: resp?.statusText, body: bodyText, socketId, channel: channel.name })
+
                 return callback(new Error(`Auth failed: ${resp?.status} ${resp?.statusText} - ${bodyText}`), null)
               }
 
               const data = await resp.json()
               if (!data || (typeof data.auth !== 'string' && !data.auth)) {
-                console.error('Pusher auth response missing `auth` field', { data, url, socketId, channel: channel.name })
+
                 return callback(new Error('Auth response missing auth info'), null)
               }
 
               return callback(null, data)
             } catch (error) {
-              console.error('Pusher authorize error (useApi):', error)
+
               return callback(error, null)
             }
           })()

@@ -42,41 +42,107 @@ export default NuxtAuthHandler({
             }
           })
 
-          const user = await res.json()
+          if (!res.ok) {
+            console.error('[Auth] Login failed:', res.status, res.statusText)
+            return null
+          }
 
-          if (res.ok && user) {
-            // Return user object which will be saved in the JWT
-            // Laravel usually returns { user: { id, name, email, ... }, token: '...' }
-            // or just the user object depending on setup.
-            const userData = user.user || user.data || user
+          const data = await res.json()
+          console.log('[Auth] Login response received:', { id: data.id, email: data.email, role: data.role })
+
+          // Backend returns user data at top level: { id, name, email, role, image, token, ... }
+          if (data && data.id) {
             return {
-              id: userData.id,
-              name: userData.name,
-              email: userData.email,
-              role: userData.role,
-              image: userData.avatar || userData.image
+              id: String(data.id),
+              name: data.name || data.email,
+              email: data.email,
+              role: data.role || 'user',
+              image: data.image || data.avatar,
+              // Store the API token from backend so we can use it for authenticated API calls
+              apiToken: data.token
             }
           }
           return null
         } catch (e) {
-          console.error('Auth error:', e)
+          console.error('[Auth] authorize error:', e)
           return null
         }
       }
     })
   ],
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60,  // 30 days
+    updateAge: 24 * 60 * 60  // Update session every 24 hours
+  },
+  cookies: {
+    sessionToken: {
+      name: `authjs.session-token`,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60  // 30 days
+      }
+    }
+  },
   callbacks: {
     async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id
         token.role = (user as any).role
+        // Persist the API token from backend
+        token.apiToken = (user as any).apiToken
       }
+      
+      // For Google OAuth (account?.provider === 'google'), we need to fetch the apiToken from backend
+      // if we don't have it yet
+      if (account?.provider === 'google' && (!token.apiToken || token.apiToken === undefined)) {
+        try {
+          const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
+          console.log('[Auth] Google OAuth detected, fetching apiToken from backend...')
+          
+          // Call the backend to get/create a Sanctum token for this user
+          const res = await fetch(`${apiBase}/api/auth/social-sync`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+              provider: 'google',
+              id: (profile as any)?.sub || token.sub || '',
+              email: token.email,
+              name: token.name,
+              image: token.picture
+            })
+          })
+          
+          if (res.ok) {
+            const data = await res.json()
+            if (data.token) {
+              token.apiToken = data.token
+              console.log('[Auth] apiToken obtained from backend')
+            }
+          } else {
+            console.warn('[Auth] Failed to fetch apiToken from backend:', res.status)
+          }
+        } catch (e) {
+          console.error('[Auth] Error fetching apiToken:', e)
+          // Continue without apiToken - user may not be registered yet
+        }
+      }
+      
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id as string
         (session.user as any).role = token.role as string
+        // Make the API token available to the frontend
+        (session.user as any).apiToken = token.apiToken as string
       }
       return session
     }

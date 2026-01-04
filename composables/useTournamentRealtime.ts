@@ -5,7 +5,7 @@ import Echo from 'laravel-echo'
 import { useApi } from '~/composables/useApi'
 
 export function useTournamentRealtime(tournamentId: number | string) {
-    const echo = ref<Echo | null>(null)
+    const echo = ref<any>(null)
     const battleUpdates = ref<TournamentBattle[]>([])
     const isConnected = ref(false)
 
@@ -16,9 +16,16 @@ export function useTournamentRealtime(tournamentId: number | string) {
     onMounted(async () => {
         if (!tournamentId) return
 
-        // Ensure CSRF token is available for WebSocket authentication
-        await api.ensureCsrf()
-        const xsrfToken = api.getXsrfFromCookie()
+        // Get Bearer token for WebSocket authentication (if user is authenticated)
+        let authHeaders: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
+        try {
+            const token = api.getAuthToken()
+            if (token) {
+                authHeaders['Authorization'] = `Bearer ${token}`
+            }
+        } catch (e) {
+            // Continue without Bearer token if not authenticated - public channels may be accessible
+        }
 
         echo.value = new Echo({
             broadcaster: 'pusher',
@@ -29,10 +36,7 @@ export function useTournamentRealtime(tournamentId: number | string) {
             forceTLS: false,
             enabledTransports: ['ws', 'wss'],
             auth: {
-                headers: {
-                    'X-XSRF-TOKEN': xsrfToken || '',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: authHeaders
             }
         })
 
