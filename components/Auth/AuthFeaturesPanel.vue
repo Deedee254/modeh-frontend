@@ -25,7 +25,7 @@
         Master your skills with Modeh
       </h1>
       <p class="text-brand-100 text-lg max-w-md">
-        Join a community of learners and educators. Challenge yourself, compete with others, and track your progress.
+        Join a community of Quizees and Quiz Masters. Challenge yourself, compete with others, and track your progress.
       </p>
     </div>
 
@@ -53,7 +53,7 @@
              </template>
           </div>
           <div class="text-sm">
-             <div class="font-bold text-white">10k+ Learners</div>
+             <div class="font-bold text-white">10k+ Quizees</div>
              <div class="text-brand-200">Joined this month</div>
           </div>
        </div>

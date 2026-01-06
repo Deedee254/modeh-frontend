@@ -12,7 +12,7 @@
             Login
           </button>
           <NuxtLink
-            to="/register?role=quizee"
+            to="/register/quizee"
             class="px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
           >
             Register
@@ -45,7 +45,7 @@
                 Sign In
               </button>
               <NuxtLink
-                to="/register?role=quizee"
+                to="/register/quizee"
                 class="block px-4 py-3 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors"
                 @click="showMobileAuthMenu = false"
               >

@@ -77,14 +77,14 @@
         <p class="text-slate-600 mb-6">You scored <span class="font-bold text-brand-600">{{ score }}</span> out of {{ totalQuestions }}</p>
         
         <div class="space-y-3 w-full max-w-xs">
-           <NuxtLink to="/register" class="block w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg transition-colors">
+           <NuxtLink to="/register/quizee" class="block w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg transition-colors">
               Create Free Account to Save
            </NuxtLink>
            <button @click="resetGame" class="block w-full py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl transition-colors">
               Try Another Topic
            </button>
         </div>
-        <p class="text-xs text-slate-400 mt-4">Join 10,000+ learners mastering new skills daily.</p>
+        <p class="text-xs text-slate-400 mt-4">Join 10,000+ Quizees mastering new skills daily.</p>
     </div>
 
     <!-- Initial State: Selection -->
@@ -146,7 +146,7 @@
                           Try Another Quiz
                        </button>
                        <NuxtLink 
-                          to="/register"
+                          to="/register/quizee"
                           class="block w-full py-2 bg-white border border-brand-600 text-brand-600 text-sm font-semibold rounded-lg hover:bg-brand-50 transition-colors"
                        >
                           Save Results

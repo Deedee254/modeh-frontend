@@ -2,7 +2,7 @@
   <div>
     <PageHero
       title="Plans & Pricing"
-      description="Flexible plans for individual learners and institutions. Start with a free trial or pick a plan that fits your needs."
+      description="Flexible plans for individual Quizees and institutions. Start with a free trial or pick a plan that fits your needs."
       :flush="true"
     >
       <template #eyebrow>
@@ -11,7 +11,7 @@
 
       <template #actions>
         <div class="flex flex-col sm:flex-row items-center gap-3 justify-center">
-          <NuxtLink to="/register" class="px-4 py-2 bg-white text-brand-600 rounded">Start free trial</NuxtLink>
+          <NuxtLink to="/register/quizee" class="px-4 py-2 bg-white text-brand-600 rounded">Start free trial</NuxtLink>
           <NuxtLink to="/contact" class="px-4 py-2 border rounded text-white/90">Contact sales</NuxtLink>
         </div>
       </template>
@@ -69,7 +69,7 @@
               <svg class="inline-block w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.5 1.5H5.75A2.25 2.25 0 003.5 3.75v12.5A2.25 2.25 0 005.75 18.5h8.5a2.25 2.25 0 002.25-2.25V10M10.5 1.5v4m0-4L16 7m-2 1.5h-8"/>
               </svg>
-              For Learners
+              For Quizees
             </button>
             <button 
               @click="pricingTab = 'institution'"
@@ -91,7 +91,7 @@
         <!-- Quizee Packages Section -->
         <div v-if="pricingTab === 'quizee'" class="animate-in fade-in duration-300">
           <div class="text-center mb-12">
-            <h3 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Designed for Learners</h3>
+            <h3 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Designed for Quizees</h3>
             <p class="text-lg text-slate-600">Choose your learning journey. Start free or upgrade for premium features.</p>
           </div>
 
@@ -281,10 +281,10 @@
       <div class="mx-auto max-w-7xl px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8 text-white">
         <div>
           <h3 class="text-3xl font-bold mb-2">Ready to transform learning?</h3>
-          <p class="text-lg text-brand-100">Join thousands of educators and learners already using Modeh.</p>
+          <p class="text-lg text-brand-100">Join thousands of Quiz Masters and Quizees already using Modeh.</p>
         </div>
         <div class="flex flex-col sm:flex-row items-center gap-4 shrink-0">
-          <NuxtLink to="/register" class="inline-flex items-center gap-2 bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition">
+          <NuxtLink to="/register/quizee" class="inline-flex items-center gap-2 bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition">
             Get Started Free
           </NuxtLink>
           <NuxtLink to="/contact" class="inline-flex items-center gap-2 border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/10 transition">
@@ -298,7 +298,7 @@
   <section class="px-6 py-20 bg-white">
       <div class="mx-auto max-w-7xl">
         <div class="text-center mb-12">
-          <h3 class="text-3xl font-bold text-gray-900 mb-3">Loved by educators and learners</h3>
+          <h3 class="text-3xl font-bold text-gray-900 mb-3">Loved by Quiz Masters and Quizees</h3>
           <p class="text-lg text-slate-600">See what our community has to say about Modeh</p>
         </div>
         <client-only>
@@ -365,9 +365,9 @@
 definePageMeta({
   title: 'Pricing — Modeh',
   meta: [
-    { name: 'description', content: 'Flexible plans for individual learners and institutions. Start with a free trial or pick a plan that fits your needs.' },
+    { name: 'description', content: 'Flexible plans for individual Quizees and institutions. Start with a free trial or pick a plan that fits your needs.' },
     { property: 'og:title', content: 'Pricing — Modeh' },
-    { property: 'og:description', content: 'Flexible plans for individual learners and institutions. Start with a free trial or pick a plan that fits your needs.' }
+    { property: 'og:description', content: 'Flexible plans for individual Quizees and institutions. Start with a free trial or pick a plan that fits your needs.' }
   ]
 })
 

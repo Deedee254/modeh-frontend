@@ -1,7 +1,10 @@
 <template>
   <div class="max-w-md mx-auto py-12 px-4">
     <h1 class="text-2xl font-bold mb-4">Welcome — choose your role</h1>
-    <p class="mb-6">Select whether you're a student (Quizee) or a teacher (Quiz Master). This is required to continue.</p>
+    <client-only>
+      <p v-if="email" class="text-sm text-gray-600 mb-2">Signed in as {{ email }}</p>
+    </client-only>
+    <p class="mb-6">Select whether you're a Quizee or a Quiz Master. This is required to continue.</p>
 
     <form @submit.prevent="submit" class="bg-white p-6 rounded-lg shadow-sm">
       <div class="mb-4">
@@ -9,19 +12,16 @@
         <div class="flex items-center space-x-4">
           <label class="flex items-center space-x-2 cursor-pointer">
             <input type="radio" v-model="role" value="quizee" />
-            <span>Quizee (student)</span>
+            <span>Quizee</span>
           </label>
           <label class="flex items-center space-x-2 cursor-pointer">
             <input type="radio" v-model="role" value="quiz-master" />
-            <span>Quiz Master (teacher)</span>
+            <span>Quiz Master</span>
           </label>
         </div>
       </div>
 
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Set a password</label>
-        <input v-model="password" type="password" minlength="8" class="w-full px-3 py-2 border rounded" placeholder="Choose a password (min 8 chars)" />
-      </div>
+      <!-- Password removed: role selection is sufficient for onboarding -->
 
       <div class="mt-6">
         <button :disabled="!role || submitting" class="w-full px-4 py-2 bg-brand-600 text-white rounded flex items-center justify-center gap-2">
@@ -37,17 +37,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'
+import { useAuthStore } from '~/stores/auth'
 const router = useRouter()
-
 // Set default role to 'quizee'
 const role = ref('quizee')
-const password = ref('')
 const submitting = ref(false)
 const message = ref('')
 const error = ref('')
+const authStore = useAuthStore()
+const email = computed(() => authStore.user?.email || '')
 
 async function submit() {
   message.value = ''
@@ -56,37 +57,46 @@ async function submit() {
     error.value = 'Please select a role to continue.'
     return
   }
-   if (!password.value) {
-    error.value = 'Please set a password to continue.'
-
-    return
-  }
   submitting.value = true
   try {
     const api = useApi()
     const { data, getSession } = useAuth()
-    
-    // Ensure session is fresh (especially after Google OAuth)
+
+    // Ensure session is fresh
     const session = await getSession()
     console.log('[new-user] Current session:', { email: session?.user?.email, hasToken: !!session?.user?.apiToken })
-    
-    // If we don't have a token yet, we might not be authenticated properly
-    if (!session || !session.user || !session.user.apiToken) {
+
+    // Require a valid session (either session cookie or JWT session)
+    if (!session || !session.user) {
       error.value = 'Authentication error. Please try logging in again.'
       submitting.value = false
       return
     }
-    
+
     const stepName = role.value === 'quiz-master' ? 'role_quiz-master' : 'role_quizee'
+    // Ensure CSRF cookie is initialized before POSTing — the backend validates XSRF
+    // for stateful API calls even when an API token may be present.
+    try {
+      await api.ensureCsrf()
+    } catch (e) {
+      // ignore — the subsequent POST will surface any network/CORS error
+    }
+
     const resp = await api.postJson('/api/onboarding/step', {
       step: stepName,
-      data: { role: role.value, password: password.value }
+      // Only send the role; password is not used in this flow
+      data: { role: role.value }
     })
-    if (!resp.ok) throw new Error('Failed to save role')
+    if (!resp.ok) {
+      let body = null
+      try { body = await resp.json() } catch (e) { /* ignore non-json */ }
+      const serverMsg = body && (body.errors || body.message) ? JSON.stringify(body.errors || body.message) : ''
+      throw new Error(`Failed to save role (status ${resp.status}) ${serverMsg}`)
+    }
 
-    message.value = 'Role saved. Continuing to onboarding.'
-    // After role is set, go to the main onboarding page which will continue the steps
-    setTimeout(() => router.replace('/onboarding'), 600)
+    message.value = `Success! Welcome ${session?.user?.name || 'to Modeh'}. Continuing to profile setup.`
+    // After role is set, go to the main onboarding page which will continue with institution/education details
+    setTimeout(() => router.replace('/onboarding'), 1000)
   } catch (e) {
     console.error(e)
     error.value = e?.message || 'Failed to save role'
@@ -94,6 +104,7 @@ async function submit() {
     submitting.value = false
   }
 }
+// No password input required on this page — role selection is sufficient.
 </script>
 
 <style scoped>

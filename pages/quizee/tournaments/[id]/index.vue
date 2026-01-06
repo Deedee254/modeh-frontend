@@ -195,11 +195,11 @@
                  </li>
                  <li v-if="tournament.access_type === 'grade' && tournament.grade" class="flex items-start gap-3 text-gray-600">
                     <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0"></span>
-                    <span>Only learners in grade {{ tournament.grade.name }} may join.</span>
+                    <span>Only Quizees in grade {{ tournament.grade.name }} may join.</span>
                  </li>
                  <li v-else-if="tournament.access_type === 'level' && tournament.level" class="flex items-start gap-3 text-gray-600">
                     <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0"></span>
-                    <span>Only learners at level {{ tournament.level.name }} may join.</span>
+                    <span>Only Quizees at level {{ tournament.level.name }} may join.</span>
                  </li>
                  <li v-if="tournament.entry_fee && Number(tournament.entry_fee) > 0" class="flex items-start gap-3 text-gray-600">
                     <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0"></span>
@@ -816,7 +816,7 @@ const registerForTournament = async () => {
     const openToSubscribers = Boolean((tournament.value as any)?.open_to_subscribers);
 
     if (eligibility.value?.reason === 'authentication_required') {
-      router.push(`/register?next=/quizee/tournaments/${route.params.id}`);
+      router.push(`/register/quizee?next=/quizee/tournaments/${route.params.id}`);
       return;
     }
 

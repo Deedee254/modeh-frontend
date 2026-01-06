@@ -70,7 +70,7 @@
                     size="lg"
                     variant="outline"
                     class="min-w-[180px] text-white border-white/40 hover:bg-white/10"
-                    to="/register?role=quiz-master"
+                    to="/register/quiz-master"
                   >
                     Become a quiz master
                   </UButton>
@@ -87,7 +87,7 @@
               <div class="flex items-center justify-between text-white/80">
                 <slot name="highlight">
                   <div>
-                    <p class="text-xs uppercase tracking-wide">Trusted by learners</p>
+                    <p class="text-xs uppercase tracking-wide">Trusted by Quizees</p>
                     <p class="mt-1 text-2xl font-semibold">15k+ students</p>
                   </div>
                 </slot>

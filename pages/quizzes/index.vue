@@ -126,7 +126,7 @@
         </div>
         <div class="flex flex-col sm:flex-row gap-3">
           <NuxtLink to="/quizzes" class="px-4 py-2 bg-white text-brand-600 rounded w-full sm:w-auto text-center">Browse all</NuxtLink>
-          <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 border rounded w-full sm:w-auto text-center">Create quiz</NuxtLink>
+          <NuxtLink to="/register/quiz-master" class="px-4 py-2 border rounded w-full sm:w-auto text-center">Create quiz</NuxtLink>
         </div>
       </div>
       </div>

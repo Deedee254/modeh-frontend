@@ -53,7 +53,7 @@
         </div>
         <div class="text-sm">
           <span class="text-gray-600">Don't have an account? </span>
-          <NuxtLink to="/register" class="text-brand-600 hover:underline font-medium">Create one</NuxtLink>
+          <NuxtLink to="/register/quizee" class="text-brand-600 hover:underline font-medium">Create one</NuxtLink>
         </div>
       </div>
     </div>

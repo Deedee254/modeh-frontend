@@ -2,7 +2,7 @@
   <div>
     <PageHero
       title="Browse by Grade"
-  description="Discover assessments curated for each grade and aligned to curriculum standards so learners and educators can assign and practice with confidence."
+  description="Discover assessments curated for each grade and aligned to curriculum standards so Quizees and Quiz Masters can assign and practice with confidence."
       :showSearch="true"
       :flush="true"
       @search="onSearch"

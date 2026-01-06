@@ -82,7 +82,7 @@
         <!-- Authenticated User Actions -->
         <div v-else class="rounded-lg bg-green-50 p-4 border border-green-200">
           <p class="text-green-800">
-            ✓ Your results have been saved to your account. Track your progress and compare with other learners!
+            ✓ Your results have been saved to your account. Track your progress and compare with other Quizees!
           </p>
         </div>
       </div>

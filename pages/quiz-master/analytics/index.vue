@@ -133,7 +133,7 @@ const statCards = computed(() => [
     label: 'Total quizzes',
     value: formatNumber(stats.value.totalQuizzes),
     trend: stats.value.totalQuizzesTrend,
-    description: 'Published quizzes available to learners'
+    description: 'Published quizzes available to Quizees'
   },
   {
     label: 'Total attempts',
@@ -151,7 +151,7 @@ const statCards = computed(() => [
     label: 'Completion rate',
     value: stats.value.completionRate != null ? `${Number(stats.value.completionRate).toFixed(1)}%` : '—',
     trend: stats.value.completionRateTrend,
-    description: 'Share of learners finishing quizzes'
+    description: 'Share of Quizees finishing quizzes'
   }
 ])
 

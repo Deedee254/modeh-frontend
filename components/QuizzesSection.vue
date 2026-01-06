@@ -5,7 +5,7 @@
       <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#6f0f12] via-[#8a1a1f] to-[#b23a3f] shadow-xl p-6 lg:p-10 border border-white/5">
         
         <!-- Section Header: Title + Sorting UI in line -->
-        <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 lg:mb-12">
+        <header v-if="props.showHeader" class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 lg:mb-12">
           <div class="flex-1">
             <h3 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Browse Quizzes</h3>
             <p class="mt-2 text-slate-100/80 text-sm max-w-xl hidden sm:block">
@@ -141,6 +141,7 @@ const props = defineProps({
   pickPaletteClass: { type: Function, required: true },
   onQuizLike: { type: Function, default: null },
   loading: { type: Boolean, default: false },
+  showHeader: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:selectedTab'])

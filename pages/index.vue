@@ -8,11 +8,9 @@
         :loading="quizzesLoading"
     />
 
-  <!-- Learn/Create/Manage CTAs removed from here and placed after Topics section -->
 
     <!-- Page Content Wrapper -->
     <div class="bg-gray-50">
-    <!-- How It Works -->
     <!-- How It Works & Quick Play -->
     <section class="relative py-24 bg-white overflow-hidden">
       <!-- Background Elements -->
@@ -94,12 +92,6 @@
       </div>
     </section>
 
-    <!-- Member Benefits Section -->
-    <MemberBenefits />
-
-    <!-- Institution Benefits Section -->
-    <InstitutionBenefits />
-
     <!-- Quizzes section (componentized) -->
     <QuizzesSection
       :quizzes="safeArray(displayedQuizzesByGrade)"
@@ -109,21 +101,22 @@
       :loading="quizzesLoading"
     />
 
-    <!-- Show quizzes for a few random subjects (reuse CategorizedQuizzes component) -->
-  <CategorizedQuizzes :levels="randomSubjects" :loading="quizzesLoading" type="subject" :columns="4" title="Subject quizzes" subtitle="Try quizzes from these subjects" bg-class="bg-white" />
-
-  <!-- Levels section replaced with CategorizedQuizzes component -->
+  <!-- Levels section  -->
   <CategorizedQuizzes :levels="safeArray(levels)" :loading="quizzesLoading" />
 
-  <!-- New CategoryBanner: replaces separate Grades and Courses sections -->
+  <!--  CategoryBanner: Grades and Courses section -->
   <CategoryBanner :grades="safeArray(GRADES)" :courses="safeArray(randomCourses)" />
 
-    <!-- Show quizzes for a few random topics (reuse CategorizedQuizzes component) -->
-    <CategorizedQuizzes :levels="randomTopics" :loading="quizzesLoading" type="topic" :columns="4" title="Topic quizzes" subtitle="Practice quizzes tied to these topics" />
+    <!-- Show quizzes for a few random subjects (reuse CategorizedQuizzes component) -->
+  <CategorizedQuizzes :levels="randomSubjects" :loading="quizzesLoading" type="subject" :columns="4" title="Subject quizzes" subtitle="Try quizzes from these subjects" bg-class="bg-white" />
 
     <!-- Learn/Create/Manage CTAs (shown only to unauthenticated users) -->
     <LearnCreateManagePills />
 
+    <!-- Show quizzes for a few random topics (reuse CategorizedQuizzes component) -->
+    <CategorizedQuizzes :levels="randomTopics" :loading="quizzesLoading" type="topic" :columns="4" title="Topic quizzes" subtitle="Practice quizzes tied to these topics" />
+
+    
 
     <!-- Tournaments Section -->
     <TournamentSection />
@@ -134,7 +127,7 @@
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Creators</div>
           <h3 class="mt-2 text-3xl font-bold text-slate-900">Creators & contributors</h3>
-          <p class="mt-3 text-slate-600">Educators and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
+          <p class="mt-3 text-slate-600">Quiz Masters and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
         </div>
   <!-- Mobile: carousel; Desktop: grid -->
   <ClientOnly>
@@ -167,9 +160,9 @@
               Ready to Start Your Learning Journey?
             </h2>
             <p class="mx-auto mt-4 max-w-2xl text-lg text-white/90">
-              Join thousands of learners and creators. Sign up for free to access quizzes, track your progress, and achieve your goals.
+              Join thousands of Quizees and creators. Sign up for free to access quizzes, track your progress, and achieve your goals.
             </p>
-            <NuxtLink to="/register" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90 sm:w-auto">Get Started for Free</NuxtLink>
+            <NuxtLink to="/register/quizee" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90 sm:w-auto">Get Started for Free</NuxtLink>
           </div>
         </div>
       </div>
@@ -256,8 +249,6 @@
 import { computed, ref, unref, watch, onMounted } from 'vue'
 import Carousel from '~/components/ui/Carousel.vue'
 import UiCard from '~/components/ui/UiCard.vue'
-import MemberBenefits from '~/components/MemberBenefits.vue'
-import InstitutionBenefits from '~/components/InstitutionBenefits.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 import UiQuizCard from '~/components/ui/QuizCard.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
@@ -281,15 +272,15 @@ const api = useApi()
 definePageMeta({
   title: 'Modeh — Practice, assess, and master curriculum skills',
   meta: [
-    { name: 'description', content: 'Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
+    { name: 'description', content: 'Modeh helps Quizees build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
     { name: 'keywords', content: 'quizzes, learning, practice, curriculum, assessment, topics, grades' },
     { property: 'og:type', content: 'website' },
     { property: 'og:title', content: 'Modeh — Practice, assess, and master curriculum skills' },
-    { property: 'og:description', content: 'Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
+    { property: 'og:description', content: 'Modeh helps Quizees build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
     { property: 'og:image', content: '/social-share.png' },
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: 'Modeh — Practice, assess, and master curriculum skills' },
-    { name: 'twitter:description', content: 'Modeh helps learners build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' }
+    { name: 'twitter:description', content: 'Modeh helps Quizees build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' }
   ]
 })
 

@@ -4,7 +4,7 @@
       <h3 class="text-lg font-semibold text-gray-900" v-if="!compact">Sign in to Modeh</h3>
       <h3 class="text-lg font-semibold text-gray-900" v-else>Log in to continue</h3>
 
-      <p class="text-sm text-slate-600 mb-4" v-if="!compact">Quick access for quizees — or <NuxtLink to="/register" class="text-brand-600 underline">create an account</NuxtLink></p>
+      <p class="text-sm text-slate-600 mb-4" v-if="!compact">Quick access for quizees — or <NuxtLink to="/register/quizee" class="text-brand-600 underline">create an account</NuxtLink></p>
 
       <!-- Password login (magic link removed) -->
 
@@ -39,7 +39,7 @@
         </div>
 
         <div>
-          <NuxtLink to="/register" class="text-sm text-brand-600 underline">Don't have an account? Register</NuxtLink>
+          <NuxtLink to="/register/quizee" class="text-sm text-brand-600 underline">Don't have an account? Register</NuxtLink>
         </div>
 
         <div>

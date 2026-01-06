@@ -168,7 +168,7 @@
           </div>
           <div>
             <div class="text-3xl font-bold text-brand-600 mb-2">10K+</div>
-            <p class="text-slate-600">Active Learners</p>
+            <p class="text-slate-600">Active Quizees</p>
           </div>
           <div>
             <div class="text-3xl font-bold text-brand-600 mb-2">100%</div>

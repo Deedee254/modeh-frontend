@@ -90,7 +90,7 @@
         <header class="flex items-start justify-between gap-4">
           <div>
             <h2 class="text-base font-semibold text-slate-900">Recent attempts</h2>
-            <p class="text-sm text-slate-500">Most recent learners and their scores</p>
+            <p class="text-sm text-slate-500">Most recent Quizees and their scores</p>
           </div>
         </header>
         <RecentAttemptsList :attempts="recentAttempts" />
@@ -143,7 +143,7 @@ const statCards = computed(() => {
       label: 'Total attempts',
       value: formatNumber(value.totalAttempts),
       trend: value.totalAttemptsTrend,
-      description: 'Learners who started this quiz'
+      description: 'Quizees who started this quiz'
     },
     {
       label: 'Completion rate',

@@ -98,7 +98,7 @@
               <Icon name="heroicons:users" class="mx-auto h-12 w-12 text-gray-300" />
               <h3 class="mt-3 text-base font-semibold text-slate-800">No engaged users yet</h3>
               <p class="mt-1 max-w-sm text-sm text-slate-500">
-                When learners follow you, like your quizzes, or take your assessments regularly they will appear here.
+                When Quizees follow you, like your quizzes, or take your assessments regularly they will appear here.
               </p>
               <NuxtLink to="/quiz-master/quizzes" class="mt-6 inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:-translate-y-0.5">
                 Promote your quizzes

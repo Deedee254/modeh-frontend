@@ -3,8 +3,8 @@
     <h1 class="text-2xl font-bold mb-4">Complete your profile</h1>
     <p class="mb-6">Hi, {{ userEmail }}! Please complete your profile information to continue.</p>
 
-    <!-- Institution Form -->
-    <div v-if="!institutionAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
+    <!-- Grade and Subject Selection -->
+      <div v-if="!institutionAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
       <h2 class="text-xl font-semibold mb-4">Institution Information</h2>
       <form @submit.prevent="submitInstitution" class="space-y-4">
         <div>
@@ -39,47 +39,8 @@
     </div>
 
     <!-- Grade and Subject Selection -->
-      <!-- Role Selection -->
-      <div v-else-if="!roleSelected" class="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h2 class="text-xl font-semibold mb-4">Select your role</h2>
-        <form @submit.prevent="submitRole" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">I am a</label>
-            <div class="flex items-center space-x-4">
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" v-model="roleForm.role" value="quizee" class="form-radio" />
-                <span>Quizee (student)</span>
-              </label>
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" v-model="roleForm.role" value="quiz-master" class="form-radio" />
-                <span>Quiz Master (teacher)</span>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Set a password</label>
-            <input
-              v-model="roleForm.password"
-              type="password"
-              required
-              minlength="8"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md"
-                autocomplete="new-password"
-              placeholder="Choose a password (min 8 characters)"
-            />
-          </div>
-
-          <div>
-            <button type="submit" class="w-full px-6 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">
-              Save Role and Password
-            </button>
-          </div>
-        </form>
-      </div>
-
       <!-- Optional Education Information -->
-      <div v-else-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
+      <div v-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
       <h2 class="text-xl font-semibold mb-4">Education Information <span class="text-sm font-normal text-gray-500">(Optional)</span></h2>
       <p class="mb-4 text-sm text-gray-600">You can skip this step and complete it later from your profile settings.</p>
       <form @submit.prevent="submitGradeAndSubjects" class="space-y-6">
@@ -157,7 +118,7 @@
     </div>
 
     <!-- Finalize Profile -->
-    <div v-else class="bg-white p-6 rounded-lg shadow-sm mb-6">
+    <div v-else-if="gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
       <h2 class="text-xl font-semibold mb-4">Review and Complete</h2>
       
       <div class="space-y-4 mb-6">
@@ -247,13 +208,11 @@ onMounted(async () => {
 
 // Form states
 const institutionAdded = ref(false)
-const roleSelected = ref(false)
 const gradeAndSubjectsAdded = ref(false)
 const newInstitutionPending = ref(false)
 
 // Form data
 const institutionForm = ref({ name: '', institution_id: '' })
-const roleForm = ref({ role: '', password: '' })
 const gradeForm = ref({
   level_id: '',
   grade_id: '',
@@ -401,24 +360,6 @@ async function submitGradeAndSubjects() {
   } catch (err) {
     console.error(err)
     error.value = err?.message || 'Failed to save education information'
-  }
-}
-
-async function submitRole() {
-  message.value = null
-  error.value = null
-  try {
-    const stepName = roleForm.value.role === 'quiz-master' ? 'role_quiz-master' : 'role_quizee'
-    const resp = await api.postJson('/api/onboarding/step', {
-      step: stepName,
-      data: { role: roleForm.value.role, password: roleForm.value.password }
-    })
-    if (!resp.ok) throw new Error('Failed to save role and password')
-    roleSelected.value = true
-    message.value = 'Role and password saved.'
-  } catch (err) {
-    console.error(err)
-    error.value = err?.message || 'Failed to save role and password'
   }
 }
 

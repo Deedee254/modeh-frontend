@@ -228,7 +228,7 @@
                     Sign In
                   </button>
                   <NuxtLink
-                    to="/register"
+                    to="/register/quizee"
                     class="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold transition text-center"
                     :class="['bg-white', 'border', 'border-primary', 'text-primary', 'hover:bg-primary/5']"
                   >

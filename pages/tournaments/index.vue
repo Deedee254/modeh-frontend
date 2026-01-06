@@ -1,7 +1,7 @@
 <template>
   <div class="bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <PageHero title="Tournaments" description="Compete with other learners in structured tournaments to benchmark skills and earn recognition." variant="gradient" padding="py-8 sm:py-12">
+      <PageHero title="Tournaments" description="Compete with other Quizees in structured tournaments to benchmark skills and earn recognition." variant="gradient" padding="py-8 sm:py-12">
       <template #stats>
         <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
           <p class="text-xs uppercase tracking-wide text-white/70">Total</p>
@@ -119,7 +119,7 @@ import resolveAssetUrl from '~/composables/useAssets'
 import useSeo from '~/composables/useSeo'
 
 // Public tournaments page — use default layout
-definePageMeta({ title: 'Tournaments — Modeh', meta: [ { name: 'description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' }, { property: 'og:title', content: 'Tournaments — Modeh' }, { property: 'og:description', content: 'Compete with other learners in structured tournaments to benchmark skills and earn recognition.' } ] })
+definePageMeta({ title: 'Tournaments — Modeh', meta: [ { name: 'description', content: 'Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.' }, { property: 'og:title', content: 'Tournaments — Modeh' }, { property: 'og:description', content: 'Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.' } ] })
 import { useRouter } from 'vue-router'
 import PageHero from '~/components/ui/PageHero.vue'
 
@@ -198,7 +198,7 @@ try {
   const path = pageParam > 1 ? `/tournaments?page=${pageParam}` : '/tournaments'
   seo.setupCollectionSeo(
     'Tournaments — Modeh',
-    'Compete with other learners in structured tournaments to benchmark skills and earn recognition.',
+    'Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.',
     base || '',
     path
   )

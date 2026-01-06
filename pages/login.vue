@@ -1,12 +1,12 @@
 <template>
-  <div class="h-screen w-full flex">
+  <div class="min-h-screen w-full flex">
     <!-- Left Side: Features Panel (Hidden on mobile) -->
     <div class="hidden lg:block lg:w-1/2 h-full">
        <AuthFeaturesPanel />
     </div>
 
     <!-- Right Side: Login Form -->
-    <div class="w-full lg:w-1/2 h-full flex items-center justify-center bg-gray-50 p-4 sm:p-8 overflow-y-auto">
+    <div class="w-full lg:w-1/2 min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-8 overflow-y-auto pt-24 sm:pt-16">
       <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
         <!-- Mobile Header (Logo only, since panel is hidden) -->
         <div class="lg:hidden text-center mb-8">
@@ -27,7 +27,7 @@
         <div class="mt-6 text-center">
            <p class="text-sm text-gray-600">
              Don't have an account? 
-             <NuxtLink to="/register" class="font-medium text-brand-600 hover:text-brand-500">Sign up</NuxtLink>
+             <NuxtLink to="/register/quizee" class="font-medium text-brand-600 hover:text-brand-500">Sign up</NuxtLink>
            </p>
         </div>
       </div>

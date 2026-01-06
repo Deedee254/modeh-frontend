@@ -24,7 +24,7 @@
       <template #highlight>
         <div>
           <p class="text-xs uppercase tracking-wide">Discover</p>
-          <p class="mt-1 text-2xl font-semibold">Expert Educators</p>
+          <p class="mt-1 text-2xl font-semibold">Expert Quiz Masters</p>
         </div>
       </template>
       

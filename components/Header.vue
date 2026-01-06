@@ -221,7 +221,7 @@
           <div class="mt-8 pt-8 border-t border-slate-200 dark:border-slate-700">
             <div class="flex gap-3">
               <NuxtLink to="/login" class="flex-1 text-center px-4 py-3 border rounded text-sm">Login</NuxtLink>
-              <NuxtLink to="/register?role=quizee" class="flex-1 text-center px-4 py-3 bg-brand-600 text-white rounded-full font-medium hover:bg-brand-700">Register</NuxtLink>
+              <NuxtLink to="/register/quizee" class="flex-1 text-center px-4 py-3 bg-brand-600 text-white rounded-full font-medium hover:bg-brand-700">Register</NuxtLink>
             </div>
       </div>
     </div>

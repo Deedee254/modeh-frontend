@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Institutions</h1>
-        <p class="text-gray-600">Find and join institutions to connect with other educators and learners</p>
+        <p class="text-gray-600">Find and join institutions to connect with other Quiz Masters and Quizees</p>
       </div>
 
       <!-- Search Bar -->
@@ -164,7 +164,7 @@ definePageMeta({ layout: 'quiz-master' })
 useHead({
   title: 'Institutions — Modeh',
   meta: [
-    { name: 'description', content: 'Browse and join institutions to connect with quiz masters and learners on Modeh.' }
+    { name: 'description', content: 'Browse and join institutions to connect with quiz masters and Quizees on Modeh.' }
   ]
 })
 

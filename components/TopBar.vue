@@ -119,7 +119,7 @@
             <template v-else>
               <div class="flex items-center gap-2">
                 <NuxtLink to="/login" class="text-sm text-gray-700 hover:text-gray-900">Sign in</NuxtLink>
-                <NuxtLink to="/register" class="hidden sm:block text-sm text-brand-600 hover:text-brand-700">Register</NuxtLink>
+                <NuxtLink to="/register/quizee" class="hidden sm:block text-sm text-brand-600 hover:text-brand-700">Register</NuxtLink>
               </div>
             </template>
           </div>
@@ -172,7 +172,7 @@
           <!-- Mobile overlay only contains navigation; profile/settings/sign out available from the avatar ActionMenu -->
           <div v-if="!auth.user || !auth.user.id" class="flex flex-col gap-2">
             <NuxtLink @click="ui.mobileNavOpen = false" to="/login" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">Sign in</NuxtLink>
-            <NuxtLink @click="ui.mobileNavOpen = false" to="/register" class="block px-3 py-2 text-sm text-brand-600 hover:bg-gray-50 rounded">Register</NuxtLink>
+            <NuxtLink @click="ui.mobileNavOpen = false" to="/register/quizee" class="block px-3 py-2 text-sm text-brand-600 hover:bg-gray-50 rounded">Register</NuxtLink>
           </div>
         </nav>
       </div>

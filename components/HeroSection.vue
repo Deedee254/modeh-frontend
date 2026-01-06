@@ -33,7 +33,7 @@
             style="animation-delay: 0.1s"
           >
             <Icon name="heroicons:sparkles-20-solid" class="h-4 w-4" />
-            <span>The #1 Quiz Platform for Learners</span>
+            <span>The #1 Quiz Platform for Quizees</span>
           </div>
 
           <!-- Role / Grade badge: show Grade for quizees, role badge for others -->
@@ -126,7 +126,7 @@
 
             <NuxtLink
               v-else
-              to="/register"
+              to="/register/quizee"
               class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105 group"
             >
               Start Learning Free
@@ -253,7 +253,7 @@ const ctaLabel = computed(() => {
 const features = [
   { icon: 'heroicons:sparkles-20-solid', text: 'Personalized learning paths' },
   { icon: 'heroicons:trophy-20-solid', text: 'Track your progress' },
-  { icon: 'heroicons:users-20-solid', text: 'Join 50,000+ learners' },
+  { icon: 'heroicons:users-20-solid', text: 'Join 50,000+ Quizees' },
   { icon: 'heroicons:bolt-20-solid', text: 'Instant feedback' },
 ]
 

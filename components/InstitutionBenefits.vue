@@ -27,7 +27,7 @@
            </ul>
 
            <div class="mt-10">
-              <NuxtLink to="/register?role=institution-manager" class="inline-flex items-center gap-2 text-[#800020] font-bold hover:gap-3 transition-all">
+              <NuxtLink to="/register/institution-manager" class="inline-flex items-center gap-2 text-[#800020] font-bold hover:gap-3 transition-all">
                  <span>Register your Institution</span>
                  <Icon name="heroicons:arrow-right" class="w-5 h-5" />
               </NuxtLink>

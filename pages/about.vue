@@ -20,7 +20,7 @@
 
           <div class="mt-8 flex flex-wrap items-center gap-3">
             <NuxtLink
-              to="/register?role=quiz-master"
+              to="/register/quiz-master"
               class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white transition hover:bg-brand-700 hover:shadow-lg"
             >
               Start Your Journey
@@ -228,7 +228,7 @@
             </div>
             <div class="flex flex-wrap justify-center gap-4">
                 <NuxtLink
-                  to="/register?role=quiz-master"
+                  to="/register/quiz-master"
                   class="inline-flex items-center rounded-xl bg-white px-6 py-3 font-semibold text-brand-600 shadow-sm transition hover:bg-white/90"
                 >
                   Start Free Trial
@@ -244,6 +244,12 @@
         </div>
       </div>
     </section>
+
+    <!-- Member Benefits Section -->
+    <MemberBenefits />
+
+    <!-- Institution Benefits Section -->
+    <InstitutionBenefits />
 
     <!-- Contact Form -->
     <section id="contact" class="mx-auto max-w-7xl px-6 py-16">
@@ -361,6 +367,8 @@ definePageMeta({
 })
 
 import UiTextarea from '~/components/ui/UiTextarea.vue'
+import MemberBenefits from '~/components/MemberBenefits.vue'
+import InstitutionBenefits from '~/components/InstitutionBenefits.vue'
 </script>
 
 <style scoped>

@@ -54,7 +54,7 @@
           </NuxtLink>
           <div class="text-center text-sm">
             <p class="text-gray-600">Don't have an account?</p>
-            <NuxtLink to="/register" class="text-brand-600 hover:text-brand-800 font-medium">
+            <NuxtLink to="/register/quizee" class="text-brand-600 hover:text-brand-800 font-medium">
               Create one now
             </NuxtLink>
           </div>

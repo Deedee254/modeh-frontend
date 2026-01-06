@@ -6,22 +6,22 @@
           One Platform, Two Journeys
         </h2>
         <p class="text-lg md:text-xl text-muted-foreground leading-relaxed">
-          Modeh brings together ambitious learners and expert educators. Choose your path and start achieving your goals.
+          Modeh brings together ambitious Quizees and expert Quiz Masters. Choose your path and start achieving your goals.
         </p>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Learners Column -->
+        <!-- Quizees Column -->
         <div class="relative group rounded-[2.5rem] p-8 md:p-12 overflow-hidden bg-card border border-border shadow-xl hover:shadow-2xl transition-all duration-500">
            
            <div class="relative z-10 h-full flex flex-col">
               <div class="mb-8">
                 <span class="inline-block py-1 px-3 rounded-full bg-[#800020]/10 text-[#800020] text-sm font-bold tracking-wide uppercase mb-4">
-                  For Learners
+                  For Quizees
                 </span>
                 <h3 class="text-3xl font-bold text-card-foreground mb-4">Master Any Subject</h3>
                 <p class="text-muted-foreground leading-relaxed">
-                  Join a community of learners. Compete in daily challenges, track your growth, and prove your skills.
+                  Join a community of Quizees. Compete in daily challenges, track your growth, and prove your skills.
                 </p>
               </div>
 
@@ -49,20 +49,20 @@
               </div>
 
               <div class="mt-auto">
-                 <NuxtLink to="/register?role=quizee" class="block w-full py-4 rounded-xl bg-[#800020] text-white font-bold text-center hover:bg-[#800020]/90 transition-colors shadow-lg">
+                 <NuxtLink to="/register/quizee" class="block w-full py-4 rounded-xl bg-[#800020] text-white font-bold text-center hover:bg-[#800020]/90 transition-colors shadow-lg">
                     Start Learning Free
                  </NuxtLink>
               </div>
            </div>
         </div>
 
-        <!-- Educators Column -->
+        <!-- Quiz Masters Column -->
         <div class="relative group rounded-[2.5rem] p-8 md:p-12 overflow-hidden bg-[#800020] border border-[#800020] shadow-xl hover:shadow-2xl transition-all duration-500 text-white">
            
            <div class="relative z-10 h-full flex flex-col">
               <div class="mb-8">
                 <span class="inline-block py-1 px-3 rounded-full bg-white/20 text-white text-sm font-bold tracking-wide uppercase mb-4 border border-white/20">
-                  For Educators
+                  For Quiz Masters
                 </span>
                 <h3 class="text-3xl font-bold mb-4">Empower & Earn</h3>
                 <p class="text-white/80 leading-relaxed">
@@ -94,7 +94,7 @@
               </div>
 
               <div class="mt-auto">
-                 <NuxtLink to="/register?role=quiz-master" class="block w-full py-4 rounded-xl bg-white text-[#800020] font-bold text-center hover:bg-gray-100 transition-colors shadow-lg">
+                 <NuxtLink to="/register/quiz-master" class="block w-full py-4 rounded-xl bg-white text-[#800020] font-bold text-center hover:bg-gray-100 transition-colors shadow-lg">
                     Become a Quiz Master
                  </NuxtLink>
               </div>

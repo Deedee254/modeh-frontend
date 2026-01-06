@@ -5,7 +5,7 @@
         <BannerCard
           label="Grades"
           title="Browse by grade"
-          description="Find quizzes and resources organised by grade level so learners can follow curriculum-aligned practice."
+          description="Find quizzes and resources organised by grade level so Quizees can follow curriculum-aligned practice."
           :items="propsGrades"
           variant="grades"
           more-link="/grades"

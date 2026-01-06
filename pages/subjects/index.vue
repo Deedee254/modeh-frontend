@@ -25,7 +25,7 @@
                 Explore topics
               </NuxtLink>
               <NuxtLink
-                to="/register?role=quiz-master"
+                to="/register/quiz-master"
                 class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
               >
                 Create a subject
@@ -146,9 +146,9 @@
         <div class="bg-brand-50 rounded-lg p-6 flex items-center justify-between">
           <div>
             <h3 class="text-lg font-semibold text-brand-800">Want to help build content?</h3>
-            <p class="text-sm text-brand-600/90">Create subjects and topics to organize your quizzes for learners worldwide.</p>
+            <p class="text-sm text-brand-600/90">Create subjects and topics to organize your quizzes for Quizees worldwide.</p>
           </div>
-          <NuxtLink to="/register?role=quiz-master" class="px-4 py-2 bg-brand-600 text-white rounded">Become a quiz-master</NuxtLink>
+          <NuxtLink to="/register/quiz-master" class="px-4 py-2 bg-brand-600 text-white rounded">Become a quiz-master</NuxtLink>
         </div>
       </div>
       </div>

@@ -11,7 +11,7 @@
             Join Tournaments and Test Your Skills
           </h2>
           <p class="text-lg text-slate-600 mb-8 leading-relaxed">
-            Challenge yourself against other learners, climb leaderboards, earn badges, and win prizes. Make learning exciting and competitive.
+            Challenge yourself against other Quizees, climb leaderboards, earn badges, and win prizes. Make learning exciting and competitive.
           </p>
 
           <ul class="space-y-5">
@@ -112,7 +112,7 @@ const tournamentBenefits = [
   },
   {
     title: 'Leaderboards',
-    desc: 'Climb the ranks and see where you stand among thousands of learners.'
+    desc: 'Climb the ranks and see where you stand among thousands of Quizees.'
   },
   {
     title: 'Earn Rewards',

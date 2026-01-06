@@ -92,8 +92,8 @@ export default NuxtAuthHandler({
       if (user) {
         token.id = user.id
         token.role = (user as any).role
-        // Persist the API token from backend
         token.apiToken = (user as any).apiToken
+        token.isNewUser = (user as any).isNewUser  // ← Pass new user flag from backend
       }
       
       // For Google OAuth (account?.provider === 'google'), we need to fetch the apiToken from backend
@@ -122,10 +122,9 @@ export default NuxtAuthHandler({
           
           if (res.ok) {
             const data = await res.json()
-            if (data.token) {
-              token.apiToken = data.token
-              console.log('[Auth] apiToken obtained from backend')
-            }
+            token.apiToken = data.token
+            token.isNewUser = data.isNewUser  // ← Capture isNewUser from backend response
+            console.log('[Auth] apiToken obtained from backend, isNewUser:', data.isNewUser)
           } else {
             console.warn('[Auth] Failed to fetch apiToken from backend:', res.status)
           }
@@ -143,6 +142,7 @@ export default NuxtAuthHandler({
         (session.user as any).role = token.role as string
         // Make the API token available to the frontend
         (session.user as any).apiToken = token.apiToken as string
+        (session.user as any).isNewUser = token.isNewUser as boolean  // ← Pass new user flag
       }
       return session
     }

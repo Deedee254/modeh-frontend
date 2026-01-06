@@ -2,7 +2,7 @@
   <div>
     <PageHero
       title="Our quiz-masters"
-      description="Meet our experienced educators and content creators who design curriculum-aligned assessments and learning resources."
+      description="Meet our experienced Quiz Masters and content creators who design curriculum-aligned assessments and learning resources."
       :showSearch="false"
       :flush="true"
     >
@@ -18,7 +18,7 @@
             </div>
             <div class="flex items-center gap-3">
               <NuxtLink
-                to="/register?role=quiz-master"
+                to="/register/quiz-master"
                 class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
               >
                 Become a quiz-master
@@ -30,7 +30,7 @@
 
       <template #highlight>
         <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Expert educators</p>
+          <p class="text-xs uppercase tracking-wide text-white/70">Expert Quiz Masters</p>
           <p class="mt-1 text-2xl font-semibold text-white">Discover inspiring content creators</p>
           <p class="mt-2 text-sm text-white/70">Browse profiles and follow quiz-masters who inspire you.</p>
         </div>

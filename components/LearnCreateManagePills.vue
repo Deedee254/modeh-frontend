@@ -6,7 +6,7 @@
           <div class="text-lg font-semibold text-[#891f21] mr-4 hidden sm:block">What brings you to Modeh today?</div>
 
           <NuxtLink
-            to="/register?role=quizee"
+            to="/register/quizee"
             class="inline-flex items-center gap-3 rounded-full bg-[#891f21] text-white px-4 py-2 shadow-sm hover:opacity-95 transition"
           >
             <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#891f21]">
@@ -18,7 +18,7 @@
           <div class="hidden sm:block h-6 w-px bg-white/20 mx-1"></div>
 
           <NuxtLink
-            to="/register?role=quiz-master"
+            to="/register/quiz-master"
             class="inline-flex items-center gap-3 rounded-full bg-[#891f21] text-white px-4 py-2 shadow-sm hover:opacity-95 transition"
           >
             <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#891f21]">
@@ -30,7 +30,7 @@
           <div class="hidden sm:block h-6 w-px bg-white/20 mx-1"></div>
 
           <NuxtLink
-            to="/register?role=institution-manager"
+            to="/register/institution-manager"
             class="inline-flex items-center gap-3 rounded-full bg-[#891f21] text-white px-4 py-2 shadow-sm hover:opacity-95 transition"
           >
             <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#891f21]">
