@@ -1,13 +1,13 @@
 <template>
   <div>
     <PageHero
-      title="Our quiz-masters"
-      description="Meet our experienced Quiz Masters and content creators who design curriculum-aligned assessments and learning resources."
+      title="Expert Quiz Masters Who Boost Student Success"
+      description="Discover top educators and subject experts creating quizzes that actually help students master concepts and improve grades."
       :showSearch="false"
       :flush="true"
     >
       <template #eyebrow>
-        Content creators
+        Expert educators
       </template>
 
       <template #actions>
@@ -21,7 +21,7 @@
                 to="/register/quiz-master"
                 class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
               >
-                Become a quiz-master
+                Start Earning as Quiz Master
               </NuxtLink>
             </div>
           </div>
@@ -31,8 +31,8 @@
       <template #highlight>
         <div>
           <p class="text-xs uppercase tracking-wide text-white/70">Expert Quiz Masters</p>
-          <p class="mt-1 text-2xl font-semibold text-white">Discover inspiring content creators</p>
-          <p class="mt-2 text-sm text-white/70">Browse profiles and follow quiz-masters who inspire you.</p>
+          <p class="mt-1 text-2xl font-semibold text-white">Follow the educators behind top student results</p>
+          <p class="mt-2 text-sm text-white/70">Connect with quiz masters whose students consistently achieve academic excellence.</p>
         </div>
       </template>
 
@@ -211,9 +211,12 @@ onMounted(() => {
 import { resolveAssetUrl } from '~/composables/useAssets'
 
 useHead({
-  title: 'Our quiz-masters',
+  title: 'Expert Quiz Masters Who Boost Student Success | Modeh',
   meta: [
-    { name: 'description', content: 'Browse our list of expert quiz-masters.' }
+    { name: 'description', content: 'Discover top educators and subject experts creating quizzes that actually help students master concepts and improve grades. Follow quiz masters with proven results.' },
+    { name: 'keywords', content: 'quiz masters, expert educators, online tutors, educational content creators, academic experts, quiz creators, top teachers' },
+    { property: 'og:title', content: 'Expert Quiz Masters Who Boost Student Success | Modeh' },
+    { property: 'og:description', content: 'Discover top educators and subject experts creating quizzes that actually help students master concepts and improve grades. Follow quiz masters with proven results.' }
   ]
 })
 </script>

@@ -168,7 +168,6 @@ function validateForm() {
   fieldErrors.email = !form.email || !/^\S+@\S+\.\S+$/.test(form.email) ? 'Valid email is required' : ''
   fieldErrors.password = !form.password || form.password.length < 6 ? 'Password must be at least 6 chars' : ''
   fieldErrors.confirmPassword = form.password !== form.confirmPassword ? 'Passwords do not match' : ''
-  fieldErrors.grade_id = !gradeId ? 'Please select your grade' : ''
 
   if (fieldErrors.name || fieldErrors.email || fieldErrors.password || fieldErrors.confirmPassword) {
     validationError.value = "Please fix errors before continuing."

@@ -131,7 +131,7 @@
         </div>
         <div>
           <h3 class="font-medium text-gray-700">Grade</h3>
-          <p class="text-gray-600">{{ getGradeName(gradeForm.grade_id) }}</p>
+          <p class="text-gray-600">{{ gradeForm.grade_id ? getGradeName(gradeForm.grade_id) : 'Not selected' }}</p>
         </div>
         <div>
           <h3 class="font-medium text-gray-700">Selected Subjects</h3>
@@ -270,11 +270,13 @@ const filteredSubjects = computed(() => {
 
 // Helper functions for displaying names
 const getGradeName = (gradeId) => {
+  if (!gradeId) return ''
   const grade = taxGrades.value.find(g => String(g.id) === String(gradeId))
   return grade?.name || ''
 }
 
 const getSubjectName = (subjectId) => {
+  if (!subjectId) return ''
   const subject = taxSubjects.value.find(s => String(s.id) === String(subjectId))
   return subject?.name || ''
 }

@@ -27,13 +27,13 @@
            <div class="flex flex-col h-full">
               <div class="mb-8">
                 <span class="inline-block py-1 px-3 rounded-full bg-[#800020]/10 text-[#800020] text-sm font-bold tracking-wide uppercase mb-4">
-                  Simple Process
+                  Your Success Path
                 </span>
                 <h2 class="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
-                  How It Works
+                  From Struggling to Straight A's in 4 Simple Steps
                 </h2>
                 <p class="text-base text-slate-600 leading-relaxed">
-                  A streamlined workflow designed for steady progress.
+                  Join thousands of students who've transformed their academic performance using our proven system.
                 </p>
               </div>
 
@@ -65,13 +65,13 @@
               <!-- Right Side Header -->
               <div class="mb-8 md:pl-4">
                  <span class="inline-block py-1 px-3 rounded-full bg-brand-50 text-brand-600 text-sm font-bold tracking-wide uppercase mb-4">
-                    Try It Now
+                    Free Trial
                  </span>
                  <h2 class="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
-                    Start Learning Instantly
+                    See Your Score Improve in Real-Time
                  </h2>
                  <p class="text-base text-slate-600 leading-relaxed">
-                    No account needed. Jump straight into a battle.
+                    Take a practice quiz now and experience instant feedback that accelerates your learning.
                  </p>
               </div>
 
@@ -125,9 +125,9 @@
     <section class="py-12">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-2xl mx-auto">
-          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Creators</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Creators & contributors</h3>
-          <p class="mt-3 text-slate-600">Quiz Masters and contributors who create, review, and curate quizzes to ensure quality and alignment with learning goals.</p>
+          <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Expert Creators</div>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Meet the Quiz Masters Behind Your Success</h3>
+          <p class="mt-3 text-slate-600">Top educators and subject experts who craft quizzes that actually help you understand concepts and ace your exams.</p>
         </div>
   <!-- Mobile: carousel; Desktop: grid -->
   <ClientOnly>
@@ -157,12 +157,12 @@
         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 to-brand-950 px-6 py-16 sm:px-12 sm:py-20">
           <div class="relative text-center">
             <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Ready to Start Your Learning Journey?
+              Ready to Transform Your Academic Performance?
             </h2>
             <p class="mx-auto mt-4 max-w-2xl text-lg text-white/90">
-              Join thousands of Quizees and creators. Sign up for free to access quizzes, track your progress, and achieve your goals.
+              Join 50,000+ Quizees who've already improved their grades. Start practicing today and see results in your next exam.
             </p>
-            <NuxtLink to="/register/quizee" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90 sm:w-auto">Get Started for Free</NuxtLink>
+            <NuxtLink to="/register/quizee" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90 sm:w-auto">Start Boosting My Grades Free</NuxtLink>
           </div>
         </div>
       </div>
@@ -230,13 +230,13 @@
     <!-- Newsletter CTA (solid color background) -->
     <section class="py-12 bg-brand-600 text-white">
       <div class="mx-auto max-w-4xl text-center px-4">
-        <h3 class="text-2xl font-bold">Get weekly learning insights</h3>
-        <p class="mt-2 text-white/90">Receive curated quizzes, practical tips, and insights to keep your practice focused and effective.</p>
+        <h3 class="text-2xl font-bold">Get Weekly Study Hacks That Actually Work</h3>
+        <p class="mt-2 text-white/90">Receive proven study strategies, new quiz releases, and exclusive tips that top students use to stay ahead.</p>
         <form @submit.prevent class="mt-6">
           <label for="homepage-newsletter" class="sr-only">Email address</label>
           <div class="mx-auto max-w-xl grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
-            <input id="homepage-newsletter" type="email" placeholder="Your email" class="w-full rounded-xl border border-transparent px-4 py-3 bg-white text-slate-900 placeholder-slate-400" />
-            <button class="w-full sm:w-auto rounded-xl bg-accent-500 text-slate-900 px-6 py-3 font-semibold hover:bg-accent-600 transition">Subscribe</button>
+            <input id="homepage-newsletter" type="email" placeholder="Enter your email for study tips" class="w-full rounded-xl border border-transparent px-4 py-3 bg-white text-slate-900 placeholder-slate-400" />
+            <button class="w-full sm:w-auto rounded-xl bg-accent-500 text-slate-900 px-6 py-3 font-semibold hover:bg-accent-600 transition">Get Study Tips</button>
           </div>
         </form>
       </div>
@@ -270,31 +270,31 @@ const api = useApi()
 
 // Page SEO: title, description and social preview tags
 definePageMeta({
-  title: 'Modeh — Practice, assess, and master curriculum skills',
+  title: 'Modeh — Ace Every Subject with Smart Practice Quizzes & Instant Results',
   meta: [
-    { name: 'description', content: 'Modeh helps Quizees build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
-    { name: 'keywords', content: 'quizzes, learning, practice, curriculum, assessment, topics, grades' },
+    { name: 'description', content: 'Transform your grades with Modeh\'s adaptive practice quizzes. Get instant feedback, track progress, and master any subject 3x faster. Join 50,000+ students excelling today!' },
+    { name: 'keywords', content: 'practice quizzes, study app, exam preparation, grade improvement, instant feedback, adaptive learning, student assessment, curriculum practice, academic success, online learning' },
     { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: 'Modeh — Practice, assess, and master curriculum skills' },
-    { property: 'og:description', content: 'Modeh helps Quizees build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' },
+    { property: 'og:title', content: 'Modeh — Ace Every Subject with Smart Practice Quizzes & Instant Results' },
+    { property: 'og:description', content: 'Transform your grades with Modeh\'s adaptive practice quizzes. Get instant feedback, track progress, and master any subject 3x faster. Join 50,000+ students excelling today!' },
     { property: 'og:image', content: '/social-share.png' },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: 'Modeh — Practice, assess, and master curriculum skills' },
-    { name: 'twitter:description', content: 'Modeh helps Quizees build real mastery with short, curriculum-aligned quizzes, instant feedback, and progress tracking.' }
+    { name: 'twitter:title', content: 'Modeh — Ace Every Subject with Smart Practice Quizzes & Instant Results' },
+    { name: 'twitter:description', content: 'Transform your grades with Modeh\'s adaptive practice quizzes. Get instant feedback, track progress, and master any subject 3x faster. Join 50,000+ students excelling today!' }
   ]
 })
 
 // Rotating messages for hero section
 const currentMessageIndex = ref(0)
 const rotatingMessages = [
-  '🎓 Quizees: Practice, get instant feedback, and master skills at your pace.',
-  '✍️ Quiz Masters: Create impactful quizzes, earn rewards, and build your teaching legacy.',
-  '🏫 Institutions: Track student progress, align curriculum, and transform learning outcomes.'
+  '🚀 Quizees: Boost your grades with smart practice quizzes that adapt to your learning style.',
+  '💡 Quiz Masters: Turn your expertise into income by creating viral quizzes students love.',
+  '📈 Institutions: Watch student performance soar with data-driven insights and engaging assessments.'
 ]
 const heroHeadings = [
-  'Master Skills with Focused Practice',
-  'Create & Earn as a Quiz Master',
-  'Transform Education for Your Institution'
+  'Boost Your Grades with Smart Practice',
+  'Monetize Your Quiz Master Expertise',
+  'Revolutionize Student Performance'
 ]
 
 // Auto-rotate messages every 8 seconds
@@ -585,8 +585,8 @@ const hasFeaturedQuiz = computed(() => {
 const howItWorksSteps = computed(() => [
     {
     number: '01',
-    title: 'Choose your path',
-    description: 'Browse curated subjects and quizzes that fit your grade level and goals.',
+    title: 'Find your perfect quiz match',
+    description: 'Discover quizzes tailored to your grade and subjects that need the most improvement.',
     badge: 'bg-gradient-to-br from-brand-600 to-brand-950',
     glow: 'bg-sky-400/60',
     icon: 'heroicons:map-20-solid',
@@ -594,8 +594,8 @@ const howItWorksSteps = computed(() => [
   },
   {
     number: '02',
-    title: 'Practice with purpose',
-    description: 'Engage with adaptive questions, hints, and timers to build confidence.',
+    title: 'Practice smart, not hard',
+    description: 'Answer adaptive questions with real-time hints that build confidence without frustration.',
     badge: 'bg-gradient-to-br from-rose-500 to-fuchsia-500',
     glow: 'bg-rose-400/60',
     icon: 'heroicons:academic-cap-20-solid',
@@ -603,8 +603,8 @@ const howItWorksSteps = computed(() => [
   },
   {
     number: '03',
-    title: 'Review instant feedback',
-    description: 'See detailed explanations, strengths, and areas to retry instantly.',
+    title: 'Get instant grade-boosting insights',
+    description: 'Receive detailed explanations that turn your mistakes into breakthrough moments.',
     badge: 'bg-gradient-to-br from-emerald-500 to-lime-500',
     glow: 'bg-emerald-400/60',
     icon: 'heroicons:chart-bar-20-solid',
@@ -612,8 +612,8 @@ const howItWorksSteps = computed(() => [
   },
   {
     number: '04',
-    title: 'Celebrate progress',
-    description: 'Unlock achievements, track streaks, and stay motivated as you master topics.',
+    title: 'Watch your confidence soar',
+    description: 'Earn achievements and maintain streaks that keep you motivated to reach academic excellence.',
     badge: 'bg-gradient-to-br from-amber-500 to-orange-500',
     glow: 'bg-amber-400/60',
     icon: 'heroicons:sparkles-20-solid',

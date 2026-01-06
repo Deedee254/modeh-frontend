@@ -1,8 +1,8 @@
 <template>
   <div>
     <PageHero
-      title="Browse by Grade"
-  description="Discover assessments curated for each grade and aligned to curriculum standards so Quizees and Quiz Masters can assign and practice with confidence."
+      title="Find Perfect Quizzes for Your Grade Level"
+  description="Access grade-specific practice quizzes designed to match your curriculum and boost your performance. Every quiz is crafted to help you excel at your level."
       :showSearch="true"
       :flush="true"
       @search="onSearch"

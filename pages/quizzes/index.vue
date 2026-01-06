@@ -1,8 +1,8 @@
 <template>
   <div>
   <PageHero
-    title="Explore assessments"
-    description="Browse curriculum-aligned assessments across topics and grades. Filter by difficulty, duration, and relevance to identify focused practice and evaluation opportunities."
+    title="Practice Quizzes That Actually Improve Your Grades"
+    description="Discover smart practice quizzes across all subjects and grade levels. Each quiz adapts to your learning style and provides instant feedback to accelerate your progress."
       :showSearch="true"
       :flush="true"
       @search="onServerSearch"
@@ -160,8 +160,13 @@ await useTaxonomyHydration({
 })
 
 useHead({
-  title: 'Quizzes • Practice & Learn | Modeh',
-  meta: [{ name: 'description', content: 'Browse curriculum-aligned assessments across subjects and grades. Search, filter, and select targeted assessments to evaluate and improve learning.' }]
+  title: 'Practice Quizzes That Actually Improve Your Grades | Modeh',
+  meta: [
+    { name: 'description', content: 'Discover smart practice quizzes across all subjects and grade levels. Each quiz adapts to your learning style and provides instant feedback to accelerate your academic progress.' },
+    { name: 'keywords', content: 'practice quizzes, study quizzes, exam preparation, grade improvement, adaptive learning, instant feedback, curriculum practice, academic assessment' },
+    { property: 'og:title', content: 'Practice Quizzes That Actually Improve Your Grades | Modeh' },
+    { property: 'og:description', content: 'Discover smart practice quizzes across all subjects and grade levels. Each quiz adapts to your learning style and provides instant feedback to accelerate your academic progress.' }
+  ]
 })
 
 const { paginator, topics: topicsList, loading, fetchItems, fetchTopics } = useQuizzes()

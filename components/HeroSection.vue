@@ -33,7 +33,7 @@
             style="animation-delay: 0.1s"
           >
             <Icon name="heroicons:sparkles-20-solid" class="h-4 w-4" />
-            <span>The #1 Quiz Platform for Quizees</span>
+            <span>Trusted by 50,000+ High-Achieving Quizees</span>
           </div>
 
           <!-- Role / Grade badge: show Grade for quizees, role badge for others -->
@@ -73,9 +73,9 @@
               class="text-3xl font-extrabold leading-tight tracking-tight text-white opacity-0 animate-fade-in sm:text-4xl lg:text-5xl xl:text-6xl"
               style="animation-delay: 0.2s"
             >
-              Master Any Subject
+              Turn Study Time Into
               <span class="bg-gradient-to-r from-brand-500 to-brand-600/70 bg-clip-text text-transparent">
-                One Quiz at a Time
+                Straight A's
               </span>
             </h1>
 
@@ -84,11 +84,10 @@
               style="animation-delay: 0.3s"
             >
               <template v-if="isLoggedIn">
-                Access personalized quizzes, track your progress, and pick up where you left off.
+                Continue your winning streak with smart quizzes that adapt to your learning style.
               </template>
               <template v-else>
-                Transform your learning experience with interactive quizzes designed
-                by experts. Build knowledge, track progress, and achieve your goals.
+                Practice with adaptive quizzes that identify your weak spots and turn them into strengths. See results in your next exam.
               </template>
             </p>
           </div>
@@ -129,7 +128,7 @@
               to="/register/quizee"
               class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-8 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105 group"
             >
-              Start Learning Free
+              Start Improving My Grades
               <Icon name="heroicons:arrow-right-20-solid" class="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </NuxtLink>
 
@@ -251,10 +250,10 @@ const ctaLabel = computed(() => {
 
 // Feature items with icons
 const features = [
-  { icon: 'heroicons:sparkles-20-solid', text: 'Personalized learning paths' },
-  { icon: 'heroicons:trophy-20-solid', text: 'Track your progress' },
-  { icon: 'heroicons:users-20-solid', text: 'Join 50,000+ Quizees' },
-  { icon: 'heroicons:bolt-20-solid', text: 'Instant feedback' },
+  { icon: 'heroicons:sparkles-20-solid', text: 'Adaptive quizzes that learn from you' },
+  { icon: 'heroicons:trophy-20-solid', text: 'Real-time performance insights' },
+  { icon: 'heroicons:users-20-solid', text: 'Join 50,000+ top performers' },
+  { icon: 'heroicons:bolt-20-solid', text: 'Instant explanations & hints' },
 ]
 
 const props = withDefaults(

@@ -105,7 +105,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Select Institution</label>
                 <select v-model="form.institution_id" class="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:ring-brand-500 focus:border-brand-500">
                   <option value="">Create new later...</option>
-                  <option v-for="inst in institutions" :key="inst.id" :value="inst.id">{{ inst.name }}</option>
+                  <option v-for="inst in institutions" v-if="inst" :key="inst.id" :value="inst.id">{{ inst.name }}</option>
                 </select>
               </div>
 
@@ -273,7 +273,8 @@ onMounted(async () => {
     const res = await api.get('/api/institutions')
     if (res.ok) {
       const data = await res.json()
-      institutions.value = data.institutions || data
+      // API returns paginated response with data array
+      institutions.value = data.data || data.institutions || data || []
     }
   } catch (e) {
     console.error('Failed to load institutions:', e)
