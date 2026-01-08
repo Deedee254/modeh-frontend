@@ -43,138 +43,140 @@ export default defineNuxtPlugin(() => {
       
       initializeEcho(config, isDev)
     })
+  } else {
+    // On the server provide a null echo to avoid undefined injections
+    // Cast to `any` so the provided shape is compatible with the client
+    // branch and with other ambient typings in the project.
+    return {
+      provide: {
+        echo: null as any
+      }
+    }
   }
 })
 
 function initializeEcho(config: any, isDev: boolean) {
-    console.log('[Echo] Starting initialization')
-    
-    // Clean up existing Echo instance if it exists (prevents multiple instances on HMR)
-    if (window.Echo) {
+  console.log('[Echo] Starting initialization')
+  
+  // Clean up existing Echo instance if it exists (prevents multiple instances on HMR)
+  if (window.Echo) {
+    try {
+      const existingEcho = window.Echo as any
+      const pusher = existingEcho?.connector?.pusher
+
+      // Disconnect all channels first
       try {
-        const existingEcho = window.Echo as any
-        const pusher = existingEcho?.connector?.pusher
-
-        // Disconnect all channels first
-        try {
-          if (existingEcho && typeof existingEcho.disconnect === 'function') {
-            existingEcho.disconnect()
-          }
-        } catch (e) {
-          // Ignore disconnect errors
-        }
-
-        // Disconnect Pusher connection if it exists
-        try {
-          if (pusher?.connection && typeof pusher.connection.disconnect === 'function') {
-            pusher.connection.disconnect()
-          }
-        } catch (e) {
-          // Ignore disconnect errors
+        if (existingEcho && typeof existingEcho.disconnect === 'function') {
+          existingEcho.disconnect()
         }
       } catch (e) {
-        // Ignore cleanup errors
+        // Ignore disconnect errors
       }
-    }
 
-    // Enable Pusher logging in development
-    if (isDev) {
-      Pusher.logToConsole = true
-    }
-
-    window.Pusher = Pusher
-
-    // Custom authorizer using the shared `useApi` composable for consistent CSRF and headers
-    const authorizer = (channel: any, options: any) => {
-      return {
-        authorize: (socketId: string, callback: Function) => {
-          // Run the async auth flow in a fire-and-forget IIFE and use the callback
-          ;(async () => {
-            try {
-              // Ensure CSRF cookie is available for Sanctum
-              try {
-                await fetch(`${config.public.apiBase}/sanctum/csrf-cookie`, {
-                  credentials: 'include'
-                })
-              } catch (e) {
-                console.warn('Failed to fetch CSRF cookie for broadcasting auth')
-              }
-
-              // Broadcasting auth uses Sanctum session auth, not Bearer token
-              // Make direct fetch call to avoid composable timing issues
-              console.log('[Echo] Attempting broadcasting auth for channel:', channel.name)
-              const resp = await fetch(`${config.public.apiBase}/api/broadcasting/auth`, {
-                method: 'POST',
-                credentials: 'include', // Include cookies for Sanctum session
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-Requested-With': 'XMLHttpRequest',
-                  // Include CSRF token if available
-                  ...(getXsrfToken() ? { 'X-XSRF-TOKEN': getXsrfToken() } : {})
-                },
-                body: JSON.stringify({
-                  socket_id: socketId,
-                  channel_name: channel.name
-                })
-              })
-
-              console.log('[Echo] Broadcasting auth response:', resp.status, resp.statusText)
-
-              if (!resp || !resp.ok) {
-                let bodyText = ''
-                try { bodyText = await resp?.text() ?? '' } catch (e) { bodyText = '<failed to read response body>' }
-
-                return callback(new Error(`Auth failed: ${resp?.status} ${resp?.statusText} - ${bodyText}`), null)
-              }
-
-              const data = await resp.json()
-              if (!data || (typeof data.auth !== 'string' && !data.auth)) {
-
-                return callback(new Error('Auth response missing auth info'), null)
-              }
-
-              return callback(null, data)
-            } catch (error) {
-
-              return callback(error, null)
-            }
-          })()
-        }
-      }
-    }
-
-    console.log('[Echo] Initializing with hardcoded key and cluster')
-
-    try {
-      const pusherKey = process.env.NUXT_PUBLIC_PUSHER_KEY || config.public?.pusherKey || '5a6916ce972fd4a06074'
-      const pusherCluster = process.env.NUXT_PUBLIC_PUSHER_CLUSTER || config.public?.pusherCluster || 'ap2'
-      
-      console.log('[Echo] process.env.NUXT_PUBLIC_PUSHER_KEY:', process.env.NUXT_PUBLIC_PUSHER_KEY)
-      console.log('[Echo] config.public?.pusherKey:', config.public?.pusherKey)
-      console.log('[Echo] Final key:', pusherKey, 'type:', typeof pusherKey, 'truthy:', !!pusherKey)
-      
-      console.log('[Echo] Creating Pusher directly for testing')
+      // Disconnect Pusher connection if it exists
       try {
-        const pusher = new Pusher(pusherKey, {
-          cluster: pusherCluster,
-          enabledTransports: ['ws', 'wss'],
-          disableStats: true
-        })
-        console.log('[Echo] Pusher instance created successfully')
-        
-        const echo = new Echo<any>({
-          broadcaster: 'pusher',
-          client: pusher
-        })
-        console.log('[Echo] Echo instance created successfully with Pusher client')
-      
-      window.Echo = echo
-    } catch (error) {
-      console.error('[Echo] Failed to create Echo instance:', error)
-      // Set a null echo to prevent other code from failing
-      window.Echo = null
-      return
+        if (pusher?.connection && typeof pusher.connection.disconnect === 'function') {
+          pusher.connection.disconnect()
+        }
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+    } catch (e) {
+      // Ignore cleanup errors
     }
+  }
+
+  // Enable Pusher logging in development
+  if (isDev) {
+    Pusher.logToConsole = true
+  }
+
+  window.Pusher = Pusher
+
+  // Custom authorizer using the shared `useApi` composable for consistent CSRF and headers
+  const authorizer = (channel: any, options: any) => {
+    return {
+      authorize: (socketId: string, callback: Function) => {
+        // Run the async auth flow in a fire-and-forget IIFE and use the callback
+        ;(async () => {
+          try {
+            // Ensure CSRF cookie is available for Sanctum
+            try {
+              await fetch(`${config.public.apiBase}/sanctum/csrf-cookie`, {
+                credentials: 'include'
+              })
+            } catch (e) {
+              console.warn('Failed to fetch CSRF cookie for broadcasting auth')
+            }
+
+            // Broadcasting auth uses Sanctum session auth, not Bearer token
+            // Make direct fetch call to avoid composable timing issues
+            console.log('[Echo] Attempting broadcasting auth for channel:', channel.name)
+            const resp = await fetch(`${config.public.apiBase}/api/broadcasting/auth`, {
+              method: 'POST',
+              credentials: 'include', // Include cookies for Sanctum session
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                // Include CSRF token if available
+                ...(getXsrfToken() ? { 'X-XSRF-TOKEN': getXsrfToken() } : {})
+              },
+              body: JSON.stringify({
+                socket_id: socketId,
+                channel_name: channel.name
+              })
+            })
+
+            console.log('[Echo] Broadcasting auth response:', resp.status, resp.statusText)
+
+            if (!resp || !resp.ok) {
+              let bodyText = ''
+              try { bodyText = await resp?.text() ?? '' } catch (e) { bodyText = '<failed to read response body>' }
+
+              return callback(new Error(`Auth failed: ${resp?.status} ${resp?.statusText} - ${bodyText}`), null)
+            }
+
+            const data = await resp.json()
+            if (!data || (typeof data.auth !== 'string' && !data.auth)) {
+
+              return callback(new Error('Auth response missing auth info'), null)
+            }
+
+            return callback(null, data)
+          } catch (error) {
+
+            return callback(error, null)
+          }
+        })()
+      }
+    }
+  }
+
+  console.log('[Echo] Initializing with hardcoded key and cluster')
+
+  try {
+    const pusherKey = process.env.NUXT_PUBLIC_PUSHER_KEY || config.public?.pusherKey || '5a6916ce972fd4a06074'
+    const pusherCluster = process.env.NUXT_PUBLIC_PUSHER_CLUSTER || config.public?.pusherCluster || 'ap2'
+    
+    console.log('[Echo] process.env.NUXT_PUBLIC_PUSHER_KEY:', process.env.NUXT_PUBLIC_PUSHER_KEY)
+    console.log('[Echo] config.public?.pusherKey:', config.public?.pusherKey)
+    console.log('[Echo] Final key:', pusherKey, 'type:', typeof pusherKey, 'truthy:', !!pusherKey)
+    
+    console.log('[Echo] Creating Pusher directly for testing')
+    const pusher = new Pusher(pusherKey, {
+      cluster: pusherCluster,
+      enabledTransports: ['ws', 'wss'],
+      disableStats: true
+    })
+    console.log('[Echo] Pusher instance created successfully')
+    
+    const echo = new Echo<any>({
+      broadcaster: 'pusher',
+      client: pusher
+    })
+    console.log('[Echo] Echo instance created successfully with Pusher client')
+    
+    window.Echo = echo
 
     // Don't connect immediately - wait for authentication
     // Connection will be established when channels are actually subscribed to
@@ -199,21 +201,11 @@ function initializeEcho(config: any, isDev: boolean) {
       import.meta.hot.dispose(cleanup)
     }
 
-    return {
-      provide: {
-        echo
-      },
-      // Cleanup on plugin unmount
-      close: cleanup
-    }
+    // Since this is called asynchronously, we can't return from the plugin
+    // The echo instance is available globally via window.Echo
+  } catch (error) {
+    console.error('[Echo] Failed to create Echo instance:', error)
+    // Set a null echo to prevent other code from failing
+    window.Echo = null
   }
-
-  // On the server provide a null echo to avoid undefined injections
-  // Cast to `any` so the provided shape is compatible with the client
-  // branch and with other ambient typings in the project.
-  return {
-    provide: {
-      echo: null as any
-    }
-  }
-})
+}
