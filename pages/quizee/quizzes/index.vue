@@ -59,7 +59,7 @@
 
       <!-- Loading -->
       <div v-if="loading" class="space-y-4">
-        <UiSkeleton v-for="i in 3" :key="i" class="h-32 rounded-lg" />
+        <UiSkeleton v-for="i in 1" :key="i" class="h-32 rounded-lg" />
       </div>
 
       <!-- Results -->
@@ -183,7 +183,7 @@ const { paginator, loading, normalizedQuizzes, fetchItems } = useQuizzes()
 
 // keep local params reactive and trigger composable fetches
 // Also watch user's level/grade so filters reapply if the auth/profile changes
-watch([sortBy, perPage, page, userLevelId, userGradeId], () => {
+watch([sortBy, userLevelId, userGradeId], () => {
   // on filter change, call fetchItems with current params, including level/grade filter
   const params = {
     sort: sortBy.value,
@@ -191,16 +191,34 @@ watch([sortBy, perPage, page, userLevelId, userGradeId], () => {
     page: page.value
   }
   
-  // Add BOTH level and grade filters if available (API expects both)
-  if (userLevelId.value) {
-    params.level_id = userLevelId.value
-  }
-  if (userGradeId.value) {
-    params.grade_id = userGradeId.value
-  }
-  
   // ensure we merge user's attempts into the listing so attempted badges show
   fetchItems({ ...params, mergeAttempts: true })
+})
+
+// Separate watcher for perPage to reset page and fetch when per-page changes
+watch(perPage, async () => {
+  page.value = 1 // Reset to first page when per-page changes
+
+  // Fetch immediately with the new per-page and reset page
+  const params = {
+    sort: sortBy.value,
+    per_page: perPage.value,
+    page: 1
+  }
+
+  await fetchItems({ ...params, mergeAttempts: true })
+})
+
+// Separate watcher for page changes
+watch(page, async () => {
+  const params = {
+    sort: sortBy.value,
+    per_page: perPage.value,
+    page: page.value
+  }
+
+  // ensure we merge user's attempts into the listing so attempted badges show
+  await fetchItems({ ...params, mergeAttempts: true })
 })
 
 onMounted(async () => { 
@@ -208,14 +226,6 @@ onMounted(async () => {
     sort: sortBy.value,
     per_page: perPage.value,
     page: page.value
-  }
-  
-  // Add BOTH level and grade filters if available (API expects both)
-  if (userLevelId.value) {
-    params.level_id = userLevelId.value
-  }
-  if (userGradeId.value) {
-    params.grade_id = userGradeId.value
   }
   
   await fetchItems({ ...params, mergeAttempts: true }) 
@@ -229,8 +239,6 @@ watch(() => auth.user, () => {
     per_page: perPage.value,
     page: page.value
   }
-  if (userLevelId.value) params.level_id = userLevelId.value
-  if (userGradeId.value) params.grade_id = userGradeId.value
   fetchItems({ ...params, mergeAttempts: true })
 })
 
@@ -256,8 +264,6 @@ watch(() => route.path, async (newPath) => {
       per_page: perPage.value,
       page: page.value
     }
-    if (userLevelId.value) params.level_id = userLevelId.value
-    if (userGradeId.value) params.grade_id = userGradeId.value
     await fetchItems({ ...params, mergeAttempts: true })
   }
 })

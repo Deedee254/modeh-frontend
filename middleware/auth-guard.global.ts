@@ -27,7 +27,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         if (path.startsWith('/quiz-master')) requiredRole = 'quiz-master'
         else if (path.startsWith('/quizee')) requiredRole = 'quizee'
         else if (path.startsWith('/institution-manager')) requiredRole = 'institution-manager'
-        else if (path.startsWith('/onboarding') || path.startsWith('/complete-profile')) requiredRole = 'authenticated_any'
+        else if (path.startsWith('/onboarding')) requiredRole = 'authenticated_any'
     }
 
     // Special case for settings/profile
@@ -56,7 +56,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // 3. Profile Completion & Onboarding Checks
     // Skip these if we are already on an onboarding/profile page to avoid loops
-    if (!path.startsWith('/onboarding') && !path.startsWith('/complete-profile')) {
+    if (!path.startsWith('/onboarding')) {
         // New users (no role) must choose a role
         if (!user.role) {
             return navigateTo('/onboarding/new-user')
@@ -68,9 +68,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
             return navigateTo('/onboarding')
         }
         
-        // Legacy check for is_profile_completed flag
+        // Legacy check for is_profile_completed flag - redirect to onboarding
         if (user.is_profile_completed === false) {
-            return navigateTo('/complete-profile')
+            return navigateTo('/onboarding')
         }
     }
 

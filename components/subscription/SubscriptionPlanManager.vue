@@ -3,7 +3,7 @@
     <h2 class="text-lg font-semibold text-gray-900 mb-4">Subscription Plans</h2>
 
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <UiSkeleton class="h-64 rounded-lg skeleton-item" v-for="i in 3" :key="i" />
+      <UiSkeleton class="h-64 rounded-lg" v-for="i in 1" :key="i" />
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -438,15 +438,4 @@ function isActive(plan: Plan | null): boolean {
 </script>
 
 <style scoped>
-/* Show only the first skeleton on small screens, and up to 3 on md+ */
-@media (max-width: 767px) {
-  .skeleton-item:nth-child(n+2) {
-    display: none;
-  }
-}
-@media (min-width: 768px) {
-  .skeleton-item {
-    display: block;
-  }
-}
 </style>

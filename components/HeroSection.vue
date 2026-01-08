@@ -218,12 +218,12 @@ const userRole = computed(() => {
 // Role helpers
 const isQuizMaster = computed(() => {
   const up: any = userProfile.value || {}
-  return Boolean(up.quizMasterProfile || up.quiz_master_profile) || (userRole.value && String(userRole.value).includes('quiz'))
+  return Boolean(up.quizMasterProfile || up.quiz_master_profile) || (userRole.value === 'quiz-master' || userRole.value === 'quiz_master')
 })
 const isInstitutionManager = computed(() => {
   const up: any = userProfile.value || {}
   const hasInstitutions = Array.isArray(up.institutions) && up.institutions.length > 0
-  return hasInstitutions || (userRole.value && String(userRole.value).includes('institution'))
+  return hasInstitutions || (userRole.value === 'institution-manager' || userRole.value === 'institution_manager')
 })
 const isQuizee = computed(() => {
   return !isQuizMaster.value && !isInstitutionManager.value

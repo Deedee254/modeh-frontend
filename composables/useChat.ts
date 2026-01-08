@@ -217,7 +217,7 @@ export default function useChat() {
 
   async function loadThreads() {
     try {
-      const res = await fetch(apiBase + '/api/chat/threads', { credentials: 'include' })
+      const res = await api.get('/api/chat/threads')
       if (res.ok) {
         const json = await res.json()
         threads.value = json.conversations || json.messages || []
@@ -227,16 +227,40 @@ export default function useChat() {
     } catch (e) {}
   }
 
-  function selectThread(t: any) {
+  async function selectThread(t: any) {
     selectedGroupId.value = null
     selectedThreadId.value = t.id || t.otherId || t.other_user_id
-    fetch(apiBase + `/api/chat/messages?user_id=${selectedThreadId.value}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(json => { messages.value = json && json.messages ? json.messages : []; markThreadRead(selectedThreadId.value) }).catch(() => { messages.value = [] }).finally(() => { nextTick(() => scrollToBottom()) })
+    try {
+      const res = await api.get(`/api/chat/messages?user_id=${selectedThreadId.value}`)
+      if (res.ok) {
+        const json = await res.json()
+        messages.value = json && json.messages ? json.messages : []
+        markThreadRead(selectedThreadId.value)
+      } else {
+        messages.value = []
+      }
+    } catch (e) {
+      messages.value = []
+    }
+    nextTick(() => scrollToBottom())
   }
 
-  function selectGroup(g: any) {
+  async function selectGroup(g: any) {
     selectedThreadId.value = null
     selectedGroupId.value = g.id
-    fetch(apiBase + `/api/chat/messages?group_id=${g.id}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(json => { messages.value = json && json.messages ? json.messages : [] }).catch(() => { messages.value = [] }).finally(() => { try { api.postJson('/api/chat/groups/mark-read', { group_id: g.id }).catch(()=>{}) } catch (e) {}; nextTick(() => scrollToBottom()) })
+    try {
+      const res = await api.get(`/api/chat/messages?group_id=${g.id}`)
+      if (res.ok) {
+        const json = await res.json()
+        messages.value = json && json.messages ? json.messages : []
+      } else {
+        messages.value = []
+      }
+    } catch (e) {
+      messages.value = []
+    }
+    try { api.postJson('/api/chat/groups/mark-read', { group_id: g.id }).catch(()=>{}) } catch (e) {};
+    nextTick(() => scrollToBottom())
   }
 
   async function startDMByEmail() {
@@ -244,7 +268,7 @@ export default function useChat() {
     if (!email) { alert.push({ message: 'Enter an email', type: 'error', icon: 'heroicons:exclamation-circle' }); return }
     if (email.toLowerCase() === 'support' || email.toLowerCase() === 'help') {
       try {
-        const res = await fetch(apiBase + '/api/messages/support-chat', { credentials: 'include' })
+        const res = await api.get('/api/messages/support-chat')
         if (!res.ok) { 
           const error = await res.json().catch(() => ({}))
           alert.push({ message: error.message || 'Support chat unavailable', type: 'error' }); 
@@ -265,7 +289,7 @@ export default function useChat() {
       return
     }
     try {
-      const r = await fetch(apiBase + '/api/users/find-by-email?email=' + encodeURIComponent(email), { credentials: 'include' })
+      const r = await api.get('/api/users/find-by-email?email=' + encodeURIComponent(email))
       if (r.status === 404) { alert.push({ message: 'User not found', type: 'error' }); return }
       if (!r.ok) { alert.push({ message: 'Lookup failed', type: 'error' }); return }
       const j = await r.json(); const user = j.user
@@ -344,7 +368,7 @@ export default function useChat() {
   async function _doUserSearch(q: string) {
     if (!q) { searchResults.value = []; return }
     try {
-      const res = await fetch(apiBase + '/api/users/search?q=' + encodeURIComponent(q), { credentials: 'include' })
+      const res = await api.get('/api/users/search?q=' + encodeURIComponent(q))
       if (res.ok) {
         const json = await res.json()
         searchResults.value = (json.users || []).filter((u: any) => !selectedUsers.value.some(s => s.id === u.id))
@@ -464,8 +488,8 @@ export default function useChat() {
       params.set('before_id', String(earliest.id))
       if (selectedThreadId.value) params.set('user_id', String(selectedThreadId.value))
       if (selectedGroupId.value) params.set('group_id', String(selectedGroupId.value))
-      const url = apiBase + '/api/chat/messages?' + params.toString()
-      const res = await fetch(url, { credentials: 'include' })
+      const url = '/api/chat/messages?' + params.toString()
+      const res = await api.get(url)
       if (res.ok) {
         const json = await res.json()
         if (json && json.messages && json.messages.length) {

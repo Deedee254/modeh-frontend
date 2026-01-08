@@ -65,7 +65,7 @@
         <main>
           <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
               <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                <UiSkeleton :count="6" />
+                <UiSkeleton :count="1" />
               </div>
               <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 <SubjectCard

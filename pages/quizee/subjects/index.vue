@@ -76,7 +76,7 @@
 
       <!-- Removed course/grade/level selectors — sorting now via buttons above -->
 
-      <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
+      <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load subjects.</div>
 
       <div v-else class="mt-6">

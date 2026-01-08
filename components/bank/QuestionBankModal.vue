@@ -61,7 +61,7 @@
         <!-- Results List -->
         <div class="flex-1 overflow-y-auto min-h-0 border rounded-md relative bg-white">
           <div v-if="loading" class="p-4 space-y-4">
-             <UiSkeleton variant="list" :count="5" />
+             <UiSkeleton variant="list" :count="1" />
           </div>
           <div v-else-if="items.length === 0" class="flex flex-col items-center justify-center h-full text-gray-500">
              <Icon name="i-heroicons-face-frown" class="w-10 h-10 mb-2 text-gray-300" />

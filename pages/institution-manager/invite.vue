@@ -146,9 +146,11 @@ import { ref } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { useRoute } from 'vue-router'
 import PageHero from '~/components/institution/PageHero.vue'
+import useApi from '~/composables/useApi'
 
 const route = useRoute()
 const cfg = useRuntimeConfig()
+const api = useApi()
 const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
 
 const email = ref('')
@@ -172,11 +174,10 @@ async function onGenerate() {
   inviteToken.value = ''
   loading.value = true
   try {
-    const res = await fetch(`${base}/api/institutions/${institutionId}/members/generate-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email: email.value, role: role.value, expires_in_days: expires_in_days.value })
+    const res = await api.postJson(`/api/institutions/${institutionId}/members/generate-token`, {
+      email: email.value,
+      role: role.value,
+      expires_in_days: expires_in_days.value
     })
     const data = await res.json()
     if (!res.ok) {
@@ -198,7 +199,7 @@ async function fetchInvites() {
   if (!institutionId) return
   invitesLoading.value = true
   try {
-    const res = await fetch(`${base}/api/institutions/${institutionId}/members/invites`, { credentials: 'include' })
+    const res = await api.get(`/api/institutions/${institutionId}/members/invites`)
     const data = await res.json()
     if (res.ok) {
       invites.value = data.invites || []

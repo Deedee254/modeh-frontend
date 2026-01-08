@@ -87,7 +87,7 @@ const router = useRouter()
 // Data refs
 const stats = ref([
   { label: 'Total Quizzes', value: '0' },
-  { label: 'Active Students', value: '0' },
+  { label: 'Active Quizees', value: '0' },
   { label: 'Topics Created', value: '0' },
   { label: 'Average Score', value: '0%' }
 ])

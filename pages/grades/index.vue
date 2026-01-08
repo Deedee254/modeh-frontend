@@ -63,7 +63,7 @@
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-10">
-      <div v-if="!store.grades.length" class="mt-6"><UiSkeleton :count="6" /></div>
+      <div v-if="!store.grades.length" class="mt-6"><UiSkeleton :count="1" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load grades.</div>
 
       <div v-else class="mt-6 space-y-10">

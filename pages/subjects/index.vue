@@ -75,7 +75,7 @@
 
         <div class="grid grid-cols-1 gap-3 sm:gap-6 mt-6">
           <main class="w-full">
-            <div v-if="pending" class="mt-6"><UiSkeleton :count="6" /></div>
+            <div v-if="pending" class="mt-6"><UiSkeleton :count="1" /></div>
             <div v-else-if="error" class="mt-6 text-red-600 dark:text-red-400">Failed to load subjects.</div>
             <div v-else class="mt-6">
               <div v-if="filtered.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 rounded-xl shadow-sm border-slate-200 dark:border-slate-800">No subjects found.</div>

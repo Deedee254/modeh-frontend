@@ -229,6 +229,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, role, guestPlayed, setGuestPlayed, logout, fetchUser, setUser, clear, syncGuestQuizResults, isFetchingUser }
+  return { user, role, guestPlayed, setGuestPlayed, logout, fetchUser, setUser, clear, syncGuestQuizResults, isFetchingUser, register }
 })
 

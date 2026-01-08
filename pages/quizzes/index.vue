@@ -82,7 +82,7 @@
       </div>
 
       <main class="w-full">
-        <div v-if="loading"><SkeletonGrid :count="3" /></div>
+        <div v-if="loading"><SkeletonGrid :count="1" /></div>
         <div v-else>
           <div v-if="(!paginator?.data || paginator.data.length === 0)" class="p-6 border rounded-md text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">0 results returned</div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">

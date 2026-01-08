@@ -147,7 +147,7 @@
       <div v-if="currentStep === 2" class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-4 animate-fadeIn">
         <div>
           <h3 class="text-lg sm:text-xl font-semibold text-gray-900">Attempts & Access</h3>
-          <p class="text-sm text-gray-500 mt-0.5">How many times can students try this quiz?</p>
+          <p class="text-sm text-gray-500 mt-0.5">How many times can quizees try this quiz?</p>
         </div>
 
         <div class="space-y-4">

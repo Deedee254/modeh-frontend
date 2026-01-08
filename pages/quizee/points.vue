@@ -69,7 +69,7 @@
         </div>
 
         <div v-if="loading" class="space-y-4">
-          <UiSkeleton v-for="i in 3" :key="i" class="h-32" />
+          <UiSkeleton v-for="i in 1" :key="i" class="h-32" />
         </div>
 
         <div v-else-if="!achievements.length" class="text-center py-8 text-gray-500">
@@ -151,7 +151,7 @@
       <div class="bg-white rounded-xl shadow-sm border p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
         <div v-if="loading" class="space-y-4">
-          <UiSkeleton v-for="i in 5" :key="i" class="h-12 rounded-xl" />
+          <UiSkeleton v-for="i in 1" :key="i" class="h-12 rounded-xl" />
         </div>
         <div v-else-if="!activity.length" class="text-center py-8 text-gray-500">
           <p>No recent activity to show.</p>

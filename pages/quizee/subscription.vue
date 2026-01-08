@@ -50,7 +50,7 @@
 
         <!-- Loading State -->
         <div v-if="loadingPackages" class="grid gap-8 md:grid-cols-3">
-          <div v-for="i in 3" :key="i" class="rounded-2xl bg-white p-8 shadow-md animate-pulse">
+          <div v-for="i in 1" :key="i" class="rounded-2xl bg-white p-8 shadow-md animate-pulse">
             <div class="h-8 bg-slate-200 rounded mb-4"></div>
             <div class="h-4 bg-slate-200 rounded mb-6"></div>
             <div class="h-12 bg-slate-200 rounded mb-6"></div>

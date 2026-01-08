@@ -348,7 +348,7 @@
 <script setup>
 definePageMeta({ layout: 'default' })
 
-import { ref, computed, watch, watchEffect } from 'vue'
+import { ref, computed, watch, watchEffect, onUnmounted } from 'vue'
 import { useHead } from '#imports'
 import { useRouter, useRoute } from 'vue-router'
 import VideoPlayer from '~/components/media/VideoPlayer.vue'
@@ -555,8 +555,53 @@ watch(() => quiz.value?.id, (quizId) => {
         results: guestResult.results
       }
     }
+
+    // Listen for real-time like updates
+    attachQuizChannelListener(quizId)
   }
 }, { immediate: true })
+
+// Echo channel management for quiz likes
+let _quizChannel = null
+
+function attachQuizChannelListener(quizId) {
+  if (typeof window === 'undefined' || !window.Echo || !quizId) return
+
+  // Clean up previous listener
+  detachQuizChannelListener()
+
+  try {
+    // Listen to quiz channel for like events
+    _quizChannel = window.Echo.channel(`quiz.${quizId}`)
+    _quizChannel.listen('.QuizLiked', (payload) => {
+      // Update likes count in real-time
+      if (quizData.value?.quiz) {
+        quizData.value.quiz.likes_count = (quizData.value.quiz.likes_count || 0) + 1
+      }
+    })
+  } catch (e) {
+    console.warn('Failed to attach quiz channel listener', e)
+  }
+}
+
+function detachQuizChannelListener() {
+  if (_quizChannel) {
+    try {
+      _quizChannel.stopListening('.QuizLiked')
+      if (typeof _quizChannel.leave === 'function') {
+        _quizChannel.leave()
+      }
+    } catch (e) {
+      console.warn('Failed to detach quiz channel listener', e)
+    }
+    _quizChannel = null
+  }
+}
+
+// Cleanup on unmount
+onUnmounted(() => {
+  detachQuizChannelListener()
+})
 
 // Format time limit for display
 function formatTimeLimit(limit) {

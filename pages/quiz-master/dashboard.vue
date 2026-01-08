@@ -270,7 +270,7 @@
               <ul class="space-y-3 text-sm text-teal-900 dark:text-teal-100">
                 <li class="flex gap-2">
                   <span class="flex-shrink-0 mt-0.5">💡</span>
-                  <span>Mix difficulty levels to maintain student engagement.</span>
+                  <span>Mix difficulty levels to maintain quizee engagement.</span>
                 </li>
                 <li class="flex gap-2">
                   <span class="flex-shrink-0 mt-0.5">🔄</span>

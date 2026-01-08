@@ -40,7 +40,7 @@
       </template>
 
       <template #content>
-        <div v-if="loading"><UiSkeleton :count="5" /></div>
+        <div v-if="loading"><UiSkeleton :count="1" /></div>
         <div v-else-if="quiz.questions.length > 0">
           <transition name="fade-slide" mode="out-in">
             <QuestionCard :key="currentQuestion" :question="currentQuestionData" v-model="answers[currentQuestionData.id]" @select="onQuestionSelect" @toggle="(opt) => rawToggleMulti(currentQuestionData.id, opt)" />

@@ -35,6 +35,30 @@ export function useApi() {
     return null
   }
 
+  async function getAuthTokenAsync() {
+    try {
+      // Wait for auth to be ready if it's still loading
+      if (auth && auth.status === 'loading') {
+        console.debug('[useApi] Waiting for auth to initialize...')
+        // Wait for status to change from 'loading'
+        await new Promise<void>((resolve) => {
+          const unwatch = auth.status.watch((newStatus) => {
+            if (newStatus !== 'loading') {
+              unwatch()
+              resolve()
+            }
+          })
+        })
+      }
+
+      // Now try to get the token
+      return getAuthToken()
+    } catch (e) {
+      console.debug('[useApi] Error getting auth token async:', e)
+      return null
+    }
+  }
+
   function getXsrfFromCookie() {
     try {
       if (typeof document === 'undefined') return null
@@ -188,9 +212,33 @@ export function useApi() {
     return headers
   }
 
+  async function commonHeadersAsync() {
+    const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
+    const token = await getAuthTokenAsync()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    } else {
+      const xsrf = getXsrfFromCookie()
+      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    }
+    return headers
+  }
+
   function defaultJsonHeaders() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     const token = getAuthToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    } else {
+      const xsrf = getXsrfFromCookie()
+      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    }
+    return headers
+  }
+
+  async function defaultJsonHeadersAsync() {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    const token = await getAuthTokenAsync()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     } else {
@@ -206,6 +254,15 @@ export function useApi() {
       method: 'GET',
       credentials: 'include',
       headers: commonHeaders()
+    })
+  }
+
+  async function getAsync(path: string) {
+    // Wait for auth initialization before making request
+    return fetch(config.public.apiBase + path, {
+      method: 'GET',
+      credentials: 'include',
+      headers: await commonHeadersAsync()
     })
   }
 
@@ -227,6 +284,17 @@ export function useApi() {
       body: JSON.stringify(body),
     })
     // Return the raw Response so callers can inspect status and call .json() as needed.
+    return resp
+  }
+
+  async function postJsonAsync(path: string, body: any) {
+    // Wait for auth initialization before making request
+    const resp = await fetch(config.public.apiBase + path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: await defaultJsonHeadersAsync(),
+      body: JSON.stringify(body),
+    })
     return resp
   }
 
@@ -369,7 +437,7 @@ export function useApi() {
   const post = (...args: Parameters<typeof postJson>) => postJson(...args)
   const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
 
-  return { ensureCsrf, getXsrfFromCookie, getAuthToken, get, getPublic, post, postJson, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  return { ensureCsrf, getXsrfFromCookie, getAuthToken, getAuthTokenAsync, get, getAsync, getPublic, post, postJson, postJsonAsync, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi

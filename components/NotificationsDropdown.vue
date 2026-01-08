@@ -23,7 +23,7 @@
       </div>
 
       <div v-if="loading" class="divide-y">
-        <div v-for="i in 3" :key="i" class="p-4 flex gap-3">
+        <div v-for="i in 1" :key="i" class="p-4 flex gap-3">
           <div class="w-10 h-10 bg-gray-200 rounded-lg flex-shrink-0"></div>
           <div class="flex-1 space-y-2">
             <div class="h-3 bg-gray-200 rounded w-3/4"></div>

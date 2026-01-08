@@ -127,7 +127,7 @@ if (institutionId.value) await load()
               class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md hover:border-green-300 dark:hover:border-green-600 transition-all duration-200 text-left"
             >
               <div class="text-sm font-medium text-green-600 dark:text-green-400 mb-1">Quizees</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">View and manage students</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">View and manage quizees</div>
             </button>
             <button
               @click="goto('/institution-manager/quiz-masters')"

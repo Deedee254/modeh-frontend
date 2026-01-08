@@ -93,7 +93,7 @@
 
             <!-- List -->
             <div v-if="loading" class="space-y-4">
-              <USkeleton v-for="i in perPage" :key="i" class="h-20 w-full" />
+              <USkeleton v-for="i in 1" :key="i" class="h-20 w-full" />
             </div>
             <div v-else>
               <div v-if="!sortedQuestions || sortedQuestions.length === 0" class="text-center py-16">

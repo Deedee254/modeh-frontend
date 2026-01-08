@@ -92,7 +92,7 @@
           <!-- Action Footer inside card -->
           <div class="mt-0 p-5 pt-4 border-t border-slate-200 flex items-center justify-between">
              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                {{ (levelQuizzes(level) || []).length }}+ Quizzes
+                {{ level.quizzes_count ?? level.items_count ?? (levelQuizzes(level) || []).length }} Quizzes
              </span>
              <NuxtLink 
                :to="makeQuizListRoute(level)"
@@ -171,7 +171,7 @@ const visibleLevels = computed(() => {
 // computed grid classes based on columns prop
 const gridClasses = computed(() => {
   if (props.columns === 4) {
-    return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'
+    return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6'
   }
   // Default/Auto magic density
   return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6'

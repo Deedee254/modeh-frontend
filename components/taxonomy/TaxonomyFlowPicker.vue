@@ -121,7 +121,7 @@
           </div>
           <div class="max-h-96 overflow-y-auto">
             <div v-if="loadingLevels" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              <div v-for="i in 3" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div v-for="i in 1" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
             </div>
             <div v-else-if="filteredLevels.length === 0" class="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 py-8 text-center dark:border-slate-700">
               <svg class="h-10 w-10 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -160,7 +160,7 @@
           </div>
           <div class="max-h-96 overflow-y-auto">
             <div v-if="loadingGrades" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              <div v-for="i in 3" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div v-for="i in 1" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
             </div>
             <div v-else-if="filteredGrades.length === 0" class="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 py-8 text-center dark:border-slate-700">
               <svg class="h-10 w-10 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -203,7 +203,7 @@
           </div>
           <div class="max-h-96 overflow-y-auto">
             <div v-if="loadingSubjects" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              <div v-for="i in 3" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div v-for="i in 1" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
             </div>
             <div v-else-if="filteredSubjects.length === 0" class="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 py-8 text-center dark:border-slate-700">
               <svg class="h-10 w-10 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -263,7 +263,7 @@
           </div>
           <div class="max-h-96 overflow-y-auto">
             <div v-if="loadingTopics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              <div v-for="i in 3" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div v-for="i in 1" :key="i" class="h-20 rounded bg-slate-200 dark:bg-slate-700"></div>
             </div>
             <div v-else-if="filteredTopics.length === 0" class="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 py-8 text-center dark:border-slate-700">
               <svg class="h-10 w-10 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

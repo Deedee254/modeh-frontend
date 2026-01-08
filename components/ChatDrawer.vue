@@ -19,7 +19,7 @@
       <div class="h-[calc(100vh-64px)] overflow-y-auto bg-white dark:bg-slate-900 p-2">
         <!-- Loading State -->
         <div v-if="loading" class="space-y-4">
-          <div v-for="i in 5" :key="i" class="flex items-start gap-3 p-3 animate-pulse">
+          <div v-for="i in 1" :key="i" class="flex items-start gap-3 p-3 animate-pulse">
             <div class="rounded-full bg-slate-200 dark:bg-slate-700 w-12 h-12"></div>
             <div class="flex-1 space-y-2">
               <div class="flex items-center justify-between">

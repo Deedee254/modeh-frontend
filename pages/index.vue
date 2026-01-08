@@ -562,12 +562,14 @@ function getRandomItems(arr, count = 4) {
 
 // Random subjects (different for every user/visit)
 const randomSubjects = computed(() => {
-  return getRandomItems(SUBJECTS, 4)
+  const withQuizzes = safeArray(SUBJECTS.value).filter(s => (s.quizzes_count || 0) > 0)
+  return getRandomItems(withQuizzes, 4)
 })
 
 // Random topics (different for every user/visit)
 const randomTopics = computed(() => {
-  return getRandomItems(topicsList, 4)
+  const withQuizzes = safeArray(topicsList.value).filter(t => (t.quizzes_count || 0) > 0)
+  return getRandomItems(withQuizzes, 4)
 })
 
 // Random courses (tertiary level grades with type='course')

@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useRuntimeConfig } from '#imports'
+import useApi from '~/composables/useApi'
 
 /**
  * Composable for managing battle creation logic.
@@ -12,6 +13,7 @@ export function useBattleCreator(options = {}) {
   const { gradesOptions, initialGrade } = options
 
   const cfg = useRuntimeConfig()
+  const api = useApi()
 
   // --- Reactive State ---
   const grade = ref(initialGrade || '')
@@ -52,7 +54,7 @@ export function useBattleCreator(options = {}) {
       return
     }
     try {
-      const res = await fetch(cfg.public.apiBase + '/api/grades')
+      const res = await api.get('/api/grades')
       if (res.ok) {
         const j = await res.json()
         grades.value = j.grades || []
@@ -70,7 +72,7 @@ export function useBattleCreator(options = {}) {
     if (!newGrade) return
 
     try {
-      const res = await fetch(cfg.public.apiBase + `/api/subjects?grade_id=${newGrade}`)
+      const res = await api.get(`/api/subjects?grade_id=${newGrade}`)
       if (res.ok) {
         const j = await res.json()
         subjects.value = (j.subjects?.data || j.subjects || []).map(s => ({ label: s.name, value: s.id }))
@@ -86,7 +88,7 @@ export function useBattleCreator(options = {}) {
     if (!newSubject || !grade.value) return
 
     try {
-      const res = await fetch(cfg.public.apiBase + `/api/topics?subject_id=${newSubject}`)
+      const res = await api.get(`/api/topics?subject_id=${newSubject}`)
       if (res.ok) {
         const j = await res.json()
         topics.value = (j.topics?.data || j.topics || []).map(t => ({ label: t.name, value: t.id }))

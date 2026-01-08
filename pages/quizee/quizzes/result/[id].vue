@@ -69,7 +69,7 @@
            <div v-if="percentile !== null" class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-md p-6 text-white flex flex-col justify-center items-center text-center">
               <div class="text-lg font-medium opacity-90">You performed better than</div>
               <div class="text-4xl font-extrabold my-2">{{ percentile }}%</div>
-              <div class="text-sm opacity-80">of other students</div>
+              <div class="text-sm opacity-80">of other quizees</div>
            </div>
 
            <!-- Response Time Analysis -->
@@ -188,6 +188,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
 import { useAnswerStore } from '~/stores/answerStore'
+import useApi from '~/composables/useApi'
 import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 
 // ensure this page uses the quizee layout. Results are user-specific — mark noindex.
@@ -246,49 +247,56 @@ async function fetchResults() {
 
   try {
     const cfg = useRuntimeConfig()
-    // Use $fetch and handle potential 404/missing attempt gracefully
-    try {
-      const res = await $fetch(cfg.public.apiBase + `/api/quiz-attempts/${attemptId}`, { credentials: 'include' })
+    const api = useApi()
+    // Use api.get instead of $fetch for proper CSRF handling
+    const res = await api.get(cfg.public.apiBase + `/api/quiz-attempts/${attemptId}`)
+    if (api.handleAuthStatus(res)) {
+      // Handle auth redirect
+      return
+    }
+    if (res.ok) {
+      const data = await res.json()
       // $fetch may return the parsed JSON directly
-      attempt.value = res.attempt || res
-      badges.value = res.badges || []
-      points.value = res.points || 0
-      rank.value = res.rank || null
-      totalParticipants.value = res.total_participants || null
-      quizId.value = (res.attempt && res.attempt.quiz_id) || res.quiz_id || null
-      percentile.value = res.percentile ?? null
-      responseAnalysis.value = res.response_analysis ?? null
+      attempt.value = data.attempt || data
+      badges.value = data.badges || []
+      points.value = data.points || 0
+      rank.value = data.rank || null
+      totalParticipants.value = data.total_participants || null
+      quizId.value = (data.attempt && data.attempt.quiz_id) || data.quiz_id || null
+      percentile.value = data.percentile ?? null
+      responseAnalysis.value = data.response_analysis ?? null
 
       // Cache the results for future use
       answerStore.storeAttemptForReview(attemptId, {
-        attempt: res.attempt || res,
-        badges: res.badges,
-        points: res.points,
-        points_earned: res.points ?? res.points_earned,
-        rank: res.rank,
-        percentile: res.percentile ?? null,
-        response_analysis: res.response_analysis ?? null,
-        total_participants: res.total_participants,
-        quiz_id: (res.attempt && res.attempt.quiz_id) || res.quiz_id
+        attempt: data.attempt || data,
+        badges: data.badges,
+        points: data.points,
+        points_earned: data.points ?? data.points_earned,
+        rank: data.rank,
+        percentile: data.percentile ?? null,
+        response_analysis: data.response_analysis ?? null,
+        total_participants: data.total_participants,
+        quiz_id: (data.attempt && data.attempt.quiz_id) || data.quiz_id
       })
 
       // polished confetti animation
       if (process.client) {
         triggerConfetti()
       }
-    } catch (err) {
-      // Distinguish not-found vs other errors
-      const status = err?.status || err?.response?.status || null
-      const resData = err?.data || {}
+    } else {
+      // Handle non-ok responses
+      const errorData = await res.json().catch(() => null)
+      const status = res.status
+      const resData = errorData || {}
       
       if (status === 404) {
         error.value = 'Results not found. The attempt may no longer exist.'
       } else if (status >= 400 && status < 500) {
-        error.value = resData?.message || err?.message || 'Could not load results. You may need an active subscription.'
+        error.value = resData?.message || 'Could not load results. You may need an active subscription.'
       } else {
         error.value = 'An unexpected error occurred. Please try again later.'
       }
-      console.error("Failed to fetch results:", err)
+      console.error("Failed to fetch results:", res.status, errorData)
     }
   } catch (e) {
     error.value = e.data?.message || e.message || 'An unexpected error occurred. You may need an active subscription to view results.'

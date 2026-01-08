@@ -59,7 +59,7 @@
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-10">
-      <div v-if="loading" class="mt-6"><UiSkeleton :count="6" /></div>
+      <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load subjects for this course.</div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-6">

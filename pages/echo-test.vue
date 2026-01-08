@@ -9,6 +9,9 @@
 </template>
 
 <script setup>
+import { ref, onMounted, watch } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+
 const { $echo } = useNuxtApp()
 const connectionStatus = ref('Connecting...')
 const error = ref(null)
@@ -29,41 +32,52 @@ const onConnectError = (err) => {
   error.value = err.message || JSON.stringify(err)
 }
 
+definePageMeta({
+  middleware: 'sidebase-auth'
+})
+
 onMounted(() => {
   if ($echo) {
-    // Determine the correct connection object based on the driver
-    connection = $echo.connector.socket || $echo.connector.pusher?.connection
+    // Get the Pusher connection object
+    connection = $echo.connector?.pusher?.connection
 
     if (connection) {
-      // Listen for connection events
-      connection.on('connect', onConnect)
-      connection.on('connected', onConnect) // Pusher uses 'connected'
-      connection.on('disconnect', onDisconnect)
-      connection.on('error', onConnectError) // Pusher uses 'error'
-      connection.on('connect_error', onConnectError) // Socket.IO uses 'connect_error'
+      // Listen for connection events using Pusher's bind method
+      connection.bind('connected', onConnect)
+      connection.bind('disconnected', onDisconnect)
+      connection.bind('error', onConnectError)
+      connection.bind('connect_error', onConnectError) // Fallback for some Pusher versions
     } else {
       connectionStatus.value = 'Error'
-      error.value = 'Could not find the connection object (socket or pusher).'
+      error.value = 'Could not find the Pusher connection object.'
     }
 
-    // Subscribe to a test channel
-    $echo.channel('test-channel').listen('TestEvent', (e) => {
-      console.log('Received test event:', e)
-    })
+    // Only subscribe to channels if user is authenticated
+    // This will be handled by watching auth state
   } else {
     connectionStatus.value = 'Error'
     error.value = 'Echo instance ($echo) is not available.'
   }
 })
 
+// Watch for authentication changes and subscribe to test channel when authenticated
+const auth = useAuthStore()
+watch(() => auth.user, (user) => {
+  if (user && $echo) {
+    // Subscribe to a test channel now that user is authenticated
+    $echo.channel('test-channel').listen('TestEvent', (e) => {
+      console.log('Received test event:', e)
+    })
+  }
+}, { immediate: true })
+
 onUnmounted(() => {
-  // Clean up listeners to prevent memory leaks
+  // Clean up listeners to prevent memory leaks using Pusher's unbind method
   if (connection) {
-    connection.off('connect', onConnect)
-    connection.off('connected', onConnect)
-    connection.off('disconnect', onDisconnect)
-    connection.off('error', onConnectError)
-    connection.off('connect_error', onConnectError)
+    connection.unbind('connected', onConnect)
+    connection.unbind('disconnected', onDisconnect)
+    connection.unbind('error', onConnectError)
+    connection.unbind('connect_error', onConnectError)
   }
 })
 </script>

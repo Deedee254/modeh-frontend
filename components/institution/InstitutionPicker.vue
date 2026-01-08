@@ -38,7 +38,7 @@
       <div class="relative min-h-48 h-48 overflow-y-auto overflow-x-hidden rounded-md border bg-slate-50/50 p-1 dark:border-slate-700 dark:bg-slate-900/20 w-full">
         <div v-show="loading" class="p-1">
           <div class="space-y-1 p-1">
-            <UiSelectSkeleton v-for="n in 6" :key="n" />
+            <UiSelectSkeleton v-for="n in 1" :key="n" />
           </div>
         </div>
 

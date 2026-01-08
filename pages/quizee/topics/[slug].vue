@@ -44,7 +44,7 @@
 
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div v-if="loading" class="text-center py-12"><UiSkeleton :count="6" /></div>
+        <div v-if="loading" class="text-center py-12"><UiSkeleton :count="1" /></div>
         <div v-else-if="error" class="mt-6 text-red-600">Failed to load this topic.</div>
 
         <div v-else>
@@ -76,7 +76,7 @@
               </div>
             </div>
             <div v-if="quizzesLoading" class="mt-6">
-              <UiSkeleton :count="6" />
+              <UiSkeleton :count="1" />
             </div>
             <div v-else-if="quizzesError" class="text-red-600">
               Failed to load quizzes.

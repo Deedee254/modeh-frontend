@@ -8,7 +8,7 @@
  */
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
-import useApi from '~/composables/useApi'
+import { nextTick } from 'vue'
 
 declare global {
   interface Window {
@@ -19,12 +19,36 @@ declare global {
   }
 }
 
-export default defineNuxtPlugin(() => {
-  const config = useRuntimeConfig()
-  const isDev = process.env.NODE_ENV !== 'production'
+// Helper function to get XSRF token from cookies
+function getXsrfToken(): string | null {
+  try {
+    if (typeof document === 'undefined') return null
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
+    if (!match || typeof match[1] !== 'string') return null
+    return decodeURIComponent(match[1])
+  } catch (e) {
+    return null
+  }
+}
 
+export default defineNuxtPlugin(() => {
   // Only initialize Echo in the browser environment
   if (import.meta.client) {
+    // Wait for next tick to ensure config is available
+    nextTick(() => {
+      const config = useRuntimeConfig()
+      const isDev = process.env.NODE_ENV !== 'production'
+      
+      console.log('[Echo] Runtime config in nextTick:', config.public)
+      
+      initializeEcho(config, isDev)
+    })
+  }
+})
+
+function initializeEcho(config: any, isDev: boolean) {
+    console.log('[Echo] Starting initialization')
+    
     // Clean up existing Echo instance if it exists (prevents multiple instances on HMR)
     if (window.Echo) {
       try {
@@ -66,16 +90,35 @@ export default defineNuxtPlugin(() => {
         authorize: (socketId: string, callback: Function) => {
           // Run the async auth flow in a fire-and-forget IIFE and use the callback
           ;(async () => {
-            const api = useApi()
-            const url = `${config.public.apiBase}/api/broadcasting/auth`
             try {
-              // Broadcasting auth uses Bearer token auth, no CSRF needed
+              // Ensure CSRF cookie is available for Sanctum
+              try {
+                await fetch(`${config.public.apiBase}/sanctum/csrf-cookie`, {
+                  credentials: 'include'
+                })
+              } catch (e) {
+                console.warn('Failed to fetch CSRF cookie for broadcasting auth')
+              }
 
-              // Use the composable to POST with credentials and standard headers
-              const resp = await api.postJson('/api/broadcasting/auth', {
-                socket_id: socketId,
-                channel_name: channel.name
+              // Broadcasting auth uses Sanctum session auth, not Bearer token
+              // Make direct fetch call to avoid composable timing issues
+              console.log('[Echo] Attempting broadcasting auth for channel:', channel.name)
+              const resp = await fetch(`${config.public.apiBase}/api/broadcasting/auth`, {
+                method: 'POST',
+                credentials: 'include', // Include cookies for Sanctum session
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest',
+                  // Include CSRF token if available
+                  ...(getXsrfToken() ? { 'X-XSRF-TOKEN': getXsrfToken() } : {})
+                },
+                body: JSON.stringify({
+                  socket_id: socketId,
+                  channel_name: channel.name
+                })
               })
+
+              console.log('[Echo] Broadcasting auth response:', resp.status, resp.statusText)
 
               if (!resp || !resp.ok) {
                 let bodyText = ''
@@ -100,71 +143,41 @@ export default defineNuxtPlugin(() => {
       }
     }
 
-    const echo = new Echo<any>({
-      broadcaster: 'pusher',
-      key: config.public.pusherKey,
-      cluster: config.public.pusherCluster,
-      enabledTransports: ['ws', 'wss'],
-      disableStats: true,
-      authorizer: authorizer
-    })
+    console.log('[Echo] Initializing with hardcoded key and cluster')
 
-    window.Echo = echo
-
-    // Wait for next tick to ensure Echo is properly initialized
-    nextTick(() => {
-      const pusher = (echo.connector as any)?.pusher
-
-      if (pusher?.connection) {
-        pusher.connection.bind('connected', () => {
-          if (isDev) {
-            console.log('Echo connection established successfully')
-          }
+    try {
+      const pusherKey = process.env.NUXT_PUBLIC_PUSHER_KEY || config.public?.pusherKey || '5a6916ce972fd4a06074'
+      const pusherCluster = process.env.NUXT_PUBLIC_PUSHER_CLUSTER || config.public?.pusherCluster || 'ap2'
+      
+      console.log('[Echo] process.env.NUXT_PUBLIC_PUSHER_KEY:', process.env.NUXT_PUBLIC_PUSHER_KEY)
+      console.log('[Echo] config.public?.pusherKey:', config.public?.pusherKey)
+      console.log('[Echo] Final key:', pusherKey, 'type:', typeof pusherKey, 'truthy:', !!pusherKey)
+      
+      console.log('[Echo] Creating Pusher directly for testing')
+      try {
+        const pusher = new Pusher(pusherKey, {
+          cluster: pusherCluster,
+          enabledTransports: ['ws', 'wss'],
+          disableStats: true
         })
-
-        pusher.connection.bind('error', (err: any) => {
-          // Suppress harmless errors in development (common during HMR)
-          const errorMessage = err?.message || err?.error?.message || String(err)
-          const errorString = errorMessage.toLowerCase()
-
-          // List of harmless errors that occur during HMR/development
-          const harmlessErrors = [
-            'premature close',
-            'websocket',
-            'socket hang up',
-            'econnreset',
-            'econnrefused',
-            'etimedout',
-            'network error',
-            'connection closed'
-          ]
-
-          if (isDev && harmlessErrors.some(harmless => errorString.includes(harmless))) {
-            // These are harmless during HMR, silently ignore
-            return
-          }
-          console.error('Echo connection error:', err)
-          if (isDev) {
-            console.log('Echo connection options:', echo.options)
-          }
+        console.log('[Echo] Pusher instance created successfully')
+        
+        const echo = new Echo<any>({
+          broadcaster: 'pusher',
+          client: pusher
         })
+        console.log('[Echo] Echo instance created successfully with Pusher client')
+      
+      window.Echo = echo
+    } catch (error) {
+      console.error('[Echo] Failed to create Echo instance:', error)
+      // Set a null echo to prevent other code from failing
+      window.Echo = null
+      return
+    }
 
-        pusher.connection.bind('disconnected', () => {
-          if (isDev) {
-            console.log('Echo disconnected, attempting to reconnect...')
-          }
-        })
-
-        // Handle connection state changes
-        pusher.connection.bind('state_change', (states: any) => {
-          if (isDev && states.previous !== 'connected' && states.current === 'connected') {
-            console.log('Echo reconnected successfully')
-          }
-        })
-      } else if (isDev) {
-        console.warn('Pusher connection not available')
-      }
-    })
+    // Don't connect immediately - wait for authentication
+    // Connection will be established when channels are actually subscribed to
 
     // Cleanup function for HMR/unmount
     const cleanup = () => {

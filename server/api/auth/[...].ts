@@ -28,9 +28,22 @@ export default NuxtAuthHandler({
         try {
           const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
           
+          // First, ensure CSRF cookie is available for Sanctum
+          await fetch(`${apiBase}/sanctum/csrf-cookie`, {
+            credentials: 'include'
+          })
+          
+          // Get CSRF token from cookie (server-side)
+          const getXsrfToken = () => {
+            // In server environment, we can't access document.cookie
+            // The CSRF cookie should be available from the previous request
+            return null // Let Sanctum handle it
+          }
+          
           // Call Laravel login endpoint
           const res = await fetch(`${apiBase}/api/login`, {
             method: 'POST',
+            credentials: 'include', // Include cookies to establish Laravel session
             body: JSON.stringify({
               email: credentials.email,
               password: credentials.password,
@@ -38,12 +51,20 @@ export default NuxtAuthHandler({
             }),
             headers: { 
               'Content-Type': 'application/json',
-              'Accept': 'application/json'
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+              // CSRF token will be handled by Sanctum automatically with credentials: 'include'
             }
           })
 
           if (!res.ok) {
             console.error('[Auth] Login failed:', res.status, res.statusText)
+            try {
+              const errorData = await res.json()
+              console.error('[Auth] Error details:', errorData)
+            } catch (e) {
+              console.error('[Auth] Could not parse error response')
+            }
             return null
           }
 
@@ -83,7 +104,7 @@ export default NuxtAuthHandler({
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60  // 30 days
+        // Remove maxAge to let session control expiration
       }
     }
   },
@@ -103,9 +124,15 @@ export default NuxtAuthHandler({
           const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
           console.log('[Auth] Google OAuth detected, fetching apiToken from backend...')
           
+          // First ensure CSRF cookie
+          await fetch(`${apiBase}/sanctum/csrf-cookie`, {
+            credentials: 'include'
+          })
+          
           // Call the backend to get/create a Sanctum token for this user
           const res = await fetch(`${apiBase}/api/auth/social-sync`, {
             method: 'POST',
+            credentials: 'include', // Include cookies to establish Laravel session
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -126,7 +153,8 @@ export default NuxtAuthHandler({
             token.isNewUser = data.isNewUser  // ← Capture isNewUser from backend response
             console.log('[Auth] apiToken obtained from backend, isNewUser:', data.isNewUser)
           } else {
-            console.warn('[Auth] Failed to fetch apiToken from backend:', res.status)
+            console.warn('[Auth] Failed to fetch apiToken from backend:', res.status, res.statusText)
+            // Don't fail the auth flow, just log the warning
           }
         } catch (e) {
           console.error('[Auth] Error fetching apiToken:', e)

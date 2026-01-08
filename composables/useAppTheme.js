@@ -1,15 +1,16 @@
 import { useState, useRuntimeConfig } from '#app'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
 
 export function useAppTheme() {
   // store theme as 'light' | 'dark'
   // prefer cookie-backed value so server can render the user's preference
   const themeCookie = useCookie('app_theme')
   const theme = useState('app_theme', () => themeCookie.value || 'light')
-  // detected on the client in onMounted
   const systemPrefersDark = ref(false)
   const cfg = useRuntimeConfig()
+  const api = useApi()
 
   const isDark = computed(() => {
     // During SSR we fall back to explicit 'dark' only. The system preference
@@ -38,7 +39,7 @@ export function useAppTheme() {
         if (auth?.user) {
           // best-effort, do not block
           // Post to the configured backend API base so requests go to the backend
-          fetch((cfg.public?.apiBase || '') + '/api/me/theme', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ theme: val }) }).catch(() => {})
+          api.postJson('/api/me/theme', { theme: val }).catch(() => {})
         }
       }
     } catch (e) {}

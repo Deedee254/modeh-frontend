@@ -1,5 +1,5 @@
 <template>
-  <nav v-if="paginator?.last_page > 1" class="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+  <nav v-if="paginator" class="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
     <!-- Previous Button -->
     <button 
       @click="change((paginator?.current_page || 1) - 1)" 
@@ -11,7 +11,7 @@
     </button>
 
     <!-- Page Numbers - Responsive display -->
-    <div class="flex items-center gap-0.5 sm:gap-1">
+    <div v-if="paginator?.last_page > 1" class="flex items-center gap-0.5 sm:gap-1">
       <!-- First page (always show) -->
       <button 
         v-if="pages[0] > 1"
@@ -53,6 +53,11 @@
       >
         {{ paginator?.last_page }}
       </button>
+    </div>
+
+    <!-- Single Page Indicator -->
+    <div v-else class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 font-medium text-sm">
+      Page {{ paginator?.current_page || 1 }} of {{ paginator?.last_page || 1 }}
     </div>
 
     <!-- Next Button -->

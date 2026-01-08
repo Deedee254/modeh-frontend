@@ -83,7 +83,7 @@ const navigationItems = computed(() => [
   },
   {
     label: 'Quizees',
-    description: 'View and manage students',
+    description: 'View and manage quizees',
     icon: '📚',
     colorBadge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
     href: `/institution-manager/institutions/${slug}/quizees`,

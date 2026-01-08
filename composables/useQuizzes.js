@@ -65,9 +65,13 @@ export default function useQuizzes(initial = {}) {
       if (isPublic) delete cleanParams.public
 
       const urlParams = new URLSearchParams()
-      Object.entries(cleanParams || {}).forEach(([k, v]) => { if (v !== undefined && v !== null) urlParams.set(k, v) })
+      Object.entries(cleanParams || {}).forEach(([k, v]) => { 
+        if (v !== undefined && v !== null) {
+          urlParams.set(k, String(v))
+        }
+      })
       
-      const path = '/api/quizzes?approved=1' + (urlParams.toString() ? '&' + urlParams.toString() : '')
+      const path = '/api/quizzes' + (urlParams.toString() ? '?' + urlParams.toString() : '')
       
       const res = isPublic ? await api.getPublic(path) : await api.get(path)
       

@@ -79,7 +79,7 @@
 
         <div class="grid grid-cols-1 gap-3 sm:gap-6">
           <main class="w-full">
-            <div v-if="pending" class="mt-6"><SkeletonGrid :count="3" /></div>
+            <div v-if="pending" class="mt-6"><SkeletonGrid :count="1" /></div>
             <div v-else>
               <div v-if="(!filtered || filtered.length === 0)" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">0 results returned</div>
               <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-3">

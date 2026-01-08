@@ -3,7 +3,7 @@
     <h2 class="text-lg font-semibold text-gray-900 mb-4">Subscription History</h2>
     
     <div v-if="loading" class="space-y-4">
-      <UiSkeleton class="h-16 rounded-lg" v-for="i in 3" :key="i" />
+      <UiSkeleton class="h-16 rounded-lg" v-for="i in 1" :key="i" />
     </div>
 
     <div v-else-if="!history.length" class="text-center py-6">

@@ -3,9 +3,30 @@
     <h1 class="text-2xl font-bold mb-4">Complete your profile</h1>
     <p class="mb-6">Hi, {{ userEmail }}! Please complete your profile information to continue.</p>
 
-    <!-- Grade and Subject Selection -->
-      <div v-if="!institutionAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
-      <h2 class="text-xl font-semibold mb-4">Institution Information</h2>
+    <!-- Step 1: Institution Information -->
+    <div v-if="!institutionAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
+      <div class="flex items-center mb-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+          1
+        </div>
+        <h2 class="text-xl font-semibold ml-3">Institution Information</h2>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex">
+          <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+          <div>
+            <h3 class="text-sm font-medium text-blue-800">Why add your institution?</h3>
+            <p class="text-sm text-blue-700 mt-1">
+              Adding your institution helps you benefit from institution-specific quizzes, competitions, and leaderboards.
+              You'll get access to content tailored to your school or university and can compete with classmates.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <form @submit.prevent="submitInstitution" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Institution</label>
@@ -20,7 +41,7 @@
               {{ inst.name }}
             </option>
           </select>
-          
+
           <p class="text-xs text-gray-600 mb-2">Or enter a new institution name:</p>
           <input
             v-model="institutionForm.name"
@@ -32,17 +53,41 @@
             If you enter a new institution, it will require approval from the institution's manager before you can create profiles.
           </p>
         </div>
-        <button type="submit" class="w-full px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">
-          Save Institution
-        </button>
+        <div class="flex space-x-3">
+          <button type="submit" class="flex-1 px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">
+            Save Institution
+          </button>
+          <button type="button" @click="skipInstitution" class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+            Skip for now
+          </button>
+        </div>
       </form>
     </div>
 
-    <!-- Grade and Subject Selection -->
-      <!-- Optional Education Information -->
-      <div v-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
-      <h2 class="text-xl font-semibold mb-4">Education Information <span class="text-sm font-normal text-gray-500">(Optional)</span></h2>
-      <p class="mb-4 text-sm text-gray-600">You can skip this step and complete it later from your profile settings.</p>
+    <!-- Step 2: Areas of Interest -->
+    <div v-else-if="!gradeAndSubjectsAdded" class="bg-white p-6 rounded-lg shadow-sm mb-6">
+      <div class="flex items-center mb-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+          2
+        </div>
+        <h2 class="text-xl font-semibold ml-3">Areas of Interest</h2>
+      </div>
+
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+        <div class="flex">
+          <svg class="w-5 h-5 text-green-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+          <div>
+            <h3 class="text-sm font-medium text-green-800">Why choose your areas of interest?</h3>
+            <p class="text-sm text-green-700 mt-1">
+              Selecting your grade/course and subjects helps us tailor content to your preferences. You'll get personalized quiz recommendations,
+              study materials, and challenges that match your academic level and interests.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <form @submit.prevent="submitGradeAndSubjects" class="space-y-6">
         <!-- Select Level then Grade -->
         <div class="space-y-4">
@@ -84,12 +129,12 @@
               <span class="text-sm text-gray-500">(Optional)</span>
             </label>
             <div class="grid grid-cols-2 gap-2">
-              <label 
-                v-for="subject in filteredSubjects" 
-                :key="subject.id" 
+              <label
+                v-for="subject in filteredSubjects"
+                :key="subject.id"
                 class="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer"
               >
-                <input 
+                <input
                   type="checkbox"
                   :value="subject.id"
                   v-model="gradeForm.subjects"
@@ -103,16 +148,16 @@
             </p>
           </div>
         </div>
-        <div class="space-y-3">
-          <button 
+        <div class="flex space-x-3">
+          <button
             type="submit"
-            class="w-full px-6 py-2 bg-brand-600 text-white rounded hover:bg-brand-700"
+            class="flex-1 px-6 py-2 bg-brand-600 text-white rounded hover:bg-brand-700"
           >
             {{ gradeForm.level_id ? 'Save and Continue' : 'Skip for now' }}
           </button>
-          <p class="text-center text-sm text-gray-500">
-            You can complete or update this information later from your profile settings
-          </p>
+          <button type="button" @click="skipToDashboard" class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+            Skip all & go to dashboard
+          </button>
         </div>
       </form>
     </div>
@@ -328,6 +373,61 @@ async function submitInstitution() {
   } catch (err) {
     console.error(err)
     error.value = err?.message || 'Failed to save institution'
+  }
+}
+
+async function skipInstitution() {
+  message.value = null
+  error.value = null
+  try {
+    // Mark institution step as skipped
+    const resp = await api.postJson('/api/onboarding/step', {
+      step: 'institution',
+      data: { skipped: true }
+    })
+    if (!resp.ok) throw new Error('Failed to skip institution')
+    institutionAdded.value = true
+    message.value = 'Institution step skipped. You can add it later from your profile.'
+  } catch (err) {
+    console.error(err)
+    error.value = err?.message || 'Failed to skip institution'
+  }
+}
+
+async function skipToDashboard() {
+  message.value = null
+  error.value = null
+  try {
+    // Mark grade/subjects step as skipped
+    const resp = await api.postJson('/api/onboarding/step', {
+      step: 'grade',
+      data: { skipped: true }
+    })
+    if (!resp.ok) throw new Error('Failed to skip grade/course')
+
+    // Also skip subjects if not selected
+    if (gradeForm.value.subjects.length === 0) {
+      const subjectsResp = await api.postJson('/api/onboarding/step', {
+        step: 'subjects',
+        data: { skipped: true }
+      })
+      if (!subjectsResp.ok) throw new Error('Failed to skip subjects')
+    }
+
+    // Finalize the profile
+    const finalizeResp = await api.postJson('/api/onboarding/finalize', {})
+    if (!finalizeResp.ok) throw new Error('Finalize failed')
+
+    // Redirect to dashboard
+    const userRole = auth.user?.role || 'quizee'
+    if (userRole === 'quiz-master') {
+      router.push('/quiz-master/dashboard')
+    } else {
+      router.push('/quizee/dashboard')
+    }
+  } catch (err) {
+    console.error(err)
+    error.value = err?.message || 'Failed to skip to dashboard'
   }
 }
 

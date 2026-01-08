@@ -3,7 +3,7 @@ export type TabDef = { key: string; label: string; icon?: string }
 // Keep compatibility: accept either { isQuizMaster, isquizee } or { isTutor, isStudent }
 export function getSettingsTabs(opts: { isQuizMaster?: boolean; isquizee?: boolean } | { isTutor?: boolean; isStudent?: boolean }): TabDef[] {
   const isTutor = (opts as any).isTutor ?? (opts as any).isQuizMaster ?? false
-  const isStudent = (opts as any).isStudent ?? (opts as any).isquizee ?? false
+  const isQuizee = (opts as any).isquizee ?? (opts as any).isStudent ?? false
 
   // Base tabs available to everyone
   const base: TabDef[] = [
@@ -12,7 +12,7 @@ export function getSettingsTabs(opts: { isQuizMaster?: boolean; isquizee?: boole
     { key: 'notifications', label: 'Notifications', icon: 'i-heroicons-bell' },
   ]
 
-  const studentOnly: TabDef[] = [
+  const quizeeOnly: TabDef[] = [
     { key: 'billing', label: 'Billing', icon: 'i-heroicons-credit-card' },
   ]
 
@@ -22,6 +22,6 @@ export function getSettingsTabs(opts: { isQuizMaster?: boolean; isquizee?: boole
 
   const out = [...base]
   if (isTutor) out.push(...tutorOnly)
-  if (isStudent) out.push(...studentOnly)
+  if (isQuizee) out.push(...quizeeOnly)
   return out
 }
