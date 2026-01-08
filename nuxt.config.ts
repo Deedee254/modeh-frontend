@@ -202,6 +202,7 @@ export default defineNuxtConfig({
   // Runtime Config
   // -----------------------------
   runtimeConfig: {
+    pusherSecret: process.env.NUXT_PUBLIC_PUSHER_SECRET || '',
     public: {
       // Backend API
       apiBase: defaultApiBase,
@@ -209,8 +210,10 @@ export default defineNuxtConfig({
       siteUrl: publicBaseUrl,
       
       // Pusher (for real-time features)
-      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? '5a6916ce972fd4a06074',
-      pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? 'ap2',
+      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
+      pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
+      pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+      pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
       
       // WebSocket (for Laravel Echo)
       wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'https://admin.modeh.co.ke',

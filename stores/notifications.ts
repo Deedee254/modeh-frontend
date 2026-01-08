@@ -119,10 +119,13 @@ export const useNotificationsStore = defineStore('notifications', () => {
             if (typeof window !== 'undefined') {
                 window.Pusher = Pusher;
             }
+            const key = config.public.pusherAppKey || config.public.pusherKey || '5a6916ce972fd4a06074';
+            const cluster = config.public.pusherAppCluster || config.public.pusherCluster || 'ap2';
+            
             echoInstance = new Echo({
                 broadcaster: 'pusher',
-                key: config.public.pusherAppKey,
-                cluster: config.public.pusherAppCluster,
+                key: key,
+                cluster: cluster,
                 forceTLS: true
             });
         }

@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 import UiQuizCard from '~/components/ui/QuizCard.vue'
 
 import { ref, watch, onMounted } from 'vue'
@@ -192,13 +192,15 @@ function makeQuizListRoute(item) {
 }
 
 // Local cache mapping level id -> quizzes array (to avoid repeated network calls)
-const levelQuizzesMap = ref({})
+const levelQuizzesMap = reactive({})
 const api = useApi()
 
 function extractQuizzesFromLevel(level) {
   if (!level) return null
   // common fields where quizzes might be stored
-  return level.quizzes || level.top_quizzes || level.items || level.quizzes_list || null
+  const quizzes = level.quizzes || level.top_quizzes || level.items || level.quizzes_list || null
+  if (Array.isArray(quizzes) && quizzes.length > 0) return quizzes
+  return null
 }
 
 const slugIdCache = ref({})
@@ -209,94 +211,59 @@ async function resolveSlugToId(type, slug) {
   if (slugIdCache.value[key]) return slugIdCache.value[key]
 
   try {
-    const apiRef = useApi()
     const taxonomy = useTaxonomy()
 
     // 1) Check in-memory taxonomy caches first (fast, avoids network)
-    try {
-      if (type === 'subject') {
-        const list = taxonomy.subjects?.value || []
-        const found = list.find(s => String(s.slug) === String(slug) || String(s.name) === String(slug))
-        if (found?.id) {
-          slugIdCache.value[key] = found.id
-          console.debug('[CategorizedQuizzes] resolveSlugToId (cache) found', { type, slug, id: found.id })
-          return found.id
-        }
-      } else if (type === 'topic') {
-        const list = taxonomy.topics?.value || []
-        const found = list.find(t => String(t.slug) === String(slug) || String(t.name) === String(slug))
-        if (found?.id) {
-          slugIdCache.value[key] = found.id
-          console.debug('[CategorizedQuizzes] resolveSlugToId (cache) found', { type, slug, id: found.id })
-          return found.id
-        }
+    if (type === 'subject') {
+      const list = taxonomy.subjects?.value || []
+      const found = list.find(s => String(s.slug) === String(slug) || String(s.name) === String(slug) || String(s.id) === String(slug))
+      if (found?.id) {
+        slugIdCache.value[key] = found.id
+        return found.id
       }
-    } catch (e) {
-      // ignore cache lookup errors
+    } else if (type === 'topic') {
+      const list = taxonomy.topics?.value || []
+      const found = list.find(t => String(t.slug) === String(slug) || String(t.name) === String(slug) || String(t.id) === String(slug))
+      if (found?.id) {
+        slugIdCache.value[key] = found.id
+        return found.id
+      }
     }
 
-    // 2) Fallback to paginated API lookup. Try q search first then brute-force pages.
+    // 2) Fallback to paginated API lookup
+    const apiRef = useApi()
     const plural = type === 'subject' ? 'subjects' : 'topics'
     const perPage = 50
-    let page = 1
-    const maxPages = 5
-
-    // Try a q-based search (if supported by backend) as a cheap first attempt
-    try {
-      const qRes = await apiRef.get(`/api/${plural}?per_page=${perPage}&q=${encodeURIComponent(String(slug))}`)
-      if (qRes.ok) {
-        const qData = await qRes.json().catch(() => null)
-        const list = (qData && (qData[plural] || qData.data || [])) || []
-        const candidate = (Array.isArray(list) && list.find(item => String(item.slug) === String(slug) || String(item.name) === String(slug))) || null
-        if (candidate?.id) {
-          slugIdCache.value[key] = candidate.id
-          console.debug('[CategorizedQuizzes] resolveSlugToId (q) found', { type, slug, id: candidate.id })
-          return candidate.id
-        }
-      }
-    } catch (e) {
-      // ignore q search errors
-    }
-
-    // If q search didn't find it, iterate pages (safe but limited)
-    for (; page <= maxPages; page++) {
-      try {
-        const res = await apiRef.get(`/api/${plural}?per_page=${perPage}&page=${page}`)
-        if (!res.ok) break
-        const data = await res.json().catch(() => null)
-        const list = (data && (data[plural] || data.data || [])) || []
-        if (!Array.isArray(list) || list.length === 0) break
-        const candidate = list.find(item => String(item.slug) === String(slug) || String(item.name) === String(slug)) || null
-        if (candidate?.id) {
-          slugIdCache.value[key] = candidate.id
-          console.debug('[CategorizedQuizzes] resolveSlugToId (paged) found', { type, slug, id: candidate.id, page })
-          return candidate.id
-        }
-      } catch (e) {
-        // break out on network issues
-        break
+    const qRes = await apiRef.get(`/api/${plural}?per_page=${perPage}&q=${encodeURIComponent(String(slug))}`)
+    if (qRes.ok) {
+      const qData = await qRes.json().catch(() => null)
+      const list = (qData && (qData[plural] || qData.data || [])) || []
+      const candidate = (Array.isArray(list) && list.find(item => String(item.slug) === String(slug) || String(item.name) === String(slug) || String(item.id) === String(slug))) || null
+      if (candidate?.id) {
+        slugIdCache.value[key] = candidate.id
+        return candidate.id
       }
     }
   } catch (e) {
     console.warn('[CategorizedQuizzes] resolveSlugToId error', e)
   }
-  console.warn('[CategorizedQuizzes] resolveSlugToId not found', { type, slug })
   return null
 }
 
 async function fetchQuizzesForLevel(level, perPage = 3) {
   if (!level) return []
-  const id = level.id ?? level.slug ?? level.name
+  const id = String(level.id ?? level.slug ?? level.name ?? '')
   if (!id) return []
+  
   // already have embedded quizzes
   const embedded = extractQuizzesFromLevel(level)
-  if (embedded && Array.isArray(embedded) && embedded.length) {
-    levelQuizzesMap.value[String(id)] = embedded
+  if (embedded) {
+    levelQuizzesMap[id] = embedded
     return embedded
   }
 
   // if cached, return
-  if (levelQuizzesMap.value[String(id)]) return levelQuizzesMap.value[String(id)]
+  if (levelQuizzesMap[id]) return levelQuizzesMap[id]
 
   try {
     const paramName = props.type === 'subject' ? 'subject_id' : (props.type === 'topic' ? 'topic_id' : 'level_id')
@@ -306,28 +273,23 @@ async function fetchQuizzesForLevel(level, perPage = 3) {
     if ((paramName === 'subject_id' || paramName === 'topic_id') && paramValRaw && String(paramValRaw).match(/[^0-9]/)) {
       const resolved = await resolveSlugToId(props.type, String(paramValRaw))
       if (resolved) paramValRaw = resolved
-      // else leave as-is; backend will return empty set
+    } else if (paramValRaw && !isNaN(parseInt(paramValRaw))) {
+      paramValRaw = parseInt(paramValRaw)
     }
 
     const paramVal = encodeURIComponent(paramValRaw || '')
     const endpoint = `/api/quizzes?${paramName}=${paramVal}&per_page=${perPage}`
-    // Debug logs to help diagnose homepage taxonomy/quizzes issues
-    console.debug('[CategorizedQuizzes] fetchQuizzesForLevel', { level: level && (level.id || level.slug || level.name), paramName, paramVal, endpoint })
     const res = await api.get(endpoint)
-    console.debug('[CategorizedQuizzes] fetch response', { status: res.status })
     if (!res.ok) {
-      levelQuizzesMap.value[String(id)] = []
+      levelQuizzesMap[id] = []
       return []
     }
     const data = await res.json().catch(() => null)
     const quizzes = (data && (data.quizzes?.data || data.quizzes || data.data)) || []
-    // store an empty array if no quizzes to avoid re-fetching repeatedly
-    levelQuizzesMap.value[String(id)] = quizzes
-    console.debug('[CategorizedQuizzes] fetched quizzes count', { id: String(id), count: quizzes.length })
+    levelQuizzesMap[id] = quizzes
     return quizzes
   } catch (e) {
-    console.warn('[CategorizedQuizzes] fetchQuizzesForLevel error', e)
-    levelQuizzesMap.value[String(id)] = []
+    levelQuizzesMap[id] = []
     return []
   }
 }
@@ -336,10 +298,9 @@ async function fetchQuizzesForLevel(level, perPage = 3) {
 function levelQuizzes(level) {
   if (!level) return []
   const embedded = extractQuizzesFromLevel(level)
-  if (embedded && Array.isArray(embedded)) return embedded
-  const id = level.id ?? level.slug ?? level.name
-  if (!id) return []
-  return levelQuizzesMap.value[String(id)] || []
+  if (embedded) return embedded
+  const id = String(level.id ?? level.slug ?? level.name ?? '')
+  return levelQuizzesMap[id] || []
 }
 
 // Watch incoming levels prop and fetch a small number of quizzes for each level
@@ -350,10 +311,9 @@ watch(propsLevels, (newVal) => {
   const levelsToFetch = newVal.filter((level) => {
     if (!level) return false
     const embedded = extractQuizzesFromLevel(level)
-    if (Array.isArray(embedded) && embedded.length) return false
+    if (embedded) return false
     const id = String(level.id ?? level.slug ?? level.name ?? '')
-    const cached = levelQuizzesMap.value[id]
-    return !(Array.isArray(cached) && cached.length > 0)
+    return !levelQuizzesMap[id]
   })
 
   if (levelsToFetch.length === 0) return
@@ -367,8 +327,6 @@ watch(propsLevels, (newVal) => {
       for (let i = 0; i < levelsToFetch.length; i += batchSize) {
         const batch = levelsToFetch.slice(i, i + batchSize)
         await Promise.all(batch.map(level => fetchQuizzesForLevel(level, perPage).catch(() => {})))
-        // small delay between batches can help in very slow networks / backends
-        // await new Promise(r => setTimeout(r, 50))
       }
     } catch (e) {
       // ignore individual fetch errors; UI will render placeholders where needed

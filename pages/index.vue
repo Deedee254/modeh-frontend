@@ -557,7 +557,9 @@ function getRandomItems(arr, count = 4) {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
   
-  return shuffled.slice(0, Math.min(count, shuffled.length))
+  const picked = shuffled.slice(0, Math.min(count, shuffled.length))
+  console.debug('[index.vue] getRandomItems picked', picked.length, 'from', items.length)
+  return picked
 }
 
 // Random subjects (different for every user/visit)

@@ -37,7 +37,7 @@ export default defineNuxtPlugin(() => {
     // Wait for next tick to ensure config is available
     nextTick(() => {
       const config = useRuntimeConfig()
-      const isDev = process.env.NODE_ENV !== 'production'
+      const isDev = import.meta.dev
       
       console.log('[Echo] Runtime config in nextTick:', config.public)
       
@@ -112,15 +112,21 @@ function initializeEcho(config: any, isDev: boolean) {
             // Broadcasting auth uses Sanctum session auth, not Bearer token
             // Make direct fetch call to avoid composable timing issues
             console.log('[Echo] Attempting broadcasting auth for channel:', channel.name)
+
+            const token = getXsrfToken()
+            const authHeaders: Record<string, string> = {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+            }
+
+            if (token) {
+              authHeaders['X-XSRF-TOKEN'] = token
+            }
+
             const resp = await fetch(`${config.public.apiBase}/api/broadcasting/auth`, {
               method: 'POST',
               credentials: 'include', // Include cookies for Sanctum session
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                // Include CSRF token if available
-                ...(getXsrfToken() ? { 'X-XSRF-TOKEN': getXsrfToken() } : {})
-              },
+              headers: authHeaders,
               body: JSON.stringify({
                 socket_id: socketId,
                 channel_name: channel.name
@@ -155,18 +161,18 @@ function initializeEcho(config: any, isDev: boolean) {
   console.log('[Echo] Initializing with hardcoded key and cluster')
 
   try {
-    const pusherKey = process.env.NUXT_PUBLIC_PUSHER_KEY || config.public?.pusherKey || '5a6916ce972fd4a06074'
-    const pusherCluster = process.env.NUXT_PUBLIC_PUSHER_CLUSTER || config.public?.pusherCluster || 'ap2'
+    const pusherKey = config.public?.pusherKey || '5a6916ce972fd4a06074'
+    const pusherCluster = config.public?.pusherCluster || 'ap2'
     
-    console.log('[Echo] process.env.NUXT_PUBLIC_PUSHER_KEY:', process.env.NUXT_PUBLIC_PUSHER_KEY)
-    console.log('[Echo] config.public?.pusherKey:', config.public?.pusherKey)
-    console.log('[Echo] Final key:', pusherKey, 'type:', typeof pusherKey, 'truthy:', !!pusherKey)
+    console.log('[Echo] Runtime config pusherKey:', config.public?.pusherKey)
+    console.log('[Echo] Using Pusher key:', pusherKey)
+    console.log('[Echo] Using Pusher cluster:', pusherCluster)
     
-    console.log('[Echo] Creating Pusher directly for testing')
     const pusher = new Pusher(pusherKey, {
       cluster: pusherCluster,
       enabledTransports: ['ws', 'wss'],
-      disableStats: true
+      disableStats: true,
+      authorizer: authorizer // Use the custom authorizer we defined above
     })
     console.log('[Echo] Pusher instance created successfully')
     

@@ -27,18 +27,23 @@ export function useTournamentRealtime(tournamentId: number | string) {
             // Continue without Bearer token if not authenticated - public channels may be accessible
         }
 
-        echo.value = new Echo({
-            broadcaster: 'pusher',
-            key: config.public.pusherKey,
-            wsHost: config.public.wsHost,
-            wsPort: config.public.wsPort,
-            wssPort: config.public.wsPort,
-            forceTLS: false,
-            enabledTransports: ['ws', 'wss'],
-            auth: {
-                headers: authHeaders
-            }
-        })
+        if (window.Echo) {
+            echo.value = window.Echo;
+        } else {
+            const key = config.public.pusherKey || config.public.pusherAppKey || '5a6916ce972fd4a06074';
+            echo.value = new Echo({
+                broadcaster: 'pusher',
+                key: key,
+                wsHost: config.public.wsHost,
+                wsPort: config.public.wsPort,
+                wssPort: config.public.wsPort,
+                forceTLS: false,
+                enabledTransports: ['ws', 'wss'],
+                auth: {
+                    headers: authHeaders
+                }
+            })
+        }
 
         echo.value.private(`tournament.${tournamentId}`)
             .listen('.battle.started', (e: { battle: TournamentBattle }) => {
