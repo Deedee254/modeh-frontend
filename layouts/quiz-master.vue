@@ -37,6 +37,7 @@
     <ClientOnly>
       <GlobalAlert />
       <NotificationDrawer />
+      <GoogleOneTap v-if="!isAuthed" />
       <!-- Add bottom navigation for mobile -->
       <BottomNav v-if="isAuthed" />
     </ClientOnly>
@@ -56,6 +57,7 @@ import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
+import GoogleOneTap from '~/components/Auth/GoogleOneTap.vue'
 
 const auth = useAuthStore()
 const route = useRoute()

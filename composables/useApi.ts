@@ -205,10 +205,12 @@ export function useApi() {
     const token = getAuthToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
-    } else {
-      const xsrf = getXsrfFromCookie()
-      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     }
+    
+    // Always include XSRF token if available (required for stateful requests even with Bearer token)
+    const xsrf = getXsrfFromCookie()
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    
     return headers
   }
 
@@ -217,10 +219,11 @@ export function useApi() {
     const token = await getAuthTokenAsync()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
-    } else {
-      const xsrf = getXsrfFromCookie()
-      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     }
+    
+    const xsrf = getXsrfFromCookie()
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    
     return headers
   }
 
@@ -229,10 +232,11 @@ export function useApi() {
     const token = getAuthToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
-    } else {
-      const xsrf = getXsrfFromCookie()
-      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     }
+    
+    const xsrf = getXsrfFromCookie()
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    
     return headers
   }
 
@@ -241,10 +245,11 @@ export function useApi() {
     const token = await getAuthTokenAsync()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
-    } else {
-      const xsrf = getXsrfFromCookie()
-      if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
     }
+    
+    const xsrf = getXsrfFromCookie()
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+    
     return headers
   }
 
@@ -276,7 +281,7 @@ export function useApi() {
   }
 
   async function postJson(path: string, body: any) {
-    // No longer need ensureCsrf() since we use Bearer token authentication
+    try { await ensureCsrf() } catch (e) { }
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
@@ -289,6 +294,7 @@ export function useApi() {
 
   async function postJsonAsync(path: string, body: any) {
     // Wait for auth initialization before making request
+    try { await ensureCsrf() } catch (e) { }
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
@@ -313,7 +319,7 @@ export function useApi() {
 
   // POST JSON and include the current Echo socket id (if available) as X-Socket-Id
   async function postJsonWithSocket(path: string, body: any) {
-    // No longer need ensureCsrf() since we use Bearer token authentication
+    try { await ensureCsrf() } catch (e) { }
     const headers = defaultJsonHeaders()
 
     // Add Echo socket ID if available
@@ -339,7 +345,7 @@ export function useApi() {
   }
 
   async function postFormData(path: string, formData: FormData) {
-    // No longer need ensureCsrf() since we use Bearer token authentication
+    try { await ensureCsrf() } catch (e) { }
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
@@ -349,8 +355,30 @@ export function useApi() {
     return resp
   }
 
+  async function patchJson(path: string, body: any) {
+    try { await ensureCsrf() } catch (e) { }
+    const resp = await fetch(config.public.apiBase + path, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: defaultJsonHeaders(),
+      body: JSON.stringify(body),
+    })
+    return resp
+  }
+
+  async function putJson(path: string, body: any) {
+    try { await ensureCsrf() } catch (e) { }
+    const resp = await fetch(config.public.apiBase + path, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: defaultJsonHeaders(),
+      body: JSON.stringify(body),
+    })
+    return resp
+  }
+
   async function del(path: string) {
-    // No longer need ensureCsrf() since we use Bearer token authentication
+    try { await ensureCsrf() } catch (e) { }
     const resp = await fetch(config.public.apiBase + path, {
       method: 'DELETE',
       credentials: 'include',
@@ -414,17 +442,6 @@ export function useApi() {
     return resp
   }
 
-  async function patchJson(path: string, body: any) {
-    // No longer need ensureCsrf() since we use Bearer token authentication
-    const resp = await fetch(config.public.apiBase + path, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: defaultJsonHeaders(),
-      body: JSON.stringify(body),
-    })
-    return resp
-  }
-
   // Reset all cached auth state (called on logout)
   function clearAuthCache() {
     _lastXsrf = null
@@ -437,7 +454,7 @@ export function useApi() {
   const post = (...args: Parameters<typeof postJson>) => postJson(...args)
   const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
 
-  return { ensureCsrf, getXsrfFromCookie, getAuthToken, getAuthTokenAsync, get, getAsync, getPublic, post, postJson, postJsonAsync, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  return { ensureCsrf, getXsrfFromCookie, getAuthToken, getAuthTokenAsync, get, getAsync, getPublic, post, postJson, postJsonAsync, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, putJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi

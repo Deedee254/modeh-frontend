@@ -18,6 +18,10 @@
 
     <Footer />
 
+    <ClientOnly>
+      <GoogleOneTap />
+    </ClientOnly>
+
     <!-- Public bottom navigation for unauthenticated users -->
     <!-- Render BottomNav without slot content; the component handles public vs authed rendering internally -->
     <BottomNav v-if="!isAuthed && !$route.meta.hideBottomNav" />
@@ -37,6 +41,7 @@ import GlobalAlert from '~/components/GlobalAlert.vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'
+import GoogleOneTap from '~/components/Auth/GoogleOneTap.vue'
 // ChatDirectMessages intentionally not imported here; role layouts include chat when authenticated.
 
 const chatOpen = ref(false)

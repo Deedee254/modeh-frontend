@@ -29,6 +29,7 @@
     <ClientOnly>
       <GlobalAlert />
       <NotificationDrawer />
+      <GoogleOneTap v-if="!isAuthed" />
       <!-- Mobile bottom navigation for quizee role -->
       <BottomNav v-if="isAuthed && !route.meta.hideBottomNav" />
     </ClientOnly>
@@ -48,6 +49,7 @@ import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'
+import GoogleOneTap from '~/components/Auth/GoogleOneTap.vue'
 
 const route = useRoute()
 // ensure we call the auth store so we can detect authenticated users
