@@ -48,7 +48,7 @@
               :subjects_count="c.subjects_count ?? (Array.isArray(c.subjects) ? c.subjects.length : 0)"
               :subjects="c.subjects || []"
               :description="c.description || c.summary || ''"
-              :actionLink="`/courses/${c.id}`"
+              :to="`/courses/${encodeURIComponent(c.slug || c.id)}`"
               :actionLabel="'Open course'"
             />
           </div>

@@ -13,7 +13,8 @@ export default NuxtAuthHandler({
     // @ts-expect-error Use .default here for it to work during SSR
     GoogleProvider.default({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || ''
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true
     }),
     // @ts-expect-error Use .default here for it to work during SSR
     CredentialsProvider.default({

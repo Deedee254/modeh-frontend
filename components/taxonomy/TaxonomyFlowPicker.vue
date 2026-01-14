@@ -767,6 +767,19 @@ watch(
   async (newValue) => {
     if (newValue) {
       selections.value = JSON.parse(JSON.stringify(newValue))
+      
+      // Normalize subject to match multiSelectSubjects mode
+      if (!props.multiSelectSubjects && Array.isArray(selections.value.subject)) {
+        // Convert array to single value (take first or null)
+        selections.value.subject = selections.value.subject[0] ?? null
+      } else if (props.multiSelectSubjects && selections.value.subject && !Array.isArray(selections.value.subject)) {
+        // Convert single value to array
+        selections.value.subject = [selections.value.subject as TaxonomyItem]
+      } else if (selections.value.subject === undefined) {
+        // Ensure subject is never undefined
+        selections.value.subject = props.multiSelectSubjects ? [] : null
+      }
+      
       // Trigger data fetch cascade if we have level selected
       if (newValue.level) {
         currentStep.value = 0 // Keep at 0 to show all breadcrumbs
@@ -921,7 +934,13 @@ onMounted(async () => {
 
   if (topicId && props.includeTopics) {
   const topicIdStr = asString(topicId)
-  const subjectIdForTopics = Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id
+  const getSubjectId = () => {
+    if (Array.isArray(selections.value.subject)) {
+      return selections.value.subject[0]?.id ?? null
+    }
+    return (selections.value.subject as TaxonomyItem | null)?.id ?? null
+  }
+  const subjectIdForTopics = getSubjectId()
   if (!topics.value || topics.value.length === 0) await fetchTopics(asString(subjectIdForTopics))
     let foundTopic: TaxonomyItem | undefined = topics.value.find(t => String(t.id) === topicIdStr)
     if (!foundTopic) {
@@ -931,7 +950,7 @@ onMounted(async () => {
               const data = await res.json().catch(() => null)
               const serverTopic = data?.topic || data?.data || data || null
                 if (serverTopic) {
-                foundTopic = { id: String(serverTopic.id ?? topicIdStr), name: serverTopic.name ?? serverTopic.title ?? `Topic #${topicIdStr}`, subject_id: serverTopic.subject_id ?? (Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id) }
+                foundTopic = { id: String(serverTopic.id ?? topicIdStr), name: serverTopic.name ?? serverTopic.title ?? `Topic #${topicIdStr}`, subject_id: serverTopic.subject_id ?? getSubjectId() }
                 if (foundTopic) {
                   topics.value = [foundTopic, ...topics.value.filter(t => String(t.id) !== String(foundTopic!.id))]
                 }
@@ -939,7 +958,7 @@ onMounted(async () => {
             }
           } catch (e) {}
         }
-        selections.value.topic = foundTopic ?? { id: topicIdStr, name: `Topic #${topicIdStr}`, subject_id: (Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id) }
+        selections.value.topic = foundTopic ?? { id: topicIdStr, name: `Topic #${topicIdStr}`, subject_id: getSubjectId() }
         currentStep.value = steps.value.length - 1
       }
 

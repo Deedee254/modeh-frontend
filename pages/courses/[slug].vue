@@ -1,7 +1,7 @@
 <template>
   <div>
     <PageHero
-      :title="`Course ${courseMeta?.name || courseId}`"
+      :title="`Course ${courseMeta?.name || slug}`"
       :description="courseMeta?.description || 'Subjects for this course'"
       :showSearch="true"
       :flush="true"
@@ -20,7 +20,7 @@
             View all subjects
           </NuxtLink>
           <NuxtLink
-            :to="`/quizzes?grade=${encodeURIComponent(courseId)}`"
+            :to="`/quizzes?grade=${encodeURIComponent(slug)}`"
             class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
           >
             Browse quizzes
@@ -110,7 +110,7 @@ import useTaxonomy from '~/composables/useTaxonomy'
 import { ref, computed, onMounted } from 'vue'
 
 const route = useRoute()
-const courseId = route.params.id
+const slug = route.params.slug
 const config = useRuntimeConfig()
 
 const subjects = ref([])
@@ -147,7 +147,7 @@ function resolveIcon(s) {
 async function fetchCourseMeta() {
   try {
     // Courses are stored as grades with type='course' on the backend, so reuse grade API
-    const res = await $fetch(`${config.public.apiBase}/api/grades/${courseId}`)
+    const res = await $fetch(`${config.public.apiBase}/api/grades/${slug}`)
     courseMeta.value = res?.grade || res || {}
   } catch (e) {
     courseMeta.value = {}
@@ -156,7 +156,7 @@ async function fetchCourseMeta() {
 
 async function fetchSubjects() {
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/subjects`, { params: { grade: courseId } })
+    const res = await $fetch(`${config.public.apiBase}/api/subjects`, { params: { grade: slug } })
     const raw = (res && res.subjects && Array.isArray(res.subjects.data)) ? res.subjects.data : (Array.isArray(res?.subjects) ? res.subjects : (Array.isArray(res) ? res : []))
     subjects.value = Array.isArray(raw) ? raw.filter(Boolean) : []
   } catch (e) {
@@ -166,7 +166,7 @@ async function fetchSubjects() {
 
 async function fetchTopicCount() {
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: { grade: courseId } })
+    const res = await $fetch(`${config.public.apiBase}/api/topics`, { params: { grade: slug } })
     const list = res?.topics?.data || res?.topics || res || []
     topicCount.value = Array.isArray(list) ? list.length : 0
   } catch (e) {
@@ -176,7 +176,7 @@ async function fetchTopicCount() {
 
 async function fetchQuizCount() {
   try {
-    const res = await $fetch(`${config.public.apiBase}/api/quizzes`, { params: { grade: courseId, per_page: 1 } })
+    const res = await $fetch(`${config.public.apiBase}/api/quizzes`, { params: { grade: slug, per_page: 1 } })
     quizCount.value = res?.quizzes?.total || res?.total || 0
   } catch (e) {
     quizCount.value = 0
