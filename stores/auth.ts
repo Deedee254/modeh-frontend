@@ -7,11 +7,6 @@ import { useInstitutionsStore } from '~/stores/institutions'
 import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
 import type { User } from '~/types'
 
-let notificationsModule: any = null
-if (typeof window !== 'undefined' && import.meta && import.meta.client) {
-  import('~/stores/notifications').then(m => (notificationsModule = m))
-}
-
 let _auth_storage_handler: ((e: StorageEvent) => void) | null = null
 let _auth_beforeunload: (() => void) | null = null
 
