@@ -143,10 +143,36 @@ async function submit() {
 async function signInGoogle() {
   if (isGoogleLoading.value) return
   isGoogleLoading.value = true
+  error.value = null
   try {
-    await signIn('google', { callbackUrl: '/auth/callback' })
+    // Use signIn with redirect: false to catch errors properly
+    // Instead of relying on automatic redirect which can hide OAuth errors
+    const result = await signIn('google', { 
+      redirect: false,
+      callbackUrl: '/auth/callback'
+    })
+    
+    if (!result?.ok) {
+      // If OAuth fails, redirect to error page with error code
+      const errorCode = result?.error || 'OAuthSignin'
+      console.error('[LoginForm] Google sign-in error:', errorCode)
+      router.push({
+        path: '/auth/error',
+        query: { error: errorCode }
+      })
+      return
+    }
+    
+    // If successful, redirect to callback
+    if (result?.ok) {
+      window.location.href = '/auth/callback'
+    }
   } catch (err) {
-    error.value = err?.message || 'Google sign-in failed.'
+    console.error('[LoginForm] Google sign-in error:', err)
+    router.push({
+      path: '/auth/error',
+      query: { error: 'OAuthSignin' }
+    })
   } finally {
     isGoogleLoading.value = false
   }

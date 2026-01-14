@@ -177,10 +177,19 @@ function validateForm() {
 // Google Sign-in (Direct - no modal)
 async function signInWithGoogle() {
   isGoogleLoading.value = true
-  error.value = null
 
   try {
     const result = await signIn('google', { redirect: false })
+    
+    if (!result || !result.ok) {
+      const errorCode = result?.error || 'OAuthSignin'
+      console.error('Google sign-in error:', errorCode)
+      router.push({
+        path: '/auth/error',
+        query: { error: errorCode }
+      })
+      return
+    }
     
     // Wait for session to establish
     await new Promise(resolve => setTimeout(resolve, 500))
@@ -193,11 +202,17 @@ async function signInWithGoogle() {
       // After Google sign-in, redirect to onboarding to select role
       setTimeout(() => router.push('/onboarding/new-user'), 800)
     } else {
-      error.value = 'Failed to establish session. Please try again.'
+      router.push({
+        path: '/auth/error',
+        query: { error: 'OAuthSignin' }
+      })
     }
   } catch (err) {
     console.error('Google sign-in error:', err)
-    error.value = err?.message || 'Google sign-in failed. Please try again.'
+    router.push({
+      path: '/auth/error',
+      query: { error: 'OAuthSignin' }
+    })
   } finally {
     isGoogleLoading.value = false
   }

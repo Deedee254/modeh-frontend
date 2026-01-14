@@ -15,11 +15,11 @@ export default NuxtAuthHandler({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
       allowDangerousEmailAccountLinking: true,
-      authorization: {
-        params: {
-          redirect_uri: process.env.NUXT_AUTH_BASE_URL ? `${process.env.NUXT_AUTH_BASE_URL}/callback/google` : undefined
-        }
-      }
+      // Explicitly set the callback URL - critical for production OAuth
+      // This tells Google where to redirect after authentication
+      callbackUrl: process.env.NUXT_AUTH_BASE_URL 
+        ? `${process.env.NUXT_AUTH_BASE_URL}/callback/google` 
+        : undefined
     }),
     // @ts-expect-error Use .default here for it to work during SSR
     CredentialsProvider.default({

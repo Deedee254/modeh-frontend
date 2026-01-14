@@ -224,8 +224,10 @@ export default defineNuxtConfig({
 
   // Auth Configuration (sidebase/nuxt-auth with AuthJS provider)
   // -------................................. 
-  // Defaults are production values
-  // Set `NUXT_AUTH_BASE_URL` in development to point to the handler
+  // CRITICAL: For production OAuth to work:
+  // 1. Set NUXT_AUTH_BASE_URL=https://yourdomain.com/api/auth in production .env
+  // 2. Ensure this matches the redirect URI in Google Cloud Console
+  // 3. Set NUXT_AUTH_SECRET to a secure random string
   // -------................................. 
   auth: {
     baseURL: authBaseUrl,
@@ -233,7 +235,12 @@ export default defineNuxtConfig({
     secret: process.env.NUXT_AUTH_SECRET ?? 'DyQkwB8DMfLQ3KbDW9dNgdZFNYb9RVxPLCWfwWXqQPM=',
     provider: {
       type: 'authjs',
-      trustHost: true,  // Trust Host header to construct callback URLs correctly
+      trustHost: true,
+      // CRITICAL: In production, explicitly set the origin to avoid mismatches
+      // This ensures Google receives the correct redirect URI
+      ...(process.env.NUXT_PUBLIC_BASE_URL && {
+        origin: process.env.NUXT_PUBLIC_BASE_URL
+      }),
       defaultProvider: 'google',
       addDefaultCallbackUrl: true
     }

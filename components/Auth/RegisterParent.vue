@@ -247,13 +247,18 @@ async function submit() {
 async function signInWithGoogle() {
   if (isGoogleLoading.value) return
   isGoogleLoading.value = true
-  error.value = null
 
   try {
     const result = await signIn('google', { redirect: false })
 
     if (!result || !result.ok) {
-      throw new Error(result?.error || 'Google sign-in failed')
+      const errorCode = result?.error || 'OAuthSignin'
+      console.error('Google sign-in error:', errorCode)
+      router.push({
+        path: '/auth/error',
+        query: { error: errorCode }
+      })
+      return
     }
 
     await new Promise(resolve => setTimeout(resolve, 500))
@@ -263,11 +268,17 @@ async function signInWithGoogle() {
     if (user) {
       setTimeout(() => router.push('/onboarding/new-user'), 800)
     } else {
-      error.value = 'Failed to complete Google sign-in'
+      router.push({
+        path: '/auth/error',
+        query: { error: 'OAuthSignin' }
+      })
     }
   } catch (err) {
     console.error('Google sign-in error:', err)
-    error.value = err?.message || 'Google sign-in failed. Please try again.'
+    router.push({
+      path: '/auth/error',
+      query: { error: 'OAuthSignin' }
+    })
   } finally {
     isGoogleLoading.value = false
   }
