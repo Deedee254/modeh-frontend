@@ -6,15 +6,20 @@ export default NuxtAuthHandler({
   secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
   pages: {
     signIn: '/login',
-    // Custom error page for friendly messages
     error: '/auth/error'
   },
+  trustHost: true,
   providers: [
     // @ts-expect-error Use .default here for it to work during SSR
     GoogleProvider.default({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      allowDangerousEmailAccountLinking: true
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          redirect_uri: process.env.NUXT_AUTH_BASE_URL ? `${process.env.NUXT_AUTH_BASE_URL}/callback/google` : undefined
+        }
+      }
     }),
     // @ts-expect-error Use .default here for it to work during SSR
     CredentialsProvider.default({
