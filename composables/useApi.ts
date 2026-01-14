@@ -16,21 +16,14 @@ export function useApi() {
   function getAuthToken() {
     try {
       // Get the API token from Nuxt-Auth session (set by the backend during login)
-      if (auth && typeof auth.data !== 'undefined') {
-        const session = auth.data
-        if (typeof session === 'object' && session !== null) {
-          const sessionVal = 'value' in session ? session.value : session
-          if (sessionVal && sessionVal.user) {
-            const user = sessionVal.user as any
-            if (typeof user === 'object' && user?.apiToken) {
-              console.debug('[useApi] Using Bearer token from Nuxt-Auth session')
-              return user.apiToken
-            }
-          }
-        }
+      // auth.data is a Ref, so handle both Ref and unwrapped cases
+      const session = auth.data?.value || auth.data
+      
+      if (session?.user?.apiToken) {
+        return session.user.apiToken
       }
     } catch (e) {
-      console.debug('[useApi] Error getting auth token:', e)
+      // Silent fail - token not available yet or auth error
     }
     return null
   }

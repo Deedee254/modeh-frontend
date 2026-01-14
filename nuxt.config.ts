@@ -233,7 +233,7 @@ export default defineNuxtConfig({
     secret: process.env.NUXT_AUTH_SECRET ?? 'DyQkwB8DMfLQ3KbDW9dNgdZFNYb9RVxPLCWfwWXqQPM=',
     provider: {
       type: 'authjs',
-      trustHost: process.env.NODE_ENV === 'development', 
+      trustHost: true,  // Trust Host header to construct callback URLs correctly
       defaultProvider: 'google',
       addDefaultCallbackUrl: true
     }

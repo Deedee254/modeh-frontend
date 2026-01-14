@@ -111,11 +111,10 @@ function initializeEcho(config: any, isDev: boolean) {
               console.warn('[Echo] Failed to ensure CSRF token:', e)
             }
 
-            // Broadcasting auth uses Sanctum session auth, but also include Bearer token if available
-            console.log('[Echo] Attempting broadcasting auth for channel:', channel.name)
-
+            // Get auth headers: Bearer token + XSRF token
             const xsrf = api.getXsrfFromCookie()
             const bearerToken = api.getAuthToken()
+            
             const authHeaders: Record<string, string> = {
               'Content-Type': 'application/json',
               'X-Requested-With': 'XMLHttpRequest',
@@ -125,22 +124,20 @@ function initializeEcho(config: any, isDev: boolean) {
               authHeaders['X-XSRF-TOKEN'] = xsrf
             }
 
-            // Include Bearer token if available (for API token auth)
+            // Include Bearer token if available
             if (bearerToken) {
               authHeaders['Authorization'] = `Bearer ${bearerToken}`
             }
 
             const resp = await fetch(`${config.public.apiBase}/api/broadcasting/auth`, {
               method: 'POST',
-              credentials: 'include', // Include cookies for Sanctum session
+              credentials: 'include', // Include session cookies for Sanctum
               headers: authHeaders,
               body: JSON.stringify({
                 socket_id: socketId,
                 channel_name: channel.name
               })
             })
-
-            console.log('[Echo] Broadcasting auth response:', resp.status, resp.statusText)
 
             if (!resp || !resp.ok) {
               let bodyText = ''

@@ -46,7 +46,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // Ensure auth store is synced if authenticated
     if (status.value === 'authenticated' && data.value?.user) {
-        // Sync minimal user data from session
+        // Sync user data from Nuxt-Auth session to auth store
         if (!auth.user || auth.user.id !== (data.value.user as any).id) {
             auth.setUser(data.value.user)
         }
