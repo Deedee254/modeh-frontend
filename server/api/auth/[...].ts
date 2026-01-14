@@ -114,7 +114,8 @@ export default NuxtAuthHandler({
         token.id = user.id
         token.role = (user as any).role
         token.apiToken = (user as any).apiToken
-        token.isNewUser = (user as any).isNewUser  // ← Pass new user flag from backend
+        token.isNewUser = (user as any).isNewUser  
+        token.isProfileCompleted = (user as any).is_profile_completed ?? (user as any).isProfileCompleted 
       }
       
       // For Google OAuth (account?.provider === 'google'), we need to fetch the apiToken from backend
@@ -150,8 +151,10 @@ export default NuxtAuthHandler({
           if (res.ok) {
             const data = await res.json()
             token.apiToken = data.token
-            token.isNewUser = data.isNewUser  // ← Capture isNewUser from backend response
-            console.log('[Auth] apiToken obtained from backend, isNewUser:', data.isNewUser)
+            token.isNewUser = data.isNewUser  
+            token.role = data.role
+            token.isProfileCompleted = data.user?.is_profile_completed || data.isProfileCompleted
+            console.log('[Auth] apiToken obtained from backend, isProfileCompleted:', token.isProfileCompleted)
           } else {
             console.warn('[Auth] Failed to fetch apiToken from backend:', res.status, res.statusText)
             // Don't fail the auth flow, just log the warning
@@ -170,7 +173,8 @@ export default NuxtAuthHandler({
         (session.user as any).role = token.role as string
         // Make the API token available to the frontend
         (session.user as any).apiToken = token.apiToken as string
-        (session.user as any).isNewUser = token.isNewUser as boolean  // ← Pass new user flag
+        (session.user as any).isNewUser = token.isNewUser as boolean  
+        (session.user as any).isProfileCompleted = token.isProfileCompleted as boolean
       }
       return session
     }

@@ -175,7 +175,7 @@
           </p>
         </div>
         <div>
-          <h3 class="font-medium text-gray-700">Grade</h3>
+          <h3 class="font-medium text-gray-700">{{ isTertiaryLevel ? 'Course' : 'Grade' }}</h3>
           <p class="text-gray-600">{{ gradeForm.grade_id ? getGradeName(gradeForm.grade_id) : 'Not selected' }}</p>
         </div>
         <div>
@@ -278,10 +278,14 @@ watch(() => gradeForm.value.grade_id, async (newGradeId) => {
   }
 })
 
-  // Computed properties for filtered lists
+// Computed properties for filtered lists
 const isTertiaryLevel = computed(() => {
+  if (!gradeForm.value.level_id) return false
   const selectedLevel = levels.value?.find(l => String(l.id) === String(gradeForm.value.level_id))
-  return selectedLevel?.name?.toLowerCase().includes('tertiary')
+  if (!selectedLevel) return false
+  
+  const name = (selectedLevel.name || '').toLowerCase()
+  return name.includes('tertiary') || name.includes('higher education') || name.includes('university') || name.includes('college')
 })
 
 const filteredGrades = computed(() => {
@@ -291,7 +295,9 @@ const filteredGrades = computed(() => {
   )
   // For tertiary level, show only items with type 'course'
   if (isTertiaryLevel.value) {
-    return grades.filter(g => g.type === 'course' || g.type === 'tertiary')
+    const courses = grades.filter(g => g.type === 'course' || g.type === 'tertiary')
+    // Fallback: if no courses found but it is tertiary, show all (maybe type wasn't set)
+    return courses.length > 0 ? courses : grades
   }
   // For other levels, show only regular grades
   return grades.filter(g => !g.type || g.type === 'grade')
@@ -418,6 +424,15 @@ async function skipToDashboard() {
     const finalizeResp = await api.postJson('/api/onboarding/finalize', {})
     if (!finalizeResp.ok) throw new Error('Finalize failed')
 
+    // Refresh user state
+    await auth.fetchUser()
+    
+    // Attempt to update the session (to sync JWT with backend)
+    const { update } = useAuth()
+    if (typeof update === 'function') {
+      try { await update() } catch (e) { }
+    }
+
     // Redirect to dashboard
     const userRole = auth.user?.role || 'quizee'
     if (userRole === 'quiz-master') {
@@ -471,14 +486,30 @@ async function finalize() {
   try {
     let resp = await api.postJson('/api/onboarding/finalize', {})
     if (!resp.ok) throw new Error('Finalize failed')
+    
+    // Refresh user data from server and update store
     resp = await api.get('/api/me')
-    const me = await resp.json()
-    try { localStorage.removeItem('modeh:onboarding:skipped') } catch (e) {}
-    message.value = 'Profile finalized.'
-    if (me && me.role === 'quiz-master') {
-      router.push('/quiz-master/dashboard')
+    if (resp.ok) {
+      const me = await resp.json()
+      auth.setUser(me)
+      
+      // Attempt to update the session (to sync JWT with backend)
+      const { update } = useAuth()
+      if (typeof update === 'function') {
+        try { await update() } catch (e) { }
+      }
+      
+      try { localStorage.removeItem('modeh:onboarding:skipped') } catch (e) {}
+      message.value = 'Profile finalized.'
+      
+      // Redirect to appropriate dashboard
+      if (me.role === 'quiz-master') {
+        router.push('/quiz-master/dashboard')
+      } else {
+        router.push('/quizee/dashboard')
+      }
     } else {
-      router.push('/quizee/dashboard')
+      throw new Error('Failed to refresh user profile')
     }
   } catch (err) {
     console.error(err)

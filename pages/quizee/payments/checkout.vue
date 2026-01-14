@@ -337,6 +337,7 @@ const route = useRoute()
 const router = useRouter()
 const q = route.query
 const api = useApi()
+const subscriptionsStore = useSubscriptionsStore()
 
 const type = (q.type || 'quiz')
 const id = q.id || null
@@ -391,7 +392,6 @@ const showReferralInput = ref(false)
 const referralCodeInput = ref('')
 
 const checkout = useCheckoutStore()
-const subscriptionsStore = useSubscriptionsStore()
 const ui = useUiStore()
 
 const canRedo = ref(false)
@@ -505,11 +505,9 @@ async function loadPackages() {
 async function checkSubscription() {
   loading.value = true
   try {
-    const res = await api.get('/api/subscriptions/mine')
-    if (res?.ok) {
-      const data = await res.json()
-      
-      const sub = data?.subscription || data?.data?.subscription || null
+    const data: any = await subscriptionsStore.fetchMySubscription()
+    if (data) {
+      const sub = data.subscription
       isActive.value = !!(sub && (sub.status === 'active' || sub.status === 'paid'))
       activePackageName.value = sub?.package?.title || sub?.package?.name || ''
       
@@ -519,7 +517,7 @@ async function checkSubscription() {
           currentActivePackage.value = sub.package || null
       }
       
-      const instSubs = data?.institution_subscriptions || []
+      const instSubs = data.institution_subscriptions || []
       institutionSubscriptions.value = instSubs
       
       if (instSubs.length > 0) {

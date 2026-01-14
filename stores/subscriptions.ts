@@ -13,10 +13,14 @@ interface Package {
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
     const packages = ref<Package[]>([])
+    const mySubscription = ref<any>(null)
+    const institutionSubscriptions = ref<any[]>([])
     const loading = ref(false)
     const api = useApi()
 
     async function fetchPackages() {
+        // Cache packages if already loaded
+        if (packages.value.length > 0) return
         loading.value = true
         try {
             const res = await api.get('/api/packages')
@@ -30,12 +34,43 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         }
     }
 
+    async function fetchMySubscription(force = false) {
+        if (mySubscription.value && !force) return mySubscription.value
+        try {
+            const res = await api.get('/api/subscriptions/mine')
+            if (res.status === 401 || res.status === 419) {
+                mySubscription.value = null
+                institutionSubscriptions.value = []
+                return null
+            }
+            const data = await res.json().catch(() => null)
+            mySubscription.value = data?.subscription || data?.data?.subscription || null
+            institutionSubscriptions.value = data?.institution_subscriptions || data?.data?.institution_subscriptions || []
+            return { subscription: mySubscription.value, institution_subscriptions: institutionSubscriptions.value }
+        } catch (e) {
+            mySubscription.value = null
+            institutionSubscriptions.value = []
+            return null
+        }
+    }
+
     async function subscribeToPackage(pkg: Package, opts: Record<string, any> = {}) {
         // expects server route POST /api/packages/{package}/subscribe
         const res = await api.postJson(`/api/packages/${pkg.id}/subscribe`, opts)
         if (!res.ok) throw new Error('Failed to subscribe to package')
-        return await res.json()
+        const data = await res.json()
+        // Refresh subscription after success
+        await fetchMySubscription(true)
+        return data
     }
 
-    return { packages, loading, fetchPackages, subscribeToPackage }
+    return { 
+        packages, 
+        mySubscription, 
+        institutionSubscriptions,
+        loading, 
+        fetchPackages, 
+        fetchMySubscription, 
+        subscribeToPackage 
+    }
 })

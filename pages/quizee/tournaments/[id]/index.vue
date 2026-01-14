@@ -354,7 +354,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '~/stores/auth';
+import { useAuthStore } from '~/stores/auth'
+import { useTournamentStore } from '~/stores/tournamentStore';
 import useApi from '~/composables/useApi';
 import { useAppAlert } from '~/composables/useAppAlert';
 import PageHero from '~/components/ui/PageHero.vue';
@@ -401,8 +402,8 @@ type Player = {
 };
 
 // State
-const loading = ref(true);
-const tournament = ref<Tournament | null>(null);
+const loading = computed(() => tournamentStore.loading);
+const tournament = computed(() => tournamentStore.currentTournament);
 const eligibility = ref<{ can_join: boolean; reason: string | null }>({ can_join: false, reason: null });
 const battles = ref<any[]>([]);
 const nextRoundAt = ref<string | null>(null);
@@ -415,6 +416,7 @@ const _retryAuthAttempted = ref(false);
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const tournamentStore = useTournamentStore();
 const api = useApi();
 const config = useRuntimeConfig();
 const { push: pushAlert } = useAppAlert();
@@ -620,28 +622,19 @@ const displayTimeline = computed(() => {
 // Methods
 const fetchTournament = async () => {
   try {
-    loading.value = true;
-    const response = await api.get(`/api/tournaments/${route.params.id}`);
-    if (await api.handleAuthStatus(response)) return;
-    const json: any = await response.json().catch(() => null);
+    const data = await tournamentStore.fetchTournament(route.params.id);
+    if (!data) return;
 
-    const payload = json?.tournament ?? json?.data ?? json;
-    const data = payload?.tournament ?? payload ?? null;
-    eligibility.value = json?.eligibility ?? payload?.eligibility ?? { can_join: false, reason: null };
+    eligibility.value = data?.eligibility ?? { can_join: false, reason: null };
 
-    // Auth revalidation logic (simplified for brevity, keeping core logic)
+    // Auth revalidation logic
     try {
       if (eligibility.value?.reason === 'authentication_required' && auth.user && !_retryAuthAttempted.value) {
         _retryAuthAttempted.value = true;
-        // GET /api/me doesn't need CSRF token - uses Bearer token instead
-        const meRes = await api.get('/api/me');
-        if (!api.handleAuthStatus(meRes) && meRes.ok) {
-          const meJson = await meRes.json().catch(() => null);
-          if (meJson) {
-            try { await auth.setUser ? auth.setUser(meJson) : (auth.fetchUser && await auth.fetchUser()) } catch (e) {}
-            await fetchTournament();
-            return;
-          }
+        const me = await auth.fetchUser(true);
+        if (me) {
+          await fetchTournament();
+          return;
         }
       }
     } catch (e) {}
@@ -652,8 +645,8 @@ const fetchTournament = async () => {
         const userObj: any = auth.user as any;
         const userGradeId = userObj?.grade?.id ?? userObj?.grade_id ?? null;
         const userLevelId = userObj?.level?.id ?? userObj?.level_id ?? null;
-        const tourGradeId = tournament.value?.grade?.id ?? tournament.value?.grade_id ?? null;
-        const tourLevelId = tournament.value?.level?.id ?? tournament.value?.level_id ?? null;
+        const tourGradeId = data?.grade?.id ?? data?.grade_id ?? null;
+        const tourLevelId = data?.level?.id ?? data?.level_id ?? null;
 
         let inferredCanJoin = true;
         if (tourGradeId && userGradeId) inferredCanJoin = inferredCanJoin && Number(userGradeId) === Number(tourGradeId);
@@ -666,59 +659,7 @@ const fetchTournament = async () => {
       }
     } catch (e) {}
 
-    // Rules normalization
-    let _rulesRaw: any = data?.rules ?? [];
-    let _rulesNorm: string[] = [];
-    if (Array.isArray(_rulesRaw)) {
-      _rulesNorm = _rulesRaw.map((r: any) => String(r));
-    } else if (typeof _rulesRaw === 'string') {
-      try {
-        const parsed = JSON.parse(_rulesRaw);
-        if (Array.isArray(parsed)) _rulesNorm = parsed.map((r: any) => String(r));
-        else _rulesNorm = _rulesRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-      } catch (e) {
-        _rulesNorm = _rulesRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-      }
-    }
-
-    tournament.value = data ? {
-      id: data.id,
-      banner: data.banner ?? data.sponsor_banner,
-      name: data.name ?? data.title ?? "Tournament",
-      start_date: (data.start_date || data.starts_at) ?? null,
-      end_date: (data.end_date || data.ends_at) ?? null,
-      participants_count: data.participants_count ?? 0,
-      prize_pool: data.prize_pool ?? data.prize ?? data.prize_amount ?? 0,
-      description: data.description ?? data.about ?? "",
-      rules: _rulesNorm,
-      entry_fee: data.entry_fee ?? 0,
-      grade: data.grade ?? null,
-      level: data.level ?? null,
-      timeline: data.timeline || data.phases || [],
-      registration_end_date: data.registration_end_date ?? data.registration_ends_at ?? null,
-      status: data.status,
-      winner: data.winner ?? null,
-      sponsor: {
-        name: data.sponsor_name ?? data.sponsor?.name ?? null,
-        logo: data.sponsor_logo ?? data.sponsor?.logo ?? null,
-      },
-      sponsor_details: data.sponsor_details,
-      access_type: data.access_type
-    } as Tournament : null;
-
-    try {
-      const _battles = (json?.battles ?? json?.data?.battles) || [];
-      battles.value = Array.isArray(_battles) ? _battles : [];
-      if (Array.isArray(battles) && battles.length) {
-        const scheduled = battles.value.filter((b: any) => b.status === "scheduled" && b.scheduled_at);
-        if (scheduled.length) {
-          scheduled.sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
-          nextRoundAt.value = scheduled[0].scheduled_at;
-        }
-      }
-    } catch (e) {}
-
-    // Make parallel requests for status checks and leaderboard
+    // Parallel requests for status checks and leaderboard
     await Promise.all([
       checkRegistrationStatus(),
       fetchLeaderboard(),
@@ -726,16 +667,12 @@ const fetchTournament = async () => {
     ]);
   } catch (error) {
     console.error("Error fetching tournament:", error);
-  } finally {
-    loading.value = false;
   }
 };
 
 const checkQualificationStatus = async () => {
   try {
-    const response = await api.get(`/api/tournaments/${route.params.id}/qualification-status`)
-    if (await api.handleAuthStatus(response)) return;
-    const json: any = await response.json().catch(() => null)
+    const json: any = await tournamentStore.fetchQualificationStatus(route.params.id)
     userHasQualified.value = !!(json?.qualified ?? false)
   } catch (error) {
     console.warn('Error checking qualification status:', error)
@@ -744,9 +681,7 @@ const checkQualificationStatus = async () => {
 
 const checkRegistrationStatus = async () => {
   try {
-    const response = await api.get(`/api/tournaments/${route.params.id}/registration-status`);
-    if (await api.handleAuthStatus(response)) return;
-    const json: any = await response.json().catch(() => null);
+    const json: any = await tournamentStore.fetchRegistrationStatus(route.params.id);
     const isReg = !!(json?.data?.isRegistered ?? json?.isRegistered);
     isRegistered.value = isReg;
     registrationStatus.value = (json?.data?.status ?? json?.status) || (isReg ? "approved" : null);
@@ -757,9 +692,7 @@ const checkRegistrationStatus = async () => {
 
 const fetchLeaderboard = async () => {
   try {
-    const response = await api.get(`/api/tournaments/${route.params.id}/leaderboard`);
-    if (await api.handleAuthStatus(response)) return;
-    const json: any = await response.json().catch(() => null);
+    const json: any = await tournamentStore.fetchLeaderboard(route.params.id);
     const list = json?.leaderboard ?? json?.data ?? json ?? [];
     topPlayers.value = Array.isArray(list) ? (list as Player[]).slice(0, 5) : [];
   } catch (error) {

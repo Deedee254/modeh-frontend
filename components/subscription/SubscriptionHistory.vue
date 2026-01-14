@@ -47,10 +47,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
-
-const config = useRuntimeConfig()
+import { useApi } from '~/composables/useApi'
 
 const alert = useAppAlert()
+const api = useApi()
 const loading = ref(true)
 const history = ref([])
 
@@ -75,9 +75,7 @@ function formatAmount(amount) {
 async function fetchHistory() {
   loading.value = true
   try {
-    const res = await fetch(config.public.apiBase + '/api/subscriptions/history', {
-      credentials: 'include'
-    })
+    const res = await api.get('/api/subscriptions/history')
     if (res.ok) {
       const data = await res.json()
       // backend returns { ok: true, subscriptions: [...], subscription: {...} }

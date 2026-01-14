@@ -44,14 +44,14 @@ export const useAuthStore = defineStore('auth', () => {
   let _fetchUserPromise: Promise<any> | null = null
 
   // Watch for session changes to update store state
-  watch(data, (newData) => {
-    if (newData?.user) {
+  watch([data, status], ([newData, newStatus]) => {
+    if (newStatus === 'authenticated' && newData?.user) {
       const normalizedUser = convertToCamelCase(newData.user)
       if (normalizedUser.id) {
         user.value = normalizedUser
         role.value = normalizedUser.role
       }
-    } else if (status.value === 'unauthenticated') {
+    } else if (newStatus === 'unauthenticated') {
       user.value = null
       role.value = null
     }
@@ -129,7 +129,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function fetchUser() {
+  async function fetchUser(force = false) {
+    // Return existing user if available and not forcing a refresh
+    if (user.value && !force) return user.value
+
     // Avoid concurrent fetches: return the in-flight promise if present
     if (_fetchUserPromise) return _fetchUserPromise
     isFetchingUser.value = true
@@ -140,10 +143,10 @@ export const useAuthStore = defineStore('auth', () => {
       if (res.status === 401 || res.status === 419 || res.status === 403) {
         // If API says unauthorized but nuxt-auth says authorized, something is out of sync
         if (status.value === 'authenticated') {
-           // We might want to signOut() here but let's just clear local state for now
+           const { signOut } = useAuth()
+           signOut({ redirect: false }).catch(() => {})
         }
         clear()
-        _fetchUserPromise = null
         return null
       }
       if (!res.ok) return

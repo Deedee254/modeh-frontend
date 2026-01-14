@@ -137,7 +137,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 definePageMeta({ layout: 'quiz-master' })
 
 import { ref, onMounted, computed } from 'vue'
@@ -298,12 +298,9 @@ async function fetchTopicDetails() {
   try {
     const api = useApi()
     const endpoint = `/api/topics?slug=${slug.value}`
-    console.log('[fetchTopicDetails] fetching from:', endpoint)
     const res = await api.get(endpoint)
-    console.log('[fetchTopicDetails] response status:', res.status)
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
-        console.warn('[fetchTopicDetails] access denied', res.status)
         alert.push({ type: 'warning', message: 'You do not have permission to view this topic.' })
       } else {
         throw new Error('Failed to fetch topic details.')
@@ -312,45 +309,40 @@ async function fetchTopicDetails() {
     }
     const data = await res.json().catch(() => null)
     topic.value = (Array.isArray(data?.data) ? data.data[0] : data?.data) || data?.topic || null
-    console.log('[fetchTopicDetails] loaded topic:', topic.value?.name, 'raw topic data:', topic.value)
-    // warm related taxonomy caches so we can look up grade/level info
-    try {
-      if (topic.value) {
-        // Extract IDs from the topic
-        const subject_id = topic.value.subject_id || topic.value.subjectId
-        const grade_id = topic.value.grade_id || topic.value.gradeId || topic.value.grade?.id
-        
-        // Fetch the full subject to get grade info
-        if (subject_id) {
-          const subjectRes = await api.get(`/api/subjects?q=${encodeURIComponent(subject_id)}`)
-          if (subjectRes.ok) {
-            const subjectData = await subjectRes.json().catch(() => null)
-            if (subjectData?.subjects && Array.isArray(subjectData.subjects)) {
-              const foundSubject = subjectData.subjects.find(s => String(s.id) === String(subject_id))
-              if (foundSubject && !grade_id) {
-                topic.value.grade_id = foundSubject.grade_id || foundSubject.gradeId
+
+    if (topic.value) {
+      const t = topic.value
+      const subject_id = t.subject_id || t.subjectId
+      const grade_id = t.grade_id || t.gradeId || t.grade?.id
+      
+      const warmingPromises = []
+      
+      if (subject_id) {
+        warmingPromises.push(
+          api.get(`/api/subjects?q=${encodeURIComponent(subject_id)}`).then(async (subjectRes) => {
+            if (subjectRes.ok) {
+              const subjectData = await subjectRes.json().catch(() => null)
+              if (subjectData?.subjects && Array.isArray(subjectData.subjects)) {
+                const foundSubject = subjectData.subjects.find((s: any) => String(s.id) === String(subject_id))
+                if (foundSubject && !grade_id) {
+                  t.grade_id = foundSubject.grade_id || foundSubject.gradeId
+                }
               }
             }
-          }
-        }
-        
-        // Fetch grades to populate the store for lookups
-        if (grade_id) {
-          await fetchGrades()
-        }
-        
-        // Also fetch all topics for this subject for warmth
-        if (subject_id) {
-          await fetchTopicsBySubject(subject_id)
-        }
+          })
+        )
+        warmingPromises.push(fetchTopicsBySubject(subject_id))
       }
-    } catch (e) {
-      // ignore warming errors
-      console.log('[fetchTopicDetails] warming error (ignored):', e)
+      
+      if (grade_id || t.grade) {
+        warmingPromises.push(fetchGrades())
+      }
+      
+      await Promise.all(warmingPromises)
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('[fetchTopicDetails] error:', e)
-    alert.push({ type: 'error', message: (e && e.message) ? e.message : String(e) })
+    alert.push({ type: 'error', message: e?.message || String(e) })
   }
 }
 
@@ -394,12 +386,10 @@ function navigateToEdit(quizSlug) {
 
 onMounted(async () => {
   loading.value = true
-  try {
-    // prefer to load levels first so downstream callers receive levels-aware data
-    await fetchLevels()
-  } catch (e) {}
-  
+  // Parallelize levels, topic details and quizzes
+  // fetchQuizzesForTopic can fall back to using slug.value if topic.value.id isn't ready
   await Promise.all([
+    fetchLevels().catch(() => {}),
     fetchTopicDetails(),
     fetchQuizzesForTopic()
   ])

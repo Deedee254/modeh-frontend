@@ -40,8 +40,10 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
+import { useApi } from '~/composables/useApi'
 
 const alert = useAppAlert()
+const api = useApi()
 const account = reactive({ number: '', routing: '' })
 const amount = ref(null)
 const method = ref('bank_transfer')
@@ -76,7 +78,6 @@ async function save() {
   if (!validate()) return
   submitting.value = true
   try {
-    const cfg = useRuntimeConfig()
     const payload = {
       amount: Number(amount.value),
       method: method.value,
@@ -86,12 +87,7 @@ async function save() {
       },
     }
 
-    const res = await fetch(cfg.public.apiBase + '/wallet/withdraw', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      credentials: 'include',
-    })
+    const res = await api.postJson('/api/wallet/withdraw', payload)
 
     if (!res.ok) {
       let msg = 'Failed to request withdrawal.'

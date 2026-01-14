@@ -707,12 +707,16 @@ const fetchBadges = async () => {
 
 // On mount
 onMounted(async () => {
-  await Promise.all([fetchDailyChallenge(), fetchHistory(), fetchBadges()])
+  await Promise.all([
+    fetchDailyChallenge(), 
+    fetchHistory(), 
+    fetchBadges(),
+    fetchLeaderboard()
+  ])
   // compute streak from history
   computeStreakFromHistory()
-  // start countdown and fetch leaderboard
+  // start countdown
   startCountdown()
-  fetchLeaderboard()
 
   // Listen for instant updates emitted by the `take.vue` submit flow
   const onLeaderboardUpdated = (e) => {

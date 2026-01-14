@@ -342,12 +342,18 @@ function scrollToWithdraw() {
 }
 
 onMounted(async () => {
-  if (!auth.user) {
-    try { await auth.fetchUser() } catch (_) {}
-  }
-  await fetchWallet()
-  await fetchTransactions()
-  await fetchWithdrawals()
+  // Parallelize auth check and wallet data fetching
+  await Promise.all([
+    (async () => {
+      if (!auth.user) {
+        try { await auth.fetchUser() } catch (_) {}
+      }
+    })(),
+    fetchWallet(),
+    fetchTransactions(),
+    fetchWithdrawals()
+  ])
+  
   attachEcho()
 })
 </script>

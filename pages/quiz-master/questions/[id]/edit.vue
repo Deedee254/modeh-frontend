@@ -217,20 +217,22 @@ async function saveQuestion() {
 }
 
 onMounted(async () => {
-  // Fetch question first so we can decide whether to load grades by its level
-  await fetchQuestion()
-  // ensure levels are available for the editor and for grade filtering
-  await fetchLevels()
+  // Parallelize fetchQuestion and fetchLevels (levels-first optimization)
+  await Promise.all([fetchQuestion(), fetchLevels()])
+  
+  const preloads = []
   // if the question already has a level set, fetch grades filtered by that level;
   // otherwise fallback to the unfiltered grades list for backwards compatibility
   if (form.value && form.value.level_id) {
-    await fetchGradesByLevel(form.value.level_id)
+    preloads.push(fetchGradesByLevel(form.value.level_id))
   } else {
-    await fetchGrades()
+    preloads.push(fetchGrades())
   }
-  await Promise.all([
-    fetchAllSubjects(),
-    fetchAllTopics()
-  ])
+  
+  // These can benefit from levels data if already loaded
+  preloads.push(fetchAllSubjects())
+  preloads.push(fetchAllTopics())
+  
+  await Promise.all(preloads)
 })
 </script>

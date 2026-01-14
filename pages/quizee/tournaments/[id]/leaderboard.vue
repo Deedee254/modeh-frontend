@@ -107,6 +107,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 import { useApi } from "~/composables/useApi";
+import { useTournamentStore } from "~/stores/tournamentStore";
 import Podium from "~/components/leaderboard/Podium.vue";
 import LeaderboardTable from "~/components/leaderboard/LeaderboardTable.vue";
 import TournamentBracket from "~/components/TournamentBracket.vue";
@@ -218,6 +219,7 @@ const visiblePages = computed(() => {
 
 const config = useRuntimeConfig();
 const api = useApi();
+const tournamentStore = useTournamentStore();
 
 // Fetch tournament and leaderboard data
 const fetchData = async () => {
@@ -229,27 +231,17 @@ const fetchData = async () => {
       return;
     }
 
-    const [tournamentResp, leaderboardResp] = await Promise.all([
-      api.get(`/api/tournaments/${id.value}`),
-      api.get(`/api/tournaments/${id.value}/leaderboard`),
+    const [tdata, leaderboardJson] = await Promise.all([
+      tournamentStore.fetchTournament(id.value),
+      tournamentStore.fetchLeaderboard(id.value),
     ]);
 
-    // handle auth redirects if necessary
-    if (api.handleAuthStatus && api.handleAuthStatus(tournamentResp)) return;
-    if (api.handleAuthStatus && api.handleAuthStatus(leaderboardResp)) return;
-
-    // tournamentResponse may return the tournament directly or inside an envelope
-    const tournamentJson: any = await tournamentResp.json().catch(() => null);
-    const tdata: any = tournamentJson?.data ?? tournamentJson ?? null;
     tournament.value = (tdata?.tournament ?? tdata) as Tournament;
 
     // leaderboardResponse may return { leaderboard: [...] } or an array directly
-    const leaderboardJson: any = await leaderboardResp.json().catch(() => null);
-    const ldata: any = leaderboardJson?.data ?? leaderboardJson ?? null;
+    const ldata: any = leaderboardJson?.data ?? leaderboardJson?.leaderboard ?? leaderboardJson ?? null;
     if (Array.isArray(ldata)) {
       leaderboard.value = ldata as Player[];
-    } else if (ldata && Array.isArray(ldata.leaderboard)) {
-      leaderboard.value = ldata.leaderboard as Player[];
     } else if (ldata && Array.isArray(ldata.data)) {
       leaderboard.value = ldata.data as Player[];
     } else {

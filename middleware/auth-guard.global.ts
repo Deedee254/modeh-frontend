@@ -39,16 +39,32 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // 2. Check Authentication Status via nuxt-auth
     if (status.value === 'unauthenticated') {
+        if (auth.user) auth.clear()
         if (!requiredRole || (requiredRole === 'authenticated_any' && path === '/')) return
         return navigateTo({ path: '/login', query: { next: to.fullPath } })
     }
 
     // Ensure auth store is synced if authenticated
-    if (status.value === 'authenticated' && !auth.user && data.value?.user) {
-        // Sync minimal user data from session, fetch full profile if needed
-        auth.setUser(data.value.user)
-        // Optionally trigger full profile fetch in background
-        if (process.client) auth.fetchUser().catch(() => {})
+    if (status.value === 'authenticated' && data.value?.user) {
+        // Sync minimal user data from session
+        if (!auth.user || auth.user.id !== (data.value.user as any).id) {
+            auth.setUser(data.value.user)
+        }
+        
+        // If the session data says the profile is incomplete, we MUST verify with the backend
+        // before redirecting to onboarding, because the JWT data might be stale (e.g., user
+        // just completed onboarding in a previous session or via another tab).
+        const sessionIncomplete = (data.value.user as any).isProfileCompleted === false || 
+                                 (data.value.user as any).is_profile_completed === false ||
+                                 !(data.value.user as any).role
+        
+        if (sessionIncomplete && !path.startsWith('/onboarding')) {
+            // Await full user fetch to see if they actually finished onboarding
+            await auth.fetchUser()
+        } else if (!auth.user?.id) {
+            // Background fetch if store is still empty for some reason
+            if (process.client) auth.fetchUser().catch(() => {})
+        }
     }
 
     const user = auth.user as User
@@ -69,7 +85,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
         }
         
         // Legacy check for is_profile_completed flag - redirect to onboarding
-        if (user.is_profile_completed === false) {
+        const isProfileCompleted = user.is_profile_completed ?? (user as any).isProfileCompleted
+        if (isProfileCompleted === false) {
             return navigateTo('/onboarding')
         }
     }

@@ -20,10 +20,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRuntimeConfig } from '#app'
+import { useApi } from '~/composables/useApi'
 
-const cfg = useRuntimeConfig()
-const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
+const api = useApi()
 
 const email = ref('')
 const sending = ref(false)
@@ -35,12 +34,7 @@ async function onSend() {
   message.value = ''
   sending.value = true
   try {
-    const res = await fetch(`${base}/api/affiliates/send-invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email: email.value })
-    })
+    const res = await api.postJson('/api/affiliates/send-invite', { email: email.value })
     const data = await res.json()
     if (!res.ok) {
       error.value = data?.message || data?.error || 'Failed to send affiliate invite'

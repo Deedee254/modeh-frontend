@@ -266,16 +266,19 @@ import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import useSeo from '~/composables/useSeo'
 import { format } from 'date-fns'
 
+import { useTournamentStore } from '~/stores/tournamentStore'
+
 const route = useRoute()
 const router = useRouter()
 const api = useApi()
 const auth = useAuthStore()
+const tournamentStore = useTournamentStore()
 const alert = useAppAlert()
 const isLoggedIn = computed(() => !!auth.user && !!auth.user.id)
 const config = useRuntimeConfig()
 
-const loading = ref(true)
-const tournament = ref(null)
+const loading = computed(() => tournamentStore.loading)
+const tournament = computed(() => tournamentStore.currentTournament)
 const showLoginModal = ref(false)
 
 const baseUrl = computed(() => {
@@ -296,38 +299,29 @@ const parsedRules = computed(() => {
 })
 
 const fetchTournament = async () => {
-  loading.value = true
-  try {
-    const res = await api.get(`/api/tournaments/${route.params.id}`)
-    if (res.ok) {
-      const j = await res.json().catch(() => null)
-      tournament.value = j?.tournament ?? j?.data ?? j
-      
-      // SEO Setup (non-blocking - runs in background)
-      Promise.resolve().then(() => {
-        try {
-          const seo = useSeo()
-          if (tournament.value && tournament.value.id) {
-            seo.setupPageSeo(
-              {
-                id: tournament.value.id,
-                name: tournament.value.name || 'Tournament',
-                slug: tournament.value.slug || String(tournament.value.id),
-                description: tournament.value.description || '' ,
-                image: tournament.value.banner || undefined,
-                start_date: tournament.value.start_date || tournament.value.created_at || undefined
-              },
-              'tournament',
-              window.location.origin
-            )
-          }
-        } catch (e) {}
-      })
-    }
-  } catch (e) {
-    console.error('Failed to fetch tournament', e)
-  } finally {
-    loading.value = false
+  await tournamentStore.fetchTournament(route.params.id)
+  
+  // SEO Setup (non-blocking - runs in background)
+  if (tournament.value) {
+    Promise.resolve().then(() => {
+      try {
+        const seo = useSeo()
+        if (tournament.value && tournament.value.id) {
+          seo.setupPageSeo(
+            {
+              id: tournament.value.id,
+              name: tournament.value.name || 'Tournament',
+              slug: tournament.value.slug || String(tournament.value.id),
+              description: tournament.value.description || '',
+              image: tournament.value.banner || undefined,
+              start_date: tournament.value.start_date || tournament.value.created_at || undefined
+            },
+            'tournament',
+            window.location.origin
+          )
+        }
+      } catch (e) {}
+    })
   }
 }
 

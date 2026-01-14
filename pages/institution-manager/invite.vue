@@ -220,11 +220,10 @@ async function sendViaBackend() {
   message.value = ''
   error.value = ''
   try {
-    const res = await fetch(`${base}/api/institutions/${institutionId}/members/invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email: email.value, role: role.value, expires_in_days: expires_in_days.value })
+    const res = await api.postJson(`/api/institutions/${institutionId}/members/invite`, { 
+      email: email.value, 
+      role: role.value, 
+      expires_in_days: expires_in_days.value 
     })
     const data = await res.json()
     if (!res.ok) {
@@ -257,10 +256,7 @@ function copyInvite() {
 async function revoke(token) {
   if (!confirm('Revoke this invitation?')) return
   try {
-    const res = await fetch(`${base}/api/institutions/${institutionId}/members/invites/${encodeURIComponent(token)}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
+    const res = await api.del(`/api/institutions/${institutionId}/members/invites/${encodeURIComponent(token)}`)
     const data = await res.json()
     if (!res.ok) {
       error.value = data?.message || 'Failed to revoke invite'

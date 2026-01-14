@@ -116,7 +116,10 @@ async function fetchTopicsForSubject() {
   try {
     // Prefer store cache if available
     const storeTopics = store.topics || []
-    const subjectId = subject.value?.id
+    
+    // Check if we already have the subject ID (from onMounted store lookup)
+    let subjectId = subject.value?.id
+    
     if (Array.isArray(storeTopics) && storeTopics.length && subjectId) {
       const filtered = storeTopics.filter(t => String(t.subject_id || t.subjectId) === String(subjectId))
       if (filtered.length) {
@@ -128,6 +131,10 @@ async function fetchTopicsForSubject() {
     // fallback to direct fetch using subject ID if available
     const params = new URLSearchParams({ approved: 1, per_page: 100 })
     const api = useApi()
+    
+    // If we still don't have subjectId, it might be fetched by fetchSubjectDetails in parallel.
+    // However, fetchTopicsForSubject starts at the same time.
+    // To be safe, we use the slug-based endpoint as a robust fallback.
     const endpoint = subjectId 
       ? `/api/subjects/${subjectId}/topics?${params.toString()}`
       : `/api/topics?subject_slug=${slug}&${params.toString()}`
@@ -156,8 +163,17 @@ async function fetchTopicsForSubject() {
 onMounted(async () => {
   loading.value = true
   error.value = null
+  
+  // Try to find subject in store first (populated by useTaxonomyHydration)
+  const storeSubjects = store.subjects || []
+  const found = storeSubjects.find(s => s.slug === slug || String(s.id) === slug)
+  if (found) {
+    subject.value = found
+  }
+
   await Promise.all([
-    fetchSubjectDetails(),
+    // Only fetch if not found in store or to ensure we have full details
+    !subject.value ? fetchSubjectDetails() : Promise.resolve(),
     fetchTopicsForSubject()
   ])
   

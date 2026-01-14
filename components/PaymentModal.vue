@@ -66,6 +66,7 @@
 import { ref, computed, watch } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
+import { useSubscriptionsStore } from '~/stores/subscriptions'
 
 const props = defineProps({
   open: Boolean,
@@ -79,6 +80,7 @@ const emits = defineEmits(['close', 'paid'])
 const cfg = useRuntimeConfig()
 const alert = useAppAlert()
 const api = useApi()
+const subscriptionsStore = useSubscriptionsStore()
 
 const isOpen = ref(props.open)
 const loading = ref(false)
@@ -124,19 +126,26 @@ async function initiatePayment() {
   try {
     let res
     if (paymentDetails.value.type === 'subscription') {
-      res = await api.postJson(`/api/packages/${props.pkg.id}/subscribe`, { phone: phoneForPayment.value })
+      res = await subscriptionsStore.subscribeToPackage(props.pkg, { phone: phoneForPayment.value })
     } else {
       const payload = { item_type: props.item.type || 'quiz', item_id: props.item.id, amount: paymentDetails.value.price, phone: phoneForPayment.value }
       res = await api.postJson('/api/one-off-purchases', payload)
     }
-    if (api.handleAuthStatus(res)) return
-    if (res?.ok && (res.tx || res.purchase?.gateway_meta?.tx)) {
-      currentTx.value = res.tx || res.purchase.gateway_meta.tx
+    
+    // Check if res is already the parsed data (from store) or a response object
+    const data = res?.ok === undefined ? res : await res.json().catch(() => ({}))
+    
+    if (data?.tx || data?.purchase?.gateway_meta?.tx) {
+      currentTx.value = data.tx || data.purchase.gateway_meta.tx
       showAwaitingModal.value = true
       isOpen.value = false // Hide this modal, show the awaiting one
+    } else if (res?.ok === false) {
+      const t = data?.message || 'Failed to initiate payment.'
+      throw new Error(t)
     } else {
-      const t = await res.text().catch(() => null)
-      throw new Error(res?.message || t || 'Failed to initiate payment.')
+      // Success but no TX? might happen for some flows
+      showAwaitingModal.value = true
+      isOpen.value = false
     }
   } catch (e) {
     error.value = e.data?.message || e.message || 'An unexpected error occurred.'

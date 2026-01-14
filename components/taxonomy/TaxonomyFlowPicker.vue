@@ -766,14 +766,13 @@ watch(
   () => props.modelValue,
   async (newValue) => {
     if (newValue) {
-      selections.value = newValue
+      selections.value = JSON.parse(JSON.stringify(newValue))
       // Trigger data fetch cascade if we have level selected
       if (newValue.level) {
-        currentStep.value = 1
+        currentStep.value = 0 // Keep at 0 to show all breadcrumbs
         const levelId = (newValue.level as TaxonomyItem).id
         await fetchGrades(levelId)
         if (newValue.grade) {
-          currentStep.value = 2
           const gradeId = (newValue.grade as TaxonomyItem).id
           await fetchSubjects(gradeId)
           if (newValue.subject) {
@@ -781,7 +780,6 @@ watch(
               ? newValue.subject[0]?.id
               : (newValue.subject as TaxonomyItem).id
             if (subjectId && props.includeTopics) {
-              currentStep.value = 3
               await fetchTopics(subjectId)
             }
           }
@@ -794,7 +792,7 @@ watch(
       }
     }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 // Initialize
@@ -857,7 +855,7 @@ onMounted(async () => {
                 foundLevel = { id: String(serverLevel.id ?? levelIdStr), name: serverLevel.name ?? serverLevel.title ?? `Level #${levelIdStr}` }
                 // insert into local list so picker can display it
                 if (foundLevel) {
-                  levels.value = [foundLevel, ...levels.value.filter(l => String(l.id) !== String(foundLevel.id))]
+                  levels.value = [foundLevel, ...levels.value.filter(l => String(l.id) !== String(foundLevel!.id))]
                 }
               }
             }
@@ -884,7 +882,7 @@ onMounted(async () => {
                 if (serverGrade) {
                 foundGrade = { id: String(serverGrade.id ?? gradeIdStr), name: serverGrade.name ?? serverGrade.title ?? `Grade #${gradeIdStr}`, level_id: serverGrade.level_id ?? serverGrade.level ?? selections.value.level?.id }
                 if (foundGrade) {
-                  grades.value = [foundGrade, ...grades.value.filter(g => String(g.id) !== String(foundGrade.id))]
+                  grades.value = [foundGrade, ...grades.value.filter(g => String(g.id) !== String(foundGrade!.id))]
                 }
               }
             }
@@ -909,7 +907,7 @@ onMounted(async () => {
                 if (serverSubject) {
                 foundSubject = { id: String(serverSubject.id ?? subjectIdStr), name: serverSubject.name ?? serverSubject.title ?? `Subject #${subjectIdStr}`, grade_id: serverSubject.grade_id ?? serverSubject.grade ?? selections.value.grade?.id }
                 if (foundSubject) {
-                  subjects.value = [foundSubject, ...subjects.value.filter(s => String(s.id) !== String(foundSubject.id))]
+                  subjects.value = [foundSubject, ...subjects.value.filter(s => String(s.id) !== String(foundSubject!.id))]
                 }
               }
             }
@@ -935,7 +933,7 @@ onMounted(async () => {
                 if (serverTopic) {
                 foundTopic = { id: String(serverTopic.id ?? topicIdStr), name: serverTopic.name ?? serverTopic.title ?? `Topic #${topicIdStr}`, subject_id: serverTopic.subject_id ?? (Array.isArray(selections.value.subject) ? selections.value.subject[0]?.id : (selections.value.subject as TaxonomyItem)?.id) }
                 if (foundTopic) {
-                  topics.value = [foundTopic, ...topics.value.filter(t => String(t.id) !== String(foundTopic.id))]
+                  topics.value = [foundTopic, ...topics.value.filter(t => String(t.id) !== String(foundTopic!.id))]
                 }
               }
             }
@@ -957,6 +955,10 @@ onMounted(async () => {
       console.warn('TaxonomyFlowPicker: failed to prefill from query', e)
     }
   }
+})
+
+defineExpose({
+  handleTopicCreated
 })
 </script>
 

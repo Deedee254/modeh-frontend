@@ -36,9 +36,9 @@
               <textarea v-model="form.bio" rows="3" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600"></textarea>
             </div>
 
-            <!-- Education Journey -->
+            <!-- Areas of Interest -->
             <div v-if="isQuizMaster || isQuizee">
-              <label class="block text-sm font-medium text-slate-700 mb-2">Education Journey</label>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Areas of Interest</label>
               <TaxonomyFlowPicker class="w-full" v-model="taxonomySelection" :includeTopics="false" :multiSelectSubjects="true" />
             </div>
 
@@ -220,15 +220,24 @@ async function initializeTaxonomySelection() {
   const profile = isQuizMaster.value ? user.value?.quizMasterProfile : user.value?.quizeeProfile
   if (!profile) return
 
-  // Ensure taxonomy lists are loaded to allow the picker to preselect values
-  try {
-    if (!taxonomyStore.levels || taxonomyStore.levels.length === 0) {
-      await taxonomyStore.fetchLevels()
-    }
-  } catch (e) {}
+  // Parallelize initial taxonomy loads
+  await Promise.all([
+    (async () => {
+      if (!taxonomyStore.levels || taxonomyStore.levels.length === 0) {
+        await taxonomyStore.fetchLevels().catch(() => {})
+      }
+    })(),
+    (async () => {
+      if (Array.isArray(profile.subjects) && profile.subjects.length > 0) {
+        if (!taxonomyStore.subjects || taxonomyStore.subjects.length === 0) {
+          await taxonomyStore.fetchAllSubjects().catch(() => {})
+        }
+      }
+    })()
+  ])
 
   // Helper to find item in list or fetch if missing
-  const resolveItem = async (current: any, list: any[], fetchFn: Function, apiEndpoint: string, parentId: string | null = null) => {
+  const resolveItem = async (current: any, list: any[], apiEndpoint: string) => {
     let item = current || null
     const id = item?.id || item // handle if item is just an ID
     if (!id) return null
@@ -236,17 +245,7 @@ async function initializeTaxonomySelection() {
     // 1. Try to find in existing list
     let found = list.find(l => String(l.id) === String(id) || String(l.value) === String(id))
     
-    // 2. If not found, try fetching list (if fetchFn provided)
-    if (!found && fetchFn) {
-      try { 
-        await fetchFn() 
-        // Re-check list after fetch
-        // Note: we need to access the store list again, but here we passed a static ref. 
-        // Ideally we check taxonomyStore directly.
-      } catch (e) {}
-    }
-
-    // 3. Fallback: try fetching individual item from API
+    // 2. Fallback: try fetching individual item from API
     if (!found && apiEndpoint) {
       try {
         const resp = await api.get(`${apiEndpoint}/${encodeURIComponent(String(id))}`)
@@ -261,53 +260,45 @@ async function initializeTaxonomySelection() {
     return found || ((item && item.name) ? item : { id, name: `Item ${id}` })
   }
 
-  // Resolve Level
-  // Prefer the profile object if it exists and has an ID, otherwise fall back to creating an object from level_id
-  let level = await resolveItem(
-    (profile.level && profile.level.id) ? profile.level : (profile.level_id ? { id: profile.level_id } : null), 
-    taxonomyStore.levels || [], 
-    taxonomyStore.fetchLevels, 
-    '/api/levels'
-  )
+  // Resolve Level and Subjects in parallel
+  const [level, resolvedSubjects] = await Promise.all([
+    resolveItem(
+      (profile.level && profile.level.id) ? profile.level : (profile.level_id ? { id: profile.level_id } : null), 
+      taxonomyStore.levels || [], 
+      '/api/levels'
+    ),
+    (async () => {
+      if (!Array.isArray(profile.subjects) || profile.subjects.length === 0) return null
+      
+      const results = []
+      for (const s of profile.subjects) {
+        const sId = s?.id || s
+        if (!sId) continue
+        
+        const found = (taxonomyStore.subjects || []).find(ss => String(ss.id) === String(sId))
+        if (found) {
+          results.push(found)
+        } else {
+          results.push((typeof s === 'object' && s.name) ? s : { id: sId, name: `Subject ${sId}` })
+        }
+      }
+      return results
+    })()
+  ])
   
-  // If we found a level, ensuring its grades are loaded is critical
+  // If we found a level, we need its grades before resolving the grade
   if (level && level.id) {
     try { await taxonomyStore.fetchGradesByLevel(level.id) } catch (e) {}
   }
 
   // Resolve Grade
-  let grade = await resolveItem(
+  const grade = await resolveItem(
     (profile.grade && profile.grade.id) ? profile.grade : (profile.grade_id ? { id: profile.grade_id } : null), 
     taxonomyStore.grades || [], 
-    null, // fetchGradesByLevel already called above
     '/api/grades'
   )
 
-  // Resolve Subjects
-  let subject = null
-  if (Array.isArray(profile.subjects) && profile.subjects.length > 0) {
-    // Ensure all subjects are loaded
-    if (!taxonomyStore.subjects || taxonomyStore.subjects.length === 0) {
-      try { await taxonomyStore.fetchAllSubjects() } catch (e) {}
-    }
-    
-    const resolvedSubjects = []
-    for (const s of profile.subjects) {
-      const sId = s?.id || s
-      if (!sId) continue
-      
-      const found = (taxonomyStore.subjects || []).find(ss => String(ss.id) === String(sId))
-      if (found) {
-        resolvedSubjects.push(found)
-      } else {
-        // preserve existing object if it has name, otherwise placeholder
-        resolvedSubjects.push((typeof s === 'object' && s.name) ? s : { id: sId, name: `Subject ${sId}` })
-      }
-    }
-    subject = resolvedSubjects
-  }
-
-  taxonomySelection.value = { level, grade, subject, topic: null }
+  taxonomySelection.value = { level, grade, subject: resolvedSubjects, topic: null }
 }
 
 function triggerAvatarUpload() { 
@@ -332,18 +323,17 @@ function reset() {
 }
 
 async function save() {
-  const success = await saveProfile(form.value, preferredRole.value, originalForm.value)
+  const success = await saveProfile(form.value, preferredRole.value)
   if (!success) return
 
   if (form.value.institution_id || form.value.institution) {
     try {
       const institutionPayload = form.value.institution_id ? { institution_id: form.value.institution_id } : { institution: form.value.institution, is_custom: true }
       const resp = await api.postJson('/api/onboarding/step', { step: 'institution', data: institutionPayload })
-      if (api.handleAuthStatus(resp)) return
+      if (await api.handleAuthStatus(resp)) return
       const json = await api.parseResponse(resp)
       if (resp.ok) {
         appAlert.push({ message: form.value.institution_id ? `Request sent to ${form.value.institution}! Awaiting manager approval for verification.` : `Custom institution "${form.value.institution}" saved to your profile!`, type: 'success' })
-        await auth.fetchUser()
       } else {
         appAlert.push({ message: (json as any)?.message || 'Failed to set institution', type: 'error' })
       }
@@ -356,7 +346,7 @@ async function save() {
     try {
       const institutionPayload = { institution: institutionQuery.value.trim(), is_custom: true }
       const resp = await api.postJson('/api/onboarding/step', { step: 'institution', data: institutionPayload })
-      if (api.handleAuthStatus(resp)) return
+      if (await api.handleAuthStatus(resp)) return
       const json = await api.parseResponse(resp)
       if (resp.ok) {
         appAlert.push({ message: `Custom institution "${institutionQuery.value.trim()}" saved to your profile!`, type: 'success' })
@@ -409,7 +399,7 @@ watch(() => institution.value, (inst) => {
       name: inst.name || '',
       email: inst.email || '',
       phone: inst.phone || '',
-      logo_url: inst.logo_url || '',
+      logo_url: (inst as any).logo_url || '',
       website: inst.website || '',
       address: inst.address || '',
     }
@@ -422,7 +412,7 @@ function resetInstitution() {
       name: institution.value.name || '',
       email: institution.value.email || '',
       phone: institution.value.phone || '',
-      logo_url: institution.value.logo_url || '',
+      logo_url: (institution.value as any).logo_url || '',
       website: institution.value.website || '',
       address: institution.value.address || '',
     }
@@ -443,7 +433,7 @@ async function saveInstitution() {
     }
 
     const resp = await api.patchJson(`/api/institutions/${institution.value.id}`, institutionForm.value)
-    if (api.handleAuthStatus(resp)) return
+    if (await api.handleAuthStatus(resp)) return
 
     if (!resp.ok) {
       const json = await api.parseResponse(resp)

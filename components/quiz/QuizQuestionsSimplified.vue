@@ -305,8 +305,10 @@ function onQuestionSaved(question) {
       store.questions.splice(existingIdx, 1, question)
     } catch (e) {}
 
-    // If the question has a server id, persist as partial update; otherwise it's a local-only edit
-    if (question && question.id) {
+    // If the question has a server id AND the quiz is already published, 
+    // persist as partial update. Otherwise, we rely on the final quiz save
+    // to persist all questions at once, reducing redundant API calls.
+    if (question && question.id && store.quiz?.visibility === 'published') {
       store.saveQuestion(question)
     }
   } else {

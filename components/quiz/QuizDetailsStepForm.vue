@@ -400,6 +400,10 @@ const handleTopicCreated = (newTopic) => {
   }
 }
 
+defineExpose({
+  handleTopicCreated
+})
+
 // Sync taxonomySelection when modelValue is first provided (e.g., when editing existing quiz)
 watch(() => props.modelValue, async (nv) => {
   if (!nv) return

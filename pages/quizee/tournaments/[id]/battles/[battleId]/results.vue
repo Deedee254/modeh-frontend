@@ -122,11 +122,13 @@
 definePageMeta({ layout: 'quizee' })
 import { ref, onMounted, computed } from 'vue'
 import { useApi } from '~/composables/useApi'
+import { useAnswerStore } from '~/stores/answerStore'
 import { useAuthStore } from '~/stores/auth'
 import { useRoute } from 'vue-router'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 const route = useRoute()
+const answerStore = useAnswerStore()
 const loading = ref(true)
 const result = ref<any>(null)
 const participants = ref<any[]>([])
@@ -140,10 +142,25 @@ const api = useApi()
 onMounted(async () => {
   const api = useApi()
   try {
-    const q = route.query || {}
-    // Try endpoint to fetch a result for tournament battle
     const tid = route.params.id
     const bid = route.params.battleId
+    
+    // Check if we have cached results first to avoid redundant API calls
+    if (answerStore.hasAttemptForReview(String(bid))) {
+      const cached = answerStore.getAttemptForReview(String(bid))
+      if (cached?.attempt) {
+        result.value = cached.attempt
+        loading.value = false
+        // If participants are not in cache, we still might need to fetch them
+        // but often the attempt object has what we need
+        if (result.value.participants || result.value.participants_list) {
+           participants.value = result.value.participants || result.value.participants_list
+           return
+        }
+      }
+    }
+
+    const q = route.query || {}
     let fetched: any = null
       try {
         const res = await api.get(`/api/tournaments/${tid}/battles/${bid}/result`)
@@ -178,6 +195,11 @@ onMounted(async () => {
         result.value = data.user_result
       } else {
         result.value = data
+      }
+
+      // Cache the result for future review
+      if (result.value) {
+        answerStore.storeAttemptForReview(String(bid), { attempt: result.value, participants: participants.value })
       }
     }
 

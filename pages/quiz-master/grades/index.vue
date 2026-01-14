@@ -144,9 +144,13 @@ function handlePageChange(newPage) {
 const { fetchAllSubjects, fetchAllTopics, fetchGrades: fetchTaxGrades, fetchLevels } = useTaxonomy()
 onMounted(async () => {
   try {
-    // prefer loading levels first so the composable can derive nested grades when available
-    await fetchLevels()
-    await Promise.all([fetchGrades(), fetchAllSubjects(), fetchAllTopics()])
+    // Parallelize all taxonomy-related fetching
+    await Promise.all([
+      fetchLevels(),
+      fetchGrades(),
+      fetchAllSubjects(),
+      fetchAllTopics()
+    ])
   } catch (e) {
     // ignore
   }

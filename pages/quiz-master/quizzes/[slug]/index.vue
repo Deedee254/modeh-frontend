@@ -271,11 +271,12 @@ function difficultyLabel(diff) {
 async function loadQuiz() {
   loading.value = true
   try {
-    // ensure levels are loaded first so we can map level ids to names
-    try { await fetchLevels() } catch (e) {}
-    // Use the canonical quiz details endpoint which returns full relations for owners
-    // Try fetching by slug first, fallback to id if needed
-    const res = await api.get(`/api/quizzes?slug=${encodeURIComponent(slug)}`)
+    // Parallelize levels loading and quiz fetching
+    const [_, res] = await Promise.all([
+      fetchLevels().catch(() => {}),
+      api.get(`/api/quizzes?slug=${encodeURIComponent(slug)}`)
+    ])
+    
     if (api.handleAuthStatus(res)) return
     if (res && res.ok) {
       const json = await res.json()

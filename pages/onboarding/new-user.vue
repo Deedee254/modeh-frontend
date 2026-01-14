@@ -94,6 +94,15 @@ async function submit() {
       throw new Error(`Failed to save role (status ${resp.status}) ${serverMsg}`)
     }
 
+    // Refresh user state to pick up new role
+    await authStore.fetchUser()
+    
+    // Attempt to update the session if the provider supports it (to sync JWT with backend)
+    const { update } = useAuth()
+    if (typeof update === 'function') {
+      try { await update() } catch (e) { console.debug('Session update not supported or failed', e) }
+    }
+
     message.value = `Success! Welcome ${session?.user?.name || 'to Modeh'}. Continuing to profile setup.`
     // After role is set, go to the main onboarding page which will continue with institution/education details
     setTimeout(() => router.replace('/onboarding'), 1000)

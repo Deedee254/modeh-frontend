@@ -210,7 +210,7 @@ const showImportModal = ref(false)
 const showPreviewModal = ref(false)
 const showCreatedModal = ref(false)
 const createdPayload = ref(null)
-const quizDetailsFormRef = ref(null)
+const quizDetailsFormRef = ref<InstanceType<typeof QuizDetailsStepForm> | null>(null)
 
 // Tab configuration
 const tabConfig = [
@@ -275,12 +275,9 @@ const onSaveSettings = async () => {
 // Topic creation handler
 const onTopicCreated = async (topic: any) => {
   try {
-    await fetchTopicsPage({
-      subjectId: store.quiz?.subject_id ?? null,
-      page: 1,
-      perPage: 50,
-      q: '',
-    })
+    // Optimization: Add topic directly to taxonomy instead of refetching
+    addTopic(topic)
+    
     store.quiz.topic_id = topic.id
     showTopicModal.value = false
     
@@ -291,7 +288,7 @@ const onTopicCreated = async (topic: any) => {
     
     alert.push({ type: 'success', message: 'Topic created' })
   } catch (e: any) {
-    alert.push({ type: 'error', message: `Failed to refresh topics: ${e?.message || 'Unknown error'}` })
+    alert.push({ type: 'error', message: `Failed to update local state: ${e?.message || 'Unknown error'}` })
   }
 }
 
@@ -361,14 +358,18 @@ const onEditQuiz = () => {
 // Lifecycle
 onMounted(async () => {
   try {
-    // Load taxonomy data
-    await Promise.all([fetchLevels(), fetchGrades()])
+    // Load taxonomy data and quiz in parallel
+    const quizId = route.query.id || route.query.slug
+    const promises: Promise<any>[] = [fetchLevels(), fetchGrades()]
+    
+    if (quizId) {
+      promises.push(store.loadQuiz(quizId))
+    }
+    
+    await Promise.all(promises)
 
     // Handle editing existing quiz
-    const quizId = route.query.id
     if (quizId) {
-      await store.loadQuiz(quizId)
-
       // After loading the quiz object into the store, preload subjects/topics
       try {
         const q = store.quiz || {}
@@ -377,48 +378,34 @@ onMounted(async () => {
         const subjectId = q?.subject_id ?? q?.subject?.id ?? null
         const topicId = q?.topic_id ?? q?.topic?.id ?? null
 
+        const preloads = []
         // If we have a grade, fetch subjects filtered by grade (and level if present).
         if (gradeId) {
-          // fetchSubjectsByGrade will populate the shared `subjects` ref
-          try {
-            await fetchSubjectsByGrade(gradeId, levelId)
-          } catch (e) {
-            // fallback to paged fetch
-            await fetchSubjectsPage({ gradeId, page: 1, perPage: 50, q: '' })
-          }
+          preloads.push(fetchSubjectsByGrade(gradeId, levelId).catch(() => 
+            fetchSubjectsPage({ gradeId, page: 1, perPage: 50, q: '' })
+          ))
         } else {
           // no grade specified: fetch all subjects so the picker can show the saved subject
-          await fetchAllSubjects()
+          preloads.push(fetchAllSubjects())
         }
 
         // If we have a subject, fetch topics for that subject
         if (subjectId) {
-          try {
-            await fetchTopicsBySubject(subjectId)
-          } catch (e) {
-            // fallback to page fetch
-            await fetchTopicsPage({ subjectId, page: 1, perPage: 50, q: '' })
-          }
-        } else if (topicId) {
-          // If only topic id was provided (rare), ensure the specific topic is added to the list
-          // store.loadQuiz already attempts addTopic if server returned the object, but ensure fallback
-          try {
-            addTopic({ id: topicId })
-          } catch (e) {}
+          preloads.push(fetchTopicsBySubject(subjectId).catch(() => 
+            fetchTopicsPage({ subjectId, page: 1, perPage: 50, q: '' })
+          ))
         }
+        
+        await Promise.all(preloads)
 
-        // Ensure the loaded subject/topic objects are present in the shared lists so the pickers
-        // can display the currently-selected labels even if the server uses some different shapes.
-        try {
-          if (subjectId && !subjects.find((s: any) => String(s.id) === String(subjectId))) {
-            addSubject({ id: subjectId })
-          }
-          if (topicId && !topics.find((t: any) => String(t.id) === String(topicId))) {
-            addTopic({ id: topicId })
-          }
-        } catch (e) {}
+        // Ensure the loaded subject/topic objects are present in the shared lists
+        if (subjectId && !subjects.value.find((s: any) => String(s.id) === String(subjectId))) {
+          addSubject({ id: subjectId })
+        }
+        if (topicId && !topics.value.find((t: any) => String(t.id) === String(topicId))) {
+          addTopic(q.topic || { id: topicId })
+        }
       } catch (e: any) {
-        // non-fatal preload errors; the UI will still function and user can re-select
         console.warn('Failed to preload taxonomy for edit mode', e)
       }
     } else {

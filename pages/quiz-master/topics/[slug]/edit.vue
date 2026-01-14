@@ -38,31 +38,46 @@ const alert = useAppAlert()
 const api = useApi()
 const route = useRoute()
 const router = useRouter()
-const id = route.params.id
+const slug = route.params.slug
+const id = slug // The API seems to accept slug as identifier in some places, or it's used as such here
 const topic = ref({})
 const loading = ref(false)
 const fileRef = ref(null)
 let selectedFile = null
 
-onMounted(fetchTopic)
+const { fetchLevels, fetchGrades, fetchAllSubjects } = useTaxonomy()
 
-async function fetchTopic() {
-  const config = useRuntimeConfig()
+onMounted(async () => {
   loading.value = true
   try {
+    await Promise.all([
+      fetchTopic(),
+      fetchLevels(),
+      fetchGrades(),
+      fetchAllSubjects()
+    ])
+  } catch (e) {
+    console.error('[onMounted] error:', e)
+  } finally {
+    loading.value = false
+  }
+})
+
+async function fetchTopic() {
+  try {
+    // If id is a slug, the endpoint might need to be different or handle it
     const res = await api.get(`/api/topics?per_page=1&q=${encodeURIComponent(id)}`)
     if (api.handleAuthStatus(res)) return
     if (res && res.ok) {
       const json = await res.json()
-      // Try to find by id in returned list
+      // Try to find by slug or id in returned list
       const data = (json.topics?.data || json.topics || json.data || [])
-      const found = Array.isArray(data) ? data.find(t => String(t.id) === String(id)) : null
+      const found = Array.isArray(data) ? data.find(t => String(t.slug) === String(id) || String(t.id) === String(id)) : null
       topic.value = found || { id }
     }
   } catch (e) {
-    alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' })
+    alert.push({ type: 'error', message: 'Network error loading topic', icon: 'heroicons:x-circle' })
   }
-  loading.value = false
 }
 
 function onFileChange(e) {

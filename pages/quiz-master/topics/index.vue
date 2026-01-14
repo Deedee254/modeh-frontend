@@ -172,10 +172,12 @@ const topicsResponse = ref(null)
 const topics = computed(() => topicsResponse.value?.data || [])
 
 onMounted(async () => {
-  // Ensure levels are loaded so FiltersSidebar can derive grades/subjects reliably
-  await store.fetchLevels()
-  // Load the first page of topics
-  await loadTopics()
+  // Parallelize levels loading and topics fetching
+  await Promise.all([
+    store.fetchLevels(),
+    loadTopics()
+  ])
+  
   if (process.env.NODE_ENV === 'development') {
     setTimeout(() => printMetrics(), 2000)
   }

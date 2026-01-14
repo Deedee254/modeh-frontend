@@ -116,17 +116,20 @@ watch(
 );
 
 onMounted(async () => {
-  // Load leaderboard and taxonomy. Prefer levels first, then load grades
-  // filtered by any preselected level in filters.
-  await fetchLeaderboard();
-  try {
-    await fetchLevels();
-  } catch (e) {}
-  try {
-    if (filters.value.level_id && typeof fetchGradesByLevel === "function")
-      await fetchGradesByLevel(filters.value.level_id);
-    else await fetchGrades();
-  } catch (e) {}
+  // Load leaderboard and taxonomy in parallel
+  await Promise.all([
+    fetchLeaderboard(),
+    fetchLevels().catch(() => {}),
+    (async () => {
+      try {
+        if (filters.value.level_id && typeof fetchGradesByLevel === "function") {
+          await fetchGradesByLevel(filters.value.level_id)
+        } else {
+          await fetchGrades()
+        }
+      } catch (e) {}
+    })()
+  ])
   
   // Hydrate from localStorage fast-path and listen for instant updates
   try {

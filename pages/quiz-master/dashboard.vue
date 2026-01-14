@@ -322,66 +322,74 @@ const pendingApprovalsError = ref(null)
 
 // Fetch data on component mount
 onMounted(async () => {
+  quizzesPending.value = true
+  pendingApprovalsPending.value = true
+
   try {
-    // Fetch recent quizzes
-    quizzesPending.value = true
-    try {
-      const res = await api.get('/api/quizzes?per_page=5')
-      if (!res.ok) {
-        console.error('Failed to fetch quizzes:', res.status, res.statusText)
-        quizzesError.value = new Error(`HTTP ${res.status}`)
-      } else {
-        quizzesData.value = await res.json()
-      }
-    } catch (err) {
-      console.error('Error fetching quizzes:', err)
-      quizzesError.value = err
-    } finally {
-      quizzesPending.value = false
-    }
+    // Parallelize all dashboard metric fetches
+    await Promise.all([
+      // Fetch recent quizzes
+      (async () => {
+        try {
+          const res = await api.get('/api/quizzes?per_page=5')
+          if (!res.ok) {
+            console.error('Failed to fetch quizzes:', res.status, res.statusText)
+            quizzesError.value = new Error(`HTTP ${res.status}`)
+          } else {
+            quizzesData.value = await res.json()
+          }
+        } catch (err) {
+          console.error('Error fetching quizzes:', err)
+          quizzesError.value = err
+        } finally {
+          quizzesPending.value = false
+        }
+      })(),
 
-    // Fetch published quizzes
-    try {
-      const res = await api.get('/api/quizzes?approved=1&per_page=1')
-      if (!res.ok) {
-        console.error('Failed to fetch published quizzes:', res.status, res.statusText)
-      } else {
-        publishedData.value = await res.json()
-      }
-    } catch (err) {
-      console.error('Error fetching published quizzes:', err)
-    }
+      // Fetch published quizzes count
+      (async () => {
+        try {
+          const res = await api.get('/api/quizzes?approved=1&per_page=1')
+          if (res.ok) {
+            publishedData.value = await res.json()
+          }
+        } catch (err) {
+          console.error('Error fetching published quizzes:', err)
+        }
+      })(),
 
-    // Fetch questions
-    try {
-      const res = await api.get('/api/questions?per_page=1')
-      if (!res.ok) {
-        console.error('Failed to fetch questions:', res.status, res.statusText)
-      } else {
-        questionsData.value = await res.json()
-      }
-    } catch (err) {
-      console.error('Error fetching questions:', err)
-    }
+      // Fetch questions count
+      (async () => {
+        try {
+          const res = await api.get('/api/questions?per_page=1')
+          if (res.ok) {
+            questionsData.value = await res.json()
+          }
+        } catch (err) {
+          console.error('Error fetching questions:', err)
+        }
+      })(),
 
-    // Fetch pending approvals
-    pendingApprovalsPending.value = true
-    try {
-      const res = await api.get('/api/quizzes?approved=0&per_page=5')
-      if (!res.ok) {
-        console.error('Failed to fetch pending approvals:', res.status, res.statusText)
-        pendingApprovalsError.value = new Error(`HTTP ${res.status}`)
-      } else {
-        pendingApprovalsData.value = await res.json()
-      }
-    } catch (err) {
-      console.error('Error fetching pending approvals:', err)
-      pendingApprovalsError.value = err
-    } finally {
-      pendingApprovalsPending.value = false
-    }
+      // Fetch pending approvals
+      (async () => {
+        try {
+          const res = await api.get('/api/quizzes?approved=0&per_page=5')
+          if (!res.ok) {
+            console.error('Failed to fetch pending approvals:', res.status, res.statusText)
+            pendingApprovalsError.value = new Error(`HTTP ${res.status}`)
+          } else {
+            pendingApprovalsData.value = await res.json()
+          }
+        } catch (err) {
+          console.error('Error fetching pending approvals:', err)
+          pendingApprovalsError.value = err
+        } finally {
+          pendingApprovalsPending.value = false
+        }
+      })()
+    ])
   } catch (err) {
-    console.error('Error in data fetch:', err)
+    console.error('Error in dashboard data fetch:', err)
   }
 })
 

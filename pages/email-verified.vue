@@ -58,12 +58,13 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
-import { useRuntimeConfig } from '#app'
+import useApi from '~/composables/useApi'
 import resolveAssetUrl from '~/composables/useAssets'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const api = useApi()
 
 const verified = ref(false)
 const error = ref(false)
@@ -114,11 +115,9 @@ onMounted(async () => {
   // If verified param present, confirm with backend and show friendly UI (no auto-redirect)
   if (String(route.query.verified) === '1') {
     try {
-      const cfg = useRuntimeConfig()
-      const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
       // call our verify-status endpoint to confirm server-side verification
-      const url = `${base}/api/auth/verify-status?email=${encodeURIComponent(email.value || '')}`
-      const resp = await fetch(url, { credentials: 'include' })
+      const url = `/api/auth/verify-status?email=${encodeURIComponent(email.value || '')}`
+      const resp = await api.get(url)
       if (!resp.ok) {
         verified.value = false
         error.value = true
@@ -148,10 +147,8 @@ onMounted(async () => {
     if (inviteToken.value) {
       invitationLoading.value = true
       try {
-        const cfg = useRuntimeConfig()
-        const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
-        const invUrl = `${base}/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
-        const invRes = await fetch(invUrl, { credentials: 'include' })
+        const invUrl = `/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
+        const invRes = await api.get(invUrl)
         if (invRes.ok) {
           const invData = await invRes.json().catch(() => null)
           invitation.value = invData?.invitation || null
@@ -169,10 +166,8 @@ onMounted(async () => {
   if (inviteToken.value) {
     invitationLoading.value = true
     try {
-      const cfg = useRuntimeConfig()
-      const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
-      const invUrl = `${base}/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
-      const invRes = await fetch(invUrl, { credentials: 'include' })
+      const invUrl = `/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
+      const invRes = await api.get(invUrl)
       if (invRes.ok) {
         const invData = await invRes.json().catch(() => null)
         invitation.value = invData?.invitation || null
@@ -221,15 +216,8 @@ async function triggerVerification() {
   if (!token.value) return
   isVerifying.value = true
   try {
-    const cfg = useRuntimeConfig()
-    const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
-    const url = `${base}/api/auth/verify-email`
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ token: token.value, ftoken: ftoken.value })
-    })
+    const url = '/api/auth/verify-email'
+    const res = await api.postJson(url, { token: token.value, ftoken: ftoken.value })
     if (!res.ok) {
       const body = await res.json().catch(() => null)
       error.value = true
@@ -245,17 +233,15 @@ async function triggerVerification() {
           // If logged in, accept immediately
           if (auth.user) {
             try {
-              const cfg = useRuntimeConfig()
-              const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
               // fetch invitation details to get institution id
-              const invUrl = `${base}/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
-              const invRes = await fetch(invUrl, { credentials: 'include' })
+              const invUrl = `/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
+              const invRes = await api.get(invUrl)
               if (invRes.ok) {
                 const invData = await invRes.json().catch(() => null)
                 const institutionId = invData?.invitation?.institution_id
                 if (institutionId) {
-                  const acceptUrl = `${base}/api/institutions/${institutionId}/members/accept-invitation/${encodeURIComponent(inviteToken.value)}`
-                  const acceptRes = await fetch(acceptUrl, { method: 'POST', credentials: 'include' })
+                  const acceptUrl = `/api/institutions/${institutionId}/members/accept-invitation/${encodeURIComponent(inviteToken.value)}`
+                  const acceptRes = await api.postJson(acceptUrl, {})
                   if (acceptRes.ok) {
                     // Redirect to institution dashboard or institution page
                     setTimeout(() => router.push('/institution-manager/dashboard'), 300)
@@ -298,10 +284,8 @@ async function acceptInvite() {
   // If user logged in, attempt to accept immediately
   if (auth.user) {
     try {
-      const cfg = useRuntimeConfig()
-      const base = cfg.public?.apiBase || cfg.public?.baseUrl || ''
-      const invUrl = `${base}/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
-      const invRes = await fetch(invUrl, { credentials: 'include' })
+      const invUrl = `/api/institutions/invitation/${encodeURIComponent(inviteToken.value)}`
+      const invRes = await api.get(invUrl)
       if (!invRes.ok) {
         error.value = true
         errorMessage.value = 'Invalid or expired invitation'
@@ -314,8 +298,8 @@ async function acceptInvite() {
         errorMessage.value = 'Invalid invitation data'
         return
       }
-      const acceptUrl = `${base}/api/institutions/${institutionId}/members/accept-invitation/${encodeURIComponent(inviteToken.value)}`
-      const acceptRes = await fetch(acceptUrl, { method: 'POST', credentials: 'include' })
+      const acceptUrl = `/api/institutions/${institutionId}/members/accept-invitation/${encodeURIComponent(inviteToken.value)}`
+      const acceptRes = await api.postJson(acceptUrl, {})
       if (!acceptRes.ok) {
         error.value = true
         errorMessage.value = 'Failed to accept invitation'

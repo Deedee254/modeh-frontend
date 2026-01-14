@@ -284,6 +284,17 @@ const battleId = route.params.id
 
 onMounted(async () => {
   try {
+    // Check if we have cached results first to avoid redundant API calls
+    if (answerStore.hasAttemptForReview(battleId)) {
+      const cached = answerStore.getAttemptForReview(battleId)
+      if (cached?.attempt) {
+        result.value = cached.attempt
+        awardedAchievements.value = cached.badges ?? []
+        loading.value = false
+        return
+      }
+    }
+
     // Call /mark endpoint which handles marking and returns full result
     // This follows the same pattern as quiz marking
     const res = await api.postJson(`/api/battles/${battleId}/mark`, {})

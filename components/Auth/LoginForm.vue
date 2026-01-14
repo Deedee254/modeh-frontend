@@ -1,15 +1,16 @@
-  <template>
-  <div :class="wrapperClass">
-    <div :class="cardClass">
-      <h3 class="text-lg font-semibold text-gray-900" v-if="!compact">Sign in to Modeh</h3>
-      <h3 class="text-lg font-semibold text-gray-900" v-else>Log in to continue</h3>
+<template>
+  <div :class="compact ? 'mx-auto w-full max-w-md' : 'w-full'">
+    <div :class="compact ? 'rounded-2xl bg-white p-6 shadow-lg' : 'w-full max-w-md bg-white rounded-lg shadow p-8'">
+      <h3 class="text-lg font-semibold text-gray-900">
+        {{ compact ? 'Log in to continue' : 'Sign in to Modeh' }}
+      </h3>
 
-      <p class="text-sm text-slate-600 mb-4" v-if="!compact">Quick access for quizees — or <NuxtLink to="/register/quizee" class="text-brand-600 underline">create an account</NuxtLink></p>
+      <p v-if="!compact" class="text-sm text-slate-600 mb-4">
+        Quick access for quizees — or 
+        <NuxtLink to="/register/quizee" class="text-brand-600 underline">create an account</NuxtLink>
+      </p>
 
-      <!-- Password login (magic link removed) -->
-
-  <!-- Password Login -->
-  <form @submit.prevent="submit" class="space-y-3">
+      <form @submit.prevent="submit" class="space-y-3">
         <div>
           <label class="block text-sm text-gray-700">Email</label>
           <input v-model="email" type="email" required autocomplete="email" placeholder="you@example.com" class="mt-1 block w-full rounded-md border-gray-200 shadow-sm px-3 py-2 focus:border-brand-500 focus:ring-brand-600" />
@@ -97,18 +98,13 @@ const showPassword = ref(false)
 const isLoading = ref(false)
 const isGoogleLoading = ref(false)
 const error = ref(null)
-// activeTab removed; only password login is supported here
 
-const router = useRouter()
 const route = useRoute()
-const auth = useAuthStore()
+const router = useRouter()
+const authStore = useAuthStore()
+const instStore = useInstitutionsStore()
 const alert = useAppAlert()
-// Auth helpers from nuxt-auth / sidebase
 const { signIn } = useAuth()
-
-const compact = computed(() => props.compact || false)
-const wrapperClass = computed(() => compact.value ? 'mx-auto w-full max-w-md' : 'w-full')
-const cardClass = computed(() => compact.value ? 'rounded-2xl bg-white p-6 shadow-lg' : 'w-full max-w-md bg-white rounded-lg shadow p-8')
 
 async function submit() {
   if (isLoading.value) return
@@ -116,143 +112,83 @@ async function submit() {
   error.value = null
 
   try {
-    // Use Nuxt-Auth signIn with credentials provider instead of direct API calls
-    // This handles session initialization, CSRF tokens, and cookies automatically
     const result = await signIn('credentials', {
       email: email.value,
       password: password.value,
       redirect: false
     })
 
-    // Check for authentication errors from NextAuth
-    if (!result || !result.ok) {
-      const msg = result?.error || 'Invalid email or password'
-      console.error('[LoginForm] signIn failed:', result)
-      throw new Error(msg)
+    if (!result?.ok) {
+      throw new Error(result?.error || 'Invalid email or password')
     }
 
-    // Refresh the auth store/session from the API
-    const authStore = useAuthStore()
-    try {
-      await authStore.fetchUser?.()
-    } catch (e) {
-      console.warn('[LoginForm] fetchUser failed, but session may still be valid:', e)
-    }
-    
-    // Ensure we have up-to-date role information (backend may take a moment to populate)
+    await authStore.fetchUser?.()
     await ensureUserRole(authStore)
-    const user = authStore.user
 
     if (props.suppressRedirect) {
-      try { emit('success', user) } catch (e) {}
-      try { emit('login-success', user) } catch (e) {}
+      emit('success', authStore.user)
       return
     }
 
-    await redirectAfterAuth(user)
+    await redirectAfterAuth(authStore.user)
   } catch (e) {
-    console.error('Login failed', e)
-    const msg = e?.message || 'Login failed. Please check your credentials and try again.'
-    try { alert.push({ message: msg, type: 'error', icon: 'heroicons:exclamation-circle' }) } catch (err) {}
+    const msg = e?.message || 'Login failed. Please try again.'
+    alert.push({ message: msg, type: 'error', icon: 'heroicons:exclamation-circle' })
     error.value = msg
   } finally {
     isLoading.value = false
   }
 }
 
-// sendMagicLink removed (magic link login is not supported here)
-
 async function signInGoogle() {
   if (isGoogleLoading.value) return
   isGoogleLoading.value = true
-  error.value = null
-
   try {
-    // Use Nuxt-Auth signIn with google provider
-    const result = await signIn('google', { redirect: false })
-    
-    if (!result || !result.ok) {
-      const msg = result?.error || 'Google sign-in failed'
-      console.error('[LoginForm] Google signIn failed:', result)
-      throw new Error(msg)
-    }
-    
-    // Brief wait for session to be fully established
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    const authStore = useAuthStore()
-    try {
-      await authStore.fetchUser?.()
-    } catch (e) {
-      console.warn('[LoginForm] fetchUser failed after Google signin, but session may be valid:', e)
-    }
-    
-    await ensureUserRole(authStore)
-    const user = authStore.user
-
-    if (user) {
-      await redirectAfterAuth(user)
-    } else {
-      error.value = 'Failed to establish session after Google sign-in'
-    }
+    await signIn('google', { callbackUrl: '/auth/callback' })
   } catch (err) {
-    console.error('Google sign-in error:', err)
-    error.value = err?.message || 'Google sign-in failed. Please try again.'
+    error.value = err?.message || 'Google sign-in failed.'
   } finally {
     isGoogleLoading.value = false
   }
 }
 
-// Sometimes the backend session/user record is updated slightly after sign-in
-// (e.g., role assigned). Retry fetching the user a few times before deciding.
-async function ensureUserRole(authStore, attempts = 3, delayMs = 300) {
-  try {
-    let tries = 0
-    while (tries < attempts) {
-      const u = authStore.user
-      if (u && u.role) return
-      // try to fetch latest user from API
-      try { await authStore.fetchUser?.() } catch (e) { /* ignore */ }
-      if (authStore.user && authStore.user.role) return
-      // wait before next attempt
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise(r => setTimeout(r, delayMs))
-      tries++
-    }
-  } catch (e) {
-    // swallow - best-effort only
+async function ensureUserRole(store, attempts = 3) {
+  for (let i = 0; i < attempts; i++) {
+    if (store.user?.role) return
+    await store.fetchUser?.()
+    if (store.user?.role) return
+    await new Promise(r => setTimeout(r, 300))
   }
 }
 
 async function redirectAfterAuth(user) {
-  const nextParam = route.query?.next
-  const isLocalPath = typeof nextParam === 'string' && nextParam.startsWith('/') && !nextParam.startsWith('//')
+  const next = route.query?.next
+  if (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') && next !== '/') {
+    return router.push(next)
+  }
 
-  // If a local `next` param is present prefer redirecting there (e.g., return to a quiz)
-  if (isLocalPath && nextParam !== '/') {
-    await router.push(nextParam)
+  const role = user?.role
+  if (role === 'admin') {
+    window.location.href = `${useRuntimeConfig().public.apiBase}/admin`
     return
   }
 
-  const instStore = useInstitutionsStore()
-  if (user?.role === 'quiz-master') {
-    await router.push('/quiz-master/dashboard')
-  } else if (user?.role === 'quizee') {
-    await router.push('/quizee/dashboard')
-  } else if (user?.role === 'admin') {
-    window.location.href = `${useRuntimeConfig().public.apiBase}/admin`
-  } else if (user?.role === 'institution-manager') {
-    const instSlug = user?.institution_slug || (user?.institutions?.[0]?.slug) || instStore.institution?.slug || route.query?.institutionSlug
-    await router.push({
-      path: '/institution-manager/dashboard',
-      query: instSlug ? { institutionSlug: String(instSlug) } : {}
-    })
-  } else {
-    // If role not set or unknown, send user to the home page rather than /grades
-    // (previous behaviour redirected to /grades which could be unexpected).
-    console.warn('redirectAfterAuth: unknown role, redirecting to home', user)
-    await router.push('/')
+  const routes = {
+    'quiz-master': '/quiz-master/dashboard',
+    'quizee': '/quizee/dashboard'
   }
+
+  if (routes[role]) return router.push(routes[role])
+
+  if (role === 'institution-manager') {
+    const slug = user?.institution_slug || user?.institutions?.[0]?.slug || instStore.institution?.slug
+    return router.push({
+      path: '/institution-manager/dashboard',
+      query: slug ? { institutionSlug: String(slug) } : {}
+    })
+  }
+
+  router.push('/')
 }
 
 defineExpose({ isLoading, error })

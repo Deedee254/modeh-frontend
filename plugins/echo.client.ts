@@ -100,27 +100,34 @@ function initializeEcho(config: any, isDev: boolean) {
         // Run the async auth flow in a fire-and-forget IIFE and use the callback
         ;(async () => {
           try {
-            // Ensure CSRF cookie is available for Sanctum
+            // Use useApi for consistent CSRF and auth handling (with built-in caching)
+            const api = useApi()
+            const { status } = useAuth()
+
+            // Always ensure CSRF is available (needed for both authenticated and unauthenticated users)
             try {
-              await fetch(`${config.public.apiBase}/sanctum/csrf-cookie`, {
-                credentials: 'include'
-              })
+              await api.ensureCsrf()
             } catch (e) {
-              console.warn('Failed to fetch CSRF cookie for broadcasting auth')
+              console.warn('[Echo] Failed to ensure CSRF token:', e)
             }
 
-            // Broadcasting auth uses Sanctum session auth, not Bearer token
-            // Make direct fetch call to avoid composable timing issues
+            // Broadcasting auth uses Sanctum session auth, but also include Bearer token if available
             console.log('[Echo] Attempting broadcasting auth for channel:', channel.name)
 
-            const token = getXsrfToken()
+            const xsrf = api.getXsrfFromCookie()
+            const bearerToken = api.getAuthToken()
             const authHeaders: Record<string, string> = {
               'Content-Type': 'application/json',
               'X-Requested-With': 'XMLHttpRequest',
             }
 
-            if (token) {
-              authHeaders['X-XSRF-TOKEN'] = token
+            if (xsrf) {
+              authHeaders['X-XSRF-TOKEN'] = xsrf
+            }
+
+            // Include Bearer token if available (for API token auth)
+            if (bearerToken) {
+              authHeaders['Authorization'] = `Bearer ${bearerToken}`
             }
 
             const resp = await fetch(`${config.public.apiBase}/api/broadcasting/auth`, {

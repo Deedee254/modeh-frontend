@@ -355,28 +355,29 @@ function onFilterChange(type, val) {
   fetchItems()
 }
 onMounted(async () => {
-  // Load levels first and then prefer fetching grades by saved level if present.
-  try {
-    await fetchLevels()
-  } catch (e) {}
-
-  // If the FiltersSidebar saved a selected level in localStorage, use it to
-  // fetch server-filtered grades for that level. Otherwise fall back to
-  // fetchGrades() which is levels-first by default.
+  // Parallelize taxonomy loading and items fetching
+  const preloads = [
+    fetchLevels().catch(() => {})
+  ]
+  
+  // Grade preloading
   try {
     let savedLevel = null
     if (process.client) {
-      try { savedLevel = localStorage.getItem('filters:quiz-master-questions:level') || null } catch (e) { savedLevel = null }
+      savedLevel = localStorage.getItem('filters:quiz-master-questions:level') || null
     }
     if (savedLevel) {
-      await fetchGradesByLevel(savedLevel)
+      preloads.push(fetchGradesByLevel(savedLevel))
     } else {
-      await fetchGrades()
+      preloads.push(fetchGrades())
     }
   } catch (e) {}
 
-  await Promise.all([fetchAllSubjects(), fetchAllTopics()])
-  fetchItems()
+  preloads.push(fetchAllSubjects())
+  preloads.push(fetchAllTopics())
+  preloads.push(fetchItems())
+
+  await Promise.all(preloads)
 })
 
 function statusLabel(v) { return v ? 'Approved' : 'Pending Review' }

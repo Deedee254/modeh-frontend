@@ -119,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -155,7 +155,16 @@ const subjects = taxSubjects
 
 // ensure levels & grades are loaded
 onMounted(async () => {
-  try { await fetchLevels(); await fetchGrades() } catch (e) {}
+  try {
+    // Use taxonomy composable to load grades/subjects/levels into shared cache
+    await Promise.all([
+      fetchLevels(),
+      fetchGrades(),
+      fetchAllSubjects()
+    ])
+  } catch (error) {
+    console.error('Error fetching taxonomy data:', error)
+  }
 })
 
 // Filter subjects based on selected grade (robust to different key names and types)
@@ -212,8 +221,6 @@ const handleSubmit = async () => {
       formData.append('image', form.value.image)
     }
 
-    // debug: show if XSRF exists and cookie keys
-    try { console.debug('[topics/create] cookie keys:', document.cookie.split(';').map(s=>s.trim().split('=')[0]), 'XSRF present:', !!document.cookie.match(/XSRF-TOKEN=/)) } catch(e) {}
     const response = await api.postFormData('/api/topics', formData)
 
     // If auth/session expired, handle centrally (redirect + message)
@@ -244,18 +251,4 @@ const handleSubmit = async () => {
     isSubmitting.value = false
   }
 }
-
-// Fetch initial data
-onMounted(async () => {
-  try {
-    // Use taxonomy composable to load grades/subjects/levels into shared cache
-    await Promise.all([
-      fetchLevels(),
-      fetchGrades(),
-      fetchAllSubjects()
-    ])
-  } catch (error) {
-    console.error('Error fetching taxonomy data:', error)
-  }
-})
 </script>

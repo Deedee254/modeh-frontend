@@ -252,8 +252,6 @@ const router = useRouter()
 
 const loading = ref(true)
 const loadingPackages = ref(true)
-const isActive = ref(false)
-const activePackageName = ref('')
 const packages = ref([])
 const phones = ref([])
 const userPhones = computed(() => authStore.user?.phones || [])
@@ -275,31 +273,14 @@ const quizeePackages = computed(() => {
   })
 })
 
-async function checkSubscription() {
-  loading.value = true
-  try {
-    const res = await api.get('/api/subscriptions/mine')
-    if (res.status === 401 || res.status === 419) {
-      // If unauthenticated, don't necessarily log out the whole app here
-      // but acknowledge we are not active
-      isActive.value = false
-      return
-    }
-    const data = await res.json().catch(() => null)
-    const sub = data?.subscription || data?.data?.subscription || null
-    isActive.value = !!(sub && (sub.status === 'active' || sub.status === 'paid'))
-    activePackageName.value = sub?.package?.name || ''
-  } catch (e) {
-    isActive.value = false
-  } finally {
-    loading.value = false
-  }
-}
+const mySubscription = computed(() => subscriptionsStore.mySubscription)
+const isActive = computed(() => !!(mySubscription.value && (mySubscription.value.status === 'active' || mySubscription.value.status === 'paid')))
+const activePackageName = computed(() => mySubscription.value?.package?.name || '')
 
 async function loadData() {
   loadingPackages.value = true
   await Promise.all([
-    checkSubscription(),
+    subscriptionsStore.fetchMySubscription(),
     subscriptionsStore.fetchPackages().then(() => { packages.value = subscriptionsStore.packages }),
     authStore.fetchUser().then(() => { phones.value = userPhones.value })
   ])
@@ -328,6 +309,6 @@ function onPaymentSuccess() {
   showPaymentModal.value = false
   alert.push({ type: 'success', message: 'Payment successful! Your subscription is now active.' })
   // Re-check subscription status to update the UI
-  checkSubscription()
+  subscriptionsStore.fetchMySubscription(true)
 }
 </script>

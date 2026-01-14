@@ -306,48 +306,48 @@ const totalAttempts = ref(0)
 
 onMounted(async () => {
   attemptsLoading.value = true
-  const res = await api.get('/api/quiz-attempts?per_page=10')
-  if (api.handleAuthStatus(res)) return
-  if (res.ok) {
-    const data = await res.json()
-    // Handle pagination structure
-    if (data.data?.data) {
-      attempts.value = data.data.data
-    } else if (Array.isArray(data.data)) {
-      attempts.value = data.data
-    } else if (Array.isArray(data)) {
-      attempts.value = data
-    }
-  }
-  attemptsLoading.value = false
-
-  // Fetch stats
-  try {
-    const statsRes = await api.get('/api/user/quiz-stats')
-    if (statsRes.ok) {
-      const statsData = await statsRes.json()
-      totalAttempts.value = statsData.total_attempts || 0
-      avgScore.value = Math.round(statsData.average_score || 0)
-      currentStreak.value = statsData.current_streak || 0
-    }
-  } catch (e) {
-    console.error('Failed to fetch quiz stats:', e)
-  }
-
-  // Fetch badges
-  try {
-    const badgesRes = await api.get('/api/user/badges?per_page=6')
-    if (badgesRes.ok) {
-      const badgesData = await badgesRes.json()
-      if (badgesData.badges && Array.isArray(badgesData.badges)) {
-        recentBadges.value = badgesData.badges
-      } else if (Array.isArray(badgesData)) {
-        recentBadges.value = badgesData
+  
+  // Parallelize all initial data fetching
+  await Promise.all([
+    // Fetch attempts
+    api.get('/api/quiz-attempts?per_page=10').then(async (res) => {
+      if (await api.handleAuthStatus(res)) return
+      if (res.ok) {
+        const data = await res.json()
+        if (data.data?.data) {
+          attempts.value = data.data.data
+        } else if (Array.isArray(data.data)) {
+          attempts.value = data.data
+        } else if (Array.isArray(data)) {
+          attempts.value = data
+        }
       }
-    }
-  } catch (e) {
-    console.error('Failed to fetch badges:', e)
-  }
+    }).finally(() => {
+      attemptsLoading.value = false
+    }),
+
+    // Fetch stats
+    api.get('/api/user/quiz-stats').then(async (statsRes) => {
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        totalAttempts.value = statsData.total_attempts || 0
+        avgScore.value = Math.round(statsData.average_score || 0)
+        currentStreak.value = statsData.current_streak || 0
+      }
+    }).catch(e => console.error('Failed to fetch quiz stats:', e)),
+
+    // Fetch badges
+    api.get('/api/user/badges?per_page=6').then(async (badgesRes) => {
+      if (badgesRes.ok) {
+        const badgesData = await badgesRes.json()
+        if (badgesData.badges && Array.isArray(badgesData.badges)) {
+          recentBadges.value = badgesData.badges
+        } else if (Array.isArray(badgesData)) {
+          recentBadges.value = badgesData
+        }
+      }
+    }).catch(e => console.error('Failed to fetch badges:', e))
+  ])
 })
 
 interface User {

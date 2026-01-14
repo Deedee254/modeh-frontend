@@ -225,10 +225,12 @@ function onServerSearch(search) {
 }
 
 onMounted(async () => {
-  // Ensure levels are loaded so FiltersSidebar can derive grades/subjects reliably
-  await store.fetchLevels()
-  // Load the first page of quizzes
-  await fetchItems()
+  // Parallelize taxonomy loading and items fetching
+  await Promise.all([
+    store.fetchLevels(),
+    fetchItems()
+  ])
+  
   if (process.env.NODE_ENV === 'development') {
     setTimeout(() => printMetrics(), 2000)
   }
