@@ -16,15 +16,21 @@ export default defineNuxtPlugin((nuxtApp) => {
         // First, restore the session from Nuxt-Auth JWT cookie
         console.log('[auth-init] Restoring session from JWT cookie...')
         const session = await auth.getSession()
+        
+        // Check if session is valid: must have user object with email AND apiToken
+        const hasValidSession = session?.user && 
+                                 (session.user as any).email && 
+                                 (session.user as any).apiToken
+        
         console.log('[auth-init] Session restored:', { 
-          authenticated: !!session, 
+          authenticated: hasValidSession, 
           email: session?.user?.email, 
-          hasToken: !!(session?.user as any)?.apiToken 
+          hasToken: !!(session?.user as any)?.apiToken,
+          rawSession: session ? 'exists' : 'null'
         })
 
-        // Sync the Nuxt-Auth session to the auth store
-        // This updates the store's `user` and `role` based on the restored session
-        if (session?.user) {
+        // Only sync to store if session is complete and valid
+        if (hasValidSession && session?.user) {
           const normalizedUser = {
             id: (session.user as any).id,
             name: session.user.name || undefined,
@@ -36,6 +42,11 @@ export default defineNuxtPlugin((nuxtApp) => {
           console.log('[auth-init] Syncing user to store:', { email: normalizedUser.email, role: normalizedUser.role })
           authStore.user = normalizedUser as any
           authStore.role = normalizedUser.role
+        } else if (session?.user && !(session.user as any).apiToken) {
+          // Session exists but token is missing - likely expired
+          console.warn('[auth-init] Session found but token is missing (likely expired). Clearing session...')
+          // Call signOut to clear the invalid session
+          await auth.signOut({ redirect: false })
         }
       } catch (e) {
         // non-fatal
