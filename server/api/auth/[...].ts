@@ -190,18 +190,16 @@ export default NuxtAuthHandler({
     }
   }
   ,
-  // Log auth events to help diagnose OAuthSignin issues (keeps minimal output unless debug enabled)
-  events: {
-    async signIn(message) {
-      if (process.env.NUXT_AUTH_DEBUG === 'true') console.log('[Auth Event] signIn:', JSON.stringify(message))
+  // Log auth events to help diagnose OAuthSignin issues (controlled by NUXT_AUTH_DEBUG)
+  events: (process.env.NUXT_AUTH_DEBUG === 'true' ? {
+    signIn: async (message: any) => {
+      console.log('[Auth Event] signIn:', JSON.stringify(message))
     },
-    async error(message) {
-      // message can be an Error or object depending on runtime - stringify safely
-      try {
-        console.error('[Auth Event] error:', typeof message === 'object' ? JSON.stringify(message) : String(message))
-      } catch (e) {
-        console.error('[Auth Event] error (string):', String(message))
-      }
+    createUser: async (message: any) => {
+      console.log('[Auth Event] createUser:', JSON.stringify(message))
+    },
+    linkAccount: async (message: any) => {
+      console.log('[Auth Event] linkAccount:', JSON.stringify(message))
     }
-  }
+  } : {}) as any
 })
