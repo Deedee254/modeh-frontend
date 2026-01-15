@@ -9,6 +9,8 @@ export default NuxtAuthHandler({
     error: '/auth/error'
   },
   trustHost: true,
+  // Ensure the base URL is explicitly set for production OAuth
+  basePath: '/api/auth',
   providers: [
     // @ts-expect-error Use .default here for it to work during SSR
     GoogleProvider.default({
