@@ -48,8 +48,20 @@ definePageMeta({
   ]
 })
 
+import { useRoute, useRouter, onMounted } from '#imports'
 import LoginForm from '~/components/Auth/LoginForm.vue'
 import AuthFeaturesPanel from '~/components/Auth/AuthFeaturesPanel.vue'
+
+const route = useRoute()
+const router = useRouter()
+
+// If NextAuth redirects to /login with an error (e.g. OAuthSignin),
+// immediately forward to the dedicated error page so users see details.
+onMounted(() => {
+  if (route.query && route.query.error) {
+    router.replace({ path: '/auth/error', query: route.query })
+  }
+})
 </script>
 
 <style scoped>
