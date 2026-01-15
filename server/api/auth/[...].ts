@@ -3,6 +3,8 @@ import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 
 export default NuxtAuthHandler({
+  // Enable debug when NUXT_AUTH_DEBUG=true in environment (temporary for diagnostics)
+  debug: process.env.NUXT_AUTH_DEBUG === 'true',
   secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
   pages: {
     signIn: '/login',
@@ -185,6 +187,21 @@ export default NuxtAuthHandler({
         (session.user as any).isProfileCompleted = token.isProfileCompleted as boolean
       }
       return session
+    }
+  }
+  ,
+  // Log auth events to help diagnose OAuthSignin issues (keeps minimal output unless debug enabled)
+  events: {
+    async signIn(message) {
+      if (process.env.NUXT_AUTH_DEBUG === 'true') console.log('[Auth Event] signIn:', JSON.stringify(message))
+    },
+    async error(message) {
+      // message can be an Error or object depending on runtime - stringify safely
+      try {
+        console.error('[Auth Event] error:', typeof message === 'object' ? JSON.stringify(message) : String(message))
+      } catch (e) {
+        console.error('[Auth Event] error (string):', String(message))
+      }
     }
   }
 })
