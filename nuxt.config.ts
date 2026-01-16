@@ -203,6 +203,11 @@ export default defineNuxtConfig({
   // -----------------------------
   runtimeConfig: {
     pusherSecret: process.env.NUXT_PUBLIC_PUSHER_SECRET || '',
+    // Temporary: expose google OAuth client secrets to runtime config so the
+    // server auth handler can read them during testing. These values are read
+    // from environment at build time — do NOT commit secrets to source.
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     public: {
       // Backend API
       apiBase: defaultApiBase,

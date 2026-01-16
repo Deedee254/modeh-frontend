@@ -1,6 +1,7 @@
 import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { useRuntimeConfig } from '#imports'
 
 export default NuxtAuthHandler({
   // Enable debug when NUXT_AUTH_DEBUG=true in environment (temporary for diagnostics)
@@ -16,8 +17,11 @@ export default NuxtAuthHandler({
   providers: [
     // @ts-expect-error Use .default here for it to work during SSR
     GoogleProvider.default({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      // Prefer environment variables, but fall back to Nuxt runtime config
+      // values when available. This allows testing by wiring secrets into
+      // `nuxt.config.ts`'s runtimeConfig during a build.
+      clientId: process.env.GOOGLE_CLIENT_ID || useRuntimeConfig().googleClientId || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || useRuntimeConfig().googleClientSecret || '',
       allowDangerousEmailAccountLinking: true,
       // Explicitly set the callback URL - critical for production OAuth
       // This tells Google where to redirect after authentication
@@ -106,18 +110,28 @@ export default NuxtAuthHandler({
     maxAge: 30 * 24 * 60 * 60,  // 30 days
     updateAge: 24 * 60 * 60  // Update session every 24 hours
   },
-  cookies: {
-    sessionToken: {
-      name: `authjs.session-token`,
-      options: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        // Remove maxAge to let session control expiration
+    cookies: {
+      sessionToken: {
+        name: `authjs.session-token`,
+        options: {
+          httpOnly: true,
+          // Compute `secure` at runtime from runtime config so the built server
+          // will correctly set cookie secure when deployed behind HTTPS.
+          secure: (() => {
+            try {
+              const cfg = useRuntimeConfig()
+              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
+              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
+            } catch (e) {
+              return process.env.NODE_ENV === 'production'
+            }
+          })(),
+          sameSite: 'lax',
+          path: '/',
+          // Remove maxAge to let session control expiration
+        }
       }
-    }
-  },
+    },
   callbacks: {
     async jwt({ token, user, account, profile }: any) {
       if (user) {
@@ -167,6 +181,12 @@ export default NuxtAuthHandler({
             console.log('[Auth] apiToken obtained from backend, isProfileCompleted:', token.isProfileCompleted)
           } else {
             console.warn('[Auth] Failed to fetch apiToken from backend:', res.status, res.statusText)
+            try {
+              const body = await res.text()
+              console.warn('[Auth] social-sync response body:', body)
+            } catch (e) {
+              console.warn('[Auth] Could not read social-sync response body')
+            }
             // Don't fail the auth flow, just log the warning
           }
         } catch (e) {
