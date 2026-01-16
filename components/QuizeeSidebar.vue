@@ -68,7 +68,7 @@ const ui = useUiStore()
 const user = computed(() => auth.user || {})
 import { resolveAssetUrl } from '~/composables/useAssets'
 // Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
-const userAvatar = computed(() => resolveAssetUrl((auth as any).userAvatar) || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
 
 const isVerified = computed(() => {
   const u = auth.user
