@@ -172,13 +172,13 @@ const totalPoints = computed(() =>
 
 const player1Avatar = computed(() => {
   const p1 = (props.battle?.player1) as any
-  const avatar = p1?.avatar_url || p1?.avatar
+  const avatar = p1?.avatar_url || p1?.avatar || p1?.avatarUrl || p1?.image || p1?.photo
   return resolveAssetUrl(avatar) || null
 })
 
 const player2Avatar = computed(() => {
   const p2 = (props.battle?.player2) as any
-  const avatar = p2?.avatar_url || p2?.avatar
+  const avatar = p2?.avatar_url || p2?.avatar || p2?.avatarUrl || p2?.image || p2?.photo
   return resolveAssetUrl(avatar) || null
 })
 

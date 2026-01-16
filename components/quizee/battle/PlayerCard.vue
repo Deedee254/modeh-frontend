@@ -37,8 +37,8 @@ function resolvePlayerAvatar(v) {
     // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
     let val = null
     if (v && typeof v === 'object') {
-    // Prefer the canonical backend field `avatarUrl` (frontend normalized) then `avatar`, `avatar_url`, `photo`, `profile.avatar`, `profile_image`.
-    val = v.avatarUrl || v.avatar || v.avatar_url || v.photo || (v.profile && (v.profile.avatar || v.profile.profile_image)) || null
+    // Prefer the canonical backend field `avatarUrl` (frontend normalized) then `avatar`, `avatar_url`, `photo`, `image`, `profile.avatar`, `profile_image`.
+    val = v.avatarUrl || v.avatar || v.avatar_url || v.photo || v.image || (v.profile && (v.profile.avatar || v.profile.profile_image)) || null
     } else {
       val = v
     }

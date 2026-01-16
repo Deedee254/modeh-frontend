@@ -192,6 +192,7 @@ export default NuxtAuthHandler({
         token.apiToken = (user as any).apiToken
         token.isNewUser = (user as any).isNewUser  
         token.isProfileCompleted = (user as any).is_profile_completed ?? (user as any).isProfileCompleted 
+        token.image = user.image || (user as any).avatar || (user as any).avatar_url
       }
       
       // For Google OAuth (account?.provider === 'google'), we need to fetch the apiToken from backend
@@ -257,6 +258,7 @@ export default NuxtAuthHandler({
         (session.user as any).apiToken = token.apiToken as string
         (session.user as any).isNewUser = token.isNewUser as boolean  
         (session.user as any).isProfileCompleted = token.isProfileCompleted as boolean
+        (session.user as any).image = token.image as string
       }
       return session
     }

@@ -14,7 +14,8 @@ const route = useRoute()
 
 // Get avatar URL using asset composable
 const getAvatarUrl = (member: any) => {
-  return resolveAssetUrl(member?.avatar) || '/logo/avatar-placeholder.png'
+  const val = member?.avatar_url || member?.avatar || member?.image || member?.avatarUrl || member?.photo || null
+  return resolveAssetUrl(val) || '/logo/avatar-placeholder.png'
 }
 
 // Generate profile detail link based on role

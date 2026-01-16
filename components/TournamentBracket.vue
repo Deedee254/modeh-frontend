@@ -1053,7 +1053,7 @@ const formatMatchInfo = (m: any) => {
 const getPlayerAvatar = (player: any) => {
   if (!player) return '/avatars/default.png'
   // Backend returns avatar_url (primary DB column) and avatar (accessor)
-  const avatar = player.avatar_url || player.avatar
+  const avatar = player.avatar_url || player.avatar || player.image || player.avatarUrl || player.photo
   return resolveAssetUrl(avatar) || '/avatars/default.png'
 }
 

@@ -199,7 +199,7 @@ const {
 // Computed avatar resolution
 const resolvedAvatar = computed(() => {
   if (!quizee.value) return null
-  const avatarUrl = quizee.value.avatar_url || quizee.value.avatar
+  const avatarUrl = quizee.value.avatar_url || quizee.value.avatar || quizee.value.image || quizee.value.avatarUrl || quizee.value.photo
   return resolveAssetUrl(avatarUrl) || (avatarUrl || null)
 })
 

@@ -146,13 +146,13 @@
                 <div class="flex items-center gap-3">
                   <div class="flex-shrink-0">
                       <NuxtLink v-if="authorLink" :to="authorLink" class="block">
-                        <img v-if="author?.avatar" :src="author.avatar" alt="Creator avatar" class="w-10 h-10 rounded-full object-cover" />
+                        <img v-if="authorAvatar" :src="authorAvatar" alt="Creator avatar" class="w-10 h-10 rounded-full object-cover" />
                         <div v-else class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM6 20v-1c0-2.21 3.582-4 6-4s6 1.79 6 4v1"></path></svg>
                         </div>
                       </NuxtLink>
                       <div v-else>
-                        <img v-if="author?.avatar" :src="author.avatar" alt="Creator avatar" class="w-10 h-10 rounded-full object-cover" />
+                        <img v-if="authorAvatar" :src="authorAvatar" alt="Creator avatar" class="w-10 h-10 rounded-full object-cover" />
                         <div v-else class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM6 20v-1c0-2.21 3.582-4 6-4s6 1.79 6 4v1"></path></svg>
                         </div>
@@ -486,6 +486,12 @@ const priceDisplay = computed(() => {
   } catch (e) {
     return `${p}`
   }
+})
+
+const authorAvatar = computed(() => {
+  const a = author.value
+  if (!a) return null
+  return resolveAssetUrl(a.avatar_url || a.avatar || a.image || a.avatarUrl || a.photo) || a.avatar_url || a.avatar || a.image || a.avatarUrl || a.photo || null
 })
 
 // Author link (prefer canonical slug coming from API; fallback to id)

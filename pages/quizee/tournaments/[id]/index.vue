@@ -284,7 +284,7 @@
                            index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-gray-50 text-gray-500']">
                            {{ index + 1 }}
                         </div>
-                        <img :src="resolveAssetUrl(player.avatar_url || player.avatar) || player.avatar_url || player.avatar || '/logo/avatar-placeholder.png'" alt="" class="w-8 h-8 rounded-full object-cover bg-gray-200" />
+                        <img :src="resolveAssetUrl(player.avatar_url || player.avatar || player.image || (player as any).avatarUrl || (player as any).photo) || '/logo/avatar-placeholder.png'" alt="" class="w-8 h-8 rounded-full object-cover bg-gray-200" />
                         <span class="font-medium text-gray-900 truncate max-w-[120px]">{{ player.name }}</span>
                      </div>
                      <span class="font-bold text-gray-900">{{ player.points }} <span class="text-xs text-gray-500 font-normal">pts</span></span>
@@ -352,7 +352,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { resolveAssetUrl } from '~/composables/useAssets';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '~/stores/auth'
 import { useTournamentStore } from '~/stores/tournamentStore';
@@ -847,11 +848,7 @@ const formatPrizeKES = (amount: number) => {
   return `Ksh ${formatted}`;
 };
 
-const resolveAssetUrl = (path: string | undefined) => {
-  if (!path) return undefined;
-  if (path.startsWith('http')) return path;
-  return path; // In a real app, you might prepend a CDN URL here
-};
+
 
 function statusColor(status: string) {
    switch(status) {

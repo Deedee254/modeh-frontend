@@ -193,7 +193,7 @@ async function fetchBadges(userId?: number) {
 
 // Computed properties
 const displayName = computed(() => quizee.value?.name || 'Quizee')
-const displayAvatar = computed(() => resolveAssetUrl(quizee.value?.avatar_url || quizee.value?.avatar) || '/logo/avatar-placeholder.png')
+const displayAvatar = computed(() => resolveAssetUrl(quizee.value?.avatar_url || quizee.value?.avatar || quizee.value?.image || quizee.value?.avatarUrl || quizee.value?.photo) || '/logo/avatar-placeholder.png')
 const displayHeadline = computed(() => quizee.value?.headline || stats.value?.headline || 'An active learner')
 const displayGrade = computed(() => quizee.value?.quizee_profile?.grade?.name || stats.value?.grade?.name || '—')
 const displayLevel = computed(() => quizee.value?.quizee_profile?.level?.name || stats.value?.level?.name || '—')

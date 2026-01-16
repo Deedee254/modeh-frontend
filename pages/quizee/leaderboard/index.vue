@@ -140,7 +140,7 @@ async function fetchLeaderboard() {
         id: u?.id ?? u?.user_id ?? `u${idx}`,
         name: u?.name || u?.display_name || u?.username || "Unknown",
         // normalize avatar and ensure any relative path is resolved to an absolute URL
-        avatar: resolveAssetUrl(u?.avatar_url || u?.avatar || u?.photo || u?.profile_image) || (u?.avatar_url || u?.avatar || u?.photo || u?.profile_image || null),
+        avatar: resolveAssetUrl(u?.avatar_url || u?.avatar || u?.image || u?.photo || u?.profile_image) || (u?.avatar_url || u?.avatar || u?.image || u?.photo || u?.profile_image || null),
         points: u?.points ?? u?.score ?? u?.pts ?? 0,
         country: u?.country || u?.location || null,
       }))

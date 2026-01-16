@@ -204,7 +204,7 @@ onMounted(async () => {
   // use user.value (computed) to read actual user object, but don't overwrite when editing a new file
   if (!avatarFile.value) {
     const u = user.value as User | null
-    avatarPreview.value = resolveAssetUrl(u?.avatarUrl || u?.avatar || u?.avatar_url) || null
+    avatarPreview.value = resolveAssetUrl(auth.userAvatar || u?.avatarUrl || u?.avatar || u?.avatar_url || u?.image || u?.photo) || null
   }
 })
 
@@ -213,7 +213,7 @@ watch(user, (u) => {
   // If the user is currently editing a new avatar file, don't overwrite the preview.
   if (avatarFile.value) return
   const userVal = u as User | null
-  avatarPreview.value = resolveAssetUrl(userVal?.avatarUrl || userVal?.avatar || userVal?.avatar_url) || null
+  avatarPreview.value = resolveAssetUrl(auth.userAvatar || userVal?.avatarUrl || userVal?.avatar || userVal?.avatar_url || userVal?.image || userVal?.photo) || null
 }, { immediate: true })
 
 async function initializeTaxonomySelection() {
@@ -318,7 +318,7 @@ function onInstitutionSelected(institution: any) {
 function reset() {
   form.value = createFormState(user.value)
   const u = user.value as User | null
-  avatarPreview.value = resolveAssetUrl(u?.avatarUrl || u?.avatar) || null
+  avatarPreview.value = resolveAssetUrl(auth.userAvatar || u?.avatarUrl || u?.avatar || u?.avatar_url || u?.image || u?.photo) || null
   avatarFile.value = null
 }
 
@@ -362,7 +362,7 @@ async function save() {
   form.value = createFormState(user.value)
   originalForm.value = JSON.parse(JSON.stringify(form.value))
   const u = user.value as User | null
-  avatarPreview.value = resolveAssetUrl(u?.avatarUrl || u?.avatar || u?.avatar_url) || null
+  avatarPreview.value = resolveAssetUrl(auth.userAvatar || u?.avatarUrl || u?.avatar || u?.avatar_url || u?.image || u?.photo) || null
   avatarFile.value = null
 
 

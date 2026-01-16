@@ -48,7 +48,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { resolveAssetUrl } from '~/composables/useAssets'
 const props = defineProps({
   allConversations: { type: Array, default: () => [] },
   activeConversationId: { type: [String, Number, null], default: null },
@@ -59,6 +60,17 @@ const props = defineProps({
 const emit = defineEmits(['select-conversation','open-create','update:searchQuery','change-tab'])
 const searchQueryLocal = ref(props.searchQuery)
 watch(() => props.searchQuery, (v) => { searchQueryLocal.value = v })
+
+// Enhanced conversations with resolved avatars
+const enhancedConversations = computed(() => {
+  return props.allConversations.map(t => {
+    const avatar = t.avatar || t.avatar_url || t.image || t.avatarUrl || t.photo || null
+    return {
+      ...t,
+      _resolvedAvatar: resolveAssetUrl(avatar) || avatar
+    }
+  })
+})
 
 function formatTime(dateString) {
   const date = new Date(dateString)

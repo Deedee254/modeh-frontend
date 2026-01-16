@@ -438,13 +438,10 @@ const posterSrc = computed(() => {
 })
 
 const creatorAvatarUrl = computed(() => {
-  const avatar = quiz.value.created_by?.avatar
+  const c = quiz.value.created_by
+  if (!c) return null
+  const avatar = c.avatar_url || c.avatar || c.image || c.avatarUrl || c.photo
   if (!avatar || typeof avatar !== 'string') return null
-  // If it's already a full URL, return as-is
-  if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
-    return avatar
-  }
-  // Otherwise, resolve it through asset URL handler
   return resolveAssetUrl(avatar)
 })
 

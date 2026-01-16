@@ -343,7 +343,8 @@ function resolveAvatar(chat: any) {
     // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
     let val = null
     if (chat && typeof chat === 'object') {
-      val = chat.avatar_url || chat.avatar || chat.photo || chat.profile_image || null
+      // Prioritize AuthJS and our own standard fields
+      val = chat.avatar_url || chat.avatar || chat.image || chat.avatarUrl || chat.photo || chat.profile_image || null
     } else {
       val = chat
     }
@@ -512,7 +513,7 @@ async function handleOpenDMModal(data: any) {
         const user = json.user
         dmModalData.value.userId = user.id
         dmModalData.value.userName = user.name
-        dmModalData.value.userAvatar = resolveAssetUrl(user.avatar_url) || user.avatar || '/logo/avatar-placeholder.png'
+        dmModalData.value.userAvatar = resolveAssetUrl(user.avatar_url || user.avatar || user.image || user.avatarUrl || user.photo) || '/logo/avatar-placeholder.png'
         dmModalData.value.userExists = true
         dmModalData.value.notFound = false
         dmModalData.value.error = ''

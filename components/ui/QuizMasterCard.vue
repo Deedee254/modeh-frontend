@@ -129,7 +129,7 @@ const isCourse = computed(() => {
 import { resolveAssetUrl } from '~/composables/useAssets'
 
 const avatarSrc = computed(() => {
-  const v = props.quizMaster?.avatar_url || props.quizMaster?.avatar || props.quizMaster?.image || ''
+  const v = props.quizMaster?.avatar_url || props.quizMaster?.avatar || props.quizMaster?.avatarUrl || props.quizMaster?.image || props.quizMaster?.photo || ''
   // prefer asset resolution, fall back to raw value if needed
   return resolveAssetUrl(v) || (v || null)
 })

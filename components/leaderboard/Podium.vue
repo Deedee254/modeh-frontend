@@ -126,9 +126,10 @@ function displayPoints(p) {
 function resolvedAvatar(v) {
   try {
     // Backend returns avatar_url (primary DB column) and avatar (accessor)
+    // AuthJS returns image
     let val = null
     if (v && typeof v === 'object') {
-      val = v.avatar_url || v.avatar || null
+      val = v.avatar_url || v.avatar || v.avatarUrl || v.image || v.photo || null
     } else {
       val = v
     }

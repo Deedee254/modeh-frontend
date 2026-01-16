@@ -236,7 +236,7 @@ function mySide() {
 
 function getParticipantAvatar(participant: any): string {
   // Backend returns avatar_url (primary DB column) and avatar (accessor)
-  const avatarUrl = participant?.avatar_url || participant?.avatar || null
+  const avatarUrl = participant?.avatar_url || participant?.avatar || participant?.image || participant?.avatarUrl || participant?.photo || null
   return resolveAssetUrl(avatarUrl) || '/logo/avatar-placeholder.png'
 }
 

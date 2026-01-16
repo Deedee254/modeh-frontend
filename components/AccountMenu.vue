@@ -151,7 +151,7 @@ const auth = useAuthStore()
 
 // Use asset composable to resolve avatar URL. Prefer camelCase `avatarUrl` normalized by the auth store.
 const userAvatarUrl = computed(() => {
-  return resolveAssetUrl(auth?.user?.avatarUrl || auth?.user?.avatar || auth?.user?.avatar_url) || '/logo/avatar-placeholder.png'
+  return resolveAssetUrl(auth?.userAvatar || auth?.user?.image || auth?.user?.avatarUrl || auth?.user?.avatar || auth?.user?.avatar_url || auth?.user?.photo) || '/logo/avatar-placeholder.png'
 })
 
 function toggle() {

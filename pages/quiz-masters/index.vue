@@ -69,7 +69,7 @@
         <UCard v-for="quizMaster in quizMasters" :key="quizMaster.id" class="hover:shadow-lg transition">
           <div class="flex flex-col items-center text-center">
             <div class="w-24 h-24 rounded-full overflow-hidden mb-4">
-              <img v-if="quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.profile_image" :src="resolveAssetUrl(quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.profile_image) || (quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.profile_image)" :alt="quizMaster.name" class="w-full h-full object-cover">
+              <img v-if="quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl" :src="resolveAssetUrl(quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl) || (quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl)" :alt="quizMaster.name" class="w-full h-full object-cover">
               <div v-else class="w-full h-full bg-brand-600/10 text-brand-600 grid place-items-center font-bold text-3xl">
                 {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
               </div>

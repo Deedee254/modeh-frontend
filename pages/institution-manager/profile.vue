@@ -107,7 +107,7 @@ const accountApi = useAccountApi()
 
 const user = computed(() => auth.user || { name: '', email: '', avatarUrl: '', avatar: '', avatar_url: '' })
 // Auth store normalizes backend snake_case to camelCase (avatar_url -> avatarUrl)
-const userAvatar = computed(() => resolveAssetUrl(user.value?.avatarUrl || user.value?.avatar || user.value?.avatar_url) || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
 const instId = computed(() => instStore.activeInstitutionSlug)
 const instName = computed(() => instStore.institution?.name || '')
 

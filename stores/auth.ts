@@ -182,7 +182,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userAvatar = computed(() => {
     const u = user.value as any
     if (!u) return null
-    return u.image || u.avatar || u.avatarUrl || u.avatar_url || null
+    return u.image || u.avatar || u.avatarUrl || u.avatar_url || u.photo || null
   })
 
   function clear(): void {

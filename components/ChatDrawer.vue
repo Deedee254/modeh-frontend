@@ -122,8 +122,8 @@ async function fetchRecentChats() {
         message: conv.last_message || conv.last_preview || 'No messages',
         time: formatTimeAgo(conv.last_at || conv.updated_at),
         unread: (conv.unread_count ?? conv.unread) > 0,
-        // Prefer API `avatar` then `avatar_url` and resolve any relative path via resolveAssetUrl
-        avatar: resolveAssetUrl(conv.avatar || conv.avatar_url) || conv.avatar || conv.avatar_url || `/logo/avatar-placeholder.png`
+        // Robust avatar resolution chain for recent chats
+        avatar: resolveAssetUrl(conv.avatar || conv.avatar_url || conv.image || conv.avatarUrl || conv.photo) || conv.avatar || conv.avatar_url || `/logo/avatar-placeholder.png`
       })).slice(0, 5)
     }
   } catch (e) {

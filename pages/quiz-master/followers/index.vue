@@ -35,7 +35,7 @@
               >
                 <div class="flex items-start gap-4">
                   <div class="relative h-16 w-16 overflow-hidden rounded-xl border border-emerald-100 flex-shrink-0">
-                    <img v-if="quizee.avatar_url || quizee.avatar" :src="resolveAssetUrl(quizee.avatar_url || quizee.avatar) || quizee.avatar_url || quizee.avatar" :alt="quizee.name" class="h-full w-full object-cover">
+                    <img v-if="quizee.avatar_url || quizee.avatar || quizee.image || quizee.avatarUrl || quizee.photo" :src="resolveAssetUrl(quizee.avatar_url || quizee.avatar || quizee.image || quizee.avatarUrl || quizee.photo) || quizee.avatar_url || quizee.avatar || quizee.image || quizee.avatarUrl || quizee.photo" :alt="quizee.name" class="h-full w-full object-cover">
                     <div v-else class="grid h-full w-full place-items-center bg-emerald-50 text-lg font-bold text-emerald-700">
                       {{ (quizee.name || '').charAt(0).toUpperCase() }}
                     </div>

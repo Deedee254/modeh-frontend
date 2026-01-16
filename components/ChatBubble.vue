@@ -38,6 +38,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { resolveAssetUrl } from '~/composables/useAssets'
 const open = ref(false)
 const threads = ref([])
 
@@ -51,10 +52,24 @@ async function loadThreads() {
     const res = await fetch(cfg.public.apiBase + '/api/chat/threads', { credentials: 'include' })
     if (res.ok) {
       const body = await res.json()
-  threads.value = body.conversations || body.conversations || []
+      // Map threads and resolve avatars with full chain
+      threads.value = (body.conversations || []).map(t => ({
+        ...t,
+        avatar: resolveAssetUrl(t.avatar || t.avatar_url || t.image || t.avatarUrl || t.photo) || t.avatar || t.avatar_url || null
+      }))
       // merge groups as well
       if (body.groups && body.groups.length) {
-  threads.value = threads.value.concat(body.groups.map(g => ({ other_user_id: 'group-'+g.id, other_name: g.name ?? ('Group '+g.id), last_message: g.last_message, last_at: g.last_at, unread_count: g.unread_count, avatar: resolveAssetUrl(g.avatar_url) || g.avatar || null })))
+        threads.value = threads.value.concat(body.groups.map(g => {
+          const groupAvatar = g.avatar_url || g.avatar || g.image || g.avatarUrl || g.photo || null
+          return { 
+            other_user_id: 'group-'+g.id, 
+            other_name: g.name ?? ('Group '+g.id), 
+            last_message: g.last_message, 
+            last_at: g.last_at, 
+            unread_count: g.unread_count, 
+            avatar: resolveAssetUrl(groupAvatar) || groupAvatar || null 
+          }
+        }))
       }
     }
   } catch (e) {

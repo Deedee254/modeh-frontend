@@ -102,7 +102,7 @@ async function fetchQuizMasterStats() {
 
 // Formatted display values
 const displayName = computed(() => quizMaster.value?.name || 'Quiz Master')
-const displayAvatar = computed(() => resolveAssetUrl(quizMaster.value?.avatar) || '/logo/avatar-placeholder.png')
+const displayAvatar = computed(() => resolveAssetUrl(quizMaster.value?.avatar_url || quizMaster.value?.avatar || quizMaster.value?.image || quizMaster.value?.avatarUrl || quizMaster.value?.photo) || '/logo/avatar-placeholder.png')
 const displayHeadline = computed(() => quizMaster.value?.headline || stats.value?.headline || 'An experienced quiz master')
 const displayInstitution = computed(() => quizMaster.value?.institution || 'Independent Educator')
 const displayGrade = computed(() => quizMaster.value?.grade?.name || stats.value?.grade?.name || '—')
