@@ -202,10 +202,12 @@ onMounted(async () => {
     // fetch subject metadata using shared API composable (preserves auth/session)
     try {
       const api = useApi()
-      const subjectRes = await api.get(`/api/subjects?slug=${slug.value}`)
+      // Use the dedicated show endpoint which supports route-model binding by slug
+      const subjectRes = await api.get(`/api/subjects/${encodeURIComponent(slug.value)}`)
       if (subjectRes && subjectRes.ok) {
         const s = await subjectRes.json()
-        subject.value = (s && s.subjects && s.subjects[0]) ? s.subjects[0] : ((s && s.subject) ? s.subject : (s || {}))
+        // Laravel Resource show() typically returns { data: { ... } }
+        subject.value = s?.data ?? s ?? {}
       }
     } catch (e) {
       // ignore subject fetch error here

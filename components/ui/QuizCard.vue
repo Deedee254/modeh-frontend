@@ -1,22 +1,25 @@
 <template>
   <!-- Horizontal variant (Mobile/List view) -->
   <div v-if="isHorizontal" :class="[
-      'group relative w-full flex flex-row rounded-lg bg-white overflow-hidden transition-all duration-300',
-      props.clean ? 'shadow-none border-0' : 'shadow-md hover:shadow-xl hover:shadow-slate-300/50 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 dark:hover:shadow-slate-900/50'
+      'group relative w-full flex flex-row rounded-xl bg-card overflow-hidden transition-all duration-300',
+      props.clean ? 'shadow-none border-0' : 'shadow-card border border-border/50 dark:border-border/50 dark:bg-slate-900'
     ]">
     <!-- Image Left (Fixed width 96-112px per spec) -->
     <div v-if="!props.hideImage" class="relative w-24 sm:w-28 flex-shrink-0 bg-slate-100">
-      <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover" />
+      <template v-if="resolvedCover">
+        <img :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+        <div class="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent dark:from-card pointer-events-none z-10" />
+      </template>
       <div v-else class="h-full w-full flex items-center justify-center text-slate-300">
         <Icon name="heroicons:photo" class="h-8 w-8" />
       </div>
       
       <!-- Difficulty Badge (mini) -->
-      <div v-if="difficultyLabel" class="absolute top-1 left-1">
+      <div v-if="difficultyLabel" class="absolute top-1 left-1 z-20">
          <div :class="['w-2 h-2 rounded-full shadow-sm', difficultyBgClass]" :title="difficultyLabel"></div>
       </div>
       <!-- Price Badge -->
-      <div class="absolute top-1 right-1">
+      <div class="absolute top-1 right-1 z-20">
         <span :class="['inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded', priceBadgeClass]">
           {{ priceBadgeLabel }}
         </span>
@@ -59,13 +62,16 @@
 
   <!-- Vertical variant (Desktop/Standard) -->
   <div v-else :class="[
-      'group relative flex w-full flex-col rounded-lg overflow-hidden transition-all duration-300 h-full',
-      props.clean ? 'shadow-none border-0' : 'bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900'
+      'group relative flex w-full flex-col rounded-xl overflow-hidden transition-all duration-300 h-full bg-card',
+      props.clean ? 'shadow-none border-0' : 'shadow-card border border-border/50 dark:border-border/50 dark:bg-slate-900'
     ]">
     
     <!-- Hero Image (Aspect Ratio 16:9 approx) - Only show if not hideImage -->
     <div v-if="!props.hideImage" class="relative w-full aspect-video h-28 bg-[#800020] overflow-hidden">
-      <img v-if="resolvedCover" :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      <template v-if="resolvedCover">
+        <img :src="resolvedCover" :alt="displayTitle || title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+        <div class="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent dark:from-card pointer-events-none z-10" />
+      </template>
       <div v-else class="h-full w-full flex items-center justify-center text-white/50 bg-gradient-to-br from-[#800020] to-red-900">
         <Icon name="heroicons:academic-cap" class="h-14 w-14 opacity-50" />
       </div>

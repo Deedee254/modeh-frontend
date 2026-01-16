@@ -66,9 +66,7 @@ definePageMeta({ layout: 'parent' })
 const auth = useAuthStore()
 const user = computed(() => auth.user || {})
 
-const userAvatar = computed(
-  () => resolveAssetUrl(auth.user?.avatarUrl || auth.user?.avatar || auth.user?.avatar_url) || '/logo/avatar-placeholder.png'
-)
+const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A'

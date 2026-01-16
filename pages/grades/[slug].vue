@@ -121,7 +121,8 @@ function resolveIcon(s) {
 async function fetchGradeMeta() {
   try {
     const res = await $fetch(`${config.public.apiBase}/api/grades?slug=${slug.value}`)
-    const grade = res?.grades?.[0] || res?.grade || res || {}
+    // Support multiple API shapes: { grades: [...] }, { grade: {...} }, or { data: [...] }
+    const grade = res?.grades?.[0] ?? res?.grade ?? (res?.data && Array.isArray(res.data) ? res.data[0] : undefined) ?? res ?? {}
     gradeMeta.value = grade
   } catch (e) {
     gradeMeta.value = {}
@@ -155,7 +156,10 @@ const error = ref(null)
 onMounted(async () => {
   try {
     await fetchGradeMeta()
-    await fetchSubjectsByGrade(slug.value)
+    // Prefer fetching subjects by the numeric/string `id` returned by the grade
+    // API; fall back to the slug if an id isn't available.
+    const gradeRef = gradeMeta.value?.id ?? slug.value
+    await fetchSubjectsByGrade(gradeRef)
     await Promise.all([fetchTopicCount(), fetchQuizCount()])
   } catch (e) {
     error.value = e

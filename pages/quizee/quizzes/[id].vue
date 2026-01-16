@@ -4,6 +4,7 @@
     <StickyShareButton
       itemType="Quiz"
       :itemId="quiz.id"
+      :itemSlug="quiz.slug"
       :itemTitle="`${quiz.title} - Take the challenge on Modeh!`"
       :disabled="!quiz.id"
     />
@@ -191,6 +192,7 @@
                   <AffiliateShareButton 
                     :itemType="'Quiz'"
                     :itemId="quiz.id"
+                    :itemSlug="quiz.slug"
                     :baseUrl="baseUrl"
                   ></AffiliateShareButton>
                 </div>

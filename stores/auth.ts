@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Ref } from 'vue'
 import useApi from '~/composables/useApi'
@@ -175,6 +175,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const userAvatar = computed(() => {
+    const u = user.value as any
+    if (!u) return null
+    return u.image || u.avatar || u.avatarUrl || u.avatar_url || null
+  })
+
   function clear(): void {
     user.value = null
     role.value = null
@@ -227,6 +233,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, role, guestPlayed, setGuestPlayed, logout, fetchUser, setUser, clear, syncGuestQuizResults, isFetchingUser, register }
+  return { user, role, guestPlayed, setGuestPlayed, logout, fetchUser, setUser, clear, syncGuestQuizResults, isFetchingUser, register, userAvatar }
 })
 

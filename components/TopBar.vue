@@ -478,8 +478,8 @@ onBeforeUnmount(() => {
 })
 
 const userName = computed(() => auth.user?.name || 'User')
-// Prefer the auth store's camelCase `avatarUrl` while falling back to legacy keys for safety.
-const userAvatar = computed(() => resolveAssetUrl(auth.user?.avatarUrl || auth.user?.avatar || auth.user?.avatar_url) || '/logo/avatar-placeholder.png')
+// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
+const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
 const userLevel = computed(() => {
   if (auth.user?.quizeeProfile?.level?.name) {

@@ -132,14 +132,15 @@ async function initiatePayment() {
       res = await api.postJson('/api/one-off-purchases', payload)
     }
     
-    // Check if res is already the parsed data (from store) or a response object
-    const data = res?.ok === undefined ? res : await res.json().catch(() => ({}))
-    
+    // Determine if `res` is a Fetch Response (has .json) or already-parsed JSON.
+    const isFetchResponse = res && typeof res.json === 'function'
+    const data = isFetchResponse ? await res.json().catch(() => ({})) : (res ?? {})
+
     if (data?.tx || data?.purchase?.gateway_meta?.tx) {
       currentTx.value = data.tx || data.purchase.gateway_meta.tx
       showAwaitingModal.value = true
       isOpen.value = false // Hide this modal, show the awaiting one
-    } else if (res?.ok === false) {
+    } else if ((isFetchResponse && res.ok === false) || (!isFetchResponse && data?.ok === false)) {
       const t = data?.message || 'Failed to initiate payment.'
       throw new Error(t)
     } else {

@@ -87,6 +87,7 @@
       class="hidden"
       :itemType="itemType"
       :itemId="itemId"
+      :itemSlug="itemSlug"
       :itemTitle="itemTitle"
       :baseUrl="baseUrl"
     />

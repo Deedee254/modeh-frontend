@@ -73,9 +73,7 @@ const auth = useAuthStore()
 const ui = useUiStore()
 const route = useRoute()
 const user = computed(() => auth.user || {})
-const userAvatar = computed(
-  () => resolveAssetUrl(auth.user?.avatarUrl || auth.user?.avatar || auth.user?.avatar_url) || '/logo/avatar-placeholder.png'
-)
+const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
 
 const navItems = [
   { to: '/parent/dashboard', label: 'Dashboard', icon: HomeIcon },

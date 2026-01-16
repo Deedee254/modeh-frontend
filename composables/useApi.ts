@@ -1,4 +1,4 @@
-import { useRuntimeConfig } from '#imports'
+import { useRuntimeConfig, watch } from '#imports'
 
 // Module-scoped memoization so all callers (and multiple composable instances)
 // share the same CSRF init state and avoid duplicate /sanctum/csrf-cookie calls.
@@ -16,14 +16,23 @@ export function useApi() {
   function getAuthToken() {
     try {
       // Get the API token from Nuxt-Auth session (set by the backend during login)
-      // auth.data is a Ref, so handle both Ref and unwrapped cases
-      const session = auth.data?.value || auth.data
+      // session.user is where the apiToken is stored (see server/api/auth/[...].ts)
+      const session = auth.data?.value
+      
+      console.debug('[useApi] getAuthToken: auth status =', auth.status.value)
       
       if (session?.user?.apiToken) {
-        return session.user.apiToken
+        console.debug('[useApi] getAuthToken: Token found (starts with):', (session.user.apiToken as string).substring(0, 10))
+        return session.user.apiToken as string
+      } else {
+        console.debug('[useApi] getAuthToken: No token in session data:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          hasApiToken: !!session?.user?.apiToken
+        })
       }
     } catch (e) {
-      // Silent fail - token not available yet or auth error
+      console.error('[useApi] getAuthToken: Error accessing auth data:', e)
     }
     return null
   }
@@ -31,23 +40,26 @@ export function useApi() {
   async function getAuthTokenAsync() {
     try {
       // Wait for auth to be ready if it's still loading
-      if (auth && auth.status === 'loading') {
-        console.debug('[useApi] Waiting for auth to initialize...')
+      if (auth && auth.status.value === 'loading') {
+        console.debug('[useApi] getAuthTokenAsync: Waiting for auth to initialize...')
         // Wait for status to change from 'loading'
         await new Promise<void>((resolve) => {
-          const unwatch = auth.status.watch((newStatus) => {
+          const stop = watch(auth.status, (newStatus) => {
+            console.debug('[useApi] getAuthTokenAsync: Auth status changed to:', newStatus)
             if (newStatus !== 'loading') {
-              unwatch()
+              stop()
               resolve()
             }
           })
         })
       }
 
+      const token = getAuthToken()
+      console.debug('[useApi] getAuthTokenAsync: Returning token status:', !!token)
       // Now try to get the token
-      return getAuthToken()
+      return token
     } catch (e) {
-      console.debug('[useApi] Error getting auth token async:', e)
+      console.error('[useApi] getAuthTokenAsync: Error getting auth token async:', e)
       return null
     }
   }
@@ -78,8 +90,7 @@ export function useApi() {
       if (typeof document !== 'undefined') {
         const xsrf = getXsrfFromCookie()
         if (xsrf) {
-          // If we have a cookie, we consider CSRF initialized. 
-          // We don't strictly need the 30s check here if we just want to avoid the redundant call.
+          console.debug('[useApi] ensureCsrf: Cookie already present, skipping fetch')
           _csrfFetchedAt = Date.now()
           return
         }
@@ -88,12 +99,12 @@ export function useApi() {
       // ignore cookie read errors and fall through to fetch
     }
 
-    if (_ensureCsrfPromise) return _ensureCsrfPromise
+    if (_ensureCsrfPromise) {
+      console.debug('[useApi] ensureCsrf: Fetch already in progress, reusing promise')
+      return _ensureCsrfPromise
+    }
 
-    // Start the CSRF fetch and then poll briefly until the XSRF cookie is visible
-    // in document.cookie. Some browsers/sites may not expose the cookie immediately
-    // to document.cookie right when fetch resolves; polling helps avoid a race
-    // where the subsequent login POST runs before the cookie is usable.
+    console.debug('[useApi] ensureCsrf: Starting CSRF fetch from', config.public.apiBase + '/sanctum/csrf-cookie')
     _ensureCsrfPromise = (async () => {
       // Use an AbortController to avoid hanging forever if the backend is unreachable.
       const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null
@@ -194,7 +205,10 @@ export function useApi() {
 
   // Build common non-JSON headers (GET, DELETE, form-data)
   function commonHeaders() {
-    const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
+    const headers: Record<string, string> = { 
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json'
+    }
     const token = getAuthToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
@@ -208,7 +222,10 @@ export function useApi() {
   }
 
   async function commonHeadersAsync() {
-    const headers: Record<string, string> = { 'X-Requested-With': 'XMLHttpRequest' }
+    const headers: Record<string, string> = { 
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json'
+    }
     const token = await getAuthTokenAsync()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
@@ -221,7 +238,11 @@ export function useApi() {
   }
 
   function defaultJsonHeaders() {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    const headers: Record<string, string> = { 
+      'Content-Type': 'application/json', 
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json'
+    }
     const token = getAuthToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
@@ -234,10 +255,17 @@ export function useApi() {
   }
 
   async function defaultJsonHeadersAsync() {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    const headers: Record<string, string> = { 
+      'Content-Type': 'application/json', 
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json'
+    }
     const token = await getAuthTokenAsync()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
+      console.debug('[useApi] defaultJsonHeadersAsync: Authorization header added')
+    } else {
+      console.warn('[useApi] defaultJsonHeadersAsync: NO token found, Authorization header OMITTED')
     }
     
     const xsrf = getXsrfFromCookie()
@@ -251,7 +279,7 @@ export function useApi() {
     return fetch(config.public.apiBase + path, {
       method: 'GET',
       credentials: 'include',
-      headers: commonHeaders()
+      headers: await commonHeadersAsync()
     })
   }
 
@@ -269,7 +297,10 @@ export function useApi() {
     return fetch(config.public.apiBase + path, {
       method: 'GET',
       credentials: 'omit',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      headers: { 
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      }
     })
   }
 
@@ -278,7 +309,7 @@ export function useApi() {
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
-      headers: defaultJsonHeaders(),
+      headers: await defaultJsonHeadersAsync(),
       body: JSON.stringify(body),
     })
     // Return the raw Response so callers can inspect status and call .json() as needed.
@@ -313,7 +344,7 @@ export function useApi() {
   // POST JSON and include the current Echo socket id (if available) as X-Socket-Id
   async function postJsonWithSocket(path: string, body: any) {
     try { await ensureCsrf() } catch (e) { }
-    const headers = defaultJsonHeaders()
+    const headers = await defaultJsonHeadersAsync()
 
     // Add Echo socket ID if available
     try {
@@ -342,7 +373,18 @@ export function useApi() {
     const resp = await fetch(config.public.apiBase + path, {
       method: 'POST',
       credentials: 'include',
-      headers: commonHeaders(),
+      headers: await commonHeadersAsync(),
+      body: formData
+    })
+    return resp
+  }
+
+  async function postFormDataAsync(path: string, formData: FormData) {
+    try { await ensureCsrf() } catch (e) { }
+    const resp = await fetch(config.public.apiBase + path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: await commonHeadersAsync(),
       body: formData
     })
     return resp
@@ -353,7 +395,7 @@ export function useApi() {
     const resp = await fetch(config.public.apiBase + path, {
       method: 'PATCH',
       credentials: 'include',
-      headers: defaultJsonHeaders(),
+      headers: await defaultJsonHeadersAsync(),
       body: JSON.stringify(body),
     })
     return resp
@@ -364,7 +406,7 @@ export function useApi() {
     const resp = await fetch(config.public.apiBase + path, {
       method: 'PUT',
       credentials: 'include',
-      headers: defaultJsonHeaders(),
+      headers: await defaultJsonHeadersAsync(),
       body: JSON.stringify(body),
     })
     return resp
@@ -375,13 +417,13 @@ export function useApi() {
     const resp = await fetch(config.public.apiBase + path, {
       method: 'DELETE',
       credentials: 'include',
-      headers: commonHeaders()
+      headers: await commonHeadersAsync()
     })
     return resp
   }
 
   // Handle authentication-related response codes via nuxt-auth
-  async function handleAuthStatus(resp: Response) {
+  function handleAuthStatus(resp: Response) {
     if (!resp) return false
     if (resp.status === 419 || resp.status === 401) {
       if (typeof window !== 'undefined') {
@@ -447,7 +489,7 @@ export function useApi() {
   const post = (...args: Parameters<typeof postJson>) => postJson(...args)
   const postWithSocket = (...args: Parameters<typeof postJsonWithSocket>) => postJsonWithSocket(...args)
 
-  return { ensureCsrf, getXsrfFromCookie, getAuthToken, getAuthTokenAsync, get, getAsync, getPublic, post, postJson, postJsonAsync, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, patchJson, putJson, del, handleAuthStatus, parseResponse, clearAuthCache }
+  return { ensureCsrf, getXsrfFromCookie, getAuthToken, getAuthTokenAsync, get, getAsync, getPublic, post, postJson, postJsonAsync, postJsonPublic, postWithSocket, postJsonWithSocket, postFormData, postFormDataAsync, patchJson, putJson, del, handleAuthStatus, parseResponse, clearAuthCache }
 }
 
 export default useApi

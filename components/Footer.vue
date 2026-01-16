@@ -6,9 +6,10 @@
           <img src="/logo/modeh-logo.png" alt="Modeh" class="h-8" />
         </div>
         <div class="mt-3 text-sm text-brand-600/80">Create and take beautiful quizzes — for quiz-mastering, classrooms and practice. Fast to build, fun to take.</div>
-        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <NuxtLink to="/register/quiz-master" class="w-full text-center px-4 py-2 rounded font-medium block bg-brand-600 text-white hover:bg-brand-700">Quiz‑master register</NuxtLink>
-          <NuxtLink to="/register/quizee" class="w-full text-center px-4 py-2 rounded font-medium block bg-brand-600 text-white hover:bg-brand-700">Quizee register</NuxtLink>
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <NuxtLink to="/register/quiz-master" class="w-full text-center px-6 py-3 rounded-xl font-semibold block bg-brand-600 text-white hover:bg-brand-700 shadow-sm">Quiz‑master register</NuxtLink>
+          <NuxtLink to="/register/quizee" class="w-full text-center px-6 py-3 rounded-xl font-semibold block bg-brand-600 text-white hover:bg-brand-700 shadow-sm">Quizee register</NuxtLink>
+          <NuxtLink to="/register/parent" class="w-full text-center px-6 py-3 rounded-xl font-semibold block bg-brand-600 text-white hover:bg-brand-700 shadow-sm">Parent register</NuxtLink>
         </div>
       </div>
 

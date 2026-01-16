@@ -437,6 +437,8 @@ async function skipToDashboard() {
     const userRole = auth.user?.role || 'quizee'
     if (userRole === 'quiz-master') {
       router.push('/quiz-master/dashboard')
+    } else if (userRole === 'parent') {
+      router.push('/parent/dashboard')
     } else {
       router.push('/quizee/dashboard')
     }
@@ -505,6 +507,8 @@ async function finalize() {
       // Redirect to appropriate dashboard
       if (me.role === 'quiz-master') {
         router.push('/quiz-master/dashboard')
+      } else if (me.role === 'parent') {
+        router.push('/parent/dashboard')
       } else {
         router.push('/quizee/dashboard')
       }

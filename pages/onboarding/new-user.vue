@@ -18,6 +18,10 @@
             <input type="radio" v-model="role" value="quiz-master" />
             <span>Quiz Master</span>
           </label>
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="radio" v-model="role" value="parent" />
+            <span>Parent</span>
+          </label>
         </div>
       </div>
 
@@ -73,7 +77,7 @@ async function submit() {
       return
     }
 
-    const stepName = role.value === 'quiz-master' ? 'role_quiz-master' : 'role_quizee'
+    const stepName = role.value === 'quiz-master' ? 'role_quiz-master' : (role.value === 'parent' ? 'role_parent' : 'role_quizee')
     // Ensure CSRF cookie is initialized before POSTing — the backend validates XSRF
     // for stateful API calls even when an API token may be present.
     try {
@@ -103,9 +107,14 @@ async function submit() {
       try { await update() } catch (e) { console.debug('Session update not supported or failed', e) }
     }
 
-    message.value = `Success! Welcome ${session?.user?.name || 'to Modeh'}. Continuing to profile setup.`
-    // After role is set, go to the main onboarding page which will continue with institution/education details
-    setTimeout(() => router.replace('/onboarding'), 1000)
+    message.value = `Success! Welcome ${session?.user?.name || 'to Modeh'}.`
+    // If the user chose Parent, send them straight to the parent dashboard (minimal onboarding)
+    if (role.value === 'parent') {
+      setTimeout(() => router.replace('/parent/dashboard'), 800)
+    } else {
+      // After role is set, go to the main onboarding page which will continue with institution/education details
+      setTimeout(() => router.replace('/onboarding'), 800)
+    }
   } catch (e) {
     console.error(e)
     error.value = e?.message || 'Failed to save role'

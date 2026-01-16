@@ -162,7 +162,10 @@
             <p class="mx-auto mt-4 max-w-2xl text-lg text-white/90">
               Join 50,000+ Quizees who've already improved their grades. Start practicing today and see results in your next exam.
             </p>
-            <NuxtLink to="/register/quizee" class="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90 sm:w-auto">Start Boosting My Grades Free</NuxtLink>
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <NuxtLink to="/register/quizee" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90">Start Boosting My Grades Free</NuxtLink>
+              <NuxtLink to="/register/parent" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-brand-700">I'm a Parent</NuxtLink>
+            </div>
           </div>
         </div>
       </div>

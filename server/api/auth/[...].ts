@@ -119,7 +119,7 @@ export default NuxtAuthHandler({
     }
   },
   callbacks: {
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile }: any) {
       if (user) {
         token.id = user.id
         token.role = (user as any).role
@@ -177,7 +177,7 @@ export default NuxtAuthHandler({
       
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (session.user) {
         (session.user as any).id = token.id as string
         (session.user as any).role = token.role as string
@@ -202,4 +202,4 @@ export default NuxtAuthHandler({
       console.log('[Auth Event] linkAccount:', JSON.stringify(message))
     }
   } : {}) as any
-})
+} as any)

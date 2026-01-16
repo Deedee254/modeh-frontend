@@ -297,10 +297,26 @@ if (process.client) {
   }
 }
 
-function handleSubscribeClick(pkg) {
+async function handleSubscribeClick(pkg) {
   if (isActive.value && activePackageName.value === pkg.name) {
     return // Button is disabled
   }
+
+  // If the package is free (price is 0 or falsy), subscribe automatically
+  const priceNum = Number(pkg?.price || 0)
+  if (!priceNum) {
+    try {
+      // Call store subscribe which returns parsed data and refreshes subscription
+      await subscriptionsStore.subscribeToPackage(pkg, {})
+      await subscriptionsStore.fetchMySubscription(true)
+      // notify user
+      useAppAlert().push({ type: 'success', message: `You're now subscribed to ${pkg.name || 'the free plan'}.` })
+    } catch (err) {
+      useAppAlert().push({ type: 'error', message: err.message || 'Failed to subscribe to free plan.' })
+    }
+    return
+  }
+
   selectedPackage.value = pkg
   showPaymentModal.value = true
 }

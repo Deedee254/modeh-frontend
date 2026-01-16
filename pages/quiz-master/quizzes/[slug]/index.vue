@@ -5,6 +5,7 @@
     <StickyShareButton
       itemType="Quiz"
       :itemId="quiz.id"
+      :itemSlug="quiz.slug"
       :itemTitle="`${quiz.title} - Check it out on Modeh!`"
       :disabled="!quiz.id"
     />

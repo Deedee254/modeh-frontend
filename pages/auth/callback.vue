@@ -72,6 +72,7 @@ onMounted(async () => {
     
     if (user.role === 'quiz-master') dashboard = '/quiz-master/dashboard'
     else if (user.role === 'quizee') dashboard = '/quizee/dashboard'
+    else if (user.role === 'parent') dashboard = '/parent/dashboard'
     else if (user.role === 'institution-manager') dashboard = '/institution-manager/dashboard'
     else if (user.role === 'admin') {
       window.location.href = `${config.public.apiBase}/admin`

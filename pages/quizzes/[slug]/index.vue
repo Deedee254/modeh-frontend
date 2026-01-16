@@ -208,7 +208,7 @@
                   </button>
                   <AffiliateShareButton 
                     :itemType="'Quiz'"
-                    :itemId="quiz.id"
+                    :itemSlug="quiz.slug"
                     :baseUrl="baseUrl"
                   />
                 </div>
@@ -539,6 +539,9 @@ const related = ref([
 // Mock last attempt (replace with actual API call)
 const lastAttempt = ref(null)
 
+// Echo channel management for quiz likes
+let _quizChannel = null
+
 // Watch for guest quiz attempts
 watch(() => quiz.value?.id, (quizId) => {
   if (quizId) {
@@ -560,9 +563,6 @@ watch(() => quiz.value?.id, (quizId) => {
     attachQuizChannelListener(quizId)
   }
 }, { immediate: true })
-
-// Echo channel management for quiz likes
-let _quizChannel = null
 
 function attachQuizChannelListener(quizId) {
   if (typeof window === 'undefined' || !window.Echo || !quizId) return

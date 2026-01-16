@@ -172,8 +172,8 @@ const user = computed<User>(() => {
   // If it's a ref with a .value property, unwrap it; otherwise use it directly
   return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
 })
-// Prefer `avatarUrl` then fallback to `avatar` and resolve relative paths
-const userAvatar = computed(() => resolveAssetUrl(user.value?.avatarUrl || user.value?.avatar) || '/logo/avatar-placeholder.png')
+// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
+const userAvatar = computed(() => resolveAssetUrl((auth as any).userAvatar) || '/logo/avatar-placeholder.png')
 
 // Get profile based on role
 const profile = computed(() => {

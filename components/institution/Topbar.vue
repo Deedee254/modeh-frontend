@@ -153,10 +153,7 @@ const subscriptionsLink = computed(() => ({ path: '/institution-manager/subscrip
 
 const settingsLink = computed(() => ({ path: '/institution-manager/settings', query: _instSlug.value ? { institutionSlug: String(_instSlug.value) } : {} }))
 
-const userAvatar = computed(() => {
-  const user = auth.user as User | null
-  return resolveAssetUrl(user?.avatarUrl || user?.avatar || user?.avatar_url) || '/logo/avatar-placeholder.png'
-})
+const userAvatar = computed(() => resolveAssetUrl((auth as any).userAvatar) || '/logo/avatar-placeholder.png')
 
 function logout() {
   open.value = false

@@ -397,8 +397,8 @@ const userUsername = computed(() => {
   return 'user'
 })
 
-// Prefer the auth store's camelCase `avatarUrl` while falling back to legacy keys for safety.
-const userAvatar = computed(() => resolveAssetUrl(user.value?.avatarUrl || user.value?.avatar || user.value?.avatar_url) || '/logo/avatar-placeholder.png')
+// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
+const userAvatar = computed(() => resolveAssetUrl((auth as any).userAvatar) || '/logo/avatar-placeholder.png')
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points
   return typeof p === 'number' ? `${p}` : '0'

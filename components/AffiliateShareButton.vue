@@ -176,6 +176,10 @@ const props = defineProps({
     default: null,
     required: false
   },
+  itemSlug: {
+    type: String,
+    default: null
+  },
   baseUrl: {
     type: String,
     default: null
@@ -240,7 +244,9 @@ const affiliateLink = computed(() => {
   // Prefer the affiliate relation's referral_code, then any appended affiliate_code on user,
   // then a cached value fetched from /api/affiliates/me. If none, return base without query.
   const code = auth.user?.affiliate?.referral_code ?? auth.user?.affiliate_code ?? fetchedAffiliateCode.value ?? ''
-  const idPart = props.itemId !== null && props.itemId !== undefined ? `/${props.itemId}` : ''
+  // Prefer itemSlug when provided (routes now use slugs), fall back to itemId for compatibility
+  const slugOrId = props.itemSlug ?? props.itemId
+  const idPart = slugOrId !== null && slugOrId !== undefined ? `/${slugOrId}` : ''
   if (!code) return `${base}${idPart}`
   return `${base}${idPart}?ref=${encodeURIComponent(code)}`
 })
@@ -248,7 +254,8 @@ const affiliateLink = computed(() => {
 // Compute a direct link (no affiliate query) for users who want to share the plain URL
 const directLink = computed(() => {
   const base = computedBaseUrl.value
-  const idPart = props.itemId !== null && props.itemId !== undefined ? `/${props.itemId}` : ''
+  const slugOrId = props.itemSlug ?? props.itemId
+  const idPart = slugOrId !== null && slugOrId !== undefined ? `/${slugOrId}` : ''
   return `${base}${idPart}`
 })
 

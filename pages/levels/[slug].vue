@@ -75,7 +75,8 @@ onMounted(async () => {
     // fetch level metadata from API using slug
     try {
       const res = await $fetch(`${config.public.apiBase}/api/levels?slug=${slug.value}`)
-      const levelData = (res && res.levels && res.levels[0]) ? res.levels[0] : ((res && res.level) ? res.level : (res || {}))
+      // Support multiple API shapes: { levels: [...] }, { level: {...} }, { data: [...] }, or direct object
+      const levelData = res?.levels?.[0] ?? res?.level ?? res?.data?.[0] ?? res ?? {}
       level.value = levelData
     } catch (e) {
       // ignore level fetch error; we will still try to render grades from taxonomy

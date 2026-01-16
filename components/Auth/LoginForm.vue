@@ -204,6 +204,9 @@ async function redirectAfterAuth(user) {
     'quizee': '/quizee/dashboard'
   }
 
+  // Ensure parent users are redirected to the parent dashboard
+  routes['parent'] = '/parent/dashboard'
+
   if (routes[role]) return router.push(routes[role])
 
   if (role === 'institution-manager') {
