@@ -135,13 +135,17 @@ export const useAuthStore = defineStore('auth', () => {
     _fetchUserPromise = (async () => {
       try {
         const res = await api.get('/api/me')
-      if (res.status === 401 || res.status === 419 || res.status === 403) {
-        // If API says unauthorized but nuxt-auth says authorized, something is out of sync
+      if (res.status === 401) {
+        // If API says unauthenticated but nuxt-auth says authenticated, something is out of sync
         if (status.value === 'authenticated') {
            const { signOut } = useAuth()
            signOut({ redirect: false }).catch(() => {})
         }
         clear()
+        return null
+      }
+      if (res.status === 419 || res.status === 403) {
+        // CSRF or Forbidden - don't force logout, just return null for now
         return null
       }
       if (!res.ok) return

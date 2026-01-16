@@ -128,7 +128,59 @@ export default NuxtAuthHandler({
           })(),
           sameSite: 'lax',
           path: '/',
-          // Remove maxAge to let session control expiration
+        }
+      },
+      // Ensure state and callback cookies share the same security settings
+      // to avoid "State cookie was missing" errors during OAuth callbacks.
+      state: {
+        name: `authjs.state`,
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: (() => {
+            try {
+              const cfg = useRuntimeConfig()
+              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
+              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
+            } catch (e) {
+              return process.env.NODE_ENV === 'production'
+            }
+          })()
+        }
+      },
+      callbackUrl: {
+        name: `authjs.callback-url`,
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: (() => {
+            try {
+              const cfg = useRuntimeConfig()
+              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
+              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
+            } catch (e) {
+              return process.env.NODE_ENV === 'production'
+            }
+          })()
+        }
+      },
+      csrfToken: {
+        name: `authjs.csrf-token`,
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: (() => {
+            try {
+              const cfg = useRuntimeConfig()
+              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
+              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
+            } catch (e) {
+              return process.env.NODE_ENV === 'production'
+            }
+          })()
         }
       }
     },
