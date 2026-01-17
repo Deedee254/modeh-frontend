@@ -73,21 +73,28 @@ export default defineNuxtRouteMiddleware(async (to) => {
     // 3. Profile Completion & Onboarding Checks
     // Skip these if we are already on an onboarding/profile page to avoid loops
     if (!path.startsWith('/onboarding')) {
-        // New users (no role) must choose a role
-        if (!user.role) {
+        // New users must choose a role. This includes social signups where
+        // the backend marks the account as `isNewUser` (or doesn't provide a role).
+        if (!user.role || (user as any).isNewUser === true) {
             return navigateTo('/onboarding/new-user')
         }
 
-        // Check for missing profile fields (if the backend provides this info)
-        const missingFields = (user as any).missingProfileFields || []
-        if (missingFields.length > 0) {
-            return navigateTo('/onboarding')
-        }
-        
-        // Legacy check for is_profile_completed flag - redirect to onboarding
-        const isProfileCompleted = user.is_profile_completed ?? (user as any).isProfileCompleted
-        if (isProfileCompleted === false) {
-            return navigateTo('/onboarding')
+        // Parents do not require the full onboarding flow — skip completion checks for them
+        if (user.role === 'parent') {
+            // allow parents to continue to their dashboard without onboarding
+        } else {
+            // Check for missing profile fields (if the backend provides this info)
+            const missingFields = (user as any).missingProfileFields || []
+            if (missingFields.length > 0) {
+                // Non-blocking: do not redirect. A banner will be shown in the layout
+                // to prompt the user to complete their profile at their convenience.
+            }
+
+            // Legacy check for is_profile_completed flag - show banner instead of redirect
+            const isProfileCompleted = user.is_profile_completed ?? (user as any).isProfileCompleted
+            if (isProfileCompleted === false) {
+                // Non-blocking: banner will surface in the UI; avoid forcing navigation.
+            }
         }
     }
 

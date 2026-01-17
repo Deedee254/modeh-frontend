@@ -8,8 +8,11 @@
       </div>
       <div class="flex-1 flex flex-col">
         <TopBar />
+        <div class="px-6 pt-4">
+          <ProfileIncompleteBanner />
+        </div>
         <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
-      <slot></slot>
+          <slot></slot>
         </main>
       </div>
     </div>
@@ -22,6 +25,9 @@
       </div>
       <div class="flex-1 flex flex-col">
         <TopBar />
+        <div class="px-6 pt-4">
+          <ProfileIncompleteBanner />
+        </div>
         <main class="p-6 flex-1 overflow-auto pb-20 md:pb-6">
           <slot />
         </main>
@@ -53,6 +59,7 @@ import { useSidebar } from '~/composables/useSidebar'
 import QuizeeSidebar from '~/components/QuizeeSidebar.vue'
 import QuizMasterSidebar from '~/components/QuizMasterSidebar.vue'
 import TopBar from '~/components/TopBar.vue'
+import ProfileIncompleteBanner from '~/components/ProfileIncompleteBanner.vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
