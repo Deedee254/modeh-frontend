@@ -51,18 +51,25 @@ export default defineNuxtRouteMiddleware(async (to) => {
             auth.setUser(data.value.user)
         }
         
-        // If the session data says the profile is incomplete, we MUST verify with the backend
-        // before redirecting to onboarding, because the JWT data might be stale (e.g., user
-        // just completed onboarding in a previous session or via another tab).
-        const sessionIncomplete = (data.value.user as any).isProfileCompleted === false || 
-                                 (data.value.user as any).is_profile_completed === false ||
-                                 !(data.value.user as any).role
-        
-        if (sessionIncomplete && !path.startsWith('/onboarding')) {
-            // Await full user fetch to see if they actually finished onboarding
+        // If the session data suggests onboarding isn't finished, verify with backend
+        // before making navigation decisions. Prefer the `onboarding` object from
+        // the API response when available since it contains step-level flags.
+        const rawUser = data.value.user as any
+        const onboarding = rawUser?.onboarding
+
+        const sessionNeedsVerification = (
+            // explicit presence of onboarding.profile_completed
+            (onboarding && onboarding.profile_completed === false) ||
+            // legacy flags
+            rawUser.isProfileCompleted === false || rawUser.is_profile_completed === false ||
+            // missing role info
+            !rawUser.role
+        )
+
+        if (sessionNeedsVerification && !path.startsWith('/onboarding')) {
+            // Await full user fetch to get the freshest onboarding state
             await auth.fetchUser()
         } else if (!auth.user?.id) {
-            // Background fetch if store is still empty for some reason
             if (process.client) auth.fetchUser().catch(() => {})
         }
     }
@@ -75,7 +82,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (!path.startsWith('/onboarding')) {
         // New users must choose a role. This includes social signups where
         // the backend marks the account as `isNewUser` (or doesn't provide a role).
-        if (!user.role || (user as any).isNewUser === true) {
+        // Also prefer the `onboarding.role_selected` flag from the API payload —
+        // if it's explicitly false the user needs to complete role selection.
+        const onboarding = (user as any).onboarding
+        const roleSelectedFlag = onboarding?.role_selected
+
+        if (!user.role || (user as any).isNewUser === true || roleSelectedFlag === false) {
             return navigateTo('/onboarding/new-user')
         }
 
@@ -90,8 +102,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
                 // to prompt the user to complete their profile at their convenience.
             }
 
-            // Legacy check for is_profile_completed flag - show banner instead of redirect
-            const isProfileCompleted = user.is_profile_completed ?? (user as any).isProfileCompleted
+            // Prefer onboarding.profile_completed when available; fall back to
+            // legacy flags. Keep this non-blocking (banner will remind the user).
+            const onboardingObj = (user as any).onboarding
+            const isProfileCompleted = onboardingObj?.profile_completed ?? user.is_profile_completed ?? (user as any).isProfileCompleted
             if (isProfileCompleted === false) {
                 // Non-blocking: banner will surface in the UI; avoid forcing navigation.
             }
