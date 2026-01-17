@@ -233,7 +233,14 @@ const computedBaseUrl = computed(() => {
   if (props.baseUrl) {
     return props.baseUrl.endsWith('/') ? props.baseUrl.slice(0, -1) : props.baseUrl
   }
-  // Default base URL based on item type
+  // Minimal special-casing: backend expects `/tournament/{id}` (singular)
+  const type = props.itemType?.toLowerCase?.()
+  if (type === 'tournament' || type === 'tournaments') {
+    const base = `${config.public.baseUrl}/tournaments`
+    return base.endsWith('/') ? base.slice(0, -1) : base
+  }
+
+  // Default base URL based on item type (keep existing behavior for other types)
   const base = `${config.public.baseUrl}/${props.itemType.toLowerCase()}s`
   return base.endsWith('/') ? base.slice(0, -1) : base
 })
@@ -244,8 +251,14 @@ const affiliateLink = computed(() => {
   // Prefer the affiliate relation's referral_code, then any appended affiliate_code on user,
   // then a cached value fetched from /api/affiliates/me. If none, return base without query.
   const code = auth.user?.affiliate?.referral_code ?? auth.user?.affiliate_code ?? fetchedAffiliateCode.value ?? ''
-  // Prefer itemSlug when provided (routes now use slugs), fall back to itemId for compatibility
-  const slugOrId = props.itemSlug ?? props.itemId
+  // Prefer itemSlug generally, but for tournaments prefer numeric id (backend uses /tournament/id)
+  const type = props.itemType?.toLowerCase?.()
+  let slugOrId = null
+  if (type === 'tournament' || type === 'tournaments') {
+    slugOrId = props.itemId ?? props.itemSlug
+  } else {
+    slugOrId = props.itemSlug ?? props.itemId
+  }
   const idPart = slugOrId !== null && slugOrId !== undefined ? `/${slugOrId}` : ''
   if (!code) return `${base}${idPart}`
   return `${base}${idPart}?ref=${encodeURIComponent(code)}`

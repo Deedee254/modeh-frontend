@@ -766,6 +766,18 @@ watch(
   () => props.modelValue,
   async (newValue) => {
     if (newValue) {
+      // Avoid re-initializing when the incoming modelValue is identical
+      // to our current internal selections (this prevents a loop where
+      // child emits update:modelValue -> parent writes same object ->
+      // child watcher resets currentStep back to level).
+      try {
+        const incoming = JSON.stringify(newValue)
+        const current = JSON.stringify(selections.value)
+        if (incoming === current) return
+      } catch (e) {
+        // If stringify fails, continue with normal behavior
+      }
+
       selections.value = JSON.parse(JSON.stringify(newValue))
       
       // Normalize subject to match multiSelectSubjects mode

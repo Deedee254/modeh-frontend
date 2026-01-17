@@ -89,7 +89,7 @@
       :itemId="itemId"
       :itemSlug="itemSlug"
       :itemTitle="itemTitle"
-      :baseUrl="baseUrl"
+      :baseUrl="childBaseUrl"
     />
   </div>
 </template>
@@ -128,6 +128,24 @@ const shareUrl = computed(() => {
 
 const shareTitle = computed(() => {
   return props.itemTitle || `Check out this ${props.itemType.toLowerCase()} on Modeh!`
+})
+
+// Compute a child-facing baseUrl that includes the resource path
+const childBaseUrl = computed(() => {
+  const b = props.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  if (!b) return ''
+  const type = (props.itemType || '').toLowerCase()
+  if (type === 'quiz' || type === 'quizzes') {
+    if (b.endsWith('/quizzes')) return b
+    if (b.endsWith('/')) return `${b}quizzes`
+    return `${b}/quizzes`
+  }
+  if (type === 'tournament' || type === 'tournaments') {
+    if (b.endsWith('/tournaments')) return b
+    if (b.endsWith('/')) return `${b}tournaments`
+    return `${b}/tournaments`
+  }
+  return b.endsWith('/') ? b.slice(0, -1) : b
 })
 
 // Show/hide button on scroll (optional: hide when scrolled to bottom)

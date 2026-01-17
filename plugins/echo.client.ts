@@ -146,9 +146,25 @@ function initializeEcho(config: any, isDev: boolean) {
               return callback(new Error(`Auth failed: ${resp?.status} ${resp?.statusText} - ${bodyText}`), null)
             }
 
-            const data = await resp.json()
-            if (!data || (typeof data.auth !== 'string' && !data.auth)) {
+            let data = null
+            try {
+              data = await resp.json()
+            } catch (e) {
+              data = null
+            }
 
+            // For presence channels, Pusher expects a `channel_data` field containing
+            // the current user's id and info. The server must compute the auth
+            // signature using the exact `channel_data` it returns. Constructing
+            // `channel_data` on the client side breaks the signature (invalid HMAC).
+            // If `channel_data` is missing, fail the auth and ask for a server fix.
+            const isPresence = String(channel.name).startsWith('presence-')
+            if (isPresence && data && !data.channel_data) {
+              console.error('[Echo] Presence auth response missing channel_data. Backend must return channel_data for presence channels.');
+              return callback(new Error('Presence auth missing channel_data from server'), null)
+            }
+
+            if (!data || (typeof data.auth !== 'string' && !data.auth)) {
               return callback(new Error('Auth response missing auth info'), null)
             }
 

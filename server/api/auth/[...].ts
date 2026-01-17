@@ -94,7 +94,9 @@ export default NuxtAuthHandler({
               role: data.role || 'user',
               image: data.image || data.avatar,
               // Store the API token from backend so we can use it for authenticated API calls
-              apiToken: data.token
+              apiToken: data.token,
+              // Keep raw backend response for pass-through into session.user
+              rawUser: data
             }
           }
           return null
@@ -230,7 +232,17 @@ export default NuxtAuthHandler({
             token.apiToken = data.token
             token.isNewUser = data.isNewUser  
             token.role = data.role
-            token.isProfileCompleted = data.user?.is_profile_completed || data.isProfileCompleted
+            // Prefer explicit boolean values from backend without treating `false` as missing.
+            // Accept both snake_case and camelCase shapes from the API response.
+            token.isProfileCompleted = (
+              data.user?.is_profile_completed ??
+              data.user?.isProfileCompleted ??
+              data.is_profile_completed ??
+              data.isProfileCompleted ??
+              undefined
+            )
+            // Attach raw backend response so frontend can read backend fields directly
+            token.rawUser = data.user ?? data
             console.log('[Auth] apiToken obtained from backend, isProfileCompleted:', token.isProfileCompleted)
           } else {
             console.warn('[Auth] Failed to fetch apiToken from backend:', res.status, res.statusText)
@@ -259,6 +271,10 @@ export default NuxtAuthHandler({
         (session.user as any).isNewUser = token.isNewUser as boolean  
         (session.user as any).isProfileCompleted = token.isProfileCompleted as boolean
         (session.user as any).image = token.image as string
+        // Merge any raw backend response into session.user so frontend sees backend field names.
+        if (token.rawUser && typeof token.rawUser === 'object') {
+          Object.assign(session.user, token.rawUser)
+        }
       }
       return session
     }

@@ -164,6 +164,15 @@ export function useProfileForm() {
    * Handles both user data and role-specific profile data.
    */
   async function saveProfile(form, isQuizMasterOrRole, originalForm) {
+    // If caller didn't supply an originalForm for change-detection,
+    // build it from the current auth user so comparisons are safe.
+    if (!originalForm) {
+      try {
+        originalForm = createFormState(auth.user)
+      } catch (e) {
+        originalForm = {}
+      }
+    }
     try {
       // Validate form
       const errors = validateForm(form)
