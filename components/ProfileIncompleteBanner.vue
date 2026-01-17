@@ -29,7 +29,7 @@ onMounted(() => {
 const route = useRoute()
 
 const isIncomplete = computed(() => {
-  const u = auth.user as any
+  const u = auth.user
   return !!u && (u.is_profile_completed === false || u.isProfileCompleted === false)
 })
 
