@@ -77,13 +77,13 @@ import resolveAssetUrl from '~/composables/useAssets'
 
 const route = useRoute()
 const router = useRouter()
-const id = route.params.id
+const slug = route.params.slug
 
 // --- Core State ---
 // Provide a defensive default shape so SSR/template rendering never reads properties
 // off an undefined `quiz` value.
 const quiz = ref({
-  id: id || null,
+  id: slug || null,
   title: 'Loading...',
   description: '',
   questions: [],
@@ -159,7 +159,7 @@ const { isImage, isAudio, isYouTube, getAudioType, formatYouTubeUrl } = useQuizM
 const { timeLeft, displayTime, timerPercent, timerColorClass, lastAnnouncement, startTimer, stopTimer } = useQuizTimer(quiz, () => submitAnswers())
 // per-question timer composable
 const { timePerQuestion, questionRemaining, questionStartTs, displayTime: qDisplayTime, timerColorClass: qTimerColorClass, startTimer: startQuestionTimer, stopTimer: stopQuestionTimer, resetTimer, recordAndReset, schedulePerQuestionLimit, clearPerQuestionLimit } = useQuestionTimer(20)
-const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, id)
+const { answers, initializeAnswers, selectMcq: rawSelectMcq, toggleMulti: rawToggleMulti, updateBlank, clearSavedAnswers } = useQuizAnswers(quiz, slug)
 import { normalizeAnswer, formatAnswersForSubmission } from '~/composables/useAnswerNormalization'
 
 // Timer circle SVG properties
@@ -210,7 +210,7 @@ const questionTimes = ref({})
 
 let persistTimeoutRef = { t: null }
 function progressKey() {
-  return `quiz:attempt:progress:${quiz.value?.id || id}:${quiz.value?._attempt_id || 'draft'}`
+  return `quiz:attempt:progress:${quiz.value?.id || slug}:${quiz.value?._attempt_id || 'draft'}`
 }
 
 function restoreProgress() {
@@ -219,7 +219,7 @@ function restoreProgress() {
     if (!raw) {
       // No attempt-specific saved progress yet. Try to migrate any existing 'draft' progress
       try {
-        const legacyKey = `quiz:attempt:progress:${quiz.value?.id || id}:draft`
+        const legacyKey = `quiz:attempt:progress:${quiz.value?.id || slug}:draft`
         const legacyRaw = localStorage.getItem(legacyKey)
         if (legacyRaw) {
           // copy legacy to the new key so future saves use the server attempt id
@@ -263,7 +263,7 @@ function persistProgress() {
     if (persistTimeoutRef.t) clearTimeout(persistTimeoutRef.t)
     persistTimeoutRef.t = setTimeout(() => {
       const payload = {
-        quiz_id: quiz.value?.id || id,
+        quiz_id: quiz.value?.id || slug,
         attempt_id: quiz.value?._attempt_id || null,
         started_at: quiz.value?._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : null,
         answers: answers.value,
@@ -470,7 +470,7 @@ function initializeQuestionTimer() {
 onMounted(async () => {
   const cfg = useRuntimeConfig()
   try {
-    const res = await api.get(`/api/quizzes/${id}`)
+    const res = await api.get(`/api/quizzes/${slug}`)
     if (api.handleAuthStatus(res)) { /* auth redirect handled */ }
     else if (res && res.ok) {
       const body = await res.json()
@@ -479,7 +479,7 @@ onMounted(async () => {
         // Try to create a server-side attempt to get authoritative attempt_id and started_at.
         // If that fails (unauthenticated or network), fall back to a client-side started_at timestamp.
         try {
-          const startRes = await api.postJson(`/api/quizzes/${id}/start`, {})
+          const startRes = await api.postJson(`/api/quizzes/${slug}/start`, {})
           if (!api.handleAuthStatus(startRes) && startRes && startRes.ok) {
             const startBody = await startRes.json().catch(() => null)
             quiz.value._attempt_id = startBody?.attempt_id ?? startBody?.attempt?.id ?? null
@@ -585,7 +585,7 @@ async function submitAnswers() {
   console.log('Number of answers in payload:', finalAnswers.length)
   console.log('First few answers detail:', finalAnswers.slice(0, 3))
   
-    const res = await api.postJson(`/api/quizzes/${id}/submit`, payload)
+    const res = await api.postJson(`/api/quizzes/${slug}/submit`, payload)
     console.log('Submission response status:', res.status)
     if (api.handleAuthStatus(res)) { pushAlert({ message: 'Session expired — please sign in again', type: 'warning' }); lastSubmitFailed.value = true; submissionMessage.value = ''; submitting.value = false; showConfirm.value = false; return }
     if (res.ok) {
@@ -612,7 +612,7 @@ async function submitAnswers() {
       }
 
       // No attempt id returned — redirect to checkout with quiz id so user can continue to payment flow
-      router.push(`/quizee/payments/checkout?type=quiz&quiz_id=${id}`)
+      router.push(`/quizee/payments/checkout?type=quiz&quiz_id=${quiz.value?.id || slug}`)
       return
   } else {
       // restore optimistic to null to indicate failure

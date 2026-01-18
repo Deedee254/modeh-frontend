@@ -726,7 +726,7 @@ function handleResultsModalClose() {
 }
 
 function handleSignup() {
-  router.push('/register')
+  router.push('/register/quizee')
 }
 
 function handleLogin() {

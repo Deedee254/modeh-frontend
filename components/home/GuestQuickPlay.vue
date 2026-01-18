@@ -74,7 +74,45 @@
            🏆
         </div>
         <h3 class="text-2xl font-bold text-slate-900 mb-2">Great Job!</h3>
-        <p class="text-slate-600 mb-6">You scored <span class="font-bold text-brand-600">{{ score }}</span> out of {{ totalQuestions }}</p>
+        
+        <!-- Results Card with Blur Effect for Guests -->
+        <div class="w-full max-w-xs mb-6 p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 relative">
+           <!-- Blur overlay -->
+           <div v-if="!auth.user" class="absolute inset-0 rounded-xl bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
+              <div class="text-center">
+                 <p class="text-sm font-semibold text-slate-900 mb-2">Sign up to see your full results</p>
+                 <p class="text-xs text-slate-500">Including your percentile rank and detailed breakdown</p>
+              </div>
+           </div>
+           
+           <!-- Score -->
+           <div class="mb-4">
+              <div class="text-4xl font-bold text-brand-600">{{ scorePercentage }}%</div>
+              <p class="text-sm text-slate-600 mt-1">Score</p>
+           </div>
+           
+           <!-- Breakdown -->
+           <div class="grid grid-cols-2 gap-3">
+              <div class="bg-white rounded-lg p-3 border border-slate-200">
+                 <div class="text-lg font-bold text-green-600">{{ score }}</div>
+                 <div class="text-xs text-slate-600">Correct</div>
+              </div>
+              <div class="bg-white rounded-lg p-3 border border-slate-200">
+                 <div class="text-lg font-bold text-red-600">{{ totalQuestions - score }}</div>
+                 <div class="text-xs text-slate-600">Incorrect</div>
+              </div>
+           </div>
+           
+           <!-- Percentile (blurred for guests) -->
+           <div v-if="!auth.user" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p class="text-xs font-semibold text-blue-900">Estimated percentile</p>
+              <p class="text-sm font-bold text-blue-700">Top {{ percentile }}%</p>
+           </div>
+           <div v-else class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p class="text-xs font-semibold text-blue-900">Your percentile</p>
+              <p class="text-sm font-bold text-blue-700">Top {{ percentile }}%</p>
+           </div>
+        </div>
         
         <div class="space-y-3 w-full max-w-xs">
            <NuxtLink to="/register/quizee" class="block w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg transition-colors">
@@ -329,6 +367,13 @@ const questions = ref<any[]>([])
 const totalQuestions = computed(() => questions.value.length)
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
 const progress = computed(() => ((currentQuestionIndex.value) / totalQuestions.value) * 100)
+const scorePercentage = computed(() => totalQuestions.value > 0 ? Math.round((score.value / totalQuestions.value) * 100) : 0)
+const percentile = computed(() => {
+  // Simple percentile calculation: 100 - scorePercentage (top performers get higher percentile)
+  // In a real app, this would be based on actual user distribution
+  const perc = Math.max(1, 100 - scorePercentage.value)
+  return perc
+})
 const isCorrect = computed(() => {
   if (!selectedOptionId.value) return false
   const opt = currentQuestion.value.options.find((o:any) => o.id === selectedOptionId.value)
