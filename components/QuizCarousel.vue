@@ -25,7 +25,7 @@
     >
       <div 
         v-for="(quiz, idx) in displayQuizzes" 
-        :key="`${quiz.id}-${idx}`" 
+        :key="quiz.slug || idx" 
         class="flex-shrink-0 w-full"
       >
         <QuizCard
@@ -33,7 +33,7 @@
           :title="quiz.title || 'Untitled'"
           :quizId="quiz.id"
           :cover="quiz.cover_image || ''"
-          :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
+          :to="{ path: `/quizzes/${quiz.slug}` }"
           :horizontal="true"
           :difficulty="quiz.difficulty"
           :level="quiz.level_name"
@@ -49,22 +49,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
-
-interface Quiz {
-  id: string | number
-  slug?: string
-  title?: string
-  description?: string
-  cover_image?: string
-  difficulty?: string
-  questions_count?: number
-  attempts_count?: number
-  likes?: number
-  level_name?: string
-  subject_name?: string
-  topic_name?: string
-  created_at?: string
-}
+import type { Quiz } from '~/types'
 
 const props = withDefaults(
   defineProps<{

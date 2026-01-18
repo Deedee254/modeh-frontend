@@ -17,7 +17,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <TopicCard
           v-for="(topic, idx) in (Array.isArray(popularTopics) ? popularTopics.filter(Boolean) : [])"
-          :key="topic?.id || idx"
+          :key="topic?.slug || idx"
           v-bind="topic"
           @click="topic && handleTopicClick(topic)"
         />
@@ -33,7 +33,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <GradeCard
           v-for="(grade, idx) in (Array.isArray(activeGrades) ? activeGrades.filter(Boolean) : [])"
-          :key="grade?.id || idx"
+          :key="grade?.slug || idx"
           v-bind="grade"
           @click="grade && handleGradeClick(grade)"
         />
@@ -49,7 +49,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <SubjectCard
           v-for="(subject, idx) in (Array.isArray(topSubjects) ? topSubjects.filter(Boolean) : [])"
-          :key="subject?.id || idx"
+          :key="subject?.slug || idx"
           v-bind="subject"
           @click="subject && handleSubjectClick(subject)"
         />
@@ -65,7 +65,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <QuizCard
           v-for="(quiz, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean) : [])"
-          :key="quiz?.id || idx"
+          :key="quiz?.slug || idx"
           v-bind="quiz"
           @click="quiz && handleQuizClick(quiz)"
         />

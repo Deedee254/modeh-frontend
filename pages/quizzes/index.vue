@@ -175,6 +175,7 @@ const query = ref('')
 const filterTopic = ref('')
 const gradeFilter = ref('')
 const subjectFilter = ref('')
+const levelFilter = ref('')
 const page = ref(1)
 
 onMounted(async () => {
@@ -182,8 +183,17 @@ onMounted(async () => {
 
   const q = route.query || {}
   if (q.topic_id) filterTopic.value = String(q.topic_id)
+  else if (q.topic) filterTopic.value = String(q.topic)
+
   if (q.subject_id) subjectFilter.value = String(q.subject_id)
+  else if (q.subject) subjectFilter.value = String(q.subject)
+
   if (q.grade_id) gradeFilter.value = String(q.grade_id)
+  else if (q.grade) gradeFilter.value = String(q.grade)
+
+  if (q.level_id) levelFilter.value = String(q.level_id)
+  else if (q.level) levelFilter.value = String(q.level)
+
   if (q.q) query.value = String(q.q)
 
   await doFetch()
@@ -200,51 +210,31 @@ async function doFetch() {
     per_page: 12
   }
   if (query.value) params.q = query.value
-  // Resolve topic/subject slugs to numeric ids when possible (backend filters expect ids)
-  const api = useApi()
+
+  // Use slugs directly if available as the backend now supports them
   if (filterTopic.value) {
-    const t = Number(filterTopic.value)
-    if (!Number.isNaN(t) && t > 0) params.topic_id = filterTopic.value
-    else {
-      // try local store first
-      const found = (store.topics || []).find(x => String(x?.slug) === String(filterTopic.value) || String(x?.name) === String(filterTopic.value))
-      if (found && found.id) params.topic_id = String(found.id)
-      else {
-        // fallback: try API lookup
-        try {
-          const res = await api.get(`/api/topics?per_page=20`)
-          if (res.ok) {
-            const json = await res.json()
-            const list = json?.topics || json?.data || []
-            const candidate = (Array.isArray(list) && list.find(ti => String(ti.slug) === String(filterTopic.value))) || null
-            if (candidate && candidate.id) params.topic_id = String(candidate.id)
-          }
-        } catch (e) {}
-      }
-    }
+    const isNumeric = String(filterTopic.value).match(/^\d+$/)
+    if (isNumeric) params.topic_id = filterTopic.value
+    else params.topic = filterTopic.value
   }
 
   if (subjectFilter.value) {
-    const s = Number(subjectFilter.value)
-    if (!Number.isNaN(s) && s > 0) params.subject_id = subjectFilter.value
-    else {
-      const found = (store.subjects || []).find(x => String(x?.slug) === String(subjectFilter.value) || String(x?.name) === String(subjectFilter.value))
-      if (found && found.id) params.subject_id = String(found.id)
-      else {
-        try {
-          const res = await api.get(`/api/subjects?per_page=20`)
-          if (res.ok) {
-            const json = await res.json()
-            const list = json?.subjects || json?.data || []
-            const candidate = (Array.isArray(list) && list.find(si => String(si.slug) === String(subjectFilter.value))) || null
-            if (candidate && candidate.id) params.subject_id = String(candidate.id)
-          }
-        } catch (e) {}
-      }
-    }
+    const isNumeric = String(subjectFilter.value).match(/^\d+$/)
+    if (isNumeric) params.subject_id = subjectFilter.value
+    else params.subject = subjectFilter.value
   }
 
-  if (gradeFilter.value) params.grade_id = gradeFilter.value
+  if (gradeFilter.value) {
+    const isNumeric = String(gradeFilter.value).match(/^\d+$/)
+    if (isNumeric) params.grade_id = gradeFilter.value
+    else params.grade = gradeFilter.value
+  }
+
+  if (levelFilter.value) {
+    const isNumeric = String(levelFilter.value).match(/^\d+$/)
+    if (isNumeric) params.level_id = levelFilter.value
+    else params.level = levelFilter.value
+  }
   
   await fetchItems(params)
 }

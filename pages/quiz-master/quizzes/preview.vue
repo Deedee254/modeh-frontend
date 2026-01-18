@@ -107,6 +107,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import type { Quiz } from '~/types'
 import { useRoute } from 'vue-router'
 import { useApi } from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -138,17 +139,6 @@ interface QuizQuestion {
   marks?: number
 }
 
-interface Quiz {
-  id?: number
-  title?: string
-  description?: string
-  user?: {
-    name?: string
-  }
-  questions_count?: number
-  questions?: QuizQuestion[]
-}
-
 // Reactive data
 const quiz = ref<Quiz | null>(null)
 const questions = ref<QuizQuestion[]>([])
@@ -156,9 +146,11 @@ const loading = ref(true)
 
 // Computed properties
 const shareUrl = computed(() => {
-  if (!quiz.value?.id) return ''
+  if (!quiz.value?.slug && !quiz.value?.id) return ''
   const config = useRuntimeConfig()
-  return `${config.public.siteUrl || window.location.origin}/quizzes/${quiz.value.id}`
+  // Prefer slug-based public route
+  const identifier = quiz.value?.slug || quiz.value?.id
+  return `${config.public.siteUrl || window.location.origin}/quizzes/${identifier}`
 })
 
 const previewQuestions = computed(() => {

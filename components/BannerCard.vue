@@ -76,8 +76,9 @@ const morePillStyle = computed(() => ({ backgroundColor: 'rgba(255,255,255,0.08)
 
 function itemLink(it) {
   if (!it) return props.moreLink
-  if (props.variant === 'grades') return `/grades/${it.slug || it.id}`
-  return `/courses/${it.slug || it.id}`
+  const slug = it.slug || it.id
+  if (props.variant === 'grades') return `/grades/${slug}`
+  return `/courses/${slug}`
 }
 
 function courseBg(idx) {

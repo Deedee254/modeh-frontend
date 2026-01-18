@@ -174,7 +174,7 @@
             </div>
             <div class="flex gap-2">
               <NuxtLink to="/quizee/quizzes" class="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">Back to Quizzes</NuxtLink>
-              <NuxtLink v-if="quizId" :to="`/quizee/quizzes/take/${quizId}`" class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700">Retake Assessment</NuxtLink>
+              <NuxtLink v-if="quizSlug" :to="`/quizee/quizzes/take/${quizSlug}`" class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700">Retake Assessment</NuxtLink>
             </div>
           </div>
         </div>
@@ -204,6 +204,7 @@ const totalParticipants = ref(null)
 const loading = ref(true)
 const error = ref('')
 const quizId = ref(null)
+const quizSlug = ref(null)
 const percentile = ref(null)
 const responseAnalysis = ref(null)
 
@@ -263,6 +264,23 @@ async function fetchResults() {
       rank.value = data.rank || null
       totalParticipants.value = data.total_participants || null
       quizId.value = (data.attempt && data.attempt.quiz_id) || data.quiz_id || null
+      // try to obtain quiz slug from response payload (if backend provided it)
+      quizSlug.value = (data.attempt && data.attempt.quiz && data.attempt.quiz.slug) || data.quiz?.slug || data.quiz_slug || null
+      // If slug is still missing but we have quizId, attempt to fetch the quiz to retrieve slug
+      if (!quizSlug.value && quizId.value) {
+        try {
+          const quizRes = await api.get(cfg.public.apiBase + `/api/quizzes/${quizId.value}`)
+          if (quizRes && quizRes.ok) {
+            const quizJson = await quizRes.json().catch(() => null)
+            if (quizJson) {
+              const serverQuiz = quizJson.quiz || quizJson.data || quizJson
+              quizSlug.value = serverQuiz?.slug || null
+            }
+          }
+        } catch (e) {
+          // ignore fetch failures — sharing will fallback to current URL
+        }
+      }
       percentile.value = data.percentile ?? null
       responseAnalysis.value = data.response_analysis ?? null
 
@@ -374,8 +392,8 @@ function pointsForDetail(d) {
 // share helpers
 function share(provider) {
   // Prefer sharing the quiz's public page rather than the result URL
-  const url = (typeof window !== 'undefined' && quizId.value)
-    ? `${window.location.origin}/quizee/quizzes/${quizId.value}`
+  const url = (typeof window !== 'undefined' && quizSlug.value)
+    ? `${window.location.origin}/quizzes/${quizSlug.value}`
     : window.location.href
   const text = `I scored ${attempt.value.score}% on this quiz!`;
   if (provider === 'twitter') {
@@ -386,8 +404,8 @@ function share(provider) {
 }
 
 function copyLink() {
-  const shareUrl = (typeof window !== 'undefined' && quizId.value)
-    ? `${window.location.origin}/quizee/quizzes/${quizId.value}`
+  const shareUrl = (typeof window !== 'undefined' && quizSlug.value)
+    ? `${window.location.origin}/quizzes/${quizSlug.value}`
     : window.location.href
   navigator.clipboard?.writeText(shareUrl)
     .then(() => {

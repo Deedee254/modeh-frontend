@@ -4,40 +4,15 @@ import { watchDebounced } from '@vueuse/core'
 // Vue reactivity / types
 import { ref, computed } from 'vue'
 import type { Ref } from 'vue'
+import type { Quiz as GlobalQuiz } from '~/types'
 // Nuxt auto-imported helpers (useRouter) are available via #imports in non-SFC modules
 import { useRouter } from '#imports'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useApi } from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
 
-export interface Quiz {
-  id?: number | string | null;
-  created_by?: number | null;
-  title: string;
-  description: string;
-  youtube_url: string | null;
-  level_id: number | string | null;
-  grade_id: number | string | null;
-  subject_id: number | string | null;
-  topic_id: number | string | null;
-  timer_minutes: number;
-  per_question_seconds: number;
-  use_per_question_timer: boolean;
-  attempts_allowed: number | string | null; // string for '' (unlimited)
-  shuffle_questions: boolean;
-  shuffle_answers: boolean;
-  access: 'free' | 'paywall';
-  one_off_price: number | null;
-  visibility: 'draft' | 'published' | 'scheduled';
-  cover?: any; // Can be a string (URL or tmp key) or File
-  cover_image?: string;
-  cover_file?: File;
-  // Optional rich objects used by the UI (may be populated from server)
-  level?: any;
-  grade?: any;
-  subject?: any;
-  topic?: any;
-}
+// Use global Quiz type but allow older code that stored created_by as numeric id
+type Quiz = GlobalQuiz & { created_by?: number | null }
 
 export interface Question {
   id?: number;

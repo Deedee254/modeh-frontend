@@ -68,13 +68,13 @@
                 <!-- Card Width optimized: slightly visible next card on mobile -->
                 <div 
                   v-for="quiz in visibleQuizzes" 
-                  :key="quiz.id" 
+                  :key="quiz.slug" 
                   class="flex-shrink-0 w-full lg:w-[260px] lg:snap-start first:ml-0"
                 >
                       <UiQuizCard
-                        :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
-                        :startLink="quiz.is_paid ? { path: `/quizzes/${quiz.slug || quiz.id}` } : { path: `/quizzes/${quiz.slug || quiz.id}/take` }"
-                        :takeLink="{ path: `/quizzes/${quiz.slug || quiz.id}/take` }"
+                        :to="{ path: `/quizzes/${quiz.slug}` }"
+                        :startLink="quiz.is_paid ? { path: `/quizzes/${quiz.slug}` } : { path: `/quizzes/${quiz.slug}/take` }"
+                        :takeLink="{ path: `/quizzes/${quiz.slug}/take` }"
                     :title="quiz.title"
                     :topic="quiz.topic?.name || quiz.topic_name"
                     :subject="quiz.topic?.subject?.name || quiz.subject?.name || quiz.subject_name"

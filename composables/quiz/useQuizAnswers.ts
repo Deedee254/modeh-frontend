@@ -1,12 +1,9 @@
 import { ref } from 'vue'
+import type { Quiz } from '~/types'
 
 interface Question {
   id: string
   type: string
-}
-
-interface Quiz {
-  questions: Question[]
 }
 
 export function useQuizAnswers(quiz: { value: Quiz }, quizId: string) {

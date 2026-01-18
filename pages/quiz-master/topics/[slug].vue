@@ -105,8 +105,8 @@
       <!-- Quiz Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <QuizCard
-          v-for="quiz in filteredQuizzes"
-          :key="quiz?.id || idx"
+          v-for="(quiz, idx) in filteredQuizzes"
+          :key="quiz?.slug || idx"
           :to="`/quiz-master/quizzes/${quiz.slug}`"
           :title="quiz.title"
           :description="quiz.description"

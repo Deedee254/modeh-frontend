@@ -120,8 +120,9 @@ const isVisible = ref(false)
 // Determine the share URL
 const shareUrl = computed(() => {
   if (!props.itemId && !props.itemSlug) return props.baseUrl
-  const path = props.itemType.toLowerCase() === 'quiz'
-    ? `/quizzes/${props.itemSlug || props.itemId}`
+  const type = props.itemType.toLowerCase()
+  const path = type === 'quiz'
+    ? (props.itemSlug ? `/quizzes/${props.itemSlug}` : '')
     : `/tournaments/${props.itemId}`
   return `${props.baseUrl}${path}`
 })

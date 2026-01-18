@@ -213,3 +213,39 @@ export interface JoinInstitutionRequest {
     branch_id?: number
   }
 }
+
+// Core Quiz type used across the frontend. Add any missing fields here
+// to ensure TypeScript recognizes `slug` on quiz objects.
+export interface Quiz {
+  id?: number | string
+  slug?: string
+  title?: string
+  description?: string
+  cover?: string
+  cover_image?: string
+  topic?: any
+  topic_name?: string
+  subject?: any
+  subject_name?: string
+  grade?: any
+  grade_id?: number | string | null
+  level_id?: number | string | null
+  questions_count?: number
+  items_count?: number
+  likes_count?: number
+  liked?: boolean
+  is_paid?: boolean
+  created_at?: string
+  updated_at?: string
+  created_by?: {
+    id: number
+    name?: string
+    avatar?: string | null
+    avatar_url?: string | null
+    avatarUrl?: string | null
+    image?: string | null
+    photo?: string | null
+    [k: string]: any
+  }
+  [key: string]: any
+}

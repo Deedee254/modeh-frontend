@@ -111,7 +111,7 @@
                 </NuxtLink>
               </div>
               <div v-else class="space-y-3">
-                <div v-for="(q, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean).slice(0, 5) : [])" :key="q?.id || idx" class="flex items-start gap-4 p-4 rounded-lg bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200 group">
+                <div v-for="(q, idx) in (Array.isArray(recentQuizzes) ? recentQuizzes.filter(Boolean).slice(0, 5) : [])" :key="q?.slug || idx" class="flex items-start gap-4 p-4 rounded-lg bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200 group">
                   <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-brand-100 to-brand-50 dark:from-brand-900/30 dark:to-brand-800/30 flex items-center justify-center flex-shrink-0">
                     <svg class="w-6 h-6 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path></svg>
                   </div>
@@ -125,11 +125,11 @@
                       </span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="p-2 text-brand-600 dark:text-brand-400 hover:bg-white dark:hover:bg-slate-600 rounded-lg transition-colors">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </NuxtLink>
-                  </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      <NuxtLink v-if="q?.slug" :to="`/quiz-master/quizzes/${q.slug}`" class="p-2 text-brand-600 dark:text-brand-400 hover:bg-white dark:hover:bg-slate-600 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                      </NuxtLink>
+                    </div>
                 </div>
               </div>
             </div>
@@ -210,8 +210,8 @@
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">No pending approvals</p>
               </div>
               <ul v-else class="space-y-3">
-                <li v-for="(q, idx) in (Array.isArray(pendingApprovals) ? pendingApprovals.slice(0, 5).filter(Boolean) : [])" :key="q?.id || idx" class="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 group hover:shadow-md transition-shadow">
-                  <NuxtLink v-if="q?.id" :to="`/quiz-master/quizzes/${q.id}`" class="block">
+                <li v-for="(q, idx) in (Array.isArray(pendingApprovals) ? pendingApprovals.slice(0, 5).filter(Boolean) : [])" :key="q?.slug || idx" class="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 group hover:shadow-md transition-shadow">
+                  <NuxtLink v-if="q?.slug" :to="`/quiz-master/quizzes/${q.slug}`" class="block">
                     <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">{{ q?.title || q?.name || 'Untitled' }}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tap to review</p>
                   </NuxtLink>

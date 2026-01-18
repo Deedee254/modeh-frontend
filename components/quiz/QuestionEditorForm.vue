@@ -261,40 +261,33 @@ function getDefaultForm(type = 'mcq') {
 import useApi from '~/composables/useApi'
 
 async function uploadMedia(file: File, type: 'image' | 'audio') {
+  // Instead of uploading directly to a cross-origin `/uploads` endpoint (which can
+  // trigger CORS/preflight failures), attach the File to the local model and show
+  // a client-side preview. The store's saveQuestion flow will send the file to the
+  // API endpoint that already handles CORS correctly when persisting the question.
   uploading.value = true
   mediaUrl.value = null
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('type', type)
-
   try {
-    const api = useApi()
-    const response = await api.postFormData('/uploads', formData)
-    // Handle auth redirects
-    if (api.handleAuthStatus(response)) return
+    // Create a local preview (data URL)
+    const reader = new FileReader()
+    const previewPromise = new Promise<void>((resolve) => {
+      reader.onload = (e) => {
+        mediaUrl.value = (e.target && (e.target as any).result) || null
+        resolve()
+      }
+      reader.onerror = () => resolve()
+    })
+    reader.readAsDataURL(file)
+    await previewPromise
 
-    if (!response || !response.ok) {
-      const text = await (response?.text?.() || '')
-      console.error('Upload failed, server response not ok', response?.status, text)
-      alert.push({ type: 'error', message: 'Upload failed — server returned an error.' })
-      return
-    }
-
-    const data = await response.json().catch(() => null)
-    // Support multiple possible shapes returned by the server
-    const url = data?.url || data?.path || data?.data?.url || data?.data?.path || null
-    if (!url) {
-      console.error('Upload succeeded but no url found in response', data)
-      alert.push({ type: 'error', message: 'Upload completed but server did not return a file URL.' })
-      return
-    }
-
-    mediaUrl.value = url
-    local.value.media_url = url
+    // Attach the File to the model so `saveQuestion` will include it in FormData
+    try { local.value.media_file = file } catch (e) { /* ignore */ }
     local.value.media_type = type
+    // Clear any previously-set remote URL since we'll upload the file on save
+    local.value.media_url = null
   } catch (error) {
-    console.error('Upload failed:', error)
-    try { alert.push({ type: 'error', message: 'Upload failed. Please try again.' }) } catch (e) {}
+    console.error('Attach media failed:', error)
+    try { alert.push({ type: 'error', message: 'Failed to attach media. Please try again.' }) } catch (e) {}
   } finally {
     uploading.value = false
   }

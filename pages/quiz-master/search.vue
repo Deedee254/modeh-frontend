@@ -33,8 +33,12 @@ watchEffect(() => {
     .finally(() => loading.value = false)
 })
 
-function openItem(type, id) {
-  router.push(`/quiz-master/${type}/${id}`)
+function openItem(type, idOrSlug) {
+  if (type === 'quizzes') {
+    router.push(`/quiz-master/quizzes/${idOrSlug}`)
+  } else {
+    router.push(`/quiz-master/${type}/${idOrSlug}`)
+  }
 }
 </script>
 
@@ -49,7 +53,7 @@ function openItem(type, id) {
       <section v-if="results.quizzes?.length">
         <h2 class="text-xl font-medium mt-4">Quizzes</h2>
         <ul class="mt-2 space-y-2">
-    <li v-for="(quiz, idx) in (Array.isArray(results.quizzes) ? results.quizzes.filter(Boolean) : [])" :key="quiz?.id || idx" class="p-3 border rounded hover:bg-gray-50 cursor-pointer" @click="openItem('quizzes', quiz?.id)">
+    <li v-for="(quiz, idx) in (Array.isArray(results.quizzes) ? results.quizzes.filter(Boolean) : [])" :key="quiz?.slug || idx" class="p-3 border rounded hover:bg-gray-50 cursor-pointer" @click="openItem('quizzes', quiz?.slug)">
             <div class="font-medium">{{ quiz.title }}</div>
             <div class="text-sm text-gray-500">{{ quiz.description }}</div>
           </li>

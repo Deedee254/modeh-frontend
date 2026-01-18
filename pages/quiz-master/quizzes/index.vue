@@ -115,7 +115,7 @@
               <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <QuizCard
                   v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
-                  :key="quiz?.id || idx"
+                  :key="quiz?.slug || idx"
                   :to="quiz.startLink"
                   :startLink="quiz.startLink"
                   :title="quiz.title"
@@ -195,11 +195,13 @@ const gradeFilter = ref(0)
 const subjectFilter = ref(0)
 
 const normalizedQuizzes = computed(() => {
-  const quizzes = paginator.value?.data || []
+  // Support both paginated responses ({ data: [...] }) and direct array responses
+  const raw = Array.isArray(paginator.value) ? paginator.value : (paginator.value?.data || paginator.value?.quizzes || [])
+  const quizzes = Array.isArray(raw) ? raw : []
   return quizzes
-    .filter(q => q && q.id) // Ensure quiz and quiz.id exist
-      .map(quiz => ({
-      ...quiz, // Pass through original properties like is_approved
+    .filter(q => q && q.slug)
+    .map(quiz => ({
+      ...quiz,
       id: quiz.id,
       title: quiz.title || quiz.name || 'Untitled Quiz',
       description: quiz.description || quiz.summary || '',
@@ -212,7 +214,6 @@ const normalizedQuizzes = computed(() => {
       questionsCount: quiz.questions_count ?? quiz.questions?.length ?? 0,
       attemptsCount: quiz.attempts_count ?? 0,
       likes: quiz.likes_count ?? quiz.likes ?? 0,
-      // Use slug-only routes for quiz navigation
       startLink: `/quiz-master/quizzes/${quiz.slug}`,
       editLink: `/quiz-master/quizzes/${quiz.slug}/edit`,
     }))

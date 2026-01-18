@@ -74,11 +74,11 @@
             <div v-else class="space-y-3">
               <UiQuizCard
                 v-for="(quiz, idx) in (levelQuizzes(level) || []).slice(0, 3)"
-                :key="quiz.id || quiz.slug"
+                :key="quiz.slug || idx"
                 :horizontal="true"
                 :clean="false"
                 :hide-image="true"
-                :to="{ path: `/quizzes/${quiz.slug || quiz.id}` }"
+                :to="{ path: `/quizzes/${quiz.slug}` }"
                 :title="quiz.title"
                 :topic="quiz.topic?.name || quiz.topic_name"
                 :likes="quiz.likes_count ?? quiz.likes ?? 0"
@@ -159,8 +159,8 @@ const visibleLevels = computed(() => {
     }
 
     // Check cached fetched quizzes
-    const id = String(item.id ?? item.slug ?? item.name ?? '')
-    const cached = levelQuizzesMap.value[id]
+    const cacheId = String(item.slug || item.id || item.name || '')
+    const cached = levelQuizzesMap[cacheId]
     if (Array.isArray(cached) && cached.length > 0) return true
 
     // Otherwise exclude (we may trigger a background fetch to populate cache elsewhere)
@@ -181,14 +181,20 @@ const gridClasses = computed(() => {
 // current taxonomy item (level/subject/topic). Using route objects avoids
 // manual string concatenation and ensures proper encoding.
 function makeQuizListRoute(item) {
-  const id = item?.id ?? item?.slug ?? item?.name ?? null
-  if (!id) return { path: '/quizzes' }
-  // Prefer numeric IDs for backend filters; if we only have a slug use the
-  // slug-based query param so the quizzes listing can handle it.
-  const isNumeric = String(id).match(/^\d+$/)
-  if (props.type === 'subject') return isNumeric ? { path: '/quizzes', query: { subject_id: String(id) } } : { path: '/quizzes', query: { subject: String(id) } }
-  if (props.type === 'topic') return isNumeric ? { path: '/quizzes', query: { topic_id: String(id) } } : { path: '/quizzes', query: { topic: String(id) } }
-  return { path: '/quizzes', query: { level_id: String(id) } }
+  const slug = item?.slug || item?.id || item?.name || null
+  if (!slug) return { path: '/quizzes' }
+
+  // Prefer slugs as requested by the user
+  const isNumeric = String(slug).match(/^\d+$/)
+  
+  if (props.type === 'subject') {
+    return isNumeric ? { path: '/quizzes', query: { subject_id: String(slug) } } : { path: '/quizzes', query: { subject: String(slug) } }
+  }
+  if (props.type === 'topic') {
+    return isNumeric ? { path: '/quizzes', query: { topic_id: String(slug) } } : { path: '/quizzes', query: { topic: String(slug) } }
+  }
+  // Default to level
+  return isNumeric ? { path: '/quizzes', query: { level_id: String(slug) } } : { path: '/quizzes', query: { level: String(slug) } }
 }
 
 // Local cache mapping level id -> quizzes array (to avoid repeated network calls)
@@ -203,93 +209,46 @@ function extractQuizzesFromLevel(level) {
   return null
 }
 
-const slugIdCache = ref({})
-
-async function resolveSlugToId(type, slug) {
-  if (!slug) return null
-  const key = `${type}:${slug}`
-  if (slugIdCache.value[key]) return slugIdCache.value[key]
-
-  try {
-    const taxonomy = useTaxonomy()
-
-    // 1) Check in-memory taxonomy caches first (fast, avoids network)
-    if (type === 'subject') {
-      const list = taxonomy.subjects?.value || []
-      const found = list.find(s => String(s.slug) === String(slug) || String(s.name) === String(slug) || String(s.id) === String(slug))
-      if (found?.id) {
-        slugIdCache.value[key] = found.id
-        return found.id
-      }
-    } else if (type === 'topic') {
-      const list = taxonomy.topics?.value || []
-      const found = list.find(t => String(t.slug) === String(slug) || String(t.name) === String(slug) || String(t.id) === String(slug))
-      if (found?.id) {
-        slugIdCache.value[key] = found.id
-        return found.id
-      }
-    }
-
-    // 2) Fallback to paginated API lookup
-    const apiRef = useApi()
-    const plural = type === 'subject' ? 'subjects' : 'topics'
-    const perPage = 50
-    const qRes = await apiRef.get(`/api/${plural}?per_page=${perPage}&q=${encodeURIComponent(String(slug))}`)
-    if (qRes.ok) {
-      const qData = await qRes.json().catch(() => null)
-      const list = (qData && (qData[plural] || qData.data || [])) || []
-      const candidate = (Array.isArray(list) && list.find(item => String(item.slug) === String(slug) || String(item.name) === String(slug) || String(item.id) === String(slug))) || null
-      if (candidate?.id) {
-        slugIdCache.value[key] = candidate.id
-        return candidate.id
-      }
-    }
-  } catch (e) {
-    console.warn('[CategorizedQuizzes] resolveSlugToId error', e)
-  }
-  return null
-}
-
 async function fetchQuizzesForLevel(level, perPage = 3) {
   if (!level) return []
-  const id = String(level.id ?? level.slug ?? level.name ?? '')
-  if (!id) return []
+  const cacheId = String(level.slug || level.id || level.name || '')
+  if (!cacheId) return []
   
   // already have embedded quizzes
   const embedded = extractQuizzesFromLevel(level)
   if (embedded) {
-    levelQuizzesMap[id] = embedded
+    levelQuizzesMap[cacheId] = embedded
     return embedded
   }
 
   // if cached, return
-  if (levelQuizzesMap[id]) return levelQuizzesMap[id]
+  if (levelQuizzesMap[cacheId]) return levelQuizzesMap[cacheId]
 
   try {
-    const paramName = props.type === 'subject' ? 'subject_id' : (props.type === 'topic' ? 'topic_id' : 'level_id')
-    let paramValRaw = level.id || level.slug || ''
-
-    // If we received a slug (non-numeric) for subject/topic, resolve it to numeric id
-    if ((paramName === 'subject_id' || paramName === 'topic_id') && paramValRaw && String(paramValRaw).match(/[^0-9]/)) {
-      const resolved = await resolveSlugToId(props.type, String(paramValRaw))
-      if (resolved) paramValRaw = resolved
-    } else if (paramValRaw && !isNaN(parseInt(paramValRaw))) {
-      paramValRaw = parseInt(paramValRaw)
+    const slug = level.slug || level.id || ''
+    const isNumeric = String(slug).match(/^\d+$/)
+    
+    let paramName = ''
+    if (props.type === 'subject') {
+      paramName = isNumeric ? 'subject_id' : 'subject'
+    } else if (props.type === 'topic') {
+      paramName = isNumeric ? 'topic_id' : 'topic'
+    } else {
+      paramName = isNumeric ? 'level_id' : 'level'
     }
 
-    const paramVal = encodeURIComponent(paramValRaw || '')
-    const endpoint = `/api/quizzes?${paramName}=${paramVal}&per_page=${perPage}`
+    const endpoint = `/api/quizzes?${paramName}=${encodeURIComponent(slug)}&per_page=${perPage}`
     const res = await api.get(endpoint)
     if (!res.ok) {
-      levelQuizzesMap[id] = []
+      levelQuizzesMap[cacheId] = []
       return []
     }
     const data = await res.json().catch(() => null)
     const quizzes = (data && (data.quizzes?.data || data.quizzes || data.data)) || []
-    levelQuizzesMap[id] = quizzes
+    levelQuizzesMap[cacheId] = quizzes
     return quizzes
   } catch (e) {
-    levelQuizzesMap[id] = []
+    levelQuizzesMap[cacheId] = []
     return []
   }
 }
@@ -299,8 +258,8 @@ function levelQuizzes(level) {
   if (!level) return []
   const embedded = extractQuizzesFromLevel(level)
   if (embedded) return embedded
-  const id = String(level.id ?? level.slug ?? level.name ?? '')
-  return levelQuizzesMap[id] || []
+  const cacheId = String(level.slug || level.id || level.name || '')
+  return levelQuizzesMap[cacheId] || []
 }
 
 // Watch incoming levels prop and fetch a small number of quizzes for each level
@@ -312,8 +271,8 @@ watch(propsLevels, (newVal) => {
     if (!level) return false
     const embedded = extractQuizzesFromLevel(level)
     if (embedded) return false
-    const id = String(level.id ?? level.slug ?? level.name ?? '')
-    return !levelQuizzesMap[id]
+    const cacheId = String(level.slug || level.id || level.name || '')
+    return !levelQuizzesMap[cacheId]
   })
 
   if (levelsToFetch.length === 0) return

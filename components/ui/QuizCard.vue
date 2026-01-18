@@ -57,7 +57,7 @@
       </div>
     </div>
     
-    <NuxtLink :to="to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')" class="absolute inset-0 z-0" aria-label="View Details"></NuxtLink>
+    <NuxtLink :to="to || (props.quiz?.slug ? `/quizzes/${props.quiz.slug}` : '#')" class="absolute inset-0 z-0" aria-label="View Details"></NuxtLink>
   </div>
 
   <!-- Vertical variant (Desktop/Standard) -->
@@ -143,9 +143,9 @@
           >
             ✓ Taken
           </button>
-          <NuxtLink 
+            <NuxtLink 
             v-else
-            :to="startLink || takeLink || to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')" 
+            :to="startLink || takeLink || to || (props.quiz?.slug ? `/quizzes/${props.quiz.slug}` : '#')" 
             class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
           >
             Start
@@ -154,7 +154,7 @@
     </div>
     
   <!-- Overall Link (z-0 to allow buttons to be clicked) -->
-  <NuxtLink :to="to || (quizId ? `/quizzes/${props.quiz?.slug || quizId}` : '#')" class="absolute inset-0 z-0" aria-label="View Details"></NuxtLink>
+  <NuxtLink :to="to || (props.quiz?.slug ? `/quizzes/${props.quiz.slug}` : '#')" class="absolute inset-0 z-0" aria-label="View Details"></NuxtLink>
   </div>
 </template>
 

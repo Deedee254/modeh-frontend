@@ -341,18 +341,30 @@ const onPublishConfirmed = async () => {
   }
 }
 
-// Navigate to view quiz
+// Navigate to view quiz (slug-only)
 const onViewQuiz = () => {
   showCreatedModal.value = false
-  const quizId = (createdPayload.value as any)?.id || store.quizId
-  router.push(`/quiz-master/quizzes/${quizId}`)
+  const payload = (createdPayload.value as any) || {}
+  const slug = payload.slug || store.quiz?.slug || null
+  if (slug) {
+    router.push(`/quiz-master/quizzes/${slug}`)
+  } else {
+    alert.push({ type: 'warning', message: 'Quiz slug unavailable — opening quizzes list' })
+    router.push('/quiz-master/quizzes')
+  }
 }
 
-// Navigate to edit quiz
+// Navigate to edit quiz (slug-only)
 const onEditQuiz = () => {
   showCreatedModal.value = false
-  const quizId = (createdPayload.value as any)?.id || store.quizId
-  router.push(`/quiz-master/quizzes/${quizId}/edit`)
+  const payload = (createdPayload.value as any) || {}
+  const slug = payload.slug || store.quiz?.slug || null
+  if (slug) {
+    router.push(`/quiz-master/quizzes/${slug}/edit`)
+  } else {
+    alert.push({ type: 'warning', message: 'Quiz slug unavailable — opening quizzes list' })
+    router.push('/quiz-master/quizzes')
+  }
 }
 
 // Lifecycle

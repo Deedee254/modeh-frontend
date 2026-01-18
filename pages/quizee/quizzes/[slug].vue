@@ -269,65 +269,11 @@ import VideoPlayer from '~/components/media/VideoPlayer.vue'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import useApi from '~/composables/useApi'
+import type { Quiz, Level, Grade, Subject, Topic } from '~/types'
 
 // --- Type Definitions ---
 
-interface Taxonomy {
-  name: string;
-}
-
-interface Level extends Taxonomy {}
-
-interface Grade extends Taxonomy {
-  level?: Level;
-}
-
-interface Subject extends Taxonomy {
-  grade?: Grade;
-}
-
-interface Topic extends Taxonomy {
-  subject?: Subject;
-}
-
-interface Quiz {
-  id: string | number;
-  title: string;
-  description: string;
-  cover?: string | null;
-  cover_image?: string | null;
-  cover_image_url?: string | null;
-  difficulty?: number | null;
-  questions_count?: number;
-  points?: number;
-  marks?: number;
-  youtube_url?: string | null;
-  video_url?: string | null;
-  media?: string | null;
-  cover_video?: string | null;
-  video?: string | null;
-  media_caption?: string | null;
-  video_description?: string | null;
-  topic?: Topic;
-  subject?: Subject;
-  grade?: Grade;
-  level?: Level;
-  questions?: any[];
-  timer_seconds?: number | null;
-  per_question_seconds?: number | null;
-  use_per_question_timer?: boolean;
-  attempts_allowed?: number;
-  shuffle_questions?: boolean;
-  shuffle_answers?: boolean;
-  is_paid?: boolean;
-  price?: string | number;
-  likes_count?: number;
-  created_by?: {
-    id: number;
-    name: string;
-    avatar?: string | null;
-  } | null;
-}
+// Local taxonomy helpers are covered by global types; no local declarations needed here.
 
 interface RelatedQuiz {
   id: number;
@@ -496,11 +442,20 @@ function getDifficultyEmoji(level: number | null | undefined): string {
 
 // Actions
 function startQuiz() {
-  router.push(`/quizee/quizzes/take/${quiz.value.id}`)
+    if (quiz.value?.slug) {
+      router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
+    } else {
+      router.push('/quizee/quizzes')
+    }
 }
 
 function showPreview() {
-  router.push(`/quizzes/${quiz.value.id}/preview`)
+  if (quiz.value.slug) {
+    router.push(`/quizzes/${quiz.value.slug}/preview`)
+  } else {
+    // Slug missing: fall back to quiz list to avoid exposing id-based routes
+    router.push('/quizzes')
+  }
 }
 
 // Update head reactively when quizData becomes available
