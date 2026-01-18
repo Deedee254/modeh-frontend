@@ -72,9 +72,10 @@
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Video player (separate from hero) -->
-          <div v-if="hasVideo" class="mb-4">
-            <!-- Accept youtube_url (canonical), video_url and other fallbacks -->
-            <VideoPlayer :src="quiz.youtube_url || quiz.video_url || quiz.media || quiz.cover_video || quiz.video" :poster="coverSrc" />
+          <div v-if="youtubeEmbedUrl" class="mb-4">
+            <div class="relative w-full rounded-xl overflow-hidden bg-black" style="aspect-ratio: 16/9">
+              <iframe :src="youtubeEmbedUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
           </div>
 
           <!-- Media Caption/Description -->
@@ -517,6 +518,22 @@ const questionCount = computed(() => Array.isArray(quiz.value.questions) ? quiz.
 
 // Only consider explicit video URLs per API
 const hasVideo = computed(() => Boolean(quiz.value.youtube_url || quiz.value.video_url))
+
+// Convert YouTube URL to embeddable format
+const youtubeEmbedUrl = computed(() => {
+  const url = quiz.value?.youtube_url
+  if (!url || typeof url !== 'string') return null
+  try {
+    // extract v= or youtu.be/ or embed/ forms
+    const m1 = url.match(/[?&]v=([^&]+)/)
+    if (m1 && m1[1]) return `https://www.youtube.com/embed/${m1[1]}`
+    const m2 = url.match(/youtu\.be\/([^?&]+)/)
+    if (m2 && m2[1]) return `https://www.youtube.com/embed/${m2[1]}`
+    const m3 = url.match(/youtube\.com\/embed\/([^?&]+)/)
+    if (m3 && m3[1]) return `https://www.youtube.com/embed/${m3[1]}`
+    return null
+  } catch (e) { return null }
+})
 
 // Safe no-op handlers for the hidden preload image above
 function onCoverLoaded() {}
