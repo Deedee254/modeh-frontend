@@ -2,6 +2,10 @@
   <div>
     <template v-if="isAuthed">
       <TopBar v-if="!route.meta.hideTopBar" />
+      <!-- Profile Completion Banner -->
+      <ClientOnly>
+        <ProfileIncompleteBanner />
+      </ClientOnly>
       <div class="min-h-screen flex bg-gray-100">
         <!-- Sidebar: permanent on lg+, drawer on smaller screens -->
         <div :class="['transition-all duration-300', { 'hidden lg:block': !ui.sidebarOpen, 'fixed inset-y-0 left-0 z-40 lg:static': ui.sidebarOpen }]">
@@ -50,6 +54,7 @@ import Footer from '~/components/Footer.vue'
 import Container from '~/components/ui/Container.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'
 import GoogleOneTap from '~/components/Auth/GoogleOneTap.vue'
+import ProfileIncompleteBanner from '~/components/ProfileIncompleteBanner.vue'
 
 const route = useRoute()
 // ensure we call the auth store so we can detect authenticated users

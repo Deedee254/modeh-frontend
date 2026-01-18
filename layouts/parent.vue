@@ -46,6 +46,10 @@
       </div>
     </header>
 
+    <ClientOnly>
+      <ProfileIncompleteBanner />
+    </ClientOnly>
+
     <div class="flex" :style="{ height: 'calc(100vh - 56px)' }">
       <div class="hidden md:block md:w-64 flex-shrink-0">
         <ParentSidebar />
@@ -78,6 +82,7 @@ import { resolveAssetUrl } from '~/composables/useAssets'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ParentSidebar from '~/components/parent/ParentSidebar.vue'
+import ProfileIncompleteBanner from '~/components/ProfileIncompleteBanner.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()

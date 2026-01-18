@@ -91,23 +91,22 @@ export default defineNuxtRouteMiddleware(async (to) => {
             return navigateTo('/onboarding/new-user')
         }
 
-        // Parents do not require the full onboarding flow — skip completion checks for them
+        // After role is selected, redirect to dashboard, NOT to onboarding.
+        // The dashboard will show a notification banner if profile is incomplete.
+        // This applies to all roles (quizee, quiz-master, parent, etc.)
+        // Parents do not require the full onboarding flow
         if (user.role === 'parent') {
             // allow parents to continue to their dashboard without onboarding
         } else {
-            // Check for missing profile fields (if the backend provides this info)
-            const missingFields = (user as any).missingProfileFields || []
-            if (missingFields.length > 0) {
-                // Non-blocking: do not redirect. A banner will be shown in the layout
-                // to prompt the user to complete their profile at their convenience.
-            }
-
-            // Prefer onboarding.profile_completed when available; fall back to
-            // legacy flags. Keep this non-blocking (banner will remind the user).
+            // For quizee/quiz-master: allow dashboard access but show notification
+            // if profile is incomplete (no blocking, just a banner)
             const onboardingObj = (user as any).onboarding
             const isProfileCompleted = onboardingObj?.profile_completed ?? user.is_profile_completed ?? (user as any).isProfileCompleted
+            
+            // Non-blocking: do NOT redirect. Dashboard will display a banner
+            // reminding user to complete their profile at their convenience.
             if (isProfileCompleted === false) {
-                // Non-blocking: banner will surface in the UI; avoid forcing navigation.
+                // User can still access dashboard; banner will be shown
             }
         }
     }

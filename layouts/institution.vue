@@ -8,6 +8,10 @@
       </template>
     </Topbar>
 
+    <ClientOnly>
+      <ProfileIncompleteBanner />
+    </ClientOnly>
+
     <div class="flex">
       <!-- Desktop Sidebar (always visible) -->
       <div class="hidden md:block">
@@ -38,6 +42,7 @@
 import Topbar from '~/components/institution/Topbar.vue'
 import Sidebar from '~/components/institution/Sidebar.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'
+import ProfileIncompleteBanner from '~/components/ProfileIncompleteBanner.vue'
 import { useUiStore } from '~/stores/ui'
 import { useInstitutionsStore } from '~/stores/institutions'
 import { useRouter, useRoute } from 'vue-router'
