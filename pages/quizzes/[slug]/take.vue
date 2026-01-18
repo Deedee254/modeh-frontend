@@ -669,8 +669,8 @@ async function submitAnswers() {
         
         // Check if user is authenticated
         if (authStore.user) {
-          // Authenticated user: redirect to full results page
-          router.push(`/quizee/quizzes/result/${attemptResult.id}`)
+          // Authenticated user: redirect to checkout to see results after payment
+          router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptResult.id}`)
           return
         }
         

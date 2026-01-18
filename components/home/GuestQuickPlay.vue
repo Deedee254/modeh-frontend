@@ -476,10 +476,56 @@ function nextQuestion() {
 
 function completeGame() {
   isPlaying.value = false
+  
+  // If authenticated, submit to checkout instead of showing results
+  if (auth.user) {
+    submitBattleAnswers()
+    return
+  }
+  
+  // For guests, show results and mark as played
   isCompleted.value = true
-  // Mark guest as played
-  if (!auth.user && auth.setGuestPlayed) {
+  if (auth.setGuestPlayed) {
     auth.setGuestPlayed()
+  }
+}
+
+async function submitBattleAnswers() {
+  try {
+    // Build answers from the battle
+    const answers = questions.value.map((q, idx) => ({
+      question_id: q.id,
+      answer: idx < currentQuestionIndex.value || selectedOptionId.value ? selectedOptionId.value : null
+    }))
+    
+    const payload = {
+      answers: answers,
+      defer_marking: true,
+      total_time_seconds: timer.value
+    }
+    
+    // Submit battle attempt - endpoint similar to quiz submission
+    const res = await api.postJson(`/api/battles/submit`, payload)
+    
+    if (res.ok) {
+      const body = await res.json()
+      const attemptId = body?.attempt_id ?? body?.attempt?.id
+      
+      // Redirect to checkout to see results after payment
+      if (attemptId) {
+        router.push(`/quizee/payments/checkout?type=battle&attempt_id=${attemptId}`)
+      } else {
+        // Fallback: redirect to dashboard if no attempt id
+        router.push('/quizee/dashboard')
+      }
+    } else {
+      // Error submitting - show results anyway but alert user
+      isCompleted.value = true
+      console.error('Failed to submit battle attempt')
+    }
+  } catch (e) {
+    console.error('Error submitting battle:', e)
+    isCompleted.value = true
   }
 }
 
