@@ -118,18 +118,7 @@
               </div>
             </div>
 
-            <!-- Phone Input: show when not active OR when this is a tournament that requires a one-off payment and the user doesn't have a usable subscription -->
-            <div v-if="(!isActive) || (isTournamentCheckout && (!hasUsableSubscriptionForTournament() && tournamentEntryFee && tournamentEntryFee > 0))" class="mb-6">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">M-Pesa Phone Number</label>
-              <div class="flex flex-col sm:flex-row gap-2">
-                <select v-if="phones.length" v-model="selectedPhonePreset" class="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent">
-                  <option value="">Enter a new number</option>
-                  <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
-                </select>
-                <input v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent" />
-              </div>
-              <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">We'll send an STK push to complete payment</p>
-            </div>
+
 
             <!-- Free Item Option -->
             <div v-if="itemPrice === 0 && !isTournamentCheckout" class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
@@ -149,7 +138,7 @@
                 </div>
                 <p class="text-2xl font-bold text-brand-600">{{ item?.currency || 'KES' }} {{ itemPrice }}</p>
               </div>
-              <button @click="payForThisItem" :disabled="!phoneForPayment || checkout.processing" class="w-full px-4 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors">
+              <button @click="payForThisItem" :disabled="checkout.processing" class="w-full px-4 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors">
                 <template v-if="checkout.processing">Processing...</template>
                 <template v-else>Pay Now</template>
               </button>
@@ -183,7 +172,7 @@
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">Free for subscribers</span>
               </div>
               <button @click="isTournamentCheckout ? attemptTournamentRegistration() : openPayment()"
-                :disabled="checkout.processing || (isTournamentCheckout ? false : (!phoneForPayment || !selectedPackage))"
+                :disabled="checkout.processing || (isTournamentCheckout ? false : !selectedPackage)"
                 class="w-full px-6 py-3 font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-700 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                 <template v-if="checkout.processing">
                   <svg class="w-4 h-4 animate-spin inline-block mr-2" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
@@ -314,6 +303,7 @@
     </div>
     
     <ReviewAnswers :open="showReview" :loading="reviewLoading" :error="reviewError" :details="reviewDetails" @close="showReview = false"></ReviewAnswers>
+    <PaymentModal :open="showPaymentModal" :pkg="paymentModalPackage" :item="paymentModalItem" :phones="phones" @close="showPaymentModal = false" @paid="onPaymentAttemptClosed"></PaymentModal>
     <PaymentAwaitingModal :tx="(checkout as any).tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed"></PaymentAwaitingModal>
   </div>
 </template>
@@ -322,6 +312,7 @@
 import { ref, onMounted, computed } from 'vue'
 import useApi from '~/composables/useApi'
 import { useRoute, useRouter } from 'vue-router'
+import PaymentModal from '~/components/PaymentModal.vue'
 import PaymentAwaitingModal from '~/components/PaymentAwaitingModal.vue'
 import { useSubscriptionsStore } from '~/stores/subscriptions'
 import ReviewAnswers from '~/components/ReviewAnswers.vue'
@@ -348,6 +339,9 @@ const isActive = ref(false)
 const institutionName = ref('')
 const institutionIsActive = ref(false)
 const showAwaitingModal = ref(false)
+const showPaymentModal = ref(false)
+const paymentModalPackage = ref<Record<string, any> | null>(null)
+const paymentModalItem = ref<Record<string, any> | null>(null)
 const lastPaymentReference = ref<string | null>(null)
 const selectedPackage = ref<Record<string, any> | null>(null)
 // small version counter to force re-rendering of the Selected Plan card when
@@ -383,9 +377,6 @@ const packages = ref<Record<string, any>[]>([])
 const item = ref<Record<string, any> | null>(null)
 const itemPrice = ref<number | null>(null)
 
-const selectedPhonePreset = ref('')
-const phoneInputLocal = ref('')
-
 // Referral code state
 const referralCodeStored = ref('')
 const showReferralInput = ref(false)
@@ -403,7 +394,6 @@ const canSeeResults = computed(() => {
 })
 
 const activePackageName = ref('')
-const phoneForPayment = computed(() => selectedPhonePreset.value || phoneInputLocal.value)
 
 const limitState = ref<Record<string, any> | null>(null)
 const limitInfo = computed(() => {
@@ -599,94 +589,6 @@ function applyReferralCode() {
   showReferralInput.value = false
 }
 
-async function initiatePayment(type: 'subscription' | 'one-off', details: Record<string, any>) {
-  if (!phoneForPayment.value) {
-    // surface the error via the checkout store state
-    checkout.processing = false
-    checkout.status = 'error'
-    checkout.pendingMessage = 'Please provide a phone number.'
-    return;
-  }
-  // mark as processing using the checkout store
-  checkout.processing = true
-  checkout.status = 'processing'
-  checkout.pendingMessage = 'Initiating payment...'
-
-  try {
-    let res
-    
-    // Get referral code (stored or from input)
-    const getReferralCode = () => {
-      if (referralCodeStored.value) return referralCodeStored.value
-      if (referralCodeInput.value) return referralCodeInput.value
-      try {
-        const stored = localStorage.getItem('modeh:referral_code')
-        if (stored) return stored
-      } catch (e) {}
-      return null
-    }
-    
-    const referralCode = getReferralCode()
-    
-    if (type === 'subscription') {
-      const payload: Record<string, any> = { phone: phoneForPayment.value }
-      
-      if (activeSubscriptionType.value && activeSubscriptionType.value.startsWith('institution-')) {
-        const institutionId = activeSubscriptionType.value.replace('institution-', '')
-        payload.owner_type = 'institution'
-        payload.owner_id = institutionId
-      }
-      
-      // Add referral code if available
-      if (referralCode) {
-        payload.ref = referralCode
-      }
-      
-      res = await api.postJson(`/api/packages/${details.id}/subscribe`, payload)
-    } else {
-      // Build one-off purchase payload. Allow explicit item_type/item_id in details
-      const payload: Record<string, any> = {
-        item_type: (details && (details.item_type || details.type)) || (isTournamentCheckout.value ? 'tournament' : (q.type || 'quiz')),
-        item_id: (details && (details.item_id || details.id)) || id,
-        amount: (details && (details.amount || details.price)) || details?.price || 0,
-        phone: phoneForPayment.value
-      }
-      
-      if (referralCode) {
-        payload.ref = referralCode
-      }
-      
-      res = await api.postJson('/api/one-off-purchases', payload)
-    }
-
-    if (!res) {
-      throw new Error('Failed to initiate payment.')
-    }
-
-    const resData = res as Record<string, any>
-    if (resData.code === 'limit_reached') {
-      const qs = new URLSearchParams({ reason: 'limit', type: resData.limit?.type || 'unknown', value: String(resData.limit?.value || '') })
-      router.push('/quizee/subscription?' + qs.toString())
-      return
-    }
-
-    const body = resData
-    const tx = body?.tx || body?.purchase?.gateway_meta?.tx
-    lastPaymentReference.value = body?.purchase?.id || tx || null
-    if (tx) {
-      if (typeof (checkout as any).setTx === 'function') (checkout as any).setTx(tx)
-      else (checkout as any).tx = tx
-      showAwaitingModal.value = true
-    } else {
-      throw new Error(body?.message || 'Failed to initiate payment.')
-    }
-  } catch (e) {
-    checkout.processing = false
-    checkout.status = 'error'
-    checkout.pendingMessage = (e as any)?.data?.message || (e as any)?.message || 'An unexpected error occurred.'
-  }
-}
-
 async function joinTournamentAfterPayment() {
   if (!isTournamentCheckout.value) return false
   if (tournamentJoinAttempted.value) return tournamentJoinSucceeded.value
@@ -851,7 +753,9 @@ function attemptTournamentRegistration() {
 
 function openPayment() {
   if (selectedPackage.value) {
-    initiatePayment('subscription', selectedPackage.value);
+    paymentModalPackage.value = selectedPackage.value
+    paymentModalItem.value = null
+    showPaymentModal.value = true
   }
 }
 
@@ -980,7 +884,9 @@ function redo() { router.push(type === 'quiz' && id ? `/quizee/quizzes/take/${id
 
 function payForThisItem() {
   if (item.value && itemPrice.value !== null && itemPrice.value > 0) {
-    initiatePayment('one-off', { ...item.value, price: itemPrice.value });
+    paymentModalPackage.value = null
+    paymentModalItem.value = { ...item.value, price: itemPrice.value }
+    showPaymentModal.value = true
   }
 }
 
