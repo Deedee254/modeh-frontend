@@ -108,12 +108,14 @@ async function submit() {
     }
 
     message.value = `Success! Welcome ${session?.user?.name || 'to Modeh'}.`
-    // If the user chose Parent, send them straight to the parent dashboard (minimal onboarding)
+    // Redirect to appropriate dashboard based on role
     if (role.value === 'parent') {
       setTimeout(() => router.replace('/parent/dashboard'), 800)
+    } else if (role.value === 'quiz-master') {
+      setTimeout(() => router.replace('/quiz-master/dashboard'), 800)
     } else {
-      // After role is set, go to the main onboarding page which will continue with institution/education details
-      setTimeout(() => router.replace('/onboarding'), 800)
+      // quizee or default
+      setTimeout(() => router.replace('/quizee/dashboard'), 800)
     }
   } catch (e) {
     console.error(e)

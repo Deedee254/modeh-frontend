@@ -318,7 +318,7 @@ const fetchHeaders = computed(() => {
   return h
 })
 
-const { data: quizData, pending } = useFetch<{ quiz: Quiz } | { data: Quiz } | Quiz>(config.public.apiBase + `/api/quizzes/${route.params.id}`, {
+const { data: quizData, pending } = useFetch<{ quiz: Quiz } | { data: Quiz } | Quiz>(config.public.apiBase + `/api/quizzes/${route.params.slug}`, {
   credentials: 'include',
   headers: fetchHeaders
 })
@@ -326,7 +326,7 @@ const { data: quizData, pending } = useFetch<{ quiz: Quiz } | { data: Quiz } | Q
 const quiz = computed<Quiz>(() => {
   const data = quizData.value
   const defaultQuiz: Quiz = {
-    id: route.params.id as string,
+    id: route.params.slug as string,
     title: 'Loading...',
     description: '',
   }

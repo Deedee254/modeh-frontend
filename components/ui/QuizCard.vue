@@ -84,6 +84,19 @@
         </div>
       </div>
 
+      <!-- Guest Quiz Limit Reached (Free Quiz Limit) -->
+      <div v-else-if="guestQuizLimitReached" class="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10 p-4">
+        <div class="text-center space-y-3">
+          <Icon name="heroicons:lock-closed" class="h-12 w-12 text-amber-300 mx-auto" />
+          <div class="text-white font-semibold">
+            <p class="text-sm">You achieved better than</p>
+            <p class="text-xl font-bold text-amber-300">{{ completedQuizPercentile || '95' }}%</p>
+            <p class="text-xs opacity-90 mt-1">of all quiz takers</p>
+          </div>
+          <p class="text-white text-xs opacity-80">Free quizzes completed. Login to continue.</p>
+        </div>
+      </div>
+
       <!-- Difficulty Label (Tag style) -->
       <div v-if="difficultyLabel" class="absolute top-2 left-2 pb-px z-20">
          <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-white/95 text-slate-700 shadow-sm backdrop-blur-sm border border-black/5">
@@ -142,6 +155,13 @@
             class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-slate-500 bg-slate-200 cursor-not-allowed"
           >
             ✓ Taken
+          </button>
+          <button
+            v-else-if="guestQuizLimitReached"
+            disabled
+            class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-slate-500 bg-slate-200 cursor-not-allowed"
+          >
+            Free Limit Reached
           </button>
             <NuxtLink 
             v-else
@@ -308,6 +328,8 @@ const emit = defineEmits(['like', 'edit'])
 const localLikes = ref(Number(props.likes) || 0)
 const localLiked = ref(Boolean(props.liked))
 const quizTaken = ref(false)
+const guestQuizLimitReached = ref(false)
+const completedQuizPercentile = ref(null)
 let likeInFlight = false
 let likeTimeout = null
 
@@ -331,6 +353,15 @@ onMounted(() => {
   const quizId = props.quizId || (props.quiz && props.quiz.id)
   if (quizId) {
     quizTaken.value = guestQuizStore.hasQuizBeenTaken(quizId)
+  }
+
+  // Check if guest has taken any quiz (free quiz limit = 1)
+  const allResults = guestQuizStore.getAllResults()
+  if (allResults.length > 0 && !auth.user) {
+    guestQuizLimitReached.value = true
+    // Get the percentile from the first completed quiz
+    const firstResult = allResults[0]
+    completedQuizPercentile.value = firstResult.percentile || null
   }
 
   if (process.client && typeof window !== 'undefined') {

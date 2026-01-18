@@ -198,8 +198,8 @@ async function submit() {
     const res = await auth.register(payload)
     if (res.error) throw new Error(res.error)
 
-    // After registration with role set, redirect to complete profile (skip role selection)
-    setTimeout(() => router.push('/onboarding'), 800)
+    // After registration with role set, redirect to quizee dashboard
+    setTimeout(() => router.push('/quizee/dashboard'), 800)
   } catch (e) {
     try {
       for (const k in fieldErrors) delete fieldErrors[k]

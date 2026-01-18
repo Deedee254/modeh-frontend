@@ -673,6 +673,16 @@ function getDifficultyEmoji(level) {
 
 // Actions
 function startQuiz() {
+  // Check if guest user has already taken a free quiz
+  if (!isLoggedIn.value && !isPaid.value) {
+    const allResults = guestQuizStore.getAllResults()
+    if (allResults.length > 0) {
+      // Guest has already taken one free quiz
+      router.push('/login')
+      return
+    }
+  }
+
   // If paid quizzes require quizee login -> direct to quizee take route.
   if (isPaid.value) {
     const quizeeTake = `/quizee/quizzes/take/${quiz.value.slug}`

@@ -19,9 +19,40 @@
       </div>
 
       <!-- Results Content -->
-      <div class="p-6 space-y-6">
-        <!-- Score Card -->
-        <div class="grid grid-cols-3 gap-4">
+      <div class="p-6 space-y-6 relative">
+        <!-- Blurred Results Section (for non-authenticated users) -->
+        <div v-if="!isAuthenticated" class="relative">
+          <!-- Score Card - Blurred -->
+          <div class="grid grid-cols-3 gap-4 blur-sm opacity-50">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <p class="text-sm text-gray-600 font-medium">Score</p>
+              <p class="text-3xl font-bold text-green-600">{{ results?.percentage || 0 }}%</p>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <p class="text-sm text-gray-600 font-medium">Correct</p>
+              <p class="text-3xl font-bold text-blue-600">{{ results?.correct_count }}/{{ results?.total_questions }}</p>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+              <p class="text-sm text-gray-600 font-medium">Time</p>
+              <p class="text-3xl font-bold text-amber-600">{{ formatTime(results?.time_taken || 0) }}</p>
+            </div>
+          </div>
+
+          <!-- Unlock Overlay -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-lg backdrop-blur-sm">
+            <Icon name="heroicons:lock-closed" class="h-12 w-12 text-blue-600 mb-3" />
+            <p class="text-center font-semibold text-gray-800 mb-3">See your full results</p>
+            <button
+              @click="$emit('signup')"
+              class="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition shadow-lg"
+            >
+              Sign Up to View Results
+            </button>
+          </div>
+        </div>
+
+        <!-- Clear Results (for authenticated users) -->
+        <div v-else class="grid grid-cols-3 gap-4">
           <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
             <p class="text-sm text-gray-600 font-medium">Score</p>
             <p class="text-3xl font-bold text-green-600">{{ results?.percentage || 0 }}%</p>
@@ -49,38 +80,8 @@
           </p>
         </div>
 
-        <!-- Sign Up / Login Encouragement -->
-        <div v-if="!isAuthenticated" class="rounded-lg bg-blue-50 p-6 border-2 border-blue-200">
-          <div class="text-center space-y-4">
-            <div>
-              <h3 class="text-lg font-bold text-blue-900">Want to unlock more features?</h3>
-              <p class="text-blue-700 mt-1">Sign up or log in to:</p>
-              <ul class="text-left inline-block mt-3 text-blue-700 space-y-1">
-                <li>✓ Take unlimited quizzes</li>
-                <li>✓ Track your progress</li>
-                <li>✓ Earn badges and points</li>
-                <li>✓ Compete with others</li>
-              </ul>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                @click="$emit('signup')"
-                class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-              >
-                Sign Up Free
-              </button>
-              <button
-                @click="$emit('login')"
-                class="px-6 py-2 bg-white text-blue-600 border-2 border-blue-600 rounded-lg font-medium hover:bg-blue-50 transition"
-              >
-                Log In
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- Authenticated User Actions -->
-        <div v-else class="rounded-lg bg-green-50 p-4 border border-green-200">
+        <div v-if="isAuthenticated" class="rounded-lg bg-green-50 p-4 border border-green-200">
           <p class="text-green-800">
             ✓ Your results have been saved to your account. Track your progress and compare with other Quizees!
           </p>

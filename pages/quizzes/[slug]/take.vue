@@ -659,7 +659,7 @@ async function submitAnswers() {
       try { clearProgress() } catch (e) {}
       clearSavedAnswers()
 
-      // For public submissions, store results and show modal
+      // For public submissions, store results
       const attemptResult = body?.attempt
 
       
@@ -667,10 +667,15 @@ async function submitAnswers() {
         // Save the result to guest quiz store
         guestQuizStore.saveQuizResult(attemptResult)
         
-        // Store results for modal display
-        quizResults.value = attemptResult
+        // Check if user is authenticated
+        if (authStore.user) {
+          // Authenticated user: redirect to full results page
+          router.push(`/quizee/quizzes/result/${attemptResult.id}`)
+          return
+        }
         
-        // Show results modal instead of redirecting
+        // Non-authenticated user: show guest results modal
+        quizResults.value = attemptResult
         showResultsModal.value = true
         return
       }
