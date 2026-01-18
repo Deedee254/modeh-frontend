@@ -40,150 +40,36 @@
           
           <!-- Metrics grid (client-only to avoid SSR/client hydration mismatches for auth-protected data) -->
           <ClientOnly>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <!-- Average Score -->
-            <div class="rounded-xl bg-white dark:bg-slate-800 p-5 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Average Score</span>
-                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                </div>
-              </div>
-              <div class="text-3xl font-black text-gray-900 dark:text-white">{{ avgScore }}<span class="text-lg">%</span></div>
-              <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ totalAttempts }} quizzes completed</div>
-            </div>
-
-            <!-- Total Time -->
-            <div class="rounded-xl bg-white dark:bg-slate-800 p-5 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Time</span>
-                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-              </div>
-              <div class="text-3xl font-black text-gray-900 dark:text-white">{{ formatTime(totalQuizTime) }}</div>
-              <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">All quizzes</div>
-            </div>
-
-            <!-- Points -->
-            <div class="rounded-xl bg-white dark:bg-slate-800 p-5 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Points</span>
-                <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                </div>
-              </div>
-              <div class="text-3xl font-black text-gray-900 dark:text-white">{{ rewards.points || 0 }}</div>
-              <div class="mt-2 text-xs text-gray-500 dark:text-gray-400"><span class="text-brand-600 font-semibold">{{ pointsToday }}</span> today</div>
-            </div>
-
-            <!-- Streak -->
-            <div class="rounded-xl bg-white dark:bg-slate-800 p-5 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Streak</span>
-                <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                </div>
-              </div>
-              <div class="text-3xl font-black text-gray-900 dark:text-white">{{ topStreak }}</div>
-              <div class="mt-2 text-xs text-gray-500 dark:text-gray-400"><span class="text-brand-600 font-semibold">{{ streakDays }}</span> days</div>
-            </div>
-          </div>
+          <QuizeeMetricsGrid 
+            :loading="metricsLoading"
+            :avgScore="avgScore"
+            :totalAttempts="totalAttempts"
+            :totalQuizTime="totalQuizTime"
+            :points="rewards.points"
+            :pointsToday="pointsToday"
+            :topStreak="topStreak"
+            :streakDays="streakDays"
+          />
           </ClientOnly>
           
           <!-- Performance Stats -->
-          <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <template #header>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                </div>
-                <div class="font-semibold text-lg">Performance Overview</div>
-              </div>
-            </template>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 p-6">
-              <div class="border-l-3 border-purple-500 pl-4">
-                <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Average per Quiz</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatTime(avgQuizTime) }}</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">How long you typically spend</p>
-              </div>
-              <div class="border-l-3 border-green-500 pl-4">
-                <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Fastest Quiz</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatTime(fastestQuizTime) }}</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Your personal best</p>
-              </div>
-              <div class="border-l-3 border-orange-500 pl-4">
-                <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Per Question</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatTime(avgQuestionTime) }}</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Average thinking time</p>
-              </div>
-            </div>
-          </UiCard>
+          <QuizeePerformanceStats 
+            :loading="metricsLoading"
+            :avgQuizTime="avgQuizTime"
+            :fastestQuizTime="fastestQuizTime"
+            :avgQuestionTime="avgQuestionTime"
+          />
 
           <!-- Topic Strength -->
-          <UiCard v-if="topicStrength && topicStrength.length > 0" class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <template #header>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/30 dark:to-indigo-800/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                </div>
-                <div class="font-semibold text-lg">Topic Strength</div>
-              </div>
-            </template>
-            <div class="p-6 space-y-5">
-               <div v-for="topic in topicStrength.slice(0, 5)" :key="topic.name" class="group">
-                  <div class="flex items-center justify-between mb-2">
-                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ topic.name }}</span>
-                     <span class="text-sm font-bold text-brand-600 dark:text-brand-400">{{ topic.accuracy }}%</span>
-                  </div>
-                  <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                     <div class="bg-gradient-to-r from-brand-500 to-brand-600 h-2.5 rounded-full transition-all duration-700 ease-out group-hover:shadow-lg group-hover:shadow-brand-500/50" :style="{ width: topic.accuracy + '%' }"></div>
-                  </div>
-               </div>
-            </div>
-          </UiCard>
+          <QuizeeTopicStrength :topicStrength="topicStrength" />
 
           <!-- Recommended quizzes -->
           <ClientOnly>
-            <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-              <template #header>
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/30 dark:to-cyan-800/30 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path></svg>
-                  </div>
-                  <div class="flex items-center gap-3 flex-1">
-                    <div class="font-semibold text-lg">Recommended for you</div>
-                    <span class="text-xs font-bold px-3 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 rounded-full">Grade {{ displayGrade }}</span>
-                  </div>
-                </div>
-              </template>
-
-              <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 p-6">
-                <div v-if="!recQuizzes.length" class="col-span-full py-8 text-center">
-                  <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">No recommendations yet</p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Try browsing quizzes to get personalized suggestions</p>
-                </div>
-                <NuxtLink v-for="q in recQuizzes" :key="q.id" :to="`/quizee/quizzes/${q.slug}`" class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 border border-gray-200 dark:border-slate-600 p-5 hover:border-brand-400 dark:hover:border-brand-500 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                  <div class="absolute inset-0 bg-gradient-to-br from-brand-600/0 to-brand-600/0 group-hover:from-brand-600/5 group-hover:to-brand-600/10 transition-all duration-300"></div>
-                  <div class="relative z-10">
-                    <div class="flex items-start justify-between mb-3">
-                      <div class="flex-1">
-                        <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{{ q.title || q.name || 'Untitled Quiz' }}</h3>
-                      </div>
-                      <div class="ml-3 flex-shrink-0">
-                        <svg class="w-5 h-5 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                      </div>
-                    </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ q.description || 'Challenge yourself with this quiz' }}</p>
-                    <div class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-brand-600 group-hover:bg-brand-700 text-white font-semibold rounded-lg transition-all duration-200">
-                      <span>Take Quiz</span>
-                      <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-                    </div>
-                  </div>
-                </NuxtLink>
-              </div>
-            </UiCard>
+            <QuizeeRecommendedQuizzes 
+              :loading="recQuizzesLoading"
+              :quizzes="recQuizzes"
+              :displayGrade="displayGrade"
+            />
           </ClientOnly>
         </div>
 
@@ -345,6 +231,11 @@ import ChatBubble from '~/components/ChatBubble.vue'
 import RuntimeImg from '~/components/RuntimeImg.vue'
 import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
+import SkeletonGrid from '~/components/SkeletonGrid.vue'
+import QuizeeMetricsGrid from '~/components/quizee/QuizeeMetricsGrid.vue'
+import QuizeePerformanceStats from '~/components/quizee/QuizeePerformanceStats.vue'
+import QuizeeTopicStrength from '~/components/quizee/QuizeeTopicStrength.vue'
+import QuizeeRecommendedQuizzes from '~/components/quizee/QuizeeRecommendedQuizzes.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useMetricsDebug } from '~/composables/useTaxonomyHydration'
@@ -356,6 +247,10 @@ const { print: printMetrics } = useMetricsDebug()
 
 const auth = useAuthStore()
 const grade = auth.user?.grade ?? 8
+
+// Loading states
+const metricsLoading = ref(true)
+const recQuizzesLoading = ref(true)
 
 // Display grade for recommendations section
 const displayGrade = computed(() => {
@@ -521,6 +416,8 @@ async function fetchRecommendations() {
   } catch (e) {
     console.error('Failed to fetch recommendations:', e)
     recQuizzes.value = []
+  } finally {
+    recQuizzesLoading.value = false
   }
 }
 
@@ -568,6 +465,8 @@ async function fetchStats() {
     }
   } catch (e) {
     console.error('Failed to fetch quiz stats:', e)
+  } finally {
+    metricsLoading.value = false
   }
 }
 

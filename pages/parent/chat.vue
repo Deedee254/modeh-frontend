@@ -1,19 +1,22 @@
-<template>
-  <div class="w-full">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Messages</h1>
-      <p class="text-gray-600 dark:text-gray-400 mt-1">Chat with quiz masters, quizees, and administrators</p>
-    </div>
+<script setup>
+definePageMeta({ layout: 'parent', hideBottomNav: true })
+import ChatWidget from '~/components/chat/ChatWidget.vue'
+</script>
 
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
-      <Icon name="heroicons:chat-bubble-left-right" class="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Chat Features</h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-6">Use the chat widget in the corner to communicate directly with quiz masters, quizees, and support team members.</p>
-      <p class="text-sm text-gray-500 dark:text-gray-400">The chat widget will appear at the bottom right of your screen.</p>
+<template>
+  <div id="root" style="height: calc(100vh - 6rem)">
+    <div role="region" aria-label="Notifications (F8)" tabindex="-1" style="pointer-events: none;">
+      <ol tabindex="-1" class="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"></ol>
     </div>
+    <section aria-label="Notifications alt+T" tabindex="-1" aria-live="polite" aria-relevant="additions text" aria-atomic="false"></section>
+    <ClientOnly>
+      <ChatWidget />
+    </ClientOnly>
   </div>
 </template>
 
-<script setup>
-definePageMeta({ layout: 'parent' })
-</script>
+<style scoped>
+:root {
+  --top-bar-height: 4rem;
+}
+</style>
