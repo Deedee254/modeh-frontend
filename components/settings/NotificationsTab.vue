@@ -1,59 +1,102 @@
 <template>
-  <div class="p-4">
-    <div class="mb-4 flex items-center justify-between">
-      <h3 class="text-lg font-medium">Notifications</h3>
-      <button @click="load" class="text-sm text-brand-600">Refresh</button>
-    </div>
-
-      <!-- Preferences editor -->
-      <div class="mb-6 p-4 border rounded">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <h4 class="font-medium">Notification Preferences</h4>
-          <div class="text-sm text-gray-500">Control how you receive notifications</div>
-        </div>
-        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label class="flex items-center gap-3">
-            <input type="checkbox" v-model="prefs.database" />
-            <span>In-app (database)</span>
-          </label>
-          <label class="flex items-center gap-3">
-            <input type="checkbox" v-model="prefs.broadcast" />
-            <span>Live (broadcast)</span>
-          </label>
-          <label class="flex items-center gap-3">
-            <input type="checkbox" v-model="prefs.mail" />
-            <span>Email</span>
-          </label>
-          <label class="flex items-center gap-3">
-            <input type="checkbox" v-model="prefs.push" />
-            <span>Push</span>
-          </label>
-        </div>
-        <div class="mt-3 flex items-center gap-3">
-          <button @click="savePrefs" :disabled="prefsSaving" class="px-3 py-1 bg-brand-600 text-white rounded text-sm">Save preferences</button>
-          <button @click="loadPrefs" type="button" class="text-sm text-gray-600">Reload</button>
-          <span v-if="prefsSaving" class="text-sm text-gray-500">Saving…</span>
-        </div>
+  <div class="space-y-6 max-w-4xl">
+    <!-- Preferences Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notification Preferences</h3>
+        <button @click="loadPrefs" class="text-sm font-medium text-brand-600 hover:text-brand-700">Reload</button>
       </div>
 
-    <div v-if="loading" class="text-sm text-gray-500">Loading notifications…</div>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose how you'd like to receive notifications</p>
 
-    <div v-else>
-      <div v-if="notifications.length === 0" class="text-sm text-gray-600">No notifications.</div>
-
-      <ul class="space-y-3">
-        <li v-for="n in notifications" :key="n.id" class="p-3 border rounded flex flex-col sm:flex-row sm:justify-between sm:items-start">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <label class="flex items-center gap-3 p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors">
+          <input type="checkbox" v-model="prefs.database" class="w-5 h-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
           <div>
-            <div class="font-semibold">{{ n.title || n.type }}</div>
-            <div class="text-sm text-gray-700 mt-1">{{ n.body || (n.data && n.data.message) }}</div>
-            <div class="text-xs text-gray-500 mt-2">{{ formatDate(n.created_at) }}</div>
+            <span class="font-medium text-gray-900 dark:text-white">In-App Notifications</span>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">See updates while using Modeh</p>
           </div>
-          <div class="ml-4 flex-shrink-0">
-            <button v-if="!n.read" @click="markRead(n)" class="px-3 py-1 bg-brand-600 text-white rounded text-sm">Mark read</button>
-            <span v-else class="text-sm text-green-600">Read</span>
+        </label>
+
+        <label class="flex items-center gap-3 p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors">
+          <input type="checkbox" v-model="prefs.broadcast" class="w-5 h-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+          <div>
+            <span class="font-medium text-gray-900 dark:text-white">Live Updates</span>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Real-time alerts</p>
           </div>
-        </li>
-      </ul>
+        </label>
+
+        <label class="flex items-center gap-3 p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors">
+          <input type="checkbox" v-model="prefs.mail" class="w-5 h-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+          <div>
+            <span class="font-medium text-gray-900 dark:text-white">Email</span>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Sent to your email address</p>
+          </div>
+        </label>
+
+        <label class="flex items-center gap-3 p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors">
+          <input type="checkbox" v-model="prefs.push" class="w-5 h-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+          <div>
+            <span class="font-medium text-gray-900 dark:text-white">Push Notifications</span>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Browser push alerts</p>
+          </div>
+        </label>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button @click="savePrefs" :disabled="prefsSaving" class="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <span v-if="!prefsSaving">Save Preferences</span>
+          <span v-else>Saving…</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notification History</h3>
+        <button @click="load" class="text-sm font-medium text-brand-600 hover:text-brand-700">Refresh</button>
+      </div>
+
+      <div v-if="loading" class="text-center py-12">
+        <div class="inline-block">
+          <svg class="animate-spin h-8 w-8 text-brand-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <p class="text-gray-500 dark:text-gray-400 mt-2">Loading notifications…</p>
+      </div>
+
+      <div v-else-if="notifications.length === 0" class="text-center py-12">
+        <svg class="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+        </svg>
+        <p class="text-gray-600 dark:text-gray-400">No notifications yet</p>
+        <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">You're all caught up!</p>
+      </div>
+
+      <div v-else class="space-y-3">
+        <div v-for="n in notifications" :key="n.id" :class="['p-4 rounded-lg border transition-colors', n.read ? 'bg-gray-50 dark:bg-slate-700/30 border-gray-200 dark:border-slate-600' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800']">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 dark:text-white">{{ n.title || n.type }}</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ n.body || (n.data && n.data.message) }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ formatDate(n.created_at) }}</p>
+            </div>
+            <button 
+              v-if="!n.read" 
+              @click="markRead(n)"
+              class="flex-shrink-0 px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded transition-colors"
+            >
+              Mark Read
+            </button>
+            <span v-else class="flex-shrink-0 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded">
+              ✓ Read
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -82,7 +125,6 @@ async function loadPrefs() {
     const json = await res.json()
     const p = json.preferences ?? null
     if (p && typeof p === 'object') {
-      // Ensure boolean values
       prefs.value.database = !!(p.database ?? prefs.value.database)
       prefs.value.broadcast = !!(p.broadcast ?? prefs.value.broadcast)
       prefs.value.mail = !!(p.mail ?? prefs.value.mail)
@@ -98,11 +140,11 @@ async function loadPrefs() {
 async function savePrefs() {
   prefsSaving.value = true
   try {
-  const body = { preferences: { ...prefs.value } }
-  const res = await api.postJson('/api/me/notification-preferences', body)
-  if (api.handleAuthStatus(res)) return
-  if (!res.ok) throw new Error('Failed to save preferences')
-  alert.push({ type: 'success', message: 'Preferences saved' })
+    const body = { preferences: { ...prefs.value } }
+    const res = await api.postJson('/api/me/notification-preferences', body)
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to save preferences')
+    alert.push({ type: 'success', message: 'Notification preferences saved' })
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to save preferences' })
   } finally {
@@ -135,19 +177,18 @@ async function load() {
 
 async function markRead(item) {
   try {
-  const res = await api.postJson(`/api/notifications/${item.id}/mark-read`, {})
-  if (api.handleAuthStatus(res)) return
-  if (!res.ok) throw new Error('Failed to mark read')
-  item.read = true
-  alert.push({ type: 'success', message: 'Marked read' })
+    const res = await api.postJson(`/api/notifications/${item.id}/mark-read`, {})
+    if (api.handleAuthStatus(res)) return
+    if (!res.ok) throw new Error('Failed to mark read')
+    item.read = true
+    alert.push({ type: 'success', message: 'Marked as read' })
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to mark notification' })
   }
 }
 
-// auto-load on mount
+// Auto-load on mount
 load()
-// load user preferences as well
 loadPrefs()
 </script>
  

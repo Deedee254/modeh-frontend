@@ -5,114 +5,77 @@
       <p class="text-base text-gray-600">Track your referrals and earnings</p>
     </div>
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-10">
-      <div v-for="stat in stats" :key="stat.name" class="bg-white overflow-hidden shadow-sm border border-gray-200 rounded-xl hover:shadow-md transition-shadow duration-200">
-        <div class="p-6">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="p-2 bg-brand-50 rounded-lg">
-                <component :is="stat.icon" class="h-6 w-6 text-brand-600" aria-hidden="true" />
-              </div>
+    <!-- Affiliate Code + Stats Grid (Left + Right Layout) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+      <!-- Left: Affiliate Code Section -->
+      <div class="lg:col-span-1 bg-white shadow-sm border border-gray-200 sm:rounded-xl overflow-hidden">
+        <div class="px-6 py-6 sm:px-8">
+          <div class="flex items-center mb-4">
+            <div class="p-2 bg-green-50 rounded-lg mr-3">
+              <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
             </div>
-            <div class="ml-4 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-600 truncate mb-1">{{ stat.name }}</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-bold text-gray-900">{{ stat.value }}</div>
-                </dd>
-              </dl>
+            <h3 class="text-lg font-semibold text-gray-900">Affiliate Code</h3>
+          </div>
+
+          <!-- No Code State -->
+          <div v-if="!affiliateCode" class="space-y-4">
+            <p class="text-sm text-gray-600">Join our affiliate program and earn 10% commission on referrals.</p>
+            <button
+              @click="generateAffiliateCode"
+              :disabled="isGenerating"
+              class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <SparklesIcon v-if="!isGenerating" class="h-4 w-4 mr-2" />
+              <ArrowPathIcon v-else class="h-4 w-4 mr-2 animate-spin" />
+              {{ isGenerating ? 'Generating...' : 'Generate Code' }}
+            </button>
+          </div>
+
+          <!-- Has Code State -->
+          <div v-else class="space-y-4">
+            <div class="bg-brand-50 rounded-lg p-4 border border-brand-200">
+              <p class="text-xs text-brand-600 uppercase tracking-wide font-semibold mb-2">Your Code</p>
+              <p class="text-2xl font-bold text-brand-900 font-mono break-all">{{ affiliateCode }}</p>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Affiliate Code Generation & Benefits -->
-    <div class="bg-white shadow-sm border border-gray-200 sm:rounded-xl mb-8">
-      <div class="px-6 py-6 sm:px-8">
-        <div class="flex items-center mb-4">
-          <div class="p-2 bg-green-50 rounded-lg mr-3">
-            <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900">Affiliate Program</h3>
-        </div>
-
-        <!-- No Code State -->
-        <div v-if="!affiliateCode" class="space-y-6">
-          <div class="prose max-w-none">
-            <h4 class="text-lg font-semibold text-gray-900">Join Our Affiliate Program</h4>
-            <p class="text-gray-600">Earn money by sharing educational content with your network. Our affiliate program offers:</p>
-            <ul class="mt-4 space-y-3">
-              <li class="flex items-start">
-                <CheckCircleIcon class="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                <span class="text-gray-700">10% commission on all referral purchases</span>
-              </li>
-              <li class="flex items-start">
-                <CheckCircleIcon class="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                <span class="text-gray-700">Real-time tracking of referrals and earnings</span>
-              </li>
-              <li class="flex items-start">
-                <CheckCircleIcon class="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                <span class="text-gray-700">Monthly payouts for earnings over 1000 KES</span>
-              </li>
-            </ul>
-          </div>
-          <button
-            @click="generateAffiliateCode"
-            :disabled="isGenerating"
-            class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <SparklesIcon v-if="!isGenerating" class="h-4 w-4 mr-2" />
-            <ArrowPathIcon v-else class="h-4 w-4 mr-2 animate-spin" />
-            {{ isGenerating ? 'Generating...' : 'Generate Affiliate Code' }}
-          </button>
-        </div>
-
-        <!-- Has Code State -->
-        <div v-else class="space-y-6">
-          <div class="prose max-w-none">
-            <h4 class="text-lg font-semibold text-gray-900">Your Affiliate Code</h4>
-            <p class="text-gray-600">Share quizzes with your referral code to earn commissions. Your code will be automatically added to any quiz links you share.</p>
-          </div>
-          
-          <div class="flex flex-col sm:flex-row gap-3">
-            <div class="flex-1">
-              <input
-                type="text"
-                :value="affiliateCode"
-                readonly
-                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-600 text-sm px-4 py-3 bg-gray-50"
-              />
-            </div>
+            
             <button
               @click="copyToClipboard(affiliateCode)"
-              class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 transition-colors duration-200"
+              class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 transition-colors duration-200"
             >
               <ClipboardIcon v-if="!copied" class="h-4 w-4 mr-2" />
               <CheckIcon v-else class="h-4 w-4 mr-2" />
               {{ copied ? 'Copied!' : 'Copy Code' }}
             </button>
-          </div>
 
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h5 class="text-sm font-semibold text-gray-900 mb-3">How to Share Quizzes</h5>
-            <ol class="space-y-2 text-sm text-gray-600">
-              <li class="flex items-start">
-                <span class="font-medium text-brand-600 mr-2">1.</span>
-                <span>Navigate to any quiz you want to share</span>
-              </li>
-              <li class="flex items-start">
-                <span class="font-medium text-brand-600 mr-2">2.</span>
-                <span>Click the share button on the quiz card or page</span>
-              </li>
-              <li class="flex items-start">
-                <span class="font-medium text-brand-600 mr-2">3.</span>
-                <span>Your affiliate code will be automatically added to the share link</span>
-              </li>
-            </ol>
+            <div class="bg-blue-50 rounded-lg p-3 border border-blue-200 text-xs text-blue-800">
+              <p class="font-semibold mb-2">💡 How to Use:</p>
+              <ol class="space-y-1 text-xs">
+                <li>1. Share quizzes from Modeh</li>
+                <li>2. Your code auto-adds to links</li>
+                <li>3. Earn 10% on referral purchases</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Stats Grid 2x2 -->
+      <div class="lg:col-span-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div v-for="stat in stats" :key="stat.name" class="bg-white overflow-hidden shadow-sm border border-gray-200 rounded-xl hover:shadow-md transition-shadow duration-200">
+            <div class="p-6">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">{{ stat.name }}</p>
+                  <p class="text-3xl font-bold text-gray-900">{{ stat.value }}</p>
+                </div>
+                <div class="p-3 bg-brand-50 rounded-lg">
+                  <component :is="stat.icon" class="h-6 w-6 text-brand-600" aria-hidden="true" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

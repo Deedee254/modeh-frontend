@@ -1,122 +1,214 @@
 <template>
-  <div class="space-y-6">
-    <ProfileHeader :title="user?.name" :subtitle="currentProfile?.headline || ''" :avatarUrl="avatarPreview || ''">
-      <template #avatarControls>
-        <input ref="avatarInput" type="file" class="hidden" @change="onFile" aria-hidden="true" />
-        <button type="button" @click="triggerAvatarUpload" title="Change avatar" class="-translate-y-1/4 translate-x-1/4 bg-white rounded-full p-1 shadow flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-700" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path d="M17.414 2.586a2 2 0 010 2.828l-9.193 9.193a1 1 0 01-.464.263l-4 1a1 1 0 01-1.213-1.213l1-4a1 1 0 01.263-.464l9.193-9.193a2 2 0 012.828 0zM15.121 4.05l-1.172-1.172-8.486 8.486-0.588 2.353 2.353-0.588 8.486-8.486L15.12 4.05z" />
-          </svg>
-        </button>
-      </template>
-    </ProfileHeader>
-
-    <div>
-      <div class="flex items-center justify-end mb-3">
-        <div v-if="isQuizMaster || isQuizee">
-          <VerifiedBadge v-if="currentProfile?.is_verified" />
+  <div class="space-y-6 max-w-4xl">
+    <!-- Avatar Section Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8">
+      <div class="flex flex-col sm:flex-row items-center gap-8">
+        <!-- Avatar -->
+        <div class="relative flex-shrink-0">
+          <ProfileHeader :title="user?.name" :subtitle="currentProfile?.headline || ''" :avatarUrl="avatarPreview || ''">
+            <template #avatarControls>
+              <input ref="avatarInput" type="file" class="hidden" @change="onFile" aria-hidden="true" />
+              <button 
+                type="button" 
+                @click="triggerAvatarUpload" 
+                title="Change avatar" 
+                class="-translate-y-1/4 translate-x-1/4 bg-white dark:bg-slate-700 rounded-full p-2 shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700 dark:text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M17.414 2.586a2 2 0 010 2.828l-9.193 9.193a1 1 0 01-.464.263l-4 1a1 1 0 01-1.213-1.213l1-4a1 1 0 01.263-.464l9.193-9.193a2 2 0 012.828 0zM15.121 4.05l-1.172-1.172-8.486 8.486-0.588 2.353 2.353-0.588 8.486-8.486L15.12 4.05z" />
+                </svg>
+              </button>
+            </template>
+          </ProfileHeader>
         </div>
-      </div>
 
-      <div class="bg-white p-4 rounded shadow">
-        <form @submit.prevent="save" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Name -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700">Full name</label>
-              <input v-model="form.display_name" type="text" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600" />
-
-              <label class="block text-sm font-medium text-slate-700 mt-3">Phone</label>
-              <input v-model="form.phone" type="text" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600" />
-            </div>
-
-            <!-- Short bio -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700">Short bio</label>
-              <textarea v-model="form.bio" rows="3" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600"></textarea>
-            </div>
-
-            <!-- Areas of Interest -->
-            <div v-if="isQuizMaster || isQuizee">
-              <label class="block text-sm font-medium text-slate-700 mb-2">Areas of Interest</label>
-              <TaxonomyFlowPicker class="w-full" v-model="taxonomySelection" :includeTopics="false" :multiSelectSubjects="true" />
-            </div>
-
-            <!-- Institution field removed as per request -->
-
-            <!-- Buttons span both columns -->
-            <div class="flex gap-2 md:col-span-2">
-              <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded">Save</button>
-              <button type="button" @click="reset" class="px-4 py-2 border rounded">Reset</button>
-            </div>
+        <!-- User Info -->
+        <div class="flex-1 text-center sm:text-left">
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ user?.name }}</h3>
+          <p v-if="currentProfile?.headline" class="text-gray-600 dark:text-gray-400 mt-1">{{ currentProfile.headline }}</p>
+          <div v-if="isQuizMaster || isQuizee" class="flex items-center gap-2 mt-3 justify-center sm:justify-start">
+            <VerifiedBadge v-if="currentProfile?.is_verified" />
           </div>
-        </form>
+        </div>
       </div>
     </div>
 
+    <!-- Profile Information Card -->
+    <form @submit.prevent="save" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Profile Information</h3>
+
+      <div class="space-y-6">
+        <!-- Name and Phone Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Full Name</label>
+            <input 
+              v-model="form.display_name" 
+              type="text" 
+              placeholder="Your full name"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Phone Number</label>
+            <input 
+              v-model="form.phone" 
+              type="text" 
+              placeholder="Your phone number"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <!-- Bio -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Short Bio</label>
+          <textarea 
+            v-model="form.bio" 
+            rows="3" 
+            placeholder="Tell us about yourself..."
+            class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+          ></textarea>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Maximum 500 characters</p>
+        </div>
+
+        <!-- Areas of Interest -->
+        <div v-if="isQuizMaster || isQuizee">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-3">Areas of Interest</label>
+          <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
+            <TaxonomyFlowPicker 
+              class="w-full" 
+              v-model="taxonomySelection" 
+              :includeTopics="false" 
+              :multiSelectSubjects="true" 
+            />
+          </div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">Select your areas of expertise</p>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
+          <button 
+            type="submit" 
+            class="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-colors"
+          >
+            Save Changes
+          </button>
+          <button 
+            type="button" 
+            @click="reset"
+            class="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </form>
+
     <!-- Institution Profile Section (for institution managers) -->
-    <div v-if="isInstitutionManager" class="mt-12 pt-8 border-t">
-      <h2 class="text-2xl font-bold text-slate-900 mb-6">Institution Profile</h2>
-      
-      <div class="bg-white p-4 rounded shadow">
-        <form @submit.prevent="saveInstitution" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Institution Name -->
+    <div v-if="isInstitutionManager">
+      <form @submit.prevent="saveInstitution" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Institution Profile</h3>
+
+        <div class="space-y-6">
+          <!-- Basics Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-slate-700">Institution Name</label>
-              <input v-model="institutionForm.name" type="text" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600" />
+              <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Institution Name</label>
+              <input 
+                v-model="institutionForm.name" 
+                type="text" 
+                placeholder="Institution name"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
             </div>
 
-            <!-- Email -->
             <div>
-              <label class="block text-sm font-medium text-slate-700">Email</label>
-              <input v-model="institutionForm.email" type="email" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600" />
+              <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Email</label>
+              <input 
+                v-model="institutionForm.email" 
+                type="email" 
+                placeholder="contact@institution.com"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
             </div>
 
-            <!-- Phone -->
             <div>
-              <label class="block text-sm font-medium text-slate-700">Phone</label>
-              <input v-model="institutionForm.phone" type="tel" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600" />
+              <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Phone</label>
+              <input 
+                v-model="institutionForm.phone" 
+                type="tel" 
+                placeholder="Phone number"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
             </div>
 
-            <!-- Website -->
             <div>
-              <label class="block text-sm font-medium text-slate-700">Website</label>
-              <input v-model="institutionForm.website" type="url" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600" />
+              <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Website</label>
+              <input 
+                v-model="institutionForm.website" 
+                type="url" 
+                placeholder="https://example.com"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
             </div>
+          </div>
 
-            <!-- Logo URL -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700">Logo URL</label>
-              <input v-model="institutionForm.logo_url" type="url" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600" />
-              <p v-if="institutionForm.logo_url" class="mt-2">
-                <img :src="institutionForm.logo_url" alt="Institution logo" class="h-20 w-20 rounded object-cover" />
-              </p>
-            </div>
+          <!-- Address -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Address</label>
+            <textarea 
+              v-model="institutionForm.address" 
+              rows="2" 
+              placeholder="Street address, city, state, postal code..."
+              class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+            ></textarea>
+          </div>
 
-            <!-- Address -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700">Address</label>
-              <textarea v-model="institutionForm.address" rows="2" class="mt-1 block w-full border border-slate-200 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-600"></textarea>
+          <!-- Logo -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Logo URL</label>
+            <input 
+              v-model="institutionForm.logo_url" 
+              type="url" 
+              placeholder="https://example.com/logo.png"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+            <div v-if="institutionForm.logo_url" class="mt-3">
+              <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Logo Preview:</p>
+              <img :src="institutionForm.logo_url" alt="Institution logo" class="h-20 w-20 rounded-lg object-cover border border-gray-200 dark:border-slate-700" />
             </div>
           </div>
 
           <!-- Status Messages -->
-          <div class="flex gap-2 md:col-span-2 pt-4">
-            <button type="submit" :disabled="institutionLoading" class="px-4 py-2 bg-brand-600 text-white rounded disabled:opacity-50">
-              {{ institutionLoading ? 'Saving...' : 'Save Institution' }}
-            </button>
-            <button type="button" @click="resetInstitution" class="px-4 py-2 border rounded">Reset</button>
-          </div>
-
-          <div v-if="institutionError" class="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+          <div v-if="institutionError" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
             {{ institutionError }}
           </div>
-          <div v-if="institutionSuccess" class="p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
+          <div v-if="institutionSuccess" class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 text-sm">
             {{ institutionSuccess }}
           </div>
-        </form>
-      </div>
+
+          <!-- Buttons -->
+          <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
+            <button 
+              type="submit" 
+              :disabled="institutionLoading" 
+              class="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="!institutionLoading">Save Institution</span>
+              <span v-else>Saving…</span>
+            </button>
+            <button 
+              type="button" 
+              @click="resetInstitution"
+              class="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 </template>

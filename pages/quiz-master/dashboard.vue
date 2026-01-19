@@ -25,28 +25,38 @@
               </NuxtLink>
             </div>
           </div>
+          <!-- Metrics Icons in Hero -->
+          <div class="hidden lg:flex flex-col gap-4">
+            <div v-if="!metricsLoading" class="flex gap-4">
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path></svg>
+                </div>
+                <div class="text-2xl font-black">{{ quizzesCount }}</div>
+                <div class="text-xs opacity-75">Quizzes</div>
+              </div>
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div class="text-2xl font-black">{{ questionsCount }}</div>
+                <div class="text-xs opacity-75">Questions</div>
+              </div>
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div class="text-2xl font-black">{{ publishedCount }}</div>
+                <div class="text-xs opacity-75">Published</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Main column -->
         <div class="lg:col-span-2 space-y-6">
-          <!-- Metrics Grid -->
-          <QuizMasterMetricsGrid 
-            :loading="metricsLoading"
-            :quizzesCount="quizzesCount"
-            :questionsCount="questionsCount"
-            :publishedCount="publishedCount"
-            :pendingCount="pendingApprovals.length"
-          />
-
-          <!-- Recent Quizzes -->
-          <QuizMasterRecentQuizzes 
-            :loading="quizzesPending"
-            :quizzes="recentQuizzes"
-            :error="quizzesError"
-          />
-
           <!-- Quick Actions -->
           <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
             <template #header>
@@ -97,6 +107,14 @@
               </template>
             </div>
           </UiCard>
+
+          <!-- Recent Quizzes -->
+          <QuizMasterRecentQuizzes 
+            :loading="quizzesPending"
+            :quizzes="recentQuizzes"
+            :error="quizzesError"
+          />
+
         </div>
 
         <!-- Sidebar -->
@@ -205,7 +223,6 @@
 import PageHero from '~/components/ui/PageHero.vue'
 import UiHorizontalCard from '~/components/ui/UiHorizontalCard.vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
-import QuizMasterMetricsGrid from '~/components/quiz-master/QuizMasterMetricsGrid.vue'
 import QuizMasterRecentQuizzes from '~/components/quiz-master/QuizMasterRecentQuizzes.vue'
 import { useAuthStore } from '~/stores/auth'
 import { computed, ref, onMounted } from 'vue'
@@ -249,7 +266,7 @@ onMounted(async () => {
       // Fetch recent quizzes
       (async () => {
         try {
-          const res = await api.get('/api/quizzes?per_page=5')
+          const res = await api.get('/api/quizzes?mine=true&per_page=5')
           if (!res.ok) {
             console.error('Failed to fetch quizzes:', res.status, res.statusText)
             quizzesError.value = new Error(`HTTP ${res.status}`)
@@ -267,7 +284,7 @@ onMounted(async () => {
       // Fetch published quizzes count
       (async () => {
         try {
-          const res = await api.get('/api/quizzes?approved=1&per_page=1')
+          const res = await api.get('/api/quizzes?mine=true&approved=1&per_page=1')
           if (res.ok) {
             publishedData.value = await res.json()
           }
