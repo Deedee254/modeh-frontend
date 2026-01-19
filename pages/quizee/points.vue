@@ -261,8 +261,8 @@ const recentAchievements = computed(() => {
   if (!Array.isArray(achievements.value)) return []
   // Filter achievements that have been completed (have completed_at date)
   return achievements.value
-    .filter((a: any) => a.completed_at)
-    .sort((a: any, b: any) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
+    .filter(a => a?.completed_at)
+    .sort((a, b) => new Date(b?.completed_at).getTime() - new Date(a?.completed_at).getTime())
     .slice(0, 3)
 })
 
@@ -270,7 +270,7 @@ const nextAchievements = computed(() => {
   if (!Array.isArray(achievements.value)) return []
   // Filter achievements that haven't been completed yet
   return achievements.value
-    .filter((a: any) => !a.completed_at)
+    .filter(a => !a?.completed_at)
     .slice(0, 3)
 })
 
