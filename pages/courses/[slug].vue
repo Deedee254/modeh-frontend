@@ -1,62 +1,14 @@
 <template>
   <div>
-    <PageHero
-      :title="`Course ${courseMeta?.name || slug}`"
-      :description="courseMeta?.description || 'Subjects for this course'"
-      :showSearch="true"
-      :flush="true"
-      @search="onSearch"
-    >
-      <template #eyebrow>
-        Course overview
-      </template>
-
-      <template #actions>
-        <div class="flex flex-wrap items-center gap-3">
-          <NuxtLink
-            to="/subjects"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-700 shadow-lg shadow-brand-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
-          >
-            View all subjects
-          </NuxtLink>
-          <NuxtLink
-            :to="`/quizzes?grade=${encodeURIComponent(slug)}`"
-            class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
-          >
-            Browse quizzes
-          </NuxtLink>
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">What you'll find</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ subjects.length || 0 }} subjects curated</p>
-          <p v-if="courseMeta?.summary" class="mt-2 text-sm text-white/70">{{ courseMeta.summary }}</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4h18M3 10h12M3 16h6" />
-        </svg>
-      </template>
-
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Subjects</p>
-          <p class="mt-2 text-xl font-semibold">{{ subjects.length || 0 }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Topics</p>
-          <p class="mt-2 text-xl font-semibold">{{ topicCount }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Quizzes</p>
-          <p class="mt-2 text-xl font-semibold">{{ quizCount }}</p>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/courses" class="hover:text-brand-600">Courses</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>{{ courseMeta?.name || slug }}</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Course {{ courseMeta?.name || slug }}</h1>
+      <p class="text-gray-600">{{ courseMeta?.description }}</p>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 py-10">
       <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
@@ -102,7 +54,6 @@
 </template>
 
 <script setup>
-import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import FiltersSidebar from '~/components/FiltersBar.vue'

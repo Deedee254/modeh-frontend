@@ -1,46 +1,14 @@
 <template>
   <div>
-    <PageHero
-      :title="topic?.name || 'Topic'"
-      :description="topic?.description || `Explore this topic in detail`"
-      :flush="true"
-    >
-      <template #eyebrow>
-        Topic detail
-      </template>
-
-      <template #actions>
-        <div class="flex flex-wrap items-center gap-3">
-          <NuxtLink
-            :to="`/quizee/subjects/${topic?.subject?.slug}`"
-            v-if="topic?.subject?.slug"
-            class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
-          >
-            Back to subject
-          </NuxtLink>
-          <NuxtLink
-            :to="`/quizee/quizzes?topic=${encodeURIComponent(topic?.slug)}`"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
-          >
-            Take a quiz
-          </NuxtLink>
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Details</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ topic?.name || 'Topic' }}</p>
-          <p v-if="topic?.subject?.name" class="mt-2 text-sm text-white/70">Part of {{ topic.subject.name }}</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h12M4 18h8" />
-        </svg>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink :to="`/quizee/subjects/${topic?.subject?.slug}`" v-if="topic?.subject?.slug" class="hover:text-brand-600">{{ topic?.subject?.name || 'Subject' }}</NuxtLink>
+        <span v-if="topic?.subject?.slug" class="mx-2">›</span>
+        <span>{{ topic?.name || 'Topic' }}</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ topic?.name || 'Topic' }}</h1>
+      <p v-if="topic?.description" class="text-gray-600 mb-6">{{ topic.description }}</p>
+    </div>
 
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -113,7 +81,6 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 import useSeo from '~/composables/useSeo'
-import PageHero from '~/components/ui/PageHero.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 

@@ -1,38 +1,13 @@
 <template>
   <div>
-  <PageHero
-    title="Practice Quizzes That Actually Improve Your Grades"
-    description="Discover smart practice quizzes across all subjects and grade levels. Each quiz adapts to your learning style and provides instant feedback to accelerate your progress."
-      :showSearch="true"
-      :flush="true"
-      @search="onServerSearch"
-      :breadcrumbs="[{ text: 'Home', href: '/' }, { text: 'Quizzes', current: true }]"
-    >
-      <template #eyebrow>
-        Quizzes
-      </template>
-
-      <template #actions>
-        <div class="flex flex-col gap-4">
-          <!-- Search is handled by PageHero's built-in search input -->
-        </div>
-        <div class="flex flex-wrap gap-3 text-sm text-white/70">
-            <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5l3.75-3 3.75 3M8.25 16.5l3.75 3 3.75-3" />
-            </svg>
-            {{ displayCount || 0 }} quizzes
-          </span>
-          <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 9.75l7.5-4.5 7.5 4.5M4.5 14.25l7.5 4.5 7.5-4.5" />
-            </svg>
-            {{ topicsList?.length || 0 }} topics
-          </span>
-        </div>
-      </template>
-
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Quizzes</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">Practice Quizzes</h1>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 py-8">
       <!-- Sticky Filters at Top -->
@@ -140,7 +115,6 @@ import QuizCard from '~/components/ui/QuizCard.vue'
 import Pagination from '~/components/Pagination.vue'
 import FiltersSidebar from '~/components/FiltersBar.vue'
 import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
-import PageHero from '~/components/ui/PageHero.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import useQuizzes from '~/composables/useQuizzes'

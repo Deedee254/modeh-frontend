@@ -1,57 +1,14 @@
 <template>
   <div>
-    <PageHero
-      title="Subjects & learning pathways"
-      description="Explore organized subject tracks and curated assessments. Use filters and search to locate learning pathways and resources aligned to your goals."
-      :showSearch="true"
-      :flush="true"
-      @search="onServerSearch"
-    >
-      <template #eyebrow>
-        Subject library
-      </template>
-
-      <template #actions>
-        <div class="flex flex-col gap-6">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex-1 max-w-2xl">
-                <!-- Search is handled by PageHero's built-in search input -->
-            </div>
-            <div class="flex items-center gap-3">
-              <NuxtLink
-                to="/topics"
-                class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
-              >
-                Explore topics
-              </NuxtLink>
-              <NuxtLink
-                to="/register/quiz-master"
-                class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
-              >
-                Create a subject
-              </NuxtLink>
-            </div>
-          </div>
-          <!-- stats removed per request -->
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Curated pathways</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ subjectsCount }} subjects ready to explore</p>
-          <p class="mt-2 text-sm text-white/70">Use the search box to jump directly into a learning path.</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h12M4 18h8" />
-        </svg>
-      </template>
-
-      <!-- stats slot intentionally removed for this page -->
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Subjects</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Subjects & learning pathways</h1>
+      <p class="text-gray-600 mb-6">Explore organized subject tracks and curated assessments. Use filters and search to locate learning pathways and resources aligned to your goals.</p>
+    </div>
 
     <!-- Compact filters (replaces subject pills) -->
     <div class="bg-gray-50 min-h-screen">
@@ -157,7 +114,6 @@
 </template>
 
 <script setup>
-import PageHero from '~/components/ui/PageHero.vue'
 // HeroFilterBar removed — using PageHero search instead
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'

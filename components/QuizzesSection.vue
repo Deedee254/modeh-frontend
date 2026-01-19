@@ -72,6 +72,7 @@
                   class="flex-shrink-0 w-full lg:w-[260px] lg:snap-start first:ml-0"
                 >
                       <UiQuizCard
+                        :quiz="quiz"
                         :to="{ path: `/quizzes/${quiz.slug}` }"
                         :startLink="quiz.is_paid ? { path: `/quizzes/${quiz.slug}` } : { path: `/quizzes/${quiz.slug}/take` }"
                         :takeLink="{ path: `/quizzes/${quiz.slug}/take` }"

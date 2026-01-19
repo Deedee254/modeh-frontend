@@ -3,49 +3,42 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-12">
       <!-- Profile Header Hero -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-        <!-- Cover area with text content -->
-        <div class="h-40 bg-gradient-to-r from-brand-600 to-brand-700 relative">
-          <!-- Name and basic info positioned on cover -->
-          <div class="absolute inset-0 px-6 sm:px-8 pt-6 flex flex-col justify-start text-white">
-            <div>
-              <h1 class="text-3xl sm:text-4xl font-bold">{{ user?.name || 'Quiz-master' }}</h1>
-              <p class="text-brand-100 mt-1">{{ user?.email }}</p>
-            </div>
-            <!-- Quick meta on cover -->
-            <div class="flex flex-wrap items-center gap-4 mt-4 text-sm text-brand-100">
-              <div v-if="institutionLabel" class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.5m-2.5 0H3m14 0v-6m0 0V9m0 6v6m-9-13h9" />
-                </svg>
-                <span class="flex items-center gap-1">{{ institutionLabel }}</span>
-              </div>
-              <div v-if="gradeLabel" class="flex items-center gap-1">Grade {{ gradeLabel }}</div>
-            </div>
-          </div>
-        </div>
+        <!-- Cover area -->
+        <div class="h-40 bg-gradient-to-r from-brand-600 to-brand-700 relative"></div>
 
-        <!-- Profile Info Below Cover -->
+        <!-- Profile Info Below Cover (Facebook Style) -->
         <div class="px-6 sm:px-8 py-6">
-          <!-- Avatar and action section -->
-          <div class="flex flex-col sm:flex-row sm:items-start sm:gap-6 mb-6">
-            <!-- Avatar -->
-            <div class="relative mb-4 sm:mb-0">
+          <!-- Avatar on left, Info on right -->
+          <div class="flex flex-col sm:flex-row gap-6 items-start">
+            <!-- Circular Avatar -->
+            <div class="flex-shrink-0">
               <img
                 :src="userAvatar"
                 :alt="user?.name"
-                class="w-32 h-32 rounded-2xl border-4 border-brand-50 bg-slate-100 object-cover shadow-lg"
+                class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-brand-50 bg-slate-100 object-cover shadow-lg"
               />
             </div>
 
-            <!-- Info and buttons -->
+            <!-- Profile Info on Right -->
             <div class="flex-1">
-              <div class="space-y-2 mb-4">
-                <p v-if="profile?.bio" class="text-slate-700 text-sm leading-relaxed">{{ profile?.bio }}</p>
-                <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                  <div v-if="user?.phone" class="flex items-center gap-2">{{ user?.phone }}</div>
-                  <div v-if="user?.created_at" class="flex items-center gap-2">Joined {{ formatDate(user?.created_at) }}</div>
-                </div>
+              <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">{{ user?.name || 'Quiz-master' }}</h1>
+                <p class="text-sm text-slate-600 mt-1">{{ user?.email }}</p>
               </div>
+
+              <!-- Quick Info -->
+              <div class="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-600 mb-4">
+                <div v-if="institutionLabel" class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.5m-2.5 0H3m14 0v-6m0 0V9m0 6v6m-9-13h9" />
+                  </svg>
+                  <span class="flex items-center gap-1">{{ institutionLabel }}</span>
+                </div>
+                <div v-if="gradeLabel" class="flex items-center gap-1">Grade {{ gradeLabel }}</div>
+              </div>
+
+              <!-- Bio -->
+              <p v-if="profile?.bio" class="text-slate-700 text-sm leading-relaxed mb-4">{{ profile?.bio }}</p>
 
               <!-- Edit button -->
               <NuxtLink

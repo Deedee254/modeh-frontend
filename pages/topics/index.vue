@@ -1,57 +1,14 @@
 <template>
   <div>
-    <PageHero
-      title="Find topic-aligned assessments"
-      description="Target specific skills with short, focused assessments aligned to individual topics. Practice deliberately and measure your progress against clear objectives."
-      :showSearch="true"
-      :flush="true"
-      @search="onSearch"
-      :breadcrumbs="[{ text: 'Home', href: '/' }, { text: 'Topics', current: true }]"
-    >
-      <template #eyebrow>
-        Topics
-      </template>
-
-      <template #actions>
-        <div class="flex flex-col gap-4">
-          <div class="max-w-2xl">
-              <!-- Search is handled by PageHero's built-in search input -->
-          </div>
-          <!-- topic stats moved to the stats slot to render in the right-hand panel -->
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Explore all topics</p>
-          <p class="mt-1 text-2xl font-semibold text-white">Master specific skills</p>
-          <p class="mt-2 text-sm text-white/70">Short, focused quizzes aligned to each topic</p>
-        </div>
-      </template>
-
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Topics</p>
-          <p class="mt-2 text-xl font-semibold">{{ topics.length || 0 }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Subjects</p>
-          <p class="mt-2 text-xl font-semibold">{{ SUBJECTS.length || 0 }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Quizzes</p>
-          <p class="mt-2 text-xl font-semibold">{{ totalQuizzes || 0 }}</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </template>
-
-
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Topics</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Find topic-aligned assessments</h1>
+      <p class="text-gray-600 mb-6">Target specific skills with short, focused assessments aligned to individual topics. Practice deliberately and measure your progress against clear objectives.</p>
+    </div>
 
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -106,7 +63,6 @@
 </template>
 
 <script setup>
-import PageHero from '~/components/ui/PageHero.vue'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import FiltersSidebar from '~/components/FiltersBar.vue'

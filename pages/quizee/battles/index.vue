@@ -1,13 +1,16 @@
 <template>
   <div class="bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <PageHero
-        title="Battle Arena"
-        description="Challenge friends or random players to real-time quiz battles. Create a new battle or join an existing one."
-        :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Battles', current: true }]"
-        align="center"
-      />
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Battles</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Battle Arena</h1>
+      <p class="text-gray-600 mb-6">Challenge friends or random players to real-time quiz battles. Create a new battle or join an existing one.</p>
+    </div>
 
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div class="max-w-4xl mx-auto">
         <!-- New Battle Creation Component -->
         <div class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
@@ -137,7 +140,6 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 import CreateBattle from '~/components/quizee/battle/CreateBattle.vue'
 import CreateGroupBattle from '~/components/quizee/battle/CreateGroupBattle.vue'
-import PageHero from '~/components/ui/PageHero.vue'
 
 // Page meta — use quizee layout so quizee sidebar/topbar are shown when authenticated
 definePageMeta({ layout: 'quizee' })

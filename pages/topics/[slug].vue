@@ -17,6 +17,7 @@
             <UiQuizCard
               v-for="qz in displayQuizzes"
               :key="qz.id"
+              :quiz="qz"
               :to="`/quizzes/${qz.slug}`"
               :quiz-id="qz.id"
               :liked="qz.liked"

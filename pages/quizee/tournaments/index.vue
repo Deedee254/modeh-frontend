@@ -1,18 +1,24 @@
 <template>
   <div class="bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <PageHero title="Tournaments" description="Compete with other Quizees in structured tournaments to benchmark skills and earn recognition." variant="gradient" padding="py-8 sm:py-12">
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
-          <p class="text-xs uppercase tracking-wide text-white/70">Total</p>
-          <p class="mt-2 text-xl font-semibold">{{ meta.total ?? 0 }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
-          <p class="text-xs uppercase tracking-wide text-white/70">Pages</p>
-          <p class="mt-2 text-xl font-semibold">{{ meta.last_page ?? 1 }}</p>
-        </div>
-      </template>
-    </PageHero>
+      <!-- Breadcrumbs -->
+      <div class="py-6">
+        <nav class="mb-4 text-sm" aria-label="Breadcrumb">
+          <ol class="flex items-center gap-2 text-gray-600">
+            <li>
+              <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+            </li>
+            <li>
+              <svg class="mx-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </li>
+            <li class="font-medium text-gray-900">Tournaments</li>
+          </ol>
+        </nav>
+        <!-- Page Title -->
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Tournaments</h1>
+      </div>
 
     <!-- Tournament filters -->
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
@@ -118,15 +124,14 @@
 </template>
 
 <script setup lang="ts">
+// Use the `quizee` layout for tournament pages
+definePageMeta({ layout: 'quizee', title: 'Tournaments — Modeh', meta: [ { name: 'description', content: 'Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.' }, { property: 'og:title', content: 'Tournaments — Modeh' }, { property: 'og:description', content: 'Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.' } ] })
+
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useApi } from '~/composables/useApi'
 import resolveAssetUrl from '~/composables/useAssets'
-
-// Use the `quizee` layout for tournament pages
-definePageMeta({ layout: 'quizee', title: 'Tournaments — Modeh', meta: [ { name: 'description', content: 'Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.' }, { property: 'og:title', content: 'Tournaments — Modeh' }, { property: 'og:description', content: 'Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.' } ] })
 import { useRouter } from 'vue-router'
-import PageHero from '~/components/ui/PageHero.vue'
 
 interface Tournament {
   id: number

@@ -67,15 +67,6 @@
             </div>
           </div>
 
-          <!-- Can View Results Button -->
-          <div v-if="canSeeResults && !isTournamentCheckout" class="bg-gradient-to-r from-brand-600 to-brand-700 dark:from-brand-700 dark:to-brand-800 rounded-xl shadow-md p-6 text-white">
-            <h3 class="text-lg font-bold mb-2">Ready to See Your Results?</h3>
-            <p class="text-brand-100 mb-4">You have access to view your detailed performance report</p>
-            <button @click="seeResults" class="w-full px-6 py-3 bg-white text-brand-600 font-semibold rounded-lg hover:bg-brand-50 transition-colors">
-              View My Results
-            </button>
-          </div>
-
           <!-- Payment Section -->
           <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-6">
             <!-- Heading -->
@@ -89,6 +80,41 @@
               <template v-else-if="type === 'battle'">Unlock detailed battle analytics and opponent performance metrics</template>
               <template v-else>View your answer breakdown and performance analysis</template>
             </p>
+
+            <!-- Referral Code Section (appears above results button) -->
+            <div v-if="!isTournamentCheckout" class="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
+              <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Referral Code</p>
+              <div v-if="referralCodeStored" class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                <p class="font-mono font-semibold text-emerald-800 dark:text-emerald-200 text-lg">{{ referralCodeStored }}</p>
+                <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-2">✓ Referrer will earn commission</p>
+              </div>
+              <div v-else-if="showReferralInput" class="space-y-2">
+                <input 
+                  v-model="referralCodeInput" 
+                  type="text" 
+                  placeholder="Enter referral code"
+                  class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                />
+                <p class="text-xs text-slate-500 dark:text-slate-400">Support a referrer and help them earn rewards</p>
+                <div class="flex items-center justify-end gap-2">
+                  <button @click="applyReferralCode" :disabled="!referralCodeInput" class="px-3 py-2 bg-brand-600 text-white rounded-lg disabled:opacity-50">Apply</button>
+                  <button @click="showReferralInput = false" class="px-3 py-2 border rounded-lg">Cancel</button>
+                </div>
+              </div>
+              <button v-else @click="showReferralInput = true" class="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+                + Add Referral Code
+              </button>
+            </div>
+
+            <!-- Ready to See Your Results Section -->
+            <div v-if="canSeeResults && !isTournamentCheckout" class="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
+              <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Ready to See Your Results?</h3>
+              <p class="text-slate-600 dark:text-slate-400 mb-4">You have access to view your detailed performance report</p>
+              <button @click="seeResults" class="w-full px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-lg hover:opacity-90 transition-colors">
+                View My Results
+              </button>
+            </div>
+
             <!-- Prominent fee near the pay button for tournaments -->
               <div v-if="isTournamentCheckout && tournamentEntryFee !== null" class="mb-4 flex items-center justify-between">
               <div>
@@ -186,31 +212,6 @@
                   </template>
                   <template v-else>Subscribe with {{ selectedPackage?.name }}</template>
                 </template>
-              </button>
-            </div>
-
-            <!-- Referral Code Section (moved here so it's next to the action button) -->
-            <div class="mt-4">
-              <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Referral Code</p>
-              <div v-if="referralCodeStored" class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
-                <p class="font-mono font-semibold text-emerald-800 dark:text-emerald-200 text-lg">{{ referralCodeStored }}</p>
-                <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-2">✓ Referrer will earn commission</p>
-              </div>
-              <div v-else-if="showReferralInput" class="space-y-2">
-                <input 
-                  v-model="referralCodeInput" 
-                  type="text" 
-                  placeholder="Enter referral code"
-                  class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-600 focus:border-transparent"
-                />
-                <p class="text-xs text-slate-500 dark:text-slate-400">Support a referrer and help them earn rewards</p>
-                <div class="flex items-center justify-end gap-2">
-                  <button @click="applyReferralCode" :disabled="!referralCodeInput" class="px-3 py-2 bg-brand-600 text-white rounded-lg disabled:opacity-50">Apply</button>
-                  <button @click="showReferralInput = false" class="px-3 py-2 border rounded-lg">Cancel</button>
-                </div>
-              </div>
-              <button v-else @click="showReferralInput = true" class="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
-                + Add Referral Code
               </button>
             </div>
 

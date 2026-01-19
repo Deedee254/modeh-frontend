@@ -7,119 +7,126 @@
       Failed to load profile. The quiz-master may not exist or there was a server error.
     </div>
     <div v-else-if="quizMaster" class="pb-12">
-      <!-- Hero Header Section -->
-      <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-700 overflow-hidden">
-        <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,...');"></div>
-        <div class="absolute top-4 left-4 sm:top-6 sm:left-6">
-          <NuxtLink to="/quizee/quiz-masters" class="text-white hover:text-brand-100 text-sm font-medium flex items-center gap-1 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      <!-- Breadcrumbs Navigation -->
+      <div class="border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <nav class="flex items-center gap-2 text-sm">
+            <NuxtLink to="/" class="text-slate-600 hover:text-slate-900 transition">Home</NuxtLink>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
-            Back
-          </NuxtLink>
-        </div>
-        <div class="h-full flex flex-col justify-end p-4 sm:p-6">
-          <h1 class="text-3xl sm:text-4xl font-bold text-white">{{ quizMaster.name }}</h1>
-          <p class="text-brand-100 mt-1">{{ quizMaster.headline || 'Experienced Quiz Master' }}</p>
+            <NuxtLink to="/quizee/quiz-masters" class="text-slate-600 hover:text-slate-900 transition">Quiz Masters</NuxtLink>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <span class="text-slate-900 font-medium">{{ quizMaster?.name || 'Profile' }}</span>
+          </nav>
         </div>
       </div>
 
-      <!-- Profile Info & Actions -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-16 relative z-10 mb-6">
-          <!-- Avatar -->
-          <div class="flex items-end gap-4">
-            <div class="w-32 h-32 rounded-2xl overflow-hidden ring-4 ring-white shadow-lg bg-white flex-shrink-0">
-              <img v-if="resolvedAvatar" :src="resolvedAvatar" :alt="quizMaster.name" class="w-full h-full object-cover">
-              <div v-else class="w-full h-full bg-brand-600/10 text-brand-600 grid place-items-center font-bold text-5xl">
-                {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
+      <!-- Main Content Grid -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Left Column: Profile Card -->
+          <div class="lg:col-span-1">
+            <div class="bg-gradient-to-br from-brand-600 to-brand-700 rounded-xl shadow-sm border border-brand-700 p-6 sticky top-24 text-white">
+              <!-- Avatar Circle -->
+              <div class="flex justify-center mb-6">
+                <div class="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white shadow-lg bg-white flex items-center justify-center">
+                  <img v-if="resolvedAvatar" :src="resolvedAvatar" :alt="quizMaster.name" class="w-full h-full object-cover">
+                  <div v-else class="w-full h-full bg-brand-600/10 text-brand-600 grid place-items-center font-bold text-5xl">
+                    {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="pb-2">
-              <div v-if="quizMaster.subjects && quizMaster.subjects.length" class="flex flex-wrap gap-2 mb-2">
-                <span v-for="subject in quizMaster.subjects.slice(0, 3)" :key="subject.id" class="bg-brand-600/10 text-brand-600 text-xs font-medium px-2 py-1 rounded-full">
-                  {{ subject.name }}
-                </span>
+
+              <!-- Profile Info -->
+              <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-white mb-2">{{ quizMaster.name }}</h1>
+                <p class="text-sm text-brand-100 font-medium mb-3">{{ quizMaster.headline || 'Experienced Quiz Master' }}</p>
+              </div>
+
+              <!-- Level -->
+              <div v-if="quizMaster?.level?.name" class="mb-4 pb-4 border-b border-brand-500">
+                <p class="text-xs text-brand-100 mb-1">Level</p>
+                <p class="text-sm font-bold text-white">{{ quizMaster.level.name }}</p>
+              </div>
+
+              <!-- Institution -->
+              <div v-if="quizMaster.institution" class="mb-4 pb-4 border-b border-brand-500">
+                <p class="text-xs text-brand-100 mb-1">Institution</p>
+                <p class="text-sm font-bold text-white">{{ quizMaster.institution }}</p>
+              </div>
+
+              <!-- Bio -->
+              <div v-if="quizMaster.bio" class="mb-6">
+                <p class="text-xs text-brand-100 mb-2">About</p>
+                <p class="text-xs text-brand-50 leading-relaxed" v-html="quizMaster.bio"></p>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-2 flex-col">
+                <button @click="openChatModal" class="w-full px-4 py-2 rounded-lg bg-white text-brand-600 text-sm font-medium hover:bg-brand-50 transition">
+                  Message
+                </button>
+                <button @click="followHandler" :disabled="loadingFollow" class="w-full px-4 py-2 rounded-lg border border-white text-sm font-medium transition text-white hover:bg-white/10" :class="following ? 'bg-white/20' : ''">
+                  <span v-if="following">Following</span>
+                  <span v-else>Follow</span>
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="flex gap-2 sm:flex-col sm:items-end">
-            <button @click="openChatModal" class="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition">
-              Message
-            </button>
-            <button @click="followHandler" :disabled="loadingFollow" class="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium transition" :class="following ? 'bg-brand-50 text-brand-600 border-brand-200' : 'text-slate-700 hover:bg-slate-50'">
-              <span v-if="following">Following</span>
-              <span v-else>Follow</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Stats Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <!-- Quizzes Created -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-xs sm:text-sm font-medium text-slate-600 mb-1">Quizzes Created</p>
-                <p class="text-2xl sm:text-3xl font-bold text-slate-900">{{ quizzesCount }}</p>
+          <!-- Right Column: Stats and Content -->
+          <div class="lg:col-span-2 space-y-8">
+            <!-- Stats Cards Grid -->
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Followers -->
+              <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 text-center hover:shadow-md transition">
+                <div class="text-3xl mb-2">👥</div>
+                <p class="text-2xl font-bold text-slate-900">{{ followersCount }}</p>
+                <p class="text-xs text-slate-600 mt-1">Followers</p>
               </div>
-              <div class="text-3xl">📝</div>
-            </div>
-          </div>
 
-          <!-- Followers -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-xs sm:text-sm font-medium text-slate-600 mb-1">Followers</p>
-                <p class="text-2xl sm:text-3xl font-bold text-slate-900">{{ followersCount }}</p>
+              <!-- Quizzes -->
+              <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 text-center hover:shadow-md transition">
+                <div class="text-3xl mb-2">📝</div>
+                <p class="text-2xl font-bold text-slate-900">{{ quizzesCount }}</p>
+                <p class="text-xs text-slate-600 mt-1">Quizzes</p>
               </div>
-              <div class="text-3xl">👥</div>
             </div>
-          </div>
 
-          <!-- Average Rating -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-xs sm:text-sm font-medium text-slate-600 mb-1">Avg Rating</p>
-                <p class="text-2xl sm:text-3xl font-bold text-slate-900">{{ averageRating }}</p>
+            <!-- Areas of Expertise Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <h3 class="text-lg font-bold text-slate-900 mb-4">📚 Areas of Expertise</h3>
+              
+              <!-- Level and Grade Pills -->
+              <div class="flex flex-wrap gap-2 mb-4">
+                <div v-if="quizMaster?.level?.name" class="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full border border-purple-200">
+                  <span class="text-xs font-medium">Level:</span>
+                  <span class="text-xs font-bold">{{ quizMaster.level.name }}</span>
+                </div>
+                <div v-if="quizMaster?.grade?.name" class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200">
+                  <span class="text-xs font-medium">Grade:</span>
+                  <span class="text-xs font-bold">{{ quizMaster.grade.name }}</span>
+                </div>
               </div>
-              <div class="text-3xl">⭐</div>
-            </div>
-          </div>
 
-          <!-- Member Since -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-xs sm:text-sm font-medium text-slate-600 mb-1">Member Since</p>
-                <p class="text-sm sm:text-lg font-bold text-slate-900">{{ memberSince }}</p>
+              <!-- Subject Pills -->
+              <div v-if="quizMaster?.subjects && quizMaster.subjects.length" class="border-t border-slate-200 pt-4">
+                <p class="text-xs text-slate-600 font-medium mb-3">Specializations</p>
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="subject in quizMaster.subjects" :key="subject.id" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full transition border border-slate-200">
+                    {{ subject.name }}
+                  </span>
+                </div>
               </div>
-              <div class="text-3xl">📅</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <!-- Main Content (2/3) -->
-          <div class="lg:col-span-2 space-y-6">
-            <!-- About Section -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-              <h2 class="text-lg font-bold text-slate-900 mb-4">About</h2>
-              <div v-if="quizMaster.bio" class="text-sm text-slate-700 leading-relaxed" v-html="quizMaster.bio"></div>
-              <p v-else class="text-sm text-slate-500">
-                This quiz master has not yet provided a bio.
-              </p>
             </div>
 
-            <!-- Recent Quizzes -->
-            <div v-if="quizMaster.quizzes && quizMaster.quizzes.length" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+            <!-- Quizzes Created Section -->
+            <div v-if="quizMaster.quizzes && quizMaster.quizzes.length" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-slate-900">Recent Quizzes</h2>
+                <h2 class="text-lg font-bold text-slate-900">Quizzes Created</h2>
                 <NuxtLink v-if="quizMaster.quizzes.length > 6" :to="`/quizee/quizzes?created_by=${quizMasterId}`" class="text-xs text-brand-600 hover:text-brand-700 font-medium">
                   View All →
                 </NuxtLink>
@@ -139,65 +146,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Sidebar (1/3) -->
-          <aside class="space-y-6">
-            <!-- Expertise Section -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-              <h3 class="text-sm font-bold text-slate-900 mb-4">📚 Expertise</h3>
-              <div v-if="quizMaster.subjects && quizMaster.subjects.length" class="space-y-2">
-                <div v-for="subject in quizMaster.subjects" :key="subject.id" class="text-xs text-slate-700 bg-slate-50 rounded-lg p-2 font-medium">
-                  {{ subject.name }}
-                </div>
-              </div>
-              <p v-else class="text-xs text-slate-500">
-                Subjects not yet specified
-              </p>
-            </div>
-
-            <!-- Contact Info -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-              <h3 class="text-sm font-bold text-slate-900 mb-4">ℹ️ Info</h3>
-              <div class="space-y-3">
-                <div v-if="quizMaster.email" class="flex items-start gap-2">
-                  <span class="text-xs text-slate-600 mt-0.5">📧</span>
-                  <div class="text-xs">
-                    <p class="text-slate-600">Email</p>
-                    <p class="text-slate-900 font-medium break-all">{{ quizMaster.email }}</p>
-                  </div>
-                </div>
-                <div v-if="quizMaster.phone" class="flex items-start gap-2">
-                  <span class="text-xs text-slate-600 mt-0.5">📱</span>
-                  <div class="text-xs">
-                    <p class="text-slate-600">Phone</p>
-                    <p class="text-slate-900 font-medium">{{ quizMaster.phone }}</p>
-                  </div>
-                </div>
-                <div class="flex items-start gap-2">
-                  <span class="text-xs text-slate-600 mt-0.5">📅</span>
-                  <div class="text-xs">
-                    <p class="text-slate-600">Joined</p>
-                    <p class="text-slate-900 font-medium">{{ joinedDate }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-              <h3 class="text-sm font-bold text-slate-900 mb-4">📊 Stats</h3>
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-slate-600">Total Quiz Takers</span>
-                  <span class="text-sm font-bold text-slate-900">{{ totalQuizTakers }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-slate-600">Avg Questions</span>
-                  <span class="text-sm font-bold text-slate-900">{{ avgQuestions }}</span>
-                </div>
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
     </div>
@@ -271,21 +219,13 @@ const quizMasterId = computed(() => quizMaster.value?.id || quizMaster.value?._i
 // Computed properties for stats and info
 const quizzesCount = computed(() => quizMaster.value?.quizzes?.length || 0)
 const followersCount = computed(() => quizMaster.value?.followers_count || quizMaster.value?.follower_count || 0)
-const averageRating = computed(() => Number(quizMaster.value?.average_rating || quizMaster.value?.rating || 0).toFixed(1))
-const memberSince = computed(() => {
-  const createdAt = quizMaster.value?.created_at
-  if (!createdAt) return 'N/A'
-  const date = new Date(createdAt)
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
-})
+const subjectsCount = computed(() => quizMaster.value?.subjects?.length || 0)
 const joinedDate = computed(() => {
   const createdAt = quizMaster.value?.created_at
   if (!createdAt) return 'N/A'
   const date = new Date(createdAt)
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 })
-const totalQuizTakers = computed(() => quizMaster.value?.total_quiz_takers || 0)
-const avgQuestions = computed(() => Number(quizMaster.value?.avg_questions_per_quiz || 0).toFixed(0))
 
 async function followHandler() {
   if (!auth.user) return router.push('/login')

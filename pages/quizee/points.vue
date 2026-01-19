@@ -1,63 +1,131 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <PageHero
-      title="My Points & Rewards"
-      description="Track your points, see your rank, view your badges, and redeem your points for awesome rewards!"
-      :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Points', current: true }]"
-      padding="py-8 sm:py-12"
-    />
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Points</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">My Points & Rewards</h1>
+      <p class="text-gray-600 mb-6">Track your points, see your rank, view your badges, and redeem your points for awesome rewards!</p>
+    </div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <!-- Level Progress -->
-      <div class="bg-white rounded-xl shadow-sm border p-6 mb-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div class="flex items-center gap-4">
-            <div 
-              class="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
-              :style="{ backgroundColor: userStats.level?.color_scheme + '20', color: userStats.level?.color_scheme }"
-            >
-              {{ userStats.level?.icon || '🎯' }}
-            </div>
-            <div>
-              <h2 class="text-2xl font-bold text-gray-900">Level {{ userStats.level?.name || 'Novice' }}</h2>
-              <p class="text-gray-600">{{ userStats.level?.description }}</p>
-            </div>
-          </div>
-          <div class="text-right">
-            <p class="text-sm text-gray-500">Next Level</p>
-            <p class="font-medium">{{ userStats.next_level?.points_needed || 0 }} points needed</p>
-          </div>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
-          <div 
-            class="h-full rounded-full transition-all duration-500"
-            :style="{ 
-              width: `${userStats.level?.progress || 0}%`,
-              backgroundColor: userStats.level?.color_scheme 
-            }"
-          ></div>
-        </div>
-        <p class="text-sm text-gray-500 text-center">{{ userStats.level?.progress || 0 }}% to {{ userStats.next_level?.name || 'next level' }}</p>
-      </div>
+      <!-- Level & Stats Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Left Column: Circular Level Progress -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-2xl shadow-sm border p-8 sticky top-6 h-fit">
+            <div class="flex flex-col items-center">
+              <!-- Circular Progress -->
+              <div class="relative w-48 h-48 flex items-center justify-center mb-6">
+                <!-- Background circle -->
+                <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+                  <circle cx="100" cy="100" r="90" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                  <circle 
+                    cx="100" 
+                    cy="100" 
+                    r="90" 
+                    fill="none" 
+                    :stroke="userStats.level?.color_scheme || '#8B5CF6'"
+                    stroke-width="8"
+                    stroke-dasharray="565.48"
+                    :stroke-dashoffset="`${565.48 * (1 - (userStats.level?.progress || 0) / 100)}`"
+                    class="transition-all duration-500"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <!-- Center content -->
+                <div class="text-center z-10">
+                  <div class="text-5xl mb-2">{{ userStats.level?.icon || '🎯' }}</div>
+                  <p class="text-xs text-gray-500 uppercase tracking-wide">Level</p>
+                  <p class="text-3xl font-bold text-gray-900">{{ userStats.level?.name || 'Novice' }}</p>
+                </div>
+              </div>
+              
+              <!-- Progress Text -->
+              <div class="w-full text-center mb-4">
+                <p class="text-sm font-semibold text-gray-900 mb-1">{{ userStats.level?.progress || 0 }}% Complete</p>
+                <p class="text-xs text-gray-500">{{ userStats.next_level?.points_needed || 0 }} points to next level</p>
+              </div>
 
-      <!-- Points Summary -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border text-center">
-          <p class="text-sm text-gray-500">Total Points</p>
-          <p class="text-4xl font-bold text-brand-600 mt-2">{{ userStats.total_points || 0 }}</p>
-          <p class="text-xs text-gray-500 mt-2">Lifetime earnings</p>
+              <!-- Level Description -->
+              <p class="text-center text-sm text-gray-600 italic">{{ userStats.level?.description }}</p>
+            </div>
+          </div>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border text-center">
-          <p class="text-sm text-gray-500">Current Rank</p>
-          <p class="text-4xl font-bold text-gray-800 mt-2">#{{ userStats.rank || 'N/A' }}</p>
-          <p class="text-xs text-gray-500 mt-2">Among all quizees</p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border text-center">
-          <p class="text-sm text-gray-500">Achievements</p>
-          <p class="text-4xl font-bold text-emerald-600 mt-2">
-            {{ userStats.unlocked_achievements || 0 }}/{{ userStats.total_achievements || 0 }}
-          </p>
-          <p class="text-xs text-gray-500 mt-2">Badges unlocked</p>
+
+        <!-- Right Column: Stats Cards Grid (2x2) -->
+        <div class="lg:col-span-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <!-- Total Points Card -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-50 rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Total Points</p>
+                  <p class="text-4xl font-bold text-blue-600">{{ userStats.total_points || 0 }}</p>
+                </div>
+                <div class="text-4xl">⭐</div>
+              </div>
+              <div class="flex items-center justify-between">
+                <p class="text-xs text-gray-500">Lifetime earnings</p>
+                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Current Rank Card -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-50 rounded-2xl shadow-sm border border-purple-100 p-6 hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Global Rank</p>
+                  <p class="text-4xl font-bold text-purple-600">#{{ userStats.rank || 'N/A' }}</p>
+                </div>
+                <div class="text-4xl">🏆</div>
+              </div>
+              <div class="flex items-center justify-between">
+                <p class="text-xs text-gray-500">Among all quizees</p>
+                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Achievements Card -->
+            <div class="bg-gradient-to-br from-emerald-50 to-emerald-50 rounded-2xl shadow-sm border border-emerald-100 p-6 hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Achievements</p>
+                  <p class="text-4xl font-bold text-emerald-600">{{ userStats.unlocked_achievements || 0 }}<span class="text-2xl text-gray-400">/{{ userStats.total_achievements || 0 }}</span></p>
+                </div>
+                <div class="text-4xl">🎖️</div>
+              </div>
+              <div class="flex items-center justify-between">
+                <p class="text-xs text-gray-500">Badges unlocked</p>
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Streak/Stats Card (expandable for future use) -->
+            <div class="bg-gradient-to-br from-amber-50 to-amber-50 rounded-2xl shadow-sm border border-amber-100 p-6 hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Current Streak</p>
+                  <p class="text-4xl font-bold text-amber-600">{{ userStats.streak || 0 }}<span class="text-2xl text-gray-400"> days</span></p>
+                </div>
+                <div class="text-4xl">🔥</div>
+              </div>
+              <div class="flex items-center justify-between">
+                <p class="text-xs text-gray-500">Keep it going!</p>
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -69,7 +137,7 @@
         </div>
 
         <div v-if="loading" class="space-y-4">
-          <UiSkeleton v-for="i in 1" :key="i" class="h-32" />
+          <UiSkeleton v-for="i in 3" :key="i" class="h-32" />
         </div>
 
         <div v-else-if="!achievements.length" class="text-center py-8 text-gray-500">
@@ -175,7 +243,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -187,10 +254,7 @@ const alert = useAppAlert()
 
 const userStats = ref({})
 const activity = ref([])
-const achievements = ref([])
 const loading = ref(true)
-const recentAchievements = ref([])
-const nextAchievements = ref([])
 
 const availableRewards = ref([
   { id: 1, name: 'Ksh 50 Airtime', description: 'Get a KES 50 airtime voucher for any network.', points: 500, icon: '📱' },
@@ -201,49 +265,37 @@ const availableRewards = ref([
 onMounted(async () => {
   loading.value = true
   try {
-    const [achievementsRes, rewardsRes, userStatsRes] = await Promise.all([
-      api.get('/api/achievements/progress').then(res => res.ok ? res.json() : null),
-      api.get('/api/rewards/my').then(res => res.ok ? res.json() : null),
-      api.get('/api/user/stats').then(res => res.ok ? res.json() : null)
-    ])
+    // Fetch user stats which includes achievements count, activity, and all stats
+    const userStatsRes = await api.get('/api/user/stats').then(res => res.ok ? res.json() : null)
     
-    if (!achievementsRes || !rewardsRes) {
-      throw new Error('Failed to load data')
+    if (!userStatsRes) {
+      throw new Error('Failed to load user stats')
     }
 
-    // Update achievements data
-    achievements.value = achievementsRes.achievements || []
-
-    // Process recent and next achievements
-    recentAchievements.value = achievements.value
-      .filter(a => a.unlocked && a.completed_at)
-      .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))
-      .slice(0, 3)
-
-    nextAchievements.value = achievements.value
-      .filter(a => !a.unlocked)
-      .sort((a, b) => b.progress - a.progress)
-      .slice(0, 3)
-
-    // Merge user stats: prefer authoritative user/stats endpoint for points/level info
-    const backendPoints = userStatsRes?.points ?? null
-    const backendLevel = userStatsRes?.level ?? null
-    const backendNextLevel = userStatsRes?.next_level ?? null
+    // Set user stats from authoritative /api/user/stats endpoint
+    const backendPoints = userStatsRes.points ?? 0
+    const backendLevel = userStatsRes.level ?? null
+    const backendNextLevel = userStatsRes.next_level ?? null
 
     userStats.value = {
-      // Prefer backend user-level points, fall back to achievements-derived points
-      total_points: backendPoints ?? (achievementsRes.stats?.total_points ?? 0),
-      unlocked_achievements: achievementsRes.stats?.unlocked_achievements ?? 0,
-      total_achievements: achievementsRes.stats?.total_achievements ?? 0,
-      // rank: prefer the dedicated user stats rank if present, otherwise fallback to rewards response
-      rank: (userStatsRes?.ranks?.global ?? rewardsRes.stats?.rank) ?? 'N/A',
-      // include level and next_level objects so the template can show color, icon, progress etc.
+      total_points: backendPoints,
+      unlocked_achievements: userStatsRes.unlocked_achievements ?? 0,
+      total_achievements: userStatsRes.total_achievements ?? 0,
+      rank: userStatsRes.ranks?.global ?? 'N/A',
       level: backendLevel,
-      next_level: backendNextLevel
+      next_level: backendNextLevel,
+      streak: userStatsRes.streak ?? 0,
+      best_streak: userStatsRes.best_streak ?? 0,
+      total_quizzes_taken: userStatsRes.total_quizzes_taken ?? 0,
+      average_score: userStatsRes.average_score ?? 0,
+      last_activity: userStatsRes.last_activity ?? null
     }
 
-    // Update activity
-    activity.value = rewardsRes.activity || []
+    // Update activity from user stats
+    activity.value = userStatsRes.activity || []
+
+    // Note: Full achievements data is available on /quizee/badges page
+    // This page only shows recent/next achievements summary from activity
 
   } catch (error) {
     console.error("Failed to fetch points data:", error)

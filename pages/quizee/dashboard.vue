@@ -5,9 +5,10 @@
       <div class="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full -mr-40 -mt-40 blur-3xl"></div>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div class="relative z-10 flex items-center gap-8">
-          <div class="flex-1">
-            <div class="text-sm font-medium opacity-90 uppercase tracking-wider">Welcome back</div>
-            <h1 class="mt-2 text-4xl md:text-5xl font-black tracking-tight">Continue your learning</h1>
+          <ClientOnly>
+            <div class="flex-1">
+              <div class="text-sm font-medium opacity-90 uppercase tracking-wider">Welcome back</div>
+              <h1 class="mt-2 text-4xl md:text-5xl font-black tracking-tight">{{ auth.user?.name || 'Quizee' }}, continue your learning</h1>
             <p class="mt-3 text-base opacity-95 leading-relaxed max-w-md">Quick access to quizzes, challenges and your progress. Keep your streak going and unlock your potential!</p>
 
             <div class="mt-6 flex flex-wrap gap-3">
@@ -24,10 +25,57 @@
                 Subscription
               </NuxtLink>
             </div>
-          </div>
-          <div class="hidden lg:block w-56 h-56">
-            <img :src="imgUrl || challengeIllustration" alt="Daily challenge" class="w-full h-full object-contain drop-shadow-2xl" loading="lazy" />
-          </div>
+            </div>
+          </ClientOnly>
+          <!-- Metrics Cards Grid (2x2) -->
+          <ClientOnly>
+            <div class="hidden lg:grid lg:grid-cols-2 gap-4 flex-shrink-0 w-80">
+              <!-- Points Card (Amber) -->
+              <div class="p-4 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Points</span>
+                  <div class="w-7 h-7 rounded bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  </div>
+                </div>
+                <div class="text-3xl font-black text-gray-900 dark:text-white">{{ rewards.points || 0 }}</div>
+                <div :class="['mt-1 text-xs font-semibold', pointsToday > 0 ? 'text-amber-600 dark:text-amber-400' : 'invisible']">+{{ pointsToday }} today</div>
+              </div>
+              <!-- Rank Card (Green) -->
+              <div class="p-4 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Global Rank</span>
+                  <div class="w-7 h-7 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm0 0c1.657 0 3 1.343 3 3s-1.343 3-3 3-3-1.343-3-3 1.343-3 3-3z"></path></svg>
+                  </div>
+                </div>
+                <div class="text-3xl font-black text-gray-900 dark:text-white">#{{ auth.user?.rank?.global_rank || '-' }}</div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ auth.user?.rank?.rank_points || 0 }} pts</div>
+              </div>
+              <!-- Achievements Card (Burgundy) -->
+              <div class="p-4 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Achievements</span>
+                  <div class="w-7 h-7 rounded bg-burgundy-100 dark:bg-burgundy-900/30 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-burgundy-600 dark:text-burgundy-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                  </div>
+                </div>
+                <div class="text-3xl font-black text-gray-900 dark:text-white">{{ achievements || 0 }}</div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">Earned</div>
+              </div>
+              <!-- Streak Card (Red) -->
+              <div class="p-4 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Streak</span>
+                  <div class="w-7 h-7 rounded bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                  </div>
+                </div>
+                <div class="text-3xl font-black text-gray-900 dark:text-white">{{ streakDays }}</div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">Days</div>
+              </div>
+            </div>
+          </ClientOnly>
         </div>
       </div>
     </div>
@@ -37,20 +85,6 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Main column (wider - 2 cols) -->
         <div class="lg:col-span-2 space-y-6">
-          
-          <!-- Metrics grid (client-only to avoid SSR/client hydration mismatches for auth-protected data) -->
-          <ClientOnly>
-          <QuizeeMetricsGrid 
-            :loading="metricsLoading"
-            :avgScore="avgScore"
-            :totalAttempts="totalAttempts"
-            :totalQuizTime="totalQuizTime"
-            :points="rewards.points"
-            :pointsToday="pointsToday"
-            :topStreak="topStreak"
-            :streakDays="streakDays"
-          />
-          </ClientOnly>
           
           <!-- Performance Stats -->
           <QuizeePerformanceStats 
@@ -62,6 +96,22 @@
 
           <!-- Topic Strength -->
           <QuizeeTopicStrength :topicStrength="topicStrength" />
+
+          <!-- Topic Progress -->
+          <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <template #header>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/30 dark:to-cyan-800/30 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div class="flex-1 font-semibold text-lg">Topic Progress</div>
+                <NuxtLink to="/quizee/topics" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300">View all →</NuxtLink>
+              </div>
+            </template>
+            <div class="p-6">
+              <QuizeeTopicProgress :loading="metricsLoading" :topics="topicProgressList" />
+            </div>
+          </UiCard>
 
           <!-- Recommended quizzes -->
           <ClientOnly>
@@ -149,71 +199,32 @@
               </div>
             </UiCard>
           </ClientOnly>
-          <!-- Account Widget -->
-          <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <template #header>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div class="flex-1">
-                  <div class="font-semibold">Account</div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Profile & Security</p>
-                </div>
-              </div>
-            </template>
-            <div class="p-4 text-sm text-gray-600 dark:text-gray-400">
-              <p>Manage your account settings and security preferences.</p>
-              <NuxtLink to="/settings" class="inline-flex items-center gap-2 mt-4 font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300">
-                <span>Go to Settings</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-              </NuxtLink>
-            </div>
-          </UiCard>
 
-          <!-- Quizzes Widget -->
-          <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <template #header>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/30 dark:to-violet-800/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path></svg>
+          <!-- Package Card -->
+          <ClientOnly>
+            <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-burgundy-50 to-burgundy-100 dark:from-burgundy-900/20 dark:to-burgundy-800/20 border border-burgundy-200 dark:border-burgundy-800">
+              <template #header>
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-burgundy-100 to-burgundy-50 dark:from-burgundy-900/30 dark:to-burgundy-800/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-burgundy-600 dark:text-burgundy-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-semibold text-burgundy-900 dark:text-burgundy-100">{{ currentPackage?.title || 'Free Plan' }}</div>
+                    <p class="text-xs text-burgundy-700 dark:text-burgundy-300">{{ currentPackageStatus }}</p>
+                  </div>
                 </div>
-                <div class="flex-1">
-                  <div class="font-semibold">Browse Quizzes</div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Explore content</p>
-                </div>
+              </template>
+              <div class="p-4">
+                <p v-if="currentPackage" class="text-sm text-burgundy-800 dark:text-burgundy-200 mb-4">{{ currentPackage.short_description || currentPackage.description }}</p>
+                <p v-else class="text-sm text-burgundy-800 dark:text-burgundy-200 mb-4">Upgrade to unlock premium features and access more quizzes.</p>
+                <NuxtLink to="/quizee/subscription" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                  <span>{{ currentPackage ? 'Manage Plan' : 'Upgrade Now' }}</span>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </NuxtLink>
               </div>
-            </template>
-            <div class="p-4">
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Discover and practice quizzes across all subjects.</p>
-              <NuxtLink to="/quizee/quizzes" class="inline-flex items-center gap-2 font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300">
-                <span>Browse Now</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-              </NuxtLink>
-            </div>
-          </UiCard>
+            </UiCard>
+          </ClientOnly>
 
-          <!-- Subscription Widget -->
-          <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-800/20 border border-brand-200 dark:border-brand-800">
-            <template #header>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-100 to-rose-50 dark:from-rose-900/30 dark:to-rose-800/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm0 0c1.657 0 3 1.343 3 3s-1.343 3-3 3-3-1.343-3-3 1.343-3 3-3z"></path></svg>
-                </div>
-                <div class="flex-1">
-                  <div class="font-semibold text-brand-900 dark:text-brand-100">Unlock Premium</div>
-                  <p class="text-xs text-brand-700 dark:text-brand-300">Upgrade your experience</p>
-                </div>
-              </div>
-            </template>
-            <div class="p-4">
-              <p class="text-sm text-brand-800 dark:text-brand-200 mb-4">Access unlimited quizzes, tournaments, and advanced analytics.</p>
-              <NuxtLink to="/quizee/subscription" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
-                <span>View Plans</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-              </NuxtLink>
-            </div>
-          </UiCard>
         </aside>
       </div>
     </div>
@@ -235,6 +246,7 @@ import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import QuizeeMetricsGrid from '~/components/quizee/QuizeeMetricsGrid.vue'
 import QuizeePerformanceStats from '~/components/quizee/QuizeePerformanceStats.vue'
 import QuizeeTopicStrength from '~/components/quizee/QuizeeTopicStrength.vue'
+import QuizeeTopicProgress from '~/components/quizee/QuizeeTopicProgress.vue'
 import QuizeeRecommendedQuizzes from '~/components/quizee/QuizeeRecommendedQuizzes.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
@@ -446,6 +458,15 @@ const fastestQuizTime = ref(0)
 const avgQuestionTime = ref(0)
 const pointsToday = ref(0)
 const topicStrength = ref([])
+const topicProgressList = ref([])
+const achievements = ref(0)
+const currentPackage = ref(null)
+const currentPackageStatus = computed(() => {
+  if (currentPackage.value) {
+    return currentPackage.value.status === 'active' ? 'Active Subscription' : 'Upgrade Available'
+  }
+  return 'Free Plan'
+})
 
 async function fetchStats() {
   try {
@@ -461,6 +482,11 @@ async function fetchStats() {
       avgQuestionTime.value = data.avg_question_time || 0
       pointsToday.value = data.points_today || 0
       streakDays.value = data.current_streak || 0
+      achievements.value = data.achievements_count || 0
+      // Populate topic progress with top 5 topics
+      if (data.topic_strength && Array.isArray(data.topic_strength)) {
+        topicProgressList.value = data.topic_strength.slice(0, 5)
+      }
       topicStrength.value = data.topic_strength || []
     }
   } catch (e) {
@@ -470,10 +496,25 @@ async function fetchStats() {
   }
 }
 
+async function fetchCurrentSubscription() {
+  try {
+    const resp = await api.get('/api/subscriptions/mine')
+    if (resp && resp.ok) {
+      const data = await resp.json().catch(() => null)
+      if (data?.subscription && data.subscription.package) {
+        currentPackage.value = data.subscription.package
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch subscription:', e)
+  }
+}
+
 onMounted(async () => {
   // ensure subjects for this user's grade are loaded
   await store.fetchSubjectsByGrade(grade)
   await fetchStats()
   await fetchRecommendations()
+  await fetchCurrentSubscription()
 })
 </script>

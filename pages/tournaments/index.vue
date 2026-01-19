@@ -1,21 +1,18 @@
 <template>
   <div class="bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <PageHero title="Tournaments" description="Compete with other Quizees in structured tournaments to benchmark skills and earn recognition." variant="gradient" padding="py-8 sm:py-12">
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
-          <p class="text-xs uppercase tracking-wide text-white/70">Total</p>
-          <p class="mt-2 text-xl font-semibold">{{ meta.total ?? 0 }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
-          <p class="text-xs uppercase tracking-wide text-white/70">Pages</p>
-          <p class="mt-2 text-xl font-semibold">{{ meta.last_page ?? 1 }}</p>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Tournaments</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Tournaments</h1>
+      <p class="text-gray-600 mb-6">Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.</p>
+    </div>
 
-    <!-- Tournament filters -->
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <!-- Tournament filters -->
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
       <div class="flex flex-wrap gap-2 md:gap-4">
         <button 
           v-for="status in ['All', 'Upcoming', 'Ongoing', 'Completed']" 

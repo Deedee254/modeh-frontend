@@ -1,28 +1,23 @@
 <template>
   <div class="bg-gray-50 min-h-screen">
-    <PageHero
-      title="Available Assessments"
-      description="Access assessments designed to measure and improve your curriculum skills. Browse by topic, difficulty, and duration to select an appropriate exercise."
-      :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Quizzes', current: true }]"
-      padding="py-8 sm:py-12"
-    >
-      <template #actions>
-        <!-- Show user's current level instead of buttons -->
-        <div class="flex flex-col gap-3 items-start">
-          <p class="text-sm text-white/80">Quizzes for:</p>
-          <div class="flex flex-wrap gap-3">
-            <div v-if="userLevelName" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 border border-white/20">
-              <span class="text-xs uppercase tracking-wide text-white/70">Level</span>
-              <span class="text-sm font-semibold text-white">{{ userLevelName }}</span>
-            </div>
-            <div v-if="userGradeName" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 border border-white/20">
-              <span class="text-xs uppercase tracking-wide text-white/70">Grade</span>
-              <span class="text-sm font-semibold text-white">{{ userGradeName }}</span>
-            </div>
-          </div>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- Breadcrumbs -->
+      <nav class="mb-4 text-sm" aria-label="Breadcrumb">
+        <ol class="flex items-center gap-2 text-gray-600">
+          <li>
+            <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+          </li>
+          <li>
+            <svg class="mx-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </li>
+          <li class="font-medium text-gray-900">Assessments</li>
+        </ol>
+      </nav>
+      <!-- Page Title -->
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">Available Assessments</h1>
+    </div>
 
     <!-- Filters -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
@@ -76,6 +71,7 @@
           <QuizCard
             v-for="qitem in (paginator?.data || [])"
             :key="qitem.id"
+            :quiz="qitem"
             :to="`/quizee/quizzes/${qitem.slug}`"
             :startLink="`/quizee/quizzes/${qitem.slug}`"
             :takeLink="`/quizee/quizzes/take/${qitem.slug}`"
@@ -123,7 +119,6 @@ import { useRoute } from 'vue-router'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import Pagination from '~/components/Pagination.vue'
-import PageHero from '~/components/ui/PageHero.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useQuizzes from '~/composables/useQuizzes'
 import { useAuthStore } from '~/stores/auth'

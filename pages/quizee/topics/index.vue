@@ -1,54 +1,25 @@
 <template>
   <div>
-    <PageHero
-      title="Your Topics"
-      description="Discover topics aligned to your learning level."
-      :flush="true"
-    >
-      <template #eyebrow>
-        Your learning topics
-      </template>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- Breadcrumbs -->
+      <nav class="mb-4 text-sm" aria-label="Breadcrumb">
+        <ol class="flex items-center gap-2 text-gray-600">
+          <li>
+            <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+          </li>
+          <li>
+            <svg class="mx-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </li>
+          <li class="font-medium text-gray-900">Your Topics</li>
+        </ol>
+      </nav>
+      <!-- Page Title -->
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">Your Topics</h1>
+    </div>
 
-      <template #actions>
-        <div class="flex flex-wrap items-center gap-3">
-          <NuxtLink
-            to="/quizee/grades"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-700 shadow-lg shadow-brand-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
-          >
-            Browse grades
-          </NuxtLink>
-          <NuxtLink
-            to="/quizee/subjects"
-            class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
-          >
-            Browse subjects
-          </NuxtLink>
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Your learning path</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ userGrade }}</p>
-          <p class="mt-2 text-sm text-white/70">{{ userLevel }} • {{ filteredTopics.length || 0 }} topics</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h10M4 18h6" />
-        </svg>
-      </template>
-
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Topics</p>
-          <p class="mt-2 text-xl font-semibold">{{ filteredTopics.length || 0 }}</p>
-        </div>
-      </template>
-    </PageHero>
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Sort Bar (button group) -->
       <div class="mb-8 flex items-center gap-3">
         <div class="text-sm text-gray-600">Sort:</div>
@@ -107,7 +78,6 @@ import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
-import PageHero from '~/components/ui/PageHero.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 

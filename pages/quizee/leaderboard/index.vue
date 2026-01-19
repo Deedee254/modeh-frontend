@@ -1,13 +1,23 @@
 <template>
   <div>
-    <PageHero
-      title="Leaderboard"
-      description="See who's leading the pack in our global quiz rankings."
-      :breadcrumbs="[
-        { text: 'Dashboard', href: '/quizee/dashboard' },
-        { text: 'Leaderboard', current: true },
-      ]"
-    />
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- Breadcrumbs -->
+      <nav class="mb-4 text-sm" aria-label="Breadcrumb">
+        <ol class="flex items-center gap-2 text-gray-600">
+          <li>
+            <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+          </li>
+          <li>
+            <svg class="mx-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </li>
+          <li class="font-medium text-gray-900">Leaderboard</li>
+        </ol>
+      </nav>
+      <!-- Page Title -->
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">Leaderboard</h1>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- Filter Options -->
@@ -100,7 +110,6 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import PageHero from "~/components/ui/PageHero.vue";
 import Podium from "~/components/leaderboard/Podium.vue";
 import LeaderboardTable from "~/components/leaderboard/LeaderboardTable.vue";
 import { resolveAssetUrl } from '~/composables/useAssets'

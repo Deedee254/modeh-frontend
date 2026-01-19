@@ -1,47 +1,13 @@
 <template>
   <div>
-    <PageHero
-      title="Contact Us"
-      description="Questions, feedback, or partnership ideas? We’d love to hear from you."
-      :flush="true"
-    >
-      <template #eyebrow>
-        Contact
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Get in touch</p>
-          <p class="mt-1 text-2xl font-semibold text-white">We're here to help</p>
-          <p class="mt-2 text-sm text-white/70">Support, partnerships, and feedback welcome</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      </template>
-
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Support</p>
-          <p class="mt-2 text-xl font-semibold">24h response</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Partners</p>
-          <p class="mt-2 text-xl font-semibold">Welcome</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Quizzes</p>
-          <p class="mt-2 text-xl font-semibold">500+</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Users</p>
-          <p class="mt-2 text-xl font-semibold">500+</p>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Contact Us</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">Contact Us</h1>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 py-10">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -137,14 +103,13 @@
 definePageMeta({
   title: 'Contact — Modeh',
   meta: [
-    { name: 'description', content: 'Questions, feedback, or partnership ideas? We’d love to hear from you. Get in touch with the Modeh team for support and partnerships.' },
+    { name: 'description', content: "Questions, feedback, or partnership ideas? We'd love to hear from you. Get in touch with the Modeh team for support and partnerships." },
     { property: 'og:title', content: 'Contact — Modeh' },
-    { property: 'og:description', content: 'Questions, feedback, or partnership ideas? We’d love to hear from you. Get in touch with the Modeh team for support and partnerships.' }
+    { property: 'og:description', content: "Questions, feedback, or partnership ideas? We'd love to hear from you. Get in touch with the Modeh team for support and partnerships." }
   ]
 })
 
 import { ref, reactive } from 'vue'
-import PageHero from '~/components/ui/PageHero.vue'
 
 const subjects = ['General', 'Support', 'Partnership', 'Feedback']
 const loading = ref(false)

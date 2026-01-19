@@ -1,11 +1,14 @@
 <template>
   <div>
-    <PageHero
-      title="Choose Your Learning Plan"
-      description="Unlock unlimited access to quizzes, detailed analytics, and compete in tournaments."
-      :breadcrumbs="[{ text: 'Dashboard', href: '/quizee/dashboard' }, { text: 'Subscription', current: true }]"
-      padding="py-12 sm:py-16"
-    ></PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Subscription</span>
+      </nav>
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Plans Built for Success</h1>
+      <p class="text-lg text-slate-600 max-w-2xl">Start free and upgrade anytime. No credit card required to get started.</p>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <!-- Upgrade Alert/Active Subscription Status -->
@@ -21,32 +24,9 @@
         </div>
       </transition>
 
-      <div v-if="isActive" class="mb-12 p-6 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-2xl shadow-sm">
-        <div class="flex items-start gap-4">
-          <div class="flex-shrink-0 w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center">
-            <Icon name="heroicons:check-solid" class="w-6 h-6 text-white" />
-          </div>
-          <div class="flex-grow">
-            <h3 class="text-lg font-bold text-emerald-900">Premium Access Active</h3>
-            <p class="text-emerald-800 mt-2">Your <span class="font-semibold">{{ activePackageName }}</span> subscription is active. Enjoy unlimited quizzes, detailed analytics, and tournament access!</p>
-            <div class="mt-4 flex flex-wrap gap-3">
-              <button @click="navigateTo('/quizee/dashboard')" class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition">
-                Go to Dashboard
-              </button>
-              <NuxtLink to="/quizee/profile" class="px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl font-semibold hover:bg-emerald-50 transition">
-                View Subscription Details
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Main Pricing Section -->
       <div class="mb-16">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Plans Built for Success</h2>
-          <p class="text-lg text-slate-600 max-w-2xl mx-auto">Start free and upgrade anytime. No credit card required to get started.</p>
-        </div>
 
         <!-- Loading State -->
         <div v-if="loadingPackages" class="grid gap-8 md:grid-cols-3">
@@ -69,15 +49,21 @@
             :key="pkg.id"
             class="group relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
             :class="[
-              pkg.popular
-                ? 'md:scale-105 md:shadow-xl bg-white ring-2 ring-brand-600'
-                : 'bg-white shadow-lg'
+              isActive && activePackageName === pkg.name
+                ? 'ring-4 ring-brand-600 bg-brand-50/5 shadow-xl scale-105 z-10'
+                : pkg.popular
+                  ? 'md:scale-105 md:shadow-xl bg-white ring-2 ring-brand-600'
+                  : 'bg-white shadow-lg'
             ]"
           >
             <!-- Card Top Accent -->
             <div
               class="h-1.5"
-              :class="pkg.popular ? 'bg-gradient-to-r from-brand-600 to-brand-700' : 'bg-slate-200'"
+              :class="[
+                isActive && activePackageName === pkg.name
+                  ? 'bg-brand-600'
+                  : pkg.popular ? 'bg-gradient-to-r from-brand-600 to-brand-700' : 'bg-slate-200'
+              ]"
             ></div>
 
             <div class="flex flex-col flex-grow p-8">
@@ -88,7 +74,11 @@
                     <h3 class="text-2xl font-bold text-gray-900">{{ pkg.name }}</h3>
                     <p class="text-sm text-slate-500 mt-1">{{ pkg.short_description }}</p>
                   </div>
-                  <div v-if="pkg.popular" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold whitespace-nowrap">
+                  <div v-if="isActive && activePackageName === pkg.name" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold whitespace-nowrap">
+                    <Icon name="heroicons:check-badge-solid" class="w-3.5 h-3.5" />
+                    Current Plan
+                  </div>
+                  <div v-else-if="pkg.popular" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold whitespace-nowrap">
                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
@@ -113,9 +103,11 @@
                 :disabled="isActive && activePackageName === pkg.name"
                 :class="[
                   'w-full py-3 px-4 rounded-xl font-semibold transition-all mb-8',
-                  pkg.popular
-                    ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white hover:shadow-lg hover:from-brand-700 hover:to-brand-800 disabled:opacity-50'
-                    : 'border-2 border-brand-600 text-brand-600 hover:bg-brand-50 disabled:opacity-50'
+                  isActive && activePackageName === pkg.name
+                    ? 'bg-brand-600 text-white cursor-default'
+                    : pkg.popular
+                      ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white hover:shadow-lg hover:from-brand-700 hover:to-brand-800 disabled:opacity-50'
+                      : 'border-2 border-brand-600 text-brand-600 hover:bg-brand-50 disabled:opacity-50'
                 ]"
               >
                 <span v-if="isActive && activePackageName === pkg.name">Your Current Plan</span>
@@ -238,7 +230,6 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import { useSubscriptionsStore } from '~/stores/subscriptions'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
-import PageHero from '~/components/ui/PageHero.vue'
 import PaymentModal from '~/components/PaymentModal.vue'
 
 definePageMeta({ layout: 'quizee' })

@@ -1,50 +1,14 @@
 <template>
   <div class="bg-gray-50">
-    <PageHero
-      :breadcrumbs="[{ text: 'Home', href: '/quizee' }, { text: 'Quiz Masters', current: true }]"
-      title="Find Your Quiz Masters"
-      description="Connect with expert quiz masters in your grade and institution who create engaging quizzes and guide your learning journey."
-      align="center"
-      padding="py-8 sm:py-12"
-    >
-      <template #actions>
-        <div class="flex flex-wrap items-center justify-center gap-4">
-          <UButton
-            size="lg"
-            color="primary"
-            variant="solid"
-            class="min-w-[200px] shadow-lg hover:-translate-y-0.5 transition-transform !bg-brand-600 hover:!bg-brand-700"
-            to="/quizzes"
-          >
-            Browse All Quizzes
-          </UButton>
-        </div>
-      </template>
-      
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide">Discover</p>
-          <p class="mt-1 text-2xl font-semibold">Expert Quiz Masters</p>
-        </div>
-      </template>
-      
-      <template #highlight-icon>
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-        </svg>
-      </template>
-      
-      <template #stats>
-        <div class="flex flex-col rounded-2xl bg-white/5 p-4 text-center">
-          <p class="text-3xl font-bold text-white">1000+</p>
-          <p class="text-sm text-white/70">Active Quizzes</p>
-        </div>
-        <div class="flex flex-col rounded-2xl bg-white/5 p-4 text-center">
-          <p class="text-3xl font-bold text-white">500+</p>
-          <p class="text-sm text-white/70">Quiz Masters</p>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/quizee" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Quiz Masters</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Find Your Quiz Masters</h1>
+      <p class="text-gray-600 mb-6">Connect with expert quiz masters in your grade and institution who create engaging quizzes and guide your learning journey.</p>
+    </div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <!-- Main Content -->
@@ -100,7 +64,6 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
-import PageHero from '~/components/ui/PageHero.vue'
 import UPagination from '~/components/ui/UPagination.vue'
 import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'

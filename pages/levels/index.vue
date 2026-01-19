@@ -1,10 +1,13 @@
 <template>
   <div>
-    <PageHero
-      title="Education levels"
-      description="Browse learning levels and discover curated assessments and pathways appropriate for each level."
-      :breadcrumbs="[{ text: 'Home', href: '/' }, { text: 'Levels', current: true }]"
-    />
+    <div class="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Levels</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">Education Levels</h1>
+    </div>
 
     <div class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div v-if="loading" class="text-center py-12">Loading levels…</div>
@@ -36,7 +39,6 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import PageHero from '~/components/ui/PageHero.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'

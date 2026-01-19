@@ -1,21 +1,14 @@
 <template>
   <div>
-    <PageHero
-      :title="level.name || 'Level'"
-      :description="level.description || level.summary || `Browse grades and courses for ${level.name || 'this level'}`"
-      :flush="true"
-      @search="onSearch"
-    >
-      <template #eyebrow>
-        Level detail
-      </template>
-
-      <template #actions>
-        <div class="flex items-center gap-3">
-          <NuxtLink to="/grades" class="inline-flex items-center justify-center rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10">Browse grades</NuxtLink>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/levels" class="hover:text-brand-600">Levels</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>{{ level.name || 'Level' }}</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ level.name || 'Level' }}</h1>
+      <p v-if="level.description || level.summary" class="text-gray-600 mb-6">{{ level.description || level.summary }}</p>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 py-10">
       <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
@@ -50,7 +43,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
@@ -66,8 +58,6 @@ const error = ref(null)
 const { grades: taxGrades, fetchGradesByLevel } = useTaxonomy()
 
 
-
-function onSearch() { /* no-op: PageHero search not used here */ }
 
 onMounted(async () => {
   loading.value = true

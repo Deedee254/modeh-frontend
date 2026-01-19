@@ -250,7 +250,7 @@ async function fetchResults() {
     const cfg = useRuntimeConfig()
     const api = useApi()
     // Use api.get instead of $fetch for proper CSRF handling
-    const res = await api.get(cfg.public.apiBase + `/api/quiz-attempts/${attemptId}`)
+    const res = await api.get(`/api/quiz-attempts/${attemptId}`)
     if (api.handleAuthStatus(res)) {
       // Handle auth redirect
       return
@@ -269,7 +269,7 @@ async function fetchResults() {
       // If slug is still missing but we have quizId, attempt to fetch the quiz to retrieve slug
       if (!quizSlug.value && quizId.value) {
         try {
-          const quizRes = await api.get(cfg.public.apiBase + `/api/quizzes/${quizId.value}`)
+          const quizRes = await api.get(`/api/quizzes/${quizId.value}`)
           if (quizRes && quizRes.ok) {
             const quizJson = await quizRes.json().catch(() => null)
             if (quizJson) {

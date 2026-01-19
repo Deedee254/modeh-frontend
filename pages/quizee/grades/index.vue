@@ -1,64 +1,14 @@
 <template>
   <div>
-    <PageHero
-      title="Your Grade Levels"
-      description="Explore assessments and topics specific to your grade level."
-      :flush="true"
-    >
-      <template #eyebrow>
-        Your learning path
-      </template>
-
-      <template #actions>
-        <div class="flex flex-wrap items-center gap-3">
-          <NuxtLink
-            to="/quizee/subjects"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-700 shadow-lg shadow-brand-950/30 transition hover:-translate-y-0.5 hover:bg-white/90"
-          >
-            Browse subjects
-          </NuxtLink>
-          <NuxtLink
-            to="/quizee/topics"
-            class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
-          >
-            Explore topics
-          </NuxtLink>
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Your level</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ userLevel }}</p>
-          <p class="mt-2 text-sm text-white/70">{{ filteredGrades.length || 0 }} grade levels available</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h10M4 18h6" />
-        </svg>
-      </template>
-
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Grades</p>
-          <p class="mt-2 text-xl font-semibold">{{ filteredGrades.length || 0 }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Subjects</p>
-          <p class="mt-2 text-xl font-semibold">{{ subjectsCount }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Topics</p>
-          <p class="mt-2 text-xl font-semibold">{{ topicsCount }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Quizzes</p>
-          <p class="mt-2 text-xl font-semibold">{{ totalQuizzes }}</p>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Grades</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Your Grade Levels</h1>
+      <p class="text-gray-600 mb-6">Explore assessments and topics specific to your grade level.</p>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <!-- Sort Bar (button group) -->
@@ -112,7 +62,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
-import PageHero from '~/components/ui/PageHero.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import { useRouter } from 'vue-router'

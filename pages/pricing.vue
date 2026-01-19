@@ -1,54 +1,13 @@
 <template>
   <div>
-    <PageHero
-      title="Plans & Pricing"
-      description="Flexible plans for individual Quizees and institutions. Start with a free trial or pick a plan that fits your needs."
-      :flush="true"
-    >
-      <template #eyebrow>
-        Pricing
-      </template>
-
-      <template #actions>
-        <div class="flex flex-col sm:flex-row items-center gap-3 justify-center">
-          <NuxtLink to="/register/quizee" class="px-4 py-2 bg-white text-brand-600 rounded">Start free trial</NuxtLink>
-          <NuxtLink to="/contact" class="px-4 py-2 border rounded text-white/90">Contact sales</NuxtLink>
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Choose your plan</p>
-          <p class="mt-1 text-2xl font-semibold text-white">Flexible pricing</p>
-          <p class="mt-2 text-sm text-white/70">From free trials to enterprise solutions</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-        </svg>
-      </template>
-
-      <template #stats>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Flexible billing</p>
-          <p class="mt-2 text-xl font-semibold">Starting at $0</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Team plans</p>
-          <p class="mt-2 text-xl font-semibold">Enterprise options</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Quizzes created</p>
-          <p class="mt-2 text-xl font-semibold">500+</p>
-        </div>
-        <div class="rounded-2xl border border-white/15 bg-white/5 p-4 text-white">
-          <p class="text-xs uppercase tracking-wide text-white/60">Users</p>
-          <p class="mt-2 text-xl font-semibold">500+</p>
-        </div>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Pricing</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">Pricing</h1>
+    </div>
 
   <!-- Pricing Tabs Section -->
   <section class="w-full bg-white">
@@ -373,7 +332,6 @@ definePageMeta({
 
 import { ref, unref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
-import PageHero from '~/components/ui/PageHero.vue'
 import { getHeroClass } from '~/utils/heroPalettes'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter, useRoute } from 'vue-router'

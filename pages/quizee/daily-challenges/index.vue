@@ -363,7 +363,6 @@
 <script setup>
 // Use the quizee layout for this page
 definePageMeta({ layout: 'quizee' })
-import PageHero from '~/components/ui/PageHero.vue'
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'

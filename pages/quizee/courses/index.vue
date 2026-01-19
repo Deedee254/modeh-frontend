@@ -1,9 +1,14 @@
 <template>
   <div>
-    <PageHero
-      title="Courses"
-      description="Browse all tertiary courses available on the platform"
-    />
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Courses</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Courses</h1>
+      <p class="text-gray-600 mb-6">Browse all tertiary courses available on the platform</p>
+    </div>
 
     <div class="max-w-6xl mx-auto px-4 py-12">
       <div v-if="loading" class="text-center py-12">Loading courses…</div>
@@ -60,7 +65,6 @@ import { ref, onMounted, computed } from 'vue'
 // FiltersSidebar removed: using sort pills instead
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
-import PageHero from '~/components/ui/PageHero.vue'
 import GradeCard from '~/components/ui/GradeCard.vue'
 
 definePageMeta({

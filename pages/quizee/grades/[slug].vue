@@ -1,45 +1,14 @@
 <template>
   <div>
-    <PageHero
-      :title="grade?.name || 'Grade'"
-      :description="grade?.description || grade?.summary || `Topics for ${grade?.name || ''}`"
-      :flush="true"
-    >
-      <template #eyebrow>
-        Grade detail
-      </template>
-
-      <template #actions>
-        <div class="flex flex-wrap items-center gap-3">
-          <NuxtLink
-            to="/quizee/topics"
-            class="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
-          >
-            Browse all topics
-          </NuxtLink>
-          <NuxtLink
-            :to="`/quizees/quizzes?grade=${encodeURIComponent(grade?.slug)}`"
-            class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
-          >
-            Explore assessments
-          </NuxtLink>
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Topic coverage</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ topics.length || 0 }} topics available</p>
-          <p v-if="grade?.level?.name" class="mt-2 text-sm text-white/70">Aligned to {{ grade.level.name }}</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h12M4 18h8" />
-        </svg>
-      </template>
-    </PageHero>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/quizee/grades" class="hover:text-brand-600">Grades</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>{{ grade?.name || 'Grade' }}</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ grade?.name || 'Grade' }}</h1>
+      <p v-if="grade?.description || grade?.summary" class="text-gray-600 mb-6">{{ grade.description || grade.summary }}</p>
+    </div>
 
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -71,7 +40,6 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
-import PageHero from '~/components/ui/PageHero.vue'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import useSeo from '~/composables/useSeo'

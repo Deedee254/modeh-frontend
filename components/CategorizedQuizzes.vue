@@ -75,6 +75,7 @@
               <UiQuizCard
                 v-for="(quiz, idx) in (levelQuizzes(level) || []).slice(0, 3)"
                 :key="quiz.slug || idx"
+                :quiz="quiz"
                 :horizontal="true"
                 :clean="false"
                 :hide-image="true"
@@ -147,15 +148,13 @@ const visibleLevels = computed(() => {
     const embedded = extractQuizzesFromLevel(item)
     if (Array.isArray(embedded) && embedded.length > 0) return true
 
-    // Subject items may include quizzes_count or topics with quizzes_count
-    if (props.type === 'subject') {
-      if (typeof item.quizzes_count === 'number' && item.quizzes_count > 0) return true
-      if (Array.isArray(item.topics) && item.topics.some(t => (t?.quizzes_count || 0) > 0)) return true
-    }
+    // Check for quizzes_count field (all types: levels, subjects, topics)
+    // This field should be returned by the backend with withCount('quizzes')
+    if (typeof item.quizzes_count === 'number' && item.quizzes_count > 0) return true
 
-    // Topic items may include quizzes_count
-    if (props.type === 'topic') {
-      if (typeof item.quizzes_count === 'number' && item.quizzes_count > 0) return true
+    // Subject items may include topics with quizzes_count
+    if (props.type === 'subject') {
+      if (Array.isArray(item.topics) && item.topics.some(t => (t?.quizzes_count || 0) > 0)) return true
     }
 
     // Check cached fetched quizzes
@@ -206,6 +205,19 @@ function extractQuizzesFromLevel(level) {
   // common fields where quizzes might be stored
   const quizzes = level.quizzes || level.top_quizzes || level.items || level.quizzes_list || null
   if (Array.isArray(quizzes) && quizzes.length > 0) return quizzes
+  
+  // For subjects: try to extract quizzes from embedded topics
+  // (though we prefer fetching them directly from /api/quizzes endpoint)
+  if (props.type === 'subject' && Array.isArray(level.topics)) {
+    const topicQuizzes = []
+    for (const topic of level.topics) {
+      if (Array.isArray(topic.quizzes)) {
+        topicQuizzes.push(...topic.quizzes)
+      }
+    }
+    if (topicQuizzes.length > 0) return topicQuizzes
+  }
+  
   return null
 }
 
@@ -225,8 +237,14 @@ async function fetchQuizzesForLevel(level, perPage = 3) {
   if (levelQuizzesMap[cacheId]) return levelQuizzesMap[cacheId]
 
   try {
-    const slug = level.slug || level.id || ''
-    const isNumeric = String(slug).match(/^\d+$/)
+    // Use ID by default for more reliable filtering; fall back to slug
+    const identifier = level.id || level.slug
+    if (!identifier) {
+      levelQuizzesMap[cacheId] = []
+      return []
+    }
+    
+    const isNumeric = String(identifier).match(/^\d+$/)
     
     let paramName = ''
     if (props.type === 'subject') {
@@ -237,17 +255,20 @@ async function fetchQuizzesForLevel(level, perPage = 3) {
       paramName = isNumeric ? 'level_id' : 'level'
     }
 
-    const endpoint = `/api/quizzes?${paramName}=${encodeURIComponent(slug)}&per_page=${perPage}`
+    const endpoint = `/api/quizzes?${paramName}=${encodeURIComponent(identifier)}&per_page=${perPage}&approved=1`
     const res = await api.get(endpoint)
     if (!res.ok) {
       levelQuizzesMap[cacheId] = []
       return []
     }
     const data = await res.json().catch(() => null)
-    const quizzes = (data && (data.quizzes?.data || data.quizzes || data.data)) || []
+    // Handle both paginated and direct array responses
+    const quizzes = (data && (data.quizzes?.data || data.data || (Array.isArray(data.quizzes) ? data.quizzes : (Array.isArray(data) ? data : [])))) || []
     levelQuizzesMap[cacheId] = quizzes
     return quizzes
   } catch (e) {
+    // Log the error for debugging
+    console.error(`[CategorizedQuizzes] Error fetching quizzes for ${props.type}:`, e)
     levelQuizzesMap[cacheId] = []
     return []
   }

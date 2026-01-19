@@ -34,78 +34,18 @@
       </div>
 
       <!-- Hero Section -->
-      <PageHero
-        :title="tournament.name"
-        :description="cleanDescription.substring(0, 150) + (cleanDescription.length > 150 ? '...' : '')"
-        :image="tournament.banner"
-        variant="image"
-        class="mb-0"
-      >
-        <template #eyebrow>
-          <span class="flex items-center gap-2">
-            <span class="relative flex h-2 w-2">
-              <span v-if="tournament.status === 'live' || tournament.status === 'active'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span :class="statusColor(tournament.status)" class="relative inline-flex rounded-full h-2 w-2"></span>
-            </span>
-            {{ tournament.status?.toUpperCase() || 'TOURNAMENT' }}
-          </span>
-        </template>
-
-        <template #highlight>
-          <div>
-            <p class="text-xs uppercase tracking-wide text-white/60">Prize Pool</p>
-            <p class="mt-1 text-3xl font-bold text-white">{{ formatPrizeKES(tournament.prize_pool) }}</p>
-          </div>
-        </template>
-
-        <template #highlight-icon>
-           <span class="text-2xl">🏆</span>
-        </template>
-
-        <template #stats>
-           <div class="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/10">
-              <p class="text-xs text-white/60 uppercase">Entry Fee</p>
-              <p class="font-semibold text-white">{{ Number(tournament.entry_fee) > 0 ? formatPrizeKES(tournament.entry_fee) : 'Free' }}</p>
-           </div>
-           <div class="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/10">
-              <p class="text-xs text-white/60 uppercase">Participants</p>
-              <p class="font-semibold text-white">{{ tournament.participants_count }}</p>
-           </div>
-        </template>
-
-        <template #actions>
-           <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <button
-                @click="heroPrimaryClick"
-                :disabled="heroPrimaryDisabled"
-                class="px-6 py-3 rounded-lg font-medium shadow-lg transition-transform hover:-translate-y-0.5 min-w-[200px]"
-                :class="heroPrimaryClass"
-              >
-                {{ heroPrimaryLabel }}
-              </button>
-
-              <button 
-                v-if="isRegistered && (tournament.status === 'upcoming' && !userHasQualified && !currentBattle) === false" 
-                @click="viewBattles" 
-                class="px-6 py-3 rounded-lg font-medium bg-white/10 text-white border border-white/20 hover:bg-white/20 backdrop-blur-sm"
-              >
-                View Battles
-              </button>
-
-              <!-- Admin Advance Round -->
-              <button
-                v-if="auth.user && (auth.user.role === 'quiz-master' || auth.user.role === 'admin')"
-                @click="advanceRound"
-                class="px-6 py-3 rounded-lg font-medium bg-yellow-500 text-white hover:bg-yellow-600 shadow-lg"
-              >
-                Advance Round
-              </button>
-           </div>
-        </template>
-      </PageHero>
+      <div class="max-w-7xl mx-auto px-4 py-6">
+        <nav class="text-sm text-gray-600 mb-4">
+          <NuxtLink to="/quizee/tournaments" class="hover:text-brand-600">Tournaments</NuxtLink>
+          <span class="mx-2">›</span>
+          <span>{{ tournament.name }}</span>
+        </nav>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ tournament.name }}</h1>
+        <p class="text-gray-600 mb-6">{{ cleanDescription.substring(0, 150) + (cleanDescription.length > 150 ? '...' : '') }}</p>
+      </div>
 
       <!-- Main Content -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           <!-- Left Column: Details & Actions -->
