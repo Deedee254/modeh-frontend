@@ -140,7 +140,4 @@ async function save() {
   }
 }
 </script>
-  }
-}
-</script>
 
