@@ -71,7 +71,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import SettingsTabs from '~/components/SettingsTabs.vue'
 import PageHero from '~/components/ui/PageHero.vue'
