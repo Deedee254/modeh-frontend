@@ -413,8 +413,24 @@ watch(() => props.modelValue, async (nv) => {
   const subjectId = nv.subject_id ?? nv.subject?.id ?? null
   const topicId = nv.topic_id ?? nv.topic?.id ?? null
 
-  // Only initialize if taxonomySelection is empty and modelValue has values
-  if (!taxonomySelection.value.grade && gradeId) {
+  // CRITICAL: Check if values actually changed before updating
+  // This prevents re-initializing when the incoming modelValue is the same
+  const currentLevel = taxonomySelection.value.level?.id
+  const currentGrade = taxonomySelection.value.grade?.id
+  const currentSubject = taxonomySelection.value.subject?.id
+  const currentTopic = taxonomySelection.value.topic?.id
+  
+  const levelChanged = String(levelId || '') !== String(currentLevel || '')
+  const gradeChanged = String(gradeId || '') !== String(currentGrade || '')
+  const subjectChanged = String(subjectId || '') !== String(currentSubject || '')
+  const topicChanged = String(topicId || '') !== String(currentTopic || '')
+  
+  if (!levelChanged && !gradeChanged && !subjectChanged && !topicChanged) {
+    return
+  }
+
+  // Only initialize if there are values to load
+  if (gradeId) {
     // Preload the taxonomy lists if needed
     try {
       if (levelId) {

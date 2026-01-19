@@ -242,7 +242,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
@@ -255,6 +255,24 @@ const alert = useAppAlert()
 const userStats = ref({})
 const activity = ref([])
 const loading = ref(true)
+const achievements = ref([])
+
+const recentAchievements = computed(() => {
+  if (!Array.isArray(achievements.value)) return []
+  // Filter achievements that have been completed (have completed_at date)
+  return achievements.value
+    .filter((a: any) => a.completed_at)
+    .sort((a: any, b: any) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
+    .slice(0, 3)
+})
+
+const nextAchievements = computed(() => {
+  if (!Array.isArray(achievements.value)) return []
+  // Filter achievements that haven't been completed yet
+  return achievements.value
+    .filter((a: any) => !a.completed_at)
+    .slice(0, 3)
+})
 
 const availableRewards = ref([
   { id: 1, name: 'Ksh 50 Airtime', description: 'Get a KES 50 airtime voucher for any network.', points: 500, icon: '📱' },
@@ -293,9 +311,17 @@ onMounted(async () => {
 
     // Update activity from user stats
     activity.value = userStatsRes.activity || []
-
-    // Note: Full achievements data is available on /quizee/badges page
-    // This page only shows recent/next achievements summary from activity
+    
+    // Initialize achievements array from API response
+    // Full achievements data is available on /quizee/badges page
+    // This page shows recent/next achievements summary
+    if (Array.isArray(userStatsRes.achievements)) {
+      achievements.value = userStatsRes.achievements
+    } else if (Array.isArray(userStatsRes.unlocked_achievements)) {
+      achievements.value = userStatsRes.unlocked_achievements
+    } else {
+      achievements.value = []
+    }
 
   } catch (error) {
     console.error("Failed to fetch points data:", error)

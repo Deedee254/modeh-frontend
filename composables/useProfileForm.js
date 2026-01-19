@@ -224,7 +224,9 @@ export function useProfileForm() {
       if (hasChanged(form.phone, originalForm.phone)) {
         userData.append('phone', form.phone || '')
       }
-      if (avatarFile.value) {
+      // CRITICAL: Only append avatar if file was actually changed (user selected a new file)
+      // Do NOT append avatar if it's just the old preview URL
+      if (avatarFile.value && avatarFile.value instanceof File) {
         userData.append('avatar', avatarFile.value)
       }
 
@@ -335,6 +337,11 @@ export function useProfileForm() {
         }
       }
 
+      // CRITICAL: Reset avatar file state after successful save to prevent re-uploading
+      if (avatarFile.value) {
+        avatarFile.value = null
+      }
+
       alert.push({
         type: 'success',
         message: 'Profile updated',
@@ -344,6 +351,10 @@ export function useProfileForm() {
       return true
     } catch (e) {
       console.error('Save error:', e)
+      // CRITICAL: Reset avatar file on error too, so user can retry
+      if (avatarFile.value) {
+        avatarFile.value = null
+      }
       alert.push({
         type: 'error',
         message: e?.message || 'Failed to save profile',

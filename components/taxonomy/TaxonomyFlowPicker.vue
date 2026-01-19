@@ -770,13 +770,27 @@ watch(
       // to our current internal selections (this prevents a loop where
       // child emits update:modelValue -> parent writes same object ->
       // child watcher resets currentStep back to level).
-      try {
-        const incoming = JSON.stringify(newValue)
-        const current = JSON.stringify(selections.value)
-        if (incoming === current) return
-      } catch (e) {
-        // If stringify fails, continue with normal behavior
+      // CRITICAL: Compare by value, not reference - check if actual data changed
+      const isSameSelection = () => {
+        // Check level
+        if ((selections.value.level?.id) !== (newValue.level?.id)) return false
+        // Check grade
+        if ((selections.value.grade?.id) !== (newValue.grade?.id)) return false
+        // Check subject(s)
+        const oldSubjects = Array.isArray(selections.value.subject) 
+          ? selections.value.subject.map(s => s?.id).sort()
+          : (selections.value.subject?.id ? [selections.value.subject.id] : [])
+        const newSubjects = Array.isArray(newValue.subject)
+          ? newValue.subject.map(s => s?.id).sort()
+          : (newValue.subject?.id ? [newValue.subject.id] : [])
+        if (oldSubjects.length !== newSubjects.length) return false
+        if (!oldSubjects.every((id, i) => id === newSubjects[i])) return false
+        // Check topic
+        if ((selections.value.topic?.id) !== (newValue.topic?.id)) return false
+        return true
       }
+      
+      if (isSameSelection()) return
 
       selections.value = JSON.parse(JSON.stringify(newValue))
       

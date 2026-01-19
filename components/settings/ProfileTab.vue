@@ -169,18 +169,24 @@ const form = ref(createFormState(user.value))
 const originalForm = ref(JSON.parse(JSON.stringify(form.value)))
 
 // Keep taxonomySelection in sync with form values
+// CRITICAL: Only update form when selection actually changes (not on every re-render)
 watch(taxonomySelection, (sel: any) => {
   if (!sel) return
-  if (sel.level) form.value.level_id = sel.level.id
-  else form.value.level_id = ''
-  if (sel.grade) form.value.grade_id = sel.grade.id
-  else form.value.grade_id = ''
-  if (sel.subject) {
-    if (Array.isArray(sel.subject)) form.value.subjects = sel.subject.map((s: any) => s.id)
-    else form.value.subjects = [sel.subject.id]
-  } else {
-    form.value.subjects = []
-  }
+  // Only update if value actually changed to avoid triggering unnecessary saves
+  const newLevel = sel.level?.id || ''
+  const newGrade = sel.grade?.id || ''
+  const newSubjects = sel.subject
+    ? (Array.isArray(sel.subject) ? sel.subject.map((s: any) => s.id) : [sel.subject.id])
+    : []
+  
+  // Check if values actually changed before updating form
+  const levelChanged = String(newLevel) !== String(form.value.level_id ?? '')
+  const gradeChanged = String(newGrade) !== String(form.value.grade_id ?? '')
+  const subjectsChanged = JSON.stringify(newSubjects.sort()) !== JSON.stringify((form.value.subjects || []).map(s => String(s)).sort())
+  
+  if (levelChanged) form.value.level_id = newLevel
+  if (gradeChanged) form.value.grade_id = newGrade
+  if (subjectsChanged) form.value.subjects = newSubjects
 }, { deep: true })
 
 // Watch for user/profile changes and initialize
