@@ -187,9 +187,6 @@
                   Begin Assessment
                 </button>
                 <div class="flex gap-3">
-                  <button @click="showPreview" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                    Preview Questions
-                  </button>
                   <AffiliateShareButton 
                     :itemType="'Quiz'"
                     :itemId="quiz.id"
@@ -466,14 +463,7 @@ function startQuiz() {
     }
 }
 
-function showPreview() {
-  if (quiz.value.slug) {
-    router.push(`/quizzes/${quiz.value.slug}/preview`)
-  } else {
-    // Slug missing: fall back to quiz list to avoid exposing id-based routes
-    router.push('/quizzes')
-  }
-}
+
 
 // Update head reactively when quizData becomes available
 watchEffect(() => {

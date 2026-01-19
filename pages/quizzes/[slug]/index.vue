@@ -204,9 +204,6 @@
                   {{ startButtonLabel }}
                 </button>
                 <div v-if="!lastAttempt" class="flex gap-3">
-                  <button @click="showPreview" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                    Preview Questions
-                  </button>
                   <AffiliateShareButton 
                     :itemType="'Quiz'"
                     :itemSlug="quiz.slug"
@@ -482,7 +479,7 @@ const priceDisplay = computed(() => {
   const p = Number(price.value)
   if (!isFinite(p)) return 'Paid'
   try {
-    const currency = config.public?.currency || 'USD'
+    const currency = 'KSH'
     return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(p)
   } catch (e) {
     return `${p}`
