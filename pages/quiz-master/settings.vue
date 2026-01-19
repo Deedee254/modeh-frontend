@@ -87,7 +87,7 @@ useHead({
   title: 'Account settings'
 })
 
-const { isQuizMaster, isquizee } = useUserRole()
+const { isQuizMaster, isQuizee } = useUserRole()
 
 const componentMap: Record<string, any> = {
   profile: ProfileTab,
@@ -98,7 +98,7 @@ const componentMap: Record<string, any> = {
 }
 
 const tabs = computed(() => {
-  const defs = getSettingsTabs({ isQuizMaster: isQuizMaster.value, isquizee: isquizee.value })
+  const defs = getSettingsTabs({ isQuizMaster: isQuizMaster.value, isQuizee: isQuizee.value })
   return defs.map(d => ({ ...d, component: componentMap[d.key] }))
 })
 
