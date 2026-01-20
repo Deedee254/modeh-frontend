@@ -624,10 +624,24 @@ async function submitAnswers() {
     
 
     
-    // Only filter out answers with question_id of 0 (completely invalid)
+    // Validate answers before submission
     const finalAnswers = sanitizedAnswers.filter(a => {
       const qid = Number(a.question_id)
-      return Number.isFinite(qid)
+      // Ensure question_id is a valid positive integer
+      return Number.isFinite(qid) && qid > 0
+    })
+    
+    // Warn if answers were filtered out (data integrity issue)
+    if (finalAnswers.length < sanitizedAnswers.length) {
+      const filtered = sanitizedAnswers.length - finalAnswers.length
+      console.warn(`[Quiz Submit] Filtered out ${filtered} invalid answer(s) with non-positive question_id`)
+    }
+    
+    // Debug log: show answer structure before submission
+    console.debug('[Quiz Submit] Answer payload:', {
+      totalAnswersSubmitted: finalAnswers.length,
+      totalQuestionsInQuiz: Q.value.questions.length,
+      sampleAnswers: finalAnswers.slice(0, 2)
     })
 
     // Extract per-question times into a separate object for the backend

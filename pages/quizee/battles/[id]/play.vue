@@ -351,12 +351,25 @@ async function submitBattle() {
   const answersToSubmit = {}
   Object.keys(answers.value).forEach(k => { answersToSubmit[Number(k)] = answers.value[k] })
   const answersPayload = formatAnswersForSubmission(answersToSubmit, questionTimes.value)
+  
+  // Validate answers before submission - filter out any with invalid question_id
+  const validatedAnswers = answersPayload.filter(a => {
+    const qid = Number(a.question_id)
+    // Ensure question_id is a valid positive integer
+    return Number.isFinite(qid) && qid > 0
+  })
+  
+  // Warn if answers were filtered out (data integrity issue)
+  if (validatedAnswers.length < answersPayload.length) {
+    const filtered = answersPayload.length - validatedAnswers.length
+    console.warn(`[Battle Submit] Filtered out ${filtered} invalid answer(s) with non-positive question_id`)
+  }
 
     // Compute best-effort score locally so backend can record points immediately. Use normalized comparisons.
     let computedScore = 0
     try {
       for (const q of questions.value) {
-  const ansEntry = (answersPayload || []).find(x => String(x.question_id) === String(q.id || q.question_id))
+  const ansEntry = (validatedAnswers || []).find(x => String(x.question_id) === String(q.id || q.question_id))
         if (!ansEntry || ansEntry.selected === '' || ansEntry.selected === null) continue
         // If question provides a correct option index, compare the normalized texts
         if (typeof q?.correct_option_id !== 'undefined' && Array.isArray(q.options)) {
@@ -373,7 +386,7 @@ async function submitBattle() {
       // ignore and keep computedScore as 0
     }
 
-    let payload = { answers: answersPayload }
+    let payload = { answers: validatedAnswers }
 
     if (useBot.value) {
       // For bot matches: defer marking but send both scores. Persist opponent=false so bot score is not saved.

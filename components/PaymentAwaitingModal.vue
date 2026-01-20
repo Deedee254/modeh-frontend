@@ -1,47 +1,163 @@
 <template>
   <div v-if="open" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-      <h3 class="text-lg font-semibold">Awaiting payment</h3>
-      <p class="mt-2 text-sm text-muted-foreground">We've initiated the payment request. Please complete the payment on your phone.</p>
+      <h3 class="text-lg font-semibold">{{ getModalTitle }}</h3>
+      <p class="mt-2 text-sm text-muted-foreground">{{ getModalMessage }}</p>
 
       <div class="mt-4">
         <div class="text-sm">Transaction ID: <span class="font-mono">{{ tx }}</span></div>
-        <div class="mt-3">
-          <div v-if="status === 'pending'" class="text-brand-600">Waiting for payment confirmation...</div>
-          <div v-else-if="status === 'active'" class="text-green-600">Payment confirmed — subscription active.</div>
-          <div v-else-if="status === 'cancelled' || status === 'failed'" class="text-red-600">Payment failed or cancelled.</div>
+        <div class="mt-3 flex items-start gap-2">
+          <div v-if="status === 'pending'" class="text-brand-600">⏳ Waiting for payment confirmation...</div>
+          <div v-else-if="status === 'active'" class="text-green-600 flex items-center gap-1">
+            <span>✓</span> Payment confirmed — subscription active.
+          </div>
+          <div v-else-if="status === 'cancelled' || status === 'failed'" class="text-red-600 flex items-center gap-1">
+            <span>❌</span> Payment cancelled or failed.
+          </div>
+          <div v-else-if="status === 'timeout'" class="text-orange-600 flex items-center gap-1">
+            <span>⏱️</span> Payment timeout — no response after {{ timeoutSeconds }} seconds.
+          </div>
+        </div>
+        
+        <!-- Timer display for pending -->
+        <div v-if="status === 'pending' && secondsRemaining > 0" class="mt-3 text-xs text-slate-500">
+          Auto-timeout in: {{ formatSeconds(secondsRemaining) }}
         </div>
       </div>
 
       <div class="mt-6 flex justify-end gap-3">
-        <button class="btn" @click="onClose" :disabled="status === 'pending'">Close</button>
+        <button 
+          @click="onClose" 
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          :class="{'opacity-50 cursor-not-allowed': isLoading}"
+          :disabled="isLoading"
+        >
+          {{ getButtonLabel }}
+        </button>
+        
+        <button 
+          v-if="showRetryButton"
+          @click="onRetry"
+          class="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
+          :class="{'opacity-50 cursor-not-allowed': isLoading}"
+          :disabled="isLoading"
+        >
+          {{ isLoading ? 'Retrying...' : 'Retry' }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import { useAppAlert } from '~/composables/useAppAlert'
+import useApi from '~/composables/useApi'
 
 const props = defineProps({ tx: String, open: Boolean })
 const emits = defineEmits(['close','update:open'])
 
-const status = ref('pending')
+// State
+const status = ref('pending') // pending, active, cancelled, failed, timeout
+const isLoading = ref(false)
+const secondsRemaining = ref(120) // 2 minute timeout
 let intervalId = null
+let timeoutId = null
+let pollIntervalId = null
 
 const auth = useAuthStore()
+const { push: pushAlert } = useAppAlert()
+const api = useApi()
 
 // Echo channel refs so we can detach listeners later
 let _echoChannels = []
 
-async function check() {
-  try {
-    const res = await $fetch(`/api/subscriptions/status?tx=${encodeURIComponent(props.tx)}`, { headers: { Accept: 'application/json' } })
-    if (res?.subscription) status.value = res.subscription.status
-  } catch (e) {
-    // ignore transient errors
+// Computed properties
+const getModalTitle = computed(() => {
+  switch (status.value) {
+    case 'active': return '✓ Payment Successful'
+    case 'timeout': return '⏱️ Payment Timeout'
+    case 'cancelled':
+    case 'failed': return '❌ Payment Failed'
+    default: return 'Processing Payment'
   }
+})
+
+const getModalMessage = computed(() => {
+  switch (status.value) {
+    case 'active': return 'Your subscription has been activated successfully.'
+    case 'timeout': return 'Payment confirmation was not received. Please try again or contact support.'
+    case 'cancelled': return 'Payment was cancelled. Please try again.'
+    case 'failed': return 'Payment failed. Please try again with a different method.'
+    default: return 'We\'ve initiated the payment request. Please complete the payment on your phone.'
+  }
+})
+
+const getButtonLabel = computed(() => {
+  if (status.value === 'active') return 'Done'
+  if (status.value === 'timeout' || status.value === 'failed' || status.value === 'cancelled') return 'Close'
+  return 'Close'
+})
+
+const showRetryButton = computed(() => {
+  return ['timeout', 'failed', 'cancelled'].includes(status.value)
+})
+
+function formatSeconds(secs) {
+  const mins = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${mins}:${s.toString().padStart(2, '0')}`
+}
+
+async function check() {
+  if (!props.tx) return
+  try {
+    isLoading.value = true
+    const res = await $fetch(`/api/subscriptions/status?tx=${encodeURIComponent(props.tx)}`, { 
+      headers: { Accept: 'application/json' } 
+    })
+    if (res?.subscription) {
+      const newStatus = res.subscription.status
+      
+      // Log status change
+      if (newStatus !== status.value) {
+        console.log('[Payment] Status updated:', { from: status.value, to: newStatus, tx: props.tx })
+      }
+      
+      status.value = newStatus
+      
+      // Auto-close on success
+      if (newStatus === 'active') {
+        console.log('[Payment] Success - closing modal after 600ms')
+        setTimeout(() => { emits('update:open', false); emits('close') }, 600)
+      }
+    }
+  } catch (e) {
+    console.error('[Payment] Status check failed:', { error: e.message, tx: props.tx })
+    // ignore transient errors - don't change status
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function startTimeoutCountdown() {
+  // Count down from 120 seconds
+  secondsRemaining.value = 120
+  intervalId = setInterval(() => {
+    secondsRemaining.value--
+    if (secondsRemaining.value <= 0) {
+      clearInterval(intervalId)
+      if (status.value === 'pending') {
+        console.warn('[Payment] Timeout reached - payment still pending after 120 seconds')
+        status.value = 'timeout'
+        pushAlert({ 
+          type: 'warning', 
+          message: 'Payment confirmation timeout. Please retry or contact support.' 
+        })
+      }
+    }
+  }, 1000)
 }
 
 function _attachEchoListeners() {
@@ -50,14 +166,18 @@ function _attachEchoListeners() {
   try {
     const Echo = (window && window.Echo) ? window.Echo : null
     const userId = auth.user?.id
-    if (!Echo || !userId) return
+    if (!Echo || !userId) {
+      console.log('[Payment] Echo not available, using polling only')
+      return
+    }
 
-  // subscribe to backend channel naming: users.{id}
-  const channelNames = [`users.${userId}`]
-  channelNames.forEach((chName) => {
+    // subscribe to backend channel naming: users.{id}
+    const channelNames = [`users.${userId}`]
+    channelNames.forEach((chName) => {
       try {
         const ch = Echo.private(chName)
         _echoChannels.push(ch)
+        console.log('[Payment] Listening on channel:', chName)
 
         const handler = (payload) => {
           const tx = payload?.tx ?? payload?.data?.tx ?? payload?.subscription?.gateway_meta?.tx ?? payload?.subscription?.tx ?? null
@@ -65,7 +185,9 @@ function _attachEchoListeners() {
           if (!tx) return
           if (tx === props.tx) {
             // update status if provided
-            status.value = subscription?.status ?? payload?.status ?? 'active'
+            const newStatus = subscription?.status ?? payload?.status ?? 'active'
+            console.log('[Payment] Echo event received:', { status: newStatus, tx })
+            status.value = newStatus
             // close modal shortly after
             setTimeout(() => { emits('update:open', false); emits('close') }, 600)
           }
@@ -77,11 +199,11 @@ function _attachEchoListeners() {
         try { ch.listen('.App\\\\Events\\\\SubscriptionUpdated', handler) } catch (e) {}
         try { ch.listen('.App\\Events\\SubscriptionUpdated', handler) } catch (e) {}
       } catch (err) {
-        // ignore per-channel errors
+        console.warn('[Payment] Error attaching to channel:', err.message)
       }
     })
   } catch (e) {
-    // ignore overall echo attach errors
+    console.warn('[Payment] Echo attachment error:', e.message)
   }
 }
 
@@ -101,31 +223,72 @@ function _detachEchoListeners() {
   _echoChannels = []
 }
 
-onMounted(() => {
-  if (!props.tx) return
-  check()
-  intervalId = setInterval(() => {
-    if (status.value !== 'pending') { clearInterval(intervalId); return }
-    check()
-  }, 3000)
+async function onRetry() {
+  isLoading.value = true
+  try {
+    // Reset state
+    status.value = 'pending'
+    secondsRemaining.value = 120
+    clearInterval(intervalId)
+    startTimeoutCountdown()
+    
+    // Restart polling
+    if (pollIntervalId) clearInterval(pollIntervalId)
+    check() // immediate check
+    pollIntervalId = setInterval(() => {
+      if (status.value === 'pending') check()
+    }, 3000)
+    
+    console.log('[Payment] Retry initiated - reset to pending state')
+    pushAlert({ type: 'info', message: 'Retrying payment confirmation...' })
+  } catch (e) {
+    console.error('[Payment] Retry error:', e)
+    pushAlert({ type: 'error', message: 'Failed to retry. Please close and try again.' })
+  } finally {
+    isLoading.value = false
+  }
+}
 
+function onClose() {
+  emits('update:open', false)
+  emits('close')
+}
+
+onMounted(() => {
+  if (!props.tx) {
+    console.error('[Payment] No TX provided to PaymentAwaitingModal')
+    return
+  }
+  
+  console.log('[Payment] Modal mounted, TX:', props.tx)
+  
+  // Initial check
+  check()
+  
+  // Start polling every 3 seconds
+  pollIntervalId = setInterval(() => {
+    if (status.value === 'pending') check()
+  }, 3000)
+  
+  // Start timeout countdown
+  startTimeoutCountdown()
+  
   // attach realtime listeners (if Echo is configured)
   _attachEchoListeners()
 })
 
 onBeforeUnmount(() => {
   if (intervalId) clearInterval(intervalId)
+  if (pollIntervalId) clearInterval(pollIntervalId)
+  if (timeoutId) clearTimeout(timeoutId)
   _detachEchoListeners()
+  console.log('[Payment] Modal unmounted, cleanup done')
 })
-
-function onClose() {
-  emits('update:open', false)
-  emits('close')
-}
 </script>
 
 <style scoped>
-.text-muted-foreground { color: var(--muted-foreground); }
-.btn { padding: 0.5rem 1rem; border-radius: 0.375rem; }
+.text-muted-foreground { 
+  color: #6b7280; 
+}
 </style>
 

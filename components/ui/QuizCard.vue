@@ -165,7 +165,17 @@
           </div>
 
           <!-- Start Button -->
-          <button v-if="!quizTaken && !guestQuizLimitReached" class="w-full mt-3 inline-flex items-center justify-center px-3 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold uppercase tracking-wide rounded transition-colors shadow-sm relative z-10">
+          <NuxtLink 
+            v-if="!quizTaken && !guestQuizLimitReached && takeLink" 
+            :to="takeLink"
+            class="w-full mt-3 inline-flex items-center justify-center px-3 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold uppercase tracking-wide rounded transition-colors shadow-sm relative z-10"
+          >
+            Start Quiz
+          </NuxtLink>
+          <button 
+            v-else-if="!quizTaken && !guestQuizLimitReached && !takeLink"
+            class="w-full mt-3 inline-flex items-center justify-center px-3 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold uppercase tracking-wide rounded transition-colors shadow-sm relative z-10"
+          >
             Start Quiz
           </button>
           <button v-else-if="quizTaken" disabled class="w-full mt-3 text-xs font-bold text-slate-400 uppercase tracking-wide">

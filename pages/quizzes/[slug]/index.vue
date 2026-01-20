@@ -670,6 +670,12 @@ function getDifficultyEmoji(level) {
 
 // Actions
 function startQuiz() {
+  // Authenticated quizees should use authenticated route for better tracking and features
+  if (isLoggedIn.value && auth.user?.role === 'quizee') {
+    router.push(`/quizee/quizzes/take/${quiz.value.slug}`)
+    return
+  }
+
   // Check if guest user has already taken a free quiz
   if (!isLoggedIn.value && !isPaid.value) {
     const allResults = guestQuizStore.getAllResults()
@@ -691,6 +697,7 @@ function startQuiz() {
       router.push({ path: '/login', query: { next: quizeeTake } })
     }
   } else {
+    // Public free quiz: guests use public take page
     router.push(`/quizzes/${quiz.value.slug}/take`)
   }
 }

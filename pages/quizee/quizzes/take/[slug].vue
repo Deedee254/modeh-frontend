@@ -558,11 +558,18 @@ async function submitAnswers() {
   console.log('Sanitized answers:', sanitizedAnswers)
   console.log('Question times:', questionTimes.value)
   
-  // Only filter out answers with question_id of 0 (completely invalid)
+  // Validate answers before submission - filter out any with invalid question_id
   const finalAnswers = sanitizedAnswers.filter(a => {
     const qid = Number(a.question_id)
-    return Number.isFinite(qid)
+    // Ensure question_id is a valid positive integer
+    return Number.isFinite(qid) && qid > 0
   })
+  
+  // Warn if answers were filtered out (data integrity issue)
+  if (finalAnswers.length < sanitizedAnswers.length) {
+    const filtered = sanitizedAnswers.length - finalAnswers.length
+    console.warn(`[Quiz Submit] Filtered out ${filtered} invalid answer(s) with non-positive question_id`)
+  }
 
   // Extract per-question times into a separate object for the backend
   const perQuestionTimes = {}
