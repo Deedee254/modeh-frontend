@@ -27,8 +27,8 @@
             </div>
           </div>
 
-          <!-- Phone Input -->
-          <div class="mb-2">
+          <!-- Phone Input (only for paid packages) -->
+          <div v-if="paymentDetails.price > 0" class="mb-2">
             <label for="phone-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Phone number for M-Pesa</label>
             <div class="flex flex-col sm:flex-row gap-2">
               <select v-if="phones.length" v-model="selectedPhonePreset" class="border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full sm:w-auto focus:ring-brand-600 focus:border-brand-500">
@@ -47,9 +47,9 @@
             <UButton 
               @click="initiatePayment" 
               :loading="loading" 
-              :disabled="!phoneForPayment" 
-              icon="i-heroicons-lock-closed" 
-              :label="`Pay ${paymentDetails.priceDisplay}`"
+              :disabled="paymentDetails.price > 0 && !phoneForPayment" 
+              :icon="paymentDetails.price > 0 ? 'i-heroicons-lock-closed' : 'i-heroicons-check-circle'"
+              :label="paymentDetails.price > 0 ? `Pay ${paymentDetails.priceDisplay}` : 'Subscribe for Free'"
               class="bg-brand-600 hover:bg-brand-700"
             >
             </UButton>
@@ -116,6 +116,31 @@ const paymentDetails = computed(() => {
 })
 
 async function initiatePayment() {
+  // If free package, subscribe without phone
+  const priceNum = Number(paymentDetails.value.price || 0)
+  if (!priceNum) {
+    loading.value = true
+    error.value = ''
+    try {
+      let res
+      if (paymentDetails.value.type === 'subscription') {
+        res = await subscriptionsStore.subscribeToPackage(props.pkg, {})
+      }
+      
+      // For free packages, there's no TX or payment modal to wait for
+      // Just close and emit paid
+      emits('paid')
+      closeModal()
+    } catch (e) {
+      error.value = e.data?.message || e.message || 'An unexpected error occurred.'
+      alert.push({ type: 'error', message: error.value })
+    } finally {
+      loading.value = false
+    }
+    return
+  }
+
+  // For paid packages, require phone
   if (!phoneForPayment.value) {
     error.value = 'Please provide a phone number.'
     return

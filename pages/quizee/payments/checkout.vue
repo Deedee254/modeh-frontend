@@ -752,12 +752,39 @@ function attemptTournamentRegistration() {
   registerForTournamentDirect()
 }
 
-function openPayment() {
-  if (selectedPackage.value) {
-    paymentModalPackage.value = selectedPackage.value
-    paymentModalItem.value = null
-    showPaymentModal.value = true
+async function openPayment() {
+  if (!selectedPackage.value) return
+
+  // If the package is free (price is 0 or falsy), subscribe automatically
+  const priceNum = Number(selectedPackage.value?.price || 0)
+  if (!priceNum) {
+    try {
+      console.log('[Payment] Free package - subscribing directly without payment modal')
+      // Call store subscribe which returns parsed data and refreshes subscription
+      await subscriptionsStore.subscribeToPackage(selectedPackage.value, {})
+      await subscriptionsStore.fetchMySubscription(true)
+      // notify user
+      useAppAlert().push({ type: 'success', message: `You're now subscribed to ${selectedPackage.value.name || 'the free plan'}.` })
+      // Check subscription and proceed with tournament if applicable
+      await checkSubscription()
+      if (isTournamentCheckout.value) {
+        const joined = await joinTournamentAfterPayment()
+        if (joined === true) {
+          checkout.status = 'success'
+          router.push({ path: `/quizee/tournaments/${id}`, query: { registered: '1' } })
+          return
+        }
+      }
+    } catch (err) {
+      useAppAlert().push({ type: 'error', message: err.message || 'Failed to subscribe to free plan.' })
+    }
+    return
   }
+
+  // For paid packages, show payment modal
+  paymentModalPackage.value = selectedPackage.value
+  paymentModalItem.value = null
+  showPaymentModal.value = true
 }
 
 async function onPaymentAttemptClosed() {
