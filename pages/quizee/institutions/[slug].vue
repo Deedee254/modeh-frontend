@@ -300,9 +300,7 @@ const isUserMember = computed(() => {
   }
 
   // Check if user's profile institution_id matches
-  const userProfileInst = user.role === 'quizee'
-    ? user.quizee_profile?.institution_id
-    : user.quiz_master_profile?.institution_id
+  const userProfileInst = user.profile?.institution_id
 
   return userProfileInst === institution.value.id
 })

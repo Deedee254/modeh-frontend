@@ -74,8 +74,9 @@ export function useProfileForm() {
       institution_id: (u?.role === 'institution-manager') ? instId : (extractInstitutionId(profile?.institution) || ''),
       grade_id: profile?.grade_id || profile?.grade?.id || '',
       level_id: profile?.level_id || profile?.level?.id || '',
+      // Extract subject IDs (handle both objects with 'id' property and plain IDs)
       subjects: Array.isArray(profile?.subjects)
-        ? profile.subjects.filter(Boolean)
+        ? profile.subjects.filter(Boolean).map(s => s?.id || s)
         : [],
       // prefer profile.bio if available, otherwise fall back to top-level user bio
       bio: (u?.role === 'institution-manager') ? (u?.bio || '') : (profile?.bio || u?.bio || '')
@@ -248,12 +249,13 @@ export function useProfileForm() {
       }
 
       // Check if subjects actually changed
-      const originalSubjectsSet = new Set((originalForm.subjects || []).map(s => String(s)))
-      const newSubjectsSet = new Set((form.subjects || []).map(s => String(s)))
+      const originalSubjectsSet = new Set((originalForm.subjects || []).map(s => String(s?.id || s)))
+      const newSubjectsSet = new Set((form.subjects || []).map(s => String(s?.id || s)))
       const subjectsChanged = originalSubjectsSet.size !== newSubjectsSet.size ||
         ![...originalSubjectsSet].every(s => newSubjectsSet.has(s))
       if (subjectsChanged) {
-        profileData.subjects = form.subjects || []
+        // Extract IDs from subject objects or use as-is if already IDs
+        profileData.subjects = (form.subjects || []).map(s => s?.id || s).filter(Boolean)
       }
 
       // Add role-specific fields only if they changed
@@ -306,7 +308,16 @@ export function useProfileForm() {
         const profileEndpoint = role === 'quiz-master' ? '/api/profile/quiz-master' : '/api/profile/quizee'
         const profileRes = await api.patchJson(profileEndpoint, profileData)
         if (!profileRes.ok) {
-          throw new Error('Failed to update profile')
+          // Get detailed error from response
+          let errorMessage = 'Failed to update profile'
+          try {
+            const errorData = await profileRes.json()
+            errorMessage = errorData.message || errorData.error || JSON.stringify(errorData)
+          } catch (e) {
+            // ignore parsing error
+          }
+          console.error('Profile update failed:', { status: profileRes.status, message: errorMessage, profileData })
+          throw new Error(errorMessage)
         }
         profileJson = await profileRes.json()
         // Profile endpoint now returns user object

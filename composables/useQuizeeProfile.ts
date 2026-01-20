@@ -83,21 +83,21 @@ export function useQuizeeProfile(quizeeName: string | Ref<string>) {
           if (profileRes.ok) {
             const profileData = await profileRes.json()
             if (profileData) {
-              // Merge detailed profile data
+              // Merge detailed profile data from unified 'profile' field
               const enrichedProfile: QuizeeProfile = {
                 id: foundQuizee.id,
                 name: foundQuizee.name,
                 email: foundQuizee.email,
                 avatar_url: foundQuizee.avatar_url || foundQuizee.avatar,
                 avatar: foundQuizee.avatar,
-                bio: profileData.quizee_profile?.profile || profileData.bio,
-                grade: profileData.quizee_profile?.grade,
-                subjects: profileData.quizee_profile?.subjectModels || [],
-                institution: profileData.quizee_profile?.institution,
-                points: profileData.quizee_profile?.points,
-                current_streak: profileData.quizee_profile?.current_streak,
-                longest_streak: profileData.quizee_profile?.longest_streak,
-                quizzes_taken: profileData.quizee_profile?.quizzes_taken
+                bio: profileData.profile?.bio || profileData.bio,
+                grade: profileData.profile?.grade,
+                subjects: profileData.profile?.subject_models || [],
+                institution: profileData.profile?.institution,
+                points: profileData.profile?.points,
+                current_streak: profileData.profile?.current_streak,
+                longest_streak: profileData.profile?.longest_streak,
+                quizzes_taken: profileData.profile?.quizzes_taken
               }
               profile.value = enrichedProfile
             }

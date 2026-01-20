@@ -58,10 +58,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
         const onboarding = rawUser?.onboarding
 
         const sessionNeedsVerification = (
-            // explicit presence of onboarding.profile_completed
+            // explicit presence of profile_completed status
             (onboarding && onboarding.profile_completed === false) ||
-            // legacy flags
-            rawUser.isProfileCompleted === false || rawUser.is_profile_completed === false ||
+            // use the clean response structure
+            !rawUser.is_profile_completed ||
             // missing role info
             !rawUser.role
         )
@@ -98,10 +98,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
         if (user.role === 'parent') {
             // allow parents to continue to their dashboard without onboarding
         } else {
-            // For quizee/quiz-master: allow dashboard access but show notification
-            // if profile is incomplete (no blocking, just a banner)
+            // Check profile completion status from clean response
             const onboardingObj = (user as any).onboarding
-            const isProfileCompleted = onboardingObj?.profile_completed ?? user.is_profile_completed ?? (user as any).isProfileCompleted
+            const isProfileCompleted = onboardingObj?.profile_completed ?? user.is_profile_completed
             
             // Non-blocking: do NOT redirect. Dashboard will display a banner
             // reminding user to complete their profile at their convenience.

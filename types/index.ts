@@ -10,30 +10,31 @@ export interface User {
   phone?: string
   avatar?: string
   avatar_url?: string
-  avatarUrl?: string
   bio?: string
   headline?: string
   role?: string
-  global_role?: string
+  email_verified_at?: string
+  affiliate_code?: string
   is_profile_completed?: boolean
-  is_verified?: boolean
-  social_provider?: string
-  social_id?: string
   created_at?: string
-  updated_at?: string
 
-  // Profile-specific fields
-  quiz_master_profile?: QuizMasterProfile
-  quizMasterProfile?: QuizMasterProfile
-  quizee_profile?: QuizeeProfile
-  quizeeProfile?: QuizeeProfile
-  institution_manager_profile?: InstitutionManagerProfile
-  institutionManagerProfile?: InstitutionManagerProfile
+  // Profile data (unified for both QuizMaster and Quizee)
+  profile?: QuizMasterProfile | QuizeeProfile
 
   // Institution relationships
   institutions?: Institution[]
   institution_id?: number
   institution?: Institution | string | number
+
+  // Affiliate relationship
+  affiliate?: any
+
+  // Profile completion status
+  profile_status?: {
+    is_completed: boolean
+    missing_fields: string[]
+    missing_messages: Record<string, string>
+  }
 
   // Pivot data for institution membership
   pivot?: {

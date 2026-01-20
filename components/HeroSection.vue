@@ -218,7 +218,7 @@ const userRole = computed(() => {
 // Role helpers
 const isQuizMaster = computed(() => {
   const up: any = userProfile.value || {}
-  return Boolean(up.quizMasterProfile || up.quiz_master_profile) || (userRole.value === 'quiz-master' || userRole.value === 'quiz_master')
+  return Boolean(up.profile) && up.role === 'quiz-master'
 })
 const isInstitutionManager = computed(() => {
   const up: any = userProfile.value || {}

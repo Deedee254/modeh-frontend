@@ -66,36 +66,36 @@ async function fetchQuizeeProfile() {
         if (analyticsData) {
           // Merge analytics data
           stats.value = {
-            grade: analyticsData.grade || member.quizee_profile?.grade,
-            level: analyticsData.level || member.quizee_profile?.level,
-            subjects: analyticsData.subjects || member.quizee_profile?.subject_models || [],
-            bio: analyticsData.bio || member.quizee_profile?.bio || member.bio,
-            headline: analyticsData.headline || member.quizee_profile?.headline || member.headline,
+            grade: analyticsData.grade || member.profile?.grade,
+            level: analyticsData.level || member.profile?.level,
+            subjects: analyticsData.subjects || member.profile?.subject_models || [],
+            bio: analyticsData.bio || member.profile?.bio || member.bio,
+            headline: analyticsData.headline || member.profile?.headline || member.headline,
             verified: analyticsData.verified || member.is_verified || false,
             createdAt: analyticsData.created_at || member.created_at,
-            points: analyticsData.points || member.quizee_profile?.points || 0,
-            currentStreak: analyticsData.current_streak || member.quizee_profile?.current_streak || 0,
-            longestStreak: analyticsData.longest_streak || member.quizee_profile?.longest_streak || 0,
-            quizzesTaken: analyticsData.quizzes_taken || member.quizee_profile?.quizzes_taken || 0
+            points: analyticsData.points || member.profile?.points || 0,
+            currentStreak: analyticsData.current_streak || member.profile?.current_streak || 0,
+            longestStreak: analyticsData.longest_streak || member.profile?.longest_streak || 0,
+            quizzesTaken: analyticsData.quizzes_taken || member.profile?.quizzes_taken || 0
           }
         }
       }
     } catch (analyticsError) {
       console.warn('Could not fetch analytics, using member data:', analyticsError)
       // Fallback to member data
-      if (member.quizee_profile) {
+      if (member.profile) {
         stats.value = {
-          grade: member.quizee_profile.grade,
-          level: member.quizee_profile.level,
-          subjects: member.quizee_profile.subject_models || [],
-          bio: member.quizee_profile.bio,
-          headline: member.quizee_profile.headline,
+          grade: member.profile.grade,
+          level: member.profile.level,
+          subjects: member.profile.subject_models || [],
+          bio: member.profile.bio,
+          headline: member.profile.headline,
           verified: member.is_verified,
           createdAt: member.created_at,
-          points: member.quizee_profile.points,
-          currentStreak: member.quizee_profile.current_streak,
-          longestStreak: member.quizee_profile.longest_streak,
-          quizzesTaken: member.quizee_profile.quizzes_taken
+          points: member.profile.points,
+          currentStreak: member.profile.current_streak,
+          longestStreak: member.profile.longest_streak,
+          quizzesTaken: member.profile.quizzes_taken
         }
       }
     }
@@ -195,10 +195,10 @@ async function fetchBadges(userId?: number) {
 const displayName = computed(() => quizee.value?.name || 'Quizee')
 const displayAvatar = computed(() => resolveAssetUrl(quizee.value?.avatar_url || quizee.value?.avatar || quizee.value?.image || quizee.value?.avatarUrl || quizee.value?.photo) || '/logo/avatar-placeholder.png')
 const displayHeadline = computed(() => quizee.value?.headline || stats.value?.headline || 'An active learner')
-const displayGrade = computed(() => quizee.value?.quizee_profile?.grade?.name || stats.value?.grade?.name || '—')
-const displayLevel = computed(() => quizee.value?.quizee_profile?.level?.name || stats.value?.level?.name || '—')
+const displayGrade = computed(() => quizee.value?.profile?.grade?.name || stats.value?.grade?.name || '—')
+const displayLevel = computed(() => quizee.value?.profile?.level?.name || stats.value?.level?.name || '—')
 const displaySubjects = computed(() => {
-  const subjects = quizee.value?.quizee_profile?.subject_models || stats.value?.subjects || []
+  const subjects = quizee.value?.profile?.subject_models || stats.value?.subjects || []
   return Array.isArray(subjects) ? subjects : []
 })
 

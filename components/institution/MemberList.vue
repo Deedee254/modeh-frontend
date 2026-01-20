@@ -5,7 +5,7 @@ import { useRoute } from 'vue-router'
 import { resolveAssetUrl } from '~/composables/useAssets'
 
 type Props = {
-  members?: Array<{ id: number; name?: string; email?: string; role?: string; avatar?: string; quizee_profile?: any; quiz_master_profile?: any }>;
+  members?: Array<{ id: number; name?: string; email?: string; role?: string; avatar?: string; profile?: any }>;
   meta?: { total?: number; per_page?: number; current_page?: number; last_page?: number };
 }
 const props = defineProps<Props>()
@@ -94,12 +94,12 @@ const getRoleColor = (role: string | undefined) => {
             <!-- Grade and Level Info -->
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <!-- Grade -->
-              <span v-if="m.quizee_profile?.grade?.name || m.quiz_master_profile?.grade?.name" class="text-xs px-2 py-1 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">
-                📚 {{ m.quizee_profile?.grade?.name || m.quiz_master_profile?.grade?.name }}
+              <span v-if="m.profile?.grade?.name" class="text-xs px-2 py-1 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">
+                📚 {{ m.profile?.grade?.name }}
               </span>
               <!-- Level -->
-              <span v-if="m.quizee_profile?.level?.name || m.quiz_master_profile?.level?.name" class="text-xs px-2 py-1 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">
-                ⭐ {{ m.quizee_profile?.level?.name || m.quiz_master_profile?.level?.name }}
+              <span v-if="m.profile?.level?.name" class="text-xs px-2 py-1 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">
+                ⭐ {{ m.profile?.level?.name }}
               </span>
             </div>
 

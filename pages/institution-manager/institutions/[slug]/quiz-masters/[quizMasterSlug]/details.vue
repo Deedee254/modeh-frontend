@@ -84,15 +84,15 @@ async function fetchQuizMasterStats() {
     
     const userData = await api.parseResponse(res)
     
-    if (userData?.quiz_master_profile) {
+    if (userData?.profile) {
       stats.value = {
-        bio: userData.quiz_master_profile?.bio,
-        headline: userData.quiz_master_profile?.headline,
+        bio: userData.profile?.bio,
+        headline: userData.profile?.headline,
         verified: userData.is_verified || false,
         createdAt: userData.created_at,
-        grade: userData.quiz_master_profile?.grade,
-        level: userData.quiz_master_profile?.level,
-        subjects: userData.quiz_master_profile?.subject_models || []
+        grade: userData.profile?.grade,
+        level: userData.profile?.level,
+        subjects: userData.profile?.subject_models || []
       }
     }
   } catch (e: any) {

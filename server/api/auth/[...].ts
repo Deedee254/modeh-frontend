@@ -193,7 +193,7 @@ export default NuxtAuthHandler({
         token.role = (user as any).role
         token.apiToken = (user as any).apiToken
         token.isNewUser = (user as any).isNewUser  
-        token.isProfileCompleted = (user as any).is_profile_completed ?? (user as any).isProfileCompleted 
+        token.isProfileCompleted = (user as any).is_profile_completed
         token.image = user.image || (user as any).avatar || (user as any).avatar_url
       }
       
@@ -232,15 +232,8 @@ export default NuxtAuthHandler({
             token.apiToken = data.token
             token.isNewUser = data.isNewUser  
             token.role = data.role
-            // Prefer explicit boolean values from backend without treating `false` as missing.
-            // Accept both snake_case and camelCase shapes from the API response.
-            token.isProfileCompleted = (
-              data.user?.is_profile_completed ??
-              data.user?.isProfileCompleted ??
-              data.is_profile_completed ??
-              data.isProfileCompleted ??
-              undefined
-            )
+            // Use clean response structure with is_profile_completed
+            token.isProfileCompleted = data.is_profile_completed ?? undefined
             // Attach raw backend response so frontend can read backend fields directly
             token.rawUser = data.user ?? data
             console.log('[Auth] apiToken obtained from backend, isProfileCompleted:', token.isProfileCompleted)

@@ -667,14 +667,19 @@ async function submitAnswers() {
         // Save the result to guest quiz store
         guestQuizStore.saveQuizResult(attemptResult)
         
-        // Check if user is authenticated
-        if (authStore.user) {
-          // Authenticated user: redirect to checkout to see results after payment
-          router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptResult.id}`)
+        // Check if we have a real database attempt ID (numeric) vs guest attempt ID (string starting with 'guest_')
+        const attemptId = body?.attempt_id
+        const isGuestAttempt = attemptId && typeof attemptId === 'string' && attemptId.startsWith('guest_')
+        
+        // Only redirect to checkout for authenticated users with real (non-guest) database attempts
+        // Guest attempts are shown in the results modal
+        if (authStore.user && !isGuestAttempt && attemptId) {
+          // Authenticated user with real attempt: redirect to checkout to see results after payment
+          router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptId}`)
           return
         }
         
-        // Non-authenticated user: show guest results modal
+        // For guest attempts or non-authenticated users: show guest results modal
         quizResults.value = attemptResult
         showResultsModal.value = true
         return
