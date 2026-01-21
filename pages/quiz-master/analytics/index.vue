@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { formatDistanceToNowStrict } from 'date-fns'
 import StatCard from '~/components/analytics/StatCard.vue'
 import AttemptsChart from '~/components/analytics/AttemptsChart.vue'
@@ -115,13 +115,16 @@ import DonutChart from '~/components/analytics/DonutChart.vue'
 import TopQuizzesList from '~/components/analytics/TopQuizzesList.vue'
 import PageHero from '~/components/ui/PageHero.vue'
 import useApi from '~/composables/useApi'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 definePageMeta({ layout: 'quiz-master', title: 'Analytics Overview' })
 
 const api = useApi()
+const { trackEngagement } = useAnalytics()
 const loading = ref(false)
 const error = ref(null)
 const lastUpdated = ref(null)
+const pageStartTime = ref(null)
 
 const stats = ref({ totalQuizzes: 0, totalAttempts: 0, avgScore: 0, completionRate: 0 })
 const series = ref([])
@@ -271,5 +274,16 @@ function exportSeriesCsv() {
   URL.revokeObjectURL(url)
 }
 
-onMounted(load)
+onMounted(() => {
+  pageStartTime.value = Date.now()
+  load()
+})
+
+onBeforeUnmount(() => {
+  // Track time spent on analytics page
+  if (pageStartTime.value) {
+    const timeSpent = Date.now() - pageStartTime.value
+    trackEngagement('analytics_page', 'quiz_master', timeSpent)
+  }
+})
 </script>

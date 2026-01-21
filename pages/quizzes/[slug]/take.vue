@@ -83,6 +83,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
 import { useQuizTimer } from '~/composables/quiz/useQuizTimer'
+import { useAnalytics } from '~/composables/useAnalytics'
 import { useQuizAnswers } from '~/composables/quiz/useQuizAnswers'
 import { useQuizNavigation } from '~/composables/quiz/useQuizNavigation'
 import { useQuizEnhancements } from '~/composables/quiz/useQuizEnhancements'
@@ -94,6 +95,8 @@ const route = useRoute()
 const router = useRouter()
 const slug = route.params.slug
 const quizId = ref(null) // Will be populated after fetching quiz by slug
+const { trackQuizAttempt, trackQuizCompletion, trackEvent, trackError } = useAnalytics()
+const quizStartTime = ref(null)
 
 // --- Core State ---
 // Provide a defensive default shape so SSR/template rendering never reads properties
@@ -526,6 +529,14 @@ function initializeQuestionTimer() {
 }
 
 onMounted(async () => {
+  // Track quiz attempt when page loads
+  trackQuizAttempt(slug, {
+    quiz_id: quizId.value,
+    quiz_slug: slug,
+    timestamp: new Date().toISOString()
+  })
+  quizStartTime.value = Date.now()
+  
   const cfg = useRuntimeConfig()
   
   // Initialize guest quiz store
@@ -591,6 +602,18 @@ async function submitAnswers() {
   lastSubmitFailed.value = false
   // Calculate achievements before submitting
   calculateAchievements()
+  
+  // Track quiz completion with score
+  const totalQuestions = quiz.value?.questions?.length || 0
+  const answeredQuestions = Object.keys(answers.value).filter(k => answers.value[k] !== null && answers.value[k] !== undefined && answers.value[k] !== '').length
+  trackQuizCompletion(quiz.value?.title || slug, {
+    quiz_id: quiz.value?.id || quizId.value,
+    quiz_slug: slug,
+    total_questions: totalQuestions,
+    answered_questions: answeredQuestions,
+    time_spent: quizStartTime.value ? Math.round((Date.now() - quizStartTime.value) / 1000) : 0,
+    difficulty: quiz.value?.difficulty || 'medium'
+  })
 
   // show a short saving message while answers persist; actual marking happens on server
   submissionMessage.value = 'Saving answers...'

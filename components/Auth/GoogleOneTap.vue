@@ -70,8 +70,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 const { status, signIn } = useAuth()
+const { trackLogin } = useAnalytics()
 const isVisible = ref(false)
 const loading = ref(false)
 
@@ -86,7 +88,11 @@ const dismiss = () => {
 const loginWithGoogle = async () => {
   loading.value = true
   try {
-    await signIn('google', { callbackUrl: '/' })
+    const result = await signIn('google', { callbackUrl: '/' })
+    // Track successful login
+    if (result?.ok) {
+      trackLogin('google')
+    }
   } catch (e) {
     console.error('Google Sign-In Error:', e)
     loading.value = false

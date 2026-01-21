@@ -4,9 +4,11 @@ definePageMeta({ layout: 'quiz-master' })
 import { ref, computed, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 const route = useRoute()
 const router = useRouter()
+const { trackEvent, trackSearch } = useAnalytics()
 const q = ref(route.query.q || '')
 const results = ref({ quizzes: [], topics: [], subjects: [], questions: [] })
 const loading = ref(false)
@@ -21,19 +23,43 @@ watchEffect(() => {
   }
   loading.value = true
   error.value = null
+  
+  // Track search query
+  trackSearch(term, 0)
+  
   // call a simple API endpoint to search across resources. If backend doesn't have one,
   // this will fall back to client-side search or show a friendly message.
   axios.get(`/api/search`, { params: { q: term } })
     .then(resp => {
       results.value = resp.data || results.value
+      const totalResults = (resp.data?.quizzes?.length || 0) + 
+                          (resp.data?.topics?.length || 0) + 
+                          (resp.data?.subjects?.length || 0) + 
+                          (resp.data?.questions?.length || 0)
+      // Track search results count
+      trackEvent('search_results', {
+        query: term,
+        total_results: totalResults,
+        quizzes: resp.data?.quizzes?.length || 0,
+        topics: resp.data?.topics?.length || 0,
+        subjects: resp.data?.subjects?.length || 0,
+        questions: resp.data?.questions?.length || 0
+      })
     })
-    .catch(() => {
+    .catch((err) => {
       error.value = 'Could not fetch search results. Try again later.'
+      trackEvent('search_error', { query: term, error: err?.message })
     })
     .finally(() => loading.value = false)
 })
 
 function openItem(type, idOrSlug) {
+  trackEvent('search_result_clicked', {
+    result_type: type,
+    result_id: idOrSlug,
+    search_query: q.value
+  })
+  
   if (type === 'quizzes') {
     router.push(`/quiz-master/quizzes/${idOrSlug}`)
   } else {

@@ -230,6 +230,7 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import { useSubscriptionsStore } from '~/stores/subscriptions'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import { useAnalytics } from '~/composables/useAnalytics'
 import PaymentModal from '~/components/PaymentModal.vue'
 
 definePageMeta({ layout: 'quizee' })
@@ -238,6 +239,8 @@ const alert = useAppAlert()
 const subscriptionsStore = useSubscriptionsStore()
 const authStore = useAuthStore()
 const api = useApi()
+const { trackEvent, trackSubscription } = useAnalytics()
+const pageStartTime = ref(Date.now())
 const config = useRuntimeConfig()
 const router = useRouter()
 
@@ -293,6 +296,13 @@ async function handleSubscribeClick(pkg) {
     return // Button is disabled
   }
 
+  trackEvent('subscription_package_clicked', {
+    package_name: pkg.name,
+    package_price: pkg.price,
+    currency: pkg.currency,
+    current_package: activePackageName.value || 'none'
+  })
+
   // If the package is free (price is 0 or falsy), subscribe automatically
   const priceNum = Number(pkg?.price || 0)
   if (!priceNum) {
@@ -302,6 +312,7 @@ async function handleSubscribeClick(pkg) {
       await subscriptionsStore.fetchMySubscription(true)
       // notify user
       useAppAlert().push({ type: 'success', message: `You're now subscribed to ${pkg.name || 'the free plan'}.` })
+      trackSubscription(pkg.name || 'free', 0)
     } catch (err) {
       useAppAlert().push({ type: 'error', message: err.message || 'Failed to subscribe to free plan.' })
     }
@@ -314,6 +325,9 @@ async function handleSubscribeClick(pkg) {
 
 function onPaymentSuccess() {
   showPaymentModal.value = false
+  if (selectedPackage.value) {
+    trackSubscription(selectedPackage.value.name, parseFloat(selectedPackage.value.price) || 0)
+  }
   alert.push({ type: 'success', message: 'Payment successful! Your subscription is now active.' })
   // Re-check subscription status to update the UI
   subscriptionsStore.fetchMySubscription(true)

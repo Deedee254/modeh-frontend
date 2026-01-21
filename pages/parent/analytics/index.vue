@@ -77,13 +77,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import useApi from '~/composables/useApi'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 definePageMeta({ layout: 'parent' })
 
 const api = useApi()
+const { trackEngagement } = useAnalytics()
 const quizees = ref([])
+const pageStartTime = ref(null)
 
 const totalQuizees = computed(() => quizees.value.length)
 const totalPoints = computed(() => quizees.value.reduce((sum, s) => sum + (s.points || 0), 0))
@@ -108,6 +111,15 @@ async function loadAnalytics() {
 }
 
 onMounted(() => {
+  pageStartTime.value = Date.now()
   loadAnalytics()
+})
+
+onBeforeUnmount(() => {
+  // Track time spent on analytics page
+  if (pageStartTime.value) {
+    const timeSpent = Date.now() - pageStartTime.value
+    trackEngagement('analytics_page', 'parent', timeSpent)
+  }
 })
 </script>

@@ -75,14 +75,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 definePageMeta({
   layout: 'quiz-master',
 })
 
 const router = useRouter()
+const { trackEngagement } = useAnalytics()
+const pageStartTime = ref(Date.now())
 
 // Data refs
 const stats = ref([
@@ -129,6 +132,13 @@ onMounted(async () => {
     recentQuizzes.value = quizzesData || []
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (pageStartTime.value) {
+    const timeSpent = Math.round((Date.now() - pageStartTime.value) / 1000)
+    trackEngagement('dashboard', 'quiz_master', timeSpent)
   }
 })
 </script>

@@ -133,12 +133,14 @@ import { useAuthStore } from '~/stores/auth'
 import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
 import useApi from '~/composables/useApi'
 import AuthFeaturesPanel from '~/components/Auth/AuthFeaturesPanel.vue'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const api = useApi()
 const { signIn } = useAuth()
+const { trackRegistration, trackLogin, trackError } = useAnalytics()
 
 // State
 const isLoading = ref(false)
@@ -199,7 +201,8 @@ async function submit() {
     const res = await auth.register(payload)
     if (res.error) throw new Error(res.error)
 
-    // Check if user just completed a guest quiz - if so, show a special redirect
+    // Track successful email registration
+    trackRegistration('email')
     // that allows them to view their guest results before going to dashboard
     try {
       const guestQuizStore = useGuestQuizStore()
@@ -264,6 +267,7 @@ async function signInWithGoogle() {
     if (!result || !result.ok) {
       const errorCode = result?.error || 'OAuthSignin'
       console.error('Google sign-in error:', errorCode)
+      trackError(`Google sign-in failed: ${errorCode}`, 'GOOGLE_SIGNIN_ERROR')
       router.push({
         path: '/auth/error',
         query: { error: errorCode }
@@ -271,7 +275,8 @@ async function signInWithGoogle() {
       return
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Track successful Google login
+    trackLogin('google')
     await auth.fetchUser?.()
     const user = auth.user
 

@@ -51,9 +51,19 @@ definePageMeta({
 import { useRoute, useRouter, onMounted } from '#imports'
 import LoginForm from '~/components/Auth/LoginForm.vue'
 import AuthFeaturesPanel from '~/components/Auth/AuthFeaturesPanel.vue'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 const route = useRoute()
 const router = useRouter()
+const { trackEvent } = useAnalytics()
+
+// Track page view
+onMounted(() => {
+  trackEvent('page_view', {
+    page: 'login',
+    page_title: 'Login — Modeh'
+  })
+})
 
 // If NextAuth redirects to /login with an error (e.g. OAuthSignin),
 // immediately forward to the dedicated error page so users see details.

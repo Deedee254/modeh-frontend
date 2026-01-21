@@ -20,6 +20,7 @@
 
     <ClientOnly>
       <GoogleOneTap />
+      <CookieConsentBanner />
     </ClientOnly>
 
     <!-- Public bottom navigation for unauthenticated users -->
@@ -42,6 +43,7 @@ import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import BottomNav from '~/components/ui/BottomNav.vue'
 import GoogleOneTap from '~/components/Auth/GoogleOneTap.vue'
+import CookieConsentBanner from '~/components/CookieConsentBanner.vue'
 // ChatDirectMessages intentionally not imported here; role layouts include chat when authenticated.
 
 const chatOpen = ref(false)

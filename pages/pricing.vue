@@ -335,12 +335,14 @@ import { useAppAlert } from '~/composables/useAppAlert'
 import { getHeroClass } from '~/utils/heroPalettes'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
+import { useAnalytics } from '~/composables/useAnalytics'
 import PaymentAwaitingModal from '~/components/PaymentAwaitingModal.vue'
 import Carousel from '~/components/ui/Carousel.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const { trackEvent } = useAnalytics()
 const pricingTab = ref('quizee')
 
 const config = useRuntimeConfig()
@@ -388,6 +390,13 @@ const modalOpen = ref(false)
 const currentTx = ref(null)
 
 async function onSubscribe(pkg) {
+  trackEvent('pricing_subscribe_clicked', {
+    package_name: pkg.name,
+    package_price: pkg.price,
+    package_type: pricingTab.value,
+    currency: pkg.currency
+  })
+  
   if (auth.user) {
     try {
       const res = await $fetch(`${config.public.apiBase}/api/packages/${pkg.id}/subscribe`, { 

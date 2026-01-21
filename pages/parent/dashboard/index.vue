@@ -130,10 +130,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import { useAnalytics } from '~/composables/useAnalytics'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 import ErrorAlert from '~/components/ui/ErrorAlert.vue'
 import InviteQuizeeModal from '~/components/parent/InviteQuizeeModal.vue'
@@ -143,6 +144,8 @@ definePageMeta({ layout: 'parent' })
 const router = useRouter()
 const auth = useAuthStore()
 const api = useApi()
+const { trackEngagement } = useAnalytics()
+const pageStartTime = ref(Date.now())
 
 const user = computed(() => auth.user || {})
 const loading = ref(false)
@@ -192,6 +195,14 @@ function onQuizeeInvited() {
 }
 
 onMounted(() => {
+  pageStartTime.value = Date.now()
   loadDashboard()
+})
+
+onBeforeUnmount(() => {
+  if (pageStartTime.value) {
+    const timeSpent = Math.round((Date.now() - pageStartTime.value) / 1000)
+    trackEngagement('dashboard', 'parent', timeSpent)
+  }
 })
 </script>

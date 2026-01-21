@@ -214,6 +214,9 @@ export default defineNuxtConfig({
       baseUrl: publicBaseUrl,
       siteUrl: publicBaseUrl,
       
+      // Google Analytics (GA4)
+      googleAnalyticsId: process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID || '',
+      
       // Pusher (for real-time features)
       pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
       pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',

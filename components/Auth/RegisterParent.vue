@@ -156,6 +156,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import { useAnalytics } from '~/composables/useAnalytics'
 import AuthFeaturesPanel from '~/components/Auth/AuthFeaturesPanel.vue'
 
 const router = useRouter()
@@ -163,6 +164,7 @@ const route = useRoute()
 const auth = useAuthStore()
 const api = useApi()
 const { signIn } = useAuth()
+const { trackRegistration, trackLogin, trackError, trackEvent } = useAnalytics()
 
 const isLoading = ref(false)
 const isGoogleLoading = ref(false)
@@ -199,6 +201,11 @@ function validateForm() {
 
 async function submit() {
   if (!validateForm()) return
+  
+  trackEvent('registration_form_submitted', {
+    user_type: 'parent',
+    method: 'email'
+  })
 
   isLoading.value = true
   error.value = null
@@ -222,6 +229,12 @@ async function submit() {
 
     const data = await res.json()
     await auth.fetchUser?.()
+    
+    trackRegistration('email', {
+      user_type: 'parent',
+      name: form.name,
+      email: form.email
+    })
 
     setTimeout(() => router.push('/parent/dashboard'), 800)
   } catch (e) {
@@ -247,6 +260,7 @@ async function submit() {
 async function signInWithGoogle() {
   if (isGoogleLoading.value) return
   isGoogleLoading.value = true
+  trackEvent('google_signin_initiated', { user_type: 'parent' })
 
   try {
     const result = await signIn('google', { redirect: false })
@@ -254,6 +268,7 @@ async function signInWithGoogle() {
     if (!result || !result.ok) {
       const errorCode = result?.error || 'OAuthSignin'
       console.error('Google sign-in error:', errorCode)
+      trackError(`Google sign-in failed: ${errorCode}`, 'GOOGLE_SIGNIN_ERROR')
       router.push({
         path: '/auth/error',
         query: { error: errorCode }
@@ -266,6 +281,10 @@ async function signInWithGoogle() {
     const user = auth.user
 
     if (user) {
+      trackLogin('google', {
+        user_type: 'parent',
+        oauth_provider: 'google'
+      })
       setTimeout(() => router.push('/onboarding/new-user'), 800)
     } else {
       router.push({
