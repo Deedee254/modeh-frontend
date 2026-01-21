@@ -288,11 +288,12 @@ function buildQuestionFromRow(row) {
   // Debug logging for CSV import
   if (type === 'mcq' && question.options && question.answers) {
     // CSV Import - Question processing
+    console.log({
       text: text.substring(0, 50) + '...',
       options: question.options,
       answers: question.answers,
       answerType: typeof question.answers[0]
-    })
+    });
   }
 
   // Convert answers to the format expected by the UI (answers array with string indexes)
