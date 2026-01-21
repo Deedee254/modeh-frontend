@@ -308,18 +308,6 @@ async function loadQuiz() {
       loaded.shuffle_questions = normalizeBoolean(serverQuiz.shuffle_questions)
       loaded.shuffle_answers = normalizeBoolean(serverQuiz.shuffle_answers)
       
-      // Debug log to see what values we're getting
-      try {
-        console.debug('loadQuiz: boolean normalization', {
-          shuffle_questions_raw: serverQuiz.shuffle_questions,
-          shuffle_questions_normalized: loaded.shuffle_questions,
-          shuffle_answers_raw: serverQuiz.shuffle_answers,
-          shuffle_answers_normalized: loaded.shuffle_answers,
-          use_per_question_timer_raw: serverQuiz.use_per_question_timer,
-          use_per_question_timer_normalized: loaded.use_per_question_timer,
-        })
-      } catch (e) {}
-      
       loaded.access = serverQuiz.access ?? (serverQuiz.is_paid ? 'paywall' : 'free')
       loaded.visibility = serverQuiz.visibility ?? serverQuiz.status ?? null
 

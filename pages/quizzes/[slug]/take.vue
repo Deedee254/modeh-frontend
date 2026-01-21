@@ -634,17 +634,9 @@ async function submitAnswers() {
     // Warn if answers were filtered out (data integrity issue)
     if (finalAnswers.length < sanitizedAnswers.length) {
       const filtered = sanitizedAnswers.length - finalAnswers.length
-      console.warn(`[Quiz Submit] Filtered out ${filtered} invalid answer(s) with non-positive question_id`)
+      // Filtered out invalid answers
     }
-    
-    // Debug log: show answer structure before submission
-    console.debug('[Quiz Submit] Answer payload:', {
-      totalAnswersSubmitted: finalAnswers.length,
-      totalQuestionsInQuiz: Q.value.questions.length,
-      sampleAnswers: finalAnswers.slice(0, 2)
-    })
 
-    // Extract per-question times into a separate object for the backend
     const perQuestionTimes = {}
     for (const [qid, time] of Object.entries(questionTimes.value)) {
       if (typeof time === 'number' && time > 0) {
@@ -745,11 +737,17 @@ function handleResultsModalClose() {
 }
 
 function handleSignup() {
+  // Save quiz slug in sessionStorage so RegisterQuizee can detect guest results
+  try {
+    sessionStorage.setItem('modeh:guestQuizSlug', slug)
+  } catch (e) {}
   router.push('/register/quizee')
 }
 
 function handleLogin() {
-  router.push('/login')
+  // For login, redirect to login page with a return URL to view the results
+  // The take.vue page will stay open if they need to come back
+  router.push(`/login?next=${encodeURIComponent(router.currentRoute.value.fullPath)}`)
 }
 
 function handleBackToQuizzes() {

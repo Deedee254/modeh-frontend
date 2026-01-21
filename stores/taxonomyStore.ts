@@ -127,9 +127,6 @@ function createCache<K, V>(ttlMs: number = 1000 * 60 * 5) {
     const hitRate = metrics.hits + metrics.misses > 0
       ? ((metrics.hits / (metrics.hits + metrics.misses)) * 100).toFixed(2)
       : '0.00'
-    console.log(
-      `[Cache:${name}] Hits: ${metrics.hits}, Misses: ${metrics.misses}, Hit Rate: ${hitRate}%, Inflight: ${metrics.inflight}, Size: ${memory.size}`
-    )
   }
 
   return { set, get, getStale, has, setInflight, getInflight, clearInflight, clear, clearExpired, getMetrics, getSize, logMetrics }
@@ -783,7 +780,6 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
   }
 
   function printMetrics(): void {
-    console.log('\n=== Taxonomy Store Cache Metrics ===')
     gradesCache.logMetrics('Grades')
     subjectsCache.logMetrics('Subjects')
     topicsCache.logMetrics('Topics')
@@ -791,7 +787,6 @@ export const useTaxonomyStore = defineStore('taxonomy', () => {
     coursesCache.logMetrics('Courses')
     subjectsPageCache.logMetrics('SubjectsPage')
     topicsPageCache.logMetrics('TopicsPage')
-    console.log('===================================\n')
   }
 
   return {

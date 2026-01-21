@@ -344,7 +344,7 @@ async function submitBattle() {
     submitting.value = true
     lastSubmitFailed.value = false
     submissionMessage.value = 'Saving answers...'
-    try { calculateAchievements() } catch (e) { console.warn('calculateAchievements failed', e) }
+    try { calculateAchievements() } catch (e) {}
     stopTimer()
     // Build answers payload using centralized normalization helper so battles and quizzes submit the same shape.
     // This ensures option objects emitted by the UI are converted to the backend-expected string/array form.
@@ -359,12 +359,6 @@ async function submitBattle() {
     return Number.isFinite(qid) && qid > 0
   })
   
-  // Warn if answers were filtered out (data integrity issue)
-  if (validatedAnswers.length < answersPayload.length) {
-    const filtered = answersPayload.length - validatedAnswers.length
-    console.warn(`[Battle Submit] Filtered out ${filtered} invalid answer(s) with non-positive question_id`)
-  }
-
     // Compute best-effort score locally so backend can record points immediately. Use normalized comparisons.
     let computedScore = 0
     try {

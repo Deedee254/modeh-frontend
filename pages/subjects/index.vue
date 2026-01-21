@@ -209,7 +209,6 @@ const visiblePages = computed(() => {
 onMounted(() => {
   if (process.env.NODE_ENV === 'development') {
     setTimeout(() => {
-      console.log('\n--- Subjects Page Cache Metrics ---')
       printMetrics()
     }, 2000)
   }

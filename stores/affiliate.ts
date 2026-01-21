@@ -54,7 +54,6 @@ export const useAffiliateStore = defineStore('affiliate', {
                 this.stats = data
             } catch (err) {
                 this.error = 'Failed to fetch affiliate statistics'
-                console.error('Affiliate stats error:', err)
             } finally {
                 this.isLoading = false
             }
@@ -73,7 +72,6 @@ export const useAffiliateStore = defineStore('affiliate', {
                 this.referrals = data
             } catch (err) {
                 this.error = 'Failed to fetch referrals'
-                console.error('Referrals fetch error:', err)
             } finally {
                 this.isLoading = false
             }
@@ -95,7 +93,6 @@ export const useAffiliateStore = defineStore('affiliate', {
                 return data
             } catch (err) {
                 this.error = 'Failed to request payout'
-                console.error('Payout request error:', err)
                 throw err
             } finally {
                 this.isLoading = false

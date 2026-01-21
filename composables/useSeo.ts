@@ -277,7 +277,6 @@ export default function useSeo() {
      */
     setupPageSeo(entity: SeoEntity, entityType: EntityType, baseUrl: string) {
       if (!entity || (!entity.slug && !entity.id)) {
-        console.warn('useSeo: Entity should have id or slug')
         return
       }
 

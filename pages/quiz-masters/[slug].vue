@@ -181,7 +181,7 @@ if (process.client && typeof window !== 'undefined' && window.Echo) {
       }
     })
   } catch (e) {
-    console.error('Echo attach failed for quiz-master follow', e)
+    // echo attachment error silently
   }
 }
 

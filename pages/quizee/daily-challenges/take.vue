@@ -346,7 +346,7 @@ const submitChallenge = async () => {
         await auth.fetchUser()
       }
     } catch (e) {
-      console.debug('Failed to refresh auth after daily challenge submit', e)
+      // Failed to refresh auth after daily challenge submit
     }
 
     // Show results modal with any returned achievements/awards
@@ -377,7 +377,7 @@ const submitChallenge = async () => {
         }
       } catch (e) {
         // non-fatal: leaderboard refresh failed; continue without blocking the user
-        console.debug('Failed to refresh daily challenge leaderboard immediately:', e)
+        // Failed to refresh daily challenge leaderboard
       }
     } catch (e) {
       // ignore any failures in the instant update logic

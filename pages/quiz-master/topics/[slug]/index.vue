@@ -150,23 +150,88 @@ import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
+interface Topic {
+  id: string | number
+  name?: string
+  slug?: string
+  description?: string
+  summary?: string
+  subject_id?: string | number
+  grade_id?: string | number
+  level_id?: string | number
+  subject?: { id?: string | number; name?: string; slug?: string; grade_id?: string | number; grade?: { id?: string | number; level_id?: string | number } }
+  grade?: { id?: string | number; name?: string; level_id?: string | number }
+}
+
+interface Quiz {
+  id: string | number
+  title?: string
+  name?: string
+  slug?: string
+  description?: string
+  summary?: string
+  subject_id?: string | number
+  subject_name?: string
+  topic_id?: string | number
+  topic_name?: string
+  grade_id?: string | number
+  grade_name?: string
+  questions_count?: number
+  questions?: any[]
+  likes_count?: number
+  likes?: number
+  is_approved?: boolean
+  approval_requested_at?: string
+  created_at?: string
+  createdAt?: string
+  subject?: { id?: string | number; name?: string }
+  topic?: { id?: string | number; name?: string }
+  grade?: { id?: string | number; name?: string }
+}
+
+interface NormalizedQuiz extends Quiz {
+  title: string  // Override to be required
+  description: string  // Override to be required
+  questionsCount: number
+  created_at: string
+  subject: { id?: string | number; name?: string }
+  topic: { id?: string | number; name?: string }
+  grade: { id?: string | number; name?: string }
+}
+
+interface Filters {
+  status: 'all' | 'approved' | 'pending' | 'draft'
+  sortBy: 'newest' | 'oldest' | 'likes' | 'questions'
+}
+
+interface TopicTaxonomy {
+  level_id: string | number | null
+  grade_id: string | number | null
+  subject_id: string | number | null
+  topic_id: string | number | null
+}
+
 const route = useRoute()
 const router = useRouter()
 const alert = useAppAlert()
 const seo = useSeo()
+const api = useApi()
 
-const slug = computed(() => route.params.slug)
-const topic = ref(null)
-const quizzes = ref([])
+const slug = computed(() => {
+  const param = route.params.slug
+  return Array.isArray(param) ? param[0] : param || ''
+})
+const topic = ref<Topic | null>(null)
+const quizzes = ref<Quiz[]>([])
 const loading = ref(true)
 
 // Filter and sort states
-const filters = ref({
+const filters = ref<Filters>({
   status: 'all',
   sortBy: 'newest'
 })
 
-function resetFilters() {
+function resetFilters(): void {
   filters.value = {
     status: 'all',
     sortBy: 'newest'
@@ -181,9 +246,9 @@ const topicTaxonomy = computed(() => {
   const t = topic.value
   
   // Direct extraction attempts
-  let level_id = t.grade?.level_id || t.level_id || t.levelId || null
-  let grade_id = t.grade_id || t.gradeId || t.grade?.id || null
-  let subject_id = t.subject_id || t.subjectId || t.subject?.id || null
+  let level_id: string | number | null = t.grade?.level_id || t.level_id || null
+  let grade_id: string | number | null = t.grade_id || t.grade?.id || null
+  let subject_id: string | number | null = t.subject_id || t.subject?.id || null
   
   // Try nested paths
   if (!level_id && t.subject?.grade?.level_id) level_id = t.subject.grade.level_id
@@ -193,7 +258,7 @@ const topicTaxonomy = computed(() => {
   // If we still don't have grade_id but have subject, look it up in taxonomy store
   if (!grade_id && subject_id) {
     const subjectsInStore = subjects.value || []
-    const subject = subjectsInStore.find(s => String(s.id || s._id) === String(subject_id))
+    const subject = subjectsInStore.find((s: any) => String(s?.id || s?._id) === String(subject_id))
     if (subject) {
       grade_id = subject.grade_id || subject.gradeId || subject.grade?.id || null
     }
@@ -202,7 +267,7 @@ const topicTaxonomy = computed(() => {
   // If we still don't have level_id but have grade, look it up in taxonomy store
   if (!level_id && grade_id) {
     const gradesInStore = grades.value || []
-    const grade = gradesInStore.find(g => String(g.id || g._id) === String(grade_id))
+    const grade = gradesInStore.find((g: any) => String(g?.id || g?._id) === String(grade_id))
     if (grade) {
       level_id = grade.level_id || grade.levelId || grade.level?.id || null
     }
@@ -211,8 +276,8 @@ const topicTaxonomy = computed(() => {
   // Also try looking through levels for nested grade info
   if (!level_id && grade_id) {
     for (const level of (levels.value || [])) {
-      if (level.grades && Array.isArray(level.grades)) {
-        const g = level.grades.find(gr => String(gr.id || gr._id) === String(grade_id))
+      if (level?.grades && Array.isArray(level.grades)) {
+        const g = level.grades.find((gr: any) => String(gr?.id || gr?._id) === String(grade_id))
         if (g) {
           level_id = level.id
           break
@@ -223,50 +288,42 @@ const topicTaxonomy = computed(() => {
   
   const topic_id = t.id || null
   
-  console.log('[topicTaxonomy] computed:', { 
-    level_id, 
-    grade_id, 
-    subject_id, 
-    topic_id,
-    'from direct': { grade_id: t.grade_id, level_id: t.level_id },
-    'from nested': { grade_id: t.subject?.grade_id, level_id: t.subject?.grade?.level_id },
-  })
-  
   return { level_id, grade_id, subject_id, topic_id }
 })
 
-const normalizedQuizzes = computed(() => {
+const normalizedQuizzes = computed<NormalizedQuiz[]>(() => {
   return (quizzes.value || [])
-    .filter(q => q && q.id)
-    .map(quiz => ({
+    .filter((q: Quiz | undefined | null): q is Quiz => q != null && (q?.id != null))
+    .map((quiz: Quiz) => ({
       ...quiz,
       id: quiz.id,
+      slug: quiz.slug || '',
       title: quiz.title || quiz.name || 'Untitled Quiz',
       description: quiz.description || quiz.summary || '',
-      subject: quiz.subject?.name || quiz.subject_name || 'N/A',
-      topic: quiz.topic?.name || quiz.topic_name || 'N/A',
+      subject: quiz.subject || { id: quiz.subject_id, name: quiz.subject_name },
+      topic: quiz.topic || { id: quiz.topic_id, name: quiz.topic_name },
       subject_id: quiz.subject?.id || quiz.subject_id,
       topic_id: quiz.topic?.id || quiz.topic_id,
-      grade: quiz.grade?.name || quiz.grade_name || quiz.grade_id || 'N/A',
+      grade: quiz.grade || { id: quiz.grade_id, name: quiz.grade_name } || { name: 'N/A' },
       questionsCount: quiz.questions_count ?? quiz.questions?.length ?? 0,
       likes: quiz.likes_count ?? quiz.likes ?? 0,
       created_at: quiz.created_at || quiz.createdAt || new Date().toISOString(),
     }))
 })
 
-const filteredQuizzes = computed(() => {
+const filteredQuizzes = computed<NormalizedQuiz[]>(() => {
   let result = [...normalizedQuizzes.value]
 
   // Apply status filter
   if (filters.value.status !== 'all') {
-    result = result.filter(quiz => {
+    result = result.filter((quiz: NormalizedQuiz) => {
       switch (filters.value.status) {
         case 'approved':
-          return quiz.is_approved
+          return quiz.is_approved === true
         case 'pending':
-          return quiz.approval_requested_at && !quiz.is_approved
+          return quiz.approval_requested_at != null && quiz.is_approved !== true
         case 'draft':
-          return !quiz.approval_requested_at && !quiz.is_approved
+          return quiz.approval_requested_at == null && quiz.is_approved !== true
         default:
           return true
       }
@@ -274,16 +331,16 @@ const filteredQuizzes = computed(() => {
   }
 
   // Apply sorting
-  result.sort((a, b) => {
+  result.sort((a: NormalizedQuiz, b: NormalizedQuiz) => {
     switch (filters.value.sortBy) {
       case 'newest':
-        return new Date(b.created_at) - new Date(a.created_at)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       case 'oldest':
-        return new Date(a.created_at) - new Date(b.created_at)
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       case 'likes':
-        return b.likes - a.likes
+        return (b.likes || 0) - (a.likes || 0)
       case 'questions':
-        return b.questionsCount - a.questionsCount
+        return (b.questionsCount || 0) - (a.questionsCount || 0)
       default:
         return 0
     }
@@ -294,9 +351,8 @@ const filteredQuizzes = computed(() => {
 
 const config = useRuntimeConfig()
 
-async function fetchTopicDetails() {
+async function fetchTopicDetails(): Promise<void> {
   try {
-    const api = useApi()
     const endpoint = `/api/topics?slug=${slug.value}`
     const res = await api.get(endpoint)
     if (!res.ok) {
@@ -312,8 +368,8 @@ async function fetchTopicDetails() {
 
     if (topic.value) {
       const t = topic.value
-      const subject_id = t.subject_id || t.subjectId
-      const grade_id = t.grade_id || t.gradeId || t.grade?.id
+      const subject_id = t.subject_id || t.subject?.id
+      const grade_id = t.grade_id || t.grade?.id
       
       const warmingPromises = []
       
@@ -346,22 +402,19 @@ async function fetchTopicDetails() {
   }
 }
 
-async function fetchQuizzesForTopic() {
+async function fetchQuizzesForTopic(): Promise<void> {
   try {
-    const api = useApi()
     // Use topic ID if available, otherwise fall back to querying by topic slug
     const topicIdToUse = topic.value?.id || slug.value
     const params = new URLSearchParams({ 
-      topic_id: topicIdToUse,
-      per_page: 100 
+      topic_id: String(topicIdToUse),
+      per_page: '100'
     })
     const endpoint = `/api/quizzes?${params.toString()}`
-    console.log('[fetchQuizzesForTopic] fetching from:', endpoint)
     const res = await api.get(endpoint)
-    console.log('[fetchQuizzesForTopic] response status:', res.status)
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
-        console.warn('[fetchQuizzesForTopic] access denied', res.status)
+        // Access denied to fetch quizzes
         alert.push({ type: 'warning', message: 'You do not have permission to view quizzes for this topic.' })
       } else {
         throw new Error('Failed to fetch quizzes for this topic.')
@@ -370,18 +423,19 @@ async function fetchQuizzesForTopic() {
     }
     const data = await res.json().catch(() => null)
     quizzes.value = data?.quizzes || data?.data || []
-    console.log('[fetchQuizzesForTopic] loaded', quizzes.value.length, 'quizzes')
-  } catch (e) {
+  } catch (e: any) {
     console.error('[fetchQuizzesForTopic] error:', e)
-    alert.push({ type: 'error', message: (e && e.message) ? e.message : String(e) })
+    alert.push({ type: 'error', message: (e?.message) ? e.message : String(e) })
   }
 }
 
 // optionally warm taxonomy caches for related subjects/grades used in the UI
 const { fetchLevels, fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject, subjects, grades, levels } = useTaxonomy()
 
-function navigateToEdit(quizSlug) {
-  router.push(`/quiz-master/quizzes/${quizSlug}/edit`)
+function navigateToEdit(quizSlug: string | undefined): void {
+  if (quizSlug) {
+    router.push(`/quiz-master/quizzes/${quizSlug}/edit`)
+  }
 }
 
 onMounted(async () => {

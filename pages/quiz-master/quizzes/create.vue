@@ -418,7 +418,7 @@ onMounted(async () => {
           addTopic(q.topic || { id: topicId })
         }
       } catch (e: any) {
-        console.warn('Failed to preload taxonomy for edit mode', e)
+        // Failed to preload taxonomy for edit mode
       }
     } else {
       store.reset()

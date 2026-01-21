@@ -39,8 +39,6 @@ export default defineNuxtPlugin(() => {
       const config = useRuntimeConfig()
       const isDev = import.meta.dev
       
-      console.log('[Echo] Runtime config in nextTick:', config.public)
-      
       initializeEcho(config, isDev)
     })
   } else {
@@ -56,9 +54,6 @@ export default defineNuxtPlugin(() => {
 })
 
 function initializeEcho(config: any, isDev: boolean) {
-  console.log('[Echo] Starting initialization')
-  
-  // Clean up existing Echo instance if it exists (prevents multiple instances on HMR)
   if (window.Echo) {
     try {
       const existingEcho = window.Echo as any
@@ -104,11 +99,11 @@ function initializeEcho(config: any, isDev: boolean) {
             const api = useApi()
             const { status } = useAuth()
 
-            // Always ensure CSRF is available (needed for both authenticated and unauthenticated users)
+            // Always ensure CSRF is available
             try {
               await api.ensureCsrf()
             } catch (e) {
-              console.warn('[Echo] Failed to ensure CSRF token:', e)
+              // csrf error silently
             }
 
             // Get auth headers: Bearer token + XSRF token
@@ -153,15 +148,10 @@ function initializeEcho(config: any, isDev: boolean) {
               data = null
             }
 
-            // For presence channels, Pusher expects a `channel_data` field containing
-            // the current user's id and info. The server must compute the auth
-            // signature using the exact `channel_data` it returns. Constructing
-            // `channel_data` on the client side breaks the signature (invalid HMAC).
-            // If `channel_data` is missing, fail the auth and ask for a server fix.
+            // If `channel_data` is missing, fail the auth
             const isPresence = String(channel.name).startsWith('presence-')
             if (isPresence && data && !data.channel_data) {
-              console.error('[Echo] Presence auth response missing channel_data. Backend must return channel_data for presence channels.');
-              return callback(new Error('Presence auth missing channel_data from server'), null)
+              return callback(new Error('Presence auth failed'), null)
             }
 
             if (!data || (typeof data.auth !== 'string' && !data.auth)) {
@@ -178,33 +168,22 @@ function initializeEcho(config: any, isDev: boolean) {
     }
   }
 
-  console.log('[Echo] Initializing with hardcoded key and cluster')
-
   try {
     const pusherKey = config.public?.pusherKey || '5a6916ce972fd4a06074'
     const pusherCluster = config.public?.pusherCluster || 'ap2'
-    
-    console.log('[Echo] Runtime config pusherKey:', config.public?.pusherKey)
-    console.log('[Echo] Using Pusher key:', pusherKey)
-    console.log('[Echo] Using Pusher cluster:', pusherCluster)
     
     const pusher = new Pusher(pusherKey, {
       cluster: pusherCluster,
       enabledTransports: ['ws', 'wss'],
       disableStats: true,
-      authorizer: authorizer // Use the custom authorizer we defined above
+      authorizer: authorizer
     })
-    console.log('[Echo] Pusher instance created successfully')
     
     const echo = new Echo<any>({
       broadcaster: 'pusher',
       client: pusher
     })
-    console.log('[Echo] Echo instance created successfully with Pusher client')
-    
     window.Echo = echo
-
-    // Don't connect immediately - wait for authentication
     // Connection will be established when channels are actually subscribed to
 
     // Cleanup function for HMR/unmount
@@ -230,8 +209,6 @@ function initializeEcho(config: any, isDev: boolean) {
     // Since this is called asynchronously, we can't return from the plugin
     // The echo instance is available globally via window.Echo
   } catch (error) {
-    console.error('[Echo] Failed to create Echo instance:', error)
-    // Set a null echo to prevent other code from failing
     window.Echo = null
   }
 }

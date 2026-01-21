@@ -45,7 +45,7 @@ export const useAchievementStore = defineStore('achievements', () => {
                     addAchievement(achievement)
                 })
         } catch (e) {
-            console.warn('Failed to attach achievement listeners', e)
+            // listener attachment error silently
         }
     }
 

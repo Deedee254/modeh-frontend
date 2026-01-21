@@ -34,7 +34,7 @@ onMounted(() => {
     setTimeout(() => {
       showInstallPrompt.value = true
       // helpful debug when troubleshooting why prompt isn't shown
-      try { console.debug('[PWA] beforeinstallprompt fired — showing install banner') } catch {}
+      try { } catch {}
     }, 1000)
   }
 
@@ -51,7 +51,7 @@ onMounted(() => {
   appInstalledHandler = () => {
     deferredPrompt = null
     showInstallPrompt.value = false
-    try { console.debug('[PWA] appinstalled event received') } catch {}
+    try { } catch {}
   }
   window.addEventListener('appinstalled', appInstalledHandler)
 })
@@ -68,7 +68,7 @@ onBeforeUnmount(() => {
 const installPWA = async () => {
   if (!deferredPrompt) {
     // nothing to do — helpful debug
-    try { console.debug('[PWA] installPWA called but no deferredPrompt available') } catch {}
+    try { } catch {}
     return
   }
 
@@ -79,11 +79,11 @@ const installPWA = async () => {
     if (outcome === 'accepted') {
       showInstallPrompt.value = false
       deferredPrompt = null
-      try { console.debug('[PWA] user accepted the install prompt') } catch {}
+      try { } catch {}
     } else {
       // user dismissed; keep the prompt object cleared so we don't show again until browser fires
       deferredPrompt = null
-      try { console.debug('[PWA] user dismissed the install prompt') } catch {}
+      try { } catch {}
     }
   } catch (err) {
     try { console.error('[PWA] prompt failed', err) } catch {}

@@ -616,7 +616,7 @@ const checkQualificationStatus = async () => {
     const json: any = await tournamentStore.fetchQualificationStatus(route.params.id)
     userHasQualified.value = !!(json?.qualified ?? false)
   } catch (error) {
-    console.warn('Error checking qualification status:', error)
+    // Failed to check qualification status
   }
 }
 

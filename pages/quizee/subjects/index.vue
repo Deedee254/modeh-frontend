@@ -47,23 +47,67 @@
 
       <!-- Removed course/grade/level selectors — sorting now via buttons above -->
 
-      <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
+      <div v-if="loading" class="mt-6 flex items-center justify-center py-12">
+        <LoadingSpinner />
+      </div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load subjects.</div>
 
       <div v-else class="mt-6">
         <div v-if="filteredSubjects.length === 0" class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">
           No subjects available for your grade level.
         </div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <SubjectCard
-            v-for="subject in filteredSubjects"
-            :key="subject.id"
-            :title="subject.name"
-            :description="subject.description || subject.summary"
-            :slug="subject.slug"
-            :to="`/quizee/subjects/${subject.slug}`"
-            :grade="subject.grade || subject.grade_id || ''"
-          />
+        <div v-else>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <SubjectCard
+              v-for="subject in paginatedSubjects"
+              :key="subject.id"
+              :title="subject.name"
+              :description="subject.description || subject.summary"
+              :slug="subject.slug"
+              :to="`/quizee/subjects/${subject.slug}`"
+              :grade="subject.grade || subject.grade_id || ''"
+            />
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
+            <div class="text-sm text-gray-600">
+              Showing <span class="font-semibold">{{ (currentPage - 1) * perPage + 1 }}</span> to 
+              <span class="font-semibold">{{ Math.min(currentPage * perPage, filteredSubjects.length) }}</span> of
+              <span class="font-semibold">{{ filteredSubjects.length }}</span> subjects
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                :disabled="currentPage === 1 || loading"
+                @click="currentPage = Math.max(1, currentPage - 1)"
+                :class="[
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  currentPage === 1 || loading
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                ]"
+              >
+                Previous
+              </button>
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-gray-600">Page</span>
+                <span class="font-semibold text-gray-900">{{ currentPage }}</span>
+                <span class="text-sm text-gray-600">of {{ totalPages }}</span>
+              </div>
+              <button
+                :disabled="currentPage === totalPages || loading"
+                @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                :class="[
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  currentPage === totalPages || loading
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-brand-600 text-white hover:bg-brand-700'
+                ]"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -71,13 +115,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
+import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 
 definePageMeta({
   layout: 'quizee',
@@ -99,6 +144,8 @@ const allCourses = ref<any[]>([])
 const selectedGradeId = ref<number | null>(null)
 const selectedLevelId = ref<number | null>(null)
 const sortOption = ref('newest')
+const currentPage = ref(1)
+const perPage = ref(12)
 
 function extractId(val: any) {
   if (val === null || val === undefined) return null
@@ -177,6 +224,19 @@ const filteredSubjects = computed(() => {
     })
   }
   return subjects
+})
+
+const totalPages = computed(() => Math.ceil((filteredSubjects.value?.length || 0) / perPage.value))
+
+const paginatedSubjects = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return filteredSubjects.value.slice(start, end)
+})
+
+// Reset to page 1 when sort option changes
+watch(() => sortOption.value, () => {
+  currentPage.value = 1
 })
 
 async function loadSubjectsByGrade() {

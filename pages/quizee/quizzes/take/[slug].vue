@@ -435,7 +435,7 @@ function formatTime(seconds) {
 function onQuestionSelect(val) {
   const q = currentQuestionData.value
   if (!q || !q.id) return
-  console.log('Question selected:', { questionId: q.id, questionType: q.type, answer: val })
+  // Question selected
   answers.value[q.id] = val
   // record per-question time
   recordQuestionTime(q.id)
@@ -542,11 +542,11 @@ async function submitAnswers() {
       const parsed = JSON.parse(saved)
       if (parsed?.answers && Object.keys(parsed.answers).length > 0) {
         answersToSubmit = parsed.answers
-        console.log('Using saved answers from localStorage:', answersToSubmit)
+        // Using saved answers from localStorage
       }
     }
   } catch (e) {
-    console.log('Could not retrieve saved answers, using in-memory:', e)
+    // Could not retrieve saved answers, using in-memory
   }
 
   // Build answers payload using central normalization helpers.
@@ -554,9 +554,7 @@ async function submitAnswers() {
   const sanitizedAnswers = formatAnswersForSubmission(answersToSubmit, questionTimes.value)
   
   // Log for debugging
-  console.log('Raw answers object:', answersToSubmit)
-  console.log('Sanitized answers:', sanitizedAnswers)
-  console.log('Question times:', questionTimes.value)
+  // Debug: answers prepared for submission
   
   // Validate answers before submission - filter out any with invalid question_id
   const finalAnswers = sanitizedAnswers.filter(a => {
@@ -568,7 +566,7 @@ async function submitAnswers() {
   // Warn if answers were filtered out (data integrity issue)
   if (finalAnswers.length < sanitizedAnswers.length) {
     const filtered = sanitizedAnswers.length - finalAnswers.length
-    console.warn(`[Quiz Submit] Filtered out ${filtered} invalid answer(s) with non-positive question_id`)
+    // Filtered out invalid answers
   }
 
   // Extract per-question times into a separate object for the backend
@@ -588,25 +586,23 @@ async function submitAnswers() {
     attempt_id: quiz.value._attempt_id || null,
   }
 
-  console.log('Final payload being sent to server:', payload)
-  console.log('Number of answers in payload:', finalAnswers.length)
-  console.log('First few answers detail:', finalAnswers.slice(0, 3))
+  // Payload prepared for server submission
   
     const res = await api.postJson(`/api/quizzes/${slug}/submit`, payload)
-    console.log('Submission response status:', res.status)
+    // Submission response received
     if (api.handleAuthStatus(res)) { pushAlert({ message: 'Session expired — please sign in again', type: 'warning' }); lastSubmitFailed.value = true; submissionMessage.value = ''; submitting.value = false; showConfirm.value = false; return }
     if (res.ok) {
       // stop saving message
       submissionMessage.value = ''
       const body = await res.json()
-      console.log('Submission response body:', body)
+      // Response body processed
       stopTimer()
       try { clearProgress() } catch (e) {}
       clearSavedAnswers()
 
       // If backend returned an attempt id, redirect to centralized checkout so user can see results after checkout
       const attemptId = body?.attempt_id ?? body?.attempt?.id
-      console.log('Extracted attemptId from response:', attemptId)
+      // AttemptId extracted
       // If backend included awarded achievements or updated user, update auth store to reflect new badges/points
       try {
         const auth = useAuthStore()

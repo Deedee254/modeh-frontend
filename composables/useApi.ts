@@ -82,7 +82,6 @@ export function useApi() {
 
     if (_ensureCsrfPromise) return _ensureCsrfPromise
 
-    console.debug('[useApi] ensureCsrf: Starting CSRF fetch...')
     _ensureCsrfPromise = (async () => {
       const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null
       const timeoutMs = 15000
@@ -174,7 +173,6 @@ export function useApi() {
 
     // Handle 419 CSRF error by retrying once
     if (resp.status === 419 && retryCount < 1) {
-      console.warn('[useApi] 419 detected, retrying with fresh CSRF...')
       await ensureCsrf(true)
       return request(path, options, retryCount + 1)
     }

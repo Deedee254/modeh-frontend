@@ -38,7 +38,7 @@ export async function sendVerificationRequest(params: {
       })
     })
   } catch (error) {
-    console.error('Failed to send verification email:', error)
+    // email send error silently
     throw error
   }
 }

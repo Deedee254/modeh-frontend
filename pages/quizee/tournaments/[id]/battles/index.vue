@@ -123,11 +123,6 @@ const startStatusPolling = () => {
         if (currentStatus === 'active' && tournament.value?.status === 'upcoming') {
           // Status changed! Reload battles
           await fetchData()
-          
-          // Show notification
-          if (battles.value.length > 0) {
-            console.log('✅ Tournament battles are now available!')
-          }
         }
         
         // Update tournament status
@@ -136,7 +131,7 @@ const startStatusPolling = () => {
         }
       }
     } catch (err) {
-      console.warn('Failed to check tournament status:', err)
+      // Failed to check tournament status
     }
   }, 5000) // Check every 5 seconds
 }

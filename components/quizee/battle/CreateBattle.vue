@@ -139,7 +139,7 @@ async function initSelectionFromIds() {
     selection.value = sel
   } catch (e) {
     // ignore resolution errors
-    // console.warn('Failed to init taxonomy selection', e)
+    // Failed to init taxonomy selection
   }
 }
 

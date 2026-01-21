@@ -97,22 +97,6 @@
           <!-- Topic Strength -->
           <QuizeeTopicStrength :topicStrength="topicStrength" />
 
-          <!-- Topic Progress -->
-          <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <template #header>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/30 dark:to-cyan-800/30 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                </div>
-                <div class="flex-1 font-semibold text-lg">Topic Progress</div>
-                <NuxtLink to="/quizee/topics" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300">View all →</NuxtLink>
-              </div>
-            </template>
-            <div class="p-6">
-              <QuizeeTopicProgress :loading="metricsLoading" :topics="topicProgressList" />
-            </div>
-          </UiCard>
-
           <!-- Recommended quizzes -->
           <ClientOnly>
             <QuizeeRecommendedQuizzes 
@@ -246,7 +230,6 @@ import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import QuizeeMetricsGrid from '~/components/quizee/QuizeeMetricsGrid.vue'
 import QuizeePerformanceStats from '~/components/quizee/QuizeePerformanceStats.vue'
 import QuizeeTopicStrength from '~/components/quizee/QuizeeTopicStrength.vue'
-import QuizeeTopicProgress from '~/components/quizee/QuizeeTopicProgress.vue'
 import QuizeeRecommendedQuizzes from '~/components/quizee/QuizeeRecommendedQuizzes.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
@@ -458,7 +441,6 @@ const fastestQuizTime = ref(0)
 const avgQuestionTime = ref(0)
 const pointsToday = ref(0)
 const topicStrength = ref([])
-const topicProgressList = ref([])
 const achievements = ref(0)
 const currentPackage = ref(null)
 const currentPackageStatus = computed(() => {
@@ -483,10 +465,6 @@ async function fetchStats() {
       pointsToday.value = data.points_today || 0
       streakDays.value = data.current_streak || 0
       achievements.value = data.achievements_count || 0
-      // Populate topic progress with top 5 topics
-      if (data.topic_strength && Array.isArray(data.topic_strength)) {
-        topicProgressList.value = data.topic_strength.slice(0, 5)
-      }
       topicStrength.value = data.topic_strength || []
     }
   } catch (e) {

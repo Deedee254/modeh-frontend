@@ -997,7 +997,7 @@ onMounted(async () => {
       emit('update:modelValue', selections.value)
     } catch (e) {
       // non-fatal
-      console.warn('TaxonomyFlowPicker: failed to prefill from query', e)
+      // Failed to prefill from query
     }
   }
 })

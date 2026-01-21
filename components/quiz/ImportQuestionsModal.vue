@@ -136,10 +136,10 @@ async function onFileSelected(e) {
     
     // Log summary for debugging
     if (result.created > 0) {
-      console.log(`CSV Import: Successfully imported ${result.created} question(s)`)
+      // Questions imported successfully
     }
     if (result.errors && result.errors.length > 0) {
-      console.warn(`CSV Import: ${result.errors.length} error(s) encountered`, result.errors)
+      // Import errors encountered
     }
     
     const msg = `Imported ${result.created} question(s).`
@@ -287,7 +287,7 @@ function buildQuestionFromRow(row) {
   
   // Debug logging for CSV import
   if (type === 'mcq' && question.options && question.answers) {
-    console.log('CSV Import - Question:', {
+    // CSV Import - Question processing
       text: text.substring(0, 50) + '...',
       options: question.options,
       answers: question.answers,
@@ -342,12 +342,12 @@ function buildQuestionFromRow(row) {
               question.answers = [String(numIdx)]
             } else {
               // Log warning for debugging
-              console.warn('CSV Import: Could not match answer', a, 'to any option. Options:', question.options)
+              // Could not match answer to option
               question.answers = []
             }
           } else {
             // Log warning for debugging
-            console.warn('CSV Import: Could not match textual answer', a, 'to any option. Options:', question.options)
+            // Could not match textual answer
             question.answers = []
           }
         }
@@ -434,7 +434,7 @@ async function handleParsedRows(rows) {
       q.subject_id = store.quiz?.subject_id ?? (store.quiz?.subject?.id ?? null)
       q.topic_id = store.quiz?.topic_id ?? (store.quiz?.topic?.id ?? null)
     } catch (e) {
-      console.warn('Error inheriting taxonomy from quiz store:', e)
+      // Error inheriting taxonomy from quiz store
     }
 
     // Ensure answers array is properly set for validation

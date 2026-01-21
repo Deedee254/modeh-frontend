@@ -103,7 +103,6 @@ export function useQuizeeProfile(quizeeName: string | Ref<string>) {
             }
           }
         } catch (enrichError) {
-          console.warn('Could not fetch detailed profile, using basic info', enrichError)
           // Continue with the basic profile we have
         }
       }

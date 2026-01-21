@@ -198,8 +198,14 @@
               <div class="flex flex-col gap-3">
                 <button 
                   v-if="!lastAttempt"
-                  @click="startQuiz" 
-                  class="w-full px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-950 text-white rounded-lg hover:from-brand-700 hover:to-brand-900 transition-colors"
+                  @click="startQuiz"
+                  :disabled="!isLoggedIn && guestQuizStore.hasReachedQuizLimit()"
+                  :class="[
+                    'w-full px-4 py-2 rounded-lg transition-colors',
+                    !isLoggedIn && guestQuizStore.hasReachedQuizLimit()
+                      ? 'bg-gray-300 text-gray-600 cursor-not-allowed opacity-60'
+                      : 'bg-gradient-to-r from-brand-600 to-brand-950 text-white hover:from-brand-700 hover:to-brand-900'
+                  ]"
                 >
                   {{ startButtonLabel }}
                 </button>
@@ -274,17 +280,29 @@
           <!-- Related Quizzes - Hidden on mobile -->
           <div class="hidden md:block bg-white rounded-xl shadow-sm p-6">
             <h3 class="font-medium mb-4">Related Quizzes</h3>
-            <div class="space-y-4">
-              <div v-for="r in related" :key="r.id" 
-                   class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                <div class="w-16 h-12 bg-gray-100 rounded overflow-hidden">
-                  <img :src="r.cover" alt="" class="w-full h-full object-cover" />
+            <div v-if="relatedLoading" class="space-y-4">
+              <div v-for="i in 3" :key="i" class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 animate-pulse">
+                <div class="w-16 h-12 bg-gray-200 rounded"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+                  <div class="h-2 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="related.length > 0" class="space-y-4">
+              <NuxtLink v-for="r in related" :key="r.id" :to="`/quizzes/${r.slug}`"
+                   class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                <div class="w-16 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                  <img v-if="r.cover" :src="r.cover" alt="" class="w-full h-full object-cover" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <h4 class="font-medium text-sm truncate">{{ r.title }}</h4>
                   <p class="text-xs text-gray-500 mt-1">{{ r.questions_count || 0 }} questions</p>
                 </div>
-              </div>
+              </NuxtLink>
+            </div>
+            <div v-else class="text-center py-4 text-gray-500 text-sm">
+              No related quizzes found
             </div>
           </div>
 
@@ -500,7 +518,13 @@ const authorLink = computed(() => {
   return null
 })
 
-const startButtonLabel = computed(() => isPaid.value ? `Buy & Begin — ${priceDisplay.value}` : 'Begin Assessment')
+const startButtonLabel = computed(() => {
+  if (!isLoggedIn.value && guestQuizStore.hasReachedQuizLimit()) {
+    return 'Limit Reached'
+  }
+  if (isPaid.value) return `Buy & Begin — ${priceDisplay.value}`
+  return 'Begin Assessment'
+})
 
 // Tab configuration
 const tabs = [
@@ -550,11 +574,54 @@ const heroStyle = computed(() => {
   }
 })
 
-// Related quizzes (mock data - replace with actual API call)
-const related = ref([
-  { id: 1, title: 'Similar Quiz 1', cover: null, questions_count: 10 },
-  { id: 2, title: 'Similar Quiz 2', cover: null, questions_count: 15 }
-])
+// Related quizzes - fetch 3 random quizzes from same topic
+const related = ref([])
+const relatedLoading = ref(false)
+
+async function fetchRelatedQuizzes() {
+  if (!quiz.value?.topic_id && !quiz.value?.topic?.id) return
+  
+  relatedLoading.value = true
+  try {
+    const topicId = quiz.value.topic_id || quiz.value.topic?.id
+    const res = await api.get(`/api/quizzes?topic_id=${topicId}&per_page=100&approved=1`)
+    
+    if (res.ok) {
+      const data = await res.json()
+      let quizzes = data?.data || data?.quizzes?.data || []
+      
+      if (Array.isArray(quizzes)) {
+        // Filter out current quiz and shuffle to get random selection
+        quizzes = quizzes.filter(q => q.id !== quiz.value.id)
+        
+        // Fisher-Yates shuffle
+        for (let i = quizzes.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[quizzes[i], quizzes[j]] = [quizzes[j], quizzes[i]]
+        }
+        
+        // Take first 3
+        related.value = quizzes.slice(0, 3).map(q => ({
+          id: q.id,
+          title: q.title,
+          slug: q.slug,
+          cover: q.cover_image,
+          questions_count: q.questions_count || 0
+        }))
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch related quizzes:', e)
+  } finally {
+    relatedLoading.value = false
+  }
+}
+
+watch(() => quiz.value?.topic_id || quiz.value?.topic?.id, () => {
+  if (quiz.value?.topic_id || quiz.value?.topic?.id) {
+    fetchRelatedQuizzes()
+  }
+}, { immediate: true })
 
 // Mock last attempt (replace with actual API call)
 const lastAttempt = ref(null)
@@ -600,7 +667,7 @@ function attachQuizChannelListener(quizId) {
       }
     })
   } catch (e) {
-    console.warn('Failed to attach quiz channel listener', e)
+    // Failed to attach quiz channel listener
   }
 }
 
@@ -612,7 +679,7 @@ function detachQuizChannelListener() {
         _quizChannel.leave()
       }
     } catch (e) {
-      console.warn('Failed to detach quiz channel listener', e)
+      // Failed to detach quiz channel listener
     }
     _quizChannel = null
   }

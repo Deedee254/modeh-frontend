@@ -472,7 +472,6 @@ const fetchLeaderboard = async () => {
     leaderboard.value = list
   } catch (e) {
     // ignore leaderboard errors — keep previous value
-    console.debug('fetchLeaderboard error', e)
   }
 }
 

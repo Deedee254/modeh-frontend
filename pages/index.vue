@@ -102,7 +102,7 @@
     />
 
   <!-- Levels section  -->
-  <CategorizedQuizzes :levels="safeArray(levels)" :loading="quizzesLoading" />
+  <CategorizedQuizzes :levels="safeArray(levels)" :loading="quizzesLoading" :columns="4" />
 
   <!--  CategoryBanner: Grades and Courses section -->
   <CategoryBanner :grades="safeArray(GRADES)" :courses="safeArray(randomCourses)" />
@@ -561,7 +561,6 @@ function getRandomItems(arr, count = 4) {
   }
   
   const picked = shuffled.slice(0, Math.min(count, shuffled.length))
-  console.debug('[index.vue] getRandomItems picked', picked.length, 'from', items.length)
   return picked
 }
 
@@ -574,7 +573,7 @@ const randomSubjects = computed(() => {
 // Random topics (different for every user/visit)
 const randomTopics = computed(() => {
   const withQuizzes = safeArray(topicsList.value).filter(t => (t.quizzes_count || 0) > 0)
-  return getRandomItems(withQuizzes, 4)
+  return getRandomItems(withQuizzes, 8)
 })
 
 // Random courses (tertiary level grades with type='course')

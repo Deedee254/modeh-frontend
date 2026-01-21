@@ -348,7 +348,6 @@ onMounted(async () => {
     await fetchLevels()
   } catch (e) {
     // non-fatal: navigation can still work without levels
-    console.debug('Failed to preload levels in header', e)
   }
 })
 

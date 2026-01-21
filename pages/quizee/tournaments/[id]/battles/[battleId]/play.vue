@@ -578,7 +578,7 @@ const selectAnswer = async (optionId: string | number | any) => {
     // Trigger auto-save to backend after a short delay (only if connected)
     triggerAutoSave()
   } catch (e) {
-    console.warn('Failed to persist answer locally', e)
+    // Failed to persist answer locally
   }
 
   // Mark answer and show feedback (pass mapped index/value)
@@ -642,7 +642,7 @@ const saveToBackend = async () => {
 
     lastAutoSaveTime = Date.now()
   } catch (error) {
-    console.warn('Auto-save failed (will retry):', error)
+    // Auto-save failed, will retry
     // Fail silently - will retry on next trigger
   }
 }

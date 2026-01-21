@@ -127,7 +127,6 @@ export default function useTaxonomy() {
 
     _levelsPromise = (async () => {
       try {
-        try { console.debug('useTaxonomy.fetchLevels: starting fetch') } catch (e) {}
         const res = await api.get('/api/levels')
         if (!res.ok) {
           try { console.error('useTaxonomy.fetchLevels: response not ok', res.status) } catch (e) {}
@@ -146,7 +145,6 @@ export default function useTaxonomy() {
           id: l.id ? String(l.id) : null,
           grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null }))
         }))
-        try { console.debug('useTaxonomy.fetchLevels: loaded', levels.value.length, 'levels with nested grades') } catch (e) {}
       } catch (e) {
         try { console.error('useTaxonomy.fetchLevels error:', e) } catch (err) {}
       } finally {
@@ -200,7 +198,6 @@ export default function useTaxonomy() {
       })
       subjects.value = filtered
       setCacheWithLimit(subjectsCache, key, filtered)
-      try { console.debug('useTaxonomy.fetchSubjectsByGrade: gradeId', gradeId, 'levelId', levelId, 'fetched', filtered.length, 'subjects') } catch (e) {}
     } catch (e) {
       subjects.value = []
       subjectsCache.delete(key)
@@ -296,14 +293,11 @@ export default function useTaxonomy() {
       if (q) params.set('q', q)
       if (perPage) params.set('per_page', perPage)
       if (page) params.set('page', page)
-  // debug: log constructed url to ensure grade_id param is passed
-  try { console.debug('useTaxonomy.fetchSubjectsPage: fetching', `/api/subjects?${params.toString()}`) } catch (e) {}
   const res = await api.get(`/api/subjects?${params.toString()}`)
       if (!res.ok) return { items: [], meta: null }
       const data = await res.json().catch(() => null)
       // normalizeList will extract the items array from paginator shapes
       const items = normalizeList(data)
-  try { console.debug('useTaxonomy.fetchSubjectsPage: fetched items', items.length) } catch (e) {}
       // extract meta - support multiple shapes
       let meta = null
       if (data && data.subjects && data.subjects.meta) meta = data.subjects.meta
@@ -357,7 +351,10 @@ export default function useTaxonomy() {
   async function fetchAllTopics() {
     loadingTopics.value = true
     try {
-      const res = await api.get('/api/topics')
+      // Request a large per_page limit to get all topics in one request
+      // Backend limits max to 50, so we request 100 which gets capped at 50 per page
+      // For most use cases, 50 topics per page is sufficient
+      const res = await api.get('/api/topics?per_page=100')
       if (res.ok) {
         const data = await res.json().catch(() => null)
         topics.value = normalizeList(data)

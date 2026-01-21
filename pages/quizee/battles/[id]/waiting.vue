@@ -343,13 +343,11 @@ function attachEchoListeners() {
   try {
     _echoChannel.value = window.Echo.private(`battle.${uuid}`)
       .listen('.BattleParticipantJoined', (payload) => {
-        console.log('Participant joined:', payload)
         if (payload.participant) {
           battle.value.opponent = payload.participant
         }
       })
       .listen('.BattleStatusUpdated', (payload) => {
-        console.log('Status updated:', payload)
         if (payload.status) {
           battle.value.status = payload.status
         }

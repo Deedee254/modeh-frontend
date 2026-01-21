@@ -72,20 +72,11 @@ export default NuxtAuthHandler({
           })
 
           if (!res.ok) {
-            console.error('[Auth] Login failed:', res.status, res.statusText)
-            try {
-              const errorData = await res.json()
-              console.error('[Auth] Error details:', errorData)
-            } catch (e) {
-              console.error('[Auth] Could not parse error response')
-            }
             return null
           }
 
           const data = await res.json()
-          console.log('[Auth] Login response received:', { id: data.id, email: data.email, role: data.role })
 
-          // Backend returns user data at top level: { id, name, email, role, image, token, ... }
           if (data && data.id) {
             return {
               id: String(data.id),
@@ -101,7 +92,6 @@ export default NuxtAuthHandler({
           }
           return null
         } catch (e) {
-          console.error('[Auth] authorize error:', e)
           return null
         }
       }
@@ -202,9 +192,7 @@ export default NuxtAuthHandler({
       if (account?.provider === 'google' && (!token.apiToken || token.apiToken === undefined)) {
         try {
           const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
-          console.log('[Auth] Google OAuth detected, fetching apiToken from backend...')
           
-          // First ensure CSRF cookie
           await fetch(`${apiBase}/sanctum/csrf-cookie`, {
             credentials: 'include'
           })
@@ -232,23 +220,18 @@ export default NuxtAuthHandler({
             token.apiToken = data.token
             token.isNewUser = data.isNewUser  
             token.role = data.role
-            // Use clean response structure with is_profile_completed
             token.isProfileCompleted = data.is_profile_completed ?? undefined
-            // Attach raw backend response so frontend can read backend fields directly
             token.rawUser = data.user ?? data
-            console.log('[Auth] apiToken obtained from backend, isProfileCompleted:', token.isProfileCompleted)
           } else {
-            console.warn('[Auth] Failed to fetch apiToken from backend:', res.status, res.statusText)
             try {
-              const body = await res.text()
-              console.warn('[Auth] social-sync response body:', body)
+              await res.text()
             } catch (e) {
-              console.warn('[Auth] Could not read social-sync response body')
+              // ignore read error
             }
             // Don't fail the auth flow, just log the warning
           }
         } catch (e) {
-          console.error('[Auth] Error fetching apiToken:', e)
+          // silently continue without apiToken
           // Continue without apiToken - user may not be registered yet
         }
       }
@@ -273,16 +256,5 @@ export default NuxtAuthHandler({
     }
   }
   ,
-  // Log auth events to help diagnose OAuthSignin issues (controlled by NUXT_AUTH_DEBUG)
-  events: (process.env.NUXT_AUTH_DEBUG === 'true' ? {
-    signIn: async (message: any) => {
-      console.log('[Auth Event] signIn:', JSON.stringify(message))
-    },
-    createUser: async (message: any) => {
-      console.log('[Auth Event] createUser:', JSON.stringify(message))
-    },
-    linkAccount: async (message: any) => {
-      console.log('[Auth Event] linkAccount:', JSON.stringify(message))
-    }
-  } : {}) as any
+  events: {} as any
 } as any)

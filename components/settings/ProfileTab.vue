@@ -51,6 +51,18 @@
       <form @submit.prevent="save" class="space-y-6">
         <!-- Profile Fields Grid -->
         <div class="space-y-6">
+          <!-- Display Name - For all users -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Display Name</label>
+            <input 
+              v-model="form.display_name" 
+              type="text" 
+              placeholder="Your display name"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">This is the name shown on your profile</p>
+          </div>
+
           <!-- Name Fields - For Quizee only -->
           <div v-if="isQuizee" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
@@ -133,24 +145,33 @@
       <!-- Display Current Selections from Profile -->
       <div class="mb-6">
         <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">Your Current Selection</p>
-        <div v-if="taxonomySelection && (taxonomySelection.level || taxonomySelection.grade || taxonomySelection.subject)" class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-700">
-          <div class="flex flex-wrap gap-2">
-            <div v-if="taxonomySelection.level" class="inline-flex items-center gap-2 rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300">
-              <span>📚 {{ taxonomySelection.level.name || 'Level' }}</span>
+        <div v-if="taxonomySelection && (taxonomySelection.level || taxonomySelection.grade || taxonomySelection.subject)" class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
+          <div v-if="taxonomySelection.level" class="flex items-center gap-2">
+            <span class="font-semibold text-slate-900 dark:text-slate-100">Level:</span>
+            <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-sm font-medium text-blue-700 dark:text-blue-300">
+              📚 {{ taxonomySelection.level.name }}
+            </span>
+          </div>
+          <div v-if="taxonomySelection.grade" class="flex items-center gap-2">
+            <span class="font-semibold text-slate-900 dark:text-slate-100">Grade:</span>
+            <span class="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/30 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-300">
+              📖 {{ taxonomySelection.grade.name }}
+            </span>
+          </div>
+          <div v-if="taxonomySelection.subject && (Array.isArray(taxonomySelection.subject) ? taxonomySelection.subject.length > 0 : taxonomySelection.subject)" class="flex items-start gap-2">
+            <span class="font-semibold text-slate-900 dark:text-slate-100 pt-1">Subjects:</span>
+            <div class="flex flex-wrap gap-2">
+              <template v-if="Array.isArray(taxonomySelection.subject)">
+                <span v-for="subject in taxonomySelection.subject" :key="subject.id" class="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1 text-sm font-medium text-purple-700 dark:text-purple-300">
+                  🎓 {{ subject.name }}
+                </span>
+              </template>
+              <template v-else>
+                <span class="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1 text-sm font-medium text-purple-700 dark:text-purple-300">
+                  🎓 {{ taxonomySelection.subject.name }}
+                </span>
+              </template>
             </div>
-            <div v-if="taxonomySelection.grade" class="inline-flex items-center gap-2 rounded-full bg-green-100 dark:bg-green-900/30 px-3 py-1.5 text-sm font-medium text-green-700 dark:text-green-300">
-              <span>📖 {{ taxonomySelection.grade.name || 'Grade' }}</span>
-            </div>
-            <template v-if="taxonomySelection.subject && Array.isArray(taxonomySelection.subject)">
-              <div v-for="subject in taxonomySelection.subject" :key="subject.id" class="inline-flex items-center gap-2 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1.5 text-sm font-medium text-purple-700 dark:text-purple-300">
-                <span>🎓 {{ subject.name }}</span>
-              </div>
-            </template>
-            <template v-else-if="taxonomySelection.subject">
-              <div class="inline-flex items-center gap-2 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1.5 text-sm font-medium text-purple-700 dark:text-purple-300">
-                <span>🎓 {{ taxonomySelection.subject.name || 'Subject' }}</span>
-              </div>
-            </template>
           </div>
         </div>
         <div v-else class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-400">
@@ -314,21 +335,7 @@
       </form>
     </div>
 
-    <!-- Update Button - Bottom of Profile Tab -->
-    <div class="flex gap-3 pt-6 pb-2">
-      <button 
-        @click="save"
-        :disabled="isSavingProfile"
-        class="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-      >
-        <svg v-if="isSavingProfile" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <span v-if="!isSavingProfile">Update Profile</span>
-        <span v-else>Updating...</span>
-      </button>
-    </div>
+    <!-- No manual save button needed - auto-saves as you type -->
   </div>
 </template>
 
@@ -380,52 +387,54 @@ const form = ref(createFormState(user.value))
 // Track original form state for change detection
 const originalForm = ref(JSON.parse(JSON.stringify(form.value)))
 
-// Keep taxonomySelection in sync with form values
-// CRITICAL: Only update form when selection actually changes (not on every re-render)
-watch(taxonomySelection, (sel: any) => {
-  if (!sel) return
-  // Only update if value actually changed to avoid triggering unnecessary saves
-  const newLevel = sel.level?.id || ''
-  const newGrade = sel.grade?.id || ''
-  const newSubjects = sel.subject
-    ? (Array.isArray(sel.subject) ? sel.subject.map((s: any) => s.id) : [sel.subject.id])
-    : []
-  
-  // Check if values actually changed before updating form
-  const levelChanged = String(newLevel) !== String(form.value.level_id ?? '')
-  const gradeChanged = String(newGrade) !== String(form.value.grade_id ?? '')
-  const subjectsChanged = JSON.stringify(newSubjects.sort()) !== JSON.stringify((form.value.subjects || []).map(s => String(s)).sort())
-  
-  if (levelChanged) form.value.level_id = newLevel
-  if (gradeChanged) form.value.grade_id = newGrade
-  if (subjectsChanged) form.value.subjects = newSubjects
-}, { deep: true })
-
-// Watch for user/profile changes and initialize
+// Watch for form changes and auto-save with debounce
+let autoSaveTimeout: NodeJS.Timeout | null = null
 watch(
-  () => currentProfile.value,
-  () => {
-    form.value = createFormState(user.value)
-
-    // ensure institutionQuery reflects the saved institution string so InstitutionPicker shows it
-    institutionQuery.value = form.value.institution || ''
+  () => form.value,
+  async () => {
+    // Clear previous timeout
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout)
     
-    // Update original form state
-    originalForm.value = JSON.parse(JSON.stringify(form.value))
-    
-    initializeTaxonomySelection()
+    // Debounce: wait 1 second after user stops typing before saving
+    autoSaveTimeout = setTimeout(async () => {
+      if (JSON.stringify(form.value) !== JSON.stringify(originalForm.value)) {
+        try {
+          await saveProfile(form.value, preferredRole.value)
+          originalForm.value = JSON.parse(JSON.stringify(form.value))
+        } catch (e) {
+          console.error('Auto-save failed:', e)
+        }
+      }
+    }, 1000)
   },
-  { deep: true, immediate: true }
+  { deep: true }
 )
 
 onMounted(async () => {
+  // Fetch fresh user data first to ensure we have latest taxonomy from database
+  try {
+    await auth.fetchUser()
+  } catch (e) {
+    // Silently handle fetch errors
+  }
+  
+  // Wait a tick to ensure auth.user is updated
+  await nextTick()
+  
+  // Initialize form from fresh user data
+  form.value = createFormState(user.value)
+  originalForm.value = JSON.parse(JSON.stringify(form.value))
+  institutionQuery.value = form.value.institution || ''
+  
   // Load avatar preview if not already set
   if (!avatarFile.value) {
     const u = user.value as User | null
     avatarPreview.value = resolveAssetUrl(auth.userAvatar || u?.avatar || u?.avatar_url) || null
   }
   
-  // Initialize taxonomy selections on mount
+  // Taxonomy is loaded globally on app init - no need to update refs
+  
+  // Initialize taxonomy selections with fresh data
   await initializeTaxonomySelection()
 })
 
@@ -438,92 +447,43 @@ watch(user, (u) => {
 }, { immediate: true })
 
 async function initializeTaxonomySelection() {
-  const profile = user.value?.profile as QuizMasterProfile | QuizeeProfile | undefined
+  const profile = user.value?.profile
+  
   if (!profile) {
     // Profile not created yet - start with empty selections
     taxonomySelection.value = { level: null, grade: null, subject: null, topic: null }
     return
   }
 
-  // Parallelize initial taxonomy loads
-  await Promise.all([
-    (async () => {
-      if (!taxonomyStore.levels || taxonomyStore.levels.length === 0) {
-        await taxonomyStore.fetchLevels().catch(() => {})
-      }
-    })(),
-    (async () => {
-      if (Array.isArray(profile.subjects) && profile.subjects.length > 0) {
-        if (!taxonomyStore.subjects || taxonomyStore.subjects.length === 0) {
-          await taxonomyStore.fetchAllSubjects().catch(() => {})
-        }
-      }
-    })()
-  ])
-
-  // Helper to find item in list or fetch if missing
-  const resolveItem = async (current: any, list: any[], apiEndpoint: string) => {
-    let item = current || null
-    const id = item?.id || item // handle if item is just an ID
-    if (!id) return null
-    
-    // 1. Try to find in existing list
-    let found = list.find(l => String(l.id) === String(id) || String(l.value) === String(id))
-    
-    // 2. Fallback: try fetching individual item from API
-    if (!found && apiEndpoint) {
-      try {
-        const resp = await api.get(`${apiEndpoint}/${encodeURIComponent(String(id))}`)
-        if (resp.ok) {
-          const data = await resp.json().catch(() => null)
-          const srv = data?.level || data?.grade || data?.subject || data?.data || data || null
-          if (srv) return { id: srv.id, name: srv.name ?? srv.title ?? `Item ${id}`, ...srv }
-        }
-      } catch (e) {}
-    }
-    
-    return found || ((item && item.name) ? item : { id, name: `Item ${id}` })
-  }
-
-  // Resolve Level and Subjects in parallel
-  const [level, resolvedSubjects] = await Promise.all([
-    resolveItem(
-      (profile.level && profile.level.id) ? profile.level : (profile.level_id ? { id: profile.level_id } : null), 
-      taxonomyStore.levels || [], 
-      '/api/levels'
-    ),
-    (async () => {
-      if (!Array.isArray(profile.subjects) || profile.subjects.length === 0) return null
-      
-      const results = []
-      for (const s of profile.subjects) {
-        const sId = s?.id || s
-        if (!sId) continue
-        
-        const found = (taxonomyStore.subjects || []).find(ss => String(ss.id) === String(sId))
-        if (found) {
-          results.push(found)
-        } else {
-          results.push((typeof s === 'object' && s.name) ? s : { id: sId, name: `Subject ${sId}` })
-        }
-      }
-      return results
-    })()
-  ])
+  // The API already returns full level and grade objects
+  const level = profile.level || null
+  const grade = profile.grade || null
   
-  // If we found a level, we need its grades before resolving the grade
-  if (level && level.id) {
-    try { await taxonomyStore.fetchGradesByLevel(level.id) } catch (e) {}
+  // For subjects, we have the IDs in profile.subjects
+  // Resolve them using the taxonomy store
+  let subjects = null
+  const subjectIds = Array.isArray(profile.subjects) ? profile.subjects : []
+  
+  if (subjectIds.length > 0) {
+    // Ensure taxonomy store is loaded
+    try {
+      // Get store subjects - handle both Ref and plain array
+      let currentSubjects = taxonomyStore.subjects || []
+      if (Array.isArray(currentSubjects) && currentSubjects.length === 0) {
+        await taxonomyStore.fetchAllSubjects()
+        currentSubjects = taxonomyStore.subjects || []
+      }
+      
+      // Find subjects from store by IDs
+      subjects = subjectIds
+        .map((sId: any) => (currentSubjects as any[]).find(s => String(s.id) === String(sId)))
+        .filter(Boolean)
+    } catch (e) {
+      // Taxonomy fetch failed but continue with what we have
+    }
   }
 
-  // Resolve Grade
-  const grade = await resolveItem(
-    (profile.grade && profile.grade.id) ? profile.grade : (profile.grade_id ? { id: profile.grade_id } : null), 
-    taxonomyStore.grades || [], 
-    '/api/grades'
-  )
-
-  taxonomySelection.value = { level, grade, subject: resolvedSubjects, topic: null }
+  taxonomySelection.value = { level, grade, subject: subjects, topic: null }
 }
 
 function triggerAvatarUpload() { 
@@ -536,10 +496,13 @@ function openTaxonomyModal() {
   showTaxonomyModal.value = true
 }
 
-function confirmTaxonomySelection() {
+async function confirmTaxonomySelection() {
   taxonomySelection.value = JSON.parse(JSON.stringify(tempTaxonomySelection.value))
   isTaxonomyDirty.value = true
   showTaxonomyModal.value = false
+  
+  // Auto-save taxonomy changes
+  await saveTaxonomy()
 }
 
 async function saveTaxonomy() {
@@ -568,79 +531,21 @@ async function saveTaxonomy() {
     
     if (!resp.ok) {
       appAlert.push({ message: 'Failed to save areas of interest', type: 'error' })
+      isTaxonomyDirty.value = false
       return
     }
     
-    // Update auth with new profile data
-    await auth.fetchUser()
     isTaxonomyDirty.value = false
-    appAlert.push({ message: 'Areas of interest saved successfully', type: 'success' })
+    appAlert.push({ message: 'Areas of interest saved automatically', type: 'success' })
   } catch (e: any) {
-    console.error('Save taxonomy error:', e)
     appAlert.push({ message: e?.message || 'Failed to save areas of interest', type: 'error' })
+    isTaxonomyDirty.value = false
   }
 }
 
 async function save() {
-  isSavingProfile.value = true
-  try {
-    const success = await saveProfile(form.value, preferredRole.value)
-    if (!success) {
-      isSavingProfile.value = false
-      return
-    }
-
-  if (form.value.institution_id || form.value.institution) {
-    try {
-      const institutionPayload = form.value.institution_id ? { institution_id: form.value.institution_id } : { institution: form.value.institution, is_custom: true }
-      const resp = await api.postJson('/api/onboarding/step', { step: 'institution', data: institutionPayload })
-      if (await api.handleAuthStatus(resp)) return
-      const json = await api.parseResponse(resp)
-      if (resp.ok) {
-        appAlert.push({ message: form.value.institution_id ? `Request sent to ${form.value.institution}! Awaiting manager approval for verification.` : `Custom institution "${form.value.institution}" saved to your profile!`, type: 'success' })
-      } else {
-        appAlert.push({ message: (json as any)?.message || 'Failed to set institution', type: 'error' })
-      }
-    } catch (e: any) { console.error('Institution save error:', e) }
-  }
-
-  // If user typed an institution into the search field but didn't select/create it explicitly,
-  // fall back to using the typed text as a custom institution string.
-  if ((!form.value.institution_id && !form.value.institution) && institutionQuery.value && institutionQuery.value.trim()) {
-    try {
-      const institutionPayload = { institution: institutionQuery.value.trim(), is_custom: true }
-      const resp = await api.postJson('/api/onboarding/step', { step: 'institution', data: institutionPayload })
-      if (await api.handleAuthStatus(resp)) return
-      const json = await api.parseResponse(resp)
-      if (resp.ok) {
-        appAlert.push({ message: `Custom institution "${institutionQuery.value.trim()}" saved to your profile!`, type: 'success' })
-        await auth.fetchUser()
-      } else {
-        appAlert.push({ message: (json as any)?.message || 'Failed to set institution', type: 'error' })
-      }
-    } catch (e: any) { console.error('Institution save error (typed fallback):', e) }
-  }
-
-  await nextTick()
-  // Re-initialize state to reflect saved data
-  form.value = createFormState(user.value)
-  originalForm.value = JSON.parse(JSON.stringify(form.value))
-  const u = user.value as User | null
-  avatarPreview.value = resolveAssetUrl(auth.userAvatar || u?.avatar_url || u?.avatar) || null
-  avatarFile.value = null
-
-  // Reload taxonomy selection from fresh database data
-  await initializeTaxonomySelection()
-
-  if (form.value.grade_id) {
-    const currentGradeId = form.value.grade_id
-    form.value.grade_id = ''
-    await nextTick()
-    form.value.grade_id = currentGradeId
-  }
-  } finally {
-    isSavingProfile.value = false
-  }
+  // This is kept for legacy - auto-save handles everything now
+  return true
 }
 
 // Institution form for institution managers
@@ -718,11 +623,9 @@ async function saveInstitution() {
       await instStore.fetchInstitution(institution.value.id)
     }
     
-    // Reset form with new data
     await nextTick()
     resetInstitution()
   } catch (e: any) {
-    console.error('Institution save error:', e)
     institutionError.value = e?.message || 'Failed to save institution'
   } finally {
     institutionLoading.value = false

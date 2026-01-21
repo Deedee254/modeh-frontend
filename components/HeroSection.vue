@@ -147,15 +147,11 @@
             style="animation-delay: 0.6s"
           >
               <div class="flex -space-x-3">
-                <!-- Use avatar images from the public folder. Update the `avatars` array below to
-                     point to the actual filenames in your public/avatars folder if available. -->
-                <img
-                  v-for="(a, idx) in avatars"
-                  :key="idx"
-                  :src="avatarSrc(a)"
-                  alt="avatar"
-                  class="h-10 w-10 rounded-full border-2 border-white object-cover"
-                />
+                <template v-for="i in 4" :key="i">
+                  <div class="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                    <img :src="`https://i.pravatar.cc/100?img=${i + 5}`" alt="User" class="w-full h-full object-cover" />
+                  </div>
+                </template>
               </div>
               <div class="text-sm">
                 <div class="flex items-center gap-1 font-semibold text-white">
@@ -289,21 +285,6 @@ const heroHeadings = computed(() => props.heroHeadings)
 const featuredQuizzes = computed(() => props.featuredQuizzes)
 const carouselDuration = computed(() => props.carouselDuration)
 const loading = computed(() => props.loading)
-
-// Avatars for social proof. Update these paths to match files in your public/avatars
-// folder. These are relative to the site root (public/). Example: 'avatars/user1.jpg'
-const avatars = [
-  'logo/avatar-placeholder.png',
-  'images/avatar-placeholder.png',
-  'logo/avatar-placeholder.png',
-  'logo/avatar-placeholder.png'
-]
-
-const avatarSrc = (p: string) => {
-  if (!p) return '/logo/avatar-placeholder.png'
-  // If the path already starts with / use it, otherwise prefix with /
-  return p.startsWith('/') ? p : `/${p}`
-}
 </script>
 
 <style scoped>

@@ -58,9 +58,9 @@
              <span class="text-[#c0c4c8]">•</span>
              <span class="font-medium">⭐ {{ localLikes || 0 }}</span>
          </div>
-         <button class="inline-flex items-center justify-center px-3 py-1 bg-brand-700 hover:bg-brand-800 text-white text-[11px] font-bold uppercase tracking-wide rounded transition-colors shadow-sm relative z-10">
-            Start
-         </button>
+         <NuxtLink :to="to || (props.quiz?.slug ? `/quizzes/${props.quiz.slug}` : '#')" class="inline-flex items-center justify-center px-3 py-1 bg-brand-700 hover:bg-brand-800 text-white text-[11px] font-bold uppercase tracking-wide rounded transition-colors shadow-sm relative z-10">
+            View
+         </NuxtLink>
       </div>
     </div>
     
@@ -90,16 +90,6 @@
         <div class="text-center">
           <div class="text-3xl text-white mb-1">✓</div>
           <span class="text-white font-bold text-xs uppercase tracking-widest">Completed</span>
-        </div>
-      </div>
-
-      <div v-else-if="guestQuizLimitReached" class="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-20 p-4">
-        <div class="text-center space-y-2">
-          <Icon name="heroicons:lock-closed" class="h-8 w-8 text-amber-300 mx-auto" />
-          <div class="text-white">
-            <p class="text-xs uppercase opacity-90 font-semibold">Limit Reached</p>
-            <p class="text-sm opacity-80">Try another quiz</p>
-          </div>
         </div>
       </div>
 
@@ -164,26 +154,13 @@
             </div>
           </div>
 
-          <!-- Start Button -->
+          <!-- View Button -->
           <NuxtLink 
-            v-if="!quizTaken && !guestQuizLimitReached && takeLink" 
-            :to="takeLink"
+            :to="to || (props.quiz?.slug ? `/quizzes/${props.quiz.slug}` : '#')"
             class="w-full mt-3 inline-flex items-center justify-center px-3 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold uppercase tracking-wide rounded transition-colors shadow-sm relative z-10"
           >
-            Start Quiz
+            View
           </NuxtLink>
-          <button 
-            v-else-if="!quizTaken && !guestQuizLimitReached && !takeLink"
-            class="w-full mt-3 inline-flex items-center justify-center px-3 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold uppercase tracking-wide rounded transition-colors shadow-sm relative z-10"
-          >
-            Start Quiz
-          </button>
-          <button v-else-if="quizTaken" disabled class="w-full mt-3 text-xs font-bold text-slate-400 uppercase tracking-wide">
-            ✓ Completed
-          </button>
-          <button v-else-if="guestQuizLimitReached" disabled class="w-full mt-3 text-xs font-bold text-amber-600 uppercase tracking-wide">
-            Limit Reached
-          </button>
        </div>
     </div>
     

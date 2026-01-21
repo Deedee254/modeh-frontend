@@ -226,7 +226,6 @@ const fetchData = async () => {
   try {
     loading.value = true;
     if (!id.value) {
-      console.warn('Missing tournament id in route');
       leaderboard.value = [];
       return;
     }

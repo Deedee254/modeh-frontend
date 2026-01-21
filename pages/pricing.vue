@@ -402,9 +402,7 @@ async function onSubscribe(pkg) {
       // If subscribe returned success without tx, go to subscription
       if (res?.ok) await router.push('/quizee/subscription')
     } catch (err) {
-      console.error(err)
-      // attempt a friendly fallback: use app alert composable
-      try { useAppAlert().push({ message: 'Subscription failed. Please try again.', type: 'error' }) } catch (e) { console.error(e) }
+      try { useAppAlert().push({ message: 'Subscription failed. Please try again.', type: 'error' }) } catch (e) { }
     }
     return
   }

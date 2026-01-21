@@ -29,8 +29,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           // use a short timeout so this is executed after login navigation completes
           setTimeout(() => router.push('/quizee/subscription'), 50)
         } catch (err) {
-          // keep intent so the user can retry; log for debugging
-          console.error('Post-login subscribe failed', err)
+          // keep intent for retry
         }
       } else if (intent.type === 'affiliate') {
         try {
@@ -49,8 +48,7 @@ export default defineNuxtPlugin((nuxtApp) => {
               if (api.handleAuthStatus && api.handleAuthStatus(genRes)) return
             }
           } catch (e) {
-            // Non-fatal: log and continue to redirect
-            console.error('Affiliate ensure-code failed', e)
+            // non-fatal; continue to redirect
           }
 
           // determine where to send user: query the current user to know their role
@@ -68,7 +66,6 @@ export default defineNuxtPlugin((nuxtApp) => {
           localStorage.removeItem('modeh:postLoginIntent')
           setTimeout(() => router.push(target), 50)
         } catch (err) {
-          console.error('Post-login affiliate intent failed', err)
           try { localStorage.removeItem('modeh:postLoginIntent') } catch (e) {}
         }
       } else if (intent.type === 'accept-invitation' && intent.token) {
@@ -100,7 +97,6 @@ export default defineNuxtPlugin((nuxtApp) => {
             localStorage.removeItem('modeh:postLoginIntent')
           }
         } catch (err) {
-          console.error('Post-login accept-invitation failed', err)
           try { localStorage.removeItem('modeh:postLoginIntent') } catch (e) {}
         }
       } else {

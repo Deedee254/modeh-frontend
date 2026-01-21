@@ -352,7 +352,7 @@ function triggerConfetti() {
       }
     }());
   } catch (e) {
-    console.warn("Confetti animation failed:", e)
+    // Confetti animation failed
   }
 }
 

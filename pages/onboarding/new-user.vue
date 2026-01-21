@@ -68,9 +68,8 @@ async function submit() {
 
     // Ensure session is fresh
     const session = await getSession()
-    console.log('[new-user] Current session:', { email: session?.user?.email, hasToken: !!session?.user?.apiToken })
 
-    // Require a valid session (either session cookie or JWT session)
+    // Require a valid session
     if (!session || !session.user) {
       error.value = 'Authentication error. Please try logging in again.'
       submitting.value = false
@@ -104,7 +103,7 @@ async function submit() {
     // Attempt to update the session if the provider supports it (to sync JWT with backend)
     const { update } = useAuth()
     if (typeof update === 'function') {
-      try { await update() } catch (e) { console.debug('Session update not supported or failed', e) }
+      try { await update() } catch (e) { }
     }
 
     message.value = `Success! Welcome ${session?.user?.name || 'to Modeh'}.`

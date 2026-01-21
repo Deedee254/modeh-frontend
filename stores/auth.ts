@@ -39,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
   let _fetchUserPromise: Promise<any> | null = null
 
   // Watch for session changes to update store state
+  // This ensures session data is synced with our user ref
   watch([data, status], ([newData, newStatus]) => {
     if (newStatus === 'authenticated' && newData?.user) {
       const normalizedUser = convertToCamelCase(newData.user)
@@ -61,7 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
       else if (roleStr === 'institution-manager') endpoint = '/api/register/institution-manager'
 
       // Use postJsonPublic for registration since it's a public endpoint (unauthenticated flow)
-      // Don't require CSRF token - registration doesn't need session state
+      // The backend now establishes a session during registration with the 'web' middleware
       const res = await api.postJsonPublic(endpoint, payload)
       if (!res.ok) {
         let message = 'Registration failed'
@@ -82,13 +83,18 @@ export const useAuthStore = defineStore('auth', () => {
         throw err
       }
 
-      // After successful registration, fetch the session
+      // After successful registration, the backend has already established a session.
+      // Now sync the session state with Nuxt-Auth and fetch the user data.
+      
+      // 1. Get the session (this reads the session cookie set by the backend)
       await getSession()
-      // Try to fetch user from API
+      
+      // 2. Fetch the full user profile from the API
       try {
         await fetchUser()
       } catch (e) {
-        // User fetch might fail if not auto-logged in; continue
+        // User fetch might fail if not synced yet; continue - the session should still be valid
+        console.error('Failed to fetch user after registration:', e)
       }
 
       return { ok: true }
@@ -125,37 +131,46 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchUser(force = false) {
-    // Return existing user if available and not forcing a refresh
-    if (user.value && !force) return user.value
-
+    // Always fetch fresh data to ensure we have latest from database
+    // The force parameter is kept for API compatibility but we now always fetch
+    
     // Avoid concurrent fetches: return the in-flight promise if present
     if (_fetchUserPromise) return _fetchUserPromise
     isFetchingUser.value = true
 
     _fetchUserPromise = (async () => {
       try {
-        const res = await api.get('/api/me')
-      if (res.status === 401) {
-        // If API says unauthenticated but nuxt-auth says authenticated, something is out of sync
-        if (status.value === 'authenticated') {
-           const { signOut } = useAuth()
-           signOut({ redirect: false }).catch(() => {})
+        // First, refresh the session to sync with latest server state
+        // This ensures nuxt-auth's session data is up-to-date
+        try {
+          await getSession()
+        } catch (e) {
+          // Session refresh might fail, but we can still fetch from /api/me
         }
-        clear()
-        return null
-      }
-      if (res.status === 419 || res.status === 403) {
-        // CSRF or Forbidden - don't force logout, just return null for now
-        return null
-      }
-      if (!res.ok) return
-      
-      const json = await res.json().catch(() => null)
-      const userData = json && (json.user || json.data || json)
-      if (userData) setUser(userData)
-      return user.value
+        
+        // Always fetch fresh user data from the API
+        const res = await api.get('/api/me')
+        if (res.status === 401) {
+          // If API says unauthenticated but nuxt-auth says authenticated, something is out of sync
+          if (status.value === 'authenticated') {
+             const { signOut } = useAuth()
+             signOut({ redirect: false }).catch(() => {})
+          }
+          clear()
+          return null
+        }
+        if (res.status === 419 || res.status === 403) {
+          // CSRF or Forbidden - don't force logout, just return null for now
+          return null
+        }
+        if (!res.ok) return
+        
+        const json = await res.json().catch(() => null)
+        const userData = json && (json.user || json.data || json)
+        if (userData) setUser(userData)
+        return user.value
       } catch (error) {
-        console.warn('Failed to fetch user:', error)
+        // fetch error silently
         return null
       } finally {
         _fetchUserPromise = null
@@ -221,10 +236,7 @@ export const useAuthStore = defineStore('auth', () => {
       const guestResults = guestQuizStore.getAllResults()
       if (!guestResults || guestResults.length === 0) return
 
-      // For now, we're just transferring the data to localStorage
-      // The actual backend sync would happen via an endpoint
-      // that creates QuizAttempt records for the authenticated user
-      console.log('Guest quiz results available for sync:', guestResults)
+      // Guest results available for potential syncing with backend
 
       // In a full implementation, you would:
       // 1. Call POST /api/quizzes/sync-guest-attempts with the results
@@ -233,7 +245,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // For now, results remain in localStorage and can be accessed by the user
     } catch (error) {
-      console.error('Error syncing guest quiz results:', error)
+      // sync error silently
     }
   }
 

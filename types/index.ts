@@ -59,7 +59,8 @@ export interface QuizMasterProfile {
   // Taxonomy data
   grade_id?: number
   level_id?: number
-  subjects?: Subject[] | Array<{ id: number; name: string }>
+  subjects?: Subject[] | Array<{ id: number; name: string }> | string[] | number[]
+  subjectModels?: Subject[]  // Full subject objects returned by API
   grade?: Grade
   level?: Level
 }
@@ -75,11 +76,14 @@ export interface QuizeeProfile {
   is_verified?: boolean
   created_at?: string
   updated_at?: string
+  first_name?: string
+  last_name?: string
 
   // Taxonomy data
   grade?: Grade
   level?: Level
-  subjects?: Subject[] | Array<{ id: number; name: string }>
+  subjects?: Subject[] | Array<{ id: number; name: string }> | string[] | number[]
+  subjectModels?: Subject[]  // Full subject objects returned by API
 }
 
 export interface InstitutionManagerProfile {

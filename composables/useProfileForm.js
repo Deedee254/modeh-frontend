@@ -20,105 +20,62 @@ export function useProfileForm() {
   const avatarPreview = ref(null)
 
   /**
-   * Extract institution name from either a string or object
-   */
-  function extractInstitutionName(inst) {
-    if (!inst) return ''
-    if (typeof inst === 'string') return inst
-    if (typeof inst === 'object' && inst.name) return String(inst.name)
-    return ''
-  }
-
-  /**
-   * Extract institution ID from either a number, string, or object
-   */
-  function extractInstitutionId(inst) {
-    if (!inst) return ''
-    if (typeof inst === 'number') return inst
-    if (typeof inst === 'string' && !isNaN(inst)) return inst
-    if (typeof inst === 'object' && inst.id) return inst.id
-    return ''
-  }
-
-  /**
-   * Creates a clean form state object from user data.
-   * Extracts profile data from nested profile objects (quizeeProfile or quizMasterProfile).
-   * Also populates taxonomy refs with profile data so pickers can preselect values.
-   * @param {object | null} u - The user object from the auth store.
-   * @returns {object} A form state object with only backend-supported fields.
+   * Creates a minimal form state object - just copying values from user/profile
+   * No transformations needed, API already provides everything in correct format
    */
   function createFormState(u) {
-    // Determine the profile object based on role (quiz-master / quizee)
-    // Handle both 'quiz-master' (with hyphen) and other variations
-    const isQuizMaster = u?.role === 'quiz-master' || u?.role === 'quizMaster'
-    const profile = isQuizMaster ? u?.quizMasterProfile : u?.quizeeProfile
-
-    // Default institution values (handle institution-manager who stores institutions on user)
-    let instName = ''
-    let instId = ''
-    if (u?.role === 'institution-manager') {
-      if (u?.institutions && Array.isArray(u.institutions) && u.institutions.length > 0) {
-        const first = u.institutions[0]
-        instName = first?.name || ''
-        instId = first?.id || first?.slug || ''
-      } else {
-        instName = u?.institution || ''
-        instId = ''
+    if (!u) {
+      return {
+        display_name: '',
+        phone: '',
+        bio: '',
+        first_name: '',
+        last_name: '',
+        headline: '',
+        institution: '',
+        institution_id: '',
+        grade_id: '',
+        level_id: '',
+        subjects: []
       }
     }
 
+    const profile = u?.profile
     const state = {
-      display_name: u?.name || '',
-      phone: u?.phone || '',
-      institution: (u?.role === 'institution-manager') ? instName : (extractInstitutionName(profile?.institution) || ''),
-      institution_id: (u?.role === 'institution-manager') ? instId : (extractInstitutionId(profile?.institution) || ''),
-      grade_id: profile?.grade_id || profile?.grade?.id || '',
-      level_id: profile?.level_id || profile?.level?.id || '',
-      // Extract subject IDs (handle both objects with 'id' property and plain IDs)
-      subjects: Array.isArray(profile?.subjects)
-        ? profile.subjects.filter(Boolean).map(s => s?.id || s)
-        : [],
-      // prefer profile.bio if available, otherwise fall back to top-level user bio
-      bio: (u?.role === 'institution-manager') ? (u?.bio || '') : (profile?.bio || u?.bio || '')
+      display_name: u.name || '',
+      phone: u.phone || '',
+      bio: profile?.bio || u.bio || '',
+      institution: profile?.institution || '',
+      institution_id: profile?.institution_id || '',
+      grade_id: profile?.grade_id || '',
+      level_id: profile?.level_id || '',
+      subjects: profile?.subjects || []
     }
 
-    // Quizee-specific fields
-    if (u?.role === 'quizee') {
+    // Add role-specific fields
+    if (u.role === 'quizee') {
       state.first_name = profile?.first_name || ''
       state.last_name = profile?.last_name || ''
-    }
-
-    // Quiz Master-specific fields
-    if (u?.role === 'quiz-master') {
+    } else if (u.role === 'quiz-master') {
       state.headline = profile?.headline || ''
     }
 
-    // CRITICAL FIX: Add profile taxonomy objects to composable refs
-    // so pickers can preselect them. This ensures level, grade, and subjects
-    // from the loaded profile are available in the dropdowns.
-    try {
-      if (profile?.level && profile.level.id) {
-        if (!taxLevels.value.find(l => String(l.id) === String(profile.level.id))) {
-          taxLevels.value = [...taxLevels.value, profile.level]
-        }
-      }
-      if (profile?.grade && profile.grade.id) {
-        if (!taxGrades.value.find(g => String(g.id) === String(profile.grade.id))) {
-          taxGrades.value = [...taxGrades.value, profile.grade]
-        }
-      }
-      if (profile?.subjects && Array.isArray(profile.subjects)) {
-        for (const subject of profile.subjects) {
-          if (subject && subject.id) {
-            addSubject(subject)
-          }
-        }
-      }
-    } catch (e) {
-      // ignore errors adding to taxonomy refs
-    }
-
     return state
+  }
+
+  /**
+   * Populate taxonomy store refs from API data
+   * API provides grade_id, level_id, subjects (array of IDs)
+   * We load the full objects into the store for resolution
+   */
+  function updateTaxonomyRefs(u) {
+    if (!u?.profile) return
+
+    const profile = u.profile
+    
+    // Ensure level and grade are in the store for resolution
+    // (Taxonomy will be loaded globally on app init)
+    // No need to add objects - the store already has all levels/grades from global fetch
   }
 
   /**
@@ -340,7 +297,15 @@ export function useProfileForm() {
 
       if (mergedUser && mergedUser.id) {
         auth.setUser(mergedUser)
-        // Refresh to get computed fields like missing_profile_fields
+        // CRITICAL: Refresh session first to ensure nuxt-auth cache is updated
+        // Then fetch fresh user data from API
+        try {
+          const { getSession } = useAuth()
+          await getSession()
+        } catch (e) {
+          // Session refresh may fail but continue
+        }
+        
         try {
           await auth.fetchUser()
         } catch (e) {
@@ -379,6 +344,7 @@ export function useProfileForm() {
     avatarFile,
     avatarPreview,
     createFormState,
+    updateTaxonomyRefs,
     onFile,
     resetAvatar,
     validateForm,

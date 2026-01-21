@@ -47,16 +47,19 @@
 
       <!-- Removed grade/level selectors — sorting now via buttons above -->
 
-      <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
+      <div v-if="loading" class="mt-6 flex items-center justify-center py-12">
+        <LoadingSpinner />
+      </div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load topics.</div>
 
       <div v-else class="mt-6">
         <div v-if="filteredTopics.length === 0" class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">
           No topics available for your level.
         </div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div v-else>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <TopicCard
-                  v-for="topic in filteredTopics"
+                  v-for="topic in paginatedTopics"
                   :key="topic.id"
                   :title="topic.name"
                   :slug="topic.slug"
@@ -66,6 +69,47 @@
                   :grade="getGradeName(topic)"
                   :course="getCourseName(topic)"
                 />
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
+            <div class="text-sm text-gray-600">
+              Showing <span class="font-semibold">{{ (currentPage - 1) * perPage + 1 }}</span> to 
+              <span class="font-semibold">{{ Math.min(currentPage * perPage, filteredTopics.length) }}</span> of
+              <span class="font-semibold">{{ filteredTopics.length }}</span> topics
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                :disabled="currentPage === 1 || loading"
+                @click="currentPage = Math.max(1, currentPage - 1)"
+                :class="[
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  currentPage === 1 || loading
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                ]"
+              >
+                Previous
+              </button>
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-gray-600">Page</span>
+                <span class="font-semibold text-gray-900">{{ currentPage }}</span>
+                <span class="text-sm text-gray-600">of {{ totalPages }}</span>
+              </div>
+              <button
+                :disabled="currentPage === totalPages || loading"
+                @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                :class="[
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  currentPage === totalPages || loading
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-brand-600 text-white hover:bg-brand-700'
+                ]"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -73,13 +117,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
+import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 
 definePageMeta({
   layout: 'quizee',
@@ -103,6 +148,8 @@ const allLevels = ref<any[]>([])
 const allCourses = ref<any[]>([])
 const selectedGradeId = ref<number | null>(null)
 const selectedLevelId = ref<number | null>(null)
+const currentPage = ref(1)
+const perPage = ref(12)
 
 function extractId(val: any) {
   if (val === null || val === undefined) return null
@@ -154,6 +201,19 @@ const filteredTopics = computed(() => {
     })
   }
   return topics
+})
+
+const totalPages = computed(() => Math.ceil((allTopics.value?.length || 0) / perPage.value))
+
+const paginatedTopics = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return filteredTopics.value.slice(start, end)
+})
+
+// Reset to page 1 when sort option changes
+watch(() => sortOption.value, () => {
+  currentPage.value = 1
 })
 
 async function loadTopicsByLevel() {
@@ -230,22 +290,14 @@ onMounted(async () => {
     console.error('Failed to load levels:', e)
   }
 
-  // fetch courses via taxonomy store (uses caching)
+  // fetch courses (which are grades with type='course') from the grades endpoint
   try {
-    await taxonomyStore.fetchCourses()
-    // taxonomyStore.courses may be a ref or plain array depending on Pinia config
-    allCourses.value = Array.isArray((taxonomyStore as any).courses) ? (taxonomyStore as any).courses : (Array.isArray((taxonomyStore as any).courses?.value) ? (taxonomyStore as any).courses.value : [])
+    await taxonomyStore.fetchGrades()
+    // Filter grades with type='course' to get courses
+    const gradesList = Array.isArray((taxonomyStore as any).grades) ? (taxonomyStore as any).grades : (Array.isArray((taxonomyStore as any).grades?.value) ? (taxonomyStore as any).grades.value : [])
+    allCourses.value = gradesList.filter((g: any) => g.type === 'course')
   } catch (e) {
-    try {
-      // fallback: fetch directly
-      const coursesRes = await api.get('/api/courses')
-      if (coursesRes.ok) {
-        const coursesData = await api.parseResponse(coursesRes)
-        allCourses.value = Array.isArray(coursesData) ? coursesData : (coursesData?.data || coursesData?.courses || [])
-      }
-    } catch (err) {
-      // ignore
-    }
+    console.error('Failed to load courses:', e)
   }
 
   // Initialize selected grade/level from user profile
@@ -288,17 +340,8 @@ function getCourseName(topic: any) {
   // try course id mapping from fetched courses
   const courseId = topic.course_id || (topic.course && topic.course.id) || topic.courseId || null
   if (courseId) {
-    const found = (allCourses.value || []).find((c: any) => String(c.id) === String(courseId) || String(c.id) === String(c?.id))
-    if (found) return found.name || found.title || ''
-    // try taxonomy store grades/courses as fallback
-    try {
-      const cs = (taxonomyStore as any).courses
-      const arr = Array.isArray(cs) ? cs : (Array.isArray(cs?.value) ? cs.value : [])
-      const f2 = arr.find((c: any) => String(c.id) === String(courseId))
-      if (f2) return f2.name || f2.title || ''
-    } catch (e) {
-      // ignore
-    }
+    const found = (allCourses.value || []).find((c: any) => String(c.id) === String(courseId))
+    if (found) return found.name || found.display_name || ''
   }
   return ''
 }

@@ -122,7 +122,7 @@
                     <td class="px-4 py-3">
                       <span class="inline-flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm" 
                         :class="idx < 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'">
-                        {{ idx + 1 }}
+                        {{ Number(idx) + 1 }}
                       </span>
                     </td>
                     <td class="px-4 py-3">
@@ -454,7 +454,7 @@
               <div class="text-sm font-semibold mb-2">Questions</div>
               <div class="space-y-2 max-h-64 overflow-auto p-2 border rounded">
                 <div v-for="(q, qi) in (matchDetails?.questions || selectedMatch?.questions || [])" :key="qi" class="p-2 bg-white rounded border">
-                  <div class="text-sm font-medium">{{ q.text || q.question || q.title || `Question ${qi + 1}` }}</div>
+                  <div class="text-sm font-medium">{{ q.text || q.question || q.title || `Question ${Number(qi) + 1}` }}</div>
                   <div class="text-xs text-gray-500">Correct: <span class="font-semibold">{{ q.correct_answer || q.answer }}</span></div>
                   <template v-if="isViewerParticipant || q.user_answers">
                     <!-- Show participant answers if viewer was a participant or answers are provided -->
@@ -645,7 +645,7 @@ const startBracketRefreshPolling = () => {
     try {
       const res = await api.get(`/api/tournaments/${props.tournamentId}/tree`);
       if (!res.ok) {
-        console.warn(`Bracket refresh failed: ${res.status} ${res.statusText}`);
+        // Bracket refresh failed
         return;
       }
       const json = await res.json();
@@ -675,7 +675,7 @@ const startBracketRefreshPolling = () => {
         }
       }
     } catch (e) {
-      console.debug('Bracket auto-refresh polling error:', e);
+      // Bracket auto-refresh polling error
     }
   }, 8000); // Poll every 8 seconds
 };

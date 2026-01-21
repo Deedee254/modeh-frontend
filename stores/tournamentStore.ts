@@ -28,7 +28,7 @@ export const useTournamentStore = defineStore('tournament', () => {
         return data
       }
     } catch (e) {
-      console.error('Failed to fetch tournament:', e)
+      // fetch error silently
     } finally {
       loading.value = false
     }
@@ -48,7 +48,7 @@ export const useTournamentStore = defineStore('tournament', () => {
         return json
       }
     } catch (e) {
-      console.error('Failed to fetch registration status:', e)
+      // fetch error silently
     }
     return null
   }
@@ -66,7 +66,7 @@ export const useTournamentStore = defineStore('tournament', () => {
         return json
       }
     } catch (e) {
-      console.error('Failed to fetch leaderboard:', e)
+      // fetch error silently
     }
     return null
   }
@@ -84,7 +84,7 @@ export const useTournamentStore = defineStore('tournament', () => {
         return json
       }
     } catch (e) {
-      console.error('Failed to fetch qualification status:', e)
+      // fetch error silently
     }
     return null
   }

@@ -76,7 +76,7 @@ onMounted(async () => {
     topicLoading.value = false
 
     // fetch quizzes for this topic using useQuizzes
-    const params = { public: true }
+    const params = { public: true, per_page: 100 }
     if (topic.value && topic.value.id) {
       params.topic_id = topic.value.id
     } else {

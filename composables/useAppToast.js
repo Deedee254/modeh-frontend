@@ -6,9 +6,6 @@ export function useAppToast() {
   const alert = useAppAlert()
 
   function push(opts = {}) {
-    if (process.client && console && console.warn) {
-      console.warn('[deprecation] useAppToast is deprecated. Use useAppAlert instead.')
-    }
     // Map toast shape to alert shape
     alert.push({ ...opts })
     return null

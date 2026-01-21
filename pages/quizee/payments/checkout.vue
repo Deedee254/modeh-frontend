@@ -478,7 +478,7 @@ async function fetchLimitInfo() {
       }
     }
   } catch (e) {
-    console.debug('Could not fetch usage info:', e)
+    // fetch error silently
   }
 }
 
@@ -563,11 +563,8 @@ function selectPackage(pkg: Record<string, any>) {
   selectedPackage.value = Object.assign({}, pkg)
   // bump the version counter to force a key-based re-render where used
   packageVersion.value = (packageVersion.value || 0) + 1
-  // keep a short debug log (can be removed later)
-  try { console.debug('selectedPackage ->', pkg?.title || pkg?.name, 'packageVersion=', packageVersion.value) } catch (e) {}
 }
 
-// Load and manage referral code
 function loadReferralCode() {
   try {
     const stored = localStorage.getItem('modeh:referral_code')
@@ -575,7 +572,7 @@ function loadReferralCode() {
       referralCodeStored.value = stored
     }
   } catch (e) {
-    console.debug('Could not load referral code from storage', e)
+    // storage read error silently
   }
 }
 
@@ -584,7 +581,7 @@ function applyReferralCode() {
   try {
     localStorage.setItem('modeh:referral_code', referralCodeInput.value)
   } catch (e) {
-    console.debug('Could not save referral code', e)
+    // storage write error silently
   }
   referralCodeStored.value = referralCodeInput.value
   showReferralInput.value = false
@@ -759,7 +756,7 @@ async function openPayment() {
   const priceNum = Number(selectedPackage.value?.price || 0)
   if (!priceNum) {
     try {
-      console.log('[Payment] Free package - subscribing directly without payment modal')
+      // Free package - subscribing directly without payment modal
       // Call store subscribe which returns parsed data and refreshes subscription
       await subscriptionsStore.subscribeToPackage(selectedPackage.value, {})
       await subscriptionsStore.fetchMySubscription(true)
@@ -900,7 +897,7 @@ async function refreshLimit() {
   try {
     await fetchLimitInfo()
   } catch (e) {
-    console.debug('refreshLimit failed', e)
+    // refresh error silently
   } finally {
     await new Promise(r => setTimeout(r, 250))
     limitRefreshing.value = false
@@ -953,7 +950,7 @@ onMounted(async () => {
         }
       }
     } catch (e) {
-      console.debug('Could not fetch tournament details', e)
+      // fetch error silently
     }
   }
   try {

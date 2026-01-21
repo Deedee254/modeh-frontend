@@ -181,7 +181,7 @@ async function doFetch() {
   const params = {
     public: true,
     page: page.value,
-    per_page: 12
+    per_page: 100
   }
   if (query.value) params.q = query.value
 

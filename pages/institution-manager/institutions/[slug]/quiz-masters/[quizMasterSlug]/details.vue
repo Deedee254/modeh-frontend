@@ -96,7 +96,7 @@ async function fetchQuizMasterStats() {
       }
     }
   } catch (e: any) {
-    console.warn('Could not fetch detailed stats:', e)
+    // fetch error silently
   }
 }
 

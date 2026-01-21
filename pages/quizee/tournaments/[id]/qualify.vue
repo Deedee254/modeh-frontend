@@ -296,7 +296,7 @@ function persistProgress() {
     }
     localStorage.setItem(`qualifier_progress_${route.params.id}`, JSON.stringify(progressData))
   } catch (e) {
-    console.warn('Failed to persist progress', e)
+    // Failed to persist progress
   }
 }
 
@@ -315,7 +315,7 @@ function restoreProgress() {
       Object.assign(answers.value, progressData.answers)
     }
   } catch (e) {
-    console.warn('Failed to restore progress', e)
+    // Failed to restore progress
   }
 }
 
@@ -406,7 +406,7 @@ async function fetchQualificationStatus() {
       myRank.value = data.rank
     }
   } catch (e) {
-    console.warn('Failed to fetch qualification status:', e)
+    // Failed to fetch qualification status
   }
 }
 
@@ -692,7 +692,7 @@ async function submitQualifier() {
     try {
       localStorage.removeItem(`qualifier_progress_${route.params.id}`)
     } catch (e) {
-      console.warn('Failed to clear progress', e)
+      // Failed to clear progress
     }
     
     pushAlert({ 

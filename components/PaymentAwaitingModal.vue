@@ -120,22 +120,14 @@ async function check() {
     if (res?.subscription) {
       const newStatus = res.subscription.status
       
-      // Log status change
-      if (newStatus !== status.value) {
-        console.log('[Payment] Status updated:', { from: status.value, to: newStatus, tx: props.tx })
-      }
-      
       status.value = newStatus
       
-      // Auto-close on success
       if (newStatus === 'active') {
-        console.log('[Payment] Success - closing modal after 600ms')
         setTimeout(() => { emits('update:open', false); emits('close') }, 600)
       }
     }
   } catch (e) {
-    console.error('[Payment] Status check failed:', { error: e.message, tx: props.tx })
-    // ignore transient errors - don't change status
+    // ignore transient errors
   } finally {
     isLoading.value = false
   }
@@ -149,7 +141,6 @@ function startTimeoutCountdown() {
     if (secondsRemaining.value <= 0) {
       clearInterval(intervalId)
       if (status.value === 'pending') {
-        console.warn('[Payment] Timeout reached - payment still pending after 120 seconds')
         status.value = 'timeout'
         pushAlert({ 
           type: 'warning', 
@@ -167,7 +158,6 @@ function _attachEchoListeners() {
     const Echo = (window && window.Echo) ? window.Echo : null
     const userId = auth.user?.id
     if (!Echo || !userId) {
-      console.log('[Payment] Echo not available, using polling only')
       return
     }
 
@@ -177,7 +167,6 @@ function _attachEchoListeners() {
       try {
         const ch = Echo.private(chName)
         _echoChannels.push(ch)
-        console.log('[Payment] Listening on channel:', chName)
 
         const handler = (payload) => {
           const tx = payload?.tx ?? payload?.data?.tx ?? payload?.subscription?.gateway_meta?.tx ?? payload?.subscription?.tx ?? null
@@ -186,7 +175,6 @@ function _attachEchoListeners() {
           if (tx === props.tx) {
             // update status if provided
             const newStatus = subscription?.status ?? payload?.status ?? 'active'
-            console.log('[Payment] Echo event received:', { status: newStatus, tx })
             status.value = newStatus
             // close modal shortly after
             setTimeout(() => { emits('update:open', false); emits('close') }, 600)
@@ -199,11 +187,11 @@ function _attachEchoListeners() {
         try { ch.listen('.App\\\\Events\\\\SubscriptionUpdated', handler) } catch (e) {}
         try { ch.listen('.App\\Events\\SubscriptionUpdated', handler) } catch (e) {}
       } catch (err) {
-        console.warn('[Payment] Error attaching to channel:', err.message)
+        // channel attachment error
       }
     })
   } catch (e) {
-    console.warn('[Payment] Echo attachment error:', e.message)
+    // echo attachment error
   }
 }
 
@@ -239,10 +227,8 @@ async function onRetry() {
       if (status.value === 'pending') check()
     }, 3000)
     
-    console.log('[Payment] Retry initiated - reset to pending state')
     pushAlert({ type: 'info', message: 'Retrying payment confirmation...' })
   } catch (e) {
-    console.error('[Payment] Retry error:', e)
     pushAlert({ type: 'error', message: 'Failed to retry. Please close and try again.' })
   } finally {
     isLoading.value = false
@@ -256,11 +242,8 @@ function onClose() {
 
 onMounted(() => {
   if (!props.tx) {
-    console.error('[Payment] No TX provided to PaymentAwaitingModal')
     return
   }
-  
-  console.log('[Payment] Modal mounted, TX:', props.tx)
   
   // Initial check
   check()
@@ -282,7 +265,6 @@ onBeforeUnmount(() => {
   if (pollIntervalId) clearInterval(pollIntervalId)
   if (timeoutId) clearTimeout(timeoutId)
   _detachEchoListeners()
-  console.log('[Payment] Modal unmounted, cleanup done')
 })
 </script>
 

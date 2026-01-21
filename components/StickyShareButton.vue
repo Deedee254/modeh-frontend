@@ -199,7 +199,7 @@ const copyLink = async () => {
   try {
     await navigator.clipboard.writeText(shareUrl.value)
     // Optional: show toast notification
-    console.log('Link copied to clipboard')
+    // Link copied to clipboard
     expanded.value = false
   } catch (err) {
     console.error('Failed to copy link', err)

@@ -320,7 +320,7 @@ const gradeLookup = computed(() => {
       return acc
     }, {})
   } catch (e) {
-    console.warn('gradeLookup computation error:', e)
+    // Grade lookup computation error
     return {}
   }
 })
@@ -339,7 +339,7 @@ const subjectLookup = computed(() => {
       return acc
     }, {})
   } catch (e) {
-    console.warn('subjectLookup computation error:', e)
+    // Subject lookup computation error
     return {}
   }
 })
@@ -358,7 +358,7 @@ const topicLookup = computed(() => {
       return acc
     }, {})
   } catch (e) {
-    console.warn('topicLookup computation error:', e)
+    // Topic lookup computation error
     return {}
   }
 })
@@ -446,7 +446,6 @@ const gradeOptionsByLevel = computed(() => {
     const rawGrades = unref(props.gradeOptions)
     return (Array.isArray(rawGrades) && rawGrades.length) ? rawGrades : (store.grades || [])
   } catch (e) {
-    console.warn('gradeOptionsByLevel computation error:', e)
     return []
   }
 })
@@ -459,7 +458,6 @@ const filteredTopics = computed(() => {
     if (!localSubject.value) return allTopics || []
     return (allTopics || []).filter(t => t && t.id != null && String(t.subject_id || t.subject || '') === String(localSubject.value))
   } catch (e) {
-    console.warn('filteredTopics computation error:', e)
     return []
   }
 })
@@ -468,7 +466,6 @@ const filteredLevels = computed(() => {
   try {
     return (store.levels || []).filter(x => x && x.id != null)
   } catch (e) {
-    console.warn('filteredLevels computation error:', e)
     return []
   }
 })
@@ -477,7 +474,6 @@ const filteredGrades = computed(() => {
   try {
     return (gradeOptionsByLevel.value || []).filter(x => x && x.id != null)
   } catch (e) {
-    console.warn('filteredGrades computation error:', e)
     return []
   }
 })
@@ -486,7 +482,6 @@ const filteredSubjectsClean = computed(() => {
   try {
     return (filteredSubjects.value || []).filter(x => x && x.id != null)
   } catch (e) {
-    console.warn('filteredSubjectsClean computation error:', e)
     return []
   }
 })
@@ -495,7 +490,6 @@ const filteredTopicsClean = computed(() => {
   try {
     return (filteredTopics.value || []).filter(x => x && x.id != null)
   } catch (e) {
-    console.warn('filteredTopicsClean computation error:', e)
     return []
   }
 })

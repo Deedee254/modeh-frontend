@@ -81,8 +81,7 @@ async function fetchQuizeeProfile() {
         }
       }
     } catch (analyticsError) {
-      console.warn('Could not fetch analytics, using member data:', analyticsError)
-      // Fallback to member data
+      // fetch error silently - fallback to member data
       if (member.profile) {
         stats.value = {
           grade: member.profile.grade,
@@ -119,7 +118,7 @@ async function fetchQuizStats() {
       topicStrength.value = data.topic_strength || []
     }
   } catch (e: any) {
-    console.warn('Could not fetch quiz stats:', e)
+    // fetch error silently
   }
 }
 
@@ -132,7 +131,7 @@ async function fetchDailyChallenges() {
     const data = await api.parseResponse(res)
     dailyChallenges.value = (data?.data || []).slice(0, 15)
   } catch (e: any) {
-    console.warn('Could not fetch daily challenges:', e)
+    // Failed to fetch daily challenges
   }
 }
 
@@ -145,7 +144,7 @@ async function fetchBattles() {
     const data = await api.parseResponse(res)
     battles.value = Array.isArray(data) ? data.slice(0, 10) : (data?.data || []).slice(0, 10)
   } catch (e: any) {
-    console.warn('Could not fetch battles:', e)
+    // Failed to fetch battles
   }
 }
 
@@ -158,7 +157,7 @@ async function fetchFollowedQuizMasters() {
     const data = await api.parseResponse(res)
     followedQuizMasters.value = (data?.data || data || []).slice(0, 8)
   } catch (e: any) {
-    console.warn('Could not fetch followed quiz masters:', e)
+    // Failed to fetch followed quiz masters
   }
 }
 
@@ -171,7 +170,7 @@ async function fetchLikedQuizzes() {
     const data = await api.parseResponse(res)
     likedQuizzes.value = (data?.data || data || []).slice(0, 12)
   } catch (e: any) {
-    console.warn('Could not fetch liked quizzes:', e)
+    // Failed to fetch liked quizzes
   }
 }
 
@@ -187,7 +186,7 @@ async function fetchBadges(userId?: number) {
     const data = await api.parseResponse(res)
     badges.value = (data?.data || data || []).slice(0, 12)
   } catch (e: any) {
-    console.warn('Could not fetch badges:', e)
+    // Failed to fetch badges
   }
 }
 

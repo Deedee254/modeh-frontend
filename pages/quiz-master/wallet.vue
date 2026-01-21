@@ -373,7 +373,7 @@ function attachEcho() {
     channel.listen('.WalletUpdated', (payload) => { if (payload?.wallet) wallet.value = payload.wallet })
     channel.listen('.WithdrawalRequestUpdated', (payload) => { if (payload?.withdrawal) withdrawals.value = [payload.withdrawal, ...(withdrawals.value || [])] })
   } catch (e) {
-    console.warn('Echo attach failed', e)
+    // Echo attach failed
   }
 }
 
@@ -383,7 +383,7 @@ function scrollToWithdraw() {
       const el = document.getElementById('withdraw-section')
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } catch (e) {
-      console.warn('scrollToWithdraw failed', e)
+      // Scroll to withdraw failed
     }
   }
 }

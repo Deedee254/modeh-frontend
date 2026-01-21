@@ -24,7 +24,6 @@ export default defineNuxtPlugin(() => {
       });
     }
   } catch (e) {
-    // avoid breaking the app if anything goes wrong
-    console.warn('fix-function-name plugin error', e);
+    // silently ignore errors
   }
 });

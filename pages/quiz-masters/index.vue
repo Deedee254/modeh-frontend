@@ -178,15 +178,11 @@ async function toggleFollow(quizMaster) {
     }
     if (api.handleAuthStatus(res)) return
     if (!res.ok) {
-      // rollback
       following.value = { ...following.value, [id]: current }
-      console.error('Follow toggle failed', await res.text())
       alert.push({ message: 'Failed to follow/unfollow. Please try again.', type: 'error' })
     }
   } catch (err) {
-    // rollback
     following.value = { ...following.value, [id]: current }
-    console.error('Follow toggle failed', err)
   } finally {
     followLoading.value = { ...followLoading.value, [id]: false }
   }

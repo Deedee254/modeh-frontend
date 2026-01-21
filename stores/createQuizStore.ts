@@ -206,22 +206,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       payload.access = normalized.access
       payload.visibility = normalized.visibility
       payload.one_off_price = normalized.access === 'paywall' && normalized.one_off_price ? Number(normalized.one_off_price) : null
-
-      // DEBUG: Log settings being added
-      try {
-        console.debug('buildQuizPayload: added settings', {
-          shuffle_questions: payload.shuffle_questions,
-          shuffle_answers: payload.shuffle_answers,
-          attempts_allowed: payload.attempts_allowed,
-          access: payload.access,
-          visibility: payload.visibility,
-        })
-      } catch (e) { }
     }
-
-    try {
-      console.debug('buildQuizPayload: complete payload', { payload, includeTimers, includeSettings })
-    } catch (e) { }
 
     return payload
   }
@@ -702,7 +687,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         originalForm.value = JSON.parse(JSON.stringify(quiz.value))
         detailsSaved.value = true
       } else {
-        console.error('API response missing quiz object:', data)
+        // missing quiz in response
       }
       persistProgress()
       alert.push({ type: 'success', message: 'Quiz details saved!' })
@@ -755,7 +740,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         }
         originalForm.value = JSON.parse(JSON.stringify(quiz.value))
       } else {
-        console.error('API response missing quiz object:', data);
+        // handle missing quiz in response
       }
       detailsSaved.value = true;
       questionsSaved.value = true;
@@ -851,10 +836,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       return
     }
     try {
-      try { console.debug('saveQuestion:start', { quizId: quizId.value, uid: question?.uid || question?.id, type: question?.type }) } catch (e) { }
-
       const sanitizedQuestion = sanitizeQuestionForPayload(question)
-      try { console.debug('saveQuestion: payload', { quizId: quizId.value, sanitizedQuestion }) } catch (e) { }
 
       let res: Response
       const hasFile = questionContainsFile(question)
@@ -862,8 +844,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       // If the question has an existing server id, perform a per-question PATCH (partial update).
       // This keeps payloads small and uses the server's single-question update endpoint.
       if (question && question.id) {
-        // Update existing question
-        try { console.debug(`PATCH /api/questions/${question.id}`, sanitizedQuestion) } catch (e) { }
         if (hasFile) {
           const form = buildQuestionFormData(sanitizedQuestion, question)
           // multipart doesn't support PATCH verb reliably; emulate with _method
@@ -873,8 +853,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           res = await api.patchJson(`/api/questions/${question.id}`, sanitizedQuestion)
         }
       } else {
-        // Create new question under the quiz (existing behavior)
-        try { console.debug(`POST /api/quizzes/${quizId.value}/questions`, sanitizedQuestion) } catch (e) { }
         if (hasFile) {
           const form = buildQuestionFormData(sanitizedQuestion, question)
           res = await api.postFormData(`/api/quizzes/${quizId.value}/questions`, form)
@@ -887,7 +865,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       if (!res.ok) throw new Error('Failed to save question')
 
       const data = await res.json().catch(() => null)
-      try { console.debug('saveQuestion:response', { status: res.status, body: data }) } catch (e) { }
 
       const idx = questions.value.findIndex(q => q.uid === question.uid || (q.id && question.id && q.id === question.id))
       // prefer server-returned question payload when available
@@ -903,7 +880,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       questionsSaved.value = true
       alert.push({ type: 'success', message: 'Question saved' })
     } catch (err: unknown) {
-      try { console.debug('saveQuestion:error', { err: (err as any)?.message || String(err) }) } catch (e) { }
       const e = err as Error
       try {
         if ((err as any)?.response && (err as any).response.status === 422) {
@@ -1199,19 +1175,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       errors._timer = ['Please set a time limit or enable per-question timer']
     }
 
-    // Debug: log validation state
-    try {
-      console.debug('validateBeforeSubmit: timer validation', {
-        use_per_question_timer: quiz.value.use_per_question_timer,
-        timer_minutes: quiz.value.timer_minutes,
-        per_question_seconds: quiz.value.per_question_seconds,
-        hasTotalTimer,
-        hasPerQuestionTimer,
-        hasTimerError: !!errors._timer
-      })
-    } catch (e) { }
-
-    // Validate questions
     if (!Array.isArray(questions.value) || questions.value.length === 0) {
       errors._questions = ['At least one question is required']
     } else {
@@ -1235,10 +1198,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     }
 
     const isValid = Object.keys(errors).length === 0
-
-    if (!isValid) {
-      try { console.debug('validateBeforeSubmit: validation failed', errors) } catch (e) { }
-    }
 
     return { isValid, errors }
   }
@@ -1284,7 +1243,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     try {
       // Step 1: Validate everything
       const validation = validateBeforeSubmit()
-      try { console.debug('submitFinalPayload: validation result', { isValid: validation.isValid, errors: validation.errors }) } catch (e) { }
 
       if (!validation.isValid) {
         // Set errors on appropriate error objects
@@ -1308,7 +1266,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           type: 'warning',
           message: 'Please fix the highlighted errors before publishing'
         })
-        try { console.debug('submitFinalPayload: validation failed', { errors: validation.errors, errorMessages }) } catch (e) { }
         return false
       }
 
@@ -1321,7 +1278,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       try {
         const success = await submitQuiz()
         if (success) {
-          try { console.debug('submitFinalPayload: quiz published successfully', { quizId: quizId.value }) } catch (e) { }
           alert.push({
             type: 'success',
             message: 'Quiz published successfully!'
@@ -1343,7 +1299,6 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
           type: 'error',
           message: e.message || 'Failed to publish quiz'
         })
-        try { console.debug('submitFinalPayload: error', e) } catch (err2) { }
         return false
       }
     } finally {

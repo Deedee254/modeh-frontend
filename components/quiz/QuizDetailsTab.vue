@@ -542,7 +542,7 @@ async function requestApproval() {
 // When grade changes, clear subject/topic and notify parent; also fetch subjects for the selected grade
 const { fetchSubjectsByGrade, fetchTopicsBySubject, fetchGradesByLevel } = useTaxonomy()
 watch(selectedGrade, async (nv, ov) => {
-  try { console.debug('QuizDetailsTab: selectedGrade changed from', ov, 'to', nv) } catch (e) {}
+  // Grade selection changed
   if (suppressWatchers.value) return
   if (sameId(nv, ov)) return
   subjectQuery.value = ''
@@ -711,7 +711,7 @@ function onGradeSelected(item) {
   try {
     lastSelectedGrade.value = item || null
     selectedGrade.value = item?.id || ''
-    try { console.debug('QuizDetailsTab: onGradeSelected item', item, 'selectedGrade', selectedGrade.value) } catch (e) {}
+    // Grade selected in quiz details
     
     // Directly emit update to parent (same pattern as onTopicPicked) to ensure grade_id reaches store
     // This bypasses the suppressWatchers check that was preventing grade from being saved

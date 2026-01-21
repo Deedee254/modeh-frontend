@@ -77,7 +77,6 @@ async function loadRequests() {
       requested_role: i.requested_role || i.role || i.global_role || null,
       created_at: i.created_at || i.requested_at || null
     }))
-    console.log('Requests loaded (normalized):', requests.value)
   } catch (e: any) {
     console.error('Error loading requests:', e)
     appAlert.push({ message: 'Failed to load pending requests: ' + (e?.message ?? e), type: 'error' })

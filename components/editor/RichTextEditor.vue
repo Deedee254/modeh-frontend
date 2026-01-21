@@ -132,7 +132,6 @@ onMounted(async () => {
     bubbleMenuComponent.value = anyT.BubbleMenu ?? anyT.default?.BubbleMenu ?? null
   } catch (e) {
     emit('error', new Error('Failed to load Tiptap BubbleMenu component: ' + String(e)));
-    console.warn('Tiptap BubbleMenu component load failed', e);
   }
 
   const finalExtensions = [...extensions.value]; // Start with base and code extensions
@@ -144,7 +143,6 @@ onMounted(async () => {
       finalExtensions.push(configuredExt);
     } catch (e: unknown) {
       emit('error', new Error('Failed to load math extension: ' + String(e)));
-      console.warn('Math extension load failed', e);
     }
   }
 
@@ -200,7 +198,7 @@ watch(() => props.modelValue, (v) => {
     // boolean flags used in runtime code and avoid TS errors.
     ;(e.commands as any).setContent(v || '', false)
   } catch (e) {
-    console.warn('Failed to sync editor content', e)
+    // sync failed silently
   }
 })
 

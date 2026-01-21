@@ -130,6 +130,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
 import useApi from '~/composables/useApi'
 import AuthFeaturesPanel from '~/components/Auth/AuthFeaturesPanel.vue'
 
@@ -198,7 +199,39 @@ async function submit() {
     const res = await auth.register(payload)
     if (res.error) throw new Error(res.error)
 
-    // After registration with role set, redirect to quizee dashboard
+    // Check if user just completed a guest quiz - if so, show a special redirect
+    // that allows them to view their guest results before going to dashboard
+    try {
+      const guestQuizStore = useGuestQuizStore()
+      guestQuizStore.initializeStore()
+      const allResults = guestQuizStore.getAllResults()
+      
+      if (allResults && allResults.length > 0) {
+        // Get the most recent guest quiz result
+        const mostRecentQuiz = allResults[allResults.length - 1]
+        if (mostRecentQuiz && mostRecentQuiz.quiz_slug) {
+          // Save the quiz info to sessionStorage so the next page can access it
+          try {
+            sessionStorage.setItem('modeh:justCompletedGuestQuiz', JSON.stringify({
+              quiz_slug: mostRecentQuiz.quiz_slug,
+              quiz_id: mostRecentQuiz.quiz_id,
+              quiz_title: mostRecentQuiz.quiz_title,
+              score: mostRecentQuiz.percentage,
+              timestamp: Date.now()
+            }))
+          } catch (e) {}
+          
+          // Redirect to special "view results" page instead of dashboard
+          setTimeout(() => router.push(`/quizee/quiz-results/${mostRecentQuiz.quiz_slug}`), 800)
+          return
+        }
+      }
+    } catch (e) {
+      // If anything fails checking guest results, just continue to dashboard
+      console.error('Error checking guest quiz results:', e)
+    }
+
+    // No guest quiz results - redirect to quizee dashboard normally
     setTimeout(() => router.push('/quizee/dashboard'), 800)
   } catch (e) {
     try {
@@ -264,6 +297,15 @@ async function signInWithGoogle() {
 
 onMounted(() => {
   if (route.query.ref) referralCode.value = route.query.ref
+  
+  // Check if coming from a guest quiz - this helps preserve context
+  try {
+    const guestSlug = sessionStorage.getItem('modeh:guestQuizSlug')
+    if (guestSlug) {
+      // Just keep it in sessionStorage for the registration flow to use
+      // Will be picked up in the submit() function
+    }
+  } catch (e) {}
 })
 </script>
 
