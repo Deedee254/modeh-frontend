@@ -2,7 +2,7 @@
   <div>
     <PageHero
       title="Expert Quiz Masters Who Boost Student Success"
-      description="Discover top educators and subject experts creating quizzes that actually help students master concepts and improve grades."
+      description="Discover top educators and subject experts creating engaging quizzes that help people test knowledge across all subjects and expand their minds."
       :showSearch="false"
       :flush="true"
     >
@@ -209,10 +209,10 @@ import { resolveAssetUrl } from '~/composables/useAssets'
 useHead({
   title: 'Expert Quiz Masters Who Boost Student Success | Modeh',
   meta: [
-    { name: 'description', content: 'Discover top educators and subject experts creating quizzes that actually help students master concepts and improve grades. Follow quiz masters with proven results.' },
+    { name: 'description', content: 'Discover top educators and subject experts creating engaging quizzes that help people test knowledge across all subjects and expand their minds. Follow quiz masters with proven expertise.' },
     { name: 'keywords', content: 'quiz masters, expert educators, online tutors, educational content creators, academic experts, quiz creators, top teachers' },
     { property: 'og:title', content: 'Expert Quiz Masters Who Boost Student Success | Modeh' },
-    { property: 'og:description', content: 'Discover top educators and subject experts creating quizzes that actually help students master concepts and improve grades. Follow quiz masters with proven results.' }
+    { property: 'og:description', content: 'Discover top educators and subject experts creating engaging quizzes that help people test knowledge across all subjects and expand their minds. Follow quiz masters with proven expertise.' }
   ]
 })
 </script>

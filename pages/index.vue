@@ -27,13 +27,13 @@
            <div class="flex flex-col h-full">
               <div class="mb-8">
                 <span class="inline-block py-1 px-3 rounded-full bg-[#800020]/10 text-[#800020] text-sm font-bold tracking-wide uppercase mb-4">
-                  Your Success Path
+                  How It Works
                 </span>
                 <h2 class="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
-                  From Struggling to Straight A's in 4 Simple Steps
+                  Test Your Knowledge in 4 Simple Steps
                 </h2>
                 <p class="text-base text-slate-600 leading-relaxed">
-                  Join thousands of students who've transformed their academic performance using our proven system.
+                  Join millions exercising their minds and testing knowledge across all areas of learning.
                 </p>
               </div>
 
@@ -65,13 +65,13 @@
               <!-- Right Side Header -->
               <div class="mb-8 md:pl-4">
                  <span class="inline-block py-1 px-3 rounded-full bg-brand-50 text-brand-600 text-sm font-bold tracking-wide uppercase mb-4">
-                    Free Trial
+                    Try It Now
                  </span>
                  <h2 class="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
-                    See Your Score Improve in Real-Time
+                    Challenge Yourself Instantly
                  </h2>
                  <p class="text-base text-slate-600 leading-relaxed">
-                    Take a practice quiz now and experience instant feedback that accelerates your learning.
+                    Take a quiz right now and get instant feedback on your knowledge across any subject.
                  </p>
               </div>
 
@@ -126,8 +126,8 @@
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-2xl mx-auto">
           <div class="text-sm uppercase tracking-wide text-brand-600 font-semibold">Expert Creators</div>
-          <h3 class="mt-2 text-3xl font-bold text-slate-900">Meet the Quiz Masters Behind Your Success</h3>
-          <p class="mt-3 text-slate-600">Top educators and subject experts who craft quizzes that actually help you understand concepts and ace your exams.</p>
+          <h3 class="mt-2 text-3xl font-bold text-slate-900">Meet the Quiz Masters Creating Great Learning</h3>
+          <p class="mt-3 text-slate-600">Top educators and subject experts who craft engaging quizzes that help people test knowledge and expand their minds.</p>
         </div>
   <!-- Mobile: carousel; Desktop: grid -->
   <ClientOnly>
@@ -157,13 +157,13 @@
         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 to-brand-950 px-6 py-16 sm:px-12 sm:py-20">
           <div class="relative text-center">
             <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Ready to Transform Your Academic Performance?
+              Ready to Test Your Knowledge?
             </h2>
             <p class="mx-auto mt-4 max-w-2xl text-lg text-white/90">
-              Join 50,000+ Quizees who've already improved their grades. Start practicing today and see results in your next exam.
+              Join millions who are testing their minds and learning across all subjects. Start your knowledge challenge today.
             </p>
             <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <NuxtLink to="/register/quizee" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90">Start Boosting My Grades Free</NuxtLink>
+              <NuxtLink to="/register/quizee" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-transparent bg-white px-6 py-3 text-base font-semibold text-brand-600 shadow-sm transition hover:bg-white/90">Start Testing Knowledge Free</NuxtLink>
               <NuxtLink to="/register/parent" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-brand-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-brand-700">I'm a Parent</NuxtLink>
             </div>
           </div>
@@ -186,7 +186,7 @@
 
           <!-- Right: Testimonials -->
           <div class="order-1 lg:order-2">
-            <h3 class="text-3xl font-bold text-brand-900 mb-8">Success Stories</h3>
+            <h3 class="text-3xl font-bold text-brand-900 mb-8">What Learners Love</h3>
             <ClientOnly>
               <div class="space-y-6">
                 <template v-for="(item, idx) in safeArray(testimonials).slice(0, 3)" :key="idx">
@@ -233,8 +233,8 @@
     <!-- Newsletter CTA (solid color background) -->
     <section class="py-12 bg-brand-600 text-white">
       <div class="mx-auto max-w-4xl text-center px-4">
-        <h3 class="text-2xl font-bold">Get Weekly Study Hacks That Actually Work</h3>
-        <p class="mt-2 text-white/90">Receive proven study strategies, new quiz releases, and exclusive tips that top students use to stay ahead.</p>
+        <h3 class="text-2xl font-bold">Discover New Quizzes & Learning Tips</h3>
+        <p class="mt-2 text-white/90">Get weekly updates on new quizzes, mind-exercise challenges, and tips to expand your knowledge across all subjects.</p>
         <form @submit.prevent class="mt-6">
           <label for="homepage-newsletter" class="sr-only">Email address</label>
           <div class="mx-auto max-w-xl grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
@@ -273,26 +273,26 @@ const api = useApi()
 
 // Page SEO: title, description and social preview tags
 definePageMeta({
-  title: 'Modeh — Ace Every Subject with Smart Practice Quizzes & Instant Results',
+  title: 'Modeh — Test Your Knowledge with Smart Quizzes Across All Subjects',
   meta: [
-    { name: 'description', content: 'Transform your grades with Modeh\'s adaptive practice quizzes. Get instant feedback, track progress, and master any subject 3x faster. Join 50,000+ students excelling today!' },
-    { name: 'keywords', content: 'practice quizzes, study app, exam preparation, grade improvement, instant feedback, adaptive learning, student assessment, curriculum practice, academic success, online learning' },
+    { name: 'description', content: 'Challenge your mind with engaging quizzes across science, history, languages, and more. Get instant feedback and expand your knowledge. Join millions testing their mind today!' },
+    { name: 'keywords', content: 'knowledge quizzes, mind exercises, test knowledge, quiz platform, learn by testing, knowledge challenge, trivia quizzes, subject quizzes, instant feedback, interactive learning' },
     { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: 'Modeh — Ace Every Subject with Smart Practice Quizzes & Instant Results' },
-    { property: 'og:description', content: 'Transform your grades with Modeh\'s adaptive practice quizzes. Get instant feedback, track progress, and master any subject 3x faster. Join 50,000+ students excelling today!' },
+    { property: 'og:title', content: 'Modeh — Test Your Knowledge with Smart Quizzes Across All Subjects' },
+    { property: 'og:description', content: 'Challenge your mind with engaging quizzes across science, history, languages, and more. Get instant feedback and expand your knowledge. Join millions testing their mind today!' },
     { property: 'og:image', content: '/social-share.png' },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: 'Modeh — Ace Every Subject with Smart Practice Quizzes & Instant Results' },
-    { name: 'twitter:description', content: 'Transform your grades with Modeh\'s adaptive practice quizzes. Get instant feedback, track progress, and master any subject 3x faster. Join 50,000+ students excelling today!' }
+    { name: 'twitter:title', content: 'Modeh — Test Your Knowledge with Smart Quizzes Across All Subjects' },
+    { name: 'twitter:description', content: 'Challenge your mind with engaging quizzes across science, history, languages, and more. Get instant feedback and expand your knowledge. Join millions testing their mind today!' }
   ]
 })
 
 // Rotating messages for hero section
 const currentMessageIndex = ref(0)
 const rotatingMessages = [
-  '🚀 Quizees: Boost your grades with smart practice quizzes that adapt to your learning style.',
-  '💡 Quiz Masters: Turn your expertise into income by creating viral quizzes students love.',
-  '📈 Institutions: Watch student performance soar with data-driven insights and engaging assessments.'
+  '🧠 Challenge Your Mind: Test your knowledge across all subjects with engaging quizzes.',
+  '💡 Quiz Masters: Share your expertise and create quizzes people love learning from.',
+  '📊 Institutions: Engage learners with data-driven assessments and track progress.'
 ]
 const heroHeadings = [
   'Boost Your Grades with Smart Practice',
@@ -591,17 +591,17 @@ const hasFeaturedQuiz = computed(() => {
 const howItWorksSteps = computed(() => [
     {
     number: '01',
-    title: 'Find your perfect quiz match',
-    description: 'Discover quizzes tailored to your grade and subjects that need the most improvement.',
+    title: 'Explore quizzes across all subjects',
+    description: 'Browse engaging quizzes from science and history to languages and beyond. Find topics that spark your curiosity.',
     badge: 'bg-gradient-to-br from-brand-600 to-brand-950',
     glow: 'bg-sky-400/60',
     icon: 'heroicons:map-20-solid',
-    link: { href: '/grades', label: 'Explore grades' },
+    link: { href: '/grades', label: 'Explore topics' },
   },
   {
     number: '02',
-    title: 'Practice smart, not hard',
-    description: 'Answer adaptive questions with real-time hints that build confidence without frustration.',
+    title: 'Test your knowledge',
+    description: 'Challenge yourself with thoughtfully crafted questions that make you think. Learn while you play.',
     badge: 'bg-gradient-to-br from-rose-500 to-fuchsia-500',
     glow: 'bg-rose-400/60',
     icon: 'heroicons:academic-cap-20-solid',
@@ -609,17 +609,17 @@ const howItWorksSteps = computed(() => [
   },
   {
     number: '03',
-    title: 'Get instant grade-boosting insights',
-    description: 'Receive detailed explanations that turn your mistakes into breakthrough moments.',
+    title: 'Get instant insights',
+    description: 'See your results immediately with detailed explanations. Understand why answers are correct and learn along the way.',
     badge: 'bg-gradient-to-br from-emerald-500 to-lime-500',
     glow: 'bg-emerald-400/60',
     icon: 'heroicons:chart-bar-20-solid',
-    link: { href: '/quizee/dashboard', label: 'Track performance' },
+    link: { href: '/quizee/dashboard', label: 'Track progress' },
   },
   {
     number: '04',
-    title: 'Watch your confidence soar',
-    description: 'Earn achievements and maintain streaks that keep you motivated to reach academic excellence.',
+    title: 'Watch your mind grow',
+    description: 'Earn badges and maintain streaks that celebrate your commitment to lifelong learning and knowledge expansion.',
     badge: 'bg-gradient-to-br from-amber-500 to-orange-500',
     glow: 'bg-amber-400/60',
     icon: 'heroicons:sparkles-20-solid',

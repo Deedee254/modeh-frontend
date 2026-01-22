@@ -132,8 +132,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
 
 definePageMeta({
-  layout: 'default',
-  middleware: ['auth'] // Only authenticated users should access this
+  layout: 'default'
+  // Note: auth-guard.global.ts handles global auth checks
 })
 
 const router = useRouter()

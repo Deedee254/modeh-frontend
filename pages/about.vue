@@ -15,7 +15,7 @@
             Empowering Education Through Innovation
           </h1>
           <p class="mt-6 text-lg leading-8 text-slate-600 max-w-2xl">
-            We help quiz-masters create engaging quizzes and quizees learn faster with instant feedback. Our platform combines simplicity with powerful features to transform the learning experience.
+            We help quiz creators build engaging quizzes and learners test knowledge across all subjects. Our platform combines simplicity with powerful features to transform how people learn and expand their minds.
           </p>
 
           <div class="mt-8 flex flex-wrap items-center gap-3">
@@ -223,8 +223,8 @@
         <div class="relative overflow-hidden rounded-2xl p-8">
           <div class="relative flex flex-col items-center text-center md:flex-row md:justify-between md:text-left">
             <div class="mb-6 md:mb-0">
-              <h2 class="text-2xl font-bold text-white sm:text-3xl">Ready to transform your teaching?</h2>
-              <p class="mt-2 text-brand-100">Join thousands of quiz-masters already using Modeh to improve learning outcomes.</p>
+              <h2 class="text-2xl font-bold text-white sm:text-3xl">Ready to share your knowledge?</h2>
+              <p class="mt-2 text-brand-100">Join thousands of creators already using Modeh to build engaging quizzes people love.</p>
             </div>
             <div class="flex flex-wrap justify-center gap-4">
                 <NuxtLink
@@ -359,9 +359,9 @@
 definePageMeta({
   title: 'About — Modeh',
   meta: [
-    { name: 'description', content: "We help quiz-masters create engaging quizzes and quizees learn faster with instant feedback. Modeh combines simplicity with powerful features to transform the learning experience." },
+    { name: 'description', content: "We help quiz creators build engaging quizzes and learners test knowledge across all subjects. Modeh combines simplicity with powerful features to transform how people learn." },
     { property: 'og:title', content: 'About — Modeh' },
-    { property: 'og:description', content: "We help quiz-masters create engaging quizzes and quizees learn faster with instant feedback. Modeh combines simplicity with powerful features to transform the learning experience." },
+    { property: 'og:description', content: "We help quiz creators build engaging quizzes and learners test knowledge across all subjects. Modeh combines simplicity with powerful features to transform how people learn." },
     { name: 'twitter:card', content: 'summary' }
   ]
 })

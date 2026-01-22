@@ -134,12 +134,12 @@ await useTaxonomyHydration({
 })
 
 useHead({
-  title: 'Practice Quizzes That Actually Improve Your Grades | Modeh',
+  title: 'Knowledge Quizzes Across All Subjects | Modeh',
   meta: [
-    { name: 'description', content: 'Discover smart practice quizzes across all subjects and grade levels. Each quiz adapts to your learning style and provides instant feedback to accelerate your academic progress.' },
-    { name: 'keywords', content: 'practice quizzes, study quizzes, exam preparation, grade improvement, adaptive learning, instant feedback, curriculum practice, academic assessment' },
-    { property: 'og:title', content: 'Practice Quizzes That Actually Improve Your Grades | Modeh' },
-    { property: 'og:description', content: 'Discover smart practice quizzes across all subjects and grade levels. Each quiz adapts to your learning style and provides instant feedback to accelerate your academic progress.' }
+    { name: 'description', content: 'Explore quizzes across all subjects and topics. Challenge your mind with engaging questions that test your knowledge and provide instant feedback.' },
+    { name: 'keywords', content: 'knowledge quizzes, quiz platform, test knowledge, all subjects, learning quizzes, mind exercises, instant feedback, interactive learning' },
+    { property: 'og:title', content: 'Knowledge Quizzes Across All Subjects | Modeh' },
+    { property: 'og:description', content: 'Explore quizzes across all subjects and topics. Challenge your mind with engaging questions that test your knowledge and provide instant feedback.' }
   ]
 })
 
