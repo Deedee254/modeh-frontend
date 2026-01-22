@@ -2,7 +2,7 @@
   <Transition name="slide-up">
     <div
       v-if="!store.bannerDismissed"
-      class="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 text-white shadow-2xl"
+      class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-2xl border-t border-gray-200 dark:border-gray-800"
     >
       <!-- Main Banner -->
       <div v-if="!showSettings" class="px-4 py-6 sm:px-6 lg:px-8">
@@ -10,34 +10,34 @@
           <!-- Content -->
           <div class="flex-1">
             <h3 class="text-lg font-semibold mb-2">🍪 We Use Cookies</h3>
-            <p class="text-sm text-gray-300 mb-4">
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
               We use cookies and similar technologies to enhance your experience, analyze traffic, and improve our services. 
               Some cookies are essential for the site to function, while others help us understand how you use our platform.
             </p>
             
             <!-- Cookie Types Info -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 text-xs">
-              <div class="bg-gray-800 rounded p-3">
-                <p class="font-semibold text-green-400 mb-1">✓ Essential</p>
-                <p class="text-gray-400">Required for basic functionality (always enabled)</p>
+              <div class="bg-gray-100 dark:bg-gray-800 rounded p-3">
+                <p class="font-semibold text-green-600 dark:text-green-400 mb-1">✓ Essential</p>
+                <p class="text-gray-700 dark:text-gray-400">Required for basic functionality (always enabled)</p>
               </div>
-              <div class="bg-gray-800 rounded p-3">
-                <p class="font-semibold text-blue-400 mb-1">📊 Analytics</p>
-                <p class="text-gray-400">Help us understand user behavior and improve the app</p>
+              <div class="bg-gray-100 dark:bg-gray-800 rounded p-3">
+                <p class="font-semibold text-blue-600 dark:text-blue-400 mb-1">📊 Analytics</p>
+                <p class="text-gray-700 dark:text-gray-400">Help us understand user behavior and improve the app</p>
               </div>
-              <div class="bg-gray-800 rounded p-3">
-                <p class="font-semibold text-purple-400 mb-1">📢 Marketing</p>
-                <p class="text-gray-400">Used for personalized ads and marketing campaigns</p>
+              <div class="bg-gray-100 dark:bg-gray-800 rounded p-3">
+                <p class="font-semibold text-purple-600 dark:text-purple-400 mb-1">📢 Marketing</p>
+                <p class="text-gray-700 dark:text-gray-400">Used for personalized ads and marketing campaigns</p>
               </div>
             </div>
 
             <!-- Links -->
             <div class="flex flex-wrap gap-2 text-xs">
-              <a href="/privacy" target="_blank" class="text-blue-400 hover:underline">Privacy Policy</a>
-              <span class="text-gray-600">•</span>
-              <a href="/cookie-policy" target="_blank" class="text-blue-400 hover:underline">Cookie Policy</a>
-              <span class="text-gray-600">•</span>
-              <button @click="showSettings = true" class="text-blue-400 hover:underline">Customize Settings</button>
+              <a href="/privacy" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Privacy Policy</a>
+              <span class="text-gray-400 dark:text-gray-600">•</span>
+              <a href="/cookie-policy" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Cookie Policy</a>
+              <span class="text-gray-400 dark:text-gray-600">•</span>
+              <button @click="showSettings = true" class="text-blue-600 dark:text-blue-400 hover:underline">Customize Settings</button>
             </div>
           </div>
 
@@ -45,19 +45,19 @@
           <div class="flex flex-col sm:flex-row gap-3 mt-4">
             <button
               @click="rejectAll"
-              class="flex-1 px-4 py-2 rounded border border-gray-700 hover:bg-gray-800 transition font-medium text-sm"
+              class="flex-1 px-4 py-2 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium text-sm"
             >
               Reject All
             </button>
             <button
               @click="showSettings = true"
-              class="flex-1 px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 transition font-medium text-sm"
+              class="flex-1 px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition font-medium text-sm"
             >
               Customize
             </button>
             <button
               @click="acceptAll"
-              class="flex-1 px-4 py-2 rounded bg-brand-600 hover:bg-brand-700 transition font-medium text-sm"
+              class="flex-1 px-4 py-2 rounded bg-brand-600 hover:bg-brand-700 transition font-medium text-sm text-white"
             >
               Accept All
             </button>
@@ -70,10 +70,10 @@
         <div class="max-w-2xl mx-auto">
           <!-- Header -->
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold">Cookie Preferences</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Cookie Preferences</h3>
             <button
               @click="showSettings = false"
-              class="text-gray-400 hover:text-white transition p-1"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition p-1"
             >
               <Icon name="heroicons:x-mark" class="w-5 h-5" />
             </button>
@@ -82,11 +82,11 @@
           <!-- Cookie Options -->
           <div class="space-y-4 mb-6">
             <!-- Essential Cookies (Always Enabled) -->
-            <div class="bg-gray-800 rounded p-4">
+            <div class="bg-gray-100 dark:bg-gray-800 rounded p-4">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h4 class="font-semibold mb-1">Essential Cookies</h4>
-                  <p class="text-sm text-gray-400">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Essential Cookies</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-400">
                     Required for the website to function properly. Cannot be disabled.
                   </p>
                 </div>
@@ -102,11 +102,11 @@
             </div>
 
             <!-- Analytics Cookies -->
-            <div class="bg-gray-800 rounded p-4">
+            <div class="bg-gray-100 dark:bg-gray-800 rounded p-4">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h4 class="font-semibold mb-1">Analytics Cookies</h4>
-                  <p class="text-sm text-gray-400">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Analytics Cookies</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-400">
                     Help us understand how you use Modeh and improve your experience.
                     Includes Google Analytics, page views, and event tracking.
                   </p>
@@ -116,7 +116,7 @@
                     <input
                       v-model="preferences.analytics"
                       type="checkbox"
-                      class="w-5 h-5 rounded border-gray-600 text-blue-600"
+                      class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500"
                     />
                   </label>
                 </div>
@@ -124,11 +124,11 @@
             </div>
 
             <!-- Marketing Cookies -->
-            <div class="bg-gray-800 rounded p-4">
+            <div class="bg-gray-100 dark:bg-gray-800 rounded p-4">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h4 class="font-semibold mb-1">Marketing Cookies</h4>
-                  <p class="text-sm text-gray-400">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Marketing Cookies</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-400">
                     Used to display relevant ads and measure marketing campaigns.
                     Helps us understand your interests better.
                   </p>
@@ -138,7 +138,7 @@
                     <input
                       v-model="preferences.marketing"
                       type="checkbox"
-                      class="w-5 h-5 rounded border-gray-600 text-purple-600"
+                      class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-purple-600 dark:text-purple-500"
                     />
                   </label>
                 </div>
@@ -147,8 +147,8 @@
           </div>
 
           <!-- Info Box -->
-          <div class="bg-blue-900/30 border border-blue-700 rounded p-4 mb-6">
-            <p class="text-xs text-blue-300">
+          <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded p-4 mb-6">
+            <p class="text-xs text-blue-900 dark:text-blue-300">
               <strong>ℹ️ Note:</strong> Your preferences are saved locally in your browser and will be remembered for one year. 
               You can change these settings anytime by clicking the cookie icon in the footer.
             </p>
@@ -158,19 +158,19 @@
           <div class="flex gap-3">
             <button
               @click="showSettings = false"
-              class="flex-1 px-4 py-2 rounded border border-gray-700 hover:bg-gray-800 transition font-medium"
+              class="flex-1 px-4 py-2 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium text-gray-900 dark:text-white"
             >
               Cancel
             </button>
             <button
               @click="rejectAll"
-              class="flex-1 px-4 py-2 rounded border border-gray-700 hover:bg-gray-800 transition font-medium"
+              class="flex-1 px-4 py-2 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium text-gray-900 dark:text-white"
             >
               Reject All
             </button>
             <button
               @click="saveCustom"
-              class="flex-1 px-4 py-2 rounded bg-brand-600 hover:bg-brand-700 transition font-medium"
+              class="flex-1 px-4 py-2 rounded bg-brand-600 hover:bg-brand-700 transition font-medium text-white"
             >
               Save Preferences
             </button>
@@ -184,11 +184,11 @@
   <button
     v-if="store.bannerDismissed"
     @click="showSettings = true"
-    class="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-gray-800 hover:bg-gray-700 text-white shadow-lg transition-all hover:scale-110 group"
+    class="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white shadow-lg transition-all hover:scale-110 group"
     title="Cookie Settings"
   >
     <Icon name="heroicons:cog-6-tooth" class="w-5 h-5" />
-    <span class="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+    <span class="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
       Cookie Settings
     </span>
   </button>
