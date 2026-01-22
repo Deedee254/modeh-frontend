@@ -257,9 +257,11 @@ async function submit() {
     const res = await auth.register(payload)
     if (res.error) throw new Error(res.error)
 
-    // Success - redirect to dashboard
-    if (auth.user) router.push(dashboardMap[auth.user.role] || '/institution-manager/dashboard')
-    else router.push('/login?registered=true')
+    // Success - wait a bit for auth state to fully sync, then redirect to dashboard
+    setTimeout(() => {
+      if (auth.user) router.push(dashboardMap[auth.user.role] || '/institution-manager/dashboard')
+      else router.push('/institution-manager/dashboard')
+    }, 800)
   } catch (e) {
     try {
       for (const k in fieldErrors) delete fieldErrors[k]

@@ -64,36 +64,54 @@ export const useAuthStore = defineStore('auth', () => {
       // Use postJsonPublic for registration since it's a public endpoint (unauthenticated flow)
       // The backend now establishes a session during registration with the 'web' middleware
       const res = await api.postJsonPublic(endpoint, payload)
+      
+      // Parse response body once
+      let responseData: any = null
+      try {
+        responseData = await res.json()
+      } catch (e) {
+        // If we can't parse JSON, try to get text
+        try { 
+          const txt = await res.text()
+          if (txt) responseData = { message: txt }
+        } catch (e) { }
+      }
+      
       if (!res.ok) {
         let message = 'Registration failed'
         let parsedErrors: any = null
-        try {
-          const errBody = await res.json()
-          if (errBody && errBody.message) message = errBody.message
-          else if (errBody && errBody.errors) {
-            parsedErrors = errBody.errors
-            const vals = Object.values(errBody.errors).flat()
-            if (vals.length) message = vals.join('; ')
-          } else if (typeof errBody === 'string') message = errBody
-        } catch (e) {
-          try { const txt = await res.text(); if (txt) message = txt } catch (e) { }
+        
+        if (responseData && responseData.message) message = responseData.message
+        else if (responseData && responseData.errors) {
+          parsedErrors = responseData.errors
+          const vals = Object.values(responseData.errors).flat()
+          if (vals.length) message = vals.join('; ')
         }
+        
         const err = new Error(message)
         try { ; (err as any).fields = parsedErrors } catch (e) { }
         throw err
       }
 
-      // After successful registration, the backend has already established a session.
-      // Now sync the session state with Nuxt-Auth and fetch the user data.
+      // After successful registration, the backend has:
+      // 1. Established a Laravel session (Auth::login() called)
+      // 2. Created a personal access token ('nuxt-auth')
+      // 3. Returned the user data + token in the response
       
-      // 1. Get the session (this reads the session cookie set by the backend)
-      await getSession()
+      // Directly update the auth store with the user data from registration response
+      // This immediately populates the store without waiting for additional API calls
+      if (responseData && responseData.user) {
+        setUser(responseData.user)
+      }
       
-      // 2. Fetch the full user profile from the API
+      // Fetch fresh user data to ensure we have the latest from the API
+      // This also syncs the Nuxt-Auth session if needed
       try {
+        // Wait a moment for the session to be fully established
+        await new Promise(resolve => setTimeout(resolve, 300))
         await fetchUser()
       } catch (e) {
-        // User fetch might fail if not synced yet; continue - the session should still be valid
+        // User fetch might fail if not synced yet, but we have the data from registration response
         console.error('Failed to fetch user after registration:', e)
       }
 

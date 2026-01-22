@@ -221,14 +221,8 @@ async function submit() {
       role: 'parent',
     }
 
-    const res = await api.postJsonPublic('/api/register/parent', payload)
-    if (!res.ok) {
-      const errorData = await res.json()
-      throw new Error(errorData.message || 'Registration failed')
-    }
-
-    const data = await res.json()
-    await auth.fetchUser?.()
+    const res = await auth.register(payload)
+    if (res.error) throw new Error(res.error)
     
     trackRegistration('email', {
       user_type: 'parent',
