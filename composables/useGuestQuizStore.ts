@@ -212,6 +212,14 @@ export const useGuestQuizStore = () => {
   }
 
   /**
+   * Check if guest has reached the quiz attempt limit
+   * Guests can attempt up to 1 quiz before needing to register
+   */
+  const hasReachedQuizLimit = (): boolean => {
+    return quizResults.value.size >= 1
+  }
+
+  /**
    * Convert guest store data for saving to user account
    * Called when user registers or logs in
    */
@@ -279,6 +287,7 @@ export const useGuestQuizStore = () => {
     getStats,
     clearAllData,
     clearQuizResult,
+    hasReachedQuizLimit,
     // in-progress APIs
     saveQuestionVerdict,
     getPartialResult,

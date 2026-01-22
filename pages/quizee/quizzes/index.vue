@@ -15,8 +15,26 @@
           <li class="font-medium text-gray-900">Assessments</li>
         </ol>
       </nav>
+      <!-- Alert if grade is missing -->
+      <div v-if="!userGradeName" class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div class="flex gap-3">
+          <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h3 class="font-semibold text-amber-900">Add Your Grade</h3>
+            <p class="text-sm text-amber-800 mt-1">Please add your grade to your profile to get personalized quizzes matched to your level.</p>
+            <NuxtLink to="/quizee/profile" class="inline-block mt-2 text-sm font-medium text-amber-700 hover:text-amber-900 underline">
+              Update Profile →
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
+
       <!-- Page Title -->
-      <h1 class="text-3xl font-bold text-gray-900 mb-6">Available Assessments</h1>
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">
+        Quizzes for {{ userGradeName || 'Your Grade' }}
+      </h1>
     </div>
 
     <!-- Filters -->
@@ -171,7 +189,17 @@ const userProfile = computed(() => {
 const userLevelId = computed(() => userProfile.value?.quizeeProfile?.level?.id || userProfile.value?.level_id)
 const userGradeId = computed(() => userProfile.value?.quizeeProfile?.grade?.id || userProfile.value?.grade_id)
 const userLevelName = computed(() => userProfile.value?.quizeeProfile?.level?.name || null)
-const userGradeName = computed(() => userProfile.value?.quizeeProfile?.grade?.name || null)
+
+// Grade name: try to get from the grade object if it's fully loaded, otherwise null
+const userGradeName = computed(() => {
+  const profile = userProfile.value?.quizeeProfile || userProfile.value
+  // Check if grade is a full object with a name property
+  if (profile?.grade && typeof profile.grade === 'object' && profile.grade.name) {
+    return profile.grade.name
+  }
+  // Otherwise return null - we only show the grade name if we have it
+  return null
+})
 
 // composable that encapsulates fetching and normalization
 const { paginator, loading, normalizedQuizzes, fetchItems } = useQuizzes()
