@@ -60,11 +60,11 @@
               style="animation-delay: 0.2s"
             >
               <template v-if="userGradeName">
-                Practice quizzes for
+                Test your knowledge in
                 <span class="bg-gradient-to-r from-brand-500 to-brand-600/70 bg-clip-text text-transparent"> {{ userGradeName }} </span>
               </template>
               <template v-else>
-                Welcome back — continue learning
+                Welcome back — keep testing your knowledge
               </template>
             </h1>
 
@@ -84,7 +84,7 @@
               style="animation-delay: 0.3s"
             >
               <template v-if="isLoggedIn">
-                Continue your learning journey with engaging quizzes across all subjects.
+                Challenge yourself with engaging quizzes and expand your mind across all subjects.
               </template>
               <template v-else>
                 Challenge your mind with adaptive quizzes that help you expand knowledge across science, history, languages, and beyond. Get instant feedback and grow.
@@ -264,14 +264,14 @@ const props = withDefaults(
   {
     currentMessageIndex: 0,
     rotatingMessages: () => [
-      '🎓 Quizees: Practice, get instant feedback, and master skills at your pace.',
-      '✍️ Quiz Masters: Create impactful quizzes, earn rewards, and build your teaching legacy.',
-      '🏫 Institutions: Track student progress, align curriculum, and transform learning outcomes.'
+      '🧠 Quizees: Test your knowledge and expand your mind across all subjects.',
+      '💡 Quiz Masters: Create engaging quizzes people love learning from.',
+      '📊 Institutions: Engage learners with data-driven assessments and track progress.'
     ],
     heroHeadings: () => [
-      'Master Skills with Focused Practice',
-      'Create & Earn as a Quiz Master',
-      'Transform Education for Your Institution'
+      'Expand Your Knowledge Daily',
+      'Build Engaging Learning Experiences',
+      'Revolutionize Learner Engagement'
     ],
     featuredQuizzes: () => [],
     carouselDuration: 25,
