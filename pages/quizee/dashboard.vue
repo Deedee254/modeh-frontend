@@ -249,7 +249,7 @@ const recQuizzesLoading = ref(true)
 
 // Display grade for recommendations section
 const displayGrade = computed(() => {
-  const gradeValue = auth.user?.quizeeProfile?.grade || auth.user?.grade || 8
+  const gradeValue = auth.user?.profile?.grade || auth.user?.grade || 8
   // Handle both numeric grades (e.g., 8) and grade objects with name (e.g., { name: 'Form 4', ... })
   if (typeof gradeValue === 'object' && gradeValue?.name) {
     return gradeValue.name
@@ -382,7 +382,7 @@ const recQuizzes = ref([])
 async function fetchRecommendations() {
   try {
     // prefer explicit grade param to ensure backend filters recommendations to user's grade
-    let forGrade = (auth.user && auth.user.quizeeProfile && auth.user.quizeeProfile.grade_id) ? auth.user.quizeeProfile.grade_id : (auth.user && auth.user.grade ? auth.user.grade : null)
+    let forGrade = (auth.user && auth.user.profile && auth.user.profile.grade_id) ? auth.user.profile.grade_id : (auth.user && auth.user.grade ? auth.user.grade : null)
     
     // Handle object grade (extract id or name) - fixes bug where [object Object] was sent to API
     if (forGrade && typeof forGrade === 'object') {

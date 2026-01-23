@@ -10,25 +10,13 @@ import type { User } from '~/types'
 let _auth_storage_handler: ((e: StorageEvent) => void) | null = null
 let _auth_beforeunload: (() => void) | null = null
 
-// Helper: Convert snake_case keys to camelCase for backward compatibility
-function convertToCamelCase(obj: any): any {
-  if (!obj || typeof obj !== 'object') return obj
-  if (Array.isArray(obj)) return obj.map(convertToCamelCase)
-
-  const result: Record<string, any> = {}
-  for (const [key, value] of Object.entries(obj)) {
-    // Convert snake_case to camelCase
-    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-    result[camelKey] = convertToCamelCase(value)
-  }
-  return result
-}
+// Note: Do not convert API keys. Frontend consumes backend-provided shape.
 
 export const useAuthStore = defineStore('auth', () => {
   const { data, status, getSession } = useAuth()
   
-  // Initialize from session data if available
-  const initialUser = data.value?.user ? convertToCamelCase(data.value.user) : null
+  // Initialize from session data if available (use raw API shape)
+  const initialUser = data.value?.user || null
   const user: Ref<User | null> = ref(initialUser)
   const role: Ref<string | null> = ref(initialUser?.role || null)
   const guestPlayed = ref(false)
@@ -216,8 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(newUser: any): void {
     if (!newUser || typeof newUser !== 'object' || !newUser.id) return
-
-    newUser = convertToCamelCase(newUser)
+    // Use the API-provided object shape as-is
     user.value = newUser
     role.value = newUser.role
 

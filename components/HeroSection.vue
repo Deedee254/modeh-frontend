@@ -195,7 +195,7 @@ const userProfile = computed(() => {
 
 const userGradeName = computed(() => {
   const up: any = userProfile.value || {}
-  return up?.quizeeProfile?.grade?.name || up?.grade_name || up?.grade?.name || null
+  return up?.profile?.grade?.name || up?.grade_name || up?.grade?.name || null
 })
 
 const isLoggedIn = computed(() => {

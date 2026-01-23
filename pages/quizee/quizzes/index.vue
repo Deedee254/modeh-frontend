@@ -186,13 +186,13 @@ const userProfile = computed(() => {
   const u = auth.user
   return (u && typeof u === 'object' && 'value' in u) ? u.value : (u || {})
 })
-const userLevelId = computed(() => userProfile.value?.quizeeProfile?.level?.id || userProfile.value?.level_id)
-const userGradeId = computed(() => userProfile.value?.quizeeProfile?.grade?.id || userProfile.value?.grade_id)
-const userLevelName = computed(() => userProfile.value?.quizeeProfile?.level?.name || null)
+const userLevelId = computed(() => userProfile.value?.profile?.level?.id || userProfile.value?.level_id)
+const userGradeId = computed(() => userProfile.value?.profile?.grade?.id || userProfile.value?.grade_id)
+const userLevelName = computed(() => userProfile.value?.profile?.level?.name || null)
 
 // Grade name: try to get from the grade object if it's fully loaded, otherwise null
 const userGradeName = computed(() => {
-  const profile = userProfile.value?.quizeeProfile || userProfile.value
+  const profile = userProfile.value?.profile || userProfile.value
   // Check if grade is a full object with a name property
   if (profile?.grade && typeof profile.grade === 'object' && profile.grade.name) {
     return profile.grade.name

@@ -286,12 +286,15 @@ export function useProfileForm() {
       // Update auth store with merged data
       let mergedUser = { ...userJson }
 
-      // Ensure profile relationships are loaded
+      // Ensure profile relationships are loaded. Normalize to `profile` when possible.
       if (profileJson && profileJson.user) {
-        if (role === 'quiz-master' && profileJson.user.quizMasterProfile) {
-          mergedUser.quizMasterProfile = profileJson.user.quizMasterProfile
+        // Prefer canonical `profile` key returned by API resources.
+        if (profileJson.user.profile) {
+          mergedUser.profile = profileJson.user.profile
+        } else if (role === 'quiz-master' && profileJson.user.quizMasterProfile) {
+          mergedUser.profile = profileJson.user.quizMasterProfile
         } else if (role === 'quizee' && profileJson.user.quizeeProfile) {
-          mergedUser.quizeeProfile = profileJson.user.quizeeProfile
+          mergedUser.profile = profileJson.user.quizeeProfile
         }
       }
 

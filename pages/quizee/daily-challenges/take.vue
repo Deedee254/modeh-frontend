@@ -130,11 +130,11 @@ const errorState = ref({
 
 // Get user's profile info from auth store (for error display)
 const userGrade = computed(() => {
-  return auth.user?.quizeeProfile?.grade?.name || auth.user?.grade?.name || null
+  return auth.user?.profile?.grade?.name || auth.user?.grade?.name || null
 })
 
 const userLevel = computed(() => {
-  return auth.user?.quizeeProfile?.level?.name || auth.user?.level?.name || null
+  return auth.user?.profile?.level?.name || auth.user?.level?.name || null
 })
 // reuse shared answers composable so daily-challenge answers are same shape as quizzes/battles
 // Pass a computed wrapper around the local `questions` ref so the composable reads

@@ -382,8 +382,10 @@ const pointsDisplay = computed(() => {
   return typeof p === 'number' ? `${p}` : '0'
 })
 
-// Get profile based on user type — read camelCase key
-const profile = computed(() => user.value?.quizeeProfile || {})
+// Use the backend-provided unified `profile` key directly.
+// Do not attempt to guess or fallback to other shapes — the API should
+// return the canonical `profile` object for the authenticated user.
+const profile = computed(() => user.value?.profile || {})
 
 // Get grade label from profile
 const gradeLabel = computed(() => {

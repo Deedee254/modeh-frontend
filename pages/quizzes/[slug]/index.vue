@@ -71,19 +71,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">
-          <!-- Video player (separate from hero) -->
-          <div v-if="youtubeEmbedUrl" class="mb-4">
-            <div class="relative w-full rounded-xl overflow-hidden bg-black" style="aspect-ratio: 16/9">
-              <iframe :src="youtubeEmbedUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
-          </div>
-
-          <!-- Media Caption/Description -->
-          <div v-if="quiz.media_caption || quiz.video_description" class="bg-white rounded-xl shadow-sm p-4">
-            <p class="text-sm text-gray-600">
-              {{ quiz.media_caption || quiz.video_description }}
-            </p>
-          </div>
+          <!-- Video and caption moved into the Overview tab (below description) -->
           <!-- Enhanced Tabs Section - Better Mobile Experience -->
           <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <!-- New Unified Tab Style -->
@@ -108,6 +96,16 @@
               <!-- Overview -->
               <div v-if="activeTab === 'overview'" class="prose max-w-none">
                 <div v-html="quiz.description || 'No description available.'"></div>
+
+                <!-- Embedded video moved here: appears below description inside Overview tab -->
+                <div v-if="youtubeEmbedUrl" class="mt-4">
+                  <div class="relative w-full rounded-xl overflow-hidden bg-black" style="aspect-ratio: 16/9">
+                    <iframe :src="youtubeEmbedUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                  </div>
+                  <p v-if="quiz.media_caption || quiz.video_description" class="text-sm text-gray-600 mt-2">
+                    {{ quiz.media_caption || quiz.video_description }}
+                  </p>
+                </div>
               </div>
 
               <!-- Requirements -->

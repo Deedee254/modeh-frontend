@@ -168,9 +168,9 @@ const user = computed<User>(() => {
 // Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
 const userAvatar = computed(() => resolveAssetUrl((auth as any).userAvatar) || '/logo/avatar-placeholder.png')
 
-// Get profile based on role
+// Get profile provided by the backend on the user object
 const profile = computed(() => {
-  return isQuizMaster.value ? user.value.quizMasterProfile : null
+  return user.value?.profile || {}
 })
 
 // Get grade label from profile

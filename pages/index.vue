@@ -355,7 +355,7 @@ const loadDynamicData = async () => {
       // For quizees, use the recommendations endpoint (shows grade-matched, randomized)
       endpoint = '/api/recommendations/quizzes'
       const userProfile = (auth.user && typeof auth.user === 'object' && 'value' in auth.user) ? auth.user.value : (auth.user || {})
-      const forGrade = userProfile?.quizeeProfile?.grade_id || userProfile?.grade_id
+      const forGrade = userProfile?.profile?.grade_id || userProfile?.grade_id
       if (forGrade) quizParams.set('for_grade', String(forGrade))
     } else if (role === 'quiz-master') {
       // For quiz masters, show THEIR created quizzes (backend filters by created_by automatically)
@@ -366,8 +366,8 @@ const loadDynamicData = async () => {
       endpoint = role === 'institution-manager' ? '/api/recommendations/quizzes' : '/api/quizzes'
       
       const userProfile = (auth.user && typeof auth.user === 'object' && 'value' in auth.user) ? auth.user.value : (auth.user || {})
-      const userLevelId = userProfile?.quizeeProfile?.level?.id || userProfile?.level_id
-      const userGradeId = userProfile?.quizeeProfile?.grade?.id || userProfile?.grade_id
+      const userLevelId = userProfile?.profile?.level?.id || userProfile?.level_id
+      const userGradeId = userProfile?.profile?.grade?.id || userProfile?.grade_id
       
       quizParams.set('approved', '1')
       if (userLevelId) quizParams.set('level_id', String(userLevelId))

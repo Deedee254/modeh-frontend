@@ -41,8 +41,8 @@ function resolveInstPath(path: string): string {
    * Common menu items structure: { id, label, icon, to }
    */
   const menuItems = computed(() => {
-    // Check if user's level is tertiary
-    const userProfile = (auth.user as any)?.quizeeProfile || auth.user
+    // Check if user's level is tertiary (use backend-provided `profile`)
+    const userProfile = (auth.user as any)?.profile || auth.user
     const userLevel = userProfile?.level?.name || userProfile?.level_name || ''
     const isTertiary = userLevel.toLowerCase().includes('tertiary')
 

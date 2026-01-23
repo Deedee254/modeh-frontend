@@ -304,7 +304,7 @@ const memberRoute = computed(() => {
 // Check if user's level is tertiary
 const isTertiary = computed(() => {
   if (!auth.user) return false
-  const profile = auth.user.quizeeProfile || auth.user
+  const profile = auth.user.profile || auth.user
   const level = profile.level?.name || profile.level_name || ''
   return level.toLowerCase().includes('tertiary')
 })
@@ -482,8 +482,8 @@ const userName = computed(() => auth.user?.name || 'User')
 const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
 const userLevel = computed(() => {
-  if (auth.user?.quizeeProfile?.level?.name) {
-    return auth.user.quizeeProfile.level.name
+  if (auth.user?.profile?.level?.name) {
+    return auth.user.profile.level.name
   }
   if (auth.user?.level?.name) {
     return auth.user.level.name

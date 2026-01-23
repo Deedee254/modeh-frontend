@@ -388,11 +388,11 @@ const debugInfo = ref({
 
 // Get user's profile info from auth store (fallback source)
 const userProfileGrade = computed(() => {
-  return auth.user?.quizeeProfile?.grade?.name || auth.user?.grade?.name || null
+  return auth.user?.profile?.grade?.name || auth.user?.grade?.name || null
 })
 
 const userLevel = computed(() => {
-  return auth.user?.quizeeProfile?.level?.name || auth.user?.level?.name || null
+  return auth.user?.profile?.level?.name || auth.user?.level?.name || null
 })
 
 // Badges

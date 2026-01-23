@@ -164,7 +164,8 @@ onMounted(async () => {
 // Use useProfileForm to derive profile info
 const { createFormState } = useProfileForm()
 
-const profile = computed(() => user.value?.quizMasterProfile || {})
+// Use canonical `profile` field provided by the API for user profiles
+const profile = computed(() => user.value?.profile || {})
 
 const userAvatar = computed(() => (user.value && user.value.avatar_url) ? user.value.avatar_url : '/logo/avatar-placeholder.png')
 

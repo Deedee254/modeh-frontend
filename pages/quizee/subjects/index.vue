@@ -166,7 +166,7 @@ const userProfile = computed(() => {
 // Compute grade with fallback to loaded grades list so PageHero shows an actual grade when available
 const taxonomyStore = useTaxonomyStore()
 const userGrade = computed(() => {
-  const profile = userProfile.value?.quizeeProfile || userProfile.value
+  const profile = userProfile.value?.profile || userProfile.value
   const name = profile?.grade?.name || profile?.grade_name
   if (name) return name
 

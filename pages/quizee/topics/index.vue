@@ -170,7 +170,7 @@ const userProfile = computed(() => {
 // Compute level with default fallback - ensure consistent SSR/client rendering
 const userLevel = computed(() => {
   const u = userProfile.value
-  const profile = u.quizeeProfile || u
+  const profile = u.profile || u
   const name = profile?.level?.name || profile?.level_name
   // Always return a string, never undefined
   return name || 'Your Level'
@@ -179,7 +179,7 @@ const userLevel = computed(() => {
 // Compute grade with default fallback - ensure consistent SSR/client rendering
 const userGrade = computed(() => {
   const u = userProfile.value
-  const profile = u.quizeeProfile || u
+  const profile = u.profile || u
   const name = profile?.grade?.name || profile?.grade_name
   // Always return a string, never undefined
   return name || 'Your Grade'
