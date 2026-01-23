@@ -149,17 +149,30 @@ export default defineNuxtConfig({
       ],
 
       manifestTransforms: [
-        (entries: any) => {
-          const manifest = entries.map((entry: any) => {
-            const isJS = entry.url.endsWith('.js')
-            const isCSS = entry.url.endsWith('.css')
+          (entries: any) => {
+            // Filter out Nuxt internal runtime files (often under node_modules/nuxt/dist)
+            // to avoid precaching dynamic dev modules that cause failed dynamic imports.
+            const filtered = entries.filter((entry: any) => {
+              if (!entry || !entry.url) return false
+              // Skip precaching any build files that live under node_modules/nuxt/dist
+              if (entry.url.includes('node_modules/nuxt/dist')) return false
+              return true
+            })
 
-            if (isJS || isCSS) entry.revision = null
-            return entry
-          })
+            const manifest = filtered.map((entry: any) => {
+              const isJS = entry.url.endsWith('.js')
+              const isCSS = entry.url.endsWith('.css')
 
-          return { manifest, warnings: [] }
-        }
+              if (isJS || isCSS) entry.revision = null
+              return entry
+            })
+
+            const warnings: string[] = []
+            const removed = entries.length - filtered.length
+            if (removed > 0) warnings.push(`Excluded ${removed} entries from precache (node_modules/nuxt/dist)`)
+
+            return { manifest, warnings }
+          }
       ]
     }
   },

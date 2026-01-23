@@ -32,7 +32,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (newStatus === 'authenticated') {
       // Always validate the session with a fresh API fetch before trusting session data
       // Do not rely on `data.value.user` as the source of truth.
-      fetchUser(true).catch(() => {})
+      // Use non-forced fetch so concurrent calls are deduplicated by
+      // the internal `_fetchUserPromise` guard. Passing `true` bypasses
+      // that guard and allowed multiple concurrent requests when
+      // session status toggled rapidly.
+      fetchUser().catch(() => {})
     } else if (newStatus === 'unauthenticated') {
       user.value = null
       role.value = null

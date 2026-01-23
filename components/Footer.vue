@@ -8,7 +8,9 @@
         <div class="mt-3 text-sm text-brand-600/80">Create and take beautiful quizzes — for quiz-mastering, classrooms and practice. Fast to build, fun to take.</div>
         <div class="mt-4 flex gap-4">
           <a href="https://twitter.com/modeh" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:text-brand-700 transition" aria-label="Twitter">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75-2.25 7-5.5 7-9.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0723 3z"/></svg>
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M23 3a10.9 10.9 0 01-3.14 1.53A4.48 4.48 0 0016 3c-2.5 0-4.5 2.5-4 5a10.66 10.66 0 01-7.73-3.9 4.48 4.48 0 001.39 6A4.48 4.48 0 012 6.5v.06A4.48 4.48 0 004.47 11a4.52 4.52 0 01-2.02.08 4.48 4.48 0 004.19 3.11A9 9 0 012 19.54a12.65 12.65 0 006.86 2c8.32 0 12.87-6.88 12.87-12.85 0-.2 0-.39-.02-.58A9.22 9.22 0 0023 3z" />
+            </svg>
           </a>
           <a href="https://facebook.com/modeh" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:text-brand-700 transition" aria-label="Facebook">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a6 6 0 00-6 6v3H7v4h2v8h4v-8h3l1-4h-4V8a1 1 0 011-1h3z"/></svg>

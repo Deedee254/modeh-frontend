@@ -7,6 +7,8 @@ let _csrfFetchedAt = 0
 // cache XSRF token reads briefly to avoid repeated document.cookie parsing
 let _lastXsrf: string | null = null
 let _lastXsrfAt = 0
+// Single-flight in-flight request map to dedupe identical GET requests
+let _inFlightRequests: Record<string, Promise<Response> | null> = {}
 
 export function useApi() {
   const config = useRuntimeConfig()
@@ -181,11 +183,23 @@ export function useApi() {
   }
 
   async function get(path: string) {
-    return request(path, { method: 'GET' })
+    // Deduplicate concurrent GET requests for the same path (especially /api/me)
+    try {
+      if (_inFlightRequests[path]) return _inFlightRequests[path] as Promise<Response>
+      const p = request(path, { method: 'GET' })
+      _inFlightRequests[path] = p
+      // Ensure cleanup regardless of success/failure
+      p.finally(() => { _inFlightRequests[path] = null })
+      return p
+    } catch (e) {
+      // Fallback to direct request if something goes wrong
+      return request(path, { method: 'GET' })
+    }
   }
 
   async function getAsync(path: string) {
-    return request(path, { method: 'GET' })
+    // Alias to `get` which already dedupes
+    return get(path)
   }
 
   async function getPublic(path: string) {
