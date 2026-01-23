@@ -38,15 +38,13 @@ export const useAuthStore = defineStore('auth', () => {
   // Deduplicate concurrent fetchUser calls
   let _fetchUserPromise: Promise<any> | null = null
 
-  // Watch for session changes to update store state
-  // This ensures session data is synced with our user ref
+  // Watch for session changes and always validate against the authoritative API (/api/me)
+  // Treat `auth.data` as provisional; promote into the store only after `/api/me` succeeds.
   watch([data, status], ([newData, newStatus]) => {
-    if (newStatus === 'authenticated' && newData?.user) {
-      const normalizedUser = convertToCamelCase(newData.user)
-      if (normalizedUser.id) {
-        user.value = normalizedUser
-        role.value = normalizedUser.role
-      }
+    if (newStatus === 'authenticated') {
+      // Always validate the session with a fresh API fetch before trusting session data
+      // Do not rely on `data.value.user` as the source of truth.
+      fetchUser(true).catch(() => {})
     } else if (newStatus === 'unauthenticated') {
       user.value = null
       role.value = null
@@ -61,9 +59,9 @@ export const useAuthStore = defineStore('auth', () => {
       else if (roleStr === 'quiz-master' || roleStr === 'quiz_master') endpoint = '/api/register/quiz-master'
       else if (roleStr === 'institution-manager') endpoint = '/api/register/institution-manager'
 
-      // Use postJsonPublic for registration since it's a public endpoint (unauthenticated flow)
-      // The backend now establishes a session during registration with the 'web' middleware
-      const res = await api.postJsonPublic(endpoint, payload)
+      // Use stateful POST so CSRF cookie and session are established by the backend
+      // The backend registers the user and sets the session cookie when 'web' middleware is used
+      const res = await api.postJson(endpoint, payload)
       
       // Parse response body once
       let responseData: any = null
@@ -112,7 +110,6 @@ export const useAuthStore = defineStore('auth', () => {
         await fetchUser()
       } catch (e) {
         // User fetch might fail if not synced yet, but we have the data from registration response
-        console.error('Failed to fetch user after registration:', e)
       }
 
       return { ok: true }
@@ -128,7 +125,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    // CRITICAL: Clear local state FIRST before calling signOut
+    // This prevents the session watcher from seeing the old user briefly
     clear()
+    
     try {
       // useAuth is auto-imported by @sidebase/nuxt-auth
       const auth = useAuth()
@@ -136,6 +136,7 @@ export const useAuthStore = defineStore('auth', () => {
         // Use client-side redirect so router state is consistent and so
         // we avoid a full page reload when possible. Ask the server not to
         // perform a redirect by passing redirect: false, then navigate.
+        // IMPORTANT: This invalidates the session on the server side
         await auth.signOut({ redirect: false })
         try { await router.push('/') } catch (e) { window.location.href = '/' }
       } else {
@@ -153,11 +154,14 @@ export const useAuthStore = defineStore('auth', () => {
     // The force parameter is kept for API compatibility but we now always fetch
     
     // Avoid concurrent fetches: return the in-flight promise if present
-    if (_fetchUserPromise) return _fetchUserPromise
+    if (_fetchUserPromise && !force) return _fetchUserPromise
     isFetchingUser.value = true
 
     _fetchUserPromise = (async () => {
       try {
+        // Store current user ID before fetching to detect mid-flight user switches
+        const userIdBeforeFetch = user.value?.id
+        
         // First, refresh the session to sync with latest server state
         // This ensures nuxt-auth's session data is up-to-date
         try {
@@ -185,7 +189,18 @@ export const useAuthStore = defineStore('auth', () => {
         
         const json = await res.json().catch(() => null)
         const userData = json && (json.user || json.data || json)
-        if (userData) setUser(userData)
+        
+        if (userData) {
+          // If user switched during the fetch, retry once to ensure we get the authoritative user
+          const userIdAfterFetch = userData.id
+          if (userIdBeforeFetch && userIdBeforeFetch !== userIdAfterFetch) {
+            _fetchUserPromise = null
+            return fetchUser(true)
+          }
+
+          // Safe to update user data from authoritative API
+          setUser(userData)
+        }
         return user.value
       } catch (error) {
         // fetch error silently

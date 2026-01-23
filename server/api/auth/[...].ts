@@ -78,16 +78,10 @@ export default NuxtAuthHandler({
           const data = await res.json()
 
           if (data && data.id) {
+            // Return only minimal fields to be stored in the JWT
             return {
               id: String(data.id),
-              name: data.name || data.email,
-              email: data.email,
-              role: data.role || 'user',
-              image: data.image || data.avatar,
-              // Store the API token from backend so we can use it for authenticated API calls
-              apiToken: data.token,
-              // Keep raw backend response for pass-through into session.user
-              rawUser: data
+              apiToken: data.token
             }
           }
           return null
@@ -178,17 +172,18 @@ export default NuxtAuthHandler({
     },
   callbacks: {
     async jwt({ token, user, account, profile }: any) {
+      // Keep JWT minimal: only `id` and `apiToken` are stored here.
       if (user) {
+        if (token.id && token.id !== user.id) {
+          // Token id mismatch — reject to avoid overwriting a valid token
+          return null as any
+        }
+
         token.id = user.id
-        token.role = (user as any).role
         token.apiToken = (user as any).apiToken
-        token.isNewUser = (user as any).isNewUser  
-        token.isProfileCompleted = (user as any).is_profile_completed
-        token.image = user.image || (user as any).avatar || (user as any).avatar_url
       }
-      
-      // For Google OAuth (account?.provider === 'google'), we need to fetch the apiToken from backend
-      // if we don't have it yet
+
+      // For Google OAuth, obtain an API token via social-sync if not present
       if (account?.provider === 'google' && (!token.apiToken || token.apiToken === undefined)) {
         try {
           const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
@@ -218,10 +213,8 @@ export default NuxtAuthHandler({
           if (res.ok) {
             const data = await res.json()
             token.apiToken = data.token
-            token.isNewUser = data.isNewUser  
-            token.role = data.role
-            token.isProfileCompleted = data.is_profile_completed ?? undefined
-            token.rawUser = data.user ?? data
+            // Prefer authoritative id if returned
+            if (data.user && data.user.id) token.id = data.user.id
           } else {
             try {
               await res.text()
@@ -239,18 +232,39 @@ export default NuxtAuthHandler({
       return token
     },
     async session({ session, token }: any) {
-      if (session.user) {
-        (session.user as any).id = token.id as string
-        (session.user as any).role = token.role as string
-        // Make the API token available to the frontend
-        (session.user as any).apiToken = token.apiToken as string
-        (session.user as any).isNewUser = token.isNewUser as boolean  
-        (session.user as any).isProfileCompleted = token.isProfileCompleted as boolean
-        (session.user as any).image = token.image as string
-        // Merge any raw backend response into session.user so frontend sees backend field names.
-        if (token.rawUser && typeof token.rawUser === 'object') {
-          Object.assign(session.user, token.rawUser)
+      // Replace session.user with authoritative profile from the backend (/api/me)
+      // Use personal access token if available to call /api/me; fallback to token id
+      try {
+        const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
+        if (token?.apiToken) {
+          const res = await fetch(`${apiBase}/api/me`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token.apiToken}`
+            }
+          })
+
+          if (res.ok) {
+            const json = await res.json().catch(() => null)
+            const userData = json && (json.user || json.data || json)
+            if (userData) {
+              session.user = userData
+              // Ensure id is present and matches token.id where possible
+              if (!session.user.id && token.id) session.user.id = token.id
+              return session
+            }
+          }
         }
+      } catch (e) {
+        // ignore and fall back
+      }
+
+      // Fallback: expose minimal token info to session.user so client can attempt validation
+      if (token?.id || token?.apiToken) {
+        session.user = session.user || {}
+        if (token.id) (session.user as any).id = token.id
+        if (token.apiToken) (session.user as any).apiToken = token.apiToken
       }
       return session
     }

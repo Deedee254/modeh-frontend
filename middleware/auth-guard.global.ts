@@ -44,18 +44,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo({ path: '/login', query: { next: to.fullPath } })
     }
 
-    // Ensure auth store is synced if authenticated
-    if (status.value === 'authenticated' && data.value?.user) {
-        // Sync user data from Nuxt-Auth session to auth store
-        if (!auth.user || auth.user.id !== (data.value.user as any).id) {
-            auth.setUser(data.value.user)
-        }
+        // Ensure auth store is synced if authenticated
+        if (status.value === 'authenticated') {
+                // Always validate the session with the authoritative API rather than trusting session payload
+                await auth.fetchUser(true)
         
-        // If the session data suggests onboarding isn't finished, verify with backend
+                // If the session data suggests onboarding isn't finished, verify with backend
         // before making navigation decisions. Prefer the `onboarding` object from
         // the API response when available since it contains step-level flags.
-        const rawUser = data.value.user as any
-        const onboarding = rawUser?.onboarding
+                const rawUser = auth.user as any
+                const onboarding = rawUser?.onboarding
 
         const sessionNeedsVerification = (
             // explicit presence of profile_completed status
