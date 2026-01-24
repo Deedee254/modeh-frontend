@@ -56,48 +56,57 @@
          <p>You haven't earned any badges yet. Keep going!</p>
        </div>
 
-       <!-- Category Accordion Grid -->
+       <!-- Category Grid -->
        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-         <div v-for="category in categories" :key="category">
-           <!-- Category Header with Accordion Toggle -->
-           <button
-             @click="toggleCategory(category)"
-             class="w-full flex flex-col items-center justify-center bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 rounded-xl px-4 py-4 border border-emerald-200 transition-all duration-200"
-           >
-             <div class="text-3xl mb-2">{{ getCategoryIcon(category) }}</div>
-             <h2 class="font-bold text-slate-900 text-center text-sm">{{ formatCategory(category) }}</h2>
-             <p class="text-xs text-slate-600 mt-1">{{ groupedBadges[category].length }} badges</p>
-             <svg
-               class="w-4 h-4 text-emerald-600 transition-transform duration-200 mt-2"
-               :class="{ 'rotate-180': expandedCategories[category] }"
-               fill="none"
-               stroke="currentColor"
-               viewBox="0 0 24 24"
-             >
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-             </svg>
-           </button>
+         <button
+           v-for="category in categories"
+           :key="category"
+           @click="selectedCategory = category"
+           class="flex flex-col items-center justify-center bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 rounded-xl px-4 py-6 border border-emerald-200 transition-all duration-200 hover:shadow-md hover:-translate-y-1"
+         >
+           <div class="text-3xl mb-2">{{ getCategoryIcon(category) }}</div>
+           <h2 class="font-bold text-slate-900 text-center text-sm">{{ formatCategory(category) }}</h2>
+           <p class="text-xs text-slate-600 mt-1">{{ groupedBadges[category].length }} badges</p>
+         </button>
+       </div>
+     </div>
 
-           <!-- Category Badges Grid -->
-           <transition
-             enter-active-class="transition duration-200 ease-out"
-             enter-from-class="opacity-0 scale-95"
-             enter-to-class="opacity-100 scale-100"
-             leave-active-class="transition duration-150 ease-in"
-             leave-from-class="opacity-100 scale-100"
-             leave-to-class="opacity-0 scale-95"
-           >
-             <div v-if="expandedCategories[category]" class="mt-4 col-span-1 sm:col-span-2 lg:col-span-4">
-               <div class="flex flex-col gap-4">
+     <!-- Badge Details Modal -->
+     <Teleport to="body">
+       <Transition name="modal">
+         <div v-if="selectedCategory" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+           <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+             <!-- Modal Header -->
+             <div class="sticky top-0 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-200 px-6 py-4 flex items-center justify-between">
+               <div class="flex items-center gap-3">
+                 <span class="text-2xl">{{ getCategoryIcon(selectedCategory) }}</span>
+                 <div>
+                   <h2 class="font-bold text-slate-900">{{ formatCategory(selectedCategory) }}</h2>
+                   <p class="text-xs text-slate-600">{{ groupedBadges[selectedCategory].length }} badges</p>
+                 </div>
+               </div>
+               <button
+                 @click="selectedCategory = null"
+                 class="text-slate-500 hover:text-slate-700 transition"
+               >
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                 </svg>
+               </button>
+             </div>
+
+             <!-- Modal Body -->
+             <div class="p-6">
+               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                  <div
-                   v-for="badge in groupedBadges[category]"
+                   v-for="badge in groupedBadges[selectedCategory]"
                    :key="badge.id"
-                   class="bg-white/70 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 p-5 hover:shadow-lg transition-all duration-200 flex flex-col"
+                   class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-all duration-200 flex flex-col"
                  >
                    <!-- Badge Icon -->
                    <div
                      :class="[
-                       'w-14 h-14 rounded-lg flex items-center justify-center text-2xl mb-4 mx-auto',
+                       'w-16 h-16 rounded-lg flex items-center justify-center text-3xl mb-4 mx-auto',
                        badge.unlocked ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'
                      ]"
                    >
@@ -111,7 +120,7 @@
                    <!-- Points Badge -->
                    <span
                      :class="[
-                       'text-xs px-2.5 py-1 rounded-full text-center mb-3',
+                       'text-xs px-2.5 py-1 rounded-full text-center mb-3 font-medium',
                        badge.unlocked ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
                      ]"
                    >
@@ -124,28 +133,36 @@
                        <span class="text-slate-600">Progress</span>
                        <span class="font-medium text-slate-900">{{ badge.progress }}%</span>
                      </div>
-                     <div class="w-full bg-slate-200 rounded-full h-1.5">
+                     <div class="w-full bg-slate-200 rounded-full h-2">
                        <div
-                         class="bg-gradient-to-r from-emerald-500 to-teal-600 h-1.5 rounded-full transition-all duration-300"
+                         class="bg-gradient-to-r from-emerald-500 to-teal-600 h-2 rounded-full transition-all duration-300"
                          :style="{ width: `${badge.progress}%` }"
                        ></div>
                      </div>
                    </div>
 
                    <!-- Completion Date -->
-                   <div v-if="badge.unlocked && badge.completed_at" class="flex items-center justify-center gap-1 text-xs text-emerald-700 bg-emerald-50 rounded-lg py-2 px-2">
+                   <div v-if="badge.unlocked && badge.completed_at" class="flex items-center justify-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 rounded-lg py-2 px-2">
                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                      </svg>
                      <span>{{ formatDate(badge.completed_at) }}</span>
                    </div>
+
+                   <!-- Locked State Indicator -->
+                   <div v-else-if="!badge.unlocked" class="flex items-center justify-center gap-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg py-2 px-2">
+                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M12 1C6.48 1 2 5.48 2 11v10h4V9c0-3.31 2.69-6 6-6s6 2.69 6 6v12h4V11c0-5.52-4.48-10-10-10z"></path>
+                     </svg>
+                     <span>Locked</span>
+                   </div>
                  </div>
                </div>
              </div>
-           </transition>
+           </div>
          </div>
-       </div>
-     </div>
+       </Transition>
+     </Teleport>
     </div>
   </div>
 </template>
@@ -173,7 +190,7 @@ const loading = ref(true)
 const error = ref(null)
 const auth = useAuthStore()
 const api = useApi()
-const expandedCategories = ref({})
+const selectedCategory = ref(null)
 
 // Computed stats
 const unlockedCount = computed(() => badges.value.filter(b => b.unlocked).length)
@@ -231,11 +248,6 @@ function getCategoryIcon(category) {
   return icons[category] || '🎖️'
 }
 
-// Toggle category accordion
-function toggleCategory(category) {
-  expandedCategories.value[category] = !expandedCategories.value[category]
-}
-
 // Fetch detailed achievements data
 onMounted(async () => {
   try {
@@ -250,10 +262,7 @@ onMounted(async () => {
         ...badge,
         progress: calculateProgress(badge)
       }))
-      // Open first category by default
-      if (categories.value.length > 0) {
-        expandedCategories.value[categories.value[0]] = true
-      }
+      // Don't auto-open any category with modal approach
     } else {
       error.value = 'Failed to load achievements'
     }
@@ -263,6 +272,15 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
+
+// Modal close on escape key
+onMounted(() => {
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') selectedCategory.value = null
+  }
+  window.addEventListener('keydown', handleEscape)
+  return () => window.removeEventListener('keydown', handleEscape)
 })
 
 // Helper functions
@@ -281,3 +299,20 @@ function formatDate(date) {
   })
 }
 </script>
+
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-to,
+.modal-leave-from {
+  opacity: 1;
+}
+</style>

@@ -65,7 +65,7 @@ import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
 import UPagination from '~/components/ui/UPagination.vue'
-import QuizMasterCard from '~/components/ui/QuizMasterCard.vue'
+import QuizMasterCard from '~/components/QuizMasterCard.vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
 

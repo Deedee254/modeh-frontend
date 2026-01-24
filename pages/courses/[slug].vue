@@ -14,40 +14,23 @@
       <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
       <div v-else-if="error" class="mt-6 text-red-600">Failed to load subjects for this course.</div>
 
-      <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <aside class="lg:col-span-1">
-          <FiltersSidebar
-            :subject-options="subjects"
-              :grade-options="taxGrades.value"
-            :showTopic="false"
-            :subject="subjectFilter"
-            :grade="gradeFilter"
-            :level="levelFilter"
-            storageKey="filters:course-detail"
-            @update:subject="val => subjectFilter.value = val"
-            @update:grade="val => gradeFilter.value = val"
-            @update:level="val => levelFilter.value = val"
+      <div v-else>
+        <div v-if="subjects.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No subjects found for this course.</div>
+        <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <SubjectCard
+            v-for="s in subjects"
+            :key="s.id"
+            :title="s.name"
+            :subtitle="`${s.quizzes_count || 0} quizzes available`"
+            :image="resolveIcon(s)"
+            :badgeText="(s.name || '').charAt(0).toUpperCase()"
+            :topicsCount="s.topics_count || s.topics?.length || 0"
+            :to="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
+            :description="s.description || s.summary || ''"
+            :grade="s.grade?.name || s.grade_id || ''"
+            startLabel="Explore Topics"
           />
-        </aside>
-
-        <main class="lg:col-span-3">
-          <div v-if="subjectsFiltered.length === 0" class="p-6 border rounded-md text-sm text-gray-600 bg-white">No subjects found for this course.</div>
-          <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <SubjectCard
-              v-for="s in subjectsFiltered"
-              :key="s.id"
-              :title="s.name"
-              :subtitle="`${s.quizzes_count || 0} quizzes available`"
-              :image="resolveIcon(s)"
-              :badgeText="(s.name || '').charAt(0).toUpperCase()"
-              :topicsCount="s.topics_count || s.topics?.length || 0"
-                :startLink="`/subjects/${encodeURIComponent(s.slug || s.id)}`"
-              :description="s.description || s.summary || ''"
-              :grade="s.grade?.name || s.grade_id || ''"
-              startLabel="Explore Topics"
-            />
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   </div>
@@ -56,7 +39,6 @@
 <script setup>
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
-import FiltersSidebar from '~/components/FiltersBar.vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { ref, computed, onMounted } from 'vue'
 
@@ -70,26 +52,7 @@ const courseMeta = ref({})
 const topicCount = ref(0)
 const quizCount = ref(0)
 
-// sidebar filters
-const subjectFilter = ref('')
-const gradeFilter = ref('')
-const levelFilter = ref('')
-
 const { grades: taxGrades, subjects: taxSubjects, levels: taxLevels, fetchGrades, fetchLevels, fetchGradesByLevel } = useTaxonomy()
-
-const subjectsFiltered = computed(() => {
-  const q = String(query.value || '').toLowerCase().trim()
-  let list = Array.isArray(subjects.value) ? subjects.value.slice() : []
-  if (q) list = list.filter(s => (s.name || '').toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q))
-  if (subjectFilter.value) list = list.filter(s => String(s.id || s.slug || s) === String(subjectFilter.value))
-  if (gradeFilter.value) list = list.filter(s => String(s.grade_id || s.grade || '') === String(gradeFilter.value))
-  if (levelFilter.value) list = list.filter(s => String(s.level_id || (s.grade && s.grade.level_id) || '') === String(levelFilter.value))
-  return list
-})
-
-function onSearch(q) {
-  query.value = q
-}
 
 function resolveIcon(s) {
   return s.image || s.cover_image || '/images/subject.png'
@@ -99,20 +62,19 @@ async function fetchCourseMeta() {
   try {
     // Courses are stored as grades with type='course' on the backend, so reuse grade API
     const res = await $fetch(`${config.public.apiBase}/api/grades/${slug}`)
-    courseMeta.value = res?.grade || res || {}
+    const grade = res?.data || res || {}
+    courseMeta.value = grade
+    // Subjects are already included in the grade response
+    subjects.value = grade.subjects || []
   } catch (e) {
     courseMeta.value = {}
+    subjects.value = []
   }
 }
 
 async function fetchSubjects() {
-  try {
-    const res = await $fetch(`${config.public.apiBase}/api/subjects`, { params: { grade: slug } })
-    const raw = (res && res.subjects && Array.isArray(res.subjects.data)) ? res.subjects.data : (Array.isArray(res?.subjects) ? res.subjects : (Array.isArray(res) ? res : []))
-    subjects.value = Array.isArray(raw) ? raw.filter(Boolean) : []
-  } catch (e) {
-    throw e
-  }
+  // Subjects are now fetched as part of fetchCourseMeta, so this is a no-op
+  // but keep it for backward compatibility in case the Promise.all() expects it
 }
 
 async function fetchTopicCount() {

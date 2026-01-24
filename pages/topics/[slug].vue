@@ -1,39 +1,45 @@
 <template>
   <div>
-    <PageHero :title="topic.name || 'Topic'" :description="`Assessments for ${topic.name || ''}`" padding="py-8 sm:py-12" :showSearch="true">
-      <template #actions>
-        <!-- Search is handled by PageHero's built-in search input -->
-      </template>
-    </PageHero>
+    <div class="bg-gradient-to-br from-slate-50 to-slate-100 border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-8 sm:py-12">
+        <nav class="text-sm text-slate-600 mb-4 flex items-center gap-2">
+          <NuxtLink to="/topics" class="hover:text-brand-600 transition-colors">Topics</NuxtLink>
+          <span class="text-slate-400">›</span>
+          <span class="text-slate-700 font-medium">{{ topic?.name }}</span>
+        </nav>
+        <div class="mt-4">
+          <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 mb-2">{{ topic?.name }}</h1>
+          <p class="text-lg text-slate-600">{{ topic?.description || `Assessments and quizzes for ${topic?.name || 'this topic'}` }}</p>
+        </div>
+      </div>
+    </div>
 
-    <div class="bg-gray-50 min-h-screen">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
-        <div v-else-if="error" class="mt-6 text-red-600">Failed to load quizzes for this topic.</div>
+    <div class="max-w-7xl mx-auto px-4 py-10">
+      <div v-if="loading" class="mt-6"><UiSkeleton :count="1" /></div>
+      <div v-else-if="error" class="mt-6 text-red-600">Failed to load quizzes for this topic.</div>
 
-        <div v-else>
-          <div v-if="normalizedQuizzes.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">No assessments found for this topic.</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <UiQuizCard
-              v-for="qz in displayQuizzes"
-              :key="qz.id"
-              :quiz="qz"
-              :to="`/quizzes/${qz.slug}`"
-              :quiz-id="qz.id"
-              :liked="qz.liked"
-              :likes="qz.likes_count"
-              :title="qz.title"
-              :startLink="`/quizzes/${qz.slug}`"
-              :grade="qz.grade_name"
-              :subject="qz.subject_name"
-              :topic="qz.topic_name"
-              :description="qz.description || ''"
-              :show-grade="true"
-              :show-subject="true"
-              :show-topic="true"
-              @like="onQuizLike(qz, $event)"
-            />
-          </div>
+      <div v-else>
+        <div v-if="normalizedQuizzes.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">No assessments found for this topic.</div>
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <UiQuizCard
+            v-for="qz in displayQuizzes"
+            :key="qz.id"
+            :quiz="qz"
+            :to="`/quizzes/${qz.slug}`"
+            :quiz-id="qz.id"
+            :liked="qz.liked"
+            :likes="qz.likes_count"
+            :title="qz.title"
+            :startLink="`/quizzes/${qz.slug}`"
+            :grade="qz.grade_name"
+            :subject="qz.subject_name"
+            :topic="qz.topic_name"
+            :description="qz.description || ''"
+            :show-grade="true"
+            :show-subject="true"
+            :show-topic="true"
+            @like="onQuizLike(qz, $event)"
+          />
         </div>
       </div>
     </div>
@@ -41,7 +47,6 @@
 </template>
 
 <script setup>
-import PageHero from '~/components/ui/PageHero.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import UiQuizCard from '~/components/ui/QuizCard.vue'
 import { ref, onMounted, computed } from 'vue'
@@ -68,11 +73,12 @@ const loading = computed(() => topicLoading.value || quizzesLoading.value)
 onMounted(async () => {
   try {
     const api = useApi()
-    // fetch topic metadata
-    const topicRes = await api.get(`/api/topics?slug=${slug.value}`)
+    // fetch topic metadata using route model binding
+    const topicRes = await api.get(`/api/topics/${encodeURIComponent(slug.value)}`)
     if (!topicRes.ok) throw topicRes
     const t = await topicRes.json()
-    topic.value = (t && t.topics && t.topics[0]) ? t.topics[0] : ((t && t.topic) ? t.topic : (t || {}))
+    // API returns direct object, not wrapped in data
+    topic.value = t || {}
     topicLoading.value = false
 
     // fetch quizzes for this topic using useQuizzes

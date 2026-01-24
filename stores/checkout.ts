@@ -40,33 +40,51 @@ export const useCheckoutStore = defineStore('checkout', () => {
       const api = useApi()
       const resultPath = type === 'battle' ? `/quizee/battles/${id}/result` : `/quizee/quizzes/result/${attemptId}`
 
-      // For tournament battles we prefer the tournament-specific mark endpoint.
-      // Try tournament mark first, then fallback to the generic battle mark endpoint.
-    let endpoints: string[] = []
+      // Determine endpoints based on type
+      let endpoints: string[] = []
       if (type === 'battle') {
-        endpoints = [
-          `${cfg.public.apiBase}/api/tournaments/battles/${id}/mark`,
-          `${cfg.public.apiBase}/api/battles/${id}/mark`
-        ]
-        // Note: the above includes a tournament-scoped attempt; frontend may provide the tournament id via attemptId in some flows.
-        // We'll try each endpoint until one succeeds or all fail.
+        // For regular battles, only use the generic battle mark endpoint
+        endpoints = [`${cfg.public.apiBase}/api/battles/${id}/mark`]
       } else {
+        // For quizzes, use quiz attempt endpoint
         endpoints = [`${cfg.public.apiBase}/api/quiz-attempts/${attemptId}/mark`]
       }
 
-  let res: any = null
+      let res: any = null
       for (let e of endpoints) {
         // Retry logic for marking answers
         let retries = 3
         while (retries > 0) {
           // postJson returns a Response or similar; treat as any for now
           // remove base prefix because api.postJson expects a path
-          res = await api.postJson(e.replace(cfg.public.apiBase, ''), {}).catch(() => null)
-          if (res && (res.code === 'limit_reached' || res.ok || res.status === 'success')) break
+          const response = await api.postJson(e.replace(cfg.public.apiBase, ''), {}).catch(() => null)
+          if (!response) {
+            retries--
+            if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
+            continue
+          }
+          
+          // Parse response to check for errors or success
+          const data = response.ok ? (await response.json().catch(() => ({}))) : {}
+          
+          if (data.code === 'limit_reached' || data.ok || response.status === 'success') {
+            res = data
+            res._httpStatus = response.status
+            break
+          }
+          
+          // If not ok, capture the error response
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            res = errorData
+            res._httpStatus = response.status
+            break
+          }
+          
           retries--
           if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
         }
-        if (res && (res.ok || res.status === 'success' || res.code === 'limit_reached')) break
+        if (res) break
       }
 
       if (res && res.code === 'limit_reached') {
@@ -77,11 +95,15 @@ export const useCheckoutStore = defineStore('checkout', () => {
         return
       }
 
-      if (res && (res.ok || res.status === 'success')) {
+      if (res && res.ok) {
         pendingMessage.value = 'Completed. Redirecting to results...'
         status.value = 'success'
         const router = useRouter()
         router.push(resultPath)
+      } else if (res && res._httpStatus >= 400) {
+        // Display actual backend error message instead of generic message
+        const errorMsg = res.message || res.error || `Server error (${res._httpStatus})`
+        throw new Error(errorMsg)
       } else {
         throw new Error('Failed to mark results. Please try again in a few seconds.')
       }

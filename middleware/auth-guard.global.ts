@@ -16,7 +16,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const roleMap: Record<string, string> = {
         'quiz-master': 'quiz-master',
         'quizee': 'quizee',
-        'institution-manager': 'institution-manager'
+        'institution-manager': 'institution-manager',
+        'parent': 'parent'
     }
 
     let requiredRole: string | undefined
@@ -27,6 +28,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         if (path.startsWith('/quiz-master/') || path === '/quiz-master') requiredRole = 'quiz-master'
         else if (path.startsWith('/quizee')) requiredRole = 'quizee'
         else if (path.startsWith('/institution-manager')) requiredRole = 'institution-manager'
+        else if (path.startsWith('/parent')) requiredRole = 'parent'
         else if (path.startsWith('/onboarding')) requiredRole = 'authenticated_any'
     }
 

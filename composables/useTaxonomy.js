@@ -129,25 +129,65 @@ export default function useTaxonomy() {
       try {
         const res = await api.get('/api/levels')
         if (!res.ok) {
-          try { console.error('useTaxonomy.fetchLevels: response not ok', res.status) } catch (e) {}
-          return
-        }
-        const data = await res.json().catch(() => null)
-        if (!data) {
-          try { console.error('useTaxonomy.fetchLevels: no data in response') } catch (e) {}
+          try { console.warn('useTaxonomy.fetchLevels: response not ok', res.status, res.statusText) } catch (e) {}
           return
         }
         
-        // LevelResource::collection returns array directly, not wrapped in {data: []}
-        const list = Array.isArray(data) ? data : (data.data || data.levels || [])
+        // Check content-type and response length first
+        const contentType = res.headers?.get('content-type') || ''
+        const text = await res.text().catch(() => '')
         
-        levels.value = list.map(l => ({
-          ...l,
-          id: l.id ? String(l.id) : null,
-          grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null }))
-        }))
+        if (!text || text.trim().length === 0) {
+          try { console.warn('useTaxonomy.fetchLevels: empty response body') } catch (e) {}
+          levels.value = []
+          return
+        }
+        
+        // Try to parse JSON
+        let data
+        try {
+          data = JSON.parse(text)
+        } catch (parseErr) {
+          try { 
+            console.warn('useTaxonomy.fetchLevels: invalid JSON response', {
+              contentType,
+              length: text.length,
+              first100: text.substring(0, 100)
+            }) 
+          } catch (e) {}
+          levels.value = []
+          return
+        }
+        
+        if (!data || typeof data !== 'object') {
+          try { console.warn('useTaxonomy.fetchLevels: response not an object', typeof data) } catch (e) {}
+          levels.value = []
+          return
+        }
+        
+        // LevelResource::collection returns {data: [...], total: N, count: N} or direct array
+        let list = []
+        if (Array.isArray(data)) {
+          list = data
+        } else if (data.data && Array.isArray(data.data)) {
+          list = data.data
+        } else if (data.levels && Array.isArray(data.levels)) {
+          list = data.levels
+        }
+        
+        if (list && list.length > 0) {
+          levels.value = list.map(l => ({
+            ...l,
+            id: l.id ? String(l.id) : null,
+            grades: (l.grades || []).map(g => ({ ...g, id: g.id ? String(g.id) : null }))
+          }))
+        } else {
+          try { console.info('useTaxonomy.fetchLevels: no levels in database') } catch (e) {}
+          levels.value = [] // Set to empty array to avoid re-fetching
+        }
       } catch (e) {
         try { console.error('useTaxonomy.fetchLevels error:', e) } catch (err) {}
+        levels.value = [] // Set to empty array to avoid re-fetching on error
       } finally {
         loadingLevels.value = false
       }
