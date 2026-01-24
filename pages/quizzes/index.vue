@@ -9,7 +9,7 @@
       <h1 class="text-3xl font-bold text-gray-900 mb-6">Practice Quizzes</h1>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto px-4 py-8 pb-16">
       <!-- Sticky Filters at Top -->
       <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
         <div class="space-y-4">
@@ -62,7 +62,7 @@
           <div v-if="(!paginator?.data || paginator.data.length === 0)" class="p-6 border rounded-md text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">0 results returned</div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             <QuizCard
-              v-for="q in paginator.data"
+              v-for="q in paginatedQuizzes"
               :key="q.id"
               :quiz="q"
               :to="`/quizzes/${q.slug}`"
@@ -85,9 +85,40 @@
               @like="onQuizLike(q, $event)"
             />
           </div>
-          <!-- Pagination controls -->
-          <div class="mt-8" v-if="paginator?.data?.length > 0">
-            <Pagination :paginator="paginator" @change-page="onPageChange" />
+          
+          <!-- Pagination Controls -->
+          <div v-if="totalPages > 1" class="mt-8 flex items-center justify-center gap-2">
+            <button 
+              @click="currentPage = Math.max(1, currentPage - 1)"
+              :disabled="currentPage === 1"
+              class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            
+            <div class="flex gap-1">
+              <button
+                v-for="page in visiblePages"
+                :key="page"
+                @click="currentPage = page"
+                :class="[
+                  'px-3 py-2 rounded-lg font-medium transition',
+                  page === currentPage
+                    ? 'bg-brand-600 text-white'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                ]"
+              >
+                {{ page }}
+              </button>
+            </div>
+            
+            <button
+              @click="currentPage = Math.min(totalPages, currentPage + 1)"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
           </div>
         </div>
       </main>
@@ -112,7 +143,6 @@
 <script setup>
 import SkeletonGrid from '~/components/SkeletonGrid.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
-import Pagination from '~/components/Pagination.vue'
 import FiltersSidebar from '~/components/FiltersBar.vue'
 import MobileFilterDrawer from '~/components/MobileFilterDrawer.vue'
 import { ref, computed, watch, onMounted } from 'vue'
@@ -150,7 +180,46 @@ const filterTopic = ref('')
 const gradeFilter = ref('')
 const subjectFilter = ref('')
 const levelFilter = ref('')
-const page = ref(1)
+const currentPage = ref(1)
+const quizzesPerPage = 12
+
+// Computed paginated quizzes
+const paginatedQuizzes = computed(() => {
+  const quizzes = paginator.value?.data || []
+  const start = (currentPage.value - 1) * quizzesPerPage
+  const end = start + quizzesPerPage
+  return quizzes.slice(start, end)
+})
+
+// Total pages computed property
+const totalPages = computed(() => {
+  const total = paginator.value?.total || 0
+  return Math.ceil(total / quizzesPerPage)
+})
+
+// Visible page numbers for pagination
+const visiblePages = computed(() => {
+  const current = currentPage.value
+  const total = totalPages.value
+  const maxVisible = 5
+  const pages = []
+  
+  if (total <= maxVisible) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+  } else {
+    const half = Math.floor(maxVisible / 2)
+    let start = Math.max(1, current - half)
+    let end = Math.min(total, start + maxVisible - 1)
+    
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1)
+    }
+    
+    for (let i = start; i <= end; i++) pages.push(i)
+  }
+  
+  return pages
+})
 
 onMounted(async () => {
   await fetchTopics({ public: true })
@@ -180,8 +249,8 @@ onMounted(async () => {
 async function doFetch() {
   const params = {
     public: true,
-    page: page.value,
-    per_page: 100
+    page: currentPage.value,
+    per_page: quizzesPerPage
   }
   if (query.value) params.q = query.value
 
@@ -213,14 +282,9 @@ async function doFetch() {
   await fetchItems(params)
 }
 
-function onPageChange(p) {
-  page.value = p
-  doFetch()
-}
-
 // Watch filters
 watch([filterTopic, subjectFilter, gradeFilter], () => {
-  page.value = 1
+  currentPage.value = 1
   doFetch()
 })
 

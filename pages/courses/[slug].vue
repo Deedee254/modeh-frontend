@@ -92,7 +92,7 @@ function onSearch(q) {
 }
 
 function resolveIcon(s) {
-  return s.icon || s.image || s.cover_image || '/images/subject-icon.svg'
+  return s.image || s.cover_image || '/images/subject.png'
 }
 
 async function fetchCourseMeta() {

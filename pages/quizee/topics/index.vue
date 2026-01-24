@@ -57,18 +57,35 @@
           No topics available for your level.
         </div>
         <div v-else>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                <TopicCard
-                  v-for="topic in paginatedTopics"
-                  :key="topic.id"
-                  :title="topic.name"
-                  :slug="topic.slug"
-                  :to="`/quizee/topics/${topic.slug}`"
-                  :quizzes-count="topic.quizzes_count"
-                  :subject="topic.subject?.name || topic.subject_name || ''"
-                  :grade="getGradeName(topic)"
-                  :course="getCourseName(topic)"
-                />
+          <!-- Horizontal on mobile -->
+          <div class="sm:hidden space-y-3">
+            <TopicCard
+              v-for="topic in paginatedTopics"
+              :key="topic.id"
+              :title="topic.name"
+              :slug="topic.slug"
+              :to="`/quizee/topics/${topic.slug}`"
+              :quizzesCount="topic.quizzes_count"
+              :subject="topic.subject?.name || topic.subject_name || ''"
+              :grade="getGradeName(topic)"
+              :course="getCourseName(topic)"
+              :isHorizontal="true"
+            />
+          </div>
+
+          <!-- Vertical grid on tablet and desktop -->
+          <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <TopicCard
+              v-for="topic in paginatedTopics"
+              :key="topic.id"
+              :title="topic.name"
+              :slug="topic.slug"
+              :to="`/quizee/topics/${topic.slug}`"
+              :quizzesCount="topic.quizzes_count"
+              :subject="topic.subject?.name || topic.subject_name || ''"
+              :grade="getGradeName(topic)"
+              :course="getCourseName(topic)"
+            />
           </div>
 
           <!-- Pagination Controls -->

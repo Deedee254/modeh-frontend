@@ -135,14 +135,27 @@
       <Carousel :items="safeArray(featuredQuizMasters.slice(0,4))" :perViewSm="1" :perViewMd="2" :perViewLg="3" :auto="false">
         <template #item="{ item }">
           <div class="p-2">
-            <QuizMasterCard :quizMaster="item" />
+            <QuizMasterCard 
+              :quizMaster="item" 
+              :is-following="following[item.id] || false"
+              :loading="followLoading[item.id] || false"
+              @follow="() => toggleQuizMasterFollow(item)"
+            />
           </div>
         </template>
       </Carousel>
     </div>
 
-    <div class="mt-8 hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
-      <QuizMasterCard v-for="qm in featuredQuizMasters.slice(0,4)" :key="qm.id" :quizMaster="qm" class="group" />
+    <div class="mt-8 hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <QuizMasterCard 
+        v-for="qm in featuredQuizMasters.slice(0,4)" 
+        :key="qm.id" 
+        :quizMaster="qm"
+        :is-following="following[qm.id] || false"
+        :loading="followLoading[qm.id] || false"
+        @follow="() => toggleQuizMasterFollow(qm)"
+        class="group"
+      />
     </div>
   </ClientOnly>
         <div class="mt-6 text-center">
@@ -339,6 +352,10 @@ const quizzesLoading = ref(true)
 const testimonials = ref([])
 const sponsors = ref([])
 
+// Quiz master follow state
+const following = ref({})
+const followLoading = ref({})
+
 // Fetch data asynchronously without blocking
 // If a user is logged in and has a grade/level we request quizzes filtered to their profile
 const loadDynamicData = async () => {
@@ -427,6 +444,36 @@ const loadDynamicData = async () => {
   } catch (error) {
     console.error('Error loading dynamic data:', error)
     quizzesLoading.value = false
+  }
+}
+
+// Toggle follow/unfollow quiz master
+const toggleQuizMasterFollow = async (quizMaster) => {
+  const id = quizMaster.id
+  const isCurrentlyFollowing = following.value[id]
+  
+  // Optimistic UI update
+  following.value[id] = !isCurrentlyFollowing
+  followLoading.value[id] = true
+  
+  try {
+    const endpoint = isCurrentlyFollowing ? `/api/quiz-masters/${id}/unfollow` : `/api/quiz-masters/${id}/follow`
+    const res = await api.post(endpoint, {})
+    
+    if (!res.ok) {
+      // Revert optimistic update on error
+      following.value[id] = isCurrentlyFollowing
+      const error = await res.json()
+      throw error
+    }
+  } catch (error) {
+    // Revert optimistic update on error
+    following.value[id] = isCurrentlyFollowing
+    console.error('Error toggling follow:', error)
+    const alert = useAppAlert()
+    alert.error('Failed to update follow status. Please try again.')
+  } finally {
+    followLoading.value[id] = false
   }
 }
 
@@ -683,6 +730,7 @@ function onQuizLike(quiz, payload) {
 
 // Auth store for template checks
 import { useAuthStore } from '~/stores/auth'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 const auth = useAuthStore()
 

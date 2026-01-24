@@ -37,8 +37,28 @@
             <div v-else class="mt-6">
               <div v-if="filtered.length === 0" class="p-6 border rounded-lg text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 rounded-xl shadow-sm border-slate-200 dark:border-slate-800">No subjects found.</div>
               <div v-else class="space-y-6">
-                <!-- Subjects Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-3">
+                <!-- Subjects Grid - Horizontal on mobile, Vertical on desktop -->
+                <div class="sm:hidden space-y-3">
+                  <SubjectCard
+                    v-for="s in paginatedSubjects"
+                    :key="s.id"
+                    :title="s.name"
+                    :subtitle="`${s.quizzes_count || 0} quizzes available`"
+                    :image="resolveIcon(s)"
+                    :badgeText="(s.name || '').charAt(0).toUpperCase()"
+                    :to="`/subjects/${encodeURIComponent(s.slug)}`"
+                    :topicsCount="(s.topics_count ?? (Array.isArray(s.topics) ? s.topics.length : (s.topics?.data && Array.isArray(s.topics.data) ? s.topics.data.length : 0))) || 0"
+                    :startLink="`/subjects/${encodeURIComponent(s.slug)}`"
+                    :description="s.description || s.summary || ''"
+                    :grade="s.grade?.name || s.grade_id || ''"
+                    :quizzes_count="s.quizzes_count || 0"
+                    startLabel="Explore Topics"
+                    :isHorizontal="true"
+                  />
+                </div>
+
+                <!-- Vertical Grid for tablet and desktop -->
+                <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-3">
                   <SubjectCard
                     v-for="s in paginatedSubjects"
                     :key="s.id"
@@ -253,8 +273,8 @@ function setFilter(v) {
 }
 
 function resolveIcon(s) {
-  if (!s) return '/images/subject-icon.svg'
-  return s.icon || s.image || s.cover_image || '/images/subject-icon.svg'
+  if (!s) return '/images/subject.png'
+  return s.image || s.cover_image || '/images/subject.png'
 }
 
 useHead({

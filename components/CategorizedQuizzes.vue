@@ -112,7 +112,7 @@
 import { computed, reactive } from 'vue'
 import UiQuizCard from '~/components/ui/QuizCard.vue'
 
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import useApi from '~/composables/useApi'
 
@@ -151,6 +151,21 @@ const visibleLevels = computed(() => {
     // Check for quizzes_count field (all types: levels, subjects, topics)
     // This field should be returned by the backend with withCount('quizzes')
     if (typeof item.quizzes_count === 'number' && item.quizzes_count > 0) return true
+
+    // For LEVELS: count quizzes from nested grades → subjects → topics
+    if (props.type === 'level') {
+      if (Array.isArray(item.grades)) {
+        for (const grade of item.grades) {
+          if (Array.isArray(grade.subjects)) {
+            for (const subject of grade.subjects) {
+              if (Array.isArray(subject.topics)) {
+                if (subject.topics.some(t => (t?.quizzes_count || 0) > 0)) return true
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Subject items may include topics with quizzes_count
     if (props.type === 'subject') {
@@ -200,6 +215,11 @@ function makeQuizListRoute(item) {
 const levelQuizzesMap = reactive({})
 const api = useApi()
 
+// Track pending fetch requests to avoid duplicates
+const pendingFetches = new Map()
+let fetchAbortController = null
+let pendingFetchTimer = null
+
 function extractQuizzesFromLevel(level) {
   if (!level) return null
   // common fields where quizzes might be stored
@@ -236,6 +256,11 @@ async function fetchQuizzesForLevel(level, perPage = 3) {
   // if cached, return
   if (levelQuizzesMap[cacheId]) return levelQuizzesMap[cacheId]
 
+  // if already fetching, return the pending promise
+  if (pendingFetches.has(cacheId)) {
+    return pendingFetches.get(cacheId)
+  }
+
   try {
     // Use ID by default for more reliable filtering; fall back to slug
     const identifier = level.id || level.slug
@@ -255,20 +280,31 @@ async function fetchQuizzesForLevel(level, perPage = 3) {
       paramName = isNumeric ? 'level_id' : 'level'
     }
 
-    const endpoint = `/api/quizzes?${paramName}=${encodeURIComponent(identifier)}&per_page=${perPage}&approved=1`
-    const res = await api.get(endpoint)
-    if (!res.ok) {
-      levelQuizzesMap[cacheId] = []
-      return []
-    }
-    const data = await res.json().catch(() => null)
-    // Handle both paginated and direct array responses
-    const quizzes = (data && (data.quizzes?.data || data.data || (Array.isArray(data.quizzes) ? data.quizzes : (Array.isArray(data) ? data : [])))) || []
-    levelQuizzesMap[cacheId] = quizzes
-    return quizzes
+    const fetchPromise = (async () => {
+      try {
+        const res = await api.get(`/api/quizzes?${paramName}=${encodeURIComponent(identifier)}&per_page=${perPage}&approved=1`)
+        if (!res.ok) {
+          levelQuizzesMap[cacheId] = []
+          return []
+        }
+        const data = await res.json().catch(() => ({}))
+        // Handle both paginated and direct array responses
+        const quizzes = (data && (data.quizzes?.data || data.data || (Array.isArray(data.quizzes) ? data.quizzes : (Array.isArray(data) ? data : [])))) || []
+        levelQuizzesMap[cacheId] = quizzes
+        return quizzes
+      } catch (e) {
+        console.error(`[CategorizedQuizzes] Error fetching quizzes for ${props.type}:`, e)
+        levelQuizzesMap[cacheId] = []
+        return []
+      } finally {
+        pendingFetches.delete(cacheId)
+      }
+    })()
+
+    pendingFetches.set(cacheId, fetchPromise)
+    return fetchPromise
   } catch (e) {
-    // Log the error for debugging
-    console.error(`[CategorizedQuizzes] Error fetching quizzes for ${props.type}:`, e)
+    console.error(`[CategorizedQuizzes] Error in fetchQuizzesForLevel:`, e)
     levelQuizzesMap[cacheId] = []
     return []
   }
@@ -283,6 +319,41 @@ function levelQuizzes(level) {
   return levelQuizzesMap[cacheId] || []
 }
 
+// Debounced batch fetch to avoid hammering the API on rapid prop changes
+function scheduleBatchFetch(levelsToFetch) {
+  if (pendingFetchTimer) {
+    clearTimeout(pendingFetchTimer)
+  }
+
+  pendingFetchTimer = setTimeout(() => {
+    const MAX_CONCURRENT = 3
+    const perPage = 3
+
+    // Fetch all in parallel with concurrency limit
+    ;(async () => {
+      const queue = [...levelsToFetch]
+      const active = []
+
+      while (queue.length > 0 || active.length > 0) {
+        // Add new requests up to MAX_CONCURRENT limit
+        while (active.length < MAX_CONCURRENT && queue.length > 0) {
+          const level = queue.shift()
+          const promise = fetchQuizzesForLevel(level, perPage).catch(() => {})
+          active.push(promise)
+        }
+
+        // Wait for at least one to complete before adding more
+        if (active.length > 0) {
+          await Promise.race(active)
+          active.splice(active.findIndex(p => p.then(() => true).catch(() => false)), 1)
+        }
+      }
+    })().catch(() => {})
+
+    pendingFetchTimer = null
+  }, 50) // Reduced debounce to 50ms to avoid perceived slowness
+}
+
 // Watch incoming levels prop and fetch a small number of quizzes for each level
 watch(propsLevels, (newVal) => {
   if (!Array.isArray(newVal) || newVal.length === 0) return
@@ -293,29 +364,25 @@ watch(propsLevels, (newVal) => {
     const embedded = extractQuizzesFromLevel(level)
     if (embedded) return false
     const cacheId = String(level.slug || level.id || level.name || '')
-    return !levelQuizzesMap[cacheId]
+    return !levelQuizzesMap[cacheId] && !pendingFetches.has(cacheId)
   })
 
   if (levelsToFetch.length === 0) return
 
-  // Limit concurrency to avoid flooding the backend and improve perceived load time.
-  const batchSize = 4
-  const perPage = 3
-
-  ;(async () => {
-    try {
-      for (let i = 0; i < levelsToFetch.length; i += batchSize) {
-        const batch = levelsToFetch.slice(i, i + batchSize)
-        await Promise.all(batch.map(level => fetchQuizzesForLevel(level, perPage).catch(() => {})))
-      }
-    } catch (e) {
-      // ignore individual fetch errors; UI will render placeholders where needed
-    }
-  })()
+  // Debounce and batch fetch requests
+  scheduleBatchFetch(levelsToFetch)
 }, { immediate: true })
 
 onMounted(() => {
   // ensure any initial prop levels are fetched (watch with immediate handles this too)
+})
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  if (pendingFetchTimer) {
+    clearTimeout(pendingFetchTimer)
+  }
+  pendingFetches.clear()
 })
 </script>
 

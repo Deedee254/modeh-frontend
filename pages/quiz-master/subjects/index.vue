@@ -261,8 +261,8 @@ async function onServerSearch(q) {
 }
 
 function resolveIcon(s) {
-  if (!s) return '/images/subject-icon.svg'
-  return s.icon || s.image || s.cover_image || '/images/subject-icon.svg'
+  if (!s) return '/images/subject.png'
+  return s.image || s.cover_image || '/images/subject.png'
 }
 
 // mark loading as complete (useFetch used with top-level await above)

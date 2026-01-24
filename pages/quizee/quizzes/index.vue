@@ -38,7 +38,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pb-16">
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5 mb-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3 sm:justify-between">
           <!-- Sort Selector (replaces search) -->
@@ -87,7 +87,7 @@
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <QuizCard
-            v-for="qitem in (paginator?.data || [])"
+            v-for="qitem in paginatedQuizzes"
             :key="qitem.id"
             :quiz="qitem"
             :to="`/quizee/quizzes/${qitem.slug}`"
@@ -113,9 +113,39 @@
           />
         </div>
 
-        <!-- Pagination -->
-        <div class="mt-8" v-if="paginator?.data?.length > 0">
-          <Pagination :paginator="paginator" @change-page="onPageChange" />
+        <!-- Pagination Controls -->
+        <div v-if="totalPages > 1" class="mt-8 flex items-center justify-center gap-2">
+          <button 
+            @click="currentPage = Math.max(1, currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          
+          <div class="flex gap-1">
+            <button
+              v-for="page in visiblePages"
+              :key="page"
+              @click="currentPage = page"
+              :class="[
+                'px-3 py-2 rounded-lg font-medium transition',
+                page === currentPage
+                  ? 'bg-brand-600 text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              ]"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button
+            @click="currentPage = Math.min(totalPages, currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
@@ -136,7 +166,6 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
-import Pagination from '~/components/Pagination.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useQuizzes from '~/composables/useQuizzes'
 import { useAuthStore } from '~/stores/auth'
@@ -179,7 +208,45 @@ const sortOptions = [
   { label: 'Shortest', value: 'shortest' }
 ]
 const perPage = ref(12)
-const page = ref(1)
+const currentPage = ref(1)
+
+// Computed paginated quizzes
+const paginatedQuizzes = computed(() => {
+  const quizzes = paginator.value?.data || []
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return quizzes.slice(start, end)
+})
+
+// Total pages computed property
+const totalPages = computed(() => {
+  const total = paginator.value?.total || 0
+  return Math.ceil(total / perPage.value)
+})
+
+// Visible page numbers for pagination
+const visiblePages = computed(() => {
+  const current = currentPage.value
+  const total = totalPages.value
+  const maxVisible = 5
+  const pages = []
+  
+  if (total <= maxVisible) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+  } else {
+    const half = Math.floor(maxVisible / 2)
+    let start = Math.max(1, current - half)
+    let end = Math.min(total, start + maxVisible - 1)
+    
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1)
+    }
+    
+    for (let i = start; i <= end; i++) pages.push(i)
+  }
+  
+  return pages
+})
 
 // Get user's level and grade from profile
 const userProfile = computed(() => {
@@ -211,7 +278,7 @@ watch([sortBy, userLevelId, userGradeId], () => {
   const params = {
     sort: sortBy.value,
     per_page: perPage.value,
-    page: page.value
+    page: currentPage.value
   }
   
   // ensure we merge user's attempts into the listing so attempted badges show
@@ -220,7 +287,7 @@ watch([sortBy, userLevelId, userGradeId], () => {
 
 // Separate watcher for perPage to reset page and fetch when per-page changes
 watch(perPage, async () => {
-  page.value = 1 // Reset to first page when per-page changes
+  currentPage.value = 1 // Reset to first page when per-page changes
 
   // Fetch immediately with the new per-page and reset page
   const params = {
@@ -233,11 +300,11 @@ watch(perPage, async () => {
 })
 
 // Separate watcher for page changes
-watch(page, async () => {
+watch(currentPage, async () => {
   const params = {
     sort: sortBy.value,
     per_page: perPage.value,
-    page: page.value
+    page: currentPage.value
   }
 
   // ensure we merge user's attempts into the listing so attempted badges show
@@ -248,7 +315,7 @@ onMounted(async () => {
   const params = {
     sort: sortBy.value,
     per_page: perPage.value,
-    page: page.value
+    page: currentPage.value
   }
   
   await fetchItems({ ...params, mergeAttempts: true }) 
@@ -260,7 +327,7 @@ watch(() => auth.user, () => {
   const params = {
     sort: sortBy.value,
     per_page: perPage.value,
-    page: page.value
+    page: currentPage.value
   }
   fetchItems({ ...params, mergeAttempts: true })
 })
@@ -285,15 +352,13 @@ watch(() => route.path, async (newPath) => {
     const params = {
       sort: sortBy.value,
       per_page: perPage.value,
-      page: page.value
+      page: currentPage.value
     }
     await fetchItems({ ...params, mergeAttempts: true })
   }
 })
 
 // fetchItems & fetchTopics provided by composable
-
-function onPageChange(p) { page.value = p }
 
 function onQuizLike(item, payload) {
   try {

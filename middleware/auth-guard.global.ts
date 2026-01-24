@@ -24,7 +24,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (layout && roleMap[layout]) {
         requiredRole = roleMap[layout]
     } else {
-        if (path.startsWith('/quiz-master')) requiredRole = 'quiz-master'
+        if (path.startsWith('/quiz-master/') || path === '/quiz-master') requiredRole = 'quiz-master'
         else if (path.startsWith('/quizee')) requiredRole = 'quizee'
         else if (path.startsWith('/institution-manager')) requiredRole = 'institution-manager'
         else if (path.startsWith('/onboarding')) requiredRole = 'authenticated_any'

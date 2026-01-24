@@ -1,24 +1,65 @@
 <template>
-  <div class="group relative flex w-full flex-col rounded-lg overflow-hidden transition-all duration-300 h-full bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900">
+  <!-- Horizontal variant (Mobile) -->
+  <div v-if="isHorizontal" class="group relative w-full flex flex-row rounded-lg overflow-hidden transition-all duration-300 bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900">
+    <!-- Image Left (Fixed width) -->
+    <div class="relative w-24 sm:w-28 flex-shrink-0 bg-slate-100 overflow-hidden rounded-l-lg">
+      <img v-if="finalImage" :src="finalImage" :alt="displayTitle" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+      <div v-else class="h-full w-full bg-gradient-to-br from-brand-50 to-brand-100/50 flex items-center justify-center">
+        <Icon name="heroicons:document-text" class="h-8 w-8 text-brand-700/50" />
+      </div>
+      <!-- Grade Badge on image -->
+      <div v-if="displayGrade" class="absolute top-1 left-1 z-20">
+        <div class="px-2 py-0.5 bg-white/95 backdrop-blur-sm rounded text-[10px] font-bold uppercase tracking-wide text-slate-800 shadow-sm border border-black/5">
+          {{ displayGrade }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Right -->
+    <div class="flex flex-col flex-1 min-w-0 p-3">
+      <h3 class="text-[14px] leading-[18px] font-semibold text-[#1f1f1f] dark:text-white line-clamp-2 mb-1">
+        {{ displayTitle }}
+      </h3>
+      
+      <!-- Meta -->
+      <div class="mt-auto flex items-center justify-between text-xs text-[#6a6f73]">
+        <div class="flex items-center gap-1">
+          <span class="font-medium">{{ quizzesCount }}</span>
+          <span>{{ quizzesCount === 1 ? 'Quiz' : 'Quizzes' }}</span>
+        </div>
+        <NuxtLink 
+          :to="to || (props.topic?.slug ? `/topics/${props.topic.slug}` : '#')" 
+          class="inline-flex items-center justify-center rounded px-3 py-1 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
+        >
+          View
+        </NuxtLink>
+      </div>
+    </div>
     
-    <!-- Hero Section (Aspect Ratio 16:9) -->
-    <div class="relative w-full aspect-video bg-slate-100 overflow-hidden">
+    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-label="View Topic Details"></NuxtLink>
+  </div>
+
+  <!-- Vertical variant (Desktop) -->
+  <div v-else class="group relative flex w-full flex-col rounded-lg overflow-hidden transition-all duration-300 h-full bg-white shadow-sm hover:shadow-md border border-slate-200 hover:border-brand-200 dark:border-slate-800 dark:bg-slate-900 p-3">
+    
+    <!-- Hero Section (Fixed height h-32, allows shrinking) -->
+    <div class="relative w-full h-32 bg-slate-100 overflow-hidden rounded-md">
        <!-- Gradient Overlay for Topic if no image -->
-       <div v-if="!image" class="absolute inset-0 bg-gradient-to-br from-brand-50 to-brand-100/50 flex items-center justify-center opacity-60">
+       <div v-if="!finalImage" class="absolute inset-0 bg-gradient-to-br from-brand-50 to-brand-100/50 flex items-center justify-center opacity-60">
           <Icon name="heroicons:document-text" class="h-12 w-12 text-brand-700/50" />
        </div>
-       <img v-else :src="image" :alt="displayTitle" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+       <img v-else :src="finalImage" :alt="displayTitle" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
 
-       <!-- Badge Top Left -->
-       <div class="absolute top-2 left-2">
+       <!-- Badge Top Left (Grade) -->
+       <div v-if="displayGrade" class="absolute top-2 left-2">
          <div class="px-2 py-0.5 bg-white/95 backdrop-blur-sm rounded text-[10px] font-bold uppercase tracking-wide text-slate-800 shadow-sm border border-black/5">
-            TOPIC
+            {{ displayGrade }}
          </div>
        </div>
     </div>
 
     <!-- Content Section -->
-    <div class="flex flex-col flex-1 p-4">
+    <div class="flex flex-col flex-1 mt-3">
        <!-- Organization / Subject Name -->
        <div class="flex items-center gap-1.5 mb-2">
           <span class="text-[13px] font-medium text-[#6a6f73] truncate">{{ displaySubject || 'Learning Resource' }}</span>
@@ -37,9 +78,6 @@
 
        <!-- Tags -->
        <div class="flex flex-wrap gap-2 mb-4">
-          <span v-if="displayGrade" class="px-2 py-0.5 bg-[#f1f3f4] text-[#6a6f73] text-[11px] font-medium rounded-full border border-slate-100">
-            {{ displayGrade }}
-          </span>
           <span v-if="displayCourse" class="px-2 py-0.5 bg-[#f1f3f4] text-[#6a6f73] text-[11px] font-medium rounded-full border border-slate-100">
             {{ displayCourse }}
           </span>
@@ -83,6 +121,12 @@ const props = defineProps({
   startLink: { type: [String, Object], default: null },
   startLabel: { type: String, default: 'View Quizzes' },
   topic: { type: Object, default: null },
+  isHorizontal: { type: Boolean, default: false },
+})
+
+const finalImage = computed(() => {
+  // Use provided image first, otherwise use default topic image
+  return props.image || '/images/topic.png'
 })
 
 const displayTitle = computed(() => props.title || props.name || props.topic?.name || 'Topic')

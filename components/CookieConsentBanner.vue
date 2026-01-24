@@ -180,9 +180,9 @@
     </div>
   </Transition>
 
-  <!-- Cookie Settings Toggle Button (Footer) -->
+  <!-- Cookie Settings Toggle Button (Footer) - Only show if no choice made yet -->
   <button
-    v-if="store.bannerDismissed"
+    v-if="!store.bannerDismissed"
     @click="showSettings = true"
     class="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white shadow-lg transition-all hover:scale-110 group"
     title="Cookie Settings"
@@ -206,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, watch } from 'vue'
 import { useCookieConsentStore } from '~/stores/cookieConsent'
 
 const store = useCookieConsentStore()
@@ -216,8 +216,19 @@ const preferences = reactive({
   marketing: false
 })
 
+// Load consent immediately when store initializes
+store.loadConsent()
+
+// Watch for changes to show/hide the banner
+watch(() => store.bannerDismissed, (isDismissed) => {
+  // Auto-close settings if banner is dismissed
+  if (isDismissed && showSettings.value) {
+    showSettings.value = false
+  }
+})
+
 onMounted(() => {
-  // Load consent on component mount
+  // Reload consent in case localStorage changed
   store.loadConsent()
   preferences.analytics = store.preferences.analytics
   preferences.marketing = store.preferences.marketing

@@ -610,7 +610,15 @@ async function submitAnswers() {
         else if (body?.awarded_achievements && body.awarded_achievements.length) await auth.fetchUser()
       } catch (e) {}
       if (attemptId) {
-        router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptId}`)
+        // Check if quiz is free - if so, redirect directly to results without checkout barrier
+        const isFreeQuiz = quiz.value?.access === 'free'
+        if (isFreeQuiz) {
+          // Free quiz: show results directly
+          router.push(`/quizee/quizzes/result/${attemptId}`)
+        } else {
+          // Premium quiz: redirect to checkout to unlock results
+          router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptId}`)
+        }
         return
       }
 

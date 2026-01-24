@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto p-6 max-w-4xl">
+    <div class="container mx-auto p-6 max-w-4xl pb-16">
       <div class="my-8">
         <NuxtLink to="/quiz-masters" class="text-brand-600 hover:underline">
           &larr; Back to all quiz-masters
@@ -13,62 +13,146 @@
       <div v-else-if="error" class="text-center text-red-500">
         Failed to load profile. The quiz-master may not exist or there was a server error.
       </div>
-      <div v-else-if="quizMaster" class="bg-white rounded-2xl shadow-lg p-8">
-        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-8">
-          <div class="flex-shrink-0">
-            <div class="w-40 h-40 rounded-full overflow-hidden ring-4 ring-brand-100">
+      <div v-else-if="quizMaster" class="">
+        <!-- Profile Card - Horizontal on Desktop, Vertical on Mobile -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+          <!-- Desktop Horizontal Layout -->
+          <div class="hidden sm:flex items-stretch">
+            <!-- Image Left -->
+            <div class="flex-shrink-0 w-48">
               <img v-if="resolvedAvatar" :src="resolvedAvatar" :alt="quizMaster.name" class="w-full h-full object-cover">
-              <div v-else class="w-full h-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-6xl">
+              <div v-else class="w-full h-full bg-gradient-to-br from-red-600 to-red-700 text-white grid place-items-center font-bold text-4xl">
                 {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
               </div>
             </div>
-          </div>
-          <div class="flex-1 text-center sm:text-left">
-            <h1 class="text-3xl font-bold text-gray-900">{{ quizMaster.name }}</h1>
-            <p class="text-lg text-gray-600 mt-1">{{ quizMaster.headline || 'Experienced quiz-master' }}</p>
-
-            <div class="mt-4 flex items-center gap-3">
-              <div v-if="quizMaster.subjects && quizMaster.subjects.length" class="flex flex-wrap gap-2">
-                <span v-for="subject in quizMaster.subjects" :key="subject.id" class="bg-brand-50 text-brand-700 text-xs font-medium px-3 py-1 rounded-full">
-                  {{ subject.name }}
-                </span>
-              </div>
+            <!-- Content Right -->
+            <div class="flex-1 p-8 flex flex-col justify-between">
               <div>
-                <button @click="followHandler" :disabled="loadingFollow" class="ml-3 px-4 py-2 rounded-lg border text-sm" :class="following ? 'bg-brand-50 text-brand-700' : 'text-gray-700'">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ quizMaster.name }}</h1>
+                <p class="text-lg text-red-700 font-medium mb-2">{{ quizMaster.headline || 'Experienced quiz-master' }}</p>
+                <p v-if="quizMaster.institution" class="text-sm text-gray-600 mb-4">{{ quizMaster.institution }}</p>
+                
+                <div v-if="quizMaster.bio" class="text-sm text-gray-700 mb-4 line-clamp-2">
+                  {{ quizMaster.bio }}
+                </div>
+
+                <div v-if="quizMaster.subjects && quizMaster.subjects.length" class="flex flex-wrap gap-2">
+                  <span v-for="subject in quizMaster.subjects.slice(0, 3)" :key="subject.id" class="bg-red-50 text-red-700 text-xs font-medium px-3 py-1 rounded-full border border-red-200">
+                    {{ subject.name }}
+                  </span>
+                  <span v-if="quizMaster.subjects.length > 3" class="text-xs text-gray-600">+{{ quizMaster.subjects.length - 3 }} more</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
+                <button @click="followHandler" :disabled="loadingFollow" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition">
                   <span v-if="following">Following</span>
                   <span v-else>Follow</span>
+                </button>
+                <button @click="messageQuizMaster" class="px-4 py-2 rounded-lg border border-red-600 text-red-600 hover:bg-red-50 font-medium text-sm transition">
+                  Message
                 </button>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="mt-8 border-t border-gray-200 pt-8">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">About Me</h2>
-          <div v-if="quizMaster.bio" class="prose max-w-none text-gray-700" v-html="quizMaster.bio"></div>
-          <p v-else class="text-gray-500">
-            This quiz-master has not yet provided a bio.
-          </p>
+          <!-- Mobile Vertical Layout -->
+          <div class="sm:hidden p-6">
+            <div class="mb-4 flex justify-center">
+              <div class="w-40 h-40 rounded-lg overflow-hidden border-2 border-red-600/30">
+                <img v-if="resolvedAvatar" :src="resolvedAvatar" :alt="quizMaster.name" class="w-full h-full object-cover">
+                <div v-else class="w-full h-full bg-gradient-to-br from-red-600 to-red-700 text-white grid place-items-center font-bold text-4xl">
+                  {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
+                </div>
+              </div>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">{{ quizMaster.name }}</h1>
+            <p class="text-sm text-red-700 font-medium text-center mb-2">{{ quizMaster.headline || 'Experienced quiz-master' }}</p>
+            <p v-if="quizMaster.institution" class="text-xs text-gray-600 text-center mb-4">{{ quizMaster.institution }}</p>
+            
+            <div v-if="quizMaster.subjects && quizMaster.subjects.length" class="flex justify-center flex-wrap gap-2 mb-4">
+              <span v-for="subject in quizMaster.subjects.slice(0, 2)" :key="subject.id" class="bg-red-50 text-red-700 text-xs font-medium px-3 py-1 rounded-full border border-red-200">
+                {{ subject.name }}
+              </span>
+              <span v-if="quizMaster.subjects.length > 2" class="text-xs text-gray-600">+{{ quizMaster.subjects.length - 2 }}</span>
+            </div>
+
+            <div v-if="quizMaster.bio" class="text-sm text-gray-700 text-center mb-4">
+              {{ quizMaster.bio }}
+            </div>
+
+            <div class="flex items-center gap-2 pt-4 border-t border-gray-200">
+              <button @click="followHandler" :disabled="loadingFollow" class="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition">
+                <span v-if="following">Following</span>
+                <span v-else>Follow</span>
+              </button>
+              <button @click="messageQuizMaster" class="flex-1 px-4 py-2 rounded-lg border border-red-600 text-red-600 hover:bg-red-50 font-medium text-sm transition">
+                Message
+              </button>
+            </div>
+          </div>
         </div>
         
-        <div v-if="quizMaster.quizzes && quizMaster.quizzes.length" class="mt-8 border-t border-gray-200 pt-8">
-           <h2 class="text-xl font-semibold text-gray-800 mb-4">Quizzes by {{ quizMaster.name }}</h2>
-           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <UCard v-for="quiz in quizMaster.quizzes" :key="quiz.id">
-                <h3 class="font-semibold text-gray-800">{{ quiz.title }}</h3>
-                <p class="text-sm text-gray-500 mt-1">{{ quiz.topic_name || 'General' }}</p>
-                <div class="mt-3">
-                  <NuxtLink :to="`/quizee/quizzes/${quiz.slug}`" class="text-brand-600 font-medium text-sm hover:underline">
-                    View Quiz
-                  </NuxtLink>
-                </div>
-             </UCard>
+        <div v-if="quizMaster.quizzes && quizMaster.quizzes.length" class="mt-8">
+           <h2 class="text-2xl font-bold text-gray-900 mb-6">Quizzes by {{ quizMaster.name }}</h2>
+           <!-- Desktop Grid -->
+           <div class="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-6">
+             <QuizCard 
+               v-for="quiz in paginatedQuizzes" 
+               :key="quiz.id"
+               :quiz="quiz"
+               :is-horizontal="false"
+             />
+           </div>
+           <!-- Mobile List -->
+           <div class="sm:hidden space-y-3">
+             <QuizCard 
+               v-for="quiz in paginatedQuizzes" 
+               :key="quiz.id"
+               :quiz="quiz"
+               :is-horizontal="true"
+             />
+           </div>
+           
+           <!-- Pagination Controls -->
+           <div v-if="totalQuizPages > 1" class="mt-8 flex items-center justify-center gap-2">
+             <button 
+               @click="quizCurrentPage = Math.max(1, quizCurrentPage - 1)"
+               :disabled="quizCurrentPage === 1"
+               class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               Previous
+             </button>
+             
+             <div class="flex gap-1">
+               <button
+                 v-for="page in visibleQuizPages"
+                 :key="page"
+                 @click="quizCurrentPage = page"
+                 :class="[
+                   'px-3 py-2 rounded-lg font-medium transition',
+                   page === quizCurrentPage
+                     ? 'bg-red-600 text-white'
+                     : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                 ]"
+               >
+                 {{ page }}
+               </button>
+             </div>
+             
+             <button
+               @click="quizCurrentPage = Math.min(totalQuizPages, quizCurrentPage + 1)"
+               :disabled="quizCurrentPage === totalQuizPages"
+               class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               Next
+             </button>
            </div>
         </div>
 
-        <div class="mt-6 flex justify-center">
+        <div class="mt-8 flex justify-center">
           <button
-            class="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 shadow"
+            class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow"
             @click="messageQuizMaster"
           >
             Message quiz-master
@@ -82,25 +166,96 @@
 
 <script setup>
 const route = useRoute()
+const router = useRouter()
 const config = useRuntimeConfig()
-const quizMasterSlug = route.params.slug
+const quizMasterParam = route.params.slug
 
-// Fetch by slug; backend returns either { data: [...] } or object
+// Function to generate slug from text
+const generateSlug = (text) => {
+  if (!text) return ''
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
+// Fetch by ID (param could be ID or slug)
 const { data: quizMasterData, pending, error } = await useAsyncData(
-  `quiz-master-${quizMasterSlug}`,
-  () => $fetch(config.public.apiBase + `/api/quiz-masters?slug=${encodeURIComponent(quizMasterSlug)}`)
+  `quiz-master-${quizMasterParam}`,
+  () => $fetch(config.public.apiBase + `/api/quiz-masters/${quizMasterParam}`)
 )
 
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
+import QuizCard from '~/components/ui/QuizCard.vue'
+
+// Quiz pagination state
+const quizCurrentPage = ref(1)
+const quizzesPerPage = 12
 
 const quizMaster = computed(() => {
     if (!quizMasterData.value) return null
-    // API might return quiz-master object nested under a 'data' key
     return quizMasterData.value.data || quizMasterData.value
 })
+
+// Paginated quizzes computed property
+const paginatedQuizzes = computed(() => {
+  const quizzes = quizMaster.value?.quizzes || []
+  const start = (quizCurrentPage.value - 1) * quizzesPerPage
+  const end = start + quizzesPerPage
+  return quizzes.slice(start, end)
+})
+
+// Total pages computed property
+const totalQuizPages = computed(() => {
+  const quizzes = quizMaster.value?.quizzes || []
+  return Math.ceil(quizzes.length / quizzesPerPage)
+})
+
+// Visible page numbers for pagination
+const visibleQuizPages = computed(() => {
+  const current = quizCurrentPage.value
+  const total = totalQuizPages.value
+  const maxVisible = 5
+  const pages = []
+  
+  if (total <= maxVisible) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+  } else {
+    const half = Math.floor(maxVisible / 2)
+    let start = Math.max(1, current - half)
+    let end = Math.min(total, start + maxVisible - 1)
+    
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1)
+    }
+    
+    for (let i = start; i <= end; i++) pages.push(i)
+  }
+  
+  return pages
+})
+
+// Generate slug from quiz master's name
+const generatedSlug = computed(() => {
+  if (!quizMaster.value) return ''
+  return generateSlug(quizMaster.value.name)
+})
+
+// Redirect to slug-based URL if needed
+watch([quizMaster, generatedSlug], ([qm, slug]) => {
+  if (qm && slug && route.params.slug !== slug) {
+    // Update URL to use the generated slug instead of ID
+    router.replace({ 
+      params: { slug: `${slug}-${qm.id}` },
+      query: route.query 
+    })
+  }
+}, { immediate: false })
 
 import { resolveAssetUrl } from '~/composables/useAssets'
 import { computed as _computed } from 'vue'
@@ -192,9 +347,6 @@ useHead({
     { name: 'description', content: () => quizMaster.value ? `View the profile of ${quizMaster.value.name}. ${quizMaster.value.headline || ''}` : 'quiz-master profile' }
   ]
 })
-
-import { useRouter } from 'vue-router'
-const router = useRouter()
 
 function messageQuizMaster() {
   // Open chat widget and start DM with this quiz-master

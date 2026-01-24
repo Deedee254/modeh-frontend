@@ -19,15 +19,29 @@
           <div v-if="displayTopics.length === 0" class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">
             No topics found for this course.
           </div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <TopicCard
-              v-for="t in displayTopics"
-              :key="t.id"
-              :title="t.name"
-              :slug="t.slug"
-              :to="`/quizee/topics/${t.slug}`"
-            />
-          </div>
+          <template v-else>
+            <!-- Horizontal on mobile -->
+            <div class="sm:hidden space-y-3">
+              <TopicCard
+                v-for="t in displayTopics"
+                :key="t.id"
+                :title="t.name"
+                :slug="t.slug"
+                :to="`/quizee/topics/${t.slug}`"
+                :isHorizontal="true"
+              />
+            </div>
+            <!-- Vertical grid on tablet and desktop -->
+            <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <TopicCard
+                v-for="t in displayTopics"
+                :key="t.id"
+                :title="t.name"
+                :slug="t.slug"
+                :to="`/quizee/topics/${t.slug}`"
+              />
+            </div>
+          </template>
         </div>
       </div>
     </div>

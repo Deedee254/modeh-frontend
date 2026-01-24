@@ -138,7 +138,8 @@ export default function useTaxonomy() {
           return
         }
         
-        const list = data.data || data.levels || (Array.isArray(data) ? data : [])
+        // LevelResource::collection returns array directly, not wrapped in {data: []}
+        const list = Array.isArray(data) ? data : (data.data || data.levels || [])
         
         levels.value = list.map(l => ({
           ...l,

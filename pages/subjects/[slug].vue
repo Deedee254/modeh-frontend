@@ -142,7 +142,7 @@ const subjectOptionsForSidebar = computed(() => {
 })
 const error = ref(null)
 
-function resolveIcon(t) { return t.icon || t.image || t.cover_image || '/images/topic-icon.svg' }
+function resolveIcon(t) { return t.image || t.cover_image || '/images/topic.png' }
 
 async function fetchTopics(params = {}) {
   loading.value = true

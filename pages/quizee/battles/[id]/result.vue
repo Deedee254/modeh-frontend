@@ -295,11 +295,11 @@ onMounted(async () => {
       }
     }
 
-    // Call /mark endpoint which handles marking and returns full result
-    // This follows the same pattern as quiz marking
-    const res = await api.postJson(`/api/battles/${battleId}/mark`, {})
+    // Call /result endpoint to retrieve battle results
+    // Use GET request to the battles result endpoint
+    const res = await api.get(`/api/battles/${battleId}/result`)
     
-    if (!res) {
+    if (!res || !res.ok) {
       result.value = null
       loading.value = false
       return
@@ -311,18 +311,24 @@ onMounted(async () => {
       return
     }
     
-    if (res?.error) {
-      throw new Error(res.message || `Failed to fetch battle results`)
+    const json = await res.json().catch(() => null)
+    const data = json && (json.result || json.data || json)
+    
+    if (!data) {
+      result.value = null
+      return
     }
     
-    // mark() returns { ok: true, result: {...}, awarded_achievements: [...] }
-    if (res?.result) {
-      result.value = res.result
-      if (Array.isArray(res?.awarded_achievements)) {
-        awardedAchievements.value = res.awarded_achievements
-      }
-      answerStore.storeAttemptForReview(battleId, res.result)
+    // /result endpoint returns the battle data directly
+    result.value = data
+    
+    // Try to extract awarded achievements if they exist in the response
+    if (Array.isArray(json?.awarded_achievements)) {
+      awardedAchievements.value = json.awarded_achievements
+    } else if (Array.isArray(data?.awarded_achievements)) {
+      awardedAchievements.value = data.awarded_achievements
     }
+    answerStore.storeAttemptForReview(battleId, data)
   } catch (error) {
     console.error("Failed to fetch battle results:", error)
     errorMessage.value = error?.message || 'Failed to load battle results. Please try again.'

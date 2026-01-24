@@ -57,7 +57,24 @@
           No subjects available for your grade level.
         </div>
         <div v-else>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <!-- Horizontal on mobile -->
+          <div class="sm:hidden space-y-3">
+            <SubjectCard
+              v-for="subject in paginatedSubjects"
+              :key="subject.id"
+              :title="subject.name"
+              :description="subject.description || subject.summary"
+              :slug="subject.slug"
+              :to="`/quizee/subjects/${subject.slug}`"
+              :grade="subject.grade || subject.grade_id || ''"
+              :quizzes_count="subject.quizzes_count || 0"
+              :topicsCount="subject.topics_count || 0"
+              :isHorizontal="true"
+            />
+          </div>
+
+          <!-- Vertical grid on tablet and desktop -->
+          <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <SubjectCard
               v-for="subject in paginatedSubjects"
               :key="subject.id"

@@ -1,62 +1,18 @@
 <template>
   <div>
-    <PageHero
-      title="Expert Quiz Masters Who Boost Student Success"
-      description="Discover top educators and subject experts creating engaging quizzes that help people test knowledge across all subjects and expand their minds."
-      :showSearch="false"
-      :flush="true"
-    >
-      <template #eyebrow>
-        Expert educators
-      </template>
+    <!-- Header Section -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <nav class="text-sm text-gray-600 mb-4">
+        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
+        <span class="mx-2">›</span>
+        <span>Quiz Masters</span>
+      </nav>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Expert Quiz Masters</h1>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">Discover top educators and subject experts creating engaging quizzes that help people test knowledge across all subjects and expand their minds.</p>
+    </div>
 
-      <template #actions>
-        <div class="flex flex-col gap-6">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex-1 max-w-2xl">
-              <!-- Placeholder for alignment -->
-            </div>
-            <div class="flex items-center gap-3">
-              <NuxtLink
-                to="/register/quiz-master"
-                class="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-600 shadow-lg shadow-brand-600/30 transition hover:-translate-y-0.5 hover:bg-white/90"
-              >
-                Start Earning as Quiz Master
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <template #highlight>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-white/70">Expert Quiz Masters</p>
-          <p class="mt-1 text-2xl font-semibold text-white">Follow the educators behind top student results</p>
-          <p class="mt-2 text-sm text-white/70">Connect with quiz masters whose students consistently achieve academic excellence.</p>
-        </div>
-      </template>
-
-      <template #highlight-icon>
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0H9m6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </template>
-    </PageHero>
-
-    <!-- Sticky Filters at Top -->
+    <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 py-8">
-      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
-        <FiltersSidebar
-          :grade-options="store.grades"
-          :subject-options="store.subjects"
-          :grade="gradeFilter"
-          :subject="subjectFilter"
-          storageKey="filters:quiz-masters"
-          @update:grade="val => gradeFilter = val"
-          @update:subject="val => subjectFilter = val"
-        />
-      </div>
-
       <main>
 
       <div v-if="pending" class="text-center text-gray-500">
@@ -65,44 +21,59 @@
       <div v-else-if="error" class="text-center text-red-500">
         Failed to load quiz-masters. Please try again later.
       </div>
-      <div v-else-if="quizMasters.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <UCard v-for="quizMaster in quizMasters" :key="quizMaster.id" class="hover:shadow-lg transition">
-          <div class="flex flex-col items-center text-center">
-            <div class="w-24 h-24 rounded-full overflow-hidden mb-4">
-              <img v-if="quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl" :src="resolveAssetUrl(quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl) || (quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl)" :alt="quizMaster.name" class="w-full h-full object-cover">
-              <div v-else class="w-full h-full bg-brand-600/10 text-brand-600 grid place-items-center font-bold text-3xl">
-                {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
-              </div>
-            </div>
-            <h3 class="font-semibold text-lg text-gray-800 dark:text-white">{{ quizMaster.name }}</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ quizMaster.headline || 'Experienced quiz-master' }}</p>
-            <p v-if="quizMaster.institution" class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {{ quizMaster.institution }}
-            </p>
-            <p v-if="quizMaster.subjects && quizMaster.subjects.length" class="mt-2 flex flex-wrap justify-center gap-1">
-              <span v-for="subject in quizMaster.subjects.slice(0, 2)" :key="subject.id" class="bg-brand-600/10 text-brand-600 text-xs font-medium px-2 py-0.5 rounded-full">
-                {{ subject.name }}
-              </span>
-              <span v-if="quizMaster.subjects.length > 2" class="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 text-xs font-medium px-2 py-0.5 rounded-full">
-                +{{ quizMaster.subjects.length - 2 }}
-              </span>
-            </p>
-            <div class="mt-4">
-              <div class="flex items-center gap-3 justify-center">
-                <NuxtLink :to="`/quiz-masters/${quizMaster.slug}`" class="text-brand-600 font-medium text-sm hover:underline">
-                  View Profile
-                </NuxtLink>
-                <button @click="() => toggleFollow(quizMaster)" :disabled="followLoading[quizMaster.id]" class="px-3 py-1 text-sm rounded-md border" :class="following[quizMaster.id] ? 'bg-brand-600/10 text-brand-600 dark:bg-brand-600/20' : 'text-gray-700 dark:text-gray-300'">
-                  <span v-if="following[quizMaster.id]">Following</span>
-                  <span v-else>Follow</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </UCard>
+      <div v-else-if="quizMasters.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <QuizMasterCard 
+          v-for="quizMaster in quizMasters" 
+          :key="quizMaster.id"
+          :quiz-master="quizMaster"
+          :is-following="following[quizMaster.id]"
+          :loading="followLoading[quizMaster.id]"
+          @follow="() => toggleFollow(quizMaster)"
+        />
       </div>
       <div v-else class="text-center text-gray-500">
         No quiz-masters found.
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="pagination && pagination.last_page > 1" class="mt-10 flex items-center justify-center gap-2">
+        <button
+          @click="currentPage = Math.max(1, currentPage - 1)"
+          :disabled="currentPage === 1"
+          class="p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          aria-label="Previous page"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+
+        <div class="flex gap-1">
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            @click="currentPage = page"
+            :class="[
+              'px-3 py-2 rounded-md font-medium transition',
+              currentPage === page
+                ? 'bg-brand-600 text-white'
+                : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300'
+            ]"
+          >
+            {{ page }}
+          </button>
+        </div>
+
+        <button
+          @click="currentPage = Math.min(pagination.last_page, currentPage + 1)"
+          :disabled="currentPage === pagination.last_page"
+          class="p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          aria-label="Next page"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
       </div>
       </main>
     </div>
@@ -111,38 +82,29 @@
 
 <script setup>
 import PageHero from '~/components/ui/PageHero.vue'
-import FiltersSidebar from '~/components/FiltersBar.vue'
 import { ref, computed, watch, onMounted, watchEffect } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
-import { useTaxonomyStore } from '~/stores/taxonomyStore'
-import { useTaxonomyHydration, useMetricsDebug } from '~/composables/useTaxonomyHydration'
+import { useMetricsDebug } from '~/composables/useTaxonomyHydration'
 
 const config = useRuntimeConfig()
-const store = useTaxonomyStore()
 const { print: printMetrics } = useMetricsDebug()
 
-// SSR hydration: pre-fetch grades and subjects
-const { data } = await useTaxonomyHydration({
-  fetchGrades: true,
-  fetchSubjects: true
-})
-
-// --- Filtering ---
-const gradeFilter = ref('')
-const subjectFilter = ref('')
+// --- Pagination ---
+const currentPage = ref(1)
+const itemsPerPage = 12
 
 const filterParams = computed(() => {
-  const params = {}
-  if (gradeFilter.value) params.grade_id = gradeFilter.value
-  if (subjectFilter.value) params.subject_id = subjectFilter.value
-  return params
+  return {
+    page: currentPage.value,
+    per_page: itemsPerPage
+  }
 })
 
 // --- Data Fetching ---
-const { data: quizMastersData, pending, error } = await useAsyncData(
+const { data: quizMastersData, pending, error, refresh } = await useAsyncData(
   'quiz-masters',
   () => $fetch(config.public.apiBase + '/api/quiz-masters', { params: filterParams.value }),
   { watch: [filterParams] }
@@ -152,6 +114,32 @@ const quizMasters = computed(() => {
   if (!quizMastersData.value) return []
   // Handle paginated response
   return quizMastersData.value.data || []
+})
+
+const pagination = computed(() => {
+  if (!quizMastersData.value) return null
+  return {
+    total: quizMastersData.value.total || 0,
+    per_page: quizMastersData.value.per_page || itemsPerPage,
+    current_page: quizMastersData.value.current_page || currentPage.value,
+    last_page: quizMastersData.value.last_page || 1
+  }
+})
+
+const visiblePages = computed(() => {
+  if (!pagination.value) return []
+  const maxVisible = 5
+  const total = pagination.value.last_page
+  const current = pagination.value.current_page
+
+  let start = Math.max(1, current - Math.floor(maxVisible / 2))
+  let end = Math.min(total, start + maxVisible - 1)
+
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
 })
 
 // --- Follow Logic ---
@@ -203,8 +191,6 @@ onMounted(() => {
     setTimeout(() => printMetrics(), 2000)
   }
 })
-
-import { resolveAssetUrl } from '~/composables/useAssets'
 
 useHead({
   title: 'Expert Quiz Masters Who Boost Student Success | Modeh',

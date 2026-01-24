@@ -39,20 +39,80 @@
             <div v-if="pending" class="mt-6"><SkeletonGrid :count="1" /></div>
             <div v-else>
               <div v-if="(!filtered || filtered.length === 0)" class="p-6 border rounded-lg text-sm text-gray-600 bg-white rounded-xl shadow-sm">0 results returned</div>
-              <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-3">
+              <div v-else>
+                <div class="flex items-center gap-3 mb-6">
+                  <div class="text-sm text-gray-500">Showing {{ paginatedTopics.length }} of {{ filtered.length }} topics</div>
+                </div>
+                
+                <!-- Horizontal on mobile -->
+                <div class="sm:hidden space-y-3">
                   <TopicCard
-                  v-for="t in filtered"
-                  :key="t.id"
-                  :title="t.name"
-                  :image="t.image || t.cover_image || ''"
-                  :grade="t.grade?.name || t.grade_name || ''"
-                  :subject="t.subject?.name || t.subject_name || ''"
-                  :description="t.description || t.summary || ''"
-                  :quizzesCount="t.quizzes_count || 0"
-                  :startLink="`/topics/${t.slug}`"
-                  :to="`/topics/${encodeURIComponent(t.slug)}`"
-                  startLabel="View Assessments"
-                />
+                    v-for="t in paginatedTopics"
+                    :key="t.id"
+                    :title="t.name"
+                    :image="t.image || t.cover_image || ''"
+                    :grade="t.grade?.name || t.grade_name || ''"
+                    :subject="t.subject?.name || t.subject_name || ''"
+                    :description="t.description || t.summary || ''"
+                    :quizzesCount="t.quizzes_count || 0"
+                    :startLink="`/topics/${t.slug}`"
+                    :to="`/topics/${encodeURIComponent(t.slug)}`"
+                    startLabel="View Assessments"
+                    :isHorizontal="true"
+                  />
+                </div>
+
+                <!-- Vertical grid on tablet and desktop -->
+                <div class="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-3">
+                  <TopicCard
+                    v-for="t in paginatedTopics"
+                    :key="t.id"
+                    :title="t.name"
+                    :image="t.image || t.cover_image || ''"
+                    :grade="t.grade?.name || t.grade_name || ''"
+                    :subject="t.subject?.name || t.subject_name || ''"
+                    :description="t.description || t.summary || ''"
+                    :quizzesCount="t.quizzes_count || 0"
+                    :startLink="`/topics/${t.slug}`"
+                    :to="`/topics/${encodeURIComponent(t.slug)}`"
+                    startLabel="View Assessments"
+                  />
+                </div>
+
+                <!-- Pagination Controls -->
+                <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-8 pb-8">
+                  <button 
+                    @click="currentPage = Math.max(1, currentPage - 1)"
+                    :disabled="currentPage === 1"
+                    class="px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  <div class="flex items-center gap-1">
+                    <button 
+                      v-for="page in visiblePages"
+                      :key="page"
+                      @click="currentPage = page"
+                      :class="[
+                        'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        page === currentPage
+                          ? 'bg-[#800020] text-white'
+                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      ]"
+                    >
+                      {{ page }}
+                    </button>
+                  </div>
+
+                  <button 
+                    @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                    :disabled="currentPage === totalPages"
+                    class="px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           </main>
@@ -107,6 +167,10 @@ const sortOptions = [
 const subjectFilter = ref('')
 const gradeFilter = ref('')
 
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = 12
+
 const filtered = computed(() => {
   const q = String(query.value || '').toLowerCase().trim()
   let list = topics.value || []
@@ -117,6 +181,33 @@ const filtered = computed(() => {
   else if (sortBy.value === 'za') list = [...list].sort((a,b) => b.name.localeCompare(a.name))
   else list = [...list].sort((a,b) => (b.quizzes_count||0) - (a.quizzes_count||0))
   return list
+})
+
+const totalPages = computed(() => Math.ceil(filtered.value.length / itemsPerPage))
+
+const paginatedTopics = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filtered.value.slice(start, end)
+})
+
+const visiblePages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  const halfVisible = Math.floor(maxVisible / 2)
+  
+  let startPage = Math.max(1, currentPage.value - halfVisible)
+  let endPage = Math.min(totalPages.value, startPage + maxVisible - 1)
+  
+  if (endPage - startPage < maxVisible - 1) {
+    startPage = Math.max(1, endPage - maxVisible + 1)
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i)
+  }
+  
+  return pages
 })
 
 // Small helper to pick a pastel gradient class by id (used for fallback avatars)
