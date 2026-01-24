@@ -302,6 +302,8 @@ export function useProfileForm() {
         auth.setUser(mergedUser)
         // CRITICAL: Refresh session first to ensure nuxt-auth cache is updated
         // Then fetch fresh user data from API
+        // Wait for backend cache to clear and session to fully update before fetching
+        await new Promise(resolve => setTimeout(resolve, 300))
         try {
           const { getSession } = useAuth()
           await getSession()
@@ -333,6 +335,10 @@ export function useProfileForm() {
       // CRITICAL: Reset avatar file on error too, so user can retry
       if (avatarFile.value) {
         avatarFile.value = null
+      }
+      // Also reset preview on error to prevent stale UI state
+      if (avatarPreview.value && !auth.user?.avatar_url) {
+        avatarPreview.value = null
       }
       alert.push({
         type: 'error',

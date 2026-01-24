@@ -9,7 +9,7 @@ export function getQuestionValidationErrors(question: any): string[] {
   switch (question.type) {
     case 'mcq':
       if (!Array.isArray(question.options) || question.options.length < 2) errors.push('MCQ questions require at least 2 options.')
-      if (!Array.isArray(question.answers) && typeof question.correct === 'undefined') errors.push('A correct option must be selected for MCQ.')
+      if (!Array.isArray(question.answers) && typeof question.correct === 'undefined' && typeof question.corrects === 'undefined') errors.push('A correct option must be selected for MCQ.')
       break
     case 'multi':
       if (!Array.isArray(question.options) || question.options.length < 2) errors.push('Multiple select questions require at least 2 options.')

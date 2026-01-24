@@ -16,9 +16,10 @@ export const useAuthStore = defineStore('auth', () => {
   const { data, status, getSession } = useAuth()
   
   // Initialize from session data if available (use raw API shape)
-  const initialUser = data.value?.user || null
-  const user: Ref<User | null> = ref(initialUser)
-  const role: Ref<string | null> = ref(initialUser?.role || null)
+  // Cast to any first since nuxt-auth data shape may differ from User type
+  const initialUser = (data.value?.user as any) || null
+  const user: Ref<User | null> = ref(initialUser as User | null)
+  const role: Ref<string | null> = ref((initialUser as any)?.role || null)
   const guestPlayed = ref(false)
   const api = useApi()
   const router = useRouter()
@@ -141,7 +142,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function fetchUser(force = false) {
+  async function fetchUser(force = false): Promise<User | null> {
     // Always fetch fresh data to ensure we have latest from database
     // The force parameter is kept for API compatibility but we now always fetch
     
@@ -149,7 +150,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (_fetchUserPromise && !force) return _fetchUserPromise
     isFetchingUser.value = true
 
-    _fetchUserPromise = (async () => {
+    _fetchUserPromise = (async (): Promise<User | null> => {
       try {
         // Store current user ID before fetching to detect mid-flight user switches
         const userIdBeforeFetch = user.value?.id
@@ -158,6 +159,11 @@ export const useAuthStore = defineStore('auth', () => {
         // This ensures nuxt-auth's session data is up-to-date
         try {
           await getSession()
+          // Validate that session refresh actually authenticated the user
+          if (status.value !== 'authenticated') {
+            clear()
+            return null
+          }
         } catch (e) {
           // Session refresh might fail, but we can still fetch from /api/me
         }
@@ -171,22 +177,25 @@ export const useAuthStore = defineStore('auth', () => {
              signOut({ redirect: false }).catch(() => {})
           }
           clear()
-          return null
+          return user.value
         }
         if (res.status === 419 || res.status === 403) {
           // CSRF or Forbidden - don't force logout, just return null for now
-          return null
+          return user.value
         }
-        if (!res.ok) return
+        if (!res.ok) return user.value
         
         const json = await res.json().catch(() => null)
         const userData = json && (json.user || json.data || json)
         
         if (userData) {
-          // If user switched during the fetch, retry once to ensure we get the authoritative user
+          // If user switched during the fetch, clear the promise guard to allow immediate retry
           const userIdAfterFetch = userData.id
           if (userIdBeforeFetch && userIdBeforeFetch !== userIdAfterFetch) {
+            // Clear the promise guard BEFORE recursing to prevent deadlock
             _fetchUserPromise = null
+            isFetchingUser.value = false
+            // Force a fresh fetch without deduplication
             return fetchUser(true)
           }
 

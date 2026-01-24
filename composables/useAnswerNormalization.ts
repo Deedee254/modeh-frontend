@@ -65,6 +65,11 @@ export function formatAnswersForSubmission(answers: Record<number, AnswerValue>,
         selected = normalizeAnswer(rawValue)
       }
 
+      // Skip empty answers - don't submit if selected is empty string or empty array
+      if (selected === '' || (Array.isArray(selected) && selected.length === 0)) {
+        return null
+      }
+      
       return {
         question_id: questionId,
         selected,
