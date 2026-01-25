@@ -2,10 +2,6 @@
   <div>
     <template v-if="isAuthed">
       <TopBar v-if="!route.meta.hideTopBar" />
-      <!-- Profile Completion Banner -->
-      <ClientOnly>
-        <ProfileIncompleteBanner />
-      </ClientOnly>
       <div class="min-h-screen flex bg-gray-100">
         <!-- Sidebar: permanent on lg+, drawer on smaller screens -->
         <div :class="['transition-all duration-300', { 'hidden lg:block': !ui.sidebarOpen, 'fixed inset-y-0 left-0 z-40 lg:static': ui.sidebarOpen }]">
@@ -15,6 +11,10 @@
         </div>
         <div v-if="ui.sidebarOpen" @click="ui.sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
         <div class="flex-1 flex flex-col transition-all duration-300 lg:pl-[var(--sidebar-width,256px)]">
+          <!-- Profile Completion Banner - Inside main content area -->
+          <ClientOnly>
+            <ProfileIncompleteBanner />
+          </ClientOnly>
           <main :class="['flex-1 overflow-y-auto min-h-0', !route.meta.hideBottomNav && 'pb-20 md:pb-6']">
             <slot></slot>
           </main>

@@ -1,39 +1,18 @@
 <template>
   <div class="bg-gray-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <!-- Hero (using shared PageHero for consistent styling) -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Hero Section -->
       <PageHero
         title="Daily Challenge"
         description="Test your knowledge with today's daily quiz challenge. Complete it to earn points and climb the leaderboard!"
-        variant="gradient"
-        align="center"
-        padding="py-8 sm:py-12"
-      >
-        <template #stats>
-          <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
-            <p class="text-xs uppercase tracking-wide text-white/70">Points</p>
-            <p class="mt-2 text-xl font-semibold">{{ challenge?.points_reward ?? '\u2014' }}</p>
-          </div>
-          <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
-            <p class="text-xs uppercase tracking-wide text-white/70">Difficulty</p>
-            <p class="mt-2 text-xl font-semibold">{{ challenge?.difficulty ?? '\u2014' }}</p>
-          </div>
-          <div class="rounded-2xl border border-white/15 bg-white/5 p-3 text-white text-center">
-            <p class="text-xs uppercase tracking-wide text-white/70">Attempts</p>
-            <p class="mt-2 text-xl font-semibold">{{ history?.length ?? 0 }}</p>
-          </div>
-        </template>
+        :breadcrumbs="[
+          { text: 'Dashboard', href: '/quizee/dashboard' },
+          { text: 'Daily Challenge', current: true }
+        ]"
+      />
 
-        <template #highlight-icon>
-          <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-          </svg>
-        </template>
-      </PageHero>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
-        <!-- Main content -->
-        <div class="lg:col-span-2">
+      <!-- Main content -->
+      <div>
           <!-- Header with stat cards -->
           <div class="mb-6">
             <div class="mb-4">
@@ -357,8 +336,7 @@
         </aside>
       </div>
     </div>
-  </div>
-</template>
+  </template>
 
 <script setup>
 // Use the quizee layout for this page
@@ -367,6 +345,7 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import useApi from '~/composables/useApi'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useAuthStore } from '~/stores/auth'
+import PageHero from '~/components/ui/PageHero.vue'
 
 const api = useApi()
 const auth = useAuthStore()

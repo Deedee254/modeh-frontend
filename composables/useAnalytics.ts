@@ -23,13 +23,9 @@ export const useAnalytics = () => {
    */
   const canTrack = () => {
     // If GA4 ID is not configured, don't track
-    if (!config.public.googleAnalyticsId) return false
-    
-    // If window.gtag doesn't exist, GA hasn't loaded yet
-    if (!window.gtag) return false
-    
-    // If analytics consent hasn't been given, check if we should track anyway
-    // (Some analytics can run in consent-denied mode for basic functionality)
+    if (!config.public.googleAnalyticsId && !config.public.googleTagManagerId) return false
+
+    // We can still push to dataLayer even if gtag isn't defined (GTM will pick it up)
     return true
   }
 
@@ -51,8 +47,20 @@ export const useAnalytics = () => {
       return
     }
 
-    // GA4 uses gtag's 'event' command
-    window.gtag?.('event', eventName, eventData)
+    // Call gtag if available
+    try {
+      window.gtag?.('event', eventName, eventData)
+    } catch (e) {
+      // ignore
+    }
+
+    // Also push a plain object to dataLayer so GTM listeners can react
+    try {
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push(Object.assign({ event: eventName }, eventData))
+    } catch (e) {
+      // ignore
+    }
   }
 
   /**
@@ -71,7 +79,8 @@ export const useAnalytics = () => {
       return
     }
 
-    window.gtag?.('event', 'page_view', {
+    // Use trackEvent to ensure both gtag and dataLayer are invoked
+    trackEvent('page_view', {
       page_title: title || document.title,
       page_path: path || router.currentRoute.value.path
     })
@@ -92,7 +101,18 @@ export const useAnalytics = () => {
       return
     }
 
-    window.gtag?.('set', { user_properties: properties })
+    try {
+      window.gtag?.('set', { user_properties: properties })
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push({ event: 'set_user_properties', user_properties: properties })
+    } catch (e) {
+      // ignore
+    }
   }
 
   /**

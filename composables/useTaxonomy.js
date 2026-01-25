@@ -127,6 +127,8 @@ export default function useTaxonomy() {
 
     _levelsPromise = (async () => {
       try {
+        // Debug: log the API base used and the request being made
+        try { console.debug('useTaxonomy.fetchLevels: requesting', (typeof config !== 'undefined' && config.public && config.public.apiBase) ? config.public.apiBase + '/api/levels' : '/api/levels') } catch (e) {}
         const res = await api.get('/api/levels')
         if (!res.ok) {
           try { console.warn('useTaxonomy.fetchLevels: response not ok', res.status, res.statusText) } catch (e) {}
@@ -136,6 +138,9 @@ export default function useTaxonomy() {
         // Check content-type and response length first
         const contentType = res.headers?.get('content-type') || ''
         const text = await res.text().catch(() => '')
+        if (!res.ok) {
+          try { console.warn('useTaxonomy.fetchLevels: non-ok response', res.status, res.statusText, 'body:', text) } catch (e) {}
+        }
         
         if (!text || text.trim().length === 0) {
           try { console.warn('useTaxonomy.fetchLevels: empty response body') } catch (e) {}

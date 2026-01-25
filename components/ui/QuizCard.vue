@@ -134,10 +134,12 @@
 
        <!-- Meta Information -->
        <div class="mt-auto space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-          <!-- Subject & Level on one line -->
-          <div v-if="displaySubject || displayLevel" class="text-[12px] text-slate-600 dark:text-slate-400">
+          <!-- Subject & Grade & Level on one line -->
+          <div v-if="displaySubject || (props.showGrade && displayGrade) || displayLevel" class="text-[12px] text-slate-600 dark:text-slate-400">
             <span v-if="displaySubject">{{ displaySubject }}</span>
-            <span v-if="displaySubject && displayLevel"> • </span>
+            <span v-if="displaySubject && (props.showGrade && displayGrade || displayLevel)"> • </span>
+            <span v-if="props.showGrade && displayGrade">{{ displayGrade }}</span>
+            <span v-if="(props.showGrade && displayGrade) && displayLevel"> • </span>
             <span v-if="displayLevel">{{ displayLevel }}</span>
           </div>
 

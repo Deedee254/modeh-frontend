@@ -250,6 +250,8 @@ export default NuxtAuthHandler({
             const userData = json && (json.user || json.data || json)
             if (userData) {
               session.user = userData
+              // Ensure apiToken is preserved in the session so client-side useApi can find it
+              if (token.apiToken) (session.user as any).apiToken = token.apiToken
               // Ensure id is present and matches token.id where possible
               if (!session.user.id && token.id) session.user.id = token.id
               return session

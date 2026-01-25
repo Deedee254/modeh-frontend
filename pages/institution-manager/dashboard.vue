@@ -5,7 +5,7 @@ import { ref } from 'vue';
 import { useApi } from '~/composables/useApi'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 import ErrorAlert from '~/components/ui/ErrorAlert.vue'
-import PageHero from '~/components/institution/PageHero.vue'
+import PageHero from '~/components/ui/PageHero.vue'
 
 const api = useApi()
 const route = useRoute();

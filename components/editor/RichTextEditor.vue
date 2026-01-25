@@ -28,6 +28,15 @@
         <span class="text-lg">{ }</span>
         <span class="text-xs ml-1">Code</span>
       </button>
+      <label class="ml-2 flex items-center gap-2">
+        <span class="text-xs text-slate-500">Lang</span>
+        <select v-model="selectedLanguage" @change="setCodeLanguage" class="text-sm border rounded px-2 py-1 bg-white dark:bg-slate-700">
+          <option value="">auto</option>
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="css">CSS</option>
+        </select>
+      </label>
       <button v-if="features?.math" @click="addMathBlock" title="Add Math Block" :class="{ 'is-active': ed && ed.isActive('math-block') }">
         <span class="text-lg">∑</span>
         <span class="text-xs ml-1">Math</span>
@@ -57,7 +66,7 @@ import Bold from '@tiptap/extension-bold'
 import Italic from '@tiptap/extension-italic'
 import Strike from '@tiptap/extension-strike'
 import Code from '@tiptap/extension-code'
-import CodeBlock from '@tiptap/extension-code-block'
+import History from '@tiptap/extension-history'
 import Dropcursor from '@tiptap/extension-dropcursor'
 import Gapcursor from '@tiptap/extension-gapcursor'
 import HardBreak from '@tiptap/extension-hard-break'
@@ -101,6 +110,8 @@ import type { Component } from 'vue'
 
 const isClient = process.client
 const bubbleMenuComponent = vueRef<Component | null>(null)
+// selected language for code blocks (used when inserting/updating code blocks)
+const selectedLanguage = vueRef<string>('javascript')
 
 // Editor instance (ref) — created onMounted so we can dynamically import optional extensions
 // Use `any` for the runtime editor reference to avoid strict type mismatches
@@ -114,9 +125,8 @@ const tiptapEditor = vueRef<any>(null)
 
 const extensions = computed(() => {
   const exts = [...baseExtensions];
-  if (props.features?.code !== false) {
-    exts.push(CodeBlock.configure({ languageClassPrefix: 'language-' }));
-  }
+  // Code block + syntax highlighting is loaded on the client in onMounted
+  // to avoid SSR/runtime resolution issues with lowlight/highlight.js.
   // Math extension is handled via dynamic import inside onMounted
   return exts;
 });
@@ -135,6 +145,41 @@ onMounted(async () => {
   }
 
   const finalExtensions = [...extensions.value]; // Start with base and code extensions
+  // Dynamically enable code highlighting (client-only)
+  if (props.features?.code) {
+    try {
+      // load lowlight and a couple of languages lazily
+      const lowlightModule = await import('lowlight')
+      const lowlight = (lowlightModule && (lowlightModule.lowlight || lowlightModule.default)) || lowlightModule
+      // register a default language (javascript). Add more as needed.
+      try {
+        const js = (await import('highlight.js/lib/languages/javascript')).default || (await import('highlight.js/lib/languages/javascript'))
+        lowlight.registerLanguage('javascript', js)
+      } catch (e) {
+        // non-fatal if a language fails to load
+      }
+      try {
+        const py = (await import('highlight.js/lib/languages/python')).default || (await import('highlight.js/lib/languages/python'))
+        lowlight.registerLanguage('python', py)
+      } catch (e) {
+        // ignore
+      }
+      try {
+        const css = (await import('highlight.js/lib/languages/css')).default || (await import('highlight.js/lib/languages/css'))
+        lowlight.registerLanguage('css', css)
+      } catch (e) {
+        // ignore
+      }
+
+      const cbModule = await import('@tiptap/extension-code-block-lowlight')
+      const CodeBlockLowlight = cbModule?.default ?? cbModule
+      finalExtensions.push(CodeBlockLowlight.configure({ lowlight, languageClassPrefix: 'language-' }))
+    } catch (e: unknown) {
+      emit('error', new Error('Failed to enable code highlighting: ' + String(e)))
+    }
+  }
+
+  // Dynamically load math extension client-side to avoid SSR issues
   if (props.features?.math) {
     try {
       const mod = await import('@aarkue/tiptap-math-extension');
@@ -214,7 +259,14 @@ function addCodeBlock() {
     const inst = getEditorInstance()
     if (!inst) return
     // Inserts a new paragraph after the current block and turns it into a code block.
-    inst.chain().focus().createParagraphNear().toggleCodeBlock().run() // This might be `toggleCodeBlock({ language: 'auto' })` for better default
+    // Use the currently selected language when creating the block.
+    const lang = selectedLanguage.value || undefined
+    // `toggleCodeBlock` may accept attributes in some versions; fallback to toggling then updating attributes.
+    try {
+      ;(inst.chain() as any).focus().createParagraphNear().toggleCodeBlock({ language: lang }).run()
+    } catch (e) {
+      ;(inst.chain() as any).focus().createParagraphNear().toggleCodeBlock().updateAttributes('codeBlock', { language: lang }).run()
+    }
   } catch (e) {
     console.error('Failed to insert code block', e)
   }
@@ -230,6 +282,23 @@ function addMathBlock() {
     ;(inst.chain() as any).focus().insertMathBlock().run()
   } catch (e) { 
     console.error('Failed to insert math block', e)
+  }
+}
+
+function setCodeLanguage() {
+  try {
+    const inst = getEditorInstance()
+    if (!inst) return
+    const lang = selectedLanguage.value || null
+    // update attributes on the current code block (no-op if not in a code block)
+    try {
+      ;(inst.chain() as any).focus().updateAttributes('codeBlock', { language: lang }).run()
+    } catch (e) {
+      // Some tiptap versions expose `setNode` instead
+      try { (inst.chain() as any).focus().setNode('codeBlock', { language: lang }).run() } catch (_) {}
+    }
+  } catch (e) {
+    console.error('Failed to set code block language', e)
   }
 }
 

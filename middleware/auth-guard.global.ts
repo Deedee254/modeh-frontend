@@ -60,10 +60,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
         const sessionNeedsVerification = (
             // explicit presence of profile_completed status
             (onboarding && onboarding.profile_completed === false) ||
-            // use the clean response structure
-            !rawUser.is_profile_completed ||
-            // missing role info
-            !rawUser.role
+            // use the clean response structure (guard rawUser may be null)
+            (rawUser && !rawUser.is_profile_completed) ||
+            // missing role info (guard rawUser may be null)
+            (!rawUser || !rawUser.role)
         )
 
         if (sessionNeedsVerification && !path.startsWith('/onboarding')) {

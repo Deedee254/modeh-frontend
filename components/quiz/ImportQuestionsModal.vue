@@ -118,122 +118,48 @@ async function onFileSelected(e) {
   createdCount.value = null
   try {
     const name = String(f.name || '').toLowerCase()
-    let rows = []
-    if (name.endsWith('.csv') || f.type === 'text/csv' || name.endsWith('.txt')) {
-      rows = await parseCsvFile(f)
-    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
-      const XLSX = (await import('xlsx')).default
-      rows = await parseExcelFile(f, XLSX)
-    } else {
-      const message = 'Unsupported file type. Please upload CSV or Excel.'
-      alert.push({ type: 'error', message })
+    
+    // Validate file type
+    if (!(name.endsWith('.csv') || name.endsWith('.txt') || name.endsWith('.xlsx') || name.endsWith('.xls') || f.type === 'text/csv')) {
+      alert.push({ type: 'error', message: 'Unsupported file type. Please upload CSV or Excel.' })
       return
     }
+
+    // Send file to backend for parsing
+    const formData = new FormData()
+    formData.append('file', f)
+    
+    const api = useApi()
+    const parseResponse = await api.postFormData('/api/questions/import/parse', formData)
+    
+    if (!parseResponse.headers || !Array.isArray(parseResponse.rows)) {
+      throw new Error('Invalid response from server')
+    }
+
+    // Build question objects from parsed rows
+    const rows = parseResponse.rows.map((rowValues, idx) => {
+      const row = {}
+      parseResponse.headers.forEach((header, i) => {
+        row[header] = rowValues[i] || ''
+      })
+      return row
+    })
 
     const result = await handleParsedRows(rows)
     createdCount.value = result.created
     if (result.errors && result.errors.length) importErrors.value = result.errors
     
-    // Log summary for debugging
-    if (result.created > 0) {
-      // Questions imported successfully
-    }
-    if (result.errors && result.errors.length > 0) {
-      // Import errors encountered
-    }
-    
     const msg = `Imported ${result.created} question(s).`
     alert.push({ type: 'success', message: msg })
   } catch (err) {
-    console.error(err)
-    alert.push({ type: 'error', message: 'Import failed' })
+    console.error('Import error:', err)
+    const errMsg = err.response?.data?.error || err.message || 'Import failed'
+    alert.push({ type: 'error', message: errMsg })
   } finally {
     loading.value = false
     try { e.target.value = '' } catch (e) {}
   }
 }
-
-function normalizeHeader(h) {
-  return String(h ?? '')
-    // strip BOM
-    .replace(/^\uFEFF/, '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-}
-
-function parseCsvFile(file) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const arrayBuffer = await file.arrayBuffer()
-      const decoder = new TextDecoder('utf-8', { fatal: false })
-      const text = decoder.decode(arrayBuffer)
-      
-      const PapaMod = await import('papaparse')
-      const Papa = PapaMod && PapaMod.default ? PapaMod.default : PapaMod
-      Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true,
-        transformHeader: normalizeHeader,
-        transform: (value) => {
-          if (value == null) return ''
-          let str = String(value)
-          str = str.replace(/\ufffd/g, '~')
-          return str
-        },
-        complete: (results) => {
-          const rows = Array.isArray(results.data) ? results.data.map(r => normalizeRowKeys(r)) : []
-          resolve(rows)
-        },
-        error: (err) => reject(err)
-      })
-    } catch (err) { reject(err) }
-  })
-}
-
-async function parseExcelFile(file, XLSX) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        const data = new Uint8Array(reader.result)
-        const wb = XLSX.read(data, { type: 'array', codepage: 65001 })
-        const first = wb.SheetNames[0]
-        const sheet = wb.Sheets[first]
-        let rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
-        if (Array.isArray(rows)) rows = rows.map(r => normalizeRowKeys(r))
-        resolve(rows)
-      } catch (err) { reject(err) }
-    }
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsArrayBuffer(file)
-  })
-}
-
-// csv parsing is handled by PapaParse (see parseCsvFile)
-
-function normalizeRowKeys(row) {
-  if (!row || typeof row !== 'object') return row
-  const out = {}
-  for (const k in row) {
-    if (!Object.prototype.hasOwnProperty.call(row, k)) continue
-    const nk = String(k ?? '')
-      .replace(/^\uFEFF/, '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '_')
-    // Clean the value - remove surrounding quotes if present, and trim
-    let value = row[k]
-    if (typeof value === 'string') {
-      // Remove surrounding quotes (both single and double)
-      value = value.replace(/^["']|["']$/g, '').trim()
-    }
-    out[nk] = value
-  }
-  return out
-}
-
-// parseCsvLine removed; PapaParse replaces custom parsing
 
 function buildQuestionFromRow(row) {
   if (!row || typeof row !== 'object') return null

@@ -47,19 +47,7 @@ onMounted(() => {
       { text: 'Members', href: `/institution-manager/institutions/${institutionSlug}/members` },
       { text: 'Analytics', current: true }
     ]"
-  >
-    <template #eyebrow>
-      Member Insights
-    </template>
-    <template #actions>
-      <NuxtLink
-        :to="`/institution-manager/institutions/${institutionSlug}/members`"
-        class="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 transition-colors"
-      >
-        ← Back to Members
-      </NuxtLink>
-    </template>
-  </PageHero>
+  />
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 

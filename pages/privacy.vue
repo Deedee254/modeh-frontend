@@ -1,6 +1,13 @@
 <template>
   <div class="max-w-5xl mx-auto px-4 py-10">
-  <PageHero title="Privacy Policy" description="Your privacy matters. Learn how Modeh collects and uses your data." align="center" variant="image" :image="'/hero-privacy.jpg'" image-position="center" overlay-class="bg-black/30" />
+    <PageHero 
+      title="Privacy Policy" 
+      description="Your privacy matters. Learn how Modeh collects and uses your data."
+      :breadcrumbs="[
+        { text: 'Home', href: '/' },
+        { text: 'Privacy Policy', current: true }
+      ]"
+    />
 
     <div class="mt-8 space-y-6 text-gray-700">
       <section>

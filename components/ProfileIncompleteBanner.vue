@@ -1,12 +1,12 @@
 <template>
-  <div v-if="show" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 flex items-start justify-between">
-    <div class="mr-4">
+  <div v-if="show" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 flex flex-col md:flex-row md:items-start md:justify-between w-full gap-4 md:gap-0">
+    <div class="mr-0 md:mr-4">
       <p class="text-yellow-800 font-medium">Complete your profile to get a tailored experience.</p>
       <p class="text-sm text-yellow-700">Complete your profile to receive personalized recommendations and content.</p>
     </div>
-    <div class="flex items-center space-x-2">
-      <NuxtLink to="/onboarding" class="px-3 py-1 bg-yellow-600 text-white rounded">Complete profile</NuxtLink>
-      <button @click="dismiss" class="text-yellow-700 underline">Dismiss</button>
+    <div class="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-2">
+      <NuxtLink to="/onboarding" class="px-3 py-2 bg-yellow-600 text-white rounded text-center md:text-left">Complete profile</NuxtLink>
+      <button @click="dismiss" class="text-yellow-700 underline py-2">Dismiss</button>
     </div>
   </div>
 </template>

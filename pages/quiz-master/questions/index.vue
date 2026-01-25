@@ -5,33 +5,7 @@
       description="Create, edit, and organize your question items. Use the bank to quickly assemble quizzes."
       :breadcrumbs="[{ text: 'Dashboard', href: '/quiz-master/dashboard' }, { text: 'Questions', current: true }]"
     >
-      <template #eyebrow>
-       
-        <Icon name="heroicons:circle-stack" class="h-4 w-4 mr-1" />
-        Question Bank
-      </template>
-      <template #actions>
-        <div class="flex items-center gap-4">
-          <UButton size="sm" color="white" variant="soft" @click="fetchItems" icon="i-heroicons-arrow-path">Refresh</UButton>
-          <UButton size="sm" color="primary" @click="goToCreate" icon="i-heroicons-plus" class="!bg-brand-600 hover:!bg-brand-700">Create question</UButton>
-        </div>
-      </template>
-      <template #stats>
-        <div class="flex items-center gap-6">
-          <div>
-            <div class="text-sm text-white/80">Total</div>
-            <div class="mt-1 text-lg font-semibold text-white">{{ totalQuestions }}</div>
-          </div>
-          <div>
-            <div class="text-sm text-white/80">Approved</div>
-            <div class="mt-1 text-lg font-semibold text-white">{{ approvedCount }}</div>
-          </div>
-          <div>
-            <div class="text-sm text-white/80">Pending</div>
-            <div class="mt-1 text-lg font-semibold text-white">{{ pendingCount }}</div>
-          </div>
-        </div>
-      </template>
+      <div class="mt-4"></div>
     </PageHero>
 
     <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">

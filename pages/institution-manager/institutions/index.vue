@@ -6,14 +6,7 @@
       { text: 'Institution Manager', href: '/institution-manager/dashboard' },
       { text: 'Institutions', current: true }
     ]"
-  >
-    <template #eyebrow>
-      Institution Management
-    </template>
-    <template #actions>
-      <NuxtLink to="/institution-manager/institutions/new" class="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700 transition-colors">Create Institution</NuxtLink>
-    </template>
-  </PageHero>
+  />
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 

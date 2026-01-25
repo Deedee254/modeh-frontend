@@ -7,22 +7,16 @@
       Failed to load profile. The quiz-master may not exist or there was a server error.
     </div>
     <div v-else-if="quizMaster" class="pb-12">
-      <!-- Breadcrumbs Navigation -->
-      <div class="border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav class="flex items-center gap-2 text-sm">
-            <NuxtLink to="/" class="text-slate-600 hover:text-slate-900 transition">Home</NuxtLink>
-            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-            <NuxtLink to="/quizee/quiz-masters" class="text-slate-600 hover:text-slate-900 transition">Quiz Masters</NuxtLink>
-            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-            <span class="text-slate-900 font-medium">{{ quizMaster?.name || 'Profile' }}</span>
-          </nav>
-        </div>
-      </div>
+      <!-- PageHero Navigation -->
+      <PageHero
+        :title="quizMaster?.name || 'Quiz Master'"
+        description="View profile, quizzes, and learning resources"
+        :breadcrumbs="[
+          { text: 'Home', href: '/' },
+          { text: 'Quiz Masters', href: '/quizee/quiz-masters' },
+          { text: quizMaster?.name || 'Profile', current: true }
+        ]"
+      />
 
       <!-- Main Content Grid -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -165,6 +159,7 @@
 
 <script setup>
 import ChatModal from '~/components/ChatModal.vue'
+import PageHero from '~/components/ui/PageHero.vue'
 import { ref, computed, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '#imports'

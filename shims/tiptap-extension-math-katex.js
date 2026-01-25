@@ -1,11 +1,8 @@
-// Local shim for tiptap-extension-math-katex
-// Provides a minimal object with `configure` to avoid build-time resolution errors
-const MathKatexStub = {
-  name: 'math-katex-stub',
-  configure(options) {
-    // return a basic passthrough extension-like object
-    return this
-  }
+// Deprecated shim — replaced by dynamic import of the real math extension.
+// Keep this file as a no-op to avoid accidental imports during SSR.
+const DeprecatedMathShim = {
+  name: 'math-katex-deprecated-shim',
+  configure() { return this }
 }
 
-export default MathKatexStub
+export default DeprecatedMathShim

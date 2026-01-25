@@ -1,20 +1,14 @@
 <template>
   <div class="bg-gray-50 min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <!-- Breadcrumbs -->
-      <nav class="mb-4 text-sm" aria-label="Breadcrumb">
-        <ol class="flex items-center gap-2 text-gray-600">
-          <li>
-            <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
-          </li>
-          <li>
-            <svg class="mx-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </li>
-          <li class="font-medium text-gray-900">Assessments</li>
-        </ol>
-      </nav>
+      <!-- Breadcrumbs & Title -->
+      <PageHero
+        title="Assessments"
+        :breadcrumbs="[
+          { text: 'Dashboard', href: '/quizee/dashboard' },
+          { text: 'Assessments', current: true }
+        ]"
+      />
       <!-- Alert if grade is missing -->
       <div v-if="!userGradeName" class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
         <div class="flex gap-3">
@@ -95,6 +89,7 @@
             :takeLink="`/quizee/quizzes/take/${qitem.slug}`"
             :title="qitem.title"
             :topic="qitem.topic?.name"
+            :grade="qitem.grade_name"
             :cover="qitem.cover_image || ''"
             :description="qitem.description"
             :marks="qitem.questions_count"
@@ -109,6 +104,7 @@
             :attempt-correct="qitem.attempt_correct"
             :attempt-incorrect="qitem.attempt_incorrect"
             :attempts-count="qitem.attempts_count"
+            :show-grade="true"
             @like="onQuizLike(qitem, $event)"
           />
         </div>
@@ -163,6 +159,7 @@ definePageMeta({
   ]
 })
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import PageHero from '~/components/ui/PageHero.vue'
 import { useRoute } from 'vue-router'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import QuizCard from '~/components/ui/QuizCard.vue'
@@ -281,6 +278,11 @@ watch([sortBy, userLevelId, userGradeId], () => {
     page: currentPage.value
   }
   
+  // Add grade filter if user has a grade
+  if (userGradeId.value) {
+    params.grade_id = userGradeId.value
+  }
+  
   // ensure we merge user's attempts into the listing so attempted badges show
   fetchItems({ ...params, mergeAttempts: true })
 })
@@ -295,6 +297,11 @@ watch(perPage, async () => {
     per_page: perPage.value,
     page: 1
   }
+  
+  // Add grade filter if user has a grade
+  if (userGradeId.value) {
+    params.grade_id = userGradeId.value
+  }
 
   await fetchItems({ ...params, mergeAttempts: true })
 })
@@ -305,6 +312,11 @@ watch(currentPage, async () => {
     sort: sortBy.value,
     per_page: perPage.value,
     page: currentPage.value
+  }
+  
+  // Add grade filter if user has a grade
+  if (userGradeId.value) {
+    params.grade_id = userGradeId.value
   }
 
   // ensure we merge user's attempts into the listing so attempted badges show
@@ -318,6 +330,11 @@ onMounted(async () => {
     page: currentPage.value
   }
   
+  // Add grade filter if user has a grade
+  if (userGradeId.value) {
+    params.grade_id = userGradeId.value
+  }
+  
   await fetchItems({ ...params, mergeAttempts: true }) 
 })
 
@@ -329,6 +346,12 @@ watch(() => auth.user, () => {
     per_page: perPage.value,
     page: currentPage.value
   }
+  
+  // Add grade filter if user has a grade
+  if (userGradeId.value) {
+    params.grade_id = userGradeId.value
+  }
+  
   fetchItems({ ...params, mergeAttempts: true })
 })
 
@@ -354,6 +377,12 @@ watch(() => route.path, async (newPath) => {
       per_page: perPage.value,
       page: currentPage.value
     }
+    
+    // Add grade filter if user has a grade
+    if (userGradeId.value) {
+      params.grade_id = userGradeId.value
+    }
+    
     await fetchItems({ ...params, mergeAttempts: true })
   }
 })

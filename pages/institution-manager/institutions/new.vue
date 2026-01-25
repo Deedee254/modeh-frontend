@@ -7,11 +7,7 @@
       { text: 'Institutions', href: '/institution-manager/institutions' },
       { text: 'Create New', current: true }
     ]"
-  >
-    <template #eyebrow>
-      Institution Setup
-    </template>
-  </PageHero>
+  />
 
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
@@ -102,8 +98,8 @@ const email = ref('')
 const slug = ref('')
 const parent = ref('')
 const loading = ref(false)
-const error = ref<any>(null)
-const fieldErrors = ref({ name: '', email: '', slug: '' })
+const error = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({ name: '', email: '', slug: '' })
 
 // validation rules
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -142,7 +138,7 @@ async function submit() {
   }
 
   try {
-    const body = {
+    const body: Record<string, string> = {
       name: name.value,
       email: email.value,
     }
@@ -150,9 +146,9 @@ async function submit() {
     if (parent.value) body['parent'] = parent.value
 
     const resp = await api.postJson('/api/institutions', body)
-    const json = await api.parseResponse(resp)
+    const json: any = await api.parseResponse(resp)
     if (resp.ok) {
-      alert.push({ message: 'Institution created', type: 'success' })
+      alert.push({ message: 'Institution created', type: 'success' } as any)
       const newSlug = json?.institution?.slug || slug.value
       if (newSlug) {
         await router.push(`/institution-manager/institutions/${newSlug}/analytics`)
@@ -169,13 +165,15 @@ async function submit() {
           else error.value = msg
         }
       } else {
-        error.value = json?.message || 'Failed to create institution'
-        alert.push({ message: error.value, type: 'error' })
+        const errorMsg: string = json?.message || 'Failed to create institution'
+        error.value = errorMsg
+        alert.push({ message: errorMsg, type: 'error' } as any)
       }
     }
-  } catch (e) {
-    error.value = e?.message || String(e)
-    alert.push({ message: 'Failed to create: ' + error.value, type: 'error' })
+  } catch (e: any) {
+    const caughtMsg: string = e?.message || String(e)
+    error.value = caughtMsg
+    alert.push({ message: 'Failed to create: ' + String(caughtMsg), type: 'error' } as any)
   } finally { loading.value = false }
 }
 

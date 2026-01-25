@@ -1,23 +1,15 @@
 <template>
   <div class="bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <!-- Breadcrumbs -->
+      <!-- Breadcrumbs & Title -->
       <div class="py-6">
-        <nav class="mb-4 text-sm" aria-label="Breadcrumb">
-          <ol class="flex items-center gap-2 text-gray-600">
-            <li>
-              <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
-            </li>
-            <li>
-              <svg class="mx-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </li>
-            <li class="font-medium text-gray-900">Tournaments</li>
-          </ol>
-        </nav>
-        <!-- Page Title -->
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">Tournaments</h1>
+        <PageHero
+          title="Tournaments"
+          :breadcrumbs="[
+            { text: 'Dashboard', href: '/quizee/dashboard' },
+            { text: 'Tournaments', current: true }
+          ]"
+        />
       </div>
 
     <!-- Tournament filters -->
@@ -132,6 +124,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useApi } from '~/composables/useApi'
 import resolveAssetUrl from '~/composables/useAssets'
 import { useRouter } from 'vue-router'
+import PageHero from '~/components/ui/PageHero.vue'
 
 interface Tournament {
   id: number

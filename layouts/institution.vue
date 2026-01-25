@@ -8,10 +8,6 @@
       </template>
     </Topbar>
 
-    <ClientOnly>
-      <ProfileIncompleteBanner />
-    </ClientOnly>
-
     <div class="flex">
       <!-- Desktop Sidebar (always visible) -->
       <div class="hidden md:block">
@@ -27,8 +23,13 @@
         </div>
       </ClientOnly>
 
-      <main class="flex-1 p-6">
-        <NuxtPage />
+      <main class="flex-1 flex flex-col">
+        <ClientOnly>
+          <ProfileIncompleteBanner />
+        </ClientOnly>
+        <div class="flex-1 p-6 overflow-y-auto">
+          <NuxtPage />
+        </div>
       </main>
     </div>
     <!-- Mobile bottom navigation -->

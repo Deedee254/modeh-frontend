@@ -2,13 +2,14 @@
   <div>
     <!-- Header Section -->
     <div class="max-w-7xl mx-auto px-4 py-6">
-      <nav class="text-sm text-gray-600 mb-4">
-        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
-        <span class="mx-2">›</span>
-        <span>Quiz Masters</span>
-      </nav>
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Expert Quiz Masters</h1>
-      <p class="text-gray-600 dark:text-gray-400 mb-6">Discover top educators and subject experts creating engaging quizzes that help people test knowledge across all subjects and expand their minds.</p>
+      <PageHero
+        title="Expert Quiz Masters"
+        description="Discover top educators and subject experts creating engaging quizzes that help people test knowledge across all subjects and expand their minds."
+        :breadcrumbs="[
+          { text: 'Home', href: '/' },
+          { text: 'Quiz Masters', current: true }
+        ]"
+      />
     </div>
 
     <!-- Main Content -->

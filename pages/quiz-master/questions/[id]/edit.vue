@@ -1,20 +1,14 @@
 <template>
   <div class="bg-gray-50 pb-16 md:pb-0">
     <PageHero
-      :title="`Edit Question`"
+      title="Edit Question"
       description="Modify the question details, options, and correct answers."
       :breadcrumbs="[
         { text: 'Dashboard', href: '/quiz-master/dashboard' },
         { text: 'Questions', href: '/quiz-master/questions' },
         { text: 'Edit', current: true }
       ]"
-      padding="py-8 sm:py-12"
-    >
-      <template #eyebrow>
-        <Icon name="heroicons:pencil-square" class="h-4 w-4 mr-1" />
-        Editing
-      </template>
-    </PageHero>
+    />
 
     <div class="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <div v-if="loading" class="text-center py-12">

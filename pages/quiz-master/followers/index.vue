@@ -4,9 +4,7 @@
       title="My Quizees"
       description="A list of users who follow you, have liked, or have taken your quizzes."
       :breadcrumbs="[{ text: 'Dashboard', href: '/quiz-master/dashboard' }, { text: 'Quizees', current: true }]"
-    >
-      <template #eyebrow>Quiz-master tools</template>
-    </PageHero>
+    />
 
     <div class="min-h-[calc(100vh-240px)] bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <!-- Main Content -->

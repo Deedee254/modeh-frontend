@@ -102,6 +102,7 @@ const error = ref(null)
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const auth = useAuth()
 const instStore = useInstitutionsStore()
 const alert = useAppAlert()
 const { signIn } = useAuth()
@@ -122,6 +123,15 @@ async function submit() {
       throw new Error(result?.error || 'Invalid email or password')
     }
 
+    // If the auth session payload already contains user data, use it immediately
+    // as a provisional user to avoid a blank UI while `/api/me` completes.
+    // We still fetch the authoritative `/api/me` afterwards to validate.
+    const provisional = auth?.data?.value?.user;
+    if (provisional && provisional.id) {
+      try { authStore.setUser(provisional) } catch (e) { }
+    }
+
+    // Ensure store is synced with authoritative API; run in foreground to guarantee role-based redirects work
     await authStore.fetchUser?.()
     await ensureUserRole(authStore)
 

@@ -171,7 +171,10 @@ export function useApi() {
     options.headers = { ...authHeaders, ...headers }
     options.credentials = options.credentials || 'include'
 
-    const resp = await fetch(config.public.apiBase + path, options)
+    // Ensure we have a usable public apiBase on the client — fall back to empty string.
+    const base = (config && config.public && config.public.apiBase) ? String(config.public.apiBase) : ''
+    try { console.debug('[useApi] request:', base + path, options) } catch (e) {}
+    const resp = await fetch(base + path, options)
 
     // Handle 419 CSRF error by retrying once
     if (resp.status === 419 && retryCount < 1) {

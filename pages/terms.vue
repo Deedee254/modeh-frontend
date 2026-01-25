@@ -1,7 +1,14 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <PageHero title="Terms of Service" description="Please read these terms carefully before using Modeh." align="center" variant="image" :image="'/hero-terms.jpg'" image-position="center" overlay-class="bg-black/30" />
+      <PageHero 
+        title="Terms of Service" 
+        description="Please read these terms carefully before using Modeh."
+        :breadcrumbs="[
+          { text: 'Home', href: '/' },
+          { text: 'Terms of Service', current: true }
+        ]"
+      />
 
       <div class="mt-8 space-y-6 text-gray-700">
         <section>

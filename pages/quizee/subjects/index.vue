@@ -1,22 +1,13 @@
 <template>
   <div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <!-- Breadcrumbs -->
-      <nav class="mb-4 text-sm" aria-label="Breadcrumb">
-        <ol class="flex items-center gap-2 text-gray-600">
-          <li>
-            <NuxtLink to="/quizee/dashboard" class="hover:text-brand-600">Dashboard</NuxtLink>
-          </li>
-          <li>
-            <svg class="mx-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </li>
-          <li class="font-medium text-gray-900">Your Subjects</li>
-        </ol>
-      </nav>
-      <!-- Page Title -->
-      <h1 class="text-3xl font-bold text-gray-900 mb-6">Your Subjects</h1>
+      <PageHero
+        title="Your Subjects"
+        :breadcrumbs="[
+          { text: 'Dashboard', href: '/quizee/dashboard' },
+          { text: 'Your Subjects', current: true }
+        ]"
+      />
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -140,6 +131,7 @@ import useApi from '~/composables/useApi'
 import SubjectCard from '~/components/ui/SubjectCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
+import PageHero from '~/components/ui/PageHero.vue'
 
 definePageMeta({
   layout: 'quizee',

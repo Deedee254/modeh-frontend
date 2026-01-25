@@ -46,10 +46,6 @@
       </div>
     </header>
 
-    <ClientOnly>
-      <ProfileIncompleteBanner />
-    </ClientOnly>
-
     <div class="flex" :style="{ height: 'calc(100vh - 56px)' }">
       <div class="hidden md:block md:w-64 flex-shrink-0">
         <ParentSidebar />
@@ -63,8 +59,13 @@
         </div>
       </ClientOnly>
 
-      <main class="flex-1 overflow-y-auto p-4 md:p-6">
-        <NuxtPage />
+      <main class="flex-1 flex flex-col">
+        <ClientOnly>
+          <ProfileIncompleteBanner />
+        </ClientOnly>
+        <div class="flex-1 overflow-y-auto p-4 md:p-6">
+          <NuxtPage />
+        </div>
       </main>
     </div>
 

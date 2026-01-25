@@ -1,13 +1,14 @@
 <template>
   <div class="bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 py-6">
-      <nav class="text-sm text-gray-600 mb-4">
-        <NuxtLink to="/" class="hover:text-brand-600">Home</NuxtLink>
-        <span class="mx-2">›</span>
-        <span>Tournaments</span>
-      </nav>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Tournaments</h1>
-      <p class="text-gray-600 mb-6">Compete with other Quizees in structured tournaments to benchmark skills and earn recognition.</p>
+      <PageHero 
+        title="Tournaments"
+        description="Compete with other Quizees in structured tournaments to benchmark skills and earn recognition."
+        :breadcrumbs="[
+          { text: 'Home', href: '/' },
+          { text: 'Tournaments', current: true }
+        ]"
+      />
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">

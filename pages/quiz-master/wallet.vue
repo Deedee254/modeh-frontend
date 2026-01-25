@@ -1,13 +1,10 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800">
     <PageHero
-      :flush="true"
       title="Wallet & Earnings"
       description="Manage your earnings, withdrawals, and transaction history."
       :breadcrumbs="[{ text: 'Dashboard', href: '/quiz-master/dashboard' }, { text: 'Wallet', current: true }]"
-    >
-      <template #eyebrow>Quiz-master tools</template>
-    </PageHero>
+    />
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Wallet Balance Cards -->

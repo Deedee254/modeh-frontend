@@ -25,41 +25,41 @@ export default defineNuxtPlugin(() => {
     return
   }
 
-  // Load Google Analytics script with consent mode
-  useHead({
-    script: [
-      {
-        async: true,
-        src: `https://www.googletagmanager.com/gtag/js?id=${gaId}`,
-        onload() {
-          window.dataLayer = window.dataLayer || []
-          
-          function gtag(...args: any[]) {
-            window.dataLayer?.push(args)
-          }
-          
-          window.gtag = gtag
-          gtag('js', new Date())
-          
-          // Set default consent to 'denied' until user responds
-          // This is required for GDPR/CCPA compliance
-          gtag('consent', 'default', {
-            analytics_storage: 'denied',
-            ad_storage: 'denied',
-            ad_user_data: 'denied',
-            ad_personalization: 'denied',
-            wait_for_update: 500 // Wait 500ms for consent preference
-          })
-          
-          // Initialize GA4 with consent mode enabled
-          gtag('config', gaId, {
-            page_path: router.currentRoute.value.path,
-            anonymize_ip: true // Anonymize IP for privacy
-          })
-        }
-      }
-    ]
-  })
+  // Do NOT load gtag.js directly when using GTM as the canonical loader.
+  // Ensure dataLayer exists and provide a lightweight gtag wrapper that
+  // pushes arguments to dataLayer. GTM will load and handle GA tags.
+  if (process.client) {
+    window.dataLayer = window.dataLayer || []
+
+    function gtag() {
+      window.dataLayer.push(arguments)
+    }
+
+    window.gtag = gtag
+
+    // Set default consent to 'denied' until user responds
+    try {
+      window.gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        wait_for_update: 500
+      })
+    } catch (e) {
+      // ignore
+    }
+
+    // Emit an initial config event so GA tags via GTM can initialize if configured
+    try {
+      window.gtag('config', gaId, {
+        page_path: router.currentRoute.value.path,
+        anonymize_ip: true
+      })
+    } catch (e) {
+      // ignore
+    }
+  }
 
   // Track page views on route change
   router.afterEach((to) => {

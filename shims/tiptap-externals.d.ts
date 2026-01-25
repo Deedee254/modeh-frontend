@@ -1,0 +1,7 @@
+declare module '@tiptap/extension-history'
+declare module 'lowlight/lib/core'
+declare module 'lowlight'
+declare module '@tiptap/extension-code-block-lowlight'
+declare module 'highlight.js/lib/languages/javascript'
+declare module 'highlight.js/lib/languages/python'
+declare module 'highlight.js/lib/languages/css'

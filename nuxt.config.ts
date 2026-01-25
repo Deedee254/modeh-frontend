@@ -6,6 +6,10 @@ const publicBaseUrl = stripTrailingSlash(defaultPublicOrigin)
 const envAuthBaseUrl = process.env.NUXT_AUTH_BASE_URL ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL) : undefined
 const authBaseUrl = envAuthBaseUrl ?? `${publicBaseUrl}/api/auth`
 const defaultApiBase = stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://admin.modeh.co.ke'))
+// Default Google Analytics ID fallback (used when env var not provided)
+const defaultGoogleAnalyticsId = process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID || 'G-0ZY24VS3D2'
+// Default Google Tag Manager ID fallback
+const defaultGtmId = process.env.NUXT_PUBLIC_GTM_ID || 'GTM-P6CXDVPF'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
@@ -18,6 +22,20 @@ export default defineNuxtConfig({
       link: [
         // Point explicitly to the .webmanifest file so the browser picks up the PWA manifest
         { rel: 'manifest', href: '/manifest.webmanifest' }
+      ]
+      ,
+      script: [
+        // Google Tag Manager (head snippet) — loads GTM container
+        {
+          children: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], j=d.createElement(s),dl=l!='dataLayer'? '&l='+l: ''; j.async=true; j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl; f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${defaultGtmId}');`,
+          type: 'text/javascript'
+        } as any
+      ],
+      // Insert GTM noscript immediately after opening <body>
+      noscript: [
+        {
+          children: `<iframe src="https://www.googletagmanager.com/ns.html?id=${defaultGtmId}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`
+        } as any
       ]
     }
   },
@@ -32,6 +50,12 @@ export default defineNuxtConfig({
     '@vite-pwa/nuxt',
     '@sidebase/nuxt-auth'
   ],
+
+  // Nuxt-level aliases (ensure server-side imports resolve the same as Vite)
+  alias: {
+    'next-auth/core': new URL('./node_modules/next-auth/core/index.js', import.meta.url).pathname,
+    'next-auth/jwt': new URL('./node_modules/next-auth/jwt/index.js', import.meta.url).pathname
+  },
 
   // -----------------------------
   // UI Framework
@@ -118,7 +142,7 @@ export default defineNuxtConfig({
       runtimeCaching: [
         // Navigation requests — SSR first, fallback to cache
         {
-          urlPattern: ({ request }) => request.mode === 'navigate',
+          urlPattern: ({ request }: any) => request.mode === 'navigate',
           handler: 'NetworkFirst',
           options: {
             cacheName: 'pages',
@@ -181,12 +205,13 @@ export default defineNuxtConfig({
   // Vite Aliases
   // -----------------------------
   vite: {
-    resolve: {
+      resolve: {
       alias: {
-        'tiptap-extension-math-katex': new URL('./shims/tiptap-extension-math-katex.js', import.meta.url).pathname,
         '#tailwind-config': new URL('./tailwind-config/', import.meta.url).pathname,
         '#tailwind-config/theme/colors': new URL('./tailwind-config/theme/colors.js', import.meta.url).pathname,
-        '#tailwind-config/theme': new URL('./tailwind-config/theme', import.meta.url).pathname
+        '#tailwind-config/theme': new URL('./tailwind-config/theme', import.meta.url).pathname,
+        'next-auth/core': new URL('./node_modules/next-auth/core/index.js', import.meta.url).pathname,
+        'next-auth/jwt': new URL('./node_modules/next-auth/jwt/index.js', import.meta.url).pathname
       }
     },
 
@@ -201,17 +226,7 @@ export default defineNuxtConfig({
   css: ['katex/dist/katex.min.css'],
 
   // -----------------------------
-  // PostCSS
-  // -----------------------------
-  postcss: {
-    plugins: {
-      'tailwindcss/nesting': {},
-      tailwindcss: {},
-      autoprefixer: {}
-    }
-  },
 
-  // -----------------------------
   // Runtime Config
   // -----------------------------
   runtimeConfig: {
@@ -227,8 +242,9 @@ export default defineNuxtConfig({
       baseUrl: publicBaseUrl,
       siteUrl: publicBaseUrl,
       
-      // Google Analytics (GA4)
-      googleAnalyticsId: process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID || '',
+      // Google Analytics (GA4) - use env var or safe fallback
+      googleAnalyticsId: process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID || defaultGoogleAnalyticsId,
+      googleTagManagerId: process.env.NUXT_PUBLIC_GTM_ID || defaultGtmId,
       
       // Pusher (for real-time features)
       pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
