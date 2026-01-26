@@ -4,10 +4,24 @@ import type { User } from '~/types'
 /**
  * Global authentication guard.
  * Leverages @sidebase/nuxt-auth status and data.
+ * 
+ * NOTE: fetchUser() is NOT called on every route change to avoid excess API calls.
+ * It's only called:
+ * - After login/register (in auth store)
+ * - When explicitly needed by a page/component
+ * - Initial app hydration (useAuthStore initializes from session data)
  */
 export default defineNuxtRouteMiddleware(async (to) => {
     const { status, data } = useAuth()
     const auth = useAuthStore()
+
+    // If we already have user data loaded, use it without fetching again
+    if (auth.user && auth.user.id) {
+        // Fast path: user already loaded, just validate role
+    } else if (status.value === 'authenticated' && !auth.user) {
+        // User is authenticated but store is empty: fetch once
+        await auth.fetchUser()
+    }
 
     // 1. Determine Required Role based on Layout OR Path
     const layout = to.meta.layout as string | undefined
@@ -46,38 +60,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo({ path: '/login', query: { next: to.fullPath } })
     }
 
-        // Ensure auth store is synced if authenticated
-        if (status.value === 'authenticated') {
-                // Always validate the session with the authoritative API rather than trusting session payload
-                await auth.fetchUser(true)
-        
-                // If the session data suggests onboarding isn't finished, verify with backend
-        // before making navigation decisions. Prefer the `onboarding` object from
-        // the API response when available since it contains step-level flags.
-                const rawUser = auth.user as any
-                const onboarding = rawUser?.onboarding
-
-        const sessionNeedsVerification = (
-            // explicit presence of profile_completed status
-            (onboarding && onboarding.profile_completed === false) ||
-            // use the clean response structure (guard rawUser may be null)
-            (rawUser && !rawUser.is_profile_completed) ||
-            // missing role info (guard rawUser may be null)
-            (!rawUser || !rawUser.role)
-        )
-
-        if (sessionNeedsVerification && !path.startsWith('/onboarding')) {
-            // Await full user fetch to get the freshest onboarding state
-            await auth.fetchUser()
-        } else if (!auth.user?.id) {
-            if (process.client) auth.fetchUser().catch(() => {})
-        }
-    }
-
+    // 4. Check role authorization (only if user is present)
     const user = auth.user as User
     if (!user) return // Should not happen if authenticated
-
-    // 3. Profile Completion & Onboarding Checks
     // Skip these if we are already on an onboarding/profile page to avoid loops
     if (!path.startsWith('/onboarding')) {
         // New users must choose a role. This includes social signups where
