@@ -304,7 +304,7 @@
     </div>
     
     <ReviewAnswers :open="showReview" :loading="reviewLoading" :error="reviewError" :details="reviewDetails" @close="showReview = false"></ReviewAnswers>
-    <PaymentModal :open="showPaymentModal" :pkg="paymentModalPackage" :item="paymentModalItem" :phones="phones" @close="showPaymentModal = false" @paid="onPaymentAttemptClosed"></PaymentModal>
+    <PaymentModal :open="showPaymentModal" :pkg="paymentModalPackage" :item="paymentModalItem" :phones="phones" :owner-context="paymentOwnerContext" @close="showPaymentModal = false" @paid="onPaymentAttemptClosed"></PaymentModal>
     <PaymentAwaitingModal :tx="(checkout as any).tx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed"></PaymentAwaitingModal>
   </div>
 </template>
@@ -364,6 +364,7 @@ const isFreeForSubscribers = computed(() => {
 })
 const tournamentRequiresSubscription = ref<boolean | null>(null)
 const tournamentIntent = ref(false)
+const paymentOwnerContext = ref<Record<string, any>>({})
 
 const showReview = ref(false)
 const isTournamentCheckout = computed(() => type === 'tournament' && !!id)
@@ -752,13 +753,24 @@ function attemptTournamentRegistration() {
 async function openPayment() {
   if (!selectedPackage.value) return
 
+  // Determine owner context based on active subscription type
+  const ownerContext: Record<string, any> = {}
+  if (activeSubscriptionType.value.startsWith('institution-')) {
+    // Extract institution ID from the activeSubscriptionType (format: 'institution-{id}')
+    const institutionId = activeSubscriptionType.value.replace('institution-', '')
+    ownerContext.owner_type = 'institution'
+    ownerContext.owner_id = institutionId
+  }
+  // If activeSubscriptionType is 'personal' or anything else, ownerContext remains empty,
+  // which will default to personal subscription on the backend
+
   // If the package is free (price is 0 or falsy), subscribe automatically
   const priceNum = Number(selectedPackage.value?.price || 0)
   if (!priceNum) {
     try {
       // Free package - subscribing directly without payment modal
       // Call store subscribe which returns parsed data and refreshes subscription
-      await subscriptionsStore.subscribeToPackage(selectedPackage.value, {})
+      await subscriptionsStore.subscribeToPackage(selectedPackage.value, ownerContext)
       await subscriptionsStore.fetchMySubscription(true)
       // notify user
       useAppAlert().push({ type: 'success', message: `You're now subscribed to ${selectedPackage.value.name || 'the free plan'}.` })
@@ -778,9 +790,11 @@ async function openPayment() {
     return
   }
 
-  // For paid packages, show payment modal
+  // For paid packages, show payment modal with owner context
   paymentModalPackage.value = selectedPackage.value
   paymentModalItem.value = null
+  // Store owner context in a ref so PaymentModal can access it
+  paymentOwnerContext.value = ownerContext
   showPaymentModal.value = true
 }
 
@@ -889,7 +903,26 @@ async function openAnswerReview() {
 function seeResults() {
   const idVal = Array.isArray(id) ? id[0] : id
   const attemptIdVal = Array.isArray(attemptId) ? attemptId[0] : attemptId
-  checkout.markResults({ type: String(type), id: idVal ? Number(idVal) || String(idVal) : undefined, attemptId: attemptIdVal ? Number(attemptIdVal) || String(attemptIdVal) : undefined })
+  
+  // Prepare subscription context from UI selection
+  let subContext: Record<string, any> = {}
+  if (activeSubscriptionType.value.startsWith('institution-')) {
+    subContext = {
+      subscription_type: 'institution',
+      institution_id: activeSubscriptionType.value.replace('institution-', '')
+    }
+  } else {
+    subContext = {
+      subscription_type: 'personal'
+    }
+  }
+
+  checkout.markResults({ 
+    type: String(type), 
+    id: idVal ? Number(idVal) || String(idVal) : undefined, 
+    attemptId: attemptIdVal ? Number(attemptIdVal) || String(attemptIdVal) : undefined,
+    ...subContext
+  })
 }
 
 async function refreshLimit() {

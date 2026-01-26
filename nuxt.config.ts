@@ -1,4 +1,5 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import { fileURLToPath } from 'node:url'
 
 const stripTrailingSlash = (value?: string) => value?.replace(/\/$/, '') ?? ''
 const defaultPublicOrigin = process.env.NUXT_PUBLIC_BASE_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://modeh.co.ke')
@@ -53,8 +54,8 @@ export default defineNuxtConfig({
 
   // Nuxt-level aliases (ensure server-side imports resolve the same as Vite)
   alias: {
-    'next-auth/core': new URL('./node_modules/next-auth/core/index.js', import.meta.url).pathname,
-    'next-auth/jwt': new URL('./node_modules/next-auth/jwt/index.js', import.meta.url).pathname
+    'next-auth/core': fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url)),
+    'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url))
   },
 
   // -----------------------------
@@ -124,11 +125,11 @@ export default defineNuxtConfig({
     },
 
     workbox: {
-  // Do not force waiting SW to skip waiting and claim clients. Let the
-  // application control when to update (via updateServiceWorker) to
-  // avoid unexpected full-page reloads for users.
-  skipWaiting: false,
-  clientsClaim: false,
+      // Do not force waiting SW to skip waiting and claim clients. Let the
+      // application control when to update (via updateServiceWorker) to
+      // avoid unexpected full-page reloads for users.
+      skipWaiting: false,
+      clientsClaim: false,
 
       // Nitro renders HTML dynamically → DO NOT fall back to index.html
       navigateFallback: null,
@@ -173,30 +174,30 @@ export default defineNuxtConfig({
       ],
 
       manifestTransforms: [
-          (entries: any) => {
-            // Filter out Nuxt internal runtime files (often under node_modules/nuxt/dist)
-            // to avoid precaching dynamic dev modules that cause failed dynamic imports.
-            const filtered = entries.filter((entry: any) => {
-              if (!entry || !entry.url) return false
-              // Skip precaching any build files that live under node_modules/nuxt/dist
-              if (entry.url.includes('node_modules/nuxt/dist')) return false
-              return true
-            })
+        (entries: any) => {
+          // Filter out Nuxt internal runtime files (often under node_modules/nuxt/dist)
+          // to avoid precaching dynamic dev modules that cause failed dynamic imports.
+          const filtered = entries.filter((entry: any) => {
+            if (!entry || !entry.url) return false
+            // Skip precaching any build files that live under node_modules/nuxt/dist
+            if (entry.url.includes('node_modules/nuxt/dist')) return false
+            return true
+          })
 
-            const manifest = filtered.map((entry: any) => {
-              const isJS = entry.url.endsWith('.js')
-              const isCSS = entry.url.endsWith('.css')
+          const manifest = filtered.map((entry: any) => {
+            const isJS = entry.url.endsWith('.js')
+            const isCSS = entry.url.endsWith('.css')
 
-              if (isJS || isCSS) entry.revision = null
-              return entry
-            })
+            if (isJS || isCSS) entry.revision = null
+            return entry
+          })
 
-            const warnings: string[] = []
-            const removed = entries.length - filtered.length
-            if (removed > 0) warnings.push(`Excluded ${removed} entries from precache (node_modules/nuxt/dist)`)
+          const warnings: string[] = []
+          const removed = entries.length - filtered.length
+          if (removed > 0) warnings.push(`Excluded ${removed} entries from precache (node_modules/nuxt/dist)`)
 
-            return { manifest, warnings }
-          }
+          return { manifest, warnings }
+        }
       ]
     }
   },
@@ -205,13 +206,13 @@ export default defineNuxtConfig({
   // Vite Aliases
   // -----------------------------
   vite: {
-      resolve: {
+    resolve: {
       alias: {
-        '#tailwind-config': new URL('./tailwind-config/', import.meta.url).pathname,
-        '#tailwind-config/theme/colors': new URL('./tailwind-config/theme/colors.js', import.meta.url).pathname,
-        '#tailwind-config/theme': new URL('./tailwind-config/theme', import.meta.url).pathname,
-        'next-auth/core': new URL('./node_modules/next-auth/core/index.js', import.meta.url).pathname,
-        'next-auth/jwt': new URL('./node_modules/next-auth/jwt/index.js', import.meta.url).pathname
+        '#tailwind-config': fileURLToPath(new URL('./tailwind-config/', import.meta.url)),
+        '#tailwind-config/theme/colors': fileURLToPath(new URL('./tailwind-config/theme/colors.js', import.meta.url)),
+        '#tailwind-config/theme': fileURLToPath(new URL('./tailwind-config/theme', import.meta.url)),
+        'next-auth/core': fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url)),
+        'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url))
       }
     },
 
@@ -241,17 +242,17 @@ export default defineNuxtConfig({
       apiBase: defaultApiBase,
       baseUrl: publicBaseUrl,
       siteUrl: publicBaseUrl,
-      
+
       // Google Analytics (GA4) - use env var or safe fallback
       googleAnalyticsId: process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID || defaultGoogleAnalyticsId,
       googleTagManagerId: process.env.NUXT_PUBLIC_GTM_ID || defaultGtmId,
-      
+
       // Pusher (for real-time features)
       pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
       pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
       pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
       pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
-      
+
       // WebSocket (for Laravel Echo)
       wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'https://admin.modeh.co.ke',
       wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : 443,

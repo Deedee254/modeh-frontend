@@ -129,7 +129,7 @@ const Q = computed(() => {
     attempts_allowed: base.attempts_allowed || null,
     shuffle_questions: !!base.shuffle_questions,
     shuffle_answers: !!base.shuffle_answers,
-    access: base.access || 'free',
+    access: base.access || (base.is_paid ? 'paywall' : 'free'),
     use_per_question_timer: !!base.use_per_question_timer,
     per_question_seconds: base.per_question_seconds || null
   }
@@ -701,10 +701,19 @@ async function submitAnswers() {
         const isGuestAttempt = attemptId && typeof attemptId === 'string' && attemptId.startsWith('guest_')
         
         // Only redirect to checkout for authenticated users with real (non-guest) database attempts
-        // Guest attempts are shown in the results modal
+        // Guest attempts and FREE quizzes are shown directly
         if (authStore.user && !isGuestAttempt && attemptId) {
-          // Authenticated user with real attempt: redirect to checkout to see results after payment
-          router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptId}`)
+          const isFreeQuiz = Q.value.access === 'free' || !quiz.value?.is_paid || Number(quiz.value?.one_off_price) === 0
+          
+          if (isFreeQuiz) {
+            // Free quiz for auth user: show results directly (results modal or results page)
+            // For this public route, we'll show the guest modal which is already built in
+            quizResults.value = attemptResult
+            showResultsModal.value = true
+          } else {
+            // Premium quiz: redirect to checkout to see results after payment
+            router.push(`/quizee/payments/checkout?type=quiz&attempt_id=${attemptId}`)
+          }
           return
         }
         

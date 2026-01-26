@@ -587,15 +587,21 @@ const selectAnswer = async (optionId: string | number | any) => {
   // Optimistic local-only: do not require connection for per-question submits.
   // We'll submit all answers in bulk on `submitBattle()` so skip network call here.
   // Auto-advance to next question after a short delay (with feedback showing)
-  setTimeout(() => {
-    if (!isLastQuestion.value) {
-      nextQuestion()
-      showingFeedback.value = false
-    } else {
-      showingFeedback.value = false
-    }
-    answerSubmitted.value = false
-  }, feedbackDelay.value)
+  if (currentQuestion.value.type === 'mcq') {
+    setTimeout(() => {
+      if (!isLastQuestion.value) {
+        nextQuestion()
+        showingFeedback.value = false
+      } else {
+        // On last question, let user review feedback then manually finish
+        // showingFeedback.value = false
+      }
+      answerSubmitted.value = false
+    }, feedbackDelay.value)
+  } else {
+    // For non-MCQ, reset submission lock quickly but don't auto-advance
+    setTimeout(() => { answerSubmitted.value = false }, 500)
+  }
 }
 
 // Auto-save state

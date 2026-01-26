@@ -72,7 +72,8 @@ const props = defineProps({
   open: Boolean,
   pkg: { type: Object, default: null },
   item: { type: Object, default: null },
-  phones: { type: Array, default: () => [] }
+  phones: { type: Array, default: () => [] },
+  ownerContext: { type: Object, default: () => ({}) }
 })
 
 const emits = defineEmits(['close', 'paid'])
@@ -151,7 +152,9 @@ async function initiatePayment() {
   try {
     let res
     if (paymentDetails.value.type === 'subscription') {
-      res = await subscriptionsStore.subscribeToPackage(props.pkg, { phone: phoneForPayment.value })
+      // Merge owner context with phone for subscription
+      const opts = { ...props.ownerContext, phone: phoneForPayment.value }
+      res = await subscriptionsStore.subscribeToPackage(props.pkg, opts)
     } else {
       const payload = { item_type: props.item.type || 'quiz', item_id: props.item.id, amount: paymentDetails.value.price, phone: phoneForPayment.value }
       res = await api.postJson('/api/one-off-purchases', payload)

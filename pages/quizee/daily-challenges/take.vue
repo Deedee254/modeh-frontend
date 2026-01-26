@@ -251,6 +251,15 @@ const selectAnswer = (answer) => {
   const { normalizeAnswer } = useAnswerNormalization()
   const normalizedAnswer = normalizeAnswer(answer)
   selectedAnswer.value = normalizedAnswer
+  
+  // Auto-advance for daily challenge (single choice)
+  // Check type if available, otherwise assume single choice for default QuestionCard usage
+  // Note: QuestionCard emits @select for single choice and @toggle for multi. This handler is bound to @select/v-model.
+  setTimeout(() => {
+    if (currentQuestionIndex.value < questions.value.length - 1) {
+      nextQuestion()
+    }
+  }, 400)
 }
 
 const nextQuestion = () => {

@@ -110,7 +110,7 @@ const Q = computed(() => {
     attempts_allowed: base.attempts_allowed || null,
     shuffle_questions: !!base.shuffle_questions,
     shuffle_answers: !!base.shuffle_answers,
-    access: base.access || 'free',
+    access: base.access || (base.is_paid ? 'paywall' : 'free'),
     use_per_question_timer: !!base.use_per_question_timer,
     per_question_seconds: base.per_question_seconds || null
   }
@@ -577,10 +577,12 @@ async function submitAnswers() {
     }
   }
 
+  const isFreeQuizPayload = Q.value.access === 'free' || !quiz.value?.is_paid || Number(quiz.value?.one_off_price) === 0
+  
   const payload = {
     answers: finalAnswers,
     question_times: Object.keys(perQuestionTimes).length > 0 ? perQuestionTimes : null,
-    defer_marking: true,
+    defer_marking: !isFreeQuizPayload,
     total_time_seconds: totalTime,
     started_at: quiz.value._started_at_ms ? new Date(quiz.value._started_at_ms).toISOString() : (quiz.value.started_at || null),
     attempt_id: quiz.value._attempt_id || null,
@@ -609,9 +611,10 @@ async function submitAnswers() {
         if (body?.user) auth.setUser(body.user)
         else if (body?.awarded_achievements && body.awarded_achievements.length) await auth.fetchUser()
       } catch (e) {}
+      const isFreeQuiz = Q.value.access === 'free' || !quiz.value?.is_paid || Number(quiz.value?.one_off_price) === 0
+
       if (attemptId) {
         // Check if quiz is free - if so, redirect directly to results without checkout barrier
-        const isFreeQuiz = quiz.value?.access === 'free'
         if (isFreeQuiz) {
           // Free quiz: show results directly
           router.push(`/quizee/quizzes/result/${attemptId}`)
@@ -623,7 +626,10 @@ async function submitAnswers() {
       }
 
       // No attempt id returned — redirect to checkout with quiz id so user can continue to payment flow
-      router.push(`/quizee/payments/checkout?type=quiz&quiz_id=${quiz.value?.id || slug}`)
+      const checkoutPath = isFreeQuiz 
+        ? `/quizee/quizzes` // Fallback for free quizzes with no attempt
+        : `/quizee/payments/checkout?type=quiz&quiz_id=${quiz.value?.id || slug}`
+      router.push(checkoutPath)
       return
   } else {
       // restore optimistic to null to indicate failure

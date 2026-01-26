@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import useApi from '~/composables/useApi'
 import { useRouter } from '#imports'
+import { useAnswerStore } from '~/stores/answerStore'
 
 export const useCheckoutStore = defineStore('checkout', () => {
   // const router = useRouter() // Should be called inside actions when needed.
@@ -20,8 +21,8 @@ export const useCheckoutStore = defineStore('checkout', () => {
     if (pollHandle) { clearInterval(pollHandle); pollHandle = null }
   }
 
-  async function markResults(params: { type: string; id?: string | number; attemptId?: string | number }) {
-    const { type, id, attemptId } = params
+  async function markResults(params: { type: string; id?: string | number; attemptId?: string | number; subscription_type?: string; institution_id?: string | number }) {
+    const { type, id, attemptId, subscription_type, institution_id } = params
     processing.value = true
     status.value = 'processing'
     pendingMessage.value = 'Preparing to mark answers...'
@@ -40,6 +41,11 @@ export const useCheckoutStore = defineStore('checkout', () => {
       const api = useApi()
       const resultPath = type === 'battle' ? `/quizee/battles/${id}/result` : `/quizee/quizzes/result/${attemptId}`
 
+      // Prepare payload with subscription selection if provided
+      const payload: any = {}
+      if (subscription_type) payload.subscription_type = subscription_type
+      if (institution_id) payload.institution_id = institution_id
+
       // Determine endpoints based on type
       let endpoints: string[] = []
       if (type === 'battle') {
@@ -57,22 +63,22 @@ export const useCheckoutStore = defineStore('checkout', () => {
         while (retries > 0) {
           // postJson returns a Response or similar; treat as any for now
           // remove base prefix because api.postJson expects a path
-          const response = await api.postJson(e.replace(cfg.public.apiBase, ''), {}).catch(() => null)
+          const response = await api.postJson(e.replace(cfg.public.apiBase, ''), payload).catch(() => null)
           if (!response) {
             retries--
             if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
             continue
           }
-          
+
           // Parse response to check for errors or success
           const data = response.ok ? (await response.json().catch(() => ({}))) : {}
-          
-          if (data.code === 'limit_reached' || data.ok || response.status === 'success') {
+
+          if (data.code === 'limit_reached' || data.ok || data.status === 'success') {
             res = data
             res._httpStatus = response.status
             break
           }
-          
+
           // If not ok, capture the error response
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
@@ -80,7 +86,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
             res._httpStatus = response.status
             break
           }
-          
+
           retries--
           if (retries > 0) await new Promise(resolve => setTimeout(resolve, 1000))
         }
@@ -96,6 +102,15 @@ export const useCheckoutStore = defineStore('checkout', () => {
       }
 
       if (res && res.ok) {
+        // Clear cached attempts so the result page fetches fresh data (with updated points/status)
+        try {
+          const answerStore = useAnswerStore()
+          const cacheKey = type === 'battle' ? id : (attemptId || id)
+          if (cacheKey) answerStore.removeReviewAttempt(cacheKey)
+        } catch (e) {
+          // ignore store errors
+        }
+
         pendingMessage.value = 'Completed. Redirecting to results...'
         status.value = 'success'
         const router = useRouter()
