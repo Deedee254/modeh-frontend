@@ -27,22 +27,11 @@ export const useAuthStore = defineStore('auth', () => {
   // Deduplicate concurrent fetchUser calls
   let _fetchUserPromise: Promise<any> | null = null
 
-  // Watch for session changes and always validate against the authoritative API (/api/me)
-  // Treat `auth.data` as provisional; promote into the store only after `/api/me` succeeds.
-  watch([data, status], ([newData, newStatus]) => {
-    if (newStatus === 'authenticated') {
-      // Always validate the session with a fresh API fetch before trusting session data
-      // Do not rely on `data.value.user` as the source of truth.
-      // Use non-forced fetch so concurrent calls are deduplicated by
-      // the internal `_fetchUserPromise` guard. Passing `true` bypasses
-      // that guard and allowed multiple concurrent requests when
-      // session status toggled rapidly.
-      fetchUser().catch(() => {})
-    } else if (newStatus === 'unauthenticated') {
-      user.value = null
-      role.value = null
-    }
-  }, { immediate: true })
+  // No automatic watcher. Instead, fetchUser() is called explicitly:
+  // - After successful login/register
+  // - Via middleware on initial app load
+  // - When components explicitly need fresh user data
+  // This is more predictable and avoids cascading API calls.
 
   async function register(payload: Record<string, any>) {
     try {
@@ -155,18 +144,8 @@ export const useAuthStore = defineStore('auth', () => {
         // Store current user ID before fetching to detect mid-flight user switches
         const userIdBeforeFetch = user.value?.id
         
-        // First, refresh the session to sync with latest server state
-        // This ensures nuxt-auth's session data is up-to-date
-        try {
-          await getSession()
-          // Validate that session refresh actually authenticated the user
-          if (status.value !== 'authenticated') {
-            clear()
-            return null
-          }
-        } catch (e) {
-          // Session refresh might fail, but we can still fetch from /api/me
-        }
+        // Fetch fresh user data from the authoritative API endpoint
+        // This is called explicitly from middleware and after login/register, not automatically
         
         // Always fetch fresh user data from the API
         const res = await api.get('/api/me')

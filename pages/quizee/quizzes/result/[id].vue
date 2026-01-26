@@ -150,7 +150,7 @@
                   <div class="mt-1 text-xs" :class="d.correct ? 'text-green-700' : 'text-red-600'">{{ d.correct ? 'Correct' : 'Incorrect' }}</div>
                 </div>
 
-                <div class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+                <div v-if="!d.correct" class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
                   <div class="font-semibold">Correct Answer</div>
                   <div class="mt-2 text-sm font-mono break-words" v-html="formatProvided(d.correct_answers)"></div>
                 </div>
