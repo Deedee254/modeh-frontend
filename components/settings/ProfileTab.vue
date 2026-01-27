@@ -63,8 +63,8 @@
             <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">This is the name shown on your profile</p>
           </div>
 
-          <!-- Name Fields - For Quizee only -->
-          <div v-if="isQuizee" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <!-- Name Fields - For Quizee and Quiz-Master -->
+          <div v-if="isQuizee || isQuizMaster" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">First Name</label>
               <input 

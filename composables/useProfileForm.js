@@ -57,11 +57,8 @@ export function useProfileForm() {
       state.first_name = profile?.first_name || ''
       state.last_name = profile?.last_name || ''
     } else if (u.role === 'quiz-master') {
-      state.headline = profile?.headline || ''
-    }
-
-    return state
-  }
+        state.first_name = profile?.first_name || ''
+        state.last_name = profile?.last_name || ''
 
   /**
    * Populate taxonomy store refs from API data
@@ -217,6 +214,12 @@ export function useProfileForm() {
 
       // Add role-specific fields only if they changed
       if (role === 'quiz-master') {
+        if (hasChanged(form.first_name, originalForm.first_name)) {
+          profileData.first_name = form.first_name || ''
+        }
+        if (hasChanged(form.last_name, originalForm.last_name)) {
+          profileData.last_name = form.last_name || ''
+        }
         if (hasChanged(form.headline, originalForm.headline)) {
           profileData.headline = form.headline || ''
         }
@@ -246,7 +249,13 @@ export function useProfileForm() {
         if (!userJson || !userJson.id) {
           const meRes = await api.get('/api/me')
           if (meRes.ok) {
-            userJson = await meRes.json()
+            try {
+              // Clone response to avoid stream already read error
+              const clonedRes = meRes.clone()
+              userJson = await clonedRes.json()
+            } catch (parseErr) {
+              console.error('Failed to parse /api/me response:', parseErr)
+            }
           }
         }
       }
@@ -267,19 +276,31 @@ export function useProfileForm() {
         if (!profileRes.ok) {
           // Get detailed error from response
           let errorMessage = 'Failed to update profile'
+          let fieldErrors = null
           try {
-            const errorData = await profileRes.json()
+            // Clone response to avoid stream already read error
+            const clonedRes = profileRes.clone()
+            const errorData = await clonedRes.json()
             errorMessage = errorData.message || errorData.error || JSON.stringify(errorData)
+            fieldErrors = errorData.errors || null
           } catch (e) {
-            // ignore parsing error
+            errorMessage = `Failed to update profile (${profileRes.status})`
           }
-          console.error('Profile update failed:', { status: profileRes.status, message: errorMessage, profileData })
+          console.error('Profile update failed:', { status: profileRes.status, message: errorMessage, fieldErrors, profileData })
           throw new Error(errorMessage)
         }
-        profileJson = await profileRes.json()
-        // Profile endpoint now returns user object
-        if (profileJson.user) {
-          userJson = profileJson.user
+        
+        try {
+          // Clone response to avoid stream already read error
+          const clonedRes = profileRes.clone()
+          profileJson = await clonedRes.json()
+          // Profile endpoint now returns user object
+          if (profileJson.user) {
+            userJson = profileJson.user
+          }
+        } catch (parseErr) {
+          console.error('Failed to parse profile response:', parseErr)
+          throw new Error('Failed to parse profile update response')
         }
       }
 
@@ -340,9 +361,23 @@ export function useProfileForm() {
       if (avatarPreview.value && !auth.user?.avatar_url) {
         avatarPreview.value = null
       }
+      
+      // Build user-friendly error message
+      let errorMsg = e?.message || 'Failed to save profile'
+      
+      // If the error contains field validation info, append it
+      if (e?.fieldErrors && typeof e.fieldErrors === 'object') {
+        const fieldMsgs = Object.entries(e.fieldErrors)
+          .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+          .join('; ')
+        if (fieldMsgs) {
+          errorMsg = `${errorMsg} - ${fieldMsgs}`
+        }
+      }
+      
       alert.push({
         type: 'error',
-        message: e?.message || 'Failed to save profile',
+        message: errorMsg,
         icon: 'heroicons:x-mark'
       })
       return false

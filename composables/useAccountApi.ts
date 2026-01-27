@@ -31,10 +31,30 @@ export function useAccountApi() {
 
       if (!res.ok) {
         let msg = 'Update failed'
-        try { const j = await res.json(); msg = j?.message || msg } catch {}
-        throw new Error(msg)
+        let fieldErrors = null
+        try { 
+          // Clone response to avoid "body stream already read" error
+          const clonedRes = res.clone()
+          const j = await clonedRes.json()
+          msg = j?.message || msg
+          fieldErrors = j?.errors || null
+        } catch (parseErr) {
+          // If we can't parse error response, use generic message
+          msg = `Update failed (${res.status})`
+        }
+        const error = new Error(msg) as any
+        if (fieldErrors) error.fieldErrors = fieldErrors
+        throw error
       }
-      return await res.json()
+      
+      // Clone and parse JSON to be safe
+      try {
+        const clonedRes = res.clone()
+        return await clonedRes.json()
+      } catch (parseErr) {
+        console.error('Failed to parse response JSON:', parseErr)
+        throw new Error('Failed to parse server response')
+      }
     } catch (e: any) {
       if (!api.handleAuthStatus(e.response)) {
         error.value = e?.data?.message || e?.message || 'Request failed'

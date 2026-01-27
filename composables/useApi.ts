@@ -310,9 +310,12 @@ export function useApi() {
     const ct = resp.headers.get('content-type') || ''
     if (ct.includes('application/json')) {
       try {
-        const json = await resp.json()
+        // Clone response to avoid "body stream already read" error
+        const clonedResp = resp.clone()
+        const json = await clonedResp.json()
         return json
       } catch (e) {
+        console.error('Failed to parse JSON response:', e)
         return null
       }
     }
