@@ -59,6 +59,8 @@ export function useProfileForm() {
     } else if (u.role === 'quiz-master') {
         state.first_name = profile?.first_name || ''
         state.last_name = profile?.last_name || ''
+    }
+  }
 
   /**
    * Populate taxonomy store refs from API data
