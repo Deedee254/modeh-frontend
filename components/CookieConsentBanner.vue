@@ -1,243 +1,107 @@
 <template>
   <Transition name="slide-up">
-    <div
-      v-if="!store.bannerDismissed"
-      class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-2xl border-t border-gray-200 dark:border-gray-800"
-    >
-      <!-- Main Banner -->
-      <div v-if="!showSettings" class="px-4 py-6 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex flex-col gap-4">
-          <!-- Content -->
-          <div class="flex-1">
-            <h3 class="text-lg font-semibold mb-2">🍪 We Use Cookies</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              We use cookies and similar technologies to enhance your experience, analyze traffic, and improve our services. 
-              Some cookies are essential for the site to function, while others help us understand how you use our platform.
-            </p>
-            
-            <!-- Cookie Types Info -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 text-xs">
-              <div class="bg-gray-100 dark:bg-gray-800 rounded p-3">
-                <p class="font-semibold text-green-600 dark:text-green-400 mb-1">✓ Essential</p>
-                <p class="text-gray-700 dark:text-gray-400">Required for basic functionality (always enabled)</p>
-              </div>
-              <div class="bg-gray-100 dark:bg-gray-800 rounded p-3">
-                <p class="font-semibold text-blue-600 dark:text-blue-400 mb-1">📊 Analytics</p>
-                <p class="text-gray-700 dark:text-gray-400">Help us understand user behavior and improve the app</p>
-              </div>
-              <div class="bg-gray-100 dark:bg-gray-800 rounded p-3">
-                <p class="font-semibold text-purple-600 dark:text-purple-400 mb-1">📢 Marketing</p>
-                <p class="text-gray-700 dark:text-gray-400">Used for personalized ads and marketing campaigns</p>
-              </div>
-            </div>
-
-            <!-- Links -->
-            <div class="flex flex-wrap gap-2 text-xs">
-              <a href="/privacy" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Privacy Policy</a>
-              <span class="text-gray-400 dark:text-gray-600">•</span>
-              <a href="/cookie-policy" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Cookie Policy</a>
-              <span class="text-gray-400 dark:text-gray-600">•</span>
-              <button @click="showSettings = true" class="text-blue-600 dark:text-blue-400 hover:underline">Customize Settings</button>
-            </div>
+    <div v-if="!store.bannerDismissed" class="fixed left-1/2 bottom-6 transform -translate-x-1/2 z-50">
+      <div class="bg-black text-white rounded-2xl shadow-2xl p-6 w-[min(95vw,920px)]">
+        <!-- Brief banner -->
+        <div v-if="!showSettings" class="space-y-4">
+          <div>
+            <h3 class="text-xl font-semibold">Hello traveller, it's cookie time!</h3>
+            <p class="text-sm text-gray-300 mt-2">Our website uses essential cookies to ensure its proper operation and tracking cookies to understand how you interact with it. The latter will be set only after consent. <button @click="showSettings = true" class="underline text-gray-200">Manage preferences</button></p>
           </div>
 
-          <!-- Buttons -->
-          <div class="flex flex-col sm:flex-row gap-3 mt-4">
-            <button
-              @click="rejectAll"
-              class="flex-1 px-4 py-2 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium text-sm"
-            >
-              Reject All
-            </button>
-            <button
-              @click="showSettings = true"
-              class="flex-1 px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition font-medium text-sm"
-            >
-              Customize
-            </button>
-            <button
-              @click="acceptAll"
-              class="flex-1 px-4 py-2 rounded bg-brand-600 hover:bg-brand-700 transition font-medium text-sm text-white"
-            >
-              Accept All
-            </button>
+          <div class="pt-3 border-t border-white/10"></div>
+
+          <div class="flex gap-3">
+            <button @click="acceptAll" class="flex-1 bg-white text-black rounded-lg px-4 py-2 font-medium">Accept all</button>
+            <button @click="rejectAll" class="flex-1 bg-white text-black rounded-lg px-4 py-2 font-medium">Reject all</button>
           </div>
         </div>
-      </div>
 
-      <!-- Settings Panel -->
-      <div v-else class="px-4 py-6 sm:px-6 lg:px-8">
-        <div class="max-w-2xl mx-auto">
-          <!-- Header -->
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Cookie Preferences</h3>
-            <button
-              @click="showSettings = false"
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition p-1"
-            >
-              <Icon name="heroicons:x-mark" class="w-5 h-5" />
-            </button>
+        <!-- Settings panel -->
+        <div v-else class="max-w-2xl mx-auto">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Cookie Preferences</h3>
+            <button @click="cancelSettings" class="text-gray-400 hover:text-gray-200 px-2 py-1">Close</button>
           </div>
 
-          <!-- Cookie Options -->
-          <div class="space-y-4 mb-6">
-            <!-- Essential Cookies (Always Enabled) -->
-            <div class="bg-gray-100 dark:bg-gray-800 rounded p-4">
+          <div class="space-y-4 mb-4">
+            <div class="bg-white/5 rounded p-4">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Essential Cookies</h4>
-                  <p class="text-sm text-gray-700 dark:text-gray-400">
-                    Required for the website to function properly. Cannot be disabled.
-                  </p>
+                  <h4 class="font-semibold mb-1">Essential Cookies</h4>
+                  <p class="text-sm text-gray-300">Required for the website to function properly. These include authentication and session cookies that enable core features. They cannot be disabled.</p>
                 </div>
                 <div class="ml-4 flex-shrink-0">
-                  <input
-                    type="checkbox"
-                    checked
-                    disabled
-                    class="w-5 h-5 rounded bg-green-600 border-0 cursor-not-allowed"
-                  />
+                  <input type="checkbox" checked disabled class="w-5 h-5 rounded bg-gray-300 cursor-not-allowed" />
                 </div>
               </div>
             </div>
 
-            <!-- Analytics Cookies -->
-            <div class="bg-gray-100 dark:bg-gray-800 rounded p-4">
+            <div class="bg-white/5 rounded p-4">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Analytics Cookies</h4>
-                  <p class="text-sm text-gray-700 dark:text-gray-400">
-                    Help us understand how you use Modeh and improve your experience.
-                    Includes Google Analytics, page views, and event tracking.
-                  </p>
+                  <h4 class="font-semibold mb-1">Analytics Cookies</h4>
+                  <p class="text-sm text-gray-300">Help us understand how you use the site so we can improve performance and content. Includes Google Analytics, page view tracking and event logging.</p>
                 </div>
                 <div class="ml-4 flex-shrink-0">
                   <label class="flex items-center cursor-pointer">
-                    <input
-                      v-model="preferences.analytics"
-                      type="checkbox"
-                      class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500"
-                    />
+                    <input v-model="preferences.analytics" type="checkbox" class="w-5 h-5 rounded border-gray-300 text-blue-600" />
                   </label>
                 </div>
               </div>
             </div>
 
-            <!-- Marketing Cookies -->
-            <div class="bg-gray-100 dark:bg-gray-800 rounded p-4">
+            <div class="bg-white/5 rounded p-4">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Marketing Cookies</h4>
-                  <p class="text-sm text-gray-700 dark:text-gray-400">
-                    Used to display relevant ads and measure marketing campaigns.
-                    Helps us understand your interests better.
-                  </p>
+                  <h4 class="font-semibold mb-1">Marketing Cookies</h4>
+                  <p class="text-sm text-gray-300">Used to deliver relevant advertising and measure campaign effectiveness. These may be set by third-party advertising networks.</p>
                 </div>
                 <div class="ml-4 flex-shrink-0">
                   <label class="flex items-center cursor-pointer">
-                    <input
-                      v-model="preferences.marketing"
-                      type="checkbox"
-                      class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-purple-600 dark:text-purple-500"
-                    />
+                    <input v-model="preferences.marketing" type="checkbox" class="w-5 h-5 rounded border-gray-300 text-purple-600" />
                   </label>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Info Box -->
-          <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded p-4 mb-6">
-            <p class="text-xs text-blue-900 dark:text-blue-300">
-              <strong>ℹ️ Note:</strong> Your preferences are saved locally in your browser and will be remembered for one year. 
-              You can change these settings anytime by clicking the cookie icon in the footer.
-            </p>
+          <div class="bg-blue-900/20 border border-white/10 rounded p-3 text-sm text-gray-300 mb-4">
+            <strong class="mr-1">ℹ️ Note:</strong> Your preferences are saved locally in your browser and will be remembered for one year. You can change these settings anytime.
           </div>
 
-          <!-- Buttons -->
           <div class="flex gap-3">
-            <button
-              @click="showSettings = false"
-              class="flex-1 px-4 py-2 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium text-gray-900 dark:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              @click="rejectAll"
-              class="flex-1 px-4 py-2 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium text-gray-900 dark:text-white"
-            >
-              Reject All
-            </button>
-            <button
-              @click="saveCustom"
-              class="flex-1 px-4 py-2 rounded bg-brand-600 hover:bg-brand-700 transition font-medium text-white"
-            >
-              Save Preferences
-            </button>
+            <button @click="cancelSettings" class="flex-1 px-4 py-2 rounded border border-white/20 text-white">Cancel</button>
+            <button @click="rejectAll" class="flex-1 px-4 py-2 rounded border border-white/20 text-white">Reject All</button>
+            <button @click="saveCustom" class="flex-1 px-4 py-2 rounded bg-white text-black">Save Preferences</button>
           </div>
         </div>
       </div>
     </div>
   </Transition>
-
-  <!-- Cookie Settings Toggle Button (Footer) - Only show if no choice made yet -->
-  <button
-    v-if="!store.bannerDismissed"
-    @click="showSettings = true"
-    class="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white shadow-lg transition-all hover:scale-110 group"
-    title="Cookie Settings"
-  >
-    <Icon name="heroicons:cog-6-tooth" class="w-5 h-5" />
-    <span class="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-      Cookie Settings
-    </span>
-  </button>
-
-  <!-- Hidden Settings Modal -->
-  <Teleport to="body">
-    <Transition name="fade">
-      <div
-        v-if="showSettings && store.bannerDismissed"
-        class="fixed inset-0 bg-black/50 z-40"
-        @click="showSettings = false"
-      />
-    </Transition>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, watch } from 'vue'
+import { onMounted, ref, reactive } from 'vue'
 import { useCookieConsentStore } from '~/stores/cookieConsent'
 
 const store = useCookieConsentStore()
+
 const showSettings = ref(false)
 const preferences = reactive({
   analytics: false,
-  marketing: false
-})
-
-// Load consent immediately when store initializes
-store.loadConsent()
-
-// Watch for changes to show/hide the banner
-watch(() => store.bannerDismissed, (isDismissed) => {
-  // Auto-close settings if banner is dismissed
-  if (isDismissed && showSettings.value) {
-    showSettings.value = false
-  }
+  marketing: false,
+  functional: true
 })
 
 onMounted(() => {
-  // Reload consent in case localStorage changed
   store.loadConsent()
+  // initialize preferences from store
   preferences.analytics = store.preferences.analytics
   preferences.marketing = store.preferences.marketing
 })
 
-const acceptAll = () => {
-  store.acceptAll()
-}
-
+const acceptAll = () => store.acceptAll()
 const rejectAll = () => {
   store.rejectAll()
   showSettings.value = false
@@ -249,29 +113,18 @@ const saveCustom = () => {
   store.savePreferences()
   showSettings.value = false
 }
+
+const cancelSettings = () => {
+  // revert local preferences to store values
+  preferences.analytics = store.preferences.analytics
+  preferences.marketing = store.preferences.marketing
+  showSettings.value = false
+}
 </script>
 
 <style scoped>
 .slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s ease;
-}
-
-.slide-up-enter-from {
-  transform: translateY(100%);
-}
-
-.slide-up-leave-to {
-  transform: translateY(100%);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.slide-up-leave-active { transition: transform 0.25s ease, opacity 0.2s ease; }
+.slide-up-enter-from { transform: translateY(30%); opacity: 0 }
+.slide-up-leave-to { transform: translateY(30%); opacity: 0 }
 </style>
