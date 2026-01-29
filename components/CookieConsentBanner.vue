@@ -1,7 +1,7 @@
 <template>
   <Transition name="slide-up">
     <div v-if="!store.bannerDismissed" class="fixed left-1/2 bottom-6 transform -translate-x-1/2 z-50">
-      <div class="bg-black text-white rounded-2xl shadow-2xl p-6 w-[min(95vw,920px)]">
+      <div class="bg-black text-white rounded-2xl shadow-2xl p-6 max-w-lg w-[min(92vw,520px)]">
         <!-- Brief banner -->
         <div v-if="!showSettings" class="space-y-4">
           <div>
