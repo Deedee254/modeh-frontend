@@ -60,6 +60,8 @@ export function useProfileForm() {
         state.first_name = profile?.first_name || ''
         state.last_name = profile?.last_name || ''
     }
+
+    return state
   }
 
   /**

@@ -1,7 +1,7 @@
 <template>
   <Transition name="slide-up">
-    <div v-if="!store.bannerDismissed" class="fixed left-1/2 bottom-6 transform -translate-x-1/2 z-50">
-      <div class="bg-black text-white rounded-2xl shadow-2xl p-6 max-w-lg w-[min(92vw,520px)]">
+    <div v-if="!store.bannerDismissed" class="fixed left-6 bottom-6 z-50">
+      <div class="text-white rounded-2xl shadow-2xl p-6 max-w-lg w-[min(92vw,520px)]" style="background-color: #8A1F22">
         <!-- Brief banner -->
         <div v-if="!showSettings" class="space-y-4">
           <div>
@@ -12,8 +12,8 @@
           <div class="pt-3 border-t border-white/10"></div>
 
           <div class="flex gap-3">
-            <button @click="acceptAll" class="flex-1 bg-white text-black rounded-lg px-4 py-2 font-medium">Accept all</button>
-            <button @click="rejectAll" class="flex-1 bg-white text-black rounded-lg px-4 py-2 font-medium">Reject all</button>
+            <button @click="acceptAll" class="flex-1 rounded-lg px-4 py-2 font-medium text-gray-900" style="background-color: #F8B92E">Accept all</button>
+            <button @click="rejectAll" class="flex-1 rounded-lg px-4 py-2 font-medium text-gray-900" style="background-color: #F8B92E">Reject all</button>
           </div>
         </div>
 
@@ -66,14 +66,14 @@
             </div>
           </div>
 
-          <div class="bg-blue-900/20 border border-white/10 rounded p-3 text-sm text-gray-300 mb-4">
+          <div class="rounded p-3 text-sm text-gray-900 mb-4" style="background-color: #F8B92E">
             <strong class="mr-1">ℹ️ Note:</strong> Your preferences are saved locally in your browser and will be remembered for one year. You can change these settings anytime.
           </div>
 
           <div class="flex gap-3">
             <button @click="cancelSettings" class="flex-1 px-4 py-2 rounded border border-white/20 text-white">Cancel</button>
             <button @click="rejectAll" class="flex-1 px-4 py-2 rounded border border-white/20 text-white">Reject All</button>
-            <button @click="saveCustom" class="flex-1 px-4 py-2 rounded bg-white text-black">Save Preferences</button>
+            <button @click="saveCustom" class="flex-1 px-4 py-2 rounded text-gray-900 font-medium" style="background-color: #F8B92E">Save Preferences</button>
           </div>
         </div>
       </div>
