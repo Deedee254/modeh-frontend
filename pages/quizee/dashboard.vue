@@ -184,6 +184,11 @@
             </UiCard>
           </ClientOnly>
 
+          <!-- Transactions Widget -->
+          <ClientOnly>
+            <QuizeeTransactionsWidget />
+          </ClientOnly>
+
           <!-- Package Card -->
           <ClientOnly>
             <UiCard class="rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-burgundy-50 to-burgundy-100 dark:from-burgundy-900/20 dark:to-burgundy-800/20 border border-burgundy-200 dark:border-burgundy-800">
@@ -231,6 +236,7 @@ import QuizeeMetricsGrid from '~/components/quizee/QuizeeMetricsGrid.vue'
 import QuizeePerformanceStats from '~/components/quizee/QuizeePerformanceStats.vue'
 import QuizeeTopicStrength from '~/components/quizee/QuizeeTopicStrength.vue'
 import QuizeeRecommendedQuizzes from '~/components/quizee/QuizeeRecommendedQuizzes.vue'
+import QuizeeTransactionsWidget from '~/components/quizee/QuizeeTransactionsWidget.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import { useMetricsDebug } from '~/composables/useTaxonomyHydration'
