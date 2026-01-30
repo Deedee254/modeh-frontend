@@ -341,6 +341,18 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAsyncData } from '#app'
 
+// Page meta for layout
+definePageMeta({
+  layout: 'quizee',
+  title: 'Transactions & Invoices — Modeh',
+  meta: [
+    {
+      name: 'description',
+      content: 'View your transaction history, manage subscriptions, and download invoices.'
+    }
+  ]
+})
+
 // State
 const activeTab = ref<'transactions' | 'renewals'>('transactions')
 const searchQuery = ref('')
@@ -422,7 +434,10 @@ const selectInvoice = (invoice: any): void => {
 
 const downloadInvoice = async (invoice: any): Promise<void> => {
   try {
-    const response = await api.get(`/transactions/${invoice.id}/download`)
+    const response = await api.get(`/api/transactions/${invoice.id}/download`)
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
     const blob = await response.blob()
     
     const url = window.URL.createObjectURL(blob)
@@ -446,12 +461,16 @@ const fetchTransactions = async (): Promise<void> => {
     if (filterStatus.value) queryParams.append('status', filterStatus.value)
     if (filterType.value) queryParams.append('type', filterType.value)
     
-    const response = await api.get(`/transactions?${queryParams.toString()}`)
+    const response = await api.get(`/api/transactions?${queryParams.toString()}`)
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
     const data = await response.json()
     transactions.value = data.data || data.invoices || []
     pagination.value = data.pagination || { last_page: 1 }
   } catch (error) {
     console.error('Failed to fetch transactions:', error)
+    transactions.value = []
   } finally {
     loading.value = false
   }
@@ -460,11 +479,17 @@ const fetchTransactions = async (): Promise<void> => {
 const fetchRenewals = async (): Promise<void> => {
   loadingRenewals.value = true
   try {
-    const response = await api.get('/transactions/renewals?days_ahead=30')
+    const response = await api.get('/api/transactions/renewals?days_ahead=30')
+    if (!response.ok) {
+      console.error('Renewals API error:', response.status, response.statusText)
+      upcomingRenewals.value = []
+      return
+    }
     const data = await response.json()
     upcomingRenewals.value = data.data || data.renewals || []
   } catch (error) {
     console.error('Failed to fetch renewals:', error)
+    upcomingRenewals.value = []
   } finally {
     loadingRenewals.value = false
   }

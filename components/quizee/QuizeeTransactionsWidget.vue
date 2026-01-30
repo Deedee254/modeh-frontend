@@ -74,7 +74,13 @@ const loading = ref(true)
 onMounted(async () => {
   try {
     loading.value = true
-    const response = await api.get('/transactions?page=1&per_page=5')
+    const response = await api.get('/api/transactions?page=1&per_page=5')
+    if (!response.ok) {
+      console.error('Failed to fetch transactions:', response.status, response.statusText)
+      transactions.value = []
+      loading.value = false
+      return
+    }
     const data = await response.json()
     transactions.value = data.data || data.invoices || []
   } catch (error) {
