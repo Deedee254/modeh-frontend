@@ -53,7 +53,6 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'
-import useApi from '~/composables/useApi'
 
 const props = defineProps({ tx: String, open: Boolean })
 const emits = defineEmits(['close','update:open'])
@@ -68,7 +67,6 @@ let pollIntervalId = null
 
 const auth = useAuthStore()
 const { push: pushAlert } = useAppAlert()
-const api = useApi()
 
 // Echo channel refs so we can detach listeners later
 let _echoChannels = []
