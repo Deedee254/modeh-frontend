@@ -10,7 +10,7 @@
            wider/smaller transparent area. -->
       <div
         class="absolute inset-0"
-        :style="{ background: 'linear-gradient(to right, rgba(2,6,23,0.85) 0%, rgba(2,6,23,0.85) 100%)' }"
+        :style="{ background: 'linear-gradient(to right, rgba(137,31,33,0.65) 0%, rgba(137,31,33,0.65) 100%)' }"
       />
     </div>
 
