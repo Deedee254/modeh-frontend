@@ -7,6 +7,7 @@
           title="Browse by grade"
           description="Find quizzes and resources organised by grade level so Quizees can follow curriculum-aligned practice."
           :items="propsGrades"
+          :colors="colors"
           variant="grades"
           more-link="/grades"
           :svg-src="'/Grades-cuate.svg'"
@@ -41,7 +42,7 @@ const props = defineProps({
   courses: { type: Array, default: () => [] }
 })
 
-const colors = ['linear-gradient(135deg,#891f21,#b23a3f)','linear-gradient(135deg,#0f4c81,#17679a)','linear-gradient(135deg,#8b2ddb,#b55ef0)','linear-gradient(135deg,#0f6b3a,#0fa86b)','linear-gradient(135deg,#d97706,#f59e0b)']
+const colors = ['linear-gradient(135deg,#891f21,#b23a3f)','linear-gradient(135deg,#0f4c81,#17679a)','#FAB82B','linear-gradient(135deg,#0f6b3a,#0fa86b)','linear-gradient(135deg,#d97706,#f59e0b)']
 
 // normalize inputs
 const propsGrades = computed(() => Array.isArray(props.grades) ? props.grades : [])

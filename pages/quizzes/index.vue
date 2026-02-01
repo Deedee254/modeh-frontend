@@ -11,12 +11,12 @@
 
     <div class="max-w-7xl mx-auto px-4 py-8 pb-16">
       <!-- Sticky Filters at Top -->
-      <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
+          <div class="sticky top-0 z-40 bg-white dark:bg-slate-900 -mx-4 px-4 py-4 mb-6 border-b border-slate-200 dark:border-slate-800">
         <div class="space-y-4">
           <!-- Mobile Filter Drawer -->
           <MobileFilterDrawer
             @apply="() => { /* apply handled reactively */ }"
-            @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = '' }"
+            @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = ''; levelFilter = '' }"
           >
             <FiltersSidebar
               :grade-options="GRADES"
@@ -26,12 +26,14 @@
               :subject="subjectFilter"
               :topic="filterTopic"
               :grade="gradeFilter"
+              :level="levelFilter"
               storageKey="filters:quizzes"
               @update:subject="val => subjectFilter = val"
               @update:topic="val => filterTopic = val"
               @update:grade="val => gradeFilter = val"
+              @update:level="val => levelFilter = val"
               @apply="() => { /* apply handled reactively */ }"
-              @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = '' }"
+              @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = ''; levelFilter = '' }"
             />
           </MobileFilterDrawer>
 
@@ -45,12 +47,14 @@
               :subject="subjectFilter"
               :topic="filterTopic"
               :grade="gradeFilter"
+              :level="levelFilter"
               storageKey="filters:quizzes"
               @update:subject="val => subjectFilter = val"
               @update:topic="val => filterTopic = val"
               @update:grade="val => gradeFilter = val"
+              @update:level="val => levelFilter = val"
               @apply="() => { /* apply handled reactively */ }"
-              @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = '' }"
+              @clear="() => { subjectFilter = ''; filterTopic = ''; gradeFilter = ''; levelFilter = '' }"
             />
           </div>
         </div>
@@ -283,7 +287,7 @@ async function doFetch() {
 }
 
 // Watch filters
-watch([filterTopic, subjectFilter, gradeFilter], () => {
+watch([filterTopic, subjectFilter, gradeFilter, levelFilter], () => {
   currentPage.value = 1
   doFetch()
 })

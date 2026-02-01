@@ -5,7 +5,7 @@
       <img :src="svgSrc" alt="" class="w-full h-full object-contain opacity-90 pointer-events-none" />
     </div>
 
-    <div class="p-6 flex flex-col justify-between h-full text-white relative z-10">
+    <div class="p-6 flex flex-col justify-between h-full relative z-10" :style="{ color: textColor }">
       <div>
         <div class="text-sm uppercase tracking-wide opacity-90">{{ label }}</div>
         <h3 class="mt-2 text-2xl font-bold">{{ title }}</h3>
@@ -64,15 +64,38 @@ const props = defineProps({
 // Brand burgundy
 const burgundy = '#891f21'
 
+const isCourses = computed(() => props.variant === 'courses')
+
+// color from passed palette (index 2 used for courses in CategoryBanner)
+const paletteColor = computed(() => {
+  try {
+    return (props.colors && props.colors.length >= 3) ? props.colors[2] : null
+  } catch (e) {
+    return null
+  }
+})
+
 const showCount = computed(() => props.variant === 'grades' ? 6 : 4)
 const shownItems = computed(() => (Array.isArray(props.items) ? props.items.slice(0, showCount.value) : []))
 const extraCount = computed(() => Math.max(0, (Array.isArray(props.items) ? props.items.length : 0) - showCount.value))
 
 const labelClass = computed(() => 'font-semibold')
-// white text on gradient panels; button becomes white with burgundy text for contrast
-const buttonStyle = computed(() => ({ backgroundColor: 'white', color: burgundy }))
-const pillStyle = computed(() => ({ backgroundColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }))
-const morePillStyle = computed(() => ({ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.9)' }))
+// Styles vary by variant. For courses we want burgundy text and burgundy button background.
+const textColor = computed(() => isCourses.value ? burgundy : 'white')
+
+// Button: courses -> burgundy; grades -> use paletteColor (e.g. colors[2]) if available, else default
+const buttonStyle = computed(() => {
+  if (isCourses.value) return { background: burgundy, color: 'white' }
+  if (props.variant === 'grades') {
+    const p = paletteColor.value
+    if (p) return { background: p, color: burgundy }
+    return { background: 'white', color: burgundy }
+  }
+  return { background: 'white', color: burgundy }
+})
+
+const pillStyle = computed(() => isCourses.value ? { backgroundColor: 'rgba(137,31,33,0.08)', color: burgundy } : { backgroundColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' })
+const morePillStyle = computed(() => isCourses.value ? { backgroundColor: 'rgba(137,31,33,0.06)', color: 'rgba(137,31,33,0.95)' } : { backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.9)' })
 
 function itemLink(it) {
   if (!it) return props.moreLink

@@ -339,6 +339,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useSubscriptionsStore } from '~/stores/subscriptions'
 import { useAsyncData } from '#app'
 
 // Page meta for layout
@@ -366,7 +367,8 @@ const loadingRenewals = ref(false)
 const transactions = ref<any[]>([])
 const upcomingRenewals = ref<any[]>([])
 const pagination = ref<any>({})
-const activeSubscription = ref<any>(null)
+const subscriptionsStore = useSubscriptionsStore()
+const activeSubscription = computed(() => subscriptionsStore.mySubscription)
 
 // API
 const api = useApi()
@@ -402,12 +404,15 @@ const formatCurrency = (amount: number): string => {
   }).format(amount)
 }
 
-const formatDate = (date: string | Date): string => {
+const formatDate = (date: string | Date | null | undefined): string => {
+  if (!date) return 'N/A'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return 'N/A'
   return new Intl.DateTimeFormat('en-KE', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }
 
 const formatStatus = (status: string): string => {
@@ -514,14 +519,8 @@ onMounted(async () => {
   await fetchTransactions()
   await fetchRenewals()
   
-  // Find active subscription from transactions
-  const activeSub = transactions.value.find(inv => 
-    inv.invoiceable_type.includes('Subscription') && 
-    inv.invoiceable?.status === 'active'
-  )
-  if (activeSub) {
-    activeSubscription.value = activeSub.invoiceable
-  }
+  // Use subscriptions API as the single source of truth for the active subscription
+  await subscriptionsStore.fetchMySubscription()
 })
 
 // Watch for filter changes
