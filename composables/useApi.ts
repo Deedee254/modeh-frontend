@@ -18,7 +18,7 @@ export function useApi() {
   function getAuthToken() {
     try {
       // Get the API token from Nuxt-Auth session (set by the backend during login)
-      const session = auth.data?.value
+      const session = auth.data?.value as any
       
       if (session?.user?.apiToken) {
         return session.user.apiToken as string
@@ -187,8 +187,18 @@ export function useApi() {
 
   async function get(path: string) {
     // Deduplicate concurrent GET requests for the same path (especially /api/me)
+    // NOTE: When returning a cached promise, we must clone the response
+    // to avoid "body already read" errors when multiple callers consume it
     try {
-      if (_inFlightRequests[path]) return _inFlightRequests[path] as Promise<Response>
+      const inFlight = _inFlightRequests[path]
+      if (inFlight) {
+        // Wait for the in-flight request to complete
+        const resp = await inFlight
+        // Return a cloned response so each caller gets their own body stream
+        // This prevents "Failed to execute 'clone' on 'Response': Response body is already used" errors
+        return resp.clone()
+      }
+      
       const p = request(path, { method: 'GET' })
       _inFlightRequests[path] = p
       // Ensure cleanup regardless of success/failure

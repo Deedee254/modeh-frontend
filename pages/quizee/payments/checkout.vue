@@ -1000,13 +1000,10 @@ onMounted(async () => {
     itemPrice.value = null
   }
   canRedo.value = !!(id && type === 'quiz')
-  try {
-    const res = await api.get('/api/me')
-    if (res?.ok) {
-      const data = await res.json()
-      if (data && data.phones) phones.value = data.phones
-    }
-  } catch (e) { phones.value = [] }
+  
+  // Get phones from auth store (already loaded by initial middleware/auth setup)
+  // No need to re-fetch /api/me; it's available in the session
+  phones.value = auth.user?.phones || []
 })
 </script>
 

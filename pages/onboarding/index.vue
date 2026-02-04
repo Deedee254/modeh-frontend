@@ -471,13 +471,13 @@ async function finalize() {
   message.value = null
   error.value = null
   try {
-    let resp = await api.postJson('/api/onboarding/finalize', {})
-    if (!resp.ok) throw new Error('Finalize failed')
+    const finalizeResp = await api.postJson('/api/onboarding/finalize', {})
+    if (!finalizeResp.ok) throw new Error('Finalize failed')
     
     // Refresh user data from server and update store
-    resp = await api.get('/api/me')
-    if (resp.ok) {
-      const me = await resp.json()
+    const userResp = await api.get('/api/me')
+    if (userResp.ok) {
+      const me = await userResp.json()
       auth.setUser(me)
       
       // Attempt to update the session (to sync JWT with backend)

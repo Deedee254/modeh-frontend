@@ -276,7 +276,8 @@ async function loadData() {
   await Promise.all([
     subscriptionsStore.fetchMySubscription(),
     subscriptionsStore.fetchPackages().then(() => { packages.value = subscriptionsStore.packages }),
-    authStore.fetchUser().then(() => { phones.value = userPhones.value })
+    // User is already loaded by middleware; just sync phones from auth store
+    Promise.resolve().then(() => { phones.value = userPhones.value })
   ])
   loadingPackages.value = false
 }

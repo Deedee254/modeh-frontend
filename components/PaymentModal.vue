@@ -169,7 +169,15 @@ async function initiatePayment() {
       showAwaitingModal.value = true
       isOpen.value = false // Hide this modal, show the awaiting one
     } else if ((isFetchResponse && res.ok === false) || (!isFetchResponse && data?.ok === false)) {
-      const t = data?.message || 'Failed to initiate payment.'
+      let t = data?.message || 'Failed to initiate payment.'
+      // Parse specific M-Pesa error messages
+      if (t.includes('failed to initiate mpesa') || t.includes('shortcode') || t.includes('passkey')) {
+        t = 'Payment service is not properly configured. Please contact support.'
+      } else if (t.includes('oauth') || t.includes('token')) {
+        t = 'Unable to connect to payment service. Please try again.'
+      } else if (t.includes('phone') || t.includes('format')) {
+        t = 'Invalid phone number format. Please use international format (e.g., 254712345678).'
+      }
       throw new Error(t)
     } else {
       // Success but no TX? might happen for some flows
