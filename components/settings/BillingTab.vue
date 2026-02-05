@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
+import useMeApi from '~/composables/useMeApi'
 
 const alert = useAppAlert()
 const billing = ref({ email: '', address: '' })
@@ -15,7 +16,7 @@ async function save() {
   }
   submitting.value = true
   try {
-    const res = await api.patchJson('/api/me/billing', billing.value)
+    const res = await meApi.patch(billing.value, '/api/me/billing')
     if (!res.ok) throw new Error('Failed')
     alert.push({ type: 'success', message: 'Billing settings saved' })
   } catch (e) {

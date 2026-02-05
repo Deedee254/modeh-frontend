@@ -88,32 +88,7 @@
                The institution layout provides its own Topbar with an avatar/menu. -->
           <div id="topbar-user-menu" class="relative" v-if="!route.path.startsWith('/institution-manager')">
             <template v-if="auth.user && auth.user.id">
-              <ActionMenu>
-                <template #trigger>
-                  <button class="inline-flex items-center duration-300 justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground size-10 rounded-full" aria-label="User menu">
-                    <div class="relative">
-                      <span class="relative flex shrink-0 overflow-hidden rounded-full h-8 w-8">
-                        <img class="aspect-square h-full w-full object-cover" :alt="userName" :src="userAvatar" />
-                      </span>
-                      <VerifiedBadge v-if="isVerified" :show-label="false" size="xs" class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm" />
-                    </div>
-                  </button>
-                </template>
-
-                <template #items="{ close }">
-                  <div class="px-4 py-3">
-                    <p class="text-sm text-gray-900 dark:text-white">Signed in as {{ userName }}</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ auth.user.email }}</p>
-                    <p v-if="userLevel" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Level: <span class="font-semibold">{{ userLevel }}</span></p>
-                  </div>
-                  <div class="border-t border-gray-200 dark:border-slate-700"></div>
-                  <NuxtLink :to="dashboardRoute" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Dashboard</NuxtLink>
-                  <NuxtLink :to="profileRoute" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Profile</NuxtLink>
-                  <NuxtLink :to="settingsRoute" class="block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Settings</NuxtLink>
-                  <div class="border-t border-gray-200 dark:border-slate-700"></div>
-                  <button @click="() => { onLogout(); close && close() }" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700">Sign out</button>
-                </template>
-              </ActionMenu>
+              <AccountMenu :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileRoute" @logout="onLogout" />
             </template>
 
             <template v-else>
@@ -215,7 +190,7 @@ import { useNotificationsStore } from '~/stores/notifications'
 import { useUserRole } from '~/composables/useUserRole'
 import { useUiStore } from '~/stores/ui'
 import { useInstitutionsStore } from '~/stores/institutions'
-import ActionMenu from '~/components/ui/ActionMenu.vue'
+import AccountMenu from '~/components/AccountMenu.vue'
 import UiLevelProgress from '~/components/ui/LevelProgress.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ChatDrawer from '~/components/ChatDrawer.vue'

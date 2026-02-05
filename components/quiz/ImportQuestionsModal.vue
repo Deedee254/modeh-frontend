@@ -52,6 +52,7 @@ import { ref, computed } from 'vue'
 import { useCreateQuizStore } from '~/stores/createQuizStore'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { getQuestionValidationErrors } from '~/composables/useQuestionValidation'
+import useApi from '~/composables/useApi'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true }
@@ -130,9 +131,20 @@ async function onFileSelected(e) {
     formData.append('file', f)
     
     const api = useApi()
-    const parseResponse = await api.postFormData('/api/questions/import/parse', formData)
-    
-    if (!parseResponse.headers || !Array.isArray(parseResponse.rows)) {
+    const res = await api.postFormData('/api/questions/import/parse', formData)
+
+    // Handle auth redirect/status
+    if (api.handleAuthStatus(res)) {
+      throw new Error('Session expired')
+    }
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => null)
+      throw new Error(txt || `Import failed with status ${res.status}`)
+    }
+
+    const parseResponse = await res.json().catch(() => null)
+    if (!parseResponse || !Array.isArray(parseResponse.rows) || !Array.isArray(parseResponse.headers)) {
       throw new Error('Invalid response from server')
     }
 

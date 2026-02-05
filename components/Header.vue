@@ -400,7 +400,7 @@ function logout() {
   }
   // Redirect to home or login
   closeMobileMenu()
-  navigateTo('/')
+  navigateTo('/login')
 }
 </script>
 

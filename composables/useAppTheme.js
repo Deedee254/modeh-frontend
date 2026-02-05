@@ -2,6 +2,7 @@ import { useState, useRuntimeConfig } from '#app'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import useMeApi from '~/composables/useMeApi'
 
 export function useAppTheme() {
   // store theme as 'light' | 'dark'
@@ -38,8 +39,9 @@ export function useAppTheme() {
         const auth = useAuthStore()
         if (auth?.user) {
           // best-effort, do not block
-          // Post to the configured backend API base so requests go to the backend
-          api.postJson('/api/me/theme', { theme: val }).catch(() => {})
+          // Use the /api/me wrapper so any returned user payload will be synced
+          // into the central auth store if the backend returns updated user data.
+          try { useMeApi().post({ theme: val }, '/api/me/theme').catch(() => {}) } catch (e) { }
         }
       }
     } catch (e) {}

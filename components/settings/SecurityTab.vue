@@ -98,10 +98,12 @@ import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
+import { useAccountApi } from '~/composables/useAccountApi'
 
 const alert = useAppAlert()
 const api = useApi()
 const auth = useAuthStore()
+const accountApi = useAccountApi()
 const form = ref({ current: '', password: '', password_confirm: '' })
 const submitting = ref(false)
 
@@ -121,16 +123,7 @@ async function save() {
       password: form.value.password,
       password_confirmation: form.value.password_confirm,
     }
-    const res = await api.postJson('/api/me/password', payload)
-    if (api.handleAuthStatus(res)) return
-    if (!res.ok) {
-      let msg = 'Failed to change password'
-      try {
-        const json = await res.json()
-        if (json?.message) msg = json.message
-      } catch (e) {}
-      throw new Error(msg)
-    }
+    await accountApi.changePassword(payload)
     alert.push({ type: 'success', message: 'Password changed successfully' })
     form.value.current = form.value.password = form.value.password_confirm = ''
   } catch (e) {

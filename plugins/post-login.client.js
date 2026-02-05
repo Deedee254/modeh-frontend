@@ -51,16 +51,15 @@ export default defineNuxtPlugin((nuxtApp) => {
             // non-fatal; continue to redirect
           }
 
-          // determine where to send user: query the current user to know their role
+          // determine where to send user: query the centralized auth store for the role
           let role = null
           try {
-            const meRes = await api.get('/api/me')
-            if (api.handleAuthStatus && api.handleAuthStatus(meRes)) return
-            if (meRes && meRes.ok) {
-              const meData = await meRes.json().catch(() => null)
-              role = meData?.role || null
-            }
-          } catch (e) { /* ignore */ }
+            const authStore = useAuthStore()
+            await authStore.fetchUser?.()
+            role = authStore.user?.role || null
+          } catch (e) {
+            // ignore and default to quizee
+          }
 
           const target = role === 'quiz-master' ? '/quiz-master/affiliate' : '/quizee/affiliate'
           localStorage.removeItem('modeh:postLoginIntent')

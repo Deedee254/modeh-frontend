@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import useApi from '~/composables/useApi'
+import { useAuthStore } from '~/stores/auth'
 
 export function useAccountApi() {
   const loading = ref(false)
@@ -50,7 +51,20 @@ export function useAccountApi() {
       // Clone and parse JSON to be safe
       try {
         const clonedRes = res.clone()
-        return await clonedRes.json()
+        const parsed = await clonedRes.json()
+        // If the server returned an updated user payload, sync it into
+        // the central auth store so components relying on `useAuthStore`
+        // see the updated values without needing an explicit fetch.
+        try {
+          const auth = useAuthStore()
+          const payload = parsed && (parsed.user || parsed.data || parsed)
+          if (payload && typeof payload === 'object' && payload.id) {
+            auth.setUser(payload)
+          }
+        } catch (e) {
+          // non-fatal if syncing fails
+        }
+        return parsed
       } catch (parseErr) {
         console.error('Failed to parse response JSON:', parseErr)
         throw new Error('Failed to parse server response')

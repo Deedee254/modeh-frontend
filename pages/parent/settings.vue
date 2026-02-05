@@ -82,12 +82,14 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import useMeApi from '~/composables/useMeApi'
 
 definePageMeta({ layout: 'parent' })
 
 const router = useRouter()
 const auth = useAuthStore()
 const api = useApi()
+const meApi = useMeApi()
 
 const isLoading = ref(false)
 const successMessage = ref(null)
@@ -108,16 +110,14 @@ async function submit() {
   errorMessage.value = null
 
   try {
-    const res = await api.postJson('/api/me', {
+    const res = await meApi.post({
       name: form.name,
       phone: form.phone,
-    })
+    }, '/api/me')
 
     if (!res.ok) {
       throw new Error('Failed to update profile')
     }
-
-    await auth.fetchUser?.()
     successMessage.value = 'Profile updated successfully'
 
     setTimeout(() => {

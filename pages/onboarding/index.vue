@@ -474,21 +474,14 @@ async function finalize() {
     const finalizeResp = await api.postJson('/api/onboarding/finalize', {})
     if (!finalizeResp.ok) throw new Error('Finalize failed')
     
-    // Refresh user data from server and update store
-    const userResp = await api.get('/api/me')
-    if (userResp.ok) {
-      const me = await userResp.json()
-      auth.setUser(me)
-      
-      // Attempt to update the session (to sync JWT with backend)
-      const { update } = useAuth()
-      if (typeof update === 'function') {
-        try { await update() } catch (e) { }
-      }
-      
+    // Refresh user data via the centralized auth store (force bypass cache)
+    // so we pick up the latest profile and benefit from dedup/caching.
+    await auth.fetchUser?.(true)
+    const me = auth.user
+    if (me && me.id) {
       try { localStorage.removeItem('modeh:onboarding:skipped') } catch (e) {}
       message.value = 'Profile finalized.'
-      
+
       // Redirect to appropriate dashboard
       if (me.role === 'quiz-master') {
         router.push('/quiz-master/dashboard')

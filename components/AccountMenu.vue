@@ -1,9 +1,8 @@
 <template>
   <div class="flex items-center gap-2">
     <template v-if="isMounted">
-      <!-- Guest: Login Button -->
-      <template v-if="!isAuthed">
-        <!-- Desktop: Login and Register buttons -->
+      <!-- Guest: Login/Register -->
+      <div v-if="!auth.user" class="flex items-center gap-3">
         <div class="hidden md:flex items-center gap-3">
           <button
             @click="showLoginModal = true"
@@ -19,11 +18,11 @@
           </NuxtLink>
         </div>
 
-        <!-- Mobile: Icon button that shows popup -->
-        <div ref="mobileAuthMenuRef" class="relative">
+        <!-- Mobile auth icon -->
+        <div ref="mobileAuthMenuRef" class="relative md:hidden">
           <button
             @click="showMobileAuthMenu = !showMobileAuthMenu"
-            class="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             aria-label="Authentication menu"
           >
             <svg class="w-5 h-5 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,70 +30,60 @@
             </svg>
           </button>
 
-          <!-- Mobile auth menu dropdown -->
           <transition name="fade">
             <div
               v-if="showMobileAuthMenu"
               class="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg z-50 border dark:border-slate-700 overflow-hidden"
-              @click.stop
             >
-              <button
-                @click="showLoginModal = true; showMobileAuthMenu = false"
-                class="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border-b dark:border-slate-700"
-              >
-                Sign In
-              </button>
-              <NuxtLink
-                to="/register/quizee"
-                class="block px-4 py-3 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors"
-                @click="showMobileAuthMenu = false"
-              >
-                Create Account
-              </NuxtLink>
-            </div>
-          </transition>
-        </div>
-      </template>
-
-      <!-- Authenticated: Account Menu with Avatar -->
-      <template v-else>
-        <div class="relative" ref="wrapper">
-          <button
-            ref="button"
-            @click="toggle"
-            :aria-expanded="open"
-            :aria-controls="menuId"
-            class="ml-2 flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg p-1 transition-colors"
-          >
-            <img 
-              :src="userAvatarUrl" 
-              :alt="userInitials"
-              class="w-8 h-8 rounded-full object-cover"
-            />
-            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </button>
-
-          <transition name="fade-scale">
-            <div
-              v-if="open"
-              :id="menuId"
-              ref="menu"
-              class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg z-50 border dark:border-slate-700 focus:outline-none"
-              role="menu"
-              tabindex="-1"
-            >
-              <div class="py-1">
-                <NuxtLink :to="profileLink" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" @click="close">Profile</NuxtLink>
-                <button @click="handleLogout" class="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Logout</button>
-
-                <div class="border-t mt-2 pt-2 px-4">
-                  <ThemeToggle />
-                </div>
+              <div class="p-2">
+                <NuxtLink to="/login" class="block text-sm px-2 py-1">Login</NuxtLink>
+                <NuxtLink to="/register" class="block text-sm px-2 py-1">Register</NuxtLink>
               </div>
             </div>
           </transition>
         </div>
-      </template>
+      </div>
+
+      <!-- Authenticated menu -->
+      <div v-else ref="wrapper" class="relative">
+        <button ref="button" @click="toggle" class="flex items-center gap-2">
+          <img :src="userAvatarUrl" :alt="userInitials" class="w-8 h-8 rounded-full object-cover" />
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+
+        <transition name="fade-scale">
+          <div
+            v-if="open"
+            :id="menuId"
+            ref="menu"
+            class="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 rounded-md shadow-lg z-50 border dark:border-slate-700 focus:outline-none"
+            role="menu"
+            tabindex="-1"
+          >
+            <div class="py-2 px-4">
+              <div class="flex items-center gap-3">
+                <img :src="userAvatarUrl" class="w-12 h-12 rounded-full" />
+                <div>
+                  <p class="font-medium">{{ userName }} <VerifiedBadge v-if="isVerified" /></p>
+                  <p class="text-xs text-gray-500">{{ auth.user.email }}</p>
+                  <p v-if="userLevel" class="text-xs text-gray-400">Level: {{ userLevel }}</p>
+                </div>
+              </div>
+            </div>
+
+            <NuxtLink :to="dashboardRoute" class="block px-4 py-2 text-sm hover:bg-gray-100">Dashboard</NuxtLink>
+            <NuxtLink :to="profileLink" class="block px-4 py-2 text-sm hover:bg-gray-100">Profile</NuxtLink>
+            <NuxtLink :to="settingsRoute" class="block px-4 py-2 text-sm hover:bg-gray-100">Settings</NuxtLink>
+            <div class="px-4">
+              <button @click.prevent="handleLogout" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Sign out</button>
+            </div>
+
+            <div class="px-4 py-2 border-t">
+              <ThemeToggle />
+            </div>
+          </div>
+        </transition>
+      </div>
     </template>
 
     <!-- Login Modal -->
@@ -128,6 +117,8 @@ import ThemeToggle from '~/components/ThemeToggle.vue'
 import LoginForm from '~/components/Auth/LoginForm.vue'
 import { useAuthStore } from '~/stores/auth'
 import { resolveAssetUrl } from '~/composables/useAssets'
+import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
+import { useInstitutionsStore } from '~/stores/institutions'
 
 const props = defineProps({
   isAuthed: { type: Boolean, default: false },
@@ -152,6 +143,36 @@ const auth = useAuthStore()
 // Use asset composable to resolve avatar URL. Prefer camelCase `avatarUrl` normalized by the auth store.
 const userAvatarUrl = computed(() => {
   return resolveAssetUrl(auth?.userAvatar || auth?.user?.image || auth?.user?.avatarUrl || auth?.user?.avatar || auth?.user?.avatar_url || auth?.user?.photo) || '/logo/avatar-placeholder.png'
+})
+
+const instStore = useInstitutionsStore()
+
+const userName = computed(() => auth.user?.name || 'User')
+const userLevel = computed(() => {
+  if (auth.user?.profile?.level?.name) return auth.user.profile.level.name
+  if (auth.user?.level?.name) return auth.user.level.name
+  return null
+})
+
+const isVerified = computed(() => {
+  const user = auth.user
+  if (!user) return false
+  return !!user.email_verified_at || (user.institutions && user.institutions.length > 0)
+})
+
+const dashboardRoute = computed(() => {
+  if (auth.user?.role === 'institution-manager') return { path: '/institution-manager/dashboard' }
+  if ((auth.user?.role || 'quizee') === 'quizee') return { path: '/quizee/dashboard' }
+  return { path: '/quiz-master/dashboard' }
+})
+
+const settingsRoute = computed(() => {
+  if (auth.user?.role === 'institution-manager') {
+    const qs = instStore.activeInstitutionSlug ? { institutionSlug: String(instStore.activeInstitutionSlug) } : {}
+    return { path: '/institution-manager/settings', query: qs }
+  }
+  if ((auth.user?.role || 'quizee') === 'quizee') return { path: '/quizee/settings' }
+  return { path: '/quiz-master/settings' }
 })
 
 function toggle() {

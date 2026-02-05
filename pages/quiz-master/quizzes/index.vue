@@ -247,6 +247,10 @@ async function fetchItems() {
     if (gradeFilter.value) params.set('grade_id', gradeFilter.value)
     params.set('per_page', perPage.value)
     params.set('page', page.value)
+      // When on the quiz-master management page, request only quizzes
+      // created by the authenticated user so the API can filter server-side
+      // and avoid returning other creators' quizzes.
+      params.set('mine', 1)
     const res = await api.get('/api/quizzes?' + params.toString())
     if (res.ok) {
       const json = await res.json()

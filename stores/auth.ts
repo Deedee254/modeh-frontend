@@ -26,6 +26,9 @@ export const useAuthStore = defineStore('auth', () => {
   const isFetchingUser = ref(false)
   // Deduplicate concurrent fetchUser calls
   let _fetchUserPromise: Promise<any> | null = null
+  // Simple in-memory cache: avoid refetching /api/me too often
+  const USER_CACHE_TTL = 30 * 1000 // 30 seconds
+  let _lastUserFetchedAt = 0
 
   // No automatic watcher. Instead, fetchUser() is called explicitly:
   // - After successful login/register
@@ -132,9 +135,27 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchUser(force = false): Promise<User | null> {
-    // Always fetch fresh data to ensure we have latest from database
-    // The force parameter is kept for API compatibility but we now always fetch
+    // Use a short-lived in-memory cache to avoid flooding /api/me with frequent calls.
+    // If `force` is true we bypass the cache and request fresh data.
+    try {
+      if (!force && Date.now() - _lastUserFetchedAt < USER_CACHE_TTL && user.value) {
+        return user.value
+      }
+    } catch (e) { }
     
+    // Prefer server session payload (nuxt-auth) when available and it contains
+    // authoritative user fields. This lets the session act as the primary
+    // source-of-truth and avoids unnecessary network requests to /api/me.
+    try {
+      const sessUser = (data && (data.value as any) && (data.value as any).user) ? (data.value as any).user : null
+      const hasMeaningfulFields = sessUser && (sessUser.name || sessUser.email || sessUser.profile || sessUser.avatar_url)
+      if (!force && hasMeaningfulFields) {
+        try { setUser(sessUser) } catch (e) {}
+        _lastUserFetchedAt = Date.now()
+        return user.value
+      }
+    } catch (e) {}
+
     // Avoid concurrent fetches: return the in-flight promise if present
     if (_fetchUserPromise && !force) return _fetchUserPromise
     isFetchingUser.value = true
@@ -180,6 +201,7 @@ export const useAuthStore = defineStore('auth', () => {
 
           // Safe to update user data from authoritative API
           setUser(userData)
+          _lastUserFetchedAt = Date.now()
         }
         return user.value
       } catch (error) {
@@ -196,9 +218,19 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(newUser: any): void {
     if (!newUser || typeof newUser !== 'object' || !newUser.id) return
-    // Use the API-provided object shape as-is
-    user.value = newUser
-    role.value = newUser.role
+
+    // Merge the incoming user fields into the existing user object instead of
+    // replacing it. This prevents accidental client-side overwrites (for
+    // example clearing the role) when components or responses include partial
+    // user objects.
+    const existing = (user.value as any) || {}
+    user.value = { ...existing, ...newUser }
+
+    // Only update the role if the incoming user payload includes a role.
+    // This reduces the risk of client-driven role clobbers.
+    if ((newUser as any).role !== undefined && (newUser as any).role !== null) {
+      role.value = (newUser as any).role
+    }
 
     // Sync guest results if needed
     if (typeof window !== 'undefined' && import.meta.client) {

@@ -105,6 +105,7 @@
 import { ref } from 'vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useApi from '~/composables/useApi'
+import useMeApi from '~/composables/useMeApi'
 
 const alert = useAppAlert()
 const api = useApi()
@@ -119,7 +120,7 @@ const prefsSaving = ref(false)
 async function loadPrefs() {
   prefsLoading.value = true
   try {
-    const res = await api.get('/api/me/notification-preferences')
+    const res = await meApi.get('/api/me/notification-preferences')
     if (api.handleAuthStatus(res)) return
     if (!res.ok) throw new Error('Failed to load notification preferences')
     const json = await res.json()
@@ -141,9 +142,9 @@ async function savePrefs() {
   prefsSaving.value = true
   try {
     const body = { preferences: { ...prefs.value } }
-    const res = await api.postJson('/api/me/notification-preferences', body)
-    if (api.handleAuthStatus(res)) return
-    if (!res.ok) throw new Error('Failed to save preferences')
+  const res = await meApi.post(body, '/api/me/notification-preferences')
+  if (api.handleAuthStatus(res)) return
+  if (!res.ok) throw new Error('Failed to save preferences')
     alert.push({ type: 'success', message: 'Notification preferences saved' })
   } catch (e) {
     alert.push({ type: 'error', message: e.message || 'Failed to save preferences' })

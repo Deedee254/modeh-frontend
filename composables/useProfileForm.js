@@ -251,15 +251,13 @@ export function useProfileForm() {
         // FormData has entries or avatar was uploaded
         userJson = await patchMe(userData)
         if (!userJson || !userJson.id) {
-          const meRes = await api.get('/api/me')
-          if (meRes.ok) {
-            try {
-              // Clone response to avoid stream already read error
-              const clonedRes = meRes.clone()
-              userJson = await clonedRes.json()
-            } catch (parseErr) {
-              console.error('Failed to parse /api/me response:', parseErr)
-            }
+          // Fall back to the centralized auth store instead of calling /api/me
+          // directly so we benefit from the store's caching/dedup behavior.
+          try {
+            await auth.fetchUser()
+            userJson = auth.user
+          } catch (e) {
+            console.error('Failed to refresh user from auth store after patch:', e)
           }
         }
       }

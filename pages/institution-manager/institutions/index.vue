@@ -83,9 +83,9 @@ if (auth.user && auth.user.institutions && auth.user.institutions.length) {
 } else {
   loading.value = true
   try {
-    const resp = await api.get('/api/me')
-    const json = await api.parseResponse(resp)
-    institutions.value = json?.user?.institutions || []
+    // Use centralized auth store to fetch user (benefits from cache/dedupe)
+    await auth.fetchUser?.()
+    institutions.value = auth.user?.institutions || []
   } catch (e) {
     institutions.value = []
   } finally { loading.value = false }
