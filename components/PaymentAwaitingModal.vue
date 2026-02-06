@@ -1,6 +1,6 @@
 ﻿<template>
   <div v-if="open" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md shadow-lg">
       <!-- Loading/Pending State -->
       <div v-if="status === 'pending'" class="text-center">
         <div class="mb-4">
@@ -9,28 +9,44 @@
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold">{{ isMpesaCheckingStatus ? 'Confirming Payment...' : 'Awaiting Payment' }}</h3>
-        <p class="mt-2 text-sm text-gray-600">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ isMpesaCheckingStatus ? 'Confirming Payment...' : 'Awaiting Payment' }}</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
           {{ isMpesaCheckingStatus 
             ? 'Checking M-PESA status. This may take a moment...'
             : 'Complete the M-PESA prompt on your phone' }}
         </p>
         
-        <div class="mt-3 text-sm text-gray-500">
-          Transaction ID: <span class="font-mono text-xs">{{ tx }}</span>
+        <div class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+          <div v-if="checkoutRequestId" class="mb-2">
+            <span class="font-medium">✅ Checkout Request ID:</span><br>
+            <span class="font-mono text-xs text-blue-600 dark:text-blue-400">{{ checkoutRequestId }}</span>
+          </div>
+          <div v-else class="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
+            <span class="text-xs font-medium text-yellow-800 dark:text-yellow-200">⚠️ Missing Checkout Request ID</span><br>
+            <span class="text-xs text-yellow-700 dark:text-yellow-300">Backend did not return checkout_request_id. Check backend logs.</span>
+          </div>
+          <div v-if="tx" class="mb-2">
+            <span class="font-medium">M-PESA Receipt:</span><br>
+            <span class="text-xs text-green-600 dark:text-green-400 font-mono">{{ tx }}</span>
+          </div>
+          <div v-if="!tx && !checkoutRequestId" class="text-xs text-slate-500">
+            Initializing payment...
+          </div>
         </div>
 
-        <div v-if="secondsRemaining > 0" class="mt-3 text-xs text-slate-500">
+        <div v-if="secondsRemaining > 0" class="mt-3 text-xs text-slate-500 dark:text-slate-400">
           Timeout in: {{ formatSeconds(secondsRemaining) }}
         </div>
 
         <button 
-          v-if="!isMpesaCheckingStatus"
+          v-if="!isMpesaCheckingStatus && checkoutRequestId"
           @click="onCheckNow" 
-          class="w-full mt-4 px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+          class="w-full mt-4 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium transition"
         >
           Check Status Now
         </button>
+
+        <!-- (debug info removed) -->
       </div>
 
       <!-- Success State -->
@@ -41,20 +57,23 @@
           </svg>
         </div>
         <h3 class="text-lg font-semibold text-green-600">Payment Confirmed!</h3>
-        <p class="mt-2 text-sm text-gray-600">Your subscription has been activated.</p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Your subscription has been activated.</p>
         
-        <div v-if="mpesaData" class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-left">
-          <p v-if="mpesaData.mpesa_receipt" class="text-xs text-gray-600">
-            <span class="font-medium">Receipt:</span> {{ mpesaData.mpesa_receipt }}
+        <div v-if="mpesaData" class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg text-left">
+          <p v-if="mpesaData.mpesa_receipt" class="text-xs text-slate-700 dark:text-slate-300">
+            <span class="font-medium">M-PESA Receipt:</span> <span class="font-mono text-green-600 dark:text-green-400">{{ mpesaData.mpesa_receipt }}</span>
           </p>
-          <p v-if="mpesaData.transaction_date" class="text-xs text-gray-600 mt-1">
+          <p v-if="mpesaData.transaction_date" class="text-xs text-slate-700 dark:text-slate-300 mt-1">
             <span class="font-medium">Date:</span> {{ formatDate(mpesaData.transaction_date) }}
+          </p>
+          <p v-if="checkoutRequestId" class="text-xs text-slate-700 dark:text-slate-300 mt-1">
+            <span class="font-medium">Checkout ID:</span> <span class="font-mono text-blue-600 dark:text-blue-400">{{ checkoutRequestId }}</span>
           </p>
         </div>
 
-        <div v-if="invoiceUrl" class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p class="text-sm font-medium text-blue-900 mb-2">Invoice Ready</p>
-          <button @click="downloadInvoice" class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded">
+        <div v-if="invoiceUrl" class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <p class="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Invoice Ready</p>
+          <button @click="downloadInvoice" class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition">
             Download PDF
           </button>
         </div>
@@ -68,8 +87,17 @@
           </svg>
         </div>
         <h3 class="text-lg font-semibold text-red-600">Payment Failed</h3>
-        <p class="mt-2 text-sm text-gray-600">{{ mpesaData?.result_desc || 'The payment was declined.' }}</p>
-        <div class="mt-3 text-sm text-gray-500">Transaction ID: <span class="font-mono text-xs">{{ tx }}</span></div>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">{{ mpesaData?.result_desc || 'The payment was declined.' }}</p>
+        <div class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+          <div v-if="mpesaData?.mpesa_receipt" class="mb-2">
+            <span class="font-medium">M-PESA Receipt:</span><br>
+            <span class="font-mono text-xs text-red-600 dark:text-red-400">{{ mpesaData.mpesa_receipt }}</span>
+          </div>
+          <div v-if="checkoutRequestId">
+            <span class="font-medium">Checkout ID:</span><br>
+            <span class="font-mono text-xs text-blue-600 dark:text-blue-400">{{ checkoutRequestId }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Manual Reconciliation Needed -->
@@ -80,15 +108,24 @@
           </svg>
         </div>
         <h3 class="text-lg font-semibold text-yellow-600">Verification Delayed</h3>
-        <p class="mt-2 text-sm text-gray-600">We couldn't verify your payment immediately. We will continue checking.</p>
-        <div class="mt-3 text-sm text-gray-500">Transaction ID: <span class="font-mono text-xs">{{ tx }}</span></div>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">We couldn't verify your payment immediately. We will continue checking.</p>
+        <div class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+          <div v-if="checkoutRequestId" class="mb-2">
+            <span class="font-medium">Checkout ID:</span><br>
+            <span class="font-mono text-xs text-blue-600 dark:text-blue-400">{{ checkoutRequestId }}</span>
+          </div>
+          <div v-if="mpesaData?.mpesa_receipt" class="mb-2">
+            <span class="font-medium">M-PESA Receipt:</span><br>
+            <span class="font-mono text-xs text-yellow-600 dark:text-yellow-400">{{ mpesaData.mpesa_receipt }}</span>
+          </div>
+          <p class="text-xs">Check your M-PESA app for the transaction status</p>
+        </div>
       </div>
 
       <div class="mt-6 flex justify-end gap-3">
         <button 
           @click="onClose" 
-          class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
-          :disabled="status === 'pending'"
+          class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition"
         >
           {{ getButtonLabel }}
         </button>
@@ -96,7 +133,7 @@
         <button 
           v-if="showRetryButton" 
           @click="onRetry" 
-          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
         >
           Retry
         </button>
@@ -110,6 +147,7 @@ import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { useMpesaPayment } from '~/composables/useMpesaPayment'
+import useApi from '~/composables/useApi'
 
 interface Echo {
   private: (channel: string) => EchoChannel
@@ -124,6 +162,7 @@ interface EchoChannel {
 const props = defineProps<{
   tx?: string
   checkoutRequestId?: string
+  phone?: string
   open?: boolean
 }>()
 const emits = defineEmits<{ close: [], 'update:open': [boolean] }>()
@@ -140,6 +179,9 @@ const { push: pushAlert } = useAppAlert()
 const api = useApi()
 const mpesa = useMpesaPayment()
 let _echoChannels: EchoChannel[] = []
+
+// Debug / runtime tracking
+const autoCheckAttempts = ref(0)
 
 const getButtonLabel = computed(() => {
   if (status.value === 'active') return 'Done'
@@ -162,6 +204,16 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+// debug toggles removed for production
+
+function maskPhoneNumber(phone: string): string {
+  if (!phone) return 'Not provided'
+  // Show first 3 and last 3 digits: 254712****78
+  const str = String(phone)
+  if (str.length <= 5) return str
+  return str.substring(0, 3) + '****' + str.substring(str.length - 2)
+}
+
 function startTimeoutCountdown(): void {
   secondsRemaining.value = 180
   intervalId = setInterval(() => {
@@ -182,6 +234,12 @@ function startTimeoutCountdown(): void {
 function startAutoCheck(): void {
   if (autoCheckInterval) clearInterval(autoCheckInterval)
   autoCheckInterval = setInterval(async () => {
+    // Stop after 5 attempts
+    if (autoCheckAttempts.value >= 5) {
+      stopAutoCheck()
+      return
+    }
+    
     if (status.value === 'pending' && props.checkoutRequestId) {
       await reconcilePayment()
     }
@@ -207,26 +265,45 @@ async function onCheckNow(): Promise<void> {
  * Reconcile payment with M-PESA backend
  */
 async function reconcilePayment(): Promise<void> {
-  if (!props.checkoutRequestId) return
+  if (!props.checkoutRequestId) {
+    console.error('[PaymentAwaitingModal] No checkoutRequestId to reconcile')
+    return
+  }
+  
   isMpesaCheckingStatus.value = true
 
-  const result = await mpesa.reconcile(props.checkoutRequestId, 'user')
+  try {
+    const result = await mpesa.reconcile(props.checkoutRequestId, 'user')
+    autoCheckAttempts.value++
 
-  if (result && result.status === 'success') {
-    mpesaData.value = result.transaction
-    status.value = 'active'
-    stopAutoCheck()
-    if (intervalId) clearInterval(intervalId)
-    fetchAndSetInvoiceUrl()
-  } else if (result && result.status === 'failed') {
-    mpesaData.value = result.transaction
-    status.value = 'failed'
-    stopAutoCheck()
-    if (intervalId) clearInterval(intervalId)
+    // Handle success
+    if (result?.ok && result.status === 'success') {
+      mpesaData.value = result.transaction
+      status.value = 'active'
+      stopAutoCheck()
+      if (intervalId) clearInterval(intervalId)
+      pushAlert({ type: 'success', message: 'Payment confirmed!' })
+      fetchAndSetInvoiceUrl()
+      return
+    }
+
+    // Handle failure
+    if (result?.status === 'failed') {
+      mpesaData.value = result.transaction
+      status.value = 'failed'
+      stopAutoCheck()
+      if (intervalId) clearInterval(intervalId)
+      pushAlert({ type: 'error', message: 'Payment failed: ' + (result.transaction?.result_desc || 'Unknown error') })
+      return
+    }
+
+    // pending or manual_reconciliation -> do nothing, will retry
+  } catch (error: any) {
+    autoCheckAttempts.value++
+    console.error('[Payment Reconcile] Error checking status:', error?.message || error)
+  } finally {
+    isMpesaCheckingStatus.value = false
   }
-  // If still pending, auto-check will retry
-
-  isMpesaCheckingStatus.value = false
 }
 
 function _attachEchoListeners(): void {
@@ -325,13 +402,24 @@ function onClose(): void {
 }
 
 onMounted(() => {
-  if (!props.tx) return
+  if (!props.tx && !props.checkoutRequestId) {
+    console.error('[PaymentAwaitingModal] ERROR: No tx or checkoutRequestId provided')
+    return
+  }
+
   startTimeoutCountdown()
   _attachEchoListeners()
+
+  if (props.checkoutRequestId) {
+    startAutoCheck()
+    // immediate first check
+    setTimeout(() => { reconcilePayment() }, 500)
+  }
 })
 
 onBeforeUnmount(() => {
   if (intervalId) clearInterval(intervalId)
+  stopAutoCheck()
   _detachEchoListeners()
 })
 </script>

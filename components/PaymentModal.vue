@@ -35,7 +35,8 @@
                 <option value="">Enter a new number</option>
                 <option v-for="p in phones" :key="p" :value="p">{{ p }}</option>
               </select>
-              <input id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-brand-600 focus:border-brand-500" />
+              <!-- Show the free-form input only when user chooses to enter a new number -->
+              <input v-if="!selectedPhonePreset" id="phone-input" v-model="phoneInputLocal" type="tel" placeholder="2547..." class="flex-1 border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 w-full focus:ring-brand-600 focus:border-brand-500" />
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">An STK push will be sent to this number. Please use international format (e.g., 254...)</p>
           </div>
@@ -58,7 +59,7 @@
       </UCard>
     </UModal>
 
-    <PaymentAwaitingModal :tx="currentTx" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed" />
+    <PaymentAwaitingModal :tx="currentTx" :checkout-request-id="currentCheckoutRequestId" :phone="phoneForPayment" :open="showAwaitingModal" @update:open="v => showAwaitingModal = v" @close="onPaymentAttemptClosed" />
   </div>
 </template>
 
@@ -87,6 +88,7 @@ const isOpen = ref(props.open)
 const loading = ref(false)
 const error = ref('')
 const currentTx = ref(null)
+const currentCheckoutRequestId = ref(null)
 const showAwaitingModal = ref(false)
 
 const selectedPhonePreset = ref('')
@@ -164,8 +166,21 @@ async function initiatePayment() {
     const isFetchResponse = res && typeof res.json === 'function'
     const data = isFetchResponse ? await res.json().catch(() => ({})) : (res ?? {})
 
+    console.log('[PaymentModal] Response from payment endpoint:', {
+      ok: isFetchResponse ? res.ok : data.ok,
+      data,
+      timestamp: new Date().toISOString()
+    })
+
     if (data?.tx || data?.purchase?.gateway_meta?.tx) {
       currentTx.value = data.tx || data.purchase.gateway_meta.tx
+      currentCheckoutRequestId.value = data?.checkout_request_id || data?.purchase?.gateway_meta?.checkout_request_id || null
+      
+      console.log('[PaymentModal] ✅ Payment initiated:', {
+        tx: currentTx.value,
+        checkoutRequestId: currentCheckoutRequestId.value
+      })
+      
       showAwaitingModal.value = true
       isOpen.value = false // Hide this modal, show the awaiting one
     } else if ((isFetchResponse && res.ok === false) || (!isFetchResponse && data?.ok === false)) {
