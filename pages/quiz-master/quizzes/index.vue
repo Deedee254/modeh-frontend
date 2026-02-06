@@ -26,7 +26,7 @@
       <template #highlight>
         <div>
           <p class="text-xs uppercase tracking-wide text-white/70">Your Stats</p>
-          <p class="mt-1 text-2xl font-semibold text-white">{{ paginator?.total || 0 }} quizzes</p>
+          <p class="mt-1 text-2xl font-semibold text-white">{{ paginator?.meta?.total || paginator?.total || 0 }} quizzes</p>
           <p class="mt-2 text-sm text-white/70">Track your content creation journey.</p>
         </div>
       </template>
@@ -104,7 +104,7 @@
             </div>
 
             <div v-else>
-              <div v-if="!paginator?.data || paginator.data.length === 0" 
+              <div v-if="!normalizedQuizzes || normalizedQuizzes.length === 0" 
                 class="text-center py-16">
                 <div class="text-gray-400 mb-2">
                   <Icon name="heroicons:inbox-20-solid" class="w-12 h-12 mx-auto opacity-50" />
@@ -114,7 +114,7 @@
               </div>
               <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <QuizCard
-                  v-for="(quiz, idx) in (Array.isArray(normalizedQuizzes) ? normalizedQuizzes.filter(Boolean) : [])"
+                  v-for="(quiz, idx) in normalizedQuizzes"
                   :key="quiz?.slug || idx"
                   :to="quiz.startLink"
                   :startLink="quiz.startLink"
@@ -137,7 +137,7 @@
                 />
               </div>
 
-              <div v-if="paginator?.data?.length > 0" class="mt-8 pt-6 border-t border-slate-200">
+              <div v-if="normalizedQuizzes && normalizedQuizzes.length > 0" class="mt-8 pt-6 border-t border-slate-200">
                 <Pagination :paginator="paginator" @change-page="onPageChange" />
               </div>
             </div>
@@ -195,9 +195,13 @@ const gradeFilter = ref(0)
 const subjectFilter = ref(0)
 
 const normalizedQuizzes = computed(() => {
-  // Support both paginated responses ({ data: [...] }) and direct array responses
-  const raw = Array.isArray(paginator.value) ? paginator.value : (paginator.value?.data || paginator.value?.quizzes || [])
+  // Support both paginated responses ({ data: [...], meta: {...}, links: {...} }) and direct array responses
+  if (!paginator.value) return []
+  
+  // Extract the data array from paginated response
+  const raw = Array.isArray(paginator.value?.data) ? paginator.value.data : (Array.isArray(paginator.value) ? paginator.value : [])
   const quizzes = Array.isArray(raw) ? raw : []
+  
   return quizzes
     .filter(q => q && q.slug)
     .map(quiz => ({

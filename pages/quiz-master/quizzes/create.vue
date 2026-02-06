@@ -305,17 +305,29 @@ const onAddFromBank = async (questions: any[]) => {
   }
 }
 
-// Handle imported questions from CSV
-const onQuestionsImported = async (questions: any) => {
+// Handle imported questions: accepts either a summary ({created, errors})
+// or raw question object(s). Avoid double-adding if modal already pushed to store.
+const onQuestionsImported = async (payload: any) => {
   try {
-    const qArray = Array.isArray(questions) ? questions : [questions]
-    for (const q of qArray) {
-      if (q) {
-        await store.addQuestion(q)
+    // If payload looks like the modal's summary (has created/errors), assume
+    // the modal already added the questions to the store and just show toast
+    if (payload && (typeof payload.created === 'number' || Array.isArray(payload?.errors))) {
+      showImportModal.value = false
+      if (payload.created) alert.push({ type: 'success', message: `Imported ${payload.created} question(s).` })
+      if (payload.errors && payload.errors.length) {
+        importErrors.value = payload.errors
+        showImportErrorsModal.value = true
       }
+      return
+    }
+
+    // Otherwise treat payload as question(s) and add them to the store
+    const questions = Array.isArray(payload) ? payload : [payload]
+    for (const q of questions) {
+      if (q) await store.addQuestion(q)
     }
     showImportModal.value = false
-    alert.push({ type: 'success', message: `${qArray.length} question(s) imported` })
+    alert.push({ type: 'success', message: `${questions.length} question(s) imported` })
   } catch (e: any) {
     alert.push({ type: 'error', message: `Error importing questions: ${e?.message || 'Unknown error'}` })
   }
@@ -367,7 +379,7 @@ const onEditQuiz = () => {
   }
 }
 
-// Lifecycle
+// Page lifecycle
 onMounted(async () => {
   try {
     // Load taxonomy data and quiz in parallel

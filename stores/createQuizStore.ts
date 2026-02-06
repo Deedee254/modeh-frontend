@@ -219,167 +219,68 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
    * @returns A question object ready for the editor UI.
    */
   function normalizeQuestionForEditor(q: any) {
+    // Minimal normalization: only add UI helper fields, don't transform backend shape.
+    // The backend sends canonical shape with 'body', 'options[].text', 'answers'.
     const question = JSON.parse(JSON.stringify(q || {}))
 
-    // Ensure editor helper fields exist to prevent reactivity issues
+    // Add UI-only helper fields
     if (!question.uid) question.uid = Math.random().toString(36).substring(2)
     if (typeof question.open === 'undefined') question.open = true
     if (typeof question.is_banked === 'undefined') question.is_banked = false
-    if (typeof question.difficulty === 'undefined') question.difficulty = 2
-    if (typeof question.marks === 'undefined') question.marks = 1
 
-    // Ensure taxonomy fields are populated (inherit from quiz if not set on question)
+    // Ensure defaults for numeric fields
+    if (typeof question.difficulty === 'undefined' || question.difficulty === null) question.difficulty = 2
+    if (typeof question.marks === 'undefined' || question.marks === null) question.marks = 1
+
+    // Inherit taxonomy from quiz if not set on question
     if (!question.grade_id && quiz.value?.grade_id) question.grade_id = quiz.value.grade_id
     if (!question.level_id && quiz.value?.level_id) question.level_id = quiz.value.level_id
     if (!question.subject_id && quiz.value?.subject_id) question.subject_id = quiz.value.subject_id
     if (!question.topic_id && quiz.value?.topic_id) question.topic_id = quiz.value.topic_id
 
-    // Map server body/question keys to editor's expected 'text' key
-    if (!question.text && question.body) question.text = question.body
-    if (!question.text && question.question) question.text = question.question
-    if (!question.text) question.text = '<p></p>'
-
-    // Ensure explanation field (server may use explain, explanation, or omit it)
-    if (!question.explanation && question.explain) question.explanation = question.explain
+    // Ensure explanation exists (default to empty string)
     if (!question.explanation) question.explanation = ''
 
-    // Normalize options and answers for the editor
-    // If options exist as array, ensure they are all objects with text and is_correct
-    if (Array.isArray(question.options) && question.options.length > 0) {
-      // First, convert options to objects if they're strings
-      question.options = question.options.map((opt: any) => {
-        if (typeof opt === 'string') {
-          return { text: opt, is_correct: false }
-        }
-        return { text: opt.text || opt.value || '', is_correct: !!opt.is_correct }
-      })
+    // Ensure options is an array (even if empty)
+    if (!Array.isArray(question.options)) question.options = []
 
-      // Sync is_correct flags with answers array (answers array takes precedence)
-      // This handles CSV imports where answers are set but is_correct flags aren't
-      if (Array.isArray(question.answers) && question.answers.length > 0) {
-        // Reset all is_correct flags first
-        question.options.forEach((opt: any) => {
-          opt.is_correct = false
-        })
-        // Set is_correct to true for options referenced in answers array
-        question.answers.forEach((answerIndex: any) => {
-          const idx = typeof answerIndex === 'string' ? parseInt(answerIndex, 10) : Number(answerIndex)
-          if (!isNaN(idx) && idx >= 0 && idx < question.options.length) {
-            question.options[idx].is_correct = true
-          }
-        })
-      } else {
-        // Derive answers from is_correct flags if answers are missing
-        const correctIndices: number[] = []
-        question.options.forEach((opt: any, idx: number) => {
-          if (opt.is_correct) correctIndices.push(idx)
-        })
-        if (correctIndices.length > 0) {
-          question.answers = question.type === 'multi' ? correctIndices.map(i => String(i)) : [String(correctIndices[0])]
-        }
-      }
-    }
-
-    // Ensure answers is always an array
+    // Ensure answers is an array (even if empty)
     if (!Array.isArray(question.answers)) question.answers = []
-
-    // Ensure options exist even if empty (editor needs this)
-    if (!Array.isArray(question.options)) {
-      question.options = [
-        { text: '', is_correct: true },
-        { text: '', is_correct: false }
-      ]
-    }
-
-    // Normalize option_mode for flexible option-based types
-    if (question.type === 'mcq' || question.type === 'multi' || question.type === 'fill_blanks') {
-      if (!question.option_mode) {
-        // Set default based on type if not explicitly set
-        question.option_mode = question.type === 'multi' ? 'multi' : 'single'
-      }
-    }
-
-    // Normalize math parts: ensure part_type, options, and answers structure
-    if (question.type === 'math' && Array.isArray(question.parts)) {
-      question.parts = question.parts.map((p: any) => {
-        const part: any = {
-          text: typeof p === 'string' ? p : (p.text || ''),
-          marks: typeof p === 'string' ? 1 : (p.marks || 1),
-          part_type: (typeof p === 'string' ? 'text' : p.part_type) || 'text'  // text | mcq | multi
-        }
-
-        // If part has options, normalize them
-        if (part.part_type !== 'text' && Array.isArray(p.options)) {
-          part.options = p.options.map((opt: any) => {
-            if (typeof opt === 'string') {
-              return { text: opt, is_correct: false }
-            }
-            return {
-              text: opt.text || opt.value || '',
-              is_correct: !!opt.is_correct
-            }
-          })
-        } else {
-          part.options = []
-        }
-
-        // If part has answers, normalize them
-        if (part.part_type !== 'text' && (Array.isArray(p.answers) || p.answers)) {
-          part.answers = Array.isArray(p.answers) 
-            ? p.answers.filter((a: any) => a !== null && typeof a !== 'undefined').map((a: any) => String(a))
-            : []
-        } else {
-          part.answers = []
-        }
-
-        return part
-      })
-    }
 
     return question
   }
   function sanitizeQuestionForPayload(q: any) {
-    // Minimal mapping: convert editor shape to backend-friendly keys.
-    // The backend already inherits missing taxonomy fields from the quiz when provided,
-    // so avoid re-implementing that logic here. Keep this function small and predictable
-    // so CSV import and the question builder can produce straightforward payloads.
+    // Send exactly what backend expects: body, type, options, answers, etc.
+    // No transformation, no fallbacks. This is the canonical shape.
     if (!q || typeof q !== 'object') return q
 
     const copy: any = {
       type: q.type || 'mcq',
-      body: q.body || q.text || q || '',
+      body: q.body || '',  // Backend canonical field for question text
       explanation: q.explanation ?? null,
       difficulty: (typeof q.difficulty !== 'undefined' && q.difficulty !== null) ? Number(q.difficulty) : 3,
       marks: (typeof q.marks !== 'undefined' && q.marks !== null) ? Number(q.marks) : 1,
       created_by: q.created_by,
     }
 
-    // Pass through taxonomy ids when explicitly present on the question object.
-    // Pass through taxonomy ids when explicitly present on the question object.
-    // Fallback to the current quiz taxonomy if the question doesn't have it set.
-    // This ensures that questions added before the quiz details were finalized (or if sync failed) 
-    // still get created with the correct parentage.
-
-    // Grade ID
+    // Pass taxonomy IDs to backend. Fallback to quiz defaults if not set.
     if (typeof q.grade_id !== 'undefined' && q.grade_id !== null) copy.grade_id = q.grade_id
     else if (q.grade && typeof q.grade.id !== 'undefined') copy.grade_id = q.grade.id
     else if (quiz.value.grade_id) copy.grade_id = quiz.value.grade_id
 
-    // Level ID
     if (typeof q.level_id !== 'undefined' && q.level_id !== null) copy.level_id = q.level_id
     else if (q.level && typeof q.level.id !== 'undefined') copy.level_id = q.level.id
     else if (quiz.value.level_id) copy.level_id = quiz.value.level_id
 
-    // Subject ID
     if (typeof q.subject_id !== 'undefined' && q.subject_id !== null) copy.subject_id = q.subject_id
     else if (q.subject && typeof q.subject.id !== 'undefined') copy.subject_id = q.subject.id
     else if (quiz.value.subject_id) copy.subject_id = quiz.value.subject_id
 
-    // Topic ID
     if (typeof q.topic_id !== 'undefined' && q.topic_id !== null) copy.topic_id = q.topic_id
     else if (q.topic && typeof q.topic.id !== 'undefined') copy.topic_id = q.topic.id
     else if (quiz.value.topic_id) copy.topic_id = quiz.value.topic_id
 
+    // Media
     if (q.media_type) {
       copy.media_type = q.media_type
       if (q.media_path) copy.media_path = q.media_path
@@ -387,15 +288,14 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       if (q.media_metadata) copy.media_metadata = { ...q.media_metadata }
     }
 
-    // Handle option_mode by converting to appropriate type
-    // MCQ with option_mode='multi' should be saved as type 'multi'
-    // This reuses existing type field instead of adding new column
+    // Type conversion: option_mode determines MCQ vs Multi
     if ((q.type === 'mcq' || q.type === 'multi') && q.option_mode === 'multi') {
-      copy.type = 'multi'  // Convert to multi type when option_mode is multi
+      copy.type = 'multi'
     } else if (q.type === 'multi' && q.option_mode === 'single') {
-      copy.type = 'mcq'    // Convert to mcq type when option_mode is single
+      copy.type = 'mcq'
     }
 
+    // Options: send as array of { text, is_correct }
     if (Array.isArray(q.options)) {
       copy.options = q.options.map((opt: any) => {
         if (typeof opt === 'string') return { text: opt, is_correct: false }
@@ -403,6 +303,7 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       })
     }
 
+    // Answers: send as array of strings
     if (Array.isArray(q.answers)) {
       copy.answers = q.answers.filter((a: any) => a !== null && typeof a !== 'undefined').map((a: any) => String(a))
     }
@@ -1182,7 +1083,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       const invalidQuestions: string[] = []
       for (let i = 0; i < questions.value.length; i++) {
         const q = questions.value[i]
-        if (!q || !q.text || !q.text.trim()) {
+        // Validate presence of backend 'body' field (editor normalizer sets this)
+        if (!q || !q.body || !q.body.trim()) {
           invalidQuestions.push(`Question ${i + 1}: Missing question text`)
         }
         if (q && (!q.options || q.options.length < 2) && ['mcq', 'multi'].includes(q.type)) {
@@ -1221,7 +1123,8 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
       questions: questions.value.map(q => ({
         uid: q.uid,
         type: q.type,
-        text: q.text,
+        // Use backend 'body' for preview text
+        body: q.body,
         marks: q.marks,
         difficulty: q.difficulty,
         options: q.options?.slice(0, 3) // Include first 3 options for preview

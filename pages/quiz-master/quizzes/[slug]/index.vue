@@ -173,25 +173,86 @@
 
       <!-- Questions -->
       <div v-show="activeTab === 'questions'">
-        <div class="mb-2 flex items-center justify-between">
-          <div class="text-sm text-gray-600">Questions: {{ quiz.questions_count ?? (quiz.questions ? quiz.questions.length : 0) }}</div>
+        <div class="mb-6 flex items-center justify-between">
+          <div class="text-sm text-gray-600 font-medium">Questions: {{ quiz.questions_count ?? (quiz.questions ? quiz.questions.length : 0) }}</div>
+          <NuxtLink :to="`/quiz-master/quizzes/${quiz.slug}/edit`" class="px-4 py-2 bg-brand-600 text-white rounded text-sm font-medium hover:bg-brand-700 transition">
+            Add Question
+          </NuxtLink>
         </div>
 
-        <div class="space-y-4">
-          <div v-for="(q, idx) in quiz.questions || []" :key="q.id || idx" class="border rounded p-4">
-            <div class="flex items-center justify-between mb-2">
-              <div class="font-medium">Question {{ idx + 1 }}</div>
-              <div class="text-sm text-gray-500">{{ q.marks || 0 }} marks • {{ difficultyLabel(q.difficulty) }}</div>
-            </div>
-            <div class="mb-3 prose max-w-none" v-html="q.question"></div>
-            <div v-if="q.options && q.options.length" class="space-y-1">
-              <div v-for="(opt, oidx) in q.options" :key="oidx" class="text-sm">
-                <span v-if="opt.is_correct" class="font-medium text-green-600">✓ </span>
-                <span v-html="opt.option"></span>
+        <div v-if="!quiz.questions || quiz.questions.length === 0" class="text-center py-12 bg-gray-50 rounded-lg">
+          <Icon name="heroicons:inbox-20-solid" class="w-12 h-12 mx-auto text-gray-400 mb-2" />
+          <p class="text-gray-600 font-medium">No questions yet</p>
+          <p class="text-gray-500 text-sm mt-1">Add questions to get started</p>
+        </div>
+
+        <div v-else class="space-y-4">
+          <div v-for="(q, idx) in quiz.questions" :key="q.id || idx" class="border rounded-lg p-5 hover:shadow-md transition bg-white">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <div class="font-semibold text-gray-900">Question {{ idx + 1 }}</div>
+                <div class="text-xs text-gray-500 mt-1">{{ q.marks || 0 }} marks • {{ difficultyLabel(q.difficulty) }}</div>
+              </div>
+              <div class="flex gap-2 ml-4 flex-shrink-0">
+                <button
+                  @click="editQuestion(q, idx)"
+                  class="px-3 py-1.5 bg-blue-100 text-blue-600 rounded text-sm font-medium hover:bg-blue-200 transition"
+                >
+                  Edit
+                </button>
+                <button
+                  @click="deleteQuestion(idx)"
+                  class="px-3 py-1.5 bg-red-100 text-red-600 rounded text-sm font-medium hover:bg-red-200 transition"
+                >
+                  Delete
+                </button>
               </div>
             </div>
-            <div v-if="q.explanation" class="mt-3 p-2 bg-brand-50 rounded text-sm">
-              <strong>Explanation:</strong> <span v-html="q.explanation"></span>
+
+            <!-- Question Body -->
+            <div class="mb-3 prose prose-sm max-w-none text-gray-800" v-html="q.body || ''"></div>
+
+            <!-- Options/Answers Display -->
+            <div v-if="(q.options && q.options.length) || (q.answers && q.answers.length)" class="space-y-2 mt-4 bg-gray-50 p-3 rounded">
+              <div v-for="(opt, oidx) in (q.options || [])" :key="oidx" class="text-sm text-gray-700 flex items-start">
+                <span v-if="(opt && opt.is_correct) || (Array.isArray(q.answers) && q.answers.includes(String(oidx)))" class="font-bold text-green-600 mr-2">✓</span>
+                <span v-else class="text-gray-400 mr-2">○</span>
+                <span v-html="(opt && opt.text) || String(opt || '')"></span>
+              </div>
+              <!-- Fallback: when answers exist but no options -->
+              <div v-if="(!q.options || !q.options.length) && q.answers && q.answers.length" class="text-sm text-gray-700">
+                <div v-for="(a, ai) in q.answers" :key="ai" class="flex items-start">
+                  <span class="font-bold text-green-600 mr-2">✓</span>
+                  {{ a }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Explanation -->
+            <div v-if="q.explanation" class="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <div class="text-xs font-semibold text-amber-900 mb-1">Explanation</div>
+              <div class="text-sm text-amber-900 prose prose-sm max-w-none" v-html="q.explanation"></div>
+            </div>
+
+            <!-- Media Display -->
+            <div v-if="q.media || q.youtube_url" class="mt-4">
+              <div v-if="q.youtube_url" class="space-y-2">
+                <div class="text-xs font-semibold text-gray-600">Video</div>
+                <iframe 
+                  v-if="extractYoutubeId(q.youtube_url)" 
+                  :src="`https://www.youtube.com/embed/${extractYoutubeId(q.youtube_url)}`"
+                  class="w-full h-48 rounded"
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen>
+                </iframe>
+              </div>
+              <div v-if="q.media" class="space-y-2">
+                <div class="text-xs font-semibold text-gray-600">Media</div>
+                <img v-if="q.media_type === 'image'" :src="q.media" class="max-w-xs rounded" />
+                <audio v-else-if="q.media_type === 'audio'" :src="q.media" controls class="w-full max-w-xs"></audio>
+                <video v-else-if="q.media_type === 'video'" :src="q.media" controls class="max-w-xs rounded"></video>
+              </div>
             </div>
           </div>
         </div>
@@ -202,7 +263,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRuntimeConfig, useRoute } from '#imports'
+import { useRuntimeConfig, useRoute, navigateTo } from '#imports'
 import useApi from '~/composables/useApi'
 import useSeo from '~/composables/useSeo'
 import { computed } from 'vue'
@@ -265,8 +326,48 @@ function tabClass(tab) {
 }
 
 function difficultyLabel(diff) {
-  const labels = { 1: 'Easy', 2: 'Medium', 3: 'Hard' }
+  const labels = { 1: 'Easy', 2: 'Medium', 3: 'Hard', 4: 'Very Hard', 5: 'Expert' }
   return labels[diff] || 'Unknown'
+}
+
+function extractYoutubeId(url) {
+  if (!url || typeof url !== 'string') return null
+  const m1 = url.match(/[?&]v=([^&]+)/)
+  if (m1 && m1[1]) return m1[1]
+  const m2 = url.match(/youtu\.be\/([^?&]+)/)
+  if (m2 && m2[1]) return m2[1]
+  const m3 = url.match(/youtube\.com\/embed\/([^?&]+)/)
+  if (m3 && m3[1]) return m3[1]
+  return null
+}
+
+function editQuestion(question, index) {
+  // Redirect to edit page where all questions can be edited
+  navigateTo(`/quiz-master/quizzes/${quiz.value.slug}/edit?focus=${index}`)
+}
+
+async function deleteQuestion(index) {
+  if (!confirm('Delete this question?')) return
+  
+  const q = quiz.value.questions[index]
+  if (!q?.id) {
+    alert('Cannot delete unsaved question')
+    return
+  }
+  
+  try {
+    const res = await api.delete(`/api/questions/${q.id}`)
+    if (api.handleAuthStatus(res)) return
+    if (res.ok) {
+      quiz.value.questions.splice(index, 1)
+      quiz.value.questions_count = (quiz.value.questions_count || 0) - 1
+      alert.push({ type: 'success', message: 'Question deleted', icon: 'heroicons:check-circle' })
+    } else {
+      alert.push({ type: 'error', message: 'Failed to delete question', icon: 'heroicons:exclamation-circle' })
+    }
+  } catch (e) {
+    alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' })
+  }
 }
 
 async function loadQuiz() {
@@ -324,12 +425,56 @@ async function loadQuiz() {
   loaded.grade = serverQuiz.grade || (serverQuiz.grade_name ? { id: loaded.grade_id, name: serverQuiz.grade_name } : (serverQuiz.gradeName ? { id: loaded.grade_id, name: serverQuiz.gradeName } : null))
   loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
 
-      // normalize questions shape so templates can display consistently
-      loaded.questions = Array.isArray(serverQuiz.questions) ? serverQuiz.questions.map((q) => ({
-        ...q,
-        question: q.question || q.text || q.body || '',
-        options: q.options || q.answers || q.options_list || []
-      })) : []
+      // Fetch questions separately since index endpoint doesn't include them
+      loaded.questions = []
+      if (loaded.id) {
+        try {
+          // Use the authenticated questions endpoint - filter by quiz_id
+          const questionsRes = await api.get(`/api/questions?quiz_id=${loaded.id}&limit=1000`)
+          if (questionsRes.ok) {
+            const questionsJson = await questionsRes.json()
+            const questionsData = questionsJson.questions || questionsJson.data || []
+            
+            // Store backend questions directly without transformation
+            // Backend sends: body, options[].text, answers[], etc.
+            loaded.questions = Array.isArray(questionsData)
+              ? questionsData.map((q, qi) => {
+                  const src = q || {}
+                  
+                  // Normalize numeric fields
+                  const marks = typeof src.marks !== 'undefined' ? Number(src.marks) : (typeof src.mark !== 'undefined' ? Number(src.mark) : 1)
+                  const difficulty = typeof src.difficulty !== 'undefined' ? Number(src.difficulty) : 2
+
+                  // Normalize answers to array of string indexes (if present)
+                  let answers = []
+                  if (Array.isArray(src.answers) && src.answers.length) answers = src.answers.map(a => String(a))
+                  else if (typeof src.answers === 'string' && src.answers.trim()) answers = [src.answers.trim()]
+
+                  // Keep options as-is from backend (should have 'text' and 'is_correct' fields)
+                  const options = Array.isArray(src.options) ? src.options : (Array.isArray(src.options_list) ? src.options_list : [])
+                  
+                  // Return object with canonical fields from backend
+                  return {
+                    id: src.id,
+                    uid: src.uid || `q-${src.id ?? qi}-${Math.random().toString(36).slice(2)}`,
+                    body: src.body || '',  // Backend canonical field
+                    marks,
+                    difficulty,
+                    options,
+                    answers,
+                    explanation: src.explanation || '',
+                    media: src.media || src.media_path || null,
+                    media_type: src.media_type || null,
+                    youtube_url: src.youtube_url || src.youtube || null,
+                    open: true,
+                  }
+                })
+              : []
+          }
+        } catch (e) {
+          console.error('Failed to load questions:', e)
+        }
+      }
 
       quiz.value = loaded
       

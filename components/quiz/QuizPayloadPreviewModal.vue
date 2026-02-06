@@ -138,7 +138,7 @@
               <div class="flex items-start justify-between gap-2">
                 <div class="flex-1 min-w-0">
                   <div class="font-medium text-gray-900">#{{ idx + 1 }}: {{ typeLabels[q.type] || q.type }}</div>
-                  <div class="text-gray-600 line-clamp-1 mt-0.5">{{ q.text?.replace(/<[^>]*>/g, '') || '(no text)' }}</div>
+                  <div class="text-gray-600 line-clamp-1 mt-0.5">{{ (q.body || '').replace(/<[^>]*>/g, '') || '(no text)' }}</div>
                   <div class="flex items-center gap-2 mt-1.5">
                     <UBadge color="gray" variant="subtle" size="xs">{{ q.marks }} mark{{ q.marks !== 1 ? 's' : '' }}</UBadge>
                     <UBadge :color="difficultyColor(q.difficulty)" variant="subtle" size="xs">

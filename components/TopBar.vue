@@ -473,4 +473,15 @@ const isVerified = computed(() => {
   return !!user.email_verified_at || (user.institutions && user.institutions.length > 0)
 })
 
+const isAuthed = computed(() => !!(auth.user && auth.user.id))
+
+const userInitials = computed(() => {
+  if (!auth.user || !auth.user.name) return '?'
+  const parts = auth.user.name.split(' ')
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return auth.user.name.substring(0, 2).toUpperCase()
+})
+
 </script>

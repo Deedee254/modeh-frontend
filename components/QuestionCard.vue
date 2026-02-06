@@ -2,7 +2,7 @@
   <div class="border rounded p-3 bg-slate-800/30">
     <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
       <div>
-        <div class="font-semibold text-white">{{ question?.text ? stripHtml(question.text) : 'Untitled question' }}</div>
+        <div class="font-semibold text-white">{{ question?.body ? stripHtml(question.body) : 'Untitled question' }}</div>
         <div class="text-xs text-slate-400">Type: {{ question?.type || '—' }}</div>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">

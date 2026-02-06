@@ -84,7 +84,7 @@
             <div v-show="q.open" class="border-t border-gray-100">
               <!-- Question Text Preview -->
               <div class="p-3 sm:p-4 bg-white space-y-3">
-                <div class="text-xs sm:text-sm text-gray-700 line-clamp-3" v-html="q.text || '<em>No question text</em>'"></div>
+                <div class="text-xs sm:text-sm text-gray-700 line-clamp-3" v-html="q.body || '<em>No question text</em>'"></div>
                 
                 <!-- Media Preview Section -->
                 <div v-if="q.youtube_url || q.media_url || q.media_type" class="space-y-2">

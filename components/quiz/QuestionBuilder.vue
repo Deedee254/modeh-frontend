@@ -280,6 +280,13 @@ async function saveQuestion() {
   try {
     const questionData = JSON.parse(JSON.stringify(questionForm.value))
 
+    // Convert editor's 'text' field to backend's canonical 'body' field
+    // Remove 'text' so backend only sees 'body'
+    if (questionData.text) {
+      questionData.body = questionData.text
+      delete questionData.text
+    }
+
     // Ensure answers are properly formatted
     if (!Array.isArray(questionData.answers)) {
       questionData.answers = []

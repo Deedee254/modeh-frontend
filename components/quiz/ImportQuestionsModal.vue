@@ -215,7 +215,7 @@ function buildQuestionFromRow(row) {
   const question = {
     uid: Math.random().toString(36).substring(2),
     type,
-    text: text || '<p></p>',
+    body: text || '<p></p>',  // Use backend canonical 'body' field, not 'text'
     marks: marks,
     difficulty: difficulty,
     options: options.length ? options : undefined,

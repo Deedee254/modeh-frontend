@@ -14,8 +14,7 @@
         <div class="space-y-6">
           <div v-for="(q, i) in quiz.questions" :key="i" class="border rounded p-4">
             <div class="font-medium mb-2">Q{{ i+1 }}</div>
-            <!-- Prefer `body` (used by backend) falling back to `text` -->
-            <div class="prose max-w-none" v-html="rendered[i] || q.body || q.text"></div>
+            <div class="prose max-w-none" v-html="rendered[i] || q.body"></div>
             <ol v-if="Array.isArray(q.options) && q.options.length" class="list-decimal pl-5 mt-2">
               <li v-for="(o, j) in q.options" :key="j" class="mb-1" v-html="(typeof o === 'string' ? o : (o?.text || ''))"></li>
             </ol>
@@ -50,9 +49,9 @@ async function renderMathAll() {
       })
       return out
     }
-    rendered.value = (props.quiz?.questions || []).map((q:any) => render(q.text || ''))
+    rendered.value = (props.quiz?.questions || []).map((q:any) => render(q.body || ''))
   } catch {
-    rendered.value = (props.quiz?.questions || []).map((q:any) => q.text || '')
+    rendered.value = (props.quiz?.questions || []).map((q:any) => q.body || '')
   }
 }
 

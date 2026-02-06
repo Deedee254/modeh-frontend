@@ -34,6 +34,35 @@
         >Add Question</UButton>
       </div>
     </div>
+
+    <!-- Question Editor Modal -->
+    <UModal v-model="showEditorModal" :ui="{ width: 'sm:max-w-3xl' }">
+      <div class="p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Edit Question</h3>
+          <div class="text-sm text-gray-500">Question {{ editingIndex + 1 }}</div>
+        </div>
+        <div class="space-y-4">
+          <QuestionEditorForm v-model="editorModel" :errors="modalErrors" @add-option="() => {}" />
+          <div class="flex justify-end gap-2">
+            <UButton size="sm" variant="soft" @click="showEditorModal = false">Cancel</UButton>
+            <UButton size="sm" color="primary" :loading="savingQuestion" @click="saveEditedQuestion" class="!bg-brand-600 hover:!bg-brand-700">Save</UButton>
+          </div>
+        </div>
+      </div>
+    </UModal>
+
+    <!-- Delete confirmation modal -->
+    <UModal v-model="showDeleteConfirm" :ui="{ width: 'sm:max-w-md' }">
+      <div class="p-4 sm:p-6">
+        <h3 class="text-lg font-semibold mb-2">Delete question</h3>
+        <p class="text-sm text-gray-600 mb-4">Are you sure you want to delete this question? This action cannot be undone.</p>
+        <div class="flex justify-end gap-2">
+          <UButton size="sm" variant="soft" @click="showDeleteConfirm = false">Cancel</UButton>
+          <UButton size="sm" color="red" @click="performDeleteQuestion">Delete</UButton>
+        </div>
+      </div>
+    </UModal>
     <ImportQuestionsModal v-model="showImportModal" @imported="onImported" />
 
     <!-- Question List -->
@@ -74,14 +103,8 @@
             </div>
             <div class="flex items-center gap-1 flex-shrink-0">
               <UButton size="xs" variant="ghost" @click="duplicateQuestion(idx)" icon="i-heroicons-document-duplicate" />
-              <UButton size="xs" variant="ghost" color="red" @click="removeQuestion(idx)" icon="i-heroicons-trash" />
-              <button 
-                class="p-1.5 text-gray-400 hover:text-gray-600 rounded transition-colors" 
-                @click="q.open = !q.open" 
-                :aria-label="q.open ? 'Collapse question' : 'Expand question'"
-              >
-                <Icon :name="q.open ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="w-4 h-4" />
-              </button>
+              <UButton size="xs" variant="ghost" color="red" @click="confirmDeleteQuestion(idx)" icon="i-heroicons-trash" />
+              <UButton size="xs" variant="ghost" color="gray" @click="openEditor(idx)" icon="i-heroicons-pencil" />
             </div>
           </div>
 
@@ -93,15 +116,10 @@
             leave-to-class="opacity-0 max-h-0 overflow-hidden"
           >
             <div v-show="q.open" class="p-3">
-              <QuestionEditor 
-                v-model="localQuestions[idx]"
-                :index="idx"
-                :errors="errors[q.uid]"
-                @add-option="addOption(idx)"
-                @remove-option="removeOption(idx, $event)"
-                @duplicate="duplicateQuestion(idx)"
-                @remove="removeQuestion(idx)"
-              />
+              <div class="prose max-w-none text-sm text-gray-700">
+                <!-- Use backend 'body' only for rendering question HTML -->
+                <div v-html="(q.body || '')"></div>
+              </div>
             </div>
           </Transition>
         </div>
@@ -175,12 +193,13 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, toRef } from 'vue'
-import QuestionEditor from './QuestionEditor.vue'
+import { computed, ref, watch, toRef, nextTick } from 'vue'
+import QuestionEditorForm from './QuestionEditorForm.vue'
 import { useCreateQuizStore } from '~/stores/createQuizStore'
 import { useAppAlert } from '~/composables/useAppAlert'
 import ImportQuestionsModal from '~/components/quiz/ImportQuestionsModal.vue'
 import { getQuestionValidationErrors } from '~/composables/useQuestionValidation'
+import useApi from '~/composables/useApi'
 
 const props = defineProps({
   errors: {
@@ -205,20 +224,17 @@ const store = useCreateQuizStore()
 // The `modelValue` prop is no longer needed for questions.
 const localQuestions = toRef(store, 'questions')
 
-// (file input and import helpers were moved to ImportQuestionsModal)
-
-  const alert = useAppAlert()
+// Use store.questions as the source of truth
+const alert = useAppAlert()
   const showImportModal = ref(false)
   // showImportErrorsModal and importErrors are used by the errors modal below
   const showImportErrorsModal = ref(false)
   const importErrors = ref([])
 
 function onImported(payload) {
-  // payload: { created: number, errors: [] }
-  // We already add imported questions to the store inside the modal; here we can show a toast if needed.
+  // Show summary from ImportQuestionsModal (it adds questions to store)
   try { if (payload && payload.created) alert.push({ type: 'success', message: `Imported ${payload.created} question(s).` }) } catch (e) {}
   if (payload && payload.errors && payload.errors.length) {
-    // Populate errors and show the import errors modal so the user can review them
     importErrors.value = payload.errors
     showImportErrorsModal.value = true
   }
@@ -236,10 +252,19 @@ const typeLabels = {
   code: 'Code Answer',
 }
 
-// Methods
 function addQuestion() {
-  // Use the new store action which handles normalization
-  store.addQuestion()
+  // Open editor modal for a new question (user can save to persist)
+  editingIndex.value = -1
+  editorModel.value = {
+    uid: Math.random().toString(36).substring(2),
+    type: 'mcq',
+    text: '<p></p>',
+    marks: 1,
+    difficulty: 2,
+    options: [ '', '' ],
+    answers: []
+  }
+  showEditorModal.value = true
 }
 
 function removeQuestion(idx) {
@@ -342,4 +367,101 @@ const canPublish = computed(() => {
     Object.keys(questionValidationErrors.value).length === 0
   );
 })
+
+// Editor modal state
+const showEditorModal = ref(false)
+const editingIndex = ref(-1)
+const editorModel = ref(null)
+const savingQuestion = ref(false)
+const showDeleteConfirm = ref(false)
+const deleteIndex = ref(-1)
+
+const api = useApi()
+
+function openEditor(idx) {
+  editingIndex.value = idx
+  // Deep clone to avoid mutating list until saved
+  editorModel.value = JSON.parse(JSON.stringify(localQuestions.value[idx] || {}))
+  showEditorModal.value = true
+}
+
+const modalErrors = computed(() => {
+  try {
+    const uid = editorModel.value?.uid
+    return (uid && store.questionsErrors && store.questionsErrors[uid]) ? store.questionsErrors[uid] : []
+  } catch (e) { return [] }
+})
+
+async function saveEditedQuestion() {
+  if (!editorModel.value) return
+  savingQuestion.value = true
+  try {
+    // Prevent saving a new question if quiz has not been created yet
+    if (!store.quizId && !editorModel.value?.id) {
+      alert.push({ type: 'warning', message: 'Please save quiz details first.' })
+      return
+    }
+
+    // Call store saveQuestion which handles API and merges returned data
+    await store.saveQuestion(editorModel.value)
+
+    // Success: show toast, close modal, and scroll to the question
+    alert.push({ type: 'success', message: 'Question saved' })
+    showEditorModal.value = false
+
+    // Wait for DOM update then find the saved question and scroll/highlight it
+    await nextTick()
+    const uid = editorModel.value?.uid
+    let selector = uid ? `[data-question-uid="${uid}"]` : null
+    // If uid didn't work, try to match by id (server-assigned)
+    if (!selector && editorModel.value?.id) selector = `[data-question-id="${editorModel.value.id}"]`
+    if (selector) {
+      // locate element and ensure it is visible
+      const el = document.querySelector(selector) || null
+      if (el && el instanceof HTMLElement) {
+        // Expand the question if collapsed
+        try {
+          const idxAttr = el.getAttribute('data-question-uid')
+          // find question object and set open = true
+          const q = store.questions.find(qi => qi.uid === uid || (editorModel.value?.id && qi.id === editorModel.value.id))
+          if (q) q.open = true
+        } catch (e) {}
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('ring-2', 'ring-offset-2', 'ring-green-300')
+        setTimeout(() => el.classList.remove('ring-2', 'ring-offset-2', 'ring-green-300'), 2200)
+      }
+    }
+  } catch (e) {
+    // Let store.questionsErrors populate; also show a generic toast
+    try { alert.push({ type: 'error', message: e.message || 'Failed to save question' }) } catch (err) {}
+  } finally {
+    savingQuestion.value = false
+  }
+}
+
+function confirmDeleteQuestion(idx) {
+  deleteIndex.value = idx
+  showDeleteConfirm.value = true
+}
+
+async function performDeleteQuestion() {
+  const idx = deleteIndex.value
+  if (idx === -1) return
+  const q = localQuestions.value[idx]
+  try {
+    if (q && q.id) {
+      const res = await api.del(`/api/questions/${q.id}`)
+      if (!res.ok) {
+        const txt = await res.text().catch(() => null)
+        throw new Error(txt || `Delete failed with status ${res.status}`)
+      }
+    }
+    // Remove from local questions
+    localQuestions.value.splice(idx, 1)
+    showDeleteConfirm.value = false
+    deleteIndex.value = -1
+  } catch (e) {
+    try { alert.push({ type: 'error', message: e.message || 'Failed to delete question' }) } catch (err) {}
+  }
+}
 </script>
