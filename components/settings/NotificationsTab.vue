@@ -109,6 +109,7 @@ import useMeApi from '~/composables/useMeApi'
 
 const alert = useAppAlert()
 const api = useApi()
+const meApi = useMeApi()
 const notifications = ref([])
 const loading = ref(false)
 

@@ -8,6 +8,7 @@ const alert = useAppAlert()
 const billing = ref({ email: '', address: '' })
 const submitting = ref(false)
 const api = useApi()
+const meApi = useMeApi()
 
 async function save() {
   if (!billing.value.email || !billing.value.address) {
