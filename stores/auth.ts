@@ -97,6 +97,13 @@ export const useAuthStore = defineStore('auth', () => {
         // User fetch might fail if not synced yet, but we have the data from registration response
       }
 
+      // Sync any guest quiz attempts to the user's account
+      try {
+        await syncGuestQuizResults()
+      } catch (e) {
+        console.warn('Failed to sync guest quiz results after registration:', e)
+      }
+
       return { ok: true }
     } catch (error) {
       throw error
@@ -280,16 +287,33 @@ export const useAuthStore = defineStore('auth', () => {
       const guestResults = guestQuizStore.getAllResults()
       if (!guestResults || guestResults.length === 0) return
 
-      // Guest results available for potential syncing with backend
+      // Sync each guest result to the backend as a QuizAttempt
+      for (const result of guestResults) {
+        try {
+          const payload = {
+            quiz_id: result.quiz_id,
+            score: result.score,
+            percentage: result.percentage,
+            correct_count: result.correct_count,
+            incorrect_count: result.incorrect_count,
+            total_questions: result.total_questions,
+            time_taken: result.time_taken,
+            results: result.results || []
+          }
 
-      // In a full implementation, you would:
-      // 1. Call POST /api/quizzes/sync-guest-attempts with the results
-      // 2. Backend would create QuizAttempt records for the user
-      // 3. Clear the guest store after successful sync
-
-      // For now, results remain in localStorage and can be accessed by the user
+          const res = await api.postJson('/api/quizzes/sync-guest-attempt', payload)
+          
+          // If sync successful, remove from guest store
+          if (res.ok) {
+            guestQuizStore.clearQuizResult(result.quiz_id)
+          }
+        } catch (e) {
+          // Continue syncing other attempts even if one fails
+          console.warn(`Failed to sync quiz attempt for quiz ${result.quiz_id}:`, e)
+        }
+      }
     } catch (error) {
-      // sync error silently
+      console.warn('Failed to sync guest quiz results:', error)
     }
   }
 

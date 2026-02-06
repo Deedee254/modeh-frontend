@@ -16,6 +16,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
   devtools: { enabled: true },
 
+  // Route-level code splitting (lazy load pages)
+  routeRules: {
+    // This enables auto code-splitting for all routes
+  },
+
   // Ensure the browser sees the manifest via an explicit <link rel="manifest"> in the HTML head.
   // Some PWA modules inject this automatically, but adding it here guarantees the link is present.
   app: {
@@ -218,6 +223,35 @@ export default defineNuxtConfig({
 
     ssr: {
       external: ['papaparse']
+    },
+
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            // Split large dependencies into separate chunks
+            if (id.includes('node_modules/@nuxt/ui')) {
+              return 'ui-library'
+            }
+            if (id.includes('node_modules/@sidebase/nuxt-auth') || id.includes('node_modules/next-auth')) {
+              return 'auth'
+            }
+            if (id.includes('node_modules/@tiptap')) {
+              return 'editor'
+            }
+            if (id.includes('node_modules/@vite-pwa')) {
+              return 'pwa'
+            }
+            if (id.includes('node_modules/pinia')) {
+              return 'pinia'
+            }
+            if (id.includes('node_modules/katex')) {
+              return 'katex'
+            }
+          }
+        }
+      }
     }
   },
 

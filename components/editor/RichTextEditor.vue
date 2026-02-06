@@ -1,64 +1,94 @@
 <template>
-  <div class="rich-editor relative">
-    <!-- Bubble Menu for inline formatting -->
-  <component 
-      :is="bubbleMenuComponent" 
-      v-if="ed && bubbleMenuComponent" 
-      :editor="ed"
-      :tippy-options="{ duration: 100, animation: 'scale-subtle' }" 
-      class="bubble-menu"
-  >
-      <button @click="ed && ed.chain().focus().toggleBold().run()" :class="{ 'is-active': ed && ed.isActive('bold') }" title="Bold">
+  <div class="rich-editor">
+    <!-- Toolbar for formatting -->
+    <div class="toolbar">
+      <!-- Text Formatting -->
+      <button @click="toggleBold" :class="{ active: editor?.isActive('bold') }" title="Bold (Ctrl+B)">
         <strong>B</strong>
       </button>
-      <button @click="ed && ed.chain().focus().toggleItalic().run()" :class="{ 'is-active': ed && ed.isActive('italic') }" title="Italic">
+      <button @click="toggleItalic" :class="{ active: editor?.isActive('italic') }" title="Italic (Ctrl+I)">
         <em>I</em>
       </button>
-      <button @click="ed && ed.chain().focus().toggleStrike().run()" :class="{ 'is-active': ed && ed.isActive('strike') }" title="Strikethrough">
+      <button @click="toggleStrike" :class="{ active: editor?.isActive('strike') }" title="Strikethrough">
         <s>S</s>
       </button>
-      <button @click="ed && ed.chain().focus().toggleCode().run()" :class="{ 'is-active': ed && ed.isActive('code') }" title="Inline Code">
+      <button @click="toggleCode" :class="{ active: editor?.isActive('code') }" title="Inline Code">
         <code>&lt;&gt;</code>
       </button>
-    </component>
 
-    <!-- Toolbar for block elements -->
-    <div class="toolbar mb-2 flex flex-wrap gap-1 border-b pb-2">
-      <button @click="addCodeBlock" title="Add Code Block" :class="{ 'is-active': ed && ed.isActive('codeBlock') }">
-        <span class="text-lg">{ }</span>
-        <span class="text-xs ml-1">Code</span>
+      <div class="separator"></div>
+
+      <!-- Heading Levels -->
+      <button @click="toggleHeading(1)" :class="{ active: editor?.isActive('heading', { level: 1 }) }" title="Heading 1">
+        H1
       </button>
-      <label class="ml-2 flex items-center gap-2">
-        <span class="text-xs text-slate-500">Lang</span>
-        <select v-model="selectedLanguage" @change="setCodeLanguage" class="text-sm border rounded px-2 py-1 bg-white dark:bg-slate-700">
-          <option value="">auto</option>
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="css">CSS</option>
-        </select>
-      </label>
-      <button v-if="features?.math" @click="addMathBlock" title="Add Math Block" :class="{ 'is-active': ed && ed.isActive('math-block') }">
-        <span class="text-lg">∑</span>
-        <span class="text-xs ml-1">Math</span>
+      <button @click="toggleHeading(2)" :class="{ active: editor?.isActive('heading', { level: 2 }) }" title="Heading 2">
+        H2
       </button>
+      <button @click="toggleHeading(3)" :class="{ active: editor?.isActive('heading', { level: 3 }) }" title="Heading 3">
+        H3
+      </button>
+
+      <div class="separator"></div>
+
+      <!-- Lists -->
+      <button @click="toggleBulletList" :class="{ active: editor?.isActive('bulletList') }" title="Bullet List">
+        ◦◦◦
+      </button>
+      <button @click="toggleOrderedList" :class="{ active: editor?.isActive('orderedList') }" title="Numbered List">
+        1.
+      </button>
+
+      <div class="separator"></div>
+
+      <!-- Blockquote -->
+      <button @click="toggleBlockquote" :class="{ active: editor?.isActive('blockquote') }" title="Blockquote">
+        ❝
+      </button>
+
+      <div class="separator"></div>
+
+      <!-- Code Block -->
+      <button @click="addCodeBlock" :class="{ active: editor?.isActive('codeBlock') }" title="Code Block">
+        <span>{ }</span>
+      </button>
+      <select v-model="codeLanguage" class="language-select">
+        <option value="">auto</option>
+        <option value="javascript">JS</option>
+        <option value="typescript">TS</option>
+        <option value="python">Python</option>
+        <option value="css">CSS</option>
+        <option value="html">HTML</option>
+        <option value="sql">SQL</option>
+      </select>
+
+      <div class="separator"></div>
+
+      <!-- Math Block -->
+      <button @click="addMathBlock" :class="{ active: editor?.isActive('math') }" title="Math Block">
+        ∑
+      </button>
+
+      <div class="separator"></div>
+
+      <!-- Undo/Redo -->
+      <button @click="undo" title="Undo (Ctrl+Z)">↶</button>
+      <button @click="redo" title="Redo (Ctrl+Y)">↷</button>
     </div>
 
-    <div v-if="ed" class="editor-content">
-      <TiptapEditorContent :editor="ed" />
+    <!-- Editor Content -->
+    <div v-if="editor" class="editor-content">
+      <EditorContent :editor="editor" />
     </div>
-    <textarea v-else :value="modelValue || ''" @input="onTextInput" placeholder="Enter text..." class="fallback-textarea"></textarea>
+
+    <!-- Fallback -->
+    <textarea v-else :value="modelValue || ''" @input="e => emit('update:modelValue', (e.target as HTMLTextAreaElement).value)" placeholder="Start typing..." />
   </div>
 </template>
 
 <script setup lang="ts">
-
-import { watch, onBeforeUnmount, defineAsyncComponent, computed } from 'vue'
-import { useEditor, EditorContent as TiptapEditorContent } from '@tiptap/vue-3'
-// Import the package as a namespace so we can access runtime exports that
-// may not be present on the static TypeScript definitions (BubbleMenu etc.)
-import * as TiptapVue from '@tiptap/vue-3'
-
-// Import Tiptap extensions individually to have full control
+import { ref, watch, onBeforeUnmount, onMounted } from 'vue'
+import { useEditor, EditorContent } from '@tiptap/vue-3'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
@@ -67,24 +97,28 @@ import Italic from '@tiptap/extension-italic'
 import Strike from '@tiptap/extension-strike'
 import Code from '@tiptap/extension-code'
 import History from '@tiptap/extension-history'
-import Dropcursor from '@tiptap/extension-dropcursor'
-import Gapcursor from '@tiptap/extension-gapcursor'
-import HardBreak from '@tiptap/extension-hard-break'
+import Heading from '@tiptap/extension-heading'
+import BulletList from '@tiptap/extension-bullet-list'
+import OrderedList from '@tiptap/extension-ordered-list'
+import ListItem from '@tiptap/extension-list-item'
+import Blockquote from '@tiptap/extension-blockquote'
 import Placeholder from '@tiptap/extension-placeholder'
 
-// Math extension will be dynamically imported on the client to avoid build-time
-// failures when optional runtime deps (like `evaluatex`) are not installed.
-
-const props = defineProps<{
-  modelValue?: string; 
-  editable?: boolean; 
-  features?: { math?: boolean; code?: boolean }; 
-  placeholder?: string;
+defineProps<{
+  modelValue?: string
+  editable?: boolean
+  features?: { math?: boolean; code?: boolean }
+  placeholder?: string
 }>()
-const emit = defineEmits<{ (e: 'update:modelValue', v: string): void; (e: 'ready'): void; (e: 'error', err: Error): void }>()
 
-// Manually build the extensions list to disable markdown shortcuts
-const baseExtensions = [
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+}>()
+
+const editor = ref<any>(null)
+const codeLanguage = ref('javascript')
+
+const extensions: any[] = [
   Document,
   Paragraph,
   Text,
@@ -93,374 +127,354 @@ const baseExtensions = [
   Strike,
   Code,
   History,
-  Dropcursor,
-  Gapcursor,
-  HardBreak,
-  Placeholder.configure({
-    placeholder: props.placeholder || 'Start typing...',
-    emptyEditorClass: 'is-editor-empty',
-  }),
-// BubbleMenu is a Vue component (imported above) and not a Tiptap extension.
-// Do not add it to the extensions array.
+  Heading.configure({ levels: [1, 2, 3] }),
+  BulletList,
+  OrderedList,
+  ListItem,
+  Blockquote,
+  Placeholder.configure({ placeholder: 'Start typing...' })
 ]
 
-import { ref as vueRef, onMounted, getCurrentInstance } from 'vue'
-import type { Editor } from '@tiptap/core'
-import type { Component } from 'vue'
-
-const isClient = process.client
-const bubbleMenuComponent = vueRef<Component | null>(null)
-// selected language for code blocks (used when inserting/updating code blocks)
-const selectedLanguage = vueRef<string>('javascript')
-
-// Editor instance (ref) — created onMounted so we can dynamically import optional extensions
-// Use `any` for the runtime editor reference to avoid strict type mismatches
-// between tiptap runtime and its TypeScript definitions in some versions.
-const tiptapEditor = vueRef<any>(null)
-
-// Initialization separated so we can call it directly when there's no active
-// component instance (some environments or tests may call this module outside
-// of a standard component setup). When a component instance exists we attach
-// initialization to onMounted; otherwise we initialize immediately on client. // This comment is slightly outdated, but not critical.
-
-const extensions = computed(() => {
-  const exts = [...baseExtensions];
-  // Code block + syntax highlighting is loaded on the client in onMounted
-  // to avoid SSR/runtime resolution issues with lowlight/highlight.js.
-  // Math extension is handled via dynamic import inside onMounted
-  return exts;
-});
-
 onMounted(async () => {
-  if (!isClient) return;
-
-  // Resolve the BubbleMenu component from the Tiptap package at runtime.
-  // We access it via the namespace import and cast to `any` to avoid
-  // TypeScript errors when the type definitions don't mention the export.
+  // Load code highlighting (always enabled)
   try {
-    const anyT = TiptapVue as any
-    bubbleMenuComponent.value = anyT.BubbleMenu ?? anyT.default?.BubbleMenu ?? null
+    const { lowlight } = await import('lowlight')
+    const js = await import('highlight.js/lib/languages/javascript').then(m => m.default)
+    const py = await import('highlight.js/lib/languages/python').then(m => m.default)
+    const css = await import('highlight.js/lib/languages/css').then(m => m.default)
+    const ts = await import('highlight.js/lib/languages/typescript').then(m => m.default)
+    const html = await import('highlight.js/lib/languages/xml').then(m => m.default)
+    const sql = await import('highlight.js/lib/languages/sql').then(m => m.default)
+    
+    lowlight.registerLanguage('javascript', js)
+    lowlight.registerLanguage('python', py)
+    lowlight.registerLanguage('css', css)
+    lowlight.registerLanguage('typescript', ts)
+    lowlight.registerLanguage('html', html)
+    lowlight.registerLanguage('sql', sql)
+    
+    const CodeBlockLowlight = await import('@tiptap/extension-code-block-lowlight').then(m => m.default)
+    extensions.push(CodeBlockLowlight.configure({ lowlight, languageClassPrefix: 'language-' }))
   } catch (e) {
-    emit('error', new Error('Failed to load Tiptap BubbleMenu component: ' + String(e)));
+    console.warn('Code highlighting unavailable:', e)
   }
 
-  const finalExtensions = [...extensions.value]; // Start with base and code extensions
-  // Dynamically enable code highlighting (client-only)
-  if (props.features?.code) {
-    try {
-      // load lowlight and a couple of languages lazily
-      const lowlightModule = await import('lowlight')
-      const lowlight = (lowlightModule && (lowlightModule.lowlight || lowlightModule.default)) || lowlightModule
-      // register a default language (javascript). Add more as needed.
-      try {
-        const js = (await import('highlight.js/lib/languages/javascript')).default || (await import('highlight.js/lib/languages/javascript'))
-        lowlight.registerLanguage('javascript', js)
-      } catch (e) {
-        // non-fatal if a language fails to load
-      }
-      try {
-        const py = (await import('highlight.js/lib/languages/python')).default || (await import('highlight.js/lib/languages/python'))
-        lowlight.registerLanguage('python', py)
-      } catch (e) {
-        // ignore
-      }
-      try {
-        const css = (await import('highlight.js/lib/languages/css')).default || (await import('highlight.js/lib/languages/css'))
-        lowlight.registerLanguage('css', css)
-      } catch (e) {
-        // ignore
-      }
-
-      const cbModule = await import('@tiptap/extension-code-block-lowlight')
-      const CodeBlockLowlight = cbModule?.default ?? cbModule
-      finalExtensions.push(CodeBlockLowlight.configure({ lowlight, languageClassPrefix: 'language-' }))
-    } catch (e: unknown) {
-      emit('error', new Error('Failed to enable code highlighting: ' + String(e)))
-    }
-  }
-
-  // Dynamically load math extension client-side to avoid SSR issues
-  if (props.features?.math) {
-    try {
-      const mod = await import('@aarkue/tiptap-math-extension');
-      const mathExt = mod?.default ?? mod;
-      const configuredExt = mathExt?.configure ? mathExt.configure({}) : mathExt;
-      finalExtensions.push(configuredExt);
-    } catch (e: unknown) {
-      emit('error', new Error('Failed to load math extension: ' + String(e)));
-    }
-  }
-
-  // useEditor can return either an Editor instance or a ref containing the instance
-  // depending on Tiptap version. Normalize and coerce types to avoid TS errors.
-  const created: any = useEditor({
-    content: props.modelValue || '',
-    editable: props.editable !== false,
-    // cast extensions to any[] to satisfy AnyExtension[] typing differences across versions
-    extensions: finalExtensions as any,
-    onUpdate({ editor: e }: { editor: any }) {
-      emit('update:modelValue', e.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-2 focus:outline-none',
-      },
-    },
-  });
-
-  // `created` may be a ref (contains `.value`) or the editor directly. Unwrap.
+  // Load math extension (always enabled)
   try {
-    if (created && typeof created === 'object' && 'value' in created) {
-      tiptapEditor.value = created.value as Editor
-    } else {
-      tiptapEditor.value = created as Editor
-    }
-  } catch (err) {
-    // Fallback: assign as any to avoid runtime crash
-    tiptapEditor.value = (created && (created as any).value) || created || null
+    const mathExt = await import('@aarkue/tiptap-math-extension').then(m => m.default)
+    extensions.push(mathExt.configure ? mathExt.configure({}) : mathExt)
+  } catch (e) {
+    console.warn('Math extension unavailable:', e)
   }
 
-  emit('ready');
-});
+  // Initialize editor
+  editor.value = useEditor({
+    content: '',
+    extensions,
+    onUpdate: ({ editor: e }) => {
+      emit('update:modelValue', e.getHTML())
+    }
+  })
+})
 
-// Helper to obtain the concrete Editor instance (handles nested ref cases)
-function getEditorInstance() {
-  return tiptapEditor.value;
+// Text Formatting
+const toggleBold = () => editor.value?.chain().focus().toggleBold().run()
+const toggleItalic = () => editor.value?.chain().focus().toggleItalic().run()
+const toggleStrike = () => editor.value?.chain().focus().toggleStrike().run()
+const toggleCode = () => editor.value?.chain().focus().toggleCode().run()
+
+// Heading
+const toggleHeading = (level: number) => {
+  editor.value?.chain().focus().toggleHeading({ level }).run()
 }
 
-// computed proxy for template-friendly usage. We type it `any` to avoid
-// TypeScript incompatibilities between the editor runtime shape and the
-// static type definitions shipped by tiptap.
-const ed = computed<any>(() => tiptapEditor.value)
+// Lists
+const toggleBulletList = () => editor.value?.chain().focus().toggleBulletList().run()
+const toggleOrderedList = () => editor.value?.chain().focus().toggleOrderedList().run()
 
-watch(() => props.modelValue, (v) => {
-  const e = getEditorInstance()
-  if (!e || !e.commands) return // Ensure editor and its commands are available
-  try {
-    const isSame = e.getHTML() === v
-    if (isSame) return
-    // `setContent` typing may expect an options object; cast to any to allow
-    // boolean flags used in runtime code and avoid TS errors.
-    ;(e.commands as any).setContent(v || '', false)
-  } catch (e) {
-    // sync failed silently
-  }
+// Blockquote
+const toggleBlockquote = () => editor.value?.chain().focus().toggleBlockquote().run()
+
+// Code Block
+const addCodeBlock = () => {
+  editor.value?.chain().focus().toggleCodeBlock({ language: codeLanguage.value }).run()
+}
+
+// Math Block
+const addMathBlock = () => {
+  ;(editor.value?.chain() as any).focus().insertMathBlock?.().run()
+}
+
+// Undo/Redo
+const undo = () => editor.value?.chain().focus().undo().run()
+const redo = () => editor.value?.chain().focus().redo().run()
+
+watch(() => editor.value?.getHTML(), (html) => {
+  if (html) emit('update:modelValue', html)
 })
 
 onBeforeUnmount(() => {
-  if (tiptapEditor.value) {
-    tiptapEditor.value.destroy()
-  }
+  editor.value?.destroy()
 })
 
-// --- Toolbar Actions ---
-function addCodeBlock() {
-  try {
-    const inst = getEditorInstance()
-    if (!inst) return
-    // Inserts a new paragraph after the current block and turns it into a code block.
-    // Use the currently selected language when creating the block.
-    const lang = selectedLanguage.value || undefined
-    // `toggleCodeBlock` may accept attributes in some versions; fallback to toggling then updating attributes.
-    try {
-      ;(inst.chain() as any).focus().createParagraphNear().toggleCodeBlock({ language: lang }).run()
-    } catch (e) {
-      ;(inst.chain() as any).focus().createParagraphNear().toggleCodeBlock().updateAttributes('codeBlock', { language: lang }).run()
-    }
-  } catch (e) {
-    console.error('Failed to insert code block', e)
-  }
-}
-
-function addMathBlock() {
-  try { // This assumes a `insertMathBlock` command exists, which is provided by the math extension.
-    const inst = getEditorInstance()
-    if (!inst || !props.features?.math) return
-    // `insertMathBlock` is provided by the math extension at runtime but may
-    // not be present in the static `ChainedCommands` type. Cast chain() to
-    // any to avoid TypeScript errors while keeping runtime behavior.
-    ;(inst.chain() as any).focus().insertMathBlock().run()
-  } catch (e) { 
-    console.error('Failed to insert math block', e)
-  }
-}
-
-function setCodeLanguage() {
-  try {
-    const inst = getEditorInstance()
-    if (!inst) return
-    const lang = selectedLanguage.value || null
-    // update attributes on the current code block (no-op if not in a code block)
-    try {
-      ;(inst.chain() as any).focus().updateAttributes('codeBlock', { language: lang }).run()
-    } catch (e) {
-      // Some tiptap versions expose `setNode` instead
-      try { (inst.chain() as any).focus().setNode('codeBlock', { language: lang }).run() } catch (_) {}
-    }
-  } catch (e) {
-    console.error('Failed to set code block language', e)
-  }
-}
-
-function onTextInput(e: Event) {
-  const t = e.target as HTMLTextAreaElement | null
-  if (!t) return
-  emit('update:modelValue', t.value || '')
-}
-
-// --- Expose Methods ---
 defineExpose({
-  focus: () => {
-    const i = getEditorInstance(); return i ? i.commands?.focus() : undefined
-  },
-  getHTML: () => {
-    const i = getEditorInstance(); return i ? i.getHTML() : ''
-  },
-  setHTML: (html: string) => {
-    const i = getEditorInstance(); return i ? (i.commands as any).setContent(html, true) : undefined
-  },
-  clearContent: () => {
-    const i = getEditorInstance(); return i ? (i.commands as any).clearContent(true) : undefined
-  },
+  editor,
+  focus: () => editor.value?.commands.focus(),
+  getHTML: () => editor.value?.getHTML() || '',
+  setHTML: (html: string) => editor.value?.commands.setContent(html),
 })
-
 </script>
 
-<style>
+<style scoped>
 .rich-editor {
-  width: 100%;
-  border: 1px solid rgb(229, 231, 235);
+  border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  background-color: white;
+  background: white;
+  overflow: hidden;
 }
+
 .dark .rich-editor {
-  border-color: rgb(75, 85, 99);
-  background-color: rgb(31, 41, 55);
+  border-color: #4b5563;
+  background: #1f2937;
 }
 
-.editor-content :global(.ProseMirror) {
-  outline: none;
-  min-height: 120px;
-  padding: 0.5rem;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  caret-color: rgb(99, 102, 241);
-}
-
-.dark .editor-content :global(.ProseMirror) {
-  color: rgb(229, 231, 235);
-}
-
-.editor-content :global(.ProseMirror.is-editor-empty:before) {
-  content: attr(data-placeholder);
-  float: left;
-  color: rgb(156, 163, 175);
-  pointer-events: none;
-  height: 0;
-}
-
-.dark .editor-content :global(.ProseMirror.is-editor-empty:before) {
-  color: rgb(107, 114, 128);
-}
-
-/* Bubble Menu Styling */
-.bubble-menu {
-  display: flex;
-  background-color: rgb(31, 41, 55);
-  padding: 0.4rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  z-index: 50;
-}
-
-.bubble-menu button {
-  border: none;
-  background: none;
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 0.35rem 0.6rem;
-  border-radius: 0.25rem;
-  opacity: 0.8;
-  transition: all 0.2s ease;
-}
-
-.bubble-menu button:hover {
-  opacity: 1;
-  background-color: rgba(255,255,255,0.1);
-}
-
-.bubble-menu button.is-active {
-  opacity: 1;
-  background-color: rgba(255,255,255,0.15);
-  color: rgb(147, 197, 253);
-}
-
-/* Toolbar Styling */
 .toolbar {
-  border-bottom: 1px solid rgb(229, 231, 235);
-  padding: 0.75rem;
-  background: rgb(250, 250, 250);
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
   display: flex;
-  gap: 0.25rem;
-}
-.dark .toolbar {
-  border-color: rgb(75, 85, 99);
-  background: rgb(41, 49, 63);
-}
-
-.toolbar button {
-  display: inline-flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-wrap: wrap;
   align-items: center;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  color: rgb(55, 65, 81);
-  background-color: white;
-  border: 1px solid rgb(229, 231, 235);
-  border-radius: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  overflow-x: auto;
 }
 
-.dark .toolbar button {
-  color: rgb(156, 163, 175);
+.dark .toolbar {
+  border-color: #4b5563;
+  background: #293140;
+}
+
+.toolbar button,
+.language-select {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dark .toolbar button,
+.dark .language-select {
+  border-color: #4b5563;
+  background: #374151;
+  color: #d1d5db;
 }
 
 .toolbar button:hover {
-  background-color: rgb(243, 244, 246);
-  border-color: rgb(229, 231, 235);
+  background: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .dark .toolbar button:hover {
-  background-color: rgb(55, 65, 81);
-  border-color: rgb(75, 85, 99);
+  background: #4b5563;
+  border-color: #6b7280;
 }
 
-.toolbar button.is-active {
-  background-color: rgb(239, 246, 255);
-  color: rgb(29, 78, 216);
+.toolbar button.active {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #0c4a6e;
+  border-color: #0284c7;
+  font-weight: 600;
 }
 
-.dark .toolbar button.is-active {
-  background-color: rgb(30, 41, 59);
-  color: rgb(191, 219, 254);
+.dark .toolbar button.active {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #93c5fd;
+  border-color: #0ea5e9;
 }
 
-.fallback-textarea {
-  width: 100%;
-  min-height: 120px;
-  border: 1px solid rgb(229, 231, 235);
+.separator {
+  width: 1px;
+  height: 1.5rem;
+  background: #d1d5db;
+  margin: 0 0.25rem;
+}
+
+.dark .separator {
+  background: #4b5563;
+}
+
+.language-select {
+  font-size: 0.75rem;
+  max-width: 100px;
+}
+
+.editor-content :deep(.ProseMirror) {
+  outline: none;
+  min-height: 200px;
+  padding: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #1f2937;
+}
+
+.dark .editor-content :deep(.ProseMirror) {
+  color: #f3f4f6;
+}
+
+/* Heading Styles */
+.editor-content :deep(h1) {
+  font-size: 1.875rem;
+  font-weight: 800;
+  margin: 1rem 0 0.5rem 0;
+  color: #000;
+}
+
+.dark .editor-content :deep(h1) {
+  color: #f9fafb;
+}
+
+.editor-content :deep(h2) {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.9rem 0 0.45rem 0;
+  color: #111827;
+}
+
+.dark .editor-content :deep(h2) {
+  color: #f3f4f6;
+}
+
+.editor-content :deep(h3) {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.8rem 0 0.4rem 0;
+  color: #1f2937;
+}
+
+.dark .editor-content :deep(h3) {
+  color: #e5e7eb;
+}
+
+/* List Styles */
+.editor-content :deep(ul),
+.editor-content :deep(ol) {
+  margin-left: 2rem;
+  margin: 0.75rem 0;
+}
+
+.editor-content :deep(li) {
+  margin-bottom: 0.25rem;
+}
+
+/* Blockquote Styles */
+.editor-content :deep(blockquote) {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1.25rem;
+  margin-left: 0;
+  margin: 1rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.dark .editor-content :deep(blockquote) {
+  border-left-color: #60a5fa;
+  color: #d1d5db;
+}
+
+/* Code Block Styles */
+.editor-content :deep(pre) {
+  background: #1f2937;
+  color: #f3f4f6;
+  padding: 1rem;
   border-radius: 0.5rem;
-  padding: 0.75rem;
-  background-color: white;
-  color: rgb(17, 24, 39);
+  overflow-x: auto;
+  margin: 1rem 0;
+  line-height: 1.5;
+  font-size: 0.85rem;
+  border: 1px solid #374151;
 }
-.dark .fallback-textarea {
-  background-color: rgb(55, 65, 81);
-  border-color: rgb(75, 85, 99);
-  color: rgb(229, 231, 235);
+
+.dark .editor-content :deep(pre) {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.editor-content :deep(code) {
+  background: #f3f4f6;
+  color: #d946ef;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.dark .editor-content :deep(code) {
+  background: #1f2937;
+  color: #f472b6;
+}
+
+.editor-content :deep(pre code) {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Inline Math */
+.editor-content :deep(.math-inline) {
+  background: #ede9fe;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-style: italic;
+}
+
+.dark .editor-content :deep(.math-inline) {
+  background: #3730a3;
+}
+
+/* Math Block */
+.editor-content :deep(.math-block) {
+  background: #f5f3ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.dark .editor-content :deep(.math-block) {
+  background: #2d1b4e;
+  border-color: #5b21b6;
+}
+
+/* Syntax highlighting for code blocks */
+.editor-content :deep(.hljs-string) { color: #22c55e; }
+.editor-content :deep(.hljs-number) { color: #f59e0b; }
+.editor-content :deep(.hljs-literal) { color: #a78bfa; }
+.editor-content :deep(.hljs-attr) { color: #60a5fa; }
+.editor-content :deep(.hljs-title) { color: #38bdf8; }
+.editor-content :deep(.hljs-name) { color: #7c3aed; }
+.editor-content :deep(.hljs-comment) { color: #6b7280; font-style: italic; }
+
+textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 1.5rem;
+  border: none;
+  font-family: inherit;
+  resize: vertical;
+  background: white;
+  color: #1f2937;
+}
+
+.dark textarea {
+  background: #1f2937;
+  color: #f3f4f6;
 }
 </style>

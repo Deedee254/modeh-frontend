@@ -268,7 +268,7 @@ function addQuestion() {
 }
 
 function removeQuestion(idx) {
-  localQuestions.value.splice(idx, 1)
+  localQuestions.value.splice(Number(idx), 1)
 }
 
 function duplicateQuestion(idx) {
@@ -285,9 +285,9 @@ function addOption(idx) {
 }
 
 function removeOption(idx, optIdx) {
-  const question = localQuestions.value[idx]
+  const question = localQuestions.value[Number(idx)]
   if (question.options && question.options.length > 2) {
-    question.options.splice(optIdx, 1)
+    question.options.splice(Number(optIdx), 1)
     // Adjust answers array (which uses string indexes)
     if (Array.isArray(question.answers)) {
       const optIdxStr = String(optIdx)

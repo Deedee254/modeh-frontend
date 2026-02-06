@@ -258,6 +258,17 @@
         </div>
       </div>
     </div>
+
+    <!-- Re-use the shared QuestionAddModal component for adding/editing questions -->
+    <QuestionAddModal
+      v-model="showEditModal"
+      :initial-question="editingQuestion"
+      :subject-id="quiz.subject_id"
+      :topic-id="quiz.topic_id"
+      :grade-id="quiz.grade_id"
+      :level-id="quiz.level_id"
+      @saved="handleQuestionSaved"
+    />
   </div>
 </template>
 
@@ -269,6 +280,8 @@ import useSeo from '~/composables/useSeo'
 import { computed } from 'vue'
 import useTaxonomy from '~/composables/useTaxonomy'
 import { useAppAlert } from '~/composables/useAppAlert'
+import QuestionEditorForm from '~/components/quiz/QuestionEditorForm.vue'
+import QuestionAddModal from '~/components/quiz/QuestionAddModal.vue'
 
 definePageMeta({ layout: 'quiz-master', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'Quiz details (quiz-master view) — manage quiz settings and preview.' } ] })
 
@@ -279,6 +292,11 @@ const slug = route.params.slug
 const quiz = ref({})
 const activeTab = ref('details')
 const loading = ref(true)
+
+// Edit modal state
+const showEditModal = ref(false)
+const editingQuestionIndex = ref(null)
+const editingQuestion = ref(null)
 
 const alert = useAppAlert()
 
@@ -342,8 +360,88 @@ function extractYoutubeId(url) {
 }
 
 function editQuestion(question, index) {
-  // Redirect to edit page where all questions can be edited
-  navigateTo(`/quiz-master/quizzes/${quiz.value.slug}/edit?focus=${index}`)
+  // Open modal to edit this specific question
+  // Convert backend question shape to editor form shape
+  editingQuestion.value = {
+    id: question.id,
+    type: question.type || 'mcq',
+    body: question.body || '',
+    marks: Number(question.marks) || 1,
+    difficulty: Number(question.difficulty) || 2,
+    options: Array.isArray(question.options) ? question.options : [],
+    answers: Array.isArray(question.answers) ? question.answers : [],
+    explanation: question.explanation || '',
+    media_path: question.media || null,
+    media_type: question.media_type || null,
+    media_url: question.media || null,
+    youtube_url: question.youtube_url || null,
+    is_banked: question.is_banked || false,
+    option_mode: question.type === 'multi' ? 'multi' : 'single'
+  }
+  editingQuestionIndex.value = index
+  showEditModal.value = true
+}
+
+async function saveEditedQuestion(updatedQuestion) {
+  if (editingQuestionIndex.value === null || !updatedQuestion) return
+  
+  try {
+    // Convert form shape back to backend shape
+    const payload = {
+      body: updatedQuestion.body || '',
+      type: updatedQuestion.type || 'mcq',
+      options: updatedQuestion.options || [],
+      answers: updatedQuestion.answers || [],
+      marks: Number(updatedQuestion.marks) || 1,
+      difficulty: Number(updatedQuestion.difficulty) || 2,
+      explanation: updatedQuestion.explanation || '',
+      youtube_url: updatedQuestion.youtube_url || null,
+      media_path: updatedQuestion.media_url || null,
+      media_type: updatedQuestion.media_type || null
+    }
+    
+    const res = await api.patchJson(`/api/questions/${editingQuestion.value.id}`, payload)
+    if (api.handleAuthStatus(res)) return
+    
+    if (res.ok) {
+      // Update the local question in the array
+      quiz.value.questions[editingQuestionIndex.value] = {
+        id: editingQuestion.value.id,
+        uid: quiz.value.questions[editingQuestionIndex.value].uid,
+        body: updatedQuestion.body || '',
+        type: updatedQuestion.type || 'mcq',
+        marks: Number(updatedQuestion.marks) || 1,
+        difficulty: Number(updatedQuestion.difficulty) || 2,
+        options: updatedQuestion.options || [],
+        answers: updatedQuestion.answers || [],
+        explanation: updatedQuestion.explanation || '',
+        media: updatedQuestion.media_url || null,
+        media_type: updatedQuestion.media_type || null,
+        youtube_url: updatedQuestion.youtube_url || null,
+        open: true
+      }
+      showEditModal.value = false
+      editingQuestion.value = null
+      editingQuestionIndex.value = null
+      alert.push({ type: 'success', message: 'Question updated successfully', icon: 'heroicons:check-circle' })
+    } else {
+      const json = await res.json().catch(() => ({}))
+      alert.push({ type: 'error', message: json?.message || 'Failed to update question', icon: 'heroicons:exclamation-circle' })
+    }
+  } catch (e) {
+    console.error('Error saving question:', e)
+    alert.push({ type: 'error', message: 'Network error', icon: 'heroicons:x-circle' })
+  }
+}
+
+function handleQuestionSaved(updatedQuestion) {
+  saveEditedQuestion(updatedQuestion)
+}
+
+function closeEditModal() {
+  showEditModal.value = false
+  editingQuestion.value = null
+  editingQuestionIndex.value = null
 }
 
 async function deleteQuestion(index) {
@@ -356,10 +454,10 @@ async function deleteQuestion(index) {
   }
   
   try {
-    const res = await api.delete(`/api/questions/${q.id}`)
+    const res = await api.del(`/api/questions/${q.id}`)
     if (api.handleAuthStatus(res)) return
     if (res.ok) {
-      quiz.value.questions.splice(index, 1)
+      quiz.value.questions.splice(Number(index), 1)
       quiz.value.questions_count = (quiz.value.questions_count || 0) - 1
       alert.push({ type: 'success', message: 'Question deleted', icon: 'heroicons:check-circle' })
     } else {
@@ -425,55 +523,72 @@ async function loadQuiz() {
   loaded.grade = serverQuiz.grade || (serverQuiz.grade_name ? { id: loaded.grade_id, name: serverQuiz.grade_name } : (serverQuiz.gradeName ? { id: loaded.grade_id, name: serverQuiz.gradeName } : null))
   loaded.level = serverQuiz.level || serverQuiz.grade?.level || (serverQuiz.level_name ? { id: loaded.level_id, name: serverQuiz.level_name } : (serverQuiz.levelName ? { id: loaded.level_id, name: serverQuiz.levelName } : null))
 
-      // Fetch questions separately since index endpoint doesn't include them
+      // Prefer questions included in the quiz payload (if API returned them).
+      // Only fetch separately if the quiz explicitly reports a positive questions_count
+      // but did NOT include the questions array in the payload (defensive fallback).
       loaded.questions = []
-      if (loaded.id) {
-        try {
-          // Use the authenticated questions endpoint - filter by quiz_id
-          const questionsRes = await api.get(`/api/questions?quiz_id=${loaded.id}&limit=1000`)
-          if (questionsRes.ok) {
-            const questionsJson = await questionsRes.json()
-            const questionsData = questionsJson.questions || questionsJson.data || []
-            
-            // Store backend questions directly without transformation
-            // Backend sends: body, options[].text, answers[], etc.
-            loaded.questions = Array.isArray(questionsData)
-              ? questionsData.map((q, qi) => {
-                  const src = q || {}
-                  
-                  // Normalize numeric fields
-                  const marks = typeof src.marks !== 'undefined' ? Number(src.marks) : (typeof src.mark !== 'undefined' ? Number(src.mark) : 1)
-                  const difficulty = typeof src.difficulty !== 'undefined' ? Number(src.difficulty) : 2
-
-                  // Normalize answers to array of string indexes (if present)
-                  let answers = []
-                  if (Array.isArray(src.answers) && src.answers.length) answers = src.answers.map(a => String(a))
-                  else if (typeof src.answers === 'string' && src.answers.trim()) answers = [src.answers.trim()]
-
-                  // Keep options as-is from backend (should have 'text' and 'is_correct' fields)
-                  const options = Array.isArray(src.options) ? src.options : (Array.isArray(src.options_list) ? src.options_list : [])
-                  
-                  // Return object with canonical fields from backend
-                  return {
-                    id: src.id,
-                    uid: src.uid || `q-${src.id ?? qi}-${Math.random().toString(36).slice(2)}`,
-                    body: src.body || '',  // Backend canonical field
-                    marks,
-                    difficulty,
-                    options,
-                    answers,
-                    explanation: src.explanation || '',
-                    media: src.media || src.media_path || null,
-                    media_type: src.media_type || null,
-                    youtube_url: src.youtube_url || src.youtube || null,
-                    open: true,
-                  }
-                })
-              : []
-          }
-        } catch (e) {
-          console.error('Failed to load questions:', e)
+      try {
+        let questionsData = []
+        if (Array.isArray(serverQuiz.questions) && serverQuiz.questions.length) {
+          questionsData = serverQuiz.questions
+        } else if (Array.isArray(serverQuiz.data) && Array.isArray(serverQuiz.data.questions)) {
+          questionsData = serverQuiz.data.questions
+        } else if (Array.isArray(serverQuiz.items) && serverQuiz.items.length) {
+          questionsData = serverQuiz.items
         }
+
+        // If we don't have embedded questions but the server reported a count, fetch only then
+        const reportedCount = serverQuiz.questions_count ?? serverQuiz.questionsCount ?? serverQuiz.count ?? null
+        if ((!questionsData || !questionsData.length) && loaded.id && reportedCount && Number(reportedCount) > 0) {
+          try {
+            const questionsRes = await api.get(`/api/questions?quiz_id=${loaded.id}&mine=1&limit=1000`)
+            if (questionsRes.ok) {
+              const questionsJson = await questionsRes.json()
+              questionsData = questionsJson.questions || questionsJson.data || []
+            }
+          } catch (e) {
+            // ignore fetch errors here; we'll show empty state below
+            console.error('Fallback questions fetch failed:', e)
+          }
+        }
+
+        // Defensive filter: only keep questions that belong to this quiz where possible
+        const filtered = Array.isArray(questionsData)
+          ? questionsData.filter(q => {
+              if (!q) return false
+              const qQuizId = q.quiz_id ?? (q.quiz && q.quiz.id) ?? q.quizId ?? null
+              return !qQuizId || String(qQuizId) === String(loaded.id)
+            })
+          : []
+
+        // Map into canonical UI shape
+        loaded.questions = Array.isArray(filtered)
+          ? filtered.map((q, qi) => {
+              const src = q || {}
+              const marks = typeof src.marks !== 'undefined' ? Number(src.marks) : (typeof src.mark !== 'undefined' ? Number(src.mark) : 1)
+              const difficulty = typeof src.difficulty !== 'undefined' ? Number(src.difficulty) : 2
+              let answers = []
+              if (Array.isArray(src.answers) && src.answers.length) answers = src.answers.map(a => String(a))
+              else if (typeof src.answers === 'string' && src.answers.trim()) answers = [src.answers.trim()]
+              const options = Array.isArray(src.options) ? src.options : (Array.isArray(src.options_list) ? src.options_list : [])
+              return {
+                id: src.id,
+                uid: src.uid || `q-${src.id ?? qi}-${Math.random().toString(36).slice(2)}`,
+                body: src.body || '',
+                marks,
+                difficulty,
+                options,
+                answers,
+                explanation: src.explanation || '',
+                media: src.media || src.media_path || null,
+                media_type: src.media_type || null,
+                youtube_url: src.youtube_url || src.youtube || null,
+                open: true,
+              }
+            })
+          : []
+      } catch (e) {
+        console.error('Failed to load questions from quiz payload:', e)
       }
 
       quiz.value = loaded

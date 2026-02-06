@@ -285,7 +285,7 @@ function getYoutubeEmbedUrl(url) {
 }
 
 function removeQuestion(idx) {
-  questions.value.splice(idx, 1)
+  questions.value.splice(Number(idx), 1)
 }
 
 function duplicateQuestion(idx) {
@@ -302,7 +302,7 @@ function onQuestionSaved(question) {
   if (existingIdx !== -1) {
     // Update local copy first for immediate feedback
     try {
-      store.questions.splice(existingIdx, 1, question)
+      store.questions.splice(Number(existingIdx), 1, question)
     } catch (e) {}
 
     // If the question has a server id AND the quiz is already published, 

@@ -210,13 +210,31 @@ async function signInWithGoogle() {
     // Wait for session to establish
     await new Promise(resolve => setTimeout(resolve, 500))
     
+    // Force NuxtAuth to sync with server session after Google OAuth
+    const { getSession } = useAuth()
+    await getSession({ force: true }).catch(() => {
+      console.warn('Could not force getSession, but user data is in auth store')
+    })
+    
     // Fetch user data
     await auth.fetchUser?.()
     const user = auth.user
 
-    if (user && user.role) {
-      // Redirect to role-specific dashboard
-      router.push(dashboardMap[user.role] || '/institution-manager/dashboard')
+    if (user) {
+      // Sync guest quiz attempts after OAuth login
+      try {
+        await auth.syncGuestQuizResults?.()
+      } catch (e) {
+        console.warn('Failed to sync guest quiz results after Google login:', e)
+      }
+      
+      if (user.role) {
+        // Redirect to role-specific dashboard
+        await router.push(dashboardMap[user.role] || '/institution-manager/dashboard')
+      } else {
+        // No role yet - redirect to onboarding
+        await router.push('/onboarding/new-user')
+      }
     } else {
       router.push({
         path: '/auth/error',
@@ -257,11 +275,20 @@ async function submit() {
     const res = await auth.register(payload)
     if (res.error) throw new Error(res.error)
 
-    // Success - wait a bit for auth state to fully sync, then redirect to dashboard
-    setTimeout(() => {
-      if (auth.user) router.push(dashboardMap[auth.user.role] || '/institution-manager/dashboard')
-      else router.push('/institution-manager/dashboard')
-    }, 800)
+    // CRITICAL: After registration, ensure NuxtAuth syncs with the session
+    const { getSession } = useAuth()
+    
+    // Wait for session to be fully established on server
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Force NuxtAuth to refresh and pick up the new session
+    await getSession({ force: true }).catch(() => {
+      console.warn('Could not force getSession, but user data is in auth store')
+    })
+
+    // Success - redirect to appropriate dashboard
+    if (auth.user) await router.push(dashboardMap[auth.user.role] || '/institution-manager/dashboard')
+    else await router.push('/institution-manager/dashboard')
   } catch (e) {
     try {
       for (const k in fieldErrors) delete fieldErrors[k]

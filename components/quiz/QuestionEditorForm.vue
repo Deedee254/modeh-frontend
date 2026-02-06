@@ -58,12 +58,12 @@
       <template v-if="local.type === 'fill_blank'">
         <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-600">Question text</label>
-          <UTextarea v-model="local.text" placeholder="Use __ for blanks" :rows="4" v-autosize />
+          <UTextarea v-model="local.body" placeholder="Use __ for blanks" :rows="4" v-autosize />
         </div>
       </template>
       <template v-else>
         <RichTextEditor 
-          v-model="local.text" 
+          v-model="local.body" 
           @ready="onEditorReady"
           placeholder="Enter your question here..."
           :features="{ math: true, code: true }"
@@ -162,7 +162,7 @@
           <div v-for="(opt, oidx) in (part.options || [])" :key="oidx" class="flex gap-2 items-start">
             <UTextarea 
               :model-value="typeof opt === 'string' ? opt : opt.text" 
-              @update:model-value="(v) => updateMathPartOption(idx, oidx, v)"
+              @update:model-value="(v) => updateMathPartOption(idx, Number(oidx), v)"
               placeholder="Option text" 
               :rows="1"
               class="flex-1"
@@ -245,7 +245,7 @@ const tfOptions = [
 function getDefaultForm(type = 'mcq') {
   return {
     type,
-    text: '',
+    body: '',
     explanation: '',
     options: (type === 'mcq' || type === 'multi' || type === 'fill_blank') ? [
       { text: '', is_correct: false },
@@ -406,7 +406,7 @@ const canToggleOptionMode = computed(() => {
   return ['mcq', 'multi', 'fill_blank'].includes(local.value.type)
 })
 const optionModes = ['single', 'multi']
-const fillBlankCount = computed(() => (local.value.text || '').match(blankPattern)?.length || 0)
+const fillBlankCount = computed(() => (local.value.body || '').match(blankPattern)?.length || 0)
 
 watch(() => local.value.type, (type) => {
   if (optionTypes.includes(type)) {

@@ -13,8 +13,8 @@
         </div>
         <div class="space-y-6">
           <div v-for="(q, i) in quiz.questions" :key="i" class="border rounded p-4">
-            <div class="font-medium mb-2">Q{{ i+1 }}</div>
-            <div class="prose max-w-none" v-html="rendered[i] || q.body"></div>
+            <div class="font-medium mb-2">Q{{ Number(i) + 1 }}</div>
+            <div class="prose max-w-none" v-html="rendered[Number(i)] || q.body"></div>
             <ol v-if="Array.isArray(q.options) && q.options.length" class="list-decimal pl-5 mt-2">
               <li v-for="(o, j) in q.options" :key="j" class="mb-1" v-html="(typeof o === 'string' ? o : (o?.text || ''))"></li>
             </ol>

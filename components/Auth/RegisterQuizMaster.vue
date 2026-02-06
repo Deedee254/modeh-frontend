@@ -194,13 +194,26 @@ async function signInWithGoogle() {
     // Wait for session to establish
     await new Promise(resolve => setTimeout(resolve, 500))
     
+    // Force NuxtAuth to sync with server session after Google OAuth
+    const { getSession } = useAuth()
+    await getSession({ force: true }).catch(() => {
+      console.warn('Could not force getSession, but user data is in auth store')
+    })
+    
     // Fetch user data
     await auth.fetchUser?.()
     const user = auth.user
 
     if (user) {
+      // Sync guest quiz attempts after OAuth login
+      try {
+        await auth.syncGuestQuizResults?.()
+      } catch (e) {
+        console.warn('Failed to sync guest quiz results after Google login:', e)
+      }
+      
       // After Google sign-in, redirect to onboarding to select role
-      setTimeout(() => router.push('/onboarding/new-user'), 800)
+      await router.push('/onboarding/new-user')
     } else {
       router.push({
         path: '/auth/error',
@@ -239,8 +252,19 @@ async function submit() {
     const res = await auth.register(payload)
     if (res.error) throw new Error(res.error)
 
+    // CRITICAL: After registration, ensure NuxtAuth syncs with the session
+    const { getSession } = useAuth()
+    
+    // Wait for session to be fully established on server
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Force NuxtAuth to refresh and pick up the new session
+    await getSession({ force: true }).catch(() => {
+      console.warn('Could not force getSession, but user data is in auth store')
+    })
+
     // After registration with role set, redirect to quiz-master dashboard
-    setTimeout(() => router.push('/quiz-master/dashboard'), 800)
+    await router.push('/quiz-master/dashboard')
   } catch (e) {
     try {
       for (const k in fieldErrors) delete fieldErrors[k]

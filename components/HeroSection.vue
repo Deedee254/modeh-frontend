@@ -163,17 +163,40 @@
           </div>
         </div>
 
-        <!-- RIGHT SIDE: Vertical Carousel -->
+        <!-- RIGHT SIDE: Leaderboard Podium -->
         <div
           class="relative w-full max-w-full overflow-hidden opacity-0 animate-slide-in-right order-2 lg:pl-8"
           style="animation-delay: 0.3s"
         >
-          <QuizCarousel
-            :quizzes="featuredQuizzes"
-            :duration="35"
-            :limit="8"
-            :loading="loading"
-          />
+          <div class="bg-white/80 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8">
+            <div class="mb-6">
+              <h3 class="text-2xl font-bold text-slate-900 mb-2">Hall of Fame</h3>
+              <p class="text-slate-600">Can you beat these leaders? Take the quizzes and claim your spot</p>
+            </div>
+            <Podium
+              v-if="!leaderboardLoading && leaderboardEntries.length > 0"
+              :entries="leaderboardEntries"
+              :points-key="'points'"
+            />
+            <div v-else-if="leaderboardLoading" class="py-12 text-center">
+              <div class="inline-block">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-brand-200 border-t-brand-600"></div>
+              </div>
+            </div>
+            <div v-else class="py-12 text-center text-slate-500">
+              <p>Loading top performers...</p>
+            </div>
+            <!-- CTA Button -->
+            <div class="mt-8 pt-6 border-t border-slate-200">
+              <NuxtLink
+                to="/quizzes"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-3 font-semibold text-white hover:shadow-lg hover:shadow-brand-600/50 transition-all transform hover:scale-105 group"
+              >
+                <Icon name="heroicons:rocket-launch-20-solid" class="h-5 w-5" />
+                Test Yourself
+              </NuxtLink>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -181,11 +204,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { useRuntimeConfig } from '#app'
 import { useAuthStore } from '~/stores/auth'
-import QuizCarousel from '~/components/QuizCarousel.vue'
+import Podium from '~/components/leaderboard/Podium.vue'
 
 const authStore = useAuthStore()
+
+// Leaderboard state
+const leaderboardEntries = ref<any[]>([])
+const leaderboardLoading = ref(true)
+
+// Fetch leaderboard on mount
+onMounted(async () => {
+  try {
+    const config = useRuntimeConfig()
+    const response = await fetch(`${config.public.apiBase}/api/leaderboard?per_page=3`)
+    if (response.ok) {
+      const data = await response.json()
+      leaderboardEntries.value = Array.isArray(data.data) ? data.data : []
+    }
+  } catch (error) {
+    console.error('Failed to fetch leaderboard:', error)
+    leaderboardEntries.value = []
+  } finally {
+    leaderboardLoading.value = false
+  }
+})
 
 // Normalize user profile access similar to other pages
 const userProfile = computed(() => {

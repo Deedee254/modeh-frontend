@@ -173,10 +173,44 @@ async function signInGoogle() {
       return
     }
     
-    // If successful, redirect to callback
-    if (result?.ok) {
-      window.location.href = '/auth/callback'
+    // Wait for session to establish
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Force NuxtAuth to sync with server session after Google OAuth
+    const { getSession } = useAuth()
+    await getSession({ force: true }).catch(() => {
+      console.warn('Could not force getSession, but user data is in auth store')
+    })
+    
+    // Fetch user and sync guest attempts
+    await auth.fetchUser?.()
+    
+    // Sync guest quiz attempts after OAuth login
+    try {
+      await auth.syncGuestQuizResults?.()
+    } catch (e) {
+      console.warn('Failed to sync guest quiz results after Google login:', e)
     }
+    
+    // Check for guest quiz results
+    try {
+      const guestQuizStore = useGuestQuizStore()
+      guestQuizStore.initializeStore()
+      const allResults = guestQuizStore.getAllResults()
+      
+      if (allResults && allResults.length > 0) {
+        const mostRecentQuiz = allResults[allResults.length - 1]
+        if (mostRecentQuiz?.quiz_slug) {
+          await router.push(`/quizee/quiz-results/${mostRecentQuiz.quiz_slug}`)
+          return
+        }
+      }
+    } catch (e) {
+      console.error('Error checking guest quiz results:', e)
+    }
+    
+    // No guest results - redirect using auth callback logic
+    await redirectAfterAuth(auth.user)
   } catch (err) {
     console.error('[LoginForm] Google sign-in error:', err)
     router.push({

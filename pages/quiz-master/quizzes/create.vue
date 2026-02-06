@@ -121,6 +121,27 @@
           @imported="onQuestionsImported"
         />
 
+        <!-- Import Errors Modal -->
+        <UModal v-model="showImportErrorsModal" :ui="{ width: 'sm:max-w-2xl' }">
+          <div class="p-4 sm:p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Import errors</h3>
+            </div>
+            <div class="space-y-3 max-h-72 overflow-auto">
+              <div v-if="!importErrors || importErrors.length === 0" class="text-sm text-gray-600">No import errors.</div>
+              <div v-for="(e, idx) in importErrors" :key="idx" class="bg-white border border-red-200 rounded p-3">
+                <div class="text-sm font-medium text-red-700 mb-1">Row {{ e.row }}</div>
+                <ul class="list-disc list-inside text-sm text-red-600 space-y-0.5">
+                  <li v-for="(m, i2) in e.errors" :key="i2">{{ m }}</li>
+                </ul>
+              </div>
+            </div>
+            <div class="flex justify-end mt-4">
+              <UButton size="sm" variant="soft" @click="showImportErrorsModal = false">Close</UButton>
+            </div>
+          </div>
+        </UModal>
+
         <QuizPayloadPreviewModal
           :model-value="showPreviewModal"
           :quiz="store.quiz"
@@ -207,6 +228,8 @@ const {
 const showTopicModal = ref(false)
 const showQuestionBank = ref(false)
 const showImportModal = ref(false)
+const importErrors = ref<any[]>([])
+const showImportErrorsModal = ref(false)
 const showPreviewModal = ref(false)
 const showCreatedModal = ref(false)
 const createdPayload = ref(null)

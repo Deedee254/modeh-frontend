@@ -1,6 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl mx-auto">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <!-- Confetti Container -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none"></canvas>
+    
+    <div class="max-w-4xl mx-auto relative z-10">
       <!-- Header -->
       <div class="text-center mb-8">
         <h1 class="text-4xl font-bold text-gray-900 mb-2">Welcome to Modeh! 🎉</h1>
@@ -73,17 +76,41 @@
                     {{ questionResult.is_correct ? '✓' : '✗' }}
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-900 mb-1">{{ questionResult.question_body }}</p>
-                    <p v-if="!questionResult.is_correct && questionResult.correct_answer" class="text-sm text-gray-600">
+                    <p class="font-medium text-gray-900 mb-1">Q{{ idx + 1 }}: {{ questionResult.question_body }}</p>
+                    <p v-if="!questionResult.is_correct && questionResult.correct_answer" class="text-sm text-gray-600 mt-1">
                       <span class="font-semibold">Correct answer:</span> {{ questionResult.correct_answer }}
                     </p>
-                    <p v-if="questionResult.explanation" class="text-sm text-gray-700 mt-2 italic">
-                      {{ questionResult.explanation }}
+                    <p v-if="questionResult.explanation" class="text-sm text-gray-700 mt-2 italic border-l-2 border-gray-300 pl-3">
+                      💡 {{ questionResult.explanation }}
                     </p>
+                    <div class="flex gap-4 mt-2 text-xs text-gray-500">
+                      <span>Marks: <span class="font-semibold">{{ questionResult.marks_earned || 0 }}</span></span>
+                      <span>Status: <span :class="questionResult.is_correct ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'">{{ questionResult.is_correct ? 'Correct' : 'Incorrect' }}</span></span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Auto-save Notice for Logged-in Users -->
+          <div v-if="isLoggedIn" class="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-sm text-blue-900 font-medium">
+              ✓ This attempt is being saved to your profile automatically. View your progress anytime in your dashboard!
+            </p>
+          </div>
+
+          <!-- Sync In Progress -->
+          <div v-if="isSyncingAttempt" class="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
+            <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-400 border-t-amber-600"></div>
+            <p class="text-sm text-amber-900">Saving to your profile...</p>
+          </div>
+
+          <!-- Sync Failed Notice -->
+          <div v-if="syncError" class="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-sm text-red-900">
+              ⚠ Could not save attempt automatically. {{ syncError }}
+            </p>
           </div>
 
           <!-- Action Buttons -->
@@ -127,9 +154,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useGuestQuizStore } from '~/composables/useGuestQuizStore'
+import { useAuthStore } from '~/stores/auth'
+import useApi from '~/composables/useApi'
+import { useAppAlert } from '~/composables/useAppAlert'
 
 definePageMeta({
   layout: 'default'
@@ -139,9 +169,15 @@ definePageMeta({
 const router = useRouter()
 const route = useRoute()
 const slug = computed(() => route.params.slug)
+const api = useApi()
+const alert = useAppAlert()
+const authStore = useAuthStore()
 
 const result = ref(null)
 const loading = ref(true)
+const isSyncingAttempt = ref(false)
+const syncError = ref(null)
+const isLoggedIn = computed(() => authStore.isLoggedIn)
 
 const performanceClass = computed(() => {
   if (!result.value) return 'bg-gray-100 text-gray-700'
@@ -181,6 +217,121 @@ function formatDate(dateString) {
   })
 }
 
+// Confetti Effect
+function createConfetti() {
+  const canvas = document.getElementById('confetti-canvas')
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
+
+  const particles = []
+  const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#ffa502', '#ff6348', '#8e44ad', '#3498db', '#e74c3c']
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * canvas.width
+      this.y = Math.random() * canvas.height - canvas.height
+      this.size = Math.random() * 5 + 2
+      this.speedX = Math.random() * 8 - 4
+      this.speedY = Math.random() * 5 + 4
+      this.rotation = Math.random() * 360
+      this.rotationSpeed = Math.random() * 10 - 5
+      this.color = colors[Math.floor(Math.random() * colors.length)]
+      this.opacity = 1
+    }
+
+    update() {
+      this.x += this.speedX
+      this.y += this.speedY
+      this.rotation += this.rotationSpeed
+      this.opacity -= 0.01
+      this.speedY += 0.1 // gravity
+    }
+
+    draw() {
+      ctx.save()
+      ctx.globalAlpha = this.opacity
+      ctx.fillStyle = this.color
+      ctx.translate(this.x, this.y)
+      ctx.rotate((this.rotation * Math.PI) / 180)
+      ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size)
+      ctx.restore()
+    }
+  }
+
+  // Create confetti particles
+  for (let i = 0; i < 100; i++) {
+    particles.push(new Particle())
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      particles[i].update()
+      particles[i].draw()
+
+      if (particles[i].opacity <= 0 || particles[i].y > canvas.height) {
+        particles.splice(i, 1)
+      }
+    }
+
+    if (particles.length > 0) {
+      requestAnimationFrame(animate)
+    }
+  }
+
+  animate()
+}
+
+// Auto-sync attempt when user logs in
+async function autoSyncAttempt() {
+  if (!isLoggedIn.value || !result.value) return
+
+  isSyncingAttempt.value = true
+  syncError.value = null
+  
+  try {
+    const payload = {
+      quiz_id: result.value.quiz_id,
+      score: result.value.score,
+      percentage: result.value.percentage,
+      correct_count: result.value.correct_count,
+      incorrect_count: result.value.incorrect_count,
+      total_questions: result.value.total_questions,
+      time_taken: result.value.time_taken,
+      results: result.value.results || []
+    }
+
+    const res = await api.postJson('/api/quizzes/sync-guest-attempt', payload)
+
+    if (res.ok) {
+      const data = await res.json()
+      
+      // Update auth store with new user data if points were added
+      if (data.user) {
+        authStore.setUser(data.user)
+      }
+      
+      // Remove from guest store since it's now in the user's account
+      const guestStore = useGuestQuizStore()
+      guestStore.clearQuizResult(result.value.quiz_id)
+    } else {
+      const error = await res.json().catch(() => ({}))
+      syncError.value = error.message || 'Failed to sync attempt'
+    }
+  } catch (error) {
+    console.error('Error syncing attempt:', error)
+    syncError.value = 'Network error while syncing'
+  } finally {
+    isSyncingAttempt.value = false
+  }
+}
+
 function goToDashboard() {
   clearSessionData()
   router.push('/quizee/dashboard')
@@ -215,6 +366,10 @@ onMounted(() => {
   
   if (matchedResult) {
     result.value = matchedResult
+    // Play confetti on successful load
+    setTimeout(() => {
+      createConfetti()
+    }, 300)
   } else {
     // Try to check sessionStorage for the quiz info
     try {
@@ -226,6 +381,10 @@ onMounted(() => {
           const quizFromStore = guestQuizStore.getQuizResult(info.quiz_id)
           if (quizFromStore) {
             result.value = quizFromStore
+            // Play confetti on successful load
+            setTimeout(() => {
+              createConfetti()
+            }, 300)
           }
         }
       }
@@ -233,6 +392,13 @@ onMounted(() => {
   }
   
   loading.value = false
+})
+
+// Auto-sync when user logs in while viewing results
+watch(() => isLoggedIn.value, (newVal) => {
+  if (newVal && result.value) {
+    autoSyncAttempt()
+  }
 })
 </script>
 

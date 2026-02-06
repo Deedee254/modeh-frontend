@@ -131,6 +131,7 @@ interface Props {
   disabled?: boolean
   maxQuestions?: number
   errors?: Record<string, string[]>
+  initialQuestion?: any
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -141,7 +142,8 @@ const props = withDefaults(defineProps<Props>(), {
   topicId: undefined,
   disabled: false,
   maxQuestions: 50,
-  errors: () => ({})
+  errors: () => ({}),
+  initialQuestion: null
 })
 
 const emit = defineEmits(['update:questions', 'save-question', 'saved'])
@@ -161,6 +163,42 @@ watch(() => props.questions, (newVal) => {
   localQuestions.value = [...newVal]
 }, { deep: true })
 
+// If parent passes an initialQuestion prop, open modal prefilled for editing
+watch(() => props.initialQuestion, (q) => {
+  if (!q) return
+  // Defensive copy
+  let copy: any = null
+  try {
+    copy = JSON.parse(JSON.stringify(q))
+  } catch (e) {
+    copy = Object.assign({}, q)
+  }
+
+  // Normalize shape for the editor: the editor uses `body` as the question content.
+  // Ensure `body` exists so the editor shows the content when editing.
+  if (!copy.body && copy.text) copy.body = copy.text
+
+  // Ensure answers are string indices where applicable (editor treats answers as strings)
+  if (Array.isArray(copy.answers)) {
+    copy.answers = copy.answers.map((a: any) => String(a))
+  } else if (typeof copy.answers === 'number' || typeof copy.answers === 'string') {
+    copy.answers = [String(copy.answers)]
+  } else if (!copy.answers) {
+    copy.answers = []
+  }
+
+  // Ensure option mode exists for MCQ/multi types
+  if (!copy.option_mode) {
+    if (copy.type === 'mcq') copy.option_mode = 'single'
+    else if (copy.type === 'multi') copy.option_mode = 'multi'
+  }
+
+  questionForm.value = copy
+  // set editingIndex to null so save emits to parent; parent will decide how to persist/update
+  editingIndex.value = null
+  showQuestionModal.value = true
+}, { immediate: true })
+
 // Computed
 const canAddQuestion = computed(() => localQuestions.value.length < props.maxQuestions)
 const dragOptions = computed(() => ({
@@ -170,7 +208,7 @@ const dragOptions = computed(() => ({
 
 const isQuestionValid = computed(() => {
   const form = questionForm.value
-  if (!form?.text?.trim()) return false
+  if (!form?.body?.trim()) return false
   
   switch (form.type) {
     case 'mcq':
@@ -198,7 +236,7 @@ const isQuestionValid = computed(() => {
 function getDefaultForm(type = 'mcq') {
   return {
     type,
-    text: '',
+    body: '',
     explanation: '',
     options: type === 'mcq' || type === 'multi' ? [
       { text: '', is_correct: true },
@@ -280,12 +318,7 @@ async function saveQuestion() {
   try {
     const questionData = JSON.parse(JSON.stringify(questionForm.value))
 
-    // Convert editor's 'text' field to backend's canonical 'body' field
-    // Remove 'text' so backend only sees 'body'
-    if (questionData.text) {
-      questionData.body = questionData.text
-      delete questionData.text
-    }
+    // The editor uses `body` directly; no conversion required.
 
     // Ensure answers are properly formatted
     if (!Array.isArray(questionData.answers)) {

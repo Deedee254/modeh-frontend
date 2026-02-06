@@ -21,6 +21,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     } else if (status.value === 'authenticated' && !auth.user) {
         // User is authenticated but store is empty: fetch once
         await auth.fetchUser()
+        
+        // Sync any guest quiz attempts to the user's account
+        try {
+            await auth.syncGuestQuizResults()
+        } catch (e) {
+            console.warn('Failed to sync guest quiz results:', e)
+        }
     }
 
     // 1. Determine Required Role based on Layout OR Path

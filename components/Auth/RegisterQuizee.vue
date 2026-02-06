@@ -203,7 +203,22 @@ async function submit() {
 
     // Track successful email registration
     trackRegistration('email')
-    // that allows them to view their guest results before going to dashboard
+    
+    // CRITICAL: After registration, the backend has set the session cookie.
+    // Now we need to ensure NuxtAuth picks it up by calling getSession()
+    // This will re-sync the client auth state with the server session
+    const { getSession } = useAuth()
+    
+    // Wait for session to be fully established on server
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Force NuxtAuth to refresh and pick up the new session
+    await getSession({ force: true }).catch(() => {
+      // Session fetch might fail but auth store already has the user
+      console.warn('Could not force getSession, but user data is in auth store')
+    })
+
+    // Check if we have guest quiz results to show
     try {
       const guestQuizStore = useGuestQuizStore()
       guestQuizStore.initializeStore()
@@ -225,7 +240,8 @@ async function submit() {
           } catch (e) {}
           
           // Redirect to special "view results" page instead of dashboard
-          setTimeout(() => router.push(`/quizee/quiz-results/${mostRecentQuiz.quiz_slug}`), 800)
+          // Now auth is established so the page will have access to user data
+          await router.push(`/quizee/quiz-results/${mostRecentQuiz.quiz_slug}`)
           return
         }
       }
@@ -235,7 +251,8 @@ async function submit() {
     }
 
     // No guest quiz results - redirect to quizee dashboard normally
-    setTimeout(() => router.push('/quizee/dashboard'), 800)
+    // Now user is authenticated so they'll see their dashboard
+    await router.push('/quizee/dashboard')
   } catch (e) {
     try {
       for (const k in fieldErrors) delete fieldErrors[k]
@@ -261,6 +278,7 @@ async function signInWithGoogle() {
   if (isGoogleLoading.value) return
   isGoogleLoading.value = true
 
+
   try {
     const result = await signIn('google', { redirect: false })
     
@@ -275,14 +293,47 @@ async function signInWithGoogle() {
       return
     }
 
+    // Wait for session to establish
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Force NuxtAuth to sync with server session after Google OAuth
+    const { getSession } = useAuth()
+    await getSession({ force: true }).catch(() => {
+      console.warn('Could not force getSession, but user data is in auth store')
+    })
+
     // Track successful Google login
     trackLogin('google')
     await auth.fetchUser?.()
     const user = auth.user
 
     if (user) {
-      // After Google sign-in, redirect to onboarding to select role
-      setTimeout(() => router.push('/onboarding/new-user'), 800)
+      // Sync guest quiz attempts after OAuth login
+      try {
+        await auth.syncGuestQuizResults?.()
+      } catch (e) {
+        console.warn('Failed to sync guest quiz results after Google login:', e)
+      }
+      
+      // Check for guest quiz results before redirecting
+      try {
+        const guestQuizStore = useGuestQuizStore()
+        guestQuizStore.initializeStore()
+        const allResults = guestQuizStore.getAllResults()
+        
+        if (allResults && allResults.length > 0) {
+          const mostRecentQuiz = allResults[allResults.length - 1]
+          if (mostRecentQuiz?.quiz_slug) {
+            await router.push(`/quizee/quiz-results/${mostRecentQuiz.quiz_slug}`)
+            return
+          }
+        }
+      } catch (e) {
+        console.error('Error checking guest quiz results:', e)
+      }
+      
+      // No guest results - go to onboarding to select role
+      await router.push('/onboarding/new-user')
     } else {
       router.push({
         path: '/auth/error',
@@ -298,6 +349,7 @@ async function signInWithGoogle() {
   } finally {
     isGoogleLoading.value = false
   }
+
 }
 
 onMounted(() => {
