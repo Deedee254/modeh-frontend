@@ -294,6 +294,17 @@ export default defineNuxtConfig({
     }
   },
 
+  // Nitro (server) build options — ensure certain auth packages are inlined
+  // so the server bundle preserves proper ESM entrypoints instead of
+  // rewriting to directory imports that Node may reject at runtime.
+  nitro: {
+    externals: {
+      // Inline next-auth and the sidebase nuxt-auth bridge so imports like
+      // `next-auth/jwt` are resolved correctly during the Nitro build.
+      inline: ['next-auth', '@sidebase/nuxt-auth']
+    }
+  },
+
   // Auth Configuration (sidebase/nuxt-auth with AuthJS provider)
   // -------................................. 
   // CRITICAL: For production OAuth to work:
