@@ -1,22 +1,31 @@
 import { NuxtAuthHandler } from '#auth'
-import GoogleProvider from 'next-auth/providers/google'
-import CredentialsProvider from 'next-auth/providers/credentials'
 import { useRuntimeConfig } from '#imports'
 
-export default NuxtAuthHandler({
-  // Enable debug when NUXT_AUTH_DEBUG=true in environment (temporary for diagnostics)
-  debug: process.env.NUXT_AUTH_DEBUG === 'true',
-  secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
-  pages: {
-    signIn: '/login',
-    error: '/auth/error'
-  },
-  trustHost: true,
-  // Ensure the base URL is explicitly set for production OAuth
-  basePath: '/api/auth',
-  providers: [
-    // @ts-expect-error Use .default here for it to work during SSR
-    GoogleProvider.default({
+// Use dynamic imports for next-auth providers to avoid ES module issues
+const getProviders = async () => {
+  const [GoogleProvider, CredentialsProvider] = await Promise.all([
+    import('next-auth/providers/google').then(m => m.default || m),
+    import('next-auth/providers/credentials').then(m => m.default || m)
+  ])
+  return { GoogleProvider, CredentialsProvider }
+}
+
+const createAuthHandler = async () => {
+  const { GoogleProvider, CredentialsProvider } = await getProviders()
+  
+  return NuxtAuthHandler({
+    // Enable debug when NUXT_AUTH_DEBUG=true in environment (temporary for diagnostics)
+    debug: process.env.NUXT_AUTH_DEBUG === 'true',
+    secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
+    pages: {
+      signIn: '/login',
+      error: '/auth/error'
+    },
+    trustHost: true,
+    // Ensure the base URL is explicitly set for production OAuth
+    basePath: '/api/auth',
+    providers: [
+      GoogleProvider({
       // Prefer environment variables, but fall back to Nuxt runtime config
       // values when available. This allows testing by wiring secrets into
       // `nuxt.config.ts`'s runtimeConfig during a build.
@@ -29,8 +38,7 @@ export default NuxtAuthHandler({
         ? `${process.env.NUXT_AUTH_BASE_URL}/callback/google` 
         : undefined
     }),
-    // @ts-expect-error Use .default here for it to work during SSR
-    CredentialsProvider.default({
+    CredentialsProvider({
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -274,3 +282,6 @@ export default NuxtAuthHandler({
   ,
   events: {} as any
 } as any)
+}
+
+export default createAuthHandler()
