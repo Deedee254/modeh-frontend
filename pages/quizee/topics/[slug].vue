@@ -53,7 +53,7 @@
               No quizzes found for this topic yet.
             </div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <QuizCard
+              <QuizCard
                 v-for="quiz in displayQuizzes"
                 :key="quiz.id"
                 :quiz-id="quiz.id"
@@ -67,7 +67,9 @@
                 :quiz="quiz"
               />
             </div>
-            <!-- TODO: Add pagination controls using quizzesMeta -->
+            <div v-if="quizzesPaginator && (quizzesPaginator.last_page || 1) > 1" class="mt-8">
+              <Pagination :paginator="quizzesPaginator" @change-page="onPageChange" />
+            </div>
           </div>
         </div>
       </div>
@@ -76,13 +78,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 import useSeo from '~/composables/useSeo'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
+import Pagination from '~/components/Pagination.vue'
 
 definePageMeta({
   layout: 'quizee',
@@ -93,6 +96,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const api = useApi()
 const seo = useSeo()
@@ -106,7 +110,8 @@ const quizzes = ref<any[]>([])
 const sortOption = ref('newest')
 const quizzesLoading = ref(false)
 const quizzesError = ref(false)
-const quizzesMeta = ref<any>(null)
+const quizzesPaginator = ref<any>(null)
+const page = ref(Number(route.query.page) || 1)
 
 async function fetchTopic() {
   loading.value = true
@@ -127,22 +132,29 @@ async function fetchTopic() {
   }
 }
 
-async function fetchQuizzes(page = 1) {
+async function fetchQuizzes(requestedPage = page.value) {
   if (!topic.value?.id) return
   quizzesLoading.value = true
   quizzesError.value = false
   try {
-    const query = new URLSearchParams({ page: page.toString() })
+    const query = new URLSearchParams({ page: requestedPage.toString() })
     const res = await api.get(`/api/topics/${topic.value.id}/quizzes?${query}`)
     if (!res.ok) {
       quizzesError.value = true
       return
     }
     const data = await api.parseResponse(res)
-    // Backend returns { quizzes: { data: [...], meta: {...} } }
-    const paginatedQuizzes = data?.quizzes || {}
-  quizzes.value = paginatedQuizzes.data || []
-    quizzesMeta.value = paginatedQuizzes || null
+    // Backend returns { quizzes: { data: [...], meta: {...} } } (Laravel paginator)
+    const paginatedQuizzes = data?.quizzes || data?.data || data || {}
+    const items = paginatedQuizzes.data || paginatedQuizzes.items || paginatedQuizzes.quizzes || []
+    const meta = paginatedQuizzes.meta || {
+      current_page: paginatedQuizzes.current_page ?? requestedPage,
+      last_page: paginatedQuizzes.last_page ?? 1,
+      per_page: paginatedQuizzes.per_page ?? (Array.isArray(items) ? items.length : 0),
+      total: paginatedQuizzes.total ?? (Array.isArray(items) ? items.length : 0)
+    }
+    quizzes.value = Array.isArray(items) ? items : []
+    quizzesPaginator.value = meta
   } catch (e) {
     console.error('Error fetching quizzes:', e)
     quizzesError.value = true
@@ -174,7 +186,7 @@ onMounted(async () => {
   if (slug.value) {
     await fetchTopic()
     if (topic.value) {
-      fetchQuizzes()
+      fetchQuizzes(page.value)
       
       // Setup SEO for topic page
       if (topic.value?.id && topic.value?.slug) {
@@ -191,5 +203,19 @@ onMounted(async () => {
       }
     }
   }
+})
+
+function onPageChange(p: number) {
+  if (!p || p < 1 || p === page.value) return
+  const q = { ...route.query }
+  q.page = String(p)
+  router.push({ path: route.path, query: q })
+}
+
+watch(() => route.query.page, (val) => {
+  const next = Math.max(1, Number(val) || 1)
+  if (next === page.value) return
+  page.value = next
+  fetchQuizzes(page.value)
 })
 </script>

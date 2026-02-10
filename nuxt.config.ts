@@ -7,10 +7,9 @@ const publicBaseUrl = stripTrailingSlash(defaultPublicOrigin)
 const envAuthBaseUrl = process.env.NUXT_AUTH_BASE_URL ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL) : undefined
 const authBaseUrl = envAuthBaseUrl ?? `${publicBaseUrl}/api/auth`
 const defaultApiBase = stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://admin.modeh.co.ke'))
-// Default Google Analytics ID fallback (used when env var not provided)
-const defaultGoogleAnalyticsId = process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID || 'G-0ZY24VS3D2'
-// Default Google Tag Manager ID fallback
-const defaultGtmId = process.env.NUXT_PUBLIC_GTM_ID || 'GTM-P6CXDVPF'
+// Google Analytics and Tag Manager - these must be configured via environment variables
+const googleAnalyticsId = process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID
+const gtmId = process.env.NUXT_PUBLIC_GTM_ID
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
@@ -32,23 +31,21 @@ export default defineNuxtConfig({
       ,
       script: [
         // Google Tag Manager (head snippet) — loads GTM container
-        {
-          children: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], j=d.createElement(s),dl=l!='dataLayer'? '&l='+l: ''; j.async=true; j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl; f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${defaultGtmId}');`,
+        ...(gtmId ? [{
+          children: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], j=d.createElement(s),dl=l!='dataLayer'? '&l='+l: ''; j.async=true; j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl; f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtmId}');`,
           type: 'text/javascript'
-        } as any
+        } as any] : [])
       ],
       // Insert GTM noscript immediately after opening <body>
       noscript: [
-        {
-          children: `<iframe src="https://www.googletagmanager.com/ns.html?id=${defaultGtmId}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`
-        } as any
+        ...(gtmId ? [{
+          children: `<iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`
+        } as any] : [])
       ]
     }
   },
 
-  // -----------------------------
   // Modules
-  // -----------------------------
   modules: [
     '@pinia/nuxt',
     ['nuxt-tiptap-editor', { prefix: 'Tiptap' }],
@@ -57,15 +54,23 @@ export default defineNuxtConfig({
     '@sidebase/nuxt-auth'
   ],
 
-  // Nuxt-level aliases (ensure server-side imports resolve the same as Vite)
   alias: {
     'next-auth/core': fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url)),
-    'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url))
+    'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url)),
+    // Use ESM Babel helpers to avoid namespace/default interop issues in Nitro bundles
+    '@babel/runtime/helpers/interopRequireDefault': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/interopRequireDefault.js', import.meta.url)),
+    '@babel/runtime/helpers/defineProperty': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/defineProperty.js', import.meta.url)),
+    '@babel/runtime/helpers/asyncToGenerator': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js', import.meta.url)),
+    '@babel/runtime/helpers/classCallCheck': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/classCallCheck.js', import.meta.url)),
+    '@babel/runtime/helpers/createClass': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/createClass.js', import.meta.url)),
+    '@babel/runtime/helpers/possibleConstructorReturn': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/possibleConstructorReturn.js', import.meta.url)),
+    '@babel/runtime/helpers/getPrototypeOf': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/getPrototypeOf.js', import.meta.url)),
+    '@babel/runtime/helpers/inherits': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/inherits.js', import.meta.url)),
+    '@babel/runtime/helpers/wrapNativeSuper': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/wrapNativeSuper.js', import.meta.url)),
+    '@babel/runtime/helpers/extends': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/extends.js', import.meta.url)),
+    '@babel/runtime/regenerator': fileURLToPath(new URL('./node_modules/@babel/runtime/regenerator/index.js', import.meta.url))
   },
 
-  // -----------------------------
-  // UI Framework
-  // -----------------------------
   ui: {
     global: true,
     safelistColors: ['primary']
@@ -75,9 +80,6 @@ export default defineNuxtConfig({
     preference: 'light'
   },
 
-  // -----------------------------
-  // PWA (Vite PWA Optimized for SSR)
-  // -----------------------------
   pwa: {
     // Use `prompt` so users aren't unexpectedly hard-refreshed when a new
     // service worker is available. `autoUpdate` will activate and reload
@@ -207,9 +209,7 @@ export default defineNuxtConfig({
     }
   },
 
-  // -----------------------------
-  // Vite Aliases
-  // -----------------------------
+  // Vite config
   vite: {
     resolve: {
       alias: {
@@ -217,12 +217,24 @@ export default defineNuxtConfig({
         '#tailwind-config/theme/colors': fileURLToPath(new URL('./tailwind-config/theme/colors.js', import.meta.url)),
         '#tailwind-config/theme': fileURLToPath(new URL('./tailwind-config/theme', import.meta.url)),
         'next-auth/core': fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url)),
-        'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url))
+        'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url)),
+        // Ensure Vite SSR build uses ESM Babel helpers as well
+        '@babel/runtime/helpers/interopRequireDefault': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/interopRequireDefault.js', import.meta.url)),
+        '@babel/runtime/helpers/defineProperty': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/defineProperty.js', import.meta.url)),
+        '@babel/runtime/helpers/asyncToGenerator': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js', import.meta.url)),
+        '@babel/runtime/helpers/classCallCheck': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/classCallCheck.js', import.meta.url)),
+        '@babel/runtime/helpers/createClass': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/createClass.js', import.meta.url)),
+        '@babel/runtime/helpers/possibleConstructorReturn': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/possibleConstructorReturn.js', import.meta.url)),
+        '@babel/runtime/helpers/getPrototypeOf': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/getPrototypeOf.js', import.meta.url)),
+        '@babel/runtime/helpers/inherits': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/inherits.js', import.meta.url)),
+        '@babel/runtime/helpers/wrapNativeSuper': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/wrapNativeSuper.js', import.meta.url)),
+        '@babel/runtime/helpers/extends': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/extends.js', import.meta.url)),
+        '@babel/runtime/regenerator': fileURLToPath(new URL('./node_modules/@babel/runtime/regenerator/index.js', import.meta.url))
       }
     },
 
     ssr: {
-      external: ['papaparse']
+      external: ['papaparse', 'next-auth', 'next-auth/jwt', 'next-auth/core', '@sidebase/nuxt-auth']
     },
 
     build: {
@@ -255,20 +267,15 @@ export default defineNuxtConfig({
     }
   },
 
-  // -----------------------------
-  // CSS
-  // -----------------------------
   css: ['katex/dist/katex.min.css'],
 
-  // -----------------------------
-
-  // Runtime Config
-  // -----------------------------
   runtimeConfig: {
+    auth: {
+      secret: process.env.NUXT_AUTH_SECRET
+    },
     pusherSecret: process.env.NUXT_PUBLIC_PUSHER_SECRET || '',
-    // Temporary: expose google OAuth client secrets to runtime config so the
-    // server auth handler can read them during testing. These values are read
-    // from environment at build time — do NOT commit secrets to source.
+    // Expose google OAuth credentials to runtime config for server-side auth handling
+    // These values are read from environment at build time — do NOT commit secrets to source
     googleClientId: process.env.GOOGLE_CLIENT_ID || '',
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     public: {
@@ -277,13 +284,13 @@ export default defineNuxtConfig({
       baseUrl: publicBaseUrl,
       siteUrl: publicBaseUrl,
 
-      // Google Analytics (GA4) - use env var or safe fallback
-      googleAnalyticsId: process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID || defaultGoogleAnalyticsId,
-      googleTagManagerId: process.env.NUXT_PUBLIC_GTM_ID || defaultGtmId,
+      // Google Analytics (GA4) and Google Tag Manager - must be configured via env vars
+      googleAnalyticsId: googleAnalyticsId || '',
+      googleTagManagerId: gtmId || '',
 
       // Pusher (for real-time features)
-      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
-      pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '5a6916ce972fd4a06074',
+      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '',
+      pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '',
       pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
       pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
 
@@ -294,28 +301,36 @@ export default defineNuxtConfig({
     }
   },
 
-  // Nitro (server) build options — ensure certain auth packages are inlined
-  // so the server bundle preserves proper ESM entrypoints instead of
-  // rewriting to directory imports that Node may reject at runtime.
   nitro: {
     externals: {
-      // Inline next-auth and the sidebase nuxt-auth bridge so imports like
-      // `next-auth/jwt` are resolved correctly during the Nitro build.
-      inline: ['next-auth', '@sidebase/nuxt-auth']
+      external: ['next-auth', 'next-auth/jwt', 'next-auth/core', '@sidebase/nuxt-auth'],
+      inline: []
     }
   },
 
-  // Auth Configuration (sidebase/nuxt-auth with AuthJS provider)
-  // -------................................. 
-  // CRITICAL: For production OAuth to work:
-  // 1. Set NUXT_AUTH_BASE_URL=https://yourdomain.com/api/auth in production .env
-  // 2. Ensure this matches the redirect URI in Google Cloud Console
-  // 3. Set NUXT_AUTH_SECRET to a secure random string
-  // -------................................. 
+  hooks: {
+    'nitro:config'(nitroConfig: any) {
+      nitroConfig.alias = nitroConfig.alias || {}
+      nitroConfig.alias['next-auth/core'] = fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url))
+      nitroConfig.alias['next-auth/jwt'] = fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url))
+      // Force ESM Babel helpers inside Nitro bundle to avoid namespace default issues
+      nitroConfig.alias['@babel/runtime/helpers/interopRequireDefault'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/interopRequireDefault.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/defineProperty'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/defineProperty.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/asyncToGenerator'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/classCallCheck'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/classCallCheck.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/createClass'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/createClass.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/possibleConstructorReturn'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/possibleConstructorReturn.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/getPrototypeOf'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/getPrototypeOf.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/inherits'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/inherits.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/wrapNativeSuper'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/wrapNativeSuper.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/helpers/extends'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/extends.js', import.meta.url))
+      nitroConfig.alias['@babel/runtime/regenerator'] = fileURLToPath(new URL('./node_modules/@babel/runtime/regenerator/index.js', import.meta.url))
+    }
+  },
+
   auth: {
     baseURL: authBaseUrl,
     originEnvKey: 'NUXT_AUTH_BASE_URL',
-    secret: process.env.NUXT_AUTH_SECRET ?? 'DyQkwB8DMfLQ3KbDW9dNgdZFNYb9RVxPLCWfwWXqQPM=',
     provider: {
       type: 'authjs',
       trustHost: true,

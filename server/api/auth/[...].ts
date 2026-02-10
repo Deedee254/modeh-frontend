@@ -1,19 +1,12 @@
 import { NuxtAuthHandler } from '#auth'
 import { useRuntimeConfig } from '#imports'
+import GoogleProviderImport from 'next-auth/providers/google'
+import CredentialsProviderImport from 'next-auth/providers/credentials'
 
-// Use dynamic imports for next-auth providers to avoid ES module issues
-const getProviders = async () => {
-  const [GoogleProvider, CredentialsProvider] = await Promise.all([
-    import('next-auth/providers/google').then(m => m.default || m),
-    import('next-auth/providers/credentials').then(m => m.default || m)
-  ])
-  return { GoogleProvider, CredentialsProvider }
-}
+const GoogleProvider: any = (GoogleProviderImport as any).default || GoogleProviderImport
+const CredentialsProvider: any = (CredentialsProviderImport as any).default || CredentialsProviderImport
 
-const createAuthHandler = async () => {
-  const { GoogleProvider, CredentialsProvider } = await getProviders()
-  
-  return NuxtAuthHandler({
+export default NuxtAuthHandler({
     // Enable debug when NUXT_AUTH_DEBUG=true in environment (temporary for diagnostics)
     debug: process.env.NUXT_AUTH_DEBUG === 'true',
     secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
@@ -282,6 +275,3 @@ const createAuthHandler = async () => {
   ,
   events: {} as any
 } as any)
-}
-
-export default createAuthHandler()
