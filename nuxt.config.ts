@@ -56,7 +56,8 @@ export default defineNuxtConfig({
 
   alias: {
     'next-auth/core': fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url)),
-    'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url)),
+    'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt', import.meta.url)),
+    '@panva/hkdf': fileURLToPath(new URL('./shims/hkdf.ts', import.meta.url)),
     // Use ESM Babel helpers to avoid namespace/default interop issues in Nitro bundles
     '@babel/runtime/helpers/interopRequireDefault': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/interopRequireDefault.js', import.meta.url)),
     '@babel/runtime/helpers/defineProperty': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/defineProperty.js', import.meta.url)),
@@ -218,6 +219,7 @@ export default defineNuxtConfig({
         '#tailwind-config/theme': fileURLToPath(new URL('./tailwind-config/theme', import.meta.url)),
         'next-auth/core': fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url)),
         'next-auth/jwt': fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url)),
+        '@panva/hkdf': fileURLToPath(new URL('./shims/hkdf.ts', import.meta.url)),
         // Ensure Vite SSR build uses ESM Babel helpers as well
         '@babel/runtime/helpers/interopRequireDefault': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/interopRequireDefault.js', import.meta.url)),
         '@babel/runtime/helpers/defineProperty': fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/defineProperty.js', import.meta.url)),
@@ -303,8 +305,13 @@ export default defineNuxtConfig({
 
   nitro: {
     externals: {
-      external: ['next-auth', 'next-auth/jwt', 'next-auth/core', '@sidebase/nuxt-auth'],
-      inline: []
+      external: [],
+      inline: ['next-auth', 'next-auth/jwt', 'next-auth/core', '@panva/hkdf']
+    },
+    rollupConfig: {
+      output: {
+        inlineDynamicImports: false
+      }
     }
   },
 
@@ -313,6 +320,7 @@ export default defineNuxtConfig({
       nitroConfig.alias = nitroConfig.alias || {}
       nitroConfig.alias['next-auth/core'] = fileURLToPath(new URL('./node_modules/next-auth/core/index.js', import.meta.url))
       nitroConfig.alias['next-auth/jwt'] = fileURLToPath(new URL('./node_modules/next-auth/jwt/index.js', import.meta.url))
+      nitroConfig.alias['@panva/hkdf'] = fileURLToPath(new URL('./shims/hkdf.ts', import.meta.url))
       // Force ESM Babel helpers inside Nitro bundle to avoid namespace default issues
       nitroConfig.alias['@babel/runtime/helpers/interopRequireDefault'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/interopRequireDefault.js', import.meta.url))
       nitroConfig.alias['@babel/runtime/helpers/defineProperty'] = fileURLToPath(new URL('./node_modules/@babel/runtime/helpers/esm/defineProperty.js', import.meta.url))
