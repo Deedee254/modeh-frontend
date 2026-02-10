@@ -2,12 +2,14 @@ import { defineNuxtConfig } from 'nuxt/config'
 import { fileURLToPath } from 'node:url'
 
 const stripTrailingSlash = (value?: string) => value?.replace(/\/$/, '') ?? ''
-const defaultPublicOrigin = process.env.NUXT_PUBLIC_BASE_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://modeh.co.ke')
-const publicBaseUrl = stripTrailingSlash(defaultPublicOrigin)
+// Public base URL must be provided via NUXT_PUBLIC_BASE_URL
+const defaultPublicOrigin = process.env.NUXT_PUBLIC_BASE_URL
+const publicBaseUrl = defaultPublicOrigin ? stripTrailingSlash(defaultPublicOrigin) : undefined
 const envAuthBaseUrl = process.env.NUXT_AUTH_BASE_URL ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL) : undefined
-const authBaseUrl = envAuthBaseUrl ?? `${publicBaseUrl}/api/auth`
-const defaultApiBase = stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://admin.modeh.co.ke'))
-// Google Analytics and Tag Manager - these must be configured via environment variables
+const authBaseUrl = envAuthBaseUrl ?? undefined
+// API base from NUXT_PUBLIC_API_BASE
+const defaultApiBase = process.env.NUXT_PUBLIC_API_BASE ? stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE) : undefined
+// Analytics IDs from env
 const googleAnalyticsId = process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID
 const gtmId = process.env.NUXT_PUBLIC_GTM_ID
 
@@ -273,33 +275,29 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     auth: {
-      secret: process.env.NUXT_AUTH_SECRET
+      secret: process.env.NUXT_AUTH_SECRET ?? undefined
     },
-    pusherSecret: process.env.NUXT_PUBLIC_PUSHER_SECRET || '',
-    // Expose google OAuth credentials to runtime config for server-side auth handling
-    // These values are read from environment at build time — do NOT commit secrets to source
-    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    pusherSecret: process.env.NUXT_PUBLIC_PUSHER_SECRET ?? undefined,
+    // Google OAuth credentials (from env)
+    googleClientId: process.env.GOOGLE_CLIENT_ID ?? undefined,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? undefined,
     public: {
-      // Backend API
-      apiBase: defaultApiBase,
-      baseUrl: publicBaseUrl,
-      siteUrl: publicBaseUrl,
+      // Public runtime values (from env)
+      apiBase: defaultApiBase ?? undefined,
+      baseUrl: publicBaseUrl ?? undefined,
+      siteUrl: publicBaseUrl ?? undefined,
 
-      // Google Analytics (GA4) and Google Tag Manager - must be configured via env vars
-      googleAnalyticsId: googleAnalyticsId || '',
-      googleTagManagerId: gtmId || '',
+      googleAnalyticsId: googleAnalyticsId ?? undefined,
+      googleTagManagerId: gtmId ?? undefined,
 
-      // Pusher (for real-time features)
-      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '',
-      pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY || '',
-      pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
-      pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+      pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? undefined,
+      pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? undefined,
+      pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? undefined,
+      pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? undefined,
 
-      // WebSocket (for Laravel Echo)
-      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? 'https://admin.modeh.co.ke',
-      wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : 443,
-      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? 'wss'
+      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? undefined,
+      wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : undefined,
+      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? undefined
     }
   },
 

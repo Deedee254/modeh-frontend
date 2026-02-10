@@ -167,13 +167,13 @@ const props = defineProps<{
 }>()
 const emits = defineEmits<{ close: [], 'update:open': [boolean] }>()
 
-const status = ref<'pending' | 'active' | 'cancelled' | 'failed' | 'timeout'>('pending')
+const status = ref<'pending' | 'active' | 'cancelled' | 'failed' | 'timeout' | 'manual_reconciliation'>('pending')
 const secondsRemaining = ref(180)
 const invoiceUrl = ref<string | null>(null)
 const mpesaData = ref<any>(null)
 const isMpesaCheckingStatus = ref(false)
-let intervalId: ReturnType<typeof setInterval> | null = null
-let autoCheckInterval: ReturnType<typeof setInterval> | null = null
+let intervalId: NodeJS.Timeout | null = null
+let autoCheckInterval: NodeJS.Timeout | null = null
 const auth = useAuthStore()
 const { push: pushAlert } = useAppAlert()
 const api = useApi()
@@ -229,25 +229,49 @@ function startTimeoutCountdown(): void {
 }
 
 /**
- * Auto-poll M-PESA reconciliation every 5 seconds while pending
+ * Auto-poll M-PESA reconciliation with stepped backoff (3s × 10, then 15s × 6, then stop & mark timeout)
  */
 function startAutoCheck(): void {
-  if (autoCheckInterval) clearInterval(autoCheckInterval)
-  autoCheckInterval = setInterval(async () => {
-    // Stop after 5 attempts
-    if (autoCheckAttempts.value >= 5) {
+  if (autoCheckInterval !== null) clearInterval(autoCheckInterval)
+  
+  const pollIntervals = [3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 15000, 15000, 15000, 15000, 15000, 15000]
+  const maxAttempts = pollIntervals.length
+  let attemptIndex = 0
+
+  const tick = async () => {
+    if (status.value !== 'pending' || !props.checkoutRequestId) {
       stopAutoCheck()
       return
     }
-    
-    if (status.value === 'pending' && props.checkoutRequestId) {
-      await reconcilePayment()
+
+    if (attemptIndex >= maxAttempts) {
+      stopAutoCheck()
+      // Mark as timeout/manual_reconciliation after all polls exhausted
+      if (status.value === 'pending') {
+        status.value = 'timeout'
+        pushAlert({
+          type: 'warning',
+          message: 'Payment verification delayed. We will continue checking in background. You can contact support if needed.',
+        })
+      }
+      return
     }
-  }, 5000)
+
+    await reconcilePayment()
+    attemptIndex++
+
+    // Restart interval with next interval duration if there are more attempts
+    if (attemptIndex < maxAttempts) {
+      if (autoCheckInterval !== null) clearInterval(autoCheckInterval)
+      autoCheckInterval = setInterval(tick, pollIntervals[attemptIndex])
+    }
+  }
+
+  autoCheckInterval = setInterval(tick, pollIntervals[attemptIndex])
 }
 
 function stopAutoCheck(): void {
-  if (autoCheckInterval) {
+  if (autoCheckInterval !== null) {
     clearInterval(autoCheckInterval)
     autoCheckInterval = null
   }
@@ -265,6 +289,11 @@ async function onCheckNow(): Promise<void> {
  * Reconcile payment with M-PESA backend
  */
 async function reconcilePayment(): Promise<void> {
+  // Concurrency guard: skip if already checking
+  if (isMpesaCheckingStatus.value) {
+    return
+  }
+
   if (!props.checkoutRequestId) {
     console.error('[PaymentAwaitingModal] No checkoutRequestId to reconcile')
     return
@@ -274,16 +303,20 @@ async function reconcilePayment(): Promise<void> {
 
   try {
     const result = await mpesa.reconcile(props.checkoutRequestId, 'user')
-    autoCheckAttempts.value++
 
     // Handle success
     if (result?.ok && result.status === 'success') {
       mpesaData.value = result.transaction
+      // Try to set invoiceUrl from response first; fallback to manual fetch
+      if (result.transaction?.invoice_url) {
+        invoiceUrl.value = result.transaction.invoice_url
+      } else {
+        await fetchAndSetInvoiceUrl()
+      }
       status.value = 'active'
       stopAutoCheck()
-      if (intervalId) clearInterval(intervalId)
+      if (intervalId !== null) clearInterval(intervalId)
       pushAlert({ type: 'success', message: 'Payment confirmed!' })
-      fetchAndSetInvoiceUrl()
       return
     }
 
@@ -292,14 +325,13 @@ async function reconcilePayment(): Promise<void> {
       mpesaData.value = result.transaction
       status.value = 'failed'
       stopAutoCheck()
-      if (intervalId) clearInterval(intervalId)
+      if (intervalId !== null) clearInterval(intervalId)
       pushAlert({ type: 'error', message: 'Payment failed: ' + (result.transaction?.result_desc || 'Unknown error') })
       return
     }
 
     // pending or manual_reconciliation -> do nothing, will retry
   } catch (error: any) {
-    autoCheckAttempts.value++
     console.error('[Payment Reconcile] Error checking status:', error?.message || error)
   } finally {
     isMpesaCheckingStatus.value = false
@@ -391,8 +423,10 @@ function onRetry(): void {
   status.value = 'pending'
   secondsRemaining.value = 180
   invoiceUrl.value = null
-  if (intervalId) clearInterval(intervalId)
+  autoCheckAttempts.value = 0
+  if (intervalId !== null) clearInterval(intervalId)
   startTimeoutCountdown()
+  startAutoCheck()
   pushAlert({ type: 'info', message: 'Retrying payment confirmation...' })
 }
 
@@ -418,7 +452,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (intervalId) clearInterval(intervalId)
+  if (intervalId !== null) clearInterval(intervalId)
   stopAutoCheck()
   _detachEchoListeners()
 })

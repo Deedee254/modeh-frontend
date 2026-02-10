@@ -1,12 +1,14 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
-  // determine base URL — prefer configured siteUrl, otherwise derive from request
-  const headers = (event.node.req && event.node.req.headers) || {}
-  const forwardedProto = headers['x-forwarded-proto'] || headers['x-forwarded-protocol'] || null
-  const proto = forwardedProto || (event.node.req.socket && (event.node.req.socket as any).encrypted ? 'https' : 'https')
-  const host = headers.host || config.public.siteUrl || 'localhost:3000'
-  const baseUrl = (config.public.siteUrl ? String(config.public.siteUrl).replace(/\/$/, '') : `${proto}://${host}`)
+  // determine base URL — require configured public.siteUrl in runtime config.
+  // For security and correctness we avoid falling back to a hard-coded host.
+  if (!config.public?.siteUrl) {
+    // Missing configuration — return a helpful error body instead of a silently wrong sitemap
+    event.res.statusCode = 500
+    return 'Sitemap unavailable: `config.public.siteUrl` is not configured. Set NUXT_PUBLIC_SITE_URL in environment.'
+  }
+  const baseUrl = String(config.public.siteUrl).replace(/\/$/, '')
 
   const urls = new Map<string, { lastmod?: string; priority?: string }>()
   const now = new Date().toISOString()
