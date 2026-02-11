@@ -18,7 +18,7 @@
               </svg>
             </button>
             <div class="relative">
-              <img :alt="activeConversationName" loading="lazy" width="40" height="40" decoding="async" class="rounded-full object-cover" :src="activeConversation?.avatar || '/avatars/avatar-placeholder.png'">
+              <img :alt="activeConversationName" loading="lazy" width="40" height="40" decoding="async" class="rounded-full object-cover" :src="resolveAvatar(activeConversation?.avatar || activeConversation?.avatar_url || activeConversation?.image, activeConversationName)">
               <span v-if="activeConversation?.status" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background" :class="statusColor(activeConversation.status)"></span>
             </div>
             <div class="ml-3">
@@ -53,6 +53,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
+import { resolveAvatar } from '~/composables/useAssets'
 const props = defineProps({
   activeConversation: { type: Object, default: null },
   activeConversationName: { type: String, default: '' },

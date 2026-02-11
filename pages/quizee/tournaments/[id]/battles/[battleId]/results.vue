@@ -66,8 +66,8 @@
             <div v-for="(q, idx) in result.questions" :key="q.question_id" class="p-4 rounded-lg border bg-white">
               <div class="mb-4">
                 <div class="flex items-center gap-3 mb-2">
-                  <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-semibold text-sm">{{ idx + 1 }}</div>
-                  <p class="font-semibold text-gray-800">Question {{ idx + 1 }}</p>
+                  <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-semibold text-sm">{{ Number(idx) + 1 }}</div>
+                  <p class="font-semibold text-gray-800">Question {{ Number(idx) + 1 }}</p>
                 </div>
                 <div class="text-gray-700 text-base mb-3" v-html="q.body"></div>
                   <div class="flex items-center gap-4 text-sm text-gray-600">
@@ -125,7 +125,7 @@ import { useApi } from '~/composables/useApi'
 import { useAnswerStore } from '~/stores/answerStore'
 import { useAuthStore } from '~/stores/auth'
 import { useRoute } from 'vue-router'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
 import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 const route = useRoute()
 const answerStore = useAnswerStore()
@@ -199,7 +199,7 @@ onMounted(async () => {
 
       // Cache the result for future review
       if (result.value) {
-        answerStore.storeAttemptForReview(String(bid), { attempt: result.value, participants: participants.value })
+        answerStore.storeAttemptForReview(String(bid), { attempt: result.value })
       }
     }
 
@@ -237,7 +237,7 @@ function mySide() {
 function getParticipantAvatar(participant: any): string {
   // Backend returns avatar_url (primary DB column) and avatar (accessor)
   const avatarUrl = participant?.avatar_url || participant?.avatar || participant?.image || participant?.avatarUrl || participant?.photo || null
-  return resolveAssetUrl(avatarUrl) || '/logo/avatar-placeholder.png'
+  return resolveAvatar(avatarUrl, participant?.name)
 }
 
 /**

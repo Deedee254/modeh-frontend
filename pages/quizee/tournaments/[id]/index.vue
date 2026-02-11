@@ -224,7 +224,7 @@
                            index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-gray-50 text-gray-500']">
                            {{ index + 1 }}
                         </div>
-                        <img :src="resolveAssetUrl(player.avatar_url || player.avatar || player.image || (player as any).avatarUrl || (player as any).photo) || '/logo/avatar-placeholder.png'" alt="" class="w-8 h-8 rounded-full object-cover bg-gray-200" />
+                        <img :src="resolveAvatar(player.avatar_url || player.avatar || (player as any).image || (player as any).avatarUrl || (player as any).photo, player.name)" alt="" class="w-8 h-8 rounded-full object-cover bg-gray-200" />
                         <span class="font-medium text-gray-900 truncate max-w-[120px]">{{ player.name }}</span>
                      </div>
                      <span class="font-bold text-gray-900">{{ player.points }} <span class="text-xs text-gray-500 font-normal">pts</span></span>
@@ -293,7 +293,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { resolveAssetUrl } from '~/composables/useAssets';
+import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '~/stores/auth'
 import { useTournamentStore } from '~/stores/tournamentStore';
@@ -343,6 +343,7 @@ type Player = {
 };
 
 // State
+const isJoining = ref(false);
 const loading = computed(() => tournamentStore.loading);
 const tournament = computed(() => tournamentStore.currentTournament);
 const eligibility = ref<{ can_join: boolean; reason: string | null }>({ can_join: false, reason: null });
@@ -563,7 +564,8 @@ const displayTimeline = computed(() => {
 // Methods
 const fetchTournament = async () => {
   try {
-    const data = await tournamentStore.fetchTournament(route.params.id);
+    const tournamentId = route.params.id as string
+    const data = await tournamentStore.fetchTournament(tournamentId);
     if (!data) return;
 
     eligibility.value = data?.eligibility ?? { can_join: false, reason: null };
@@ -613,7 +615,8 @@ const fetchTournament = async () => {
 
 const checkQualificationStatus = async () => {
   try {
-    const json: any = await tournamentStore.fetchQualificationStatus(route.params.id)
+    const tournamentId = route.params.id as string
+    const json: any = await tournamentStore.fetchQualificationStatus(tournamentId)
     userHasQualified.value = !!(json?.qualified ?? false)
   } catch (error) {
     // Failed to check qualification status
@@ -622,7 +625,8 @@ const checkQualificationStatus = async () => {
 
 const checkRegistrationStatus = async () => {
   try {
-    const json: any = await tournamentStore.fetchRegistrationStatus(route.params.id);
+    const tournamentId = route.params.id as string
+    const json: any = await tournamentStore.fetchRegistrationStatus(tournamentId);
     const isReg = !!(json?.data?.isRegistered ?? json?.isRegistered);
     isRegistered.value = isReg;
     registrationStatus.value = (json?.data?.status ?? json?.status) || (isReg ? "approved" : null);
@@ -633,7 +637,8 @@ const checkRegistrationStatus = async () => {
 
 const fetchLeaderboard = async () => {
   try {
-    const json: any = await tournamentStore.fetchLeaderboard(route.params.id);
+    const tournamentId = route.params.id as string
+    const json: any = await tournamentStore.fetchLeaderboard(tournamentId);
     const list = json?.leaderboard ?? json?.data ?? json ?? [];
     topPlayers.value = Array.isArray(list) ? (list as Player[]).slice(0, 5) : [];
   } catch (error) {
@@ -707,7 +712,7 @@ const registerForTournament = async () => {
       return;
     }
 
-    loading.value = true;
+    isJoining.value = true;
     const res = await api.postJson(`/api/tournaments/${route.params.id}/join`, {});
     if (await api.handleAuthStatus(res)) return;
 
@@ -728,7 +733,7 @@ const registerForTournament = async () => {
   } catch (error) {
     console.error('Error registering for tournament:', error);
   } finally {
-    loading.value = false;
+    isJoining.value = false;
   }
 };
 

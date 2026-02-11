@@ -35,7 +35,7 @@
 
               <!-- Quick Info -->
               <div class="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-600 mb-4">
-                <div v-if="profile?.institution" class="flex items-center gap-2">
+                <div v-if="(user as any)?.institution" class="flex items-center gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.5m-2.5 0H3m14 0v-6m0 0V9m0 6v6m-9-13h9" />
                   </svg>
@@ -55,7 +55,7 @@
               </div>
 
               <!-- Bio -->
-              <p v-if="profile?.bio" class="text-slate-700 text-sm leading-relaxed mb-4">{{ profile?.bio }}</p>
+              <p v-if="(user as any)?.bio" class="text-slate-700 text-sm leading-relaxed mb-4">{{ (user as any)?.bio }}</p>
 
               <!-- Edit button -->
               <NuxtLink
@@ -158,15 +158,15 @@
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 class="text-sm font-bold text-slate-900 mb-4">Personal Info</h3>
             <div class="space-y-3 text-sm">
-              <div v-if="profile?.first_name">
+              <div v-if="(user as any)?.first_name">
                 <label class="block font-medium text-slate-700">First Name</label>
-                <p class="text-slate-600 mt-1">{{ profile.first_name }}</p>
+                <p class="text-slate-600 mt-1">{{ (user as any)?.first_name }}</p>
               </div>
-              <div v-if="profile?.last_name">
+              <div v-if="(user as any)?.last_name">
                 <label class="block font-medium text-slate-700">Last Name</label>
-                <p class="text-slate-600 mt-1">{{ profile.last_name }}</p>
+                <p class="text-slate-600 mt-1">{{ (user as any)?.last_name }}</p>
               </div>
-              <div v-if="profile?.first_name || profile?.last_name" class="pt-2 border-t border-slate-200">
+              <div v-if="(user as any)?.first_name || (user as any)?.last_name" class="pt-2 border-t border-slate-200">
                 <NuxtLink
                   to="/quizee/settings"
                   class="text-xs text-brand-600 hover:text-brand-700 font-medium"
@@ -257,7 +257,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 
 // Profile is user-specific; avoid indexing user profile edit pages
 definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'View your Modeh profile and manage personal information, avatar, and bio.' } ] })
@@ -375,34 +375,32 @@ const userUsername = computed(() => {
   return 'user'
 })
 
-// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
-const userAvatar = computed(() => resolveAssetUrl((auth as any).userAvatar) || '/logo/avatar-placeholder.png')
+// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAvatar`.
+const userAvatar = computed(() => resolveAvatar((auth as any).userAvatar, user.value?.name))
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points
   return typeof p === 'number' ? `${p}` : '0'
 })
 
-// Use the backend-provided unified `profile` key directly.
-// Do not attempt to guess or fallback to other shapes — the API should
-// return the canonical `profile` object for the authenticated user.
-const profile = computed(() => user.value?.profile || {})
+// Get user properties - the backend returns these at top level
+const profile = computed(() => user.value || {})
 
 // Get grade label from profile
 const gradeLabel = computed(() => {
-  return profile.value?.grade?.name || null
+  return (user.value as any)?.grade?.name || null
 })
 
 // Get level label from profile
 const levelLabel = computed(() => {
-  return profile.value?.level?.name || null
+  return (user.value as any)?.level?.name || null
 })
 
 // Get subject labels from profile — prefer subjectModels (full objects), fallback to subjects
 const subjectLabels = computed(() => {
-  const subjectArray = Array.isArray(profile.value?.subjectModels)
-    ? profile.value.subjectModels
-    : Array.isArray(profile.value?.subjects)
-      ? profile.value.subjects
+  const subjectArray = Array.isArray((user.value as any)?.subjectModels)
+    ? (user.value as any).subjectModels
+    : Array.isArray((user.value as any)?.subjects)
+      ? (user.value as any).subjects
       : []
   return subjectArray
     .map((s: any) => (s && typeof s === 'object' ? s.name : s))
@@ -437,9 +435,9 @@ function formatActivityDate(date: string | null | undefined): string {
   })
 }
 
-// Institution name helper: sometimes `profile.institution` is an object, sometimes a string.
+// Institution name helper: sometimes `institution` is an object, sometimes a string.
 const instName = computed(() => {
-  const inst = profile.value?.institution
+  const inst = (user.value as any)?.institution
   if (!inst) return ''
   if (typeof inst === 'string') return inst
   if (typeof inst === 'object' && inst.name) return inst.name

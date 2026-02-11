@@ -350,7 +350,7 @@ import { useUserRole } from '~/composables/useUserRole'
 import { useApi } from '~/composables/useApi'
 import { useAccountApi } from '~/composables/useAccountApi'
 import { useAppAlert } from '~/composables/useAppAlert'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
 import { useProfileForm } from '~/composables/useProfileForm'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
@@ -430,7 +430,7 @@ onMounted(async () => {
   // Load avatar preview if not already set
   if (!avatarFile.value) {
     const u = user.value as User | null
-    avatarPreview.value = resolveAssetUrl(auth.userAvatar || u?.avatar || u?.avatar_url) || null
+    avatarPreview.value = resolveAvatar(auth.userAvatar || u?.avatar || u?.avatar_url, u?.name)
   }
   
   // Taxonomy is loaded globally on app init - no need to update refs
@@ -444,7 +444,7 @@ watch(user, (u) => {
   // If the user is currently editing a new avatar file, don't overwrite the preview.
   if (avatarFile.value) return
   const userVal = u as User | null
-  avatarPreview.value = resolveAssetUrl(auth.userAvatar || userVal?.avatar_url || userVal?.avatar) || null
+  avatarPreview.value = resolveAvatar(auth.userAvatar || userVal?.avatar_url || userVal?.avatar, userVal?.name)
 }, { immediate: true })
 
 async function initializeTaxonomySelection() {
@@ -551,7 +551,7 @@ async function onAvatarFileSelected(e: Event) {
     
     // Reset preview on error
     avatarFile.value = null
-    avatarPreview.value = resolveAssetUrl(auth.userAvatar || user.value?.avatar || user.value?.avatar_url) || null
+    avatarPreview.value = resolveAvatar(auth.userAvatar || user.value?.avatar || user.value?.avatar_url, user.value?.name)
     input.value = ''
   } finally {
     isUploadingAvatar.value = false

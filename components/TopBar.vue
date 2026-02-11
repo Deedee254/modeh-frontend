@@ -195,7 +195,7 @@ import UiLevelProgress from '~/components/ui/LevelProgress.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ChatDrawer from '~/components/ChatDrawer.vue'
 import { useApi } from '~/composables/useApi'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
 import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
 import ProfileProgress from '~/components/ui/ProfileProgress.vue'
 
@@ -453,8 +453,8 @@ onBeforeUnmount(() => {
 })
 
 const userName = computed(() => auth.user?.name || 'User')
-// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
-const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
+// Resolve avatar with letter fallback if no image
+const userAvatar = computed(() => resolveAvatar(auth.userAvatar, auth.user?.name))
 const walletAmount = computed(() => (auth.user?.wallet ? `$${auth.user.wallet}` : '$0'))
 const userLevel = computed(() => {
   if (auth.user?.profile?.level?.name) {

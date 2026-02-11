@@ -22,6 +22,7 @@ import { computed } from 'vue'
 import PlayerCard from '~/components/quizee/battle/PlayerCard.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
+import { resolveAvatar } from '~/composables/useAssets'
 
 const props = defineProps<{ match: any; tournamentId?: number | string }>()
 const router = useRouter()
@@ -48,13 +49,17 @@ const formatDate = (d: string) => {
 
 const formatPlayer = (p: any) => {
   // player objects in API sometimes come as { id, name, avatar } or split names
-  if (!p) return { id: null, first_name: 'TBD', last_name: '', profile: { avatar: '/avatars/default.png' } }
+  const playerName = p?.first_name ?? p?.name ?? (p?.display_name ?? '').split(' ')[0] ?? null
+  const avatarUrl = p?.avatar_url ?? p?.avatar ?? p?.profile?.avatar ?? null
+  const resolvedAvatar = resolveAvatar(avatarUrl, playerName || 'TBD')
+  
+  if (!p) return { id: null, first_name: 'TBD', last_name: '', profile: { avatar: resolvedAvatar } }
   return {
     id: p.id,
-    first_name: p.first_name ?? p.name ?? (p.display_name ?? '').split(' ')[0] ?? '',
+    first_name: playerName,
     last_name: p.last_name ?? '',
-    // Normalize to use canonical `avatar_url` when available; fall back to legacy `avatar`.
-    profile: { avatar: p.avatar_url ?? p.avatar ?? p.profile?.avatar ?? '/avatars/default.png' }
+    // Normalize to use canonical `avatar_url` when available; fall back to letter avatar.
+    profile: { avatar: resolvedAvatar }
   }
 }
 </script>

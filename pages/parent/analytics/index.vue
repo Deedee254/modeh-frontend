@@ -45,7 +45,7 @@
             <tr v-for="quizee in quizees" :key="quizee.id" class="border-b dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
-                  <img :src="quizee.avatar || '/logo/avatar-placeholder.png'" class="w-8 h-8 rounded-full object-cover" />
+                  <img :src="resolveAvatar(quizee.avatar, quizee.name)" class="w-8 h-8 rounded-full object-cover" />
                   <div>
                     <p class="font-medium text-gray-900 dark:text-white">{{ quizee.name }}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ quizee.email }}</p>
@@ -80,6 +80,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import useApi from '~/composables/useApi'
 import { useAnalytics } from '~/composables/useAnalytics'
+import { resolveAvatar } from '~/composables/useAssets'
 
 definePageMeta({ layout: 'parent' })
 

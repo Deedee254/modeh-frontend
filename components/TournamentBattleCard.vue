@@ -37,7 +37,7 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <img 
-            :src="player1Avatar || '/avatars/default.png'"
+            :src="player1Avatar"
             :alt="battle.player1?.name || 'Player 1'"
             class="w-12 h-12 rounded-full object-cover"
           >
@@ -52,7 +52,7 @@
             <div class="text-sm text-gray-600">{{ battle.player2_score || '-' }} points</div>
           </div>
           <img 
-            :src="player2Avatar || '/avatars/default.png'"
+            :src="player2Avatar"
             :alt="battle.player2?.name || 'Player 2'"
             class="w-12 h-12 rounded-full object-cover"
           >
@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import resolveAssetUrl from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 import type { PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -173,13 +173,13 @@ const totalPoints = computed(() =>
 const player1Avatar = computed(() => {
   const p1 = (props.battle?.player1) as any
   const avatar = p1?.avatar_url || p1?.avatar || p1?.avatarUrl || p1?.image || p1?.photo
-  return resolveAssetUrl(avatar) || null
+  return resolveAvatar(avatar, p1?.name)
 })
 
 const player2Avatar = computed(() => {
   const p2 = (props.battle?.player2) as any
   const avatar = p2?.avatar_url || p2?.avatar || p2?.avatarUrl || p2?.image || p2?.photo
-  return resolveAssetUrl(avatar) || null
+  return resolveAvatar(avatar, p2?.name)
 })
 
 const handleForfeit = async () => {

@@ -491,7 +491,7 @@
 import { ref, onMounted, computed, onUnmounted, watch } from "vue";
 import useApi from "~/composables/useApi";
 import { useAuthStore } from '~/stores/auth';
-import resolveAssetUrl from "~/composables/useAssets";
+import { resolveAvatar } from "~/composables/useAssets";
 const props = defineProps({
   tournamentId: { type: [String, Number], required: true },
   // optional initial rounds (array of arrays of matches) provided by parent to avoid extra API requests
@@ -1051,10 +1051,10 @@ const formatMatchInfo = (m: any) => {
 }
 
 const getPlayerAvatar = (player: any) => {
-  if (!player) return '/avatars/default.png'
+  if (!player) return undefined
   // Backend returns avatar_url (primary DB column) and avatar (accessor)
   const avatar = player.avatar_url || player.avatar || player.image || player.avatarUrl || player.photo
-  return resolveAssetUrl(avatar) || '/avatars/default.png'
+  return resolveAvatar(avatar, player.name)
 }
 
 const formatDateShort = (dateString: string | null) => {

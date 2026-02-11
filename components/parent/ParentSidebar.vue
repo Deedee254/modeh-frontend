@@ -58,7 +58,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 import {
   HomeIcon,
   UserGroupIcon,
@@ -73,7 +73,7 @@ const auth = useAuthStore()
 const ui = useUiStore()
 const route = useRoute()
 const user = computed(() => auth.user || {})
-const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAvatar(auth.userAvatar, auth.user?.name))
 
 const navItems = [
   { to: '/parent/dashboard', label: 'Dashboard', icon: HomeIcon },

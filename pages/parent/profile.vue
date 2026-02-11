@@ -59,14 +59,14 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 
 definePageMeta({ layout: 'parent' })
 
 const auth = useAuthStore()
 const user = computed(() => auth.user || {})
 
-const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAvatar(auth.userAvatar, auth.user?.name))
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A'

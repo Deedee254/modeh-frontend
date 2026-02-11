@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import useApi from '~/composables/useApi'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
 
 definePageMeta({ layout: 'institution' as any })
 
@@ -192,7 +192,7 @@ async function fetchBadges(userId?: number) {
 
 // Computed properties
 const displayName = computed(() => quizee.value?.name || 'Quizee')
-const displayAvatar = computed(() => resolveAssetUrl(quizee.value?.avatar_url || quizee.value?.avatar || quizee.value?.image || quizee.value?.avatarUrl || quizee.value?.photo) || '/logo/avatar-placeholder.png')
+const displayAvatar = computed(() => resolveAvatar(quizee.value?.avatar_url || quizee.value?.avatar || quizee.value?.image || quizee.value?.avatarUrl || quizee.value?.photo, quizee.value?.name))
 const displayHeadline = computed(() => quizee.value?.headline || stats.value?.headline || 'An active learner')
 const displayGrade = computed(() => quizee.value?.profile?.grade?.name || stats.value?.grade?.name || '—')
 const displayLevel = computed(() => quizee.value?.profile?.level?.name || stats.value?.level?.name || '—')

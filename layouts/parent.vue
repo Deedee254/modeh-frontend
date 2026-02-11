@@ -79,7 +79,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useUiStore } from '~/stores/ui'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 import ActionMenu from '~/components/ui/ActionMenu.vue'
 import NotificationDrawer from '~/components/NotificationDrawer.vue'
 import ParentSidebar from '~/components/parent/ParentSidebar.vue'
@@ -87,7 +87,7 @@ import ProfileIncompleteBanner from '~/components/ProfileIncompleteBanner.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
-const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAvatar(auth.userAvatar, auth.user?.name))
 </script>
 
 <style scoped>

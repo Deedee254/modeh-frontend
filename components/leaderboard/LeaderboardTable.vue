@@ -151,12 +151,11 @@
 
 <script setup>
 import { computed } from "vue";
-import resolveAssetUrl from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   variant: { type: String, default: "global" },
   loading: { type: Boolean, default: false },
-  placeholder: { type: String, default: "/logo/avatar-placeholder.png" },
   pointsKey: { type: String, default: "points" },
 });
 
@@ -167,20 +166,12 @@ const colspan = computed(() => {
 });
 
 function resolvePlayerAvatar(player) {
-  try {
-    // Backend returns avatar_url (primary DB column) and avatar (accessor)
-    // AuthJS returns image
-    const avatarUrl = player?.avatar_url || player?.avatar || player?.avatarUrl || player?.image || player?.photo || null
-    if (!avatarUrl) return props.placeholder
-    
-    // Always resolve the asset URL to ensure we get the full correct path
-    const resolved = resolveAssetUrl(avatarUrl)
-    
-    // Return resolved URL if it's valid, otherwise return placeholder
-    return resolved && String(resolved).trim() ? resolved : props.placeholder
-  } catch {
-    return props.placeholder
-  }
+  // Backend returns avatar_url (primary DB column) and avatar (accessor)
+  // AuthJS returns image
+  const avatarUrl = player?.avatar_url || player?.avatar || player?.avatarUrl || player?.image || player?.photo || null
+  
+  // Use resolveAvatar which always returns valid avatar (letter-based fallback)
+  return resolveAvatar(avatarUrl, player?.name)
 }
 
 function rankBadgeClass(index) {

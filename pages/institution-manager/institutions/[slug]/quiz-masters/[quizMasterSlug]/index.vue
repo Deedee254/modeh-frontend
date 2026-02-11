@@ -120,6 +120,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useProfileForm } from '~/composables/useProfileForm'
 import useApi from '~/composables/useApi'
+import { resolveAvatar } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 
@@ -167,7 +168,7 @@ const { createFormState } = useProfileForm()
 // Use canonical `profile` field provided by the API for user profiles
 const profile = computed(() => user.value?.profile || {})
 
-const userAvatar = computed(() => (user.value && user.value.avatar_url) ? user.value.avatar_url : '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAvatar(user.value?.avatar_url, user.value?.name))
 
 const pointsDisplay = computed(() => {
   const p = user.value?.points ?? user.value?.rewards?.points

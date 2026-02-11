@@ -95,7 +95,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import useApi from '~/composables/useApi'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 import { useAppAlert } from '~/composables/useAppAlert'
 
 const props = defineProps({
@@ -113,7 +113,7 @@ const props = defineProps({
   },
   recipientAvatar: {
     type: String,
-    default: () => '/logo/avatar-placeholder.png'
+    default: () => null
   },
   recipientGreeting: {
     type: String,
@@ -138,7 +138,7 @@ const api = useApi()
 const { push: pushAlert } = useAppAlert()
 
 const resolvedAvatar = computed(() => {
-  return resolveAssetUrl(props.recipientAvatar) || '/logo/avatar-placeholder.png'
+  return resolveAvatar(props.recipientAvatar, props.recipientName)
 })
 
 async function sendMessage() {

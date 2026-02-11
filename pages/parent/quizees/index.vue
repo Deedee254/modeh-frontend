@@ -23,7 +23,7 @@
         <div v-for="quizee in quizees" :key="quizee.id" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div class="flex items-center gap-4 flex-1">
-              <img :src="quizee.avatar || '/logo/avatar-placeholder.png'" class="w-16 h-16 rounded-lg object-cover" />
+              <img :src="resolveAvatar(quizee.avatar, quizee.name)" class="w-16 h-16 rounded-lg object-cover" />
               <div class="flex-1 min-w-0">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ quizee.name }}</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ quizee.email }}</p>
@@ -79,6 +79,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
+import { resolveAvatar } from '~/composables/useAssets'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 import ErrorAlert from '~/components/ui/ErrorAlert.vue'
 import InviteQuizeeModal from '~/components/parent/InviteQuizeeModal.vue'

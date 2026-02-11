@@ -62,13 +62,13 @@ import { useUiStore } from '~/stores/ui'
 import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
 // Heroicons outline
 import { HomeIcon, ClipboardDocumentListIcon, TrophyIcon, FlagIcon, StarIcon, CreditCardIcon, UserGroupIcon, CogIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon, CalendarDaysIcon, LinkIcon, BuildingLibraryIcon, ReceiptPercentIcon } from '@heroicons/vue/24/outline'
+import { resolveAvatar } from '~/composables/useAssets'
 
 const auth = useAuthStore()
 const ui = useUiStore()
 const user = computed(() => auth.user || {})
-import { resolveAssetUrl } from '~/composables/useAssets'
-// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAssetUrl`.
-const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
+// Prefer the canonical `userAvatar` from the auth store and resolve via `resolveAvatar`.
+const userAvatar = computed(() => resolveAvatar(auth.userAvatar, auth.user?.name))
 
 const isVerified = computed(() => {
   const u = auth.user

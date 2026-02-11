@@ -71,7 +71,7 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserRole } from '~/composables/useUserRole'
-import resolveAssetUrl from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
 
 const props = defineProps({
   isOpen: {
@@ -123,7 +123,7 @@ async function fetchRecentChats() {
         time: formatTimeAgo(conv.last_at || conv.updated_at),
         unread: (conv.unread_count ?? conv.unread) > 0,
         // Robust avatar resolution chain for recent chats
-        avatar: resolveAssetUrl(conv.avatar || conv.avatar_url || conv.image || conv.avatarUrl || conv.photo) || conv.avatar || conv.avatar_url || `/logo/avatar-placeholder.png`
+        avatar: resolveAvatar(conv.avatar || conv.avatar_url || conv.image || conv.avatarUrl || conv.photo, conv.other_name || conv.otherName || conv.name)
       })).slice(0, 5)
     }
   } catch (e) {

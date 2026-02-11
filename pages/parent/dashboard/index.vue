@@ -73,7 +73,7 @@
 
           <div v-if="dashboardData.quizees && dashboardData.quizees.length > 0" class="space-y-4">
             <div v-for="quizee in dashboardData.quizees" :key="quizee.id" class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors cursor-pointer" @click="viewQuizee(quizee.id)">
-              <img :src="quizee.avatar || '/logo/avatar-placeholder.png'" class="w-12 h-12 rounded-full object-cover" />
+              <img :src="resolveAvatar(quizee.avatar, quizee.name)" class="w-12 h-12 rounded-full object-cover" />
               <div class="flex-1 min-w-0">
                 <h3 class="font-medium text-gray-900 dark:text-white truncate">{{ quizee.name }}</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ quizee.email }}</p>
@@ -135,6 +135,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 import { useAnalytics } from '~/composables/useAnalytics'
+import { resolveAvatar } from '~/composables/useAssets'
 import LoadingSpinner from '~/components/ui/LoadingSpinner.vue'
 import ErrorAlert from '~/components/ui/ErrorAlert.vue'
 import InviteQuizeeModal from '~/components/parent/InviteQuizeeModal.vue'

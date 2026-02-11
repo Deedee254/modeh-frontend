@@ -77,10 +77,9 @@
 
 <script setup>
 import { computed } from "vue";
-import resolveAssetUrl from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 const props = defineProps({
   entries: { type: Array, default: () => [] },
-  placeholder: { type: String, default: "/logo/avatar-placeholder.png" },
   pointsKey: { type: String, default: "points" },
 });
 
@@ -113,26 +112,19 @@ function displayPoints(p) {
 }
 
 function resolvedAvatar(v) {
-  try {
-    // Backend returns avatar_url (primary DB column) and avatar (accessor)
-    // AuthJS returns image
-    let val = null
-    if (v && typeof v === 'object') {
-      val = v.avatar_url || v.avatar || v.avatarUrl || v.image || v.photo || null
-    } else {
-      val = v
-    }
-    
-    if (!val) return props.placeholder
-    
-    // Always resolve the asset URL to ensure we get the full correct path
-    const resolved = resolveAssetUrl(val)
-    
-    // Return resolved URL if it's valid, otherwise return placeholder
-    return resolved && String(resolved).trim() ? resolved : props.placeholder
-  } catch {
-    return props.placeholder
+  // Backend returns avatar_url (primary DB column) and avatar (accessor)
+  // AuthJS returns image
+  let avatarUrl = null
+  let name = null
+  if (v && typeof v === 'object') {
+    avatarUrl = v.avatar_url || v.avatar || v.avatarUrl || v.image || v.photo || null
+    name = v.name || null
+  } else {
+    avatarUrl = v
   }
+  
+  // Use resolveAvatar which always returns valid avatar (letter-based fallback)
+  return resolveAvatar(avatarUrl, name)
 }
 </script>
 

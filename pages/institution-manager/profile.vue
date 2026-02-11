@@ -93,7 +93,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useInstitutionsStore } from '~/stores/institutions'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import UiCard from '~/components/ui/UiCard.vue'
 import { useAccountApi } from '~/composables/useAccountApi'
@@ -107,7 +107,7 @@ const accountApi = useAccountApi()
 
 const user = computed(() => auth.user || { name: '', email: '', avatarUrl: '', avatar: '', avatar_url: '' })
 // Auth store normalizes backend snake_case to camelCase (avatar_url -> avatarUrl)
-const userAvatar = computed(() => resolveAssetUrl(auth.userAvatar) || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAvatar(auth.userAvatar, auth.user?.name))
 const instId = computed(() => instStore.activeInstitutionSlug)
 const instName = computed(() => instStore.institution?.name || '')
 

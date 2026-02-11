@@ -46,7 +46,7 @@ import type { Ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
 import { useInstitutionsStore } from '~/stores/institutions'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 import type { Institution, User } from '~/types'
 
 defineProps({})
@@ -153,7 +153,7 @@ const subscriptionsLink = computed(() => ({ path: '/institution-manager/subscrip
 
 const settingsLink = computed(() => ({ path: '/institution-manager/settings', query: _instSlug.value ? { institutionSlug: String(_instSlug.value) } : {} }))
 
-const userAvatar = computed(() => resolveAssetUrl((auth as any).userAvatar) || '/logo/avatar-placeholder.png')
+const userAvatar = computed(() => resolveAvatar((auth as any).userAvatar, auth.user?.name))
 
 function logout() {
   open.value = false

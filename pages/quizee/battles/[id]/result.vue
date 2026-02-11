@@ -259,7 +259,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import resolveAssetUrl from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar as resolveAvatarFn } from '~/composables/useAssets'
 import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -377,21 +377,12 @@ const opponentScore = computed(() => {
   return typeof points === 'number' ? points : 0
 })
 
-// Match Podium.vue's resolvedAvatar pattern for consistency
-function resolveAvatar(v) {
-  try {
-    // Backend returns avatar_url (primary DB column) and avatar (accessor)
-    let val = null
-    if (v && typeof v === 'object') {
-      val = v.avatar_url || v.avatar || null
-    } else {
-      val = v
-    }
-    return resolveAssetUrl(val) || val || '/logo/avatar-placeholder.png'
-  } catch {
-    return (typeof v === 'string' ? v : null) || '/logo/avatar-placeholder.png'
-  }
-}
+// Use the composable's resolveAvatar for consistent avatar handling
+const resolveAvatar = (v) => resolveAvatarFn(
+  typeof v === 'object' ? (v.avatar_url || v.avatar) : v,
+  typeof v === 'object' ? v.name : undefined
+)
+
 
 const meAvatar = computed(() => {
   return resolveAvatar(me.value)

@@ -166,7 +166,7 @@
       :is-open="chatModalOpen"
       :recipient-id="quizee?.id"
       :recipient-name="quizee?.name || 'User'"
-      :recipient-avatar="resolvedAvatar || '/logo/avatar-placeholder.png'"
+      :recipient-avatar="resolvedAvatar"
       :recipient-greeting="`Hi there! Feel free to send me a message about quizzes or anything else.`"
       @close="chatModalOpen = false"
       @message-sent="onMessageSent"
@@ -177,8 +177,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 const router = useRouter()
+const route = useRoute()
 
 // Extract the name from the route parameter
 const quizeeName = computed(() => decodeURIComponent(route.params.name as string))
@@ -197,10 +198,10 @@ const {
 } = useQuizeeProfile(quizeeName)
 
 // Computed avatar resolution
-const resolvedAvatar = computed(() => {
-  if (!quizee.value) return null
-  const avatarUrl = quizee.value.avatar_url || quizee.value.avatar || quizee.value.image || quizee.value.avatarUrl || quizee.value.photo
-  return resolveAssetUrl(avatarUrl) || (avatarUrl || null)
+const resolvedAvatar = computed((): string | undefined => {
+  if (!quizee.value) return undefined
+  const avatarUrl = quizee.value.avatar_url || quizee.value.avatar || (quizee.value as any).image || (quizee.value as any).avatarUrl || (quizee.value as any).photo
+  return resolveAvatar(avatarUrl, quizee.value.name)
 })
 
 // Open chat modal

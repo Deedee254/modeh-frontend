@@ -15,7 +15,7 @@
           <template v-if="threads.length">
             <div v-for="t in threads" :key="t.other_user_id" class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer" @click="openThread(t)">
               <div class="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
-                <img class="w-8 h-8" :src="t.avatar || avatarSrc" />
+                <img class="w-8 h-8" :src="t.avatar" />
               </div>
               <div class="flex-1 text-sm">
                 <div class="font-medium">{{ t.other_name || ('User ' + t.other_user_id) }}</div>
@@ -38,11 +38,9 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 const open = ref(false)
 const threads = ref([])
-
-const avatarSrc = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect fill='%23e5e7eb' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='24'>?</text></svg>"
 
 let privateChannel = null
 
@@ -52,10 +50,10 @@ async function loadThreads() {
     const res = await fetch(cfg.public.apiBase + '/api/chat/threads', { credentials: 'include' })
     if (res.ok) {
       const body = await res.json()
-      // Map threads and resolve avatars with full chain
+      // Map threads and resolve avatars with fallback to letter avatars
       threads.value = (body.conversations || []).map(t => ({
         ...t,
-        avatar: resolveAssetUrl(t.avatar || t.avatar_url || t.image || t.avatarUrl || t.photo) || t.avatar || t.avatar_url || null
+        avatar: resolveAvatar(t.avatar || t.avatar_url || t.image || t.avatarUrl || t.photo, t.other_name)
       }))
       // merge groups as well
       if (body.groups && body.groups.length) {
@@ -67,7 +65,7 @@ async function loadThreads() {
             last_message: g.last_message, 
             last_at: g.last_at, 
             unread_count: g.unread_count, 
-            avatar: resolveAssetUrl(groupAvatar) || groupAvatar || null 
+            avatar: resolveAvatar(groupAvatar, g.name)
           }
         }))
       }

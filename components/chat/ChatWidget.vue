@@ -259,7 +259,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { format } from 'date-fns'
 import { type Ref } from 'vue';
 import useChat from '~/composables/useChat'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar as resolveAvatarFn } from '~/composables/useAssets'
 import NewChatModal from '~/components/chat/NewChatModal.vue'
 import SupportChatModal from '~/components/SupportChatModal.vue'
 import ChatModal from '~/components/ChatModal.vue'
@@ -336,21 +336,21 @@ const messageInputRef = ref<HTMLInputElement | null>(null)
 const emojis = ['😀','😂','😍','👍','🙏','🎉','😅','🙌','😉','🔥','😢','🤔']
 
 // Helper function to resolve avatar with proper fallback logic
-const avatarPlaceholder = '/logo/avatar-placeholder.png'
-
 function resolveAvatar(chat: any) {
   try {
     // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
     let val = null
+    let name = null
     if (chat && typeof chat === 'object') {
       // Prioritize AuthJS and our own standard fields
       val = chat.avatar_url || chat.avatar || chat.image || chat.avatarUrl || chat.photo || chat.profile_image || null
+      name = chat.name || chat.other_name || null
     } else {
       val = chat
     }
-    return resolveAssetUrl(val) || val || avatarPlaceholder
+    return resolveAvatarFn(val, name)
   } catch {
-    return (typeof chat === 'string' ? chat : null) || avatarPlaceholder
+    return resolveAvatarFn(typeof chat === 'string' ? chat : null, typeof chat === 'object' ? chat?.name : null)
   }
 }
 
@@ -513,7 +513,7 @@ async function handleOpenDMModal(data: any) {
         const user = json.user
         dmModalData.value.userId = user.id
         dmModalData.value.userName = user.name
-        dmModalData.value.userAvatar = resolveAssetUrl(user.avatar_url || user.avatar || user.image || user.avatarUrl || user.photo) || '/logo/avatar-placeholder.png'
+        dmModalData.value.userAvatar = resolveAvatarFn(user.avatar_url || user.avatar || user.image || user.avatarUrl || user.photo, user.name)
         dmModalData.value.userExists = true
         dmModalData.value.notFound = false
         dmModalData.value.error = ''

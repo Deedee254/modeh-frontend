@@ -116,7 +116,7 @@ import { ref, watch, nextTick, onMounted, onBeforeUnmount, computed } from 'vue'
 import ThemeToggle from '~/components/ThemeToggle.vue'
 import LoginForm from '~/components/Auth/LoginForm.vue'
 import { useAuthStore } from '~/stores/auth'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
 import { useInstitutionsStore } from '~/stores/institutions'
 
@@ -140,9 +140,9 @@ const isMounted = ref(false)
 
 const auth = useAuthStore()
 
-// Use asset composable to resolve avatar URL. Prefer camelCase `avatarUrl` normalized by the auth store.
+// Use asset composable to resolve avatar URL with letter fallback
 const userAvatarUrl = computed(() => {
-  return resolveAssetUrl(auth?.userAvatar || auth?.user?.image || auth?.user?.avatarUrl || auth?.user?.avatar || auth?.user?.avatar_url || auth?.user?.photo) || '/logo/avatar-placeholder.png'
+  return resolveAvatar(auth?.userAvatar || auth?.user?.image || auth?.user?.avatarUrl || auth?.user?.avatar || auth?.user?.avatar_url || auth?.user?.photo, auth.user?.name)
 })
 
 const instStore = useInstitutionsStore()

@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import useApi from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
 
 definePageMeta({ layout: 'institution' as any })
 
@@ -102,7 +102,7 @@ async function fetchQuizMasterStats() {
 
 // Formatted display values
 const displayName = computed(() => quizMaster.value?.name || 'Quiz Master')
-const displayAvatar = computed(() => resolveAssetUrl(quizMaster.value?.avatar_url || quizMaster.value?.avatar || quizMaster.value?.image || quizMaster.value?.avatarUrl || quizMaster.value?.photo) || '/logo/avatar-placeholder.png')
+const displayAvatar = computed(() => resolveAvatar(quizMaster.value?.avatar_url || quizMaster.value?.avatar || quizMaster.value?.image || quizMaster.value?.avatarUrl || quizMaster.value?.photo, quizMaster.value?.name))
 const displayHeadline = computed(() => quizMaster.value?.headline || stats.value?.headline || 'An experienced quiz master')
 const displayInstitution = computed(() => quizMaster.value?.institution || 'Independent Educator')
 const displayGrade = computed(() => quizMaster.value?.grade?.name || stats.value?.grade?.name || '—')

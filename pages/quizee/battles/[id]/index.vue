@@ -109,7 +109,7 @@
                   <!-- Initiator Card -->
                   <div v-if="battle.initiator" class="bg-gradient-to-br from-brand-50 to-brand-50 dark:from-brand-900/20 dark:to-brand-900/20 rounded-lg p-4 border border-brand-100 dark:border-brand-800">
                     <div class="flex items-center gap-3">
-                      <img :src="battle.initiator.profile?.avatar || '/avatars/default.png'"
+                      <img :src="resolveAvatarForPlayer(battle.initiator)"
                            :alt="battle.initiator.first_name"
                            class="w-10 h-10 rounded-full object-cover border-2 border-brand-500" />
                       <div>
@@ -122,7 +122,7 @@
                   <!-- Opponent Card -->
                   <div v-if="battle.opponent && battle.opponent_id !== battle.initiator_id" class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-4 border border-purple-100 dark:border-purple-800">
                     <div class="flex items-center gap-3">
-                      <img :src="battle.opponent.profile?.avatar || '/avatars/default.png'"
+                      <img :src="resolveAvatarForPlayer(battle.opponent)"
                            :alt="battle.opponent.first_name"
                            class="w-10 h-10 rounded-full object-cover border-2 border-purple-500" />
                       <div>
@@ -183,6 +183,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useAppAlert } from '~/composables/useAppAlert'
 import useTaxonomy from '~/composables/useTaxonomy'
+import { resolveAvatar } from '~/composables/useAssets'
+import useApi from '~/composables/useApi'
 
 const router = useRouter()
 const route = useRoute()
@@ -190,6 +192,14 @@ const route = useRoute()
 const api = useApi()
 const auth = useAuthStore()
 const { push: showAlert } = useAppAlert()
+
+// Helper function to resolve player avatars
+const resolveAvatarForPlayer = (player) => {
+  if (!player) return undefined
+  const avatarUrl = player.profile?.avatar || player.avatar || player.avatar_url || null
+  const name = player.first_name || player.name || null
+  return resolveAvatar(avatarUrl, name)
+}
 
 // Get taxonomy data for grade/subject/topic names
 const { grades, subjects, topics, fetchGrades, fetchSubjectsByGrade, fetchTopicsBySubject } = useTaxonomy()

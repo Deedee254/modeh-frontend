@@ -3,14 +3,10 @@
     <!-- Profile Image (Left) - Full Height Rectangle -->
     <div class="flex-shrink-0 -m-6 mr-0 rounded-l-lg overflow-hidden w-40">
       <img 
-        v-if="quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl" 
-        :src="resolveAssetUrl(quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl) || (quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl)" 
+        :src="resolveAvatar(quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl, quizMaster.name)" 
         :alt="quizMaster.name" 
         class="w-full h-full object-cover"
       >
-      <div v-else class="w-full h-full bg-gradient-to-br from-red-600 to-red-700 text-white grid place-items-center font-bold text-3xl">
-        {{ (quizMaster.name || '').charAt(0).toUpperCase() }}
-      </div>
     </div>
 
     <!-- Content (Right) -->
@@ -68,7 +64,7 @@
 </template>
 
 <script setup>
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 
 defineProps({
   quizMaster: {

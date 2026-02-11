@@ -2,7 +2,7 @@
   <div :class="['w-full flex flex-col items-center text-center p-2 sm:p-4 rounded-lg', isActive ? 'ring-2 ring-brand-600 bg-brand-50/30' : '']">
     <div class="relative">
       <img 
-        :src="avatarSrc || '/images/avatar-placeholder.png'"
+        :src="avatarSrc"
         :alt="player.first_name"
         class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
       />
@@ -21,7 +21,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import resolveAssetUrl from '~/composables/useAssets'
+import { resolveAvatar } from '~/composables/useAssets'
 
 const props = defineProps({
   player: { type: Object, required: true },
@@ -31,21 +31,19 @@ const props = defineProps({
   answered: { type: Number, default: null }
 })
 
-// Match Leaderboard.vue/Podium.vue's resolvedAvatar pattern for consistency
+// Use resolveAvatar for consistent letter-avatar fallback
 function resolvePlayerAvatar(v) {
-  try {
-    // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
-    let val = null
-    if (v && typeof v === 'object') {
-    // Prefer the canonical backend field `avatarUrl` (frontend normalized) then `avatar`, `avatar_url`, `photo`, `image`, `profile.avatar`, `profile_image`.
-    val = v.avatarUrl || v.avatar || v.avatar_url || v.photo || v.image || (v.profile && (v.profile.avatar || v.profile.profile_image)) || null
-    } else {
-      val = v
-    }
-    return resolveAssetUrl(val) || val || '/images/avatar-placeholder.png'
-  } catch {
-    return (typeof v === 'string' ? v : null) || '/images/avatar-placeholder.png'
+  // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
+  let avatarUrl = null
+  let name = null
+  if (v && typeof v === 'object') {
+    // Prefer the canonical backend field `avatar_url` then `avatar`, `avatarUrl`, `photo`, `image`, etc.
+    avatarUrl = v.avatar_url || v.avatar || v.avatarUrl || v.photo || v.image || (v.profile && (v.profile.avatar || v.profile.profile_image)) || null
+    name = v.first_name || v.name || null
+  } else {
+    avatarUrl = v
   }
+  return resolveAvatar(avatarUrl, name)
 }
 
 const avatarSrc = computed(() => {

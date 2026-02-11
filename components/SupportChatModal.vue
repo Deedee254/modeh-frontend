@@ -3,7 +3,7 @@
     :is-open="isOpen"
     :is-support="true"
     :recipient-name="'Support Team'"
-    :recipient-avatar="'/logo/avatar-placeholder.png'"
+    :recipient-avatar="undefined"
     :recipient-greeting="'Hello! Thank you for reaching out. Our support team is here to help. Please tell us what you need assistance with.'"
     :prefilled-email="prefilledEmail"
     @close="$emit('close')"
