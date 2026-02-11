@@ -29,7 +29,7 @@ export default NuxtAuthHandler({
       // This tells Google where to redirect after authentication
       callbackUrl: process.env.NUXT_AUTH_BASE_URL 
         ? `${process.env.NUXT_AUTH_BASE_URL}/callback/google` 
-        : undefined
+        : 'https://modeh.co.ke/api/auth/callback/google'
     }),
     CredentialsProvider({
       name: 'Credentials',
