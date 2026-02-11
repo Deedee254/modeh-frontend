@@ -335,16 +335,11 @@ export default defineNuxtConfig({
   },
 
   auth: {
-    baseURL: authBaseUrl,
+    baseURL: authBaseUrl || 'https://modeh.co.ke/api/auth',
     originEnvKey: 'NUXT_AUTH_BASE_URL',
     provider: {
       type: 'authjs',
       trustHost: true,
-      // CRITICAL: In production, explicitly set the origin to avoid mismatches
-      // This ensures Google receives the correct redirect URI
-      ...(process.env.NUXT_PUBLIC_BASE_URL && {
-        origin: process.env.NUXT_PUBLIC_BASE_URL
-      }),
       defaultProvider: 'google',
       addDefaultCallbackUrl: true
     }

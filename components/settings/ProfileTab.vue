@@ -23,14 +23,19 @@
             <button 
               type="button" 
               @click="triggerAvatarUpload" 
+              :disabled="isUploadingAvatar"
               title="Change avatar" 
-              class="absolute bottom-0 right-0 bg-brand-600 hover:bg-brand-700 text-white rounded-full p-2 shadow-lg transition-colors"
+              class="absolute bottom-0 right-0 bg-brand-600 hover:bg-brand-700 text-white rounded-full p-2 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <svg v-if="!isUploadingAvatar" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M17.414 2.586a2 2 0 010 2.828l-9.193 9.193a1 1 0 01-.464.263l-4 1a1 1 0 01-1.213-1.213l1-4a1 1 0 01.263-.464l9.193-9.193a2 2 0 012.828 0zM15.121 4.05l-1.172-1.172-8.486 8.486-0.588 2.353 2.353-0.588 8.486-8.486L15.12 4.05z" />
               </svg>
+              <svg v-else class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
             </button>
-            <input ref="avatarInput" type="file" class="hidden" @change="onFile" aria-hidden="true" />
+            <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="onAvatarFileSelected" aria-hidden="true" />
           </div>
         </div>
 
@@ -48,7 +53,7 @@
     <!-- Account Settings Card -->
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 sm:p-8">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Account Settings</h3>
-      <form @submit.prevent="save" class="space-y-6">
+      <div class="space-y-6">
         <!-- Profile Fields Grid -->
         <div class="space-y-6">
           <!-- Display Name - For all users -->
@@ -132,9 +137,7 @@
             <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Maximum 500 characters</p>
           </div>
         </div>
-
-        <!-- No buttons here - moved to bottom -->
-      </form>
+      </div>
     </div>
 
     <!-- Areas of Interest Card -->
@@ -345,10 +348,10 @@ import type { Ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useUserRole } from '~/composables/useUserRole'
 import { useApi } from '~/composables/useApi'
+import { useAccountApi } from '~/composables/useAccountApi'
 import { useAppAlert } from '~/composables/useAppAlert'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import { useProfileForm } from '~/composables/useProfileForm'
-import useTaxonomy from '~/composables/useTaxonomy'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import TaxonomyFlowPicker from '~/components/taxonomy/TaxonomyFlowPicker.vue'
 import VerifiedBadge from '~/components/badge/VerifiedBadge.vue'
@@ -358,12 +361,11 @@ const auth = useAuthStore()
 const { isQuizMaster, isInstitutionManager, preferredRole, isQuizee } = useUserRole()
 const { createFormState, onFile, saveProfile, avatarPreview, avatarFile } = useProfileForm()
 const api = useApi()
+const { patchMe } = useAccountApi()
 const appAlert = useAppAlert()
 
 const avatarInput = ref<HTMLInputElement | null>(null)
 
-const institutionQuery = ref('')
-const { fetchGrades, fetchLevels, fetchGradesByLevel } = useTaxonomy()
 const taxonomyStore = useTaxonomyStore()
 
 // Taxonomy selection state
@@ -371,7 +373,7 @@ const taxonomySelection = ref<{ level: any; grade: any; subject: any; topic: any
 const tempTaxonomySelection = ref<{ level: any; grade: any; subject: any; topic: any }>({ level: null, grade: null, subject: null, topic: null })
 const showTaxonomyModal = ref(false)
 const isTaxonomyDirty = ref(false)
-const isSavingProfile = ref(false)
+const isUploadingAvatar = ref(false)
 
 // Make user reactive and form depend on it
 const user = computed(() => auth.user as User | null)
@@ -424,7 +426,6 @@ onMounted(async () => {
   // Initialize form from fresh user data
   form.value = createFormState(user.value)
   originalForm.value = JSON.parse(JSON.stringify(form.value))
-  institutionQuery.value = form.value.institution || ''
   
   // Load avatar preview if not already set
   if (!avatarFile.value) {
@@ -490,6 +491,73 @@ function triggerAvatarUpload() {
   avatarInput.value?.click() 
 }
 
+async function onAvatarFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  try {
+    // Call onFile from composable to set preview and file ref
+    onFile(e)
+    
+    // Immediately save the avatar without waiting for form submission
+    isUploadingAvatar.value = true
+    
+    // Create a FormData with just the avatar file
+    const formData = new FormData()
+    formData.append('avatar', file)
+    
+    // Call patchMe from useAccountApi to save the avatar
+    const updatedUser = await patchMe(formData)
+    
+    if (!updatedUser || !updatedUser.id) {
+      throw new Error('Failed to get updated user data')
+    }
+    
+    // Update auth store immediately so topbar sees the new avatar
+    auth.setUser(updatedUser)
+    
+    // Refresh session to ensure auth is fully updated
+    await new Promise(resolve => setTimeout(resolve, 100))
+    try {
+      const { getSession } = useAuth()
+      await getSession()
+    } catch (e) {
+      // Session refresh may fail but continue
+    }
+    
+    // Fetch fresh user data from API to ensure everything is in sync
+    try {
+      await auth.fetchUser()
+    } catch (e) {
+      console.error('Failed to refresh user after avatar upload:', e)
+    }
+    
+    appAlert.push({
+      type: 'success',
+      message: 'Avatar updated successfully',
+      icon: 'heroicons:check-circle'
+    })
+    
+    // Reset the file input so the same file can be selected again
+    input.value = ''
+    
+  } catch (err: any) {
+    appAlert.push({
+      type: 'error',
+      message: err?.message || 'Failed to upload avatar',
+      icon: 'heroicons:exclamation-circle'
+    })
+    
+    // Reset preview on error
+    avatarFile.value = null
+    avatarPreview.value = resolveAssetUrl(auth.userAvatar || user.value?.avatar || user.value?.avatar_url) || null
+    input.value = ''
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
+
 function openTaxonomyModal() {
   // Copy current selection to temp for editing
   tempTaxonomySelection.value = JSON.parse(JSON.stringify(taxonomySelection.value))
@@ -541,11 +609,6 @@ async function saveTaxonomy() {
     appAlert.push({ message: e?.message || 'Failed to save areas of interest', type: 'error' })
     isTaxonomyDirty.value = false
   }
-}
-
-async function save() {
-  // This is kept for legacy - auto-save handles everything now
-  return true
 }
 
 // Institution form for institution managers
