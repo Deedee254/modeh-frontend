@@ -1,5 +1,4 @@
 import { NuxtAuthHandler } from '#auth'
-import { useRuntimeConfig } from '#imports'
 import GoogleProviderImport from 'next-auth/providers/google'
 import CredentialsProviderImport from 'next-auth/providers/credentials'
 
@@ -19,15 +18,14 @@ export default NuxtAuthHandler({
     basePath: '/api/auth',
     providers: [
       GoogleProvider({
-      // Prefer environment variables, but fall back to Nuxt runtime config
-      // values when available. This allows testing by wiring secrets into
-      // `nuxt.config.ts`'s runtimeConfig during a build.
-      clientId: process.env.GOOGLE_CLIENT_ID || useRuntimeConfig().googleClientId || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || useRuntimeConfig().googleClientSecret || '',
-      allowDangerousEmailAccountLinking: true,
-      // Don't set callbackUrl here - let NuxtAuth derive it from the request
-      // at runtime so it respects the actual host the request came from
-    }),
+        // CRITICAL: Use environment variables only - do NOT call useRuntimeConfig() here
+        // The provider config is evaluated at build time, not runtime
+        clientId: process.env.GOOGLE_CLIENT_ID || '',
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        allowDangerousEmailAccountLinking: true,
+        // Don't set callbackUrl here - let NuxtAuth derive it from the request
+        // at runtime so it respects the actual host the request came from
+      }),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -99,16 +97,10 @@ export default NuxtAuthHandler({
         name: `authjs.session-token`,
         options: {
           httpOnly: true,
-          // Compute `secure` at runtime from runtime config so the built server
-          // will correctly set cookie secure when deployed behind HTTPS.
+          // Set secure based on environment variables and NODE_ENV
           secure: (() => {
-            try {
-              const cfg = useRuntimeConfig()
-              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
-              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
-            } catch (e) {
-              return process.env.NODE_ENV === 'production'
-            }
+            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
+            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
           })(),
           sameSite: 'lax',
           path: '/',
@@ -123,13 +115,8 @@ export default NuxtAuthHandler({
           sameSite: 'lax',
           path: '/',
           secure: (() => {
-            try {
-              const cfg = useRuntimeConfig()
-              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
-              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
-            } catch (e) {
-              return process.env.NODE_ENV === 'production'
-            }
+            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
+            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
           })()
         }
       },
@@ -140,13 +127,8 @@ export default NuxtAuthHandler({
           sameSite: 'lax',
           path: '/',
           secure: (() => {
-            try {
-              const cfg = useRuntimeConfig()
-              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
-              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
-            } catch (e) {
-              return process.env.NODE_ENV === 'production'
-            }
+            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
+            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
           })()
         }
       },
@@ -157,13 +139,8 @@ export default NuxtAuthHandler({
           sameSite: 'lax',
           path: '/',
           secure: (() => {
-            try {
-              const cfg = useRuntimeConfig()
-              const base = (cfg?.app?.baseURL || cfg?.public?.baseUrl || '') as string
-              return String(base).startsWith('https') || process.env.NODE_ENV === 'production'
-            } catch (e) {
-              return process.env.NODE_ENV === 'production'
-            }
+            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
+            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
           })()
         }
       }

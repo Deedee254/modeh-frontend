@@ -2,16 +2,12 @@ import { defineNuxtConfig } from 'nuxt/config'
 import { fileURLToPath } from 'node:url'
 
 const stripTrailingSlash = (value?: string) => value?.replace(/\/$/, '') ?? ''
-// Public base URL must be provided via NUXT_PUBLIC_BASE_URL
-const defaultPublicOrigin = process.env.NUXT_PUBLIC_BASE_URL
-const publicBaseUrl = defaultPublicOrigin ? stripTrailingSlash(defaultPublicOrigin) : undefined
-const envAuthBaseUrl = process.env.NUXT_AUTH_BASE_URL ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL) : undefined
-const authBaseUrl = envAuthBaseUrl ?? undefined
-// API base from NUXT_PUBLIC_API_BASE
-const defaultApiBase = process.env.NUXT_PUBLIC_API_BASE ? stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE) : undefined
-// Analytics IDs from env
-const googleAnalyticsId = process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID
+
+// NOTE: These env vars are intentionally read at build time for specific purposes,
+// but critical auth/api URLs are moved to runtimeConfig so they pick up values at runtime.
+// This is critical for production where env vars may not be available during build.
 const gtmId = process.env.NUXT_PUBLIC_GTM_ID
+const googleAnalyticsId = process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_ID
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-07',
@@ -275,6 +271,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     auth: {
+      // NUXT_AUTH_SECRET must be set in production environment
       secret: process.env.NUXT_AUTH_SECRET ?? undefined
     },
     pusherSecret: process.env.NUXT_PUBLIC_PUSHER_SECRET ?? undefined,
@@ -282,10 +279,17 @@ export default defineNuxtConfig({
     googleClientId: process.env.GOOGLE_CLIENT_ID ?? undefined,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? undefined,
     public: {
-      // Public runtime values (from env)
-      apiBase: defaultApiBase ?? undefined,
-      baseUrl: publicBaseUrl ?? undefined,
-      siteUrl: publicBaseUrl ?? undefined,
+      // CRITICAL: These must use environment variables that are evaluated at RUNTIME
+      // NOT at build time, so they pick up production values correctly
+      apiBase: process.env.NUXT_PUBLIC_API_BASE 
+        ? stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE)
+        : undefined,
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL 
+        ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
+        : undefined,
+      siteUrl: process.env.NUXT_PUBLIC_BASE_URL 
+        ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
+        : undefined,
 
       googleAnalyticsId: googleAnalyticsId ?? undefined,
       googleTagManagerId: gtmId ?? undefined,
@@ -335,9 +339,13 @@ export default defineNuxtConfig({
   },
 
   auth: {
-    // Don't set baseURL here - let NuxtAuth auto-detect from the incoming request
-    // This ensures it works correctly whether deployed locally or in production
-    originEnvKey: 'NUXT_AUTH_BASE_URL',
+    // CRITICAL: Set baseURL to the environment variable at RUNTIME
+    // This ensures auth callbacks work correctly in production
+    // When deployed, NUXT_PUBLIC_BASE_URL must be set in your production environment
+    baseURL: process.env.NUXT_PUBLIC_BASE_URL 
+      ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
+      : 'http://localhost:3000',
+    originEnvKey: 'NUXT_PUBLIC_BASE_URL',
     provider: {
       type: 'authjs',
       trustHost: true,
