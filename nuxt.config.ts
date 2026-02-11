@@ -335,7 +335,8 @@ export default defineNuxtConfig({
   },
 
   auth: {
-    baseURL: authBaseUrl || 'https://modeh.co.ke/api/auth',
+    // Don't set baseURL here - let NuxtAuth auto-detect from the incoming request
+    // This ensures it works correctly whether deployed locally or in production
     originEnvKey: 'NUXT_AUTH_BASE_URL',
     provider: {
       type: 'authjs',

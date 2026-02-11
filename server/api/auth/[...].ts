@@ -25,11 +25,8 @@ export default NuxtAuthHandler({
       clientId: process.env.GOOGLE_CLIENT_ID || useRuntimeConfig().googleClientId || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || useRuntimeConfig().googleClientSecret || '',
       allowDangerousEmailAccountLinking: true,
-      // Explicitly set the callback URL - critical for production OAuth
-      // This tells Google where to redirect after authentication
-      callbackUrl: process.env.NUXT_AUTH_BASE_URL 
-        ? `${process.env.NUXT_AUTH_BASE_URL}/callback/google` 
-        : 'https://modeh.co.ke/api/auth/callback/google'
+      // Don't set callbackUrl here - let NuxtAuth derive it from the request
+      // at runtime so it respects the actual host the request came from
     }),
     CredentialsProvider({
       name: 'Credentials',
