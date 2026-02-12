@@ -177,10 +177,18 @@ async function signInGoogle() {
     await new Promise(resolve => setTimeout(resolve, 500))
     
     // Force NuxtAuth to sync with server session after Google OAuth
+    // Wrap in try-catch to prevent recursion errors from propagating
     const { getSession } = useAuth()
-    await getSession({ force: true }).catch(() => {
-      console.warn('Could not force getSession, but user data is in auth store')
-    })
+    try {
+      await Promise.race([
+        getSession({ force: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
+    } catch (e) {
+      // Session fetch may fail due to routing recursion, but we can continue
+      // The auth store already has the user data from the response
+      console.warn('Session fetch failed (non-fatal):', String(e).split(':')[0])
+    }
     
     // Fetch user and sync guest attempts
     await auth.fetchUser?.()

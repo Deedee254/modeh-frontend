@@ -356,15 +356,6 @@ export default defineNuxtConfig({
       : 'https://modeh.co.ke',
     // CRITICAL: originEnvKey tells NuxtAuth which env var to read for the origin
     originEnvKey: 'NUXT_PUBLIC_BASE_URL',
-    // Disable automatic session fetching to prevent /session route recursion
-    skipCSRFCheck: true,
-    // Add explicit configuration for page redirects
-    pages: {
-      signIn: '/login',
-      signOut: '/login',
-      error: '/auth/error',
-      newUser: '/onboarding'
-    },
     provider: {
       type: 'authjs',
       trustHost: true,

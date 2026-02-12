@@ -213,10 +213,16 @@ async function submit() {
     await new Promise(resolve => setTimeout(resolve, 500))
     
     // Force NuxtAuth to refresh and pick up the new session
-    await getSession({ force: true }).catch(() => {
-      // Session fetch might fail but auth store already has the user
-      console.warn('Could not force getSession, but user data is in auth store')
-    })
+    // Wrap in try-catch with timeout to prevent recursion errors
+    try {
+      await Promise.race([
+        getSession({ force: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
+    } catch (e) {
+      // Session fetch might fail due to routing recursion, but auth store already has the user
+      console.warn('Session fetch failed (non-fatal):', String(e).split(':')[0])
+    }
 
     // Check if we have guest quiz results to show
     try {
@@ -297,10 +303,16 @@ async function signInWithGoogle() {
     await new Promise(resolve => setTimeout(resolve, 500))
     
     // Force NuxtAuth to sync with server session after Google OAuth
+    // Wrap in try-catch with timeout to prevent recursion errors
     const { getSession } = useAuth()
-    await getSession({ force: true }).catch(() => {
-      console.warn('Could not force getSession, but user data is in auth store')
-    })
+    try {
+      await Promise.race([
+        getSession({ force: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
+    } catch (e) {
+      console.warn('Session fetch failed (non-fatal):', String(e).split(':')[0])
+    }
 
     // Track successful Google login
     trackLogin('google')

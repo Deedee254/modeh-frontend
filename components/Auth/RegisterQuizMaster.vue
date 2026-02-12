@@ -195,10 +195,16 @@ async function signInWithGoogle() {
     await new Promise(resolve => setTimeout(resolve, 500))
     
     // Force NuxtAuth to sync with server session after Google OAuth
+    // Wrap in try-catch with timeout to prevent recursion errors
     const { getSession } = useAuth()
-    await getSession({ force: true }).catch(() => {
-      console.warn('Could not force getSession, but user data is in auth store')
-    })
+    try {
+      await Promise.race([
+        getSession({ force: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
+    } catch (e) {
+      console.warn('Session fetch failed (non-fatal):', String(e).split(':')[0])
+    }
     
     // Fetch user data
     await auth.fetchUser?.()
@@ -259,9 +265,15 @@ async function submit() {
     await new Promise(resolve => setTimeout(resolve, 500))
     
     // Force NuxtAuth to refresh and pick up the new session
-    await getSession({ force: true }).catch(() => {
-      console.warn('Could not force getSession, but user data is in auth store')
-    })
+    // Wrap in try-catch with timeout to prevent recursion errors
+    try {
+      await Promise.race([
+        getSession({ force: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
+    } catch (e) {
+      console.warn('Session fetch failed (non-fatal):', String(e).split(':')[0])
+    }
 
     // After registration with role set, redirect to quiz-master dashboard
     await router.push('/quiz-master/dashboard')

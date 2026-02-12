@@ -51,8 +51,18 @@ onMounted(async () => {
 
   try {
     // 1. Refresh the session to ensure nuxt-auth picks up the cookies set by the backend
+    // Wrap in try-catch to prevent recursion errors from propagating
     const { getSession } = useAuth()
-    const session = await getSession()
+    let session = null
+    try {
+      session = await Promise.race([
+        getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
+    } catch (e) {
+      // Session fetch may fail, fallback to manual fetch
+      console.warn('Session fetch failed:', String(e).split(':')[0])
+    }
     
     if (!session) {
       // Fallback: Try fetching user manually to see if cookies are there but session isn't synced

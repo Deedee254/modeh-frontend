@@ -521,9 +521,14 @@ async function onAvatarFileSelected(e: Event) {
     await new Promise(resolve => setTimeout(resolve, 100))
     try {
       const { getSession } = useAuth()
-      await getSession()
+      // Wrap with timeout to prevent recursion
+      await Promise.race([
+        getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
     } catch (e) {
       // Session refresh may fail but continue
+      console.warn('Session refresh failed (non-fatal):', String(e).split(':')[0])
     }
     
     // Fetch fresh user data from API to ensure everything is in sync

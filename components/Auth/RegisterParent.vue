@@ -237,9 +237,15 @@ async function submit() {
     await new Promise(resolve => setTimeout(resolve, 500))
     
     // Force NuxtAuth to refresh and pick up the new session
-    await getSession({ force: true }).catch(() => {
-      console.warn('Could not force getSession, but user data is in auth store')
-    })
+    // Wrap in try-catch with timeout to prevent recursion errors
+    try {
+      await Promise.race([
+        getSession({ force: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 3000))
+      ])
+    } catch (e) {
+      console.warn('Session fetch failed (non-fatal):', String(e).split(':')[0])
+    }
 
     // Redirect to parent dashboard
     await router.push('/parent/dashboard')
