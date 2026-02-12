@@ -20,15 +20,16 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import useApi from '~/composables/useApi'
+
 const thread = ref(null)
 const loading = ref(true)
-const config = useRuntimeConfig()
-const apiBase = config.public.apiBase
+const api = useApi()
 
 async function load() {
   loading.value = true
   try {
-    const res = await fetch(apiBase + '/api/chat/threads', { credentials: 'include' })
+    const res = await api.get('/api/chat/threads')
     if (res.ok) {
       const json = await res.json()
       thread.value = (json.conversations && json.conversations[0]) || null

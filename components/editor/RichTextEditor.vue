@@ -1,93 +1,102 @@
 <template>
   <div class="rich-editor">
-    <!-- Toolbar for formatting -->
-    <div class="toolbar">
-      <!-- Text Formatting -->
-      <button @click="toggleBold" :class="{ active: editor?.isActive('bold') }" title="Bold (Ctrl+B)">
+    <div class="toolbar" role="toolbar" aria-label="Rich text formatting">
+      <button type="button" @click="toggleBold" :class="{ active: editorApi?.isActive('bold') }" title="Bold (Ctrl+B)">
         <strong>B</strong>
       </button>
-      <button @click="toggleItalic" :class="{ active: editor?.isActive('italic') }" title="Italic (Ctrl+I)">
+      <button type="button" @click="toggleItalic" :class="{ active: editorApi?.isActive('italic') }" title="Italic (Ctrl+I)">
         <em>I</em>
       </button>
-      <button @click="toggleStrike" :class="{ active: editor?.isActive('strike') }" title="Strikethrough">
+      <button type="button" @click="toggleStrike" :class="{ active: editorApi?.isActive('strike') }" title="Strikethrough">
         <s>S</s>
       </button>
-      <button @click="toggleCode" :class="{ active: editor?.isActive('code') }" title="Inline Code">
-        <code>&lt;&gt;</code>
+      <button
+        v-if="featureCode"
+        type="button"
+        @click="toggleCode"
+        :class="{ active: editorApi?.isActive('code') }"
+        title="Inline code"
+      >
+        <code>&lt;/&gt;</code>
       </button>
 
       <div class="separator"></div>
 
-      <!-- Heading Levels -->
-      <button @click="toggleHeading(1)" :class="{ active: editor?.isActive('heading', { level: 1 }) }" title="Heading 1">
+      <button type="button" @click="toggleHeading(1)" :class="{ active: editorApi?.isActive('heading', { level: 1 }) }" title="Heading 1">
         H1
       </button>
-      <button @click="toggleHeading(2)" :class="{ active: editor?.isActive('heading', { level: 2 }) }" title="Heading 2">
+      <button type="button" @click="toggleHeading(2)" :class="{ active: editorApi?.isActive('heading', { level: 2 }) }" title="Heading 2">
         H2
       </button>
-      <button @click="toggleHeading(3)" :class="{ active: editor?.isActive('heading', { level: 3 }) }" title="Heading 3">
+      <button type="button" @click="toggleHeading(3)" :class="{ active: editorApi?.isActive('heading', { level: 3 }) }" title="Heading 3">
         H3
       </button>
 
       <div class="separator"></div>
 
-      <!-- Lists -->
-      <button @click="toggleBulletList" :class="{ active: editor?.isActive('bulletList') }" title="Bullet List">
-        ◦◦◦
+      <button type="button" @click="toggleBulletList" :class="{ active: editorApi?.isActive('bulletList') }" title="Bullet list">
+        UL
       </button>
-      <button @click="toggleOrderedList" :class="{ active: editor?.isActive('orderedList') }" title="Numbered List">
-        1.
-      </button>
-
-      <div class="separator"></div>
-
-      <!-- Blockquote -->
-      <button @click="toggleBlockquote" :class="{ active: editor?.isActive('blockquote') }" title="Blockquote">
-        ❝
+      <button type="button" @click="toggleOrderedList" :class="{ active: editorApi?.isActive('orderedList') }" title="Ordered list">
+        OL
       </button>
 
       <div class="separator"></div>
 
-      <!-- Code Block -->
-      <button @click="addCodeBlock" :class="{ active: editor?.isActive('codeBlock') }" title="Code Block">
-        <span>{ }</span>
+      <button type="button" @click="toggleBlockquote" :class="{ active: editorApi?.isActive('blockquote') }" title="Blockquote">
+        Quote
       </button>
-      <select v-model="codeLanguage" class="language-select">
-        <option value="">auto</option>
-        <option value="javascript">JS</option>
-        <option value="typescript">TS</option>
-        <option value="python">Python</option>
-        <option value="css">CSS</option>
-        <option value="html">HTML</option>
-        <option value="sql">SQL</option>
-      </select>
+
+      <template v-if="featureCode && hasCodeBlock">
+        <div class="separator"></div>
+        <button type="button" @click="addCodeBlock" :class="{ active: editorApi?.isActive('codeBlock') }" title="Code block">
+          Code
+        </button>
+        <select v-model="codeLanguage" class="language-select" title="Code language">
+          <option value="">auto</option>
+          <option value="javascript">JS</option>
+          <option value="typescript">TS</option>
+          <option value="python">Python</option>
+          <option value="css">CSS</option>
+          <option value="html">HTML</option>
+          <option value="sql">SQL</option>
+        </select>
+      </template>
+
+      <template v-if="featureMath && hasMath">
+        <div class="separator"></div>
+        <button
+          type="button"
+          @click="addMathBlock"
+          :class="{ active: editorApi?.isActive('math') || editorApi?.isActive('mathBlock') }"
+          title="Math block"
+        >
+          Math
+        </button>
+      </template>
 
       <div class="separator"></div>
 
-      <!-- Math Block -->
-      <button @click="addMathBlock" :class="{ active: editor?.isActive('math') }" title="Math Block">
-        ∑
-      </button>
-
-      <div class="separator"></div>
-
-      <!-- Undo/Redo -->
-      <button @click="undo" title="Undo (Ctrl+Z)">↶</button>
-      <button @click="redo" title="Redo (Ctrl+Y)">↷</button>
+      <button type="button" @click="undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button type="button" @click="redo" title="Redo (Ctrl+Y)">Redo</button>
     </div>
 
-    <!-- Editor Content -->
-    <div v-if="editor" class="editor-content">
-      <EditorContent :editor="editor" />
+    <div v-if="editorApi" class="editor-content">
+      <EditorContent :editor="editorApi" />
     </div>
 
-    <!-- Fallback -->
-    <textarea v-else :value="modelValue || ''" @input="e => emit('update:modelValue', (e.target as HTMLTextAreaElement).value)" placeholder="Start typing..." />
+    <textarea
+      v-else
+      :value="modelValue || ''"
+      :placeholder="placeholder || 'Start typing...'"
+      :disabled="editable === false"
+      @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
@@ -104,124 +113,171 @@ import ListItem from '@tiptap/extension-list-item'
 import Blockquote from '@tiptap/extension-blockquote'
 import Placeholder from '@tiptap/extension-placeholder'
 
-defineProps<{
-  modelValue?: string
-  editable?: boolean
-  features?: { math?: boolean; code?: boolean }
-  placeholder?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string
+    editable?: boolean
+    features?: { math?: boolean; code?: boolean }
+    placeholder?: string
+  }>(),
+  {
+    modelValue: '',
+    editable: true,
+    placeholder: 'Start typing...',
+    features: () => ({ math: true, code: true }),
+  }
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  ready: [editor: any]
 }>()
 
 const editor = ref<any>(null)
 const codeLanguage = ref('javascript')
+const hasCodeBlock = ref(false)
+const hasMath = ref(false)
 
-const extensions: any[] = [
-  Document,
-  Paragraph,
-  Text,
-  Bold,
-  Italic,
-  Strike,
-  Code,
-  History,
-  Heading.configure({ levels: [1, 2, 3] }),
-  BulletList,
-  OrderedList,
-  ListItem,
-  Blockquote,
-  Placeholder.configure({ placeholder: 'Start typing...' })
-]
+const featureMath = computed(() => props.features?.math !== false)
+const featureCode = computed(() => props.features?.code !== false)
+
+let applyingExternalValue = false
+
+const normalizeHtml = (html: string) => (html || '').replace(/\s+/g, ' ').trim()
+const getEditorInstance = () => {
+  const candidate = editor.value
+  if (!candidate) return null
+  if (typeof candidate.getHTML === 'function') return candidate
+  if (candidate.value && typeof candidate.value.getHTML === 'function') return candidate.value
+  return null
+}
+const editorApi = computed(() => getEditorInstance())
 
 onMounted(async () => {
-  // Load code highlighting (always enabled)
-  try {
-    const { lowlight } = await import('lowlight')
-    const js = await import('highlight.js/lib/languages/javascript').then(m => m.default)
-    const py = await import('highlight.js/lib/languages/python').then(m => m.default)
-    const css = await import('highlight.js/lib/languages/css').then(m => m.default)
-    const ts = await import('highlight.js/lib/languages/typescript').then(m => m.default)
-    const html = await import('highlight.js/lib/languages/xml').then(m => m.default)
-    const sql = await import('highlight.js/lib/languages/sql').then(m => m.default)
-    
-    lowlight.registerLanguage('javascript', js)
-    lowlight.registerLanguage('python', py)
-    lowlight.registerLanguage('css', css)
-    lowlight.registerLanguage('typescript', ts)
-    lowlight.registerLanguage('html', html)
-    lowlight.registerLanguage('sql', sql)
-    
-    const CodeBlockLowlight = await import('@tiptap/extension-code-block-lowlight').then(m => m.default)
-    extensions.push(CodeBlockLowlight.configure({ lowlight, languageClassPrefix: 'language-' }))
-  } catch (e) {
-    console.warn('Code highlighting unavailable:', e)
-  }
+  const extensions: any[] = [
+    Document,
+    Paragraph,
+    Text,
+    Bold,
+    Italic,
+    Strike,
+    Code,
+    History,
+    Heading.configure({ levels: [1, 2, 3] }),
+    BulletList,
+    OrderedList,
+    ListItem,
+    Blockquote,
+    Placeholder.configure({ placeholder: props.placeholder || 'Start typing...' }),
+  ]
 
-  // Load math extension (always enabled)
-  try {
-    const mathExt = await import('@aarkue/tiptap-math-extension').then(m => m.default)
-    extensions.push(mathExt.configure ? mathExt.configure({}) : mathExt)
-  } catch (e) {
-    console.warn('Math extension unavailable:', e)
-  }
+  if (featureCode.value) {
+    try {
+      const { lowlight } = await import('lowlight')
+      const js = await import('highlight.js/lib/languages/javascript').then((m) => m.default)
+      const py = await import('highlight.js/lib/languages/python').then((m) => m.default)
+      const css = await import('highlight.js/lib/languages/css').then((m) => m.default)
+      const ts = await import('highlight.js/lib/languages/typescript').then((m) => m.default)
+      const html = await import('highlight.js/lib/languages/xml').then((m) => m.default)
+      const sql = await import('highlight.js/lib/languages/sql').then((m) => m.default)
 
-  // Initialize editor
-  editor.value = useEditor({
-    content: '',
-    extensions,
-    onUpdate: ({ editor: e }) => {
-      emit('update:modelValue', e.getHTML())
+      lowlight.registerLanguage('javascript', js)
+      lowlight.registerLanguage('python', py)
+      lowlight.registerLanguage('css', css)
+      lowlight.registerLanguage('typescript', ts)
+      lowlight.registerLanguage('html', html)
+      lowlight.registerLanguage('sql', sql)
+
+      const CodeBlockLowlight = await import('@tiptap/extension-code-block-lowlight').then((m) => m.default)
+      extensions.push(CodeBlockLowlight.configure({ lowlight, languageClassPrefix: 'language-' }))
+      hasCodeBlock.value = true
+    } catch (e) {
+      console.warn('Code highlighting unavailable:', e)
     }
+  }
+
+  if (featureMath.value) {
+    try {
+      const mathExt = await import('@aarkue/tiptap-math-extension').then((m) => m.default)
+      extensions.push(mathExt.configure ? mathExt.configure({}) : mathExt)
+      hasMath.value = true
+    } catch (e) {
+      console.warn('Math extension unavailable:', e)
+    }
+  }
+
+  editor.value = useEditor({
+    content: props.modelValue || '',
+    editable: props.editable !== false,
+    extensions,
+    onUpdate: ({ editor: instance }) => {
+      if (applyingExternalValue) return
+      emit('update:modelValue', instance.getHTML())
+    },
   })
+
+  const instance = getEditorInstance()
+  if (instance) {
+    emit('ready', instance)
+  }
 })
 
-// Text Formatting
-const toggleBold = () => editor.value?.chain().focus().toggleBold().run()
-const toggleItalic = () => editor.value?.chain().focus().toggleItalic().run()
-const toggleStrike = () => editor.value?.chain().focus().toggleStrike().run()
-const toggleCode = () => editor.value?.chain().focus().toggleCode().run()
+watch(
+  () => props.modelValue,
+  (nextValue) => {
+    const instance = getEditorInstance()
+    if (!instance) return
+    const incoming = nextValue || ''
+    const current = instance.getHTML()
+    if (normalizeHtml(incoming) === normalizeHtml(current)) return
+    applyingExternalValue = true
+    instance.commands.setContent(incoming, false)
+    applyingExternalValue = false
+  }
+)
 
-// Heading
+watch(
+  () => props.editable,
+  (value) => {
+    const instance = getEditorInstance()
+    instance?.setEditable(value !== false)
+  }
+)
+
+const toggleBold = () => getEditorInstance()?.chain().focus().toggleBold().run()
+const toggleItalic = () => getEditorInstance()?.chain().focus().toggleItalic().run()
+const toggleStrike = () => getEditorInstance()?.chain().focus().toggleStrike().run()
+const toggleCode = () => {
+  if (!featureCode.value) return
+  getEditorInstance()?.chain().focus().toggleCode().run()
+}
 const toggleHeading = (level: number) => {
-  editor.value?.chain().focus().toggleHeading({ level }).run()
+  getEditorInstance()?.chain().focus().toggleHeading({ level }).run()
 }
-
-// Lists
-const toggleBulletList = () => editor.value?.chain().focus().toggleBulletList().run()
-const toggleOrderedList = () => editor.value?.chain().focus().toggleOrderedList().run()
-
-// Blockquote
-const toggleBlockquote = () => editor.value?.chain().focus().toggleBlockquote().run()
-
-// Code Block
+const toggleBulletList = () => getEditorInstance()?.chain().focus().toggleBulletList().run()
+const toggleOrderedList = () => getEditorInstance()?.chain().focus().toggleOrderedList().run()
+const toggleBlockquote = () => getEditorInstance()?.chain().focus().toggleBlockquote().run()
 const addCodeBlock = () => {
-  editor.value?.chain().focus().toggleCodeBlock({ language: codeLanguage.value }).run()
+  if (!featureCode.value || !hasCodeBlock.value) return
+  getEditorInstance()?.chain().focus().toggleCodeBlock({ language: codeLanguage.value }).run()
 }
-
-// Math Block
 const addMathBlock = () => {
-  ;(editor.value?.chain() as any).focus().insertMathBlock?.().run()
+  if (!featureMath.value || !hasMath.value) return
+  const instance = getEditorInstance()
+  ;(instance?.chain() as any)?.focus().insertMathBlock?.().run()
 }
-
-// Undo/Redo
-const undo = () => editor.value?.chain().focus().undo().run()
-const redo = () => editor.value?.chain().focus().redo().run()
-
-watch(() => editor.value?.getHTML(), (html) => {
-  if (html) emit('update:modelValue', html)
-})
+const undo = () => getEditorInstance()?.chain().focus().undo().run()
+const redo = () => getEditorInstance()?.chain().focus().redo().run()
 
 onBeforeUnmount(() => {
-  editor.value?.destroy()
+  getEditorInstance()?.destroy()
 })
 
 defineExpose({
   editor,
-  focus: () => editor.value?.commands.focus(),
-  getHTML: () => editor.value?.getHTML() || '',
-  setHTML: (html: string) => editor.value?.commands.setContent(html),
+  focus: () => getEditorInstance()?.commands.focus(),
+  getHTML: () => getEditorInstance()?.getHTML() || '',
+  setHTML: (html: string) => getEditorInstance()?.commands.setContent(html),
 })
 </script>
 
@@ -229,7 +285,7 @@ defineExpose({
 .rich-editor {
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  background: white;
+  background: #ffffff;
   overflow: hidden;
 }
 
@@ -261,7 +317,7 @@ defineExpose({
   font-weight: 500;
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
-  background: white;
+  background: #ffffff;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
@@ -286,14 +342,14 @@ defineExpose({
 }
 
 .toolbar button.active {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  background: #dbeafe;
   color: #0c4a6e;
   border-color: #0284c7;
   font-weight: 600;
 }
 
 .dark .toolbar button.active {
-  background: linear-gradient(135deg, #1e293b, #0f172a);
+  background: #1e293b;
   color: #93c5fd;
   border-color: #0ea5e9;
 }
@@ -327,12 +383,11 @@ defineExpose({
   color: #f3f4f6;
 }
 
-/* Heading Styles */
 .editor-content :deep(h1) {
   font-size: 1.875rem;
   font-weight: 800;
   margin: 1rem 0 0.5rem 0;
-  color: #000;
+  color: #000000;
 }
 
 .dark .editor-content :deep(h1) {
@@ -361,22 +416,19 @@ defineExpose({
   color: #e5e7eb;
 }
 
-/* List Styles */
 .editor-content :deep(ul),
 .editor-content :deep(ol) {
-  margin-left: 2rem;
   margin: 0.75rem 0;
+  padding-left: 1.5rem;
 }
 
 .editor-content :deep(li) {
   margin-bottom: 0.25rem;
 }
 
-/* Blockquote Styles */
 .editor-content :deep(blockquote) {
   border-left: 4px solid #3b82f6;
   padding-left: 1.25rem;
-  margin-left: 0;
   margin: 1rem 0;
   color: #6b7280;
   font-style: italic;
@@ -387,7 +439,6 @@ defineExpose({
   color: #d1d5db;
 }
 
-/* Code Block Styles */
 .editor-content :deep(pre) {
   background: #1f2937;
   color: #f3f4f6;
@@ -407,26 +458,25 @@ defineExpose({
 
 .editor-content :deep(code) {
   background: #f3f4f6;
-  color: #d946ef;
+  color: #be185d;
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.9em;
 }
 
 .dark .editor-content :deep(code) {
   background: #1f2937;
-  color: #f472b6;
+  color: #f9a8d4;
 }
 
 .editor-content :deep(pre code) {
-  background: none;
+  background: transparent;
   color: inherit;
   padding: 0;
   border-radius: 0;
 }
 
-/* Inline Math */
 .editor-content :deep(.math-inline) {
   background: #ede9fe;
   padding: 0.125rem 0.375rem;
@@ -438,7 +488,6 @@ defineExpose({
   background: #3730a3;
 }
 
-/* Math Block */
 .editor-content :deep(.math-block) {
   background: #f5f3ff;
   border: 1px solid #e9d5ff;
@@ -453,23 +502,43 @@ defineExpose({
   border-color: #5b21b6;
 }
 
-/* Syntax highlighting for code blocks */
-.editor-content :deep(.hljs-string) { color: #22c55e; }
-.editor-content :deep(.hljs-number) { color: #f59e0b; }
-.editor-content :deep(.hljs-literal) { color: #a78bfa; }
-.editor-content :deep(.hljs-attr) { color: #60a5fa; }
-.editor-content :deep(.hljs-title) { color: #38bdf8; }
-.editor-content :deep(.hljs-name) { color: #7c3aed; }
-.editor-content :deep(.hljs-comment) { color: #6b7280; font-style: italic; }
+.editor-content :deep(.hljs-string) {
+  color: #22c55e;
+}
+
+.editor-content :deep(.hljs-number) {
+  color: #f59e0b;
+}
+
+.editor-content :deep(.hljs-literal) {
+  color: #a78bfa;
+}
+
+.editor-content :deep(.hljs-attr) {
+  color: #60a5fa;
+}
+
+.editor-content :deep(.hljs-title) {
+  color: #38bdf8;
+}
+
+.editor-content :deep(.hljs-name) {
+  color: #7c3aed;
+}
+
+.editor-content :deep(.hljs-comment) {
+  color: #6b7280;
+  font-style: italic;
+}
 
 textarea {
   width: 100%;
   min-height: 200px;
   padding: 1.5rem;
-  border: none;
+  border: 0;
   font-family: inherit;
   resize: vertical;
-  background: white;
+  background: #ffffff;
   color: #1f2937;
 }
 

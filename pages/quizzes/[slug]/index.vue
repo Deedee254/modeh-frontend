@@ -1,25 +1,31 @@
 <template>
   <div class="min-h-screen bg-gray-50 pb-16 md:pb-0">
-    <!-- Skeleton Loading State -->
-    <div v-if="pending && !quizData" class="max-w-7xl mx-auto px-4 py-6 animate-pulse">
-      <!-- New Integrated Hero Section -->
-      <div class="mb-6">
-        <div class="h-6 w-24 bg-gray-200 rounded-md mb-4"></div>
-        <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gray-200"></div>
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div class="lg:col-span-2 space-y-6">
-          <div class="bg-gray-200 rounded-xl h-48"></div>
-          <div class="bg-gray-200 rounded-xl h-64"></div>
+    <!-- Skeleton Loading State - Client Only -->
+    <ClientOnly>
+      <div v-if="pending && !quizData" class="max-w-7xl mx-auto px-4 py-6 animate-pulse">
+        <!-- New Integrated Hero Section -->
+        <div class="mb-6">
+          <div class="h-6 w-24 bg-gray-200 rounded-md mb-4"></div>
+          <div class="relative h-64 md:h-80 rounded-xl overflow-hidden bg-gray-200"></div>
         </div>
-        <div class="space-y-6">
-          <div class="bg-gray-200 rounded-xl h-72 sticky top-6"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div class="lg:col-span-2 space-y-6">
+            <div class="bg-gray-200 rounded-xl h-48"></div>
+            <div class="bg-gray-200 rounded-xl h-64"></div>
+          </div>
+          <div class="space-y-6">
+            <div class="bg-gray-200 rounded-xl h-72 sticky top-6"></div>
+          </div>
         </div>
       </div>
-    </div>
+      <template #fallback>
+        <!-- Server-side placeholder to preserve child node count during SSR/hydration -->
+        <div aria-hidden="true" style="display:none"></div>
+      </template>
+    </ClientOnly>
 
     <!-- Main Content - Responsive Grid -->
-    <div v-else class="max-w-7xl mx-auto px-4 py-6">
+    <div class="max-w-7xl mx-auto px-4 py-6">
       <!-- New Integrated Hero Section -->
       <div class="mb-6">
         <button @click="router.back()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-4">
@@ -276,33 +282,43 @@
           </div>
 
           <!-- Related Quizzes - Hidden on mobile -->
-          <div class="hidden md:block bg-white rounded-xl shadow-sm p-6">
-            <h3 class="font-medium mb-4">Related Quizzes</h3>
-            <div v-if="relatedLoading" class="space-y-4">
-              <div v-for="i in 3" :key="i" class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 animate-pulse">
-                <div class="w-16 h-12 bg-gray-200 rounded"></div>
-                <div class="flex-1 space-y-2">
-                  <div class="h-3 bg-gray-200 rounded w-3/4"></div>
-                  <div class="h-2 bg-gray-200 rounded w-1/2"></div>
+          <ClientOnly>
+            <template #default>
+              <div class="hidden md:block bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-medium mb-4">Related Quizzes</h3>
+                <div v-if="relatedLoading" class="space-y-4">
+                  <div v-for="i in 3" :key="i" class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 animate-pulse">
+                    <div class="w-16 h-12 bg-gray-200 rounded"></div>
+                    <div class="flex-1 space-y-2">
+                      <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+                      <div class="h-2 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else-if="related.length > 0" class="space-y-4">
+                  <NuxtLink v-for="r in related" :key="r.id" :to="`/quizzes/${r.slug}`"
+                       class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                    <div class="w-16 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                      <img v-if="r.cover" :src="r.cover" alt="" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="font-medium text-sm truncate">{{ r.title }}</h4>
+                      <p class="text-xs text-gray-500 mt-1">{{ r.questions_count || 0 }} questions</p>
+                    </div>
+                  </NuxtLink>
+                </div>
+                <div v-else class="space-y-4">
+                  <div class="text-center py-4 text-gray-500 text-sm">
+                    No related quizzes found
+                  </div>
                 </div>
               </div>
-            </div>
-            <div v-else-if="related.length > 0" class="space-y-4">
-              <NuxtLink v-for="r in related" :key="r.id" :to="`/quizzes/${r.slug}`"
-                   class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                <div class="w-16 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                  <img v-if="r.cover" :src="r.cover" alt="" class="w-full h-full object-cover" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <h4 class="font-medium text-sm truncate">{{ r.title }}</h4>
-                  <p class="text-xs text-gray-500 mt-1">{{ r.questions_count || 0 }} questions</p>
-                </div>
-              </NuxtLink>
-            </div>
-            <div v-else class="text-center py-4 text-gray-500 text-sm">
-              No related quizzes found
-            </div>
-          </div>
+            </template>
+            <template #fallback>
+              <!-- Preserve a placeholder node on the server so hydration child counts match -->
+              <div aria-hidden="true" style="display:none"></div>
+            </template>
+          </ClientOnly>
 
           <!-- Detailed Results (Guest Quiz) - Only show if quiz taken -->
           <div v-if="lastAttempt && lastAttempt.results" class="bg-white rounded-xl shadow-sm p-6 space-y-4">

@@ -129,29 +129,27 @@ function normalizeToBuilder(q) {
 
 function normalizeFromBuilder(bq) {
   // Map builder shape back to server payload
-  // build canonical answers array (text) from options + correct/corrects where applicable
+  // build canonical answers array as INDICES (not text)
   let answers = []
   const opts = Array.isArray(bq.options) ? bq.options : []
-  const getOptText = (o) => {
-    if (!o) return ''
-    if (typeof o === 'string') return o
-    return o.text ?? o.option ?? ''
-  }
 
   if (bq.type === 'mcq') {
     const idx = Number(bq.correct)
-    if (Number.isFinite(idx) && opts[idx]) answers = [getOptText(opts[idx])]
+    if (Number.isFinite(idx)) answers = [String(idx)]
   } else if (bq.type === 'multi') {
     if (Array.isArray(bq.corrects)) {
-      answers = bq.corrects.map(i => {
-        const o = opts[Number(i)]
-        return getOptText(o)
-      }).filter(Boolean)
+      answers = bq.corrects.map(i => String(Number(i)))
     }
   } else if (bq.type === 'fill_blank') {
     answers = Array.isArray(bq.answers) ? bq.answers : []
   } else {
     answers = bq.answers || []
+  }
+
+  const getOptText = (o) => {
+    if (!o) return ''
+    if (typeof o === 'string') return o
+    return o.text ?? o.option ?? ''
   }
 
   return {

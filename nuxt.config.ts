@@ -303,16 +303,7 @@ export default defineNuxtConfig({
 
       wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? undefined,
       wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : undefined,
-      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? undefined,
-      // Auth provider configuration for @sidebase/nuxt-auth
-      auth: {
-        provider: {
-          type: 'authjs',
-          trustHost: true,
-          defaultProvider: 'google',
-          addDefaultCallbackUrl: true
-        }
-      }
+      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? undefined
     }
   },
 
@@ -355,8 +346,9 @@ export default defineNuxtConfig({
     baseURL: process.env.NUXT_AUTH_BASE_URL
       ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL)
       : '/api/auth',
-    // Auth.js origin should be host only (no `/api/auth` path).
-    originEnvKey: 'NUXT_PUBLIC_BASE_URL',
+    // Must point to an auth API URL that includes `/api/auth` (not plain origin),
+    // otherwise server-side internal routing resolves to `/session`.
+    originEnvKey: 'NUXT_AUTH_BASE_URL',
     provider: {
       type: 'authjs',
       trustHost: true,

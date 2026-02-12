@@ -39,15 +39,17 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { resolveAvatar } from '~/composables/useAssets'
+import useApi from '~/composables/useApi'
+
 const open = ref(false)
 const threads = ref([])
+const api = useApi()
 
 let privateChannel = null
 
 async function loadThreads() {
   try {
-    const cfg = useRuntimeConfig()
-    const res = await fetch(cfg.public.apiBase + '/api/chat/threads', { credentials: 'include' })
+    const res = await api.get('/api/chat/threads')
     if (res.ok) {
       const body = await res.json()
       // Map threads and resolve avatars with fallback to letter avatars

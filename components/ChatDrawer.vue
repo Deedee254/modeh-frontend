@@ -72,6 +72,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserRole } from '~/composables/useUserRole'
 import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
+import useApi from '~/composables/useApi'
 
 const props = defineProps({
   isOpen: {
@@ -86,6 +87,7 @@ const router = useRouter()
 const { isquizee } = useUserRole()
 const loading = ref(false)
 const chats = ref([])
+const api = useApi()
 
 function close() {
   emit('update:isOpen', false)
@@ -111,8 +113,7 @@ function openConversation(chat) {
 async function fetchRecentChats() {
   loading.value = true
   try {
-    const config = useRuntimeConfig()
-    const res = await fetch(config.public.apiBase + '/api/chat/threads?limit=5', { credentials: 'include' })
+    const res = await api.get('/api/chat/threads?limit=5')
     if (res.ok) {
       const json = await res.json()
       chats.value = (json.conversations || []).map(conv => ({

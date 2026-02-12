@@ -55,7 +55,22 @@ const mediaSrc = computed(() => props.question?.media_path || props.question?.me
 const isImageLocal = computed(() => quizMedia.isImage(mediaSrc.value))
 const isAudioLocal = computed(() => quizMedia.isAudio(mediaSrc.value))
 const isEmbed = computed(() => !!(props.question?.youtube_url || props.question?.youtube))
-const embedUrl = computed(() => props.question?.youtube_url || props.question?.youtube)
+const embedUrl = computed(() => {
+  const url = props.question?.youtube_url || props.question?.youtube
+  if (!url) return null
+  try {
+    // Extract video ID from various YouTube URL formats
+    const m1 = url.match(/[?&]v=([^&]+)/)
+    if (m1 && m1[1]) return `https://www.youtube.com/embed/${m1[1]}`
+    const m2 = url.match(/youtu\.be\/([^?&]+)/)
+    if (m2 && m2[1]) return `https://www.youtube.com/embed/${m2[1]}`
+    const m3 = url.match(/youtube\.com\/embed\/([^?&]+)/)
+    if (m3 && m3[1]) return `https://www.youtube.com/embed/${m3[1]}`
+    // If it's already a valid embed URL, return as-is
+    if (url.includes('youtube.com/embed/')) return url
+    return null
+  } catch (e) { return null }
+})
 
 const layoutClass = computed(() => hasMedia.value ? 'sm:flex sm:items-start sm:space-x-6' : '')
 const componentName = computed(() => {
@@ -129,14 +144,13 @@ onBeforeUnmount(() => {
 /* Media column: responsive width, max 240px on desktop, full on mobile */
 .media-col { 
   width: 100%; 
-  flex: 0 0 100%; 
+  flex: 0 0 auto; 
   max-width: 240px;
 }
-.content-col { flex: 1 }
-@media (max-width: 640px) {
-  .media-col { width: 100%; flex: none; max-width: 100% }
-}
-/* Ensure long question text wraps and preserves normal whitespace */
-.content-col h3 { word-wrap: break-word; word-break: break-word; white-space: normal }
+.content-col { flex: 1; min-width: 0; }
+
+/* On small screens and up, layout is flex (handled by layoutClass) */
+/* Media is constrained to max-width: 240px on desktop */
+/* Fallback for when no layoutClass is applied (no media) */
 </style>
 
