@@ -350,11 +350,12 @@ export default defineNuxtConfig({
   },
 
   auth: {
-    // CRITICAL: baseURL is used for OAuth callbacks (must be the external app URL)
-    baseURL: process.env.NUXT_PUBLIC_BASE_URL 
-      ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
-      : 'https://modeh.co.ke',
-    // CRITICAL: originEnvKey tells NuxtAuth which env var to read for the origin
+    // Nuxt Auth API base path; must include `/api/auth` to avoid `/providers` 404s.
+    // Example: http://localhost:3000/api/auth
+    baseURL: process.env.NUXT_AUTH_BASE_URL
+      ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL)
+      : '/api/auth',
+    // Auth.js origin should be host only (no `/api/auth` path).
     originEnvKey: 'NUXT_PUBLIC_BASE_URL',
     provider: {
       type: 'authjs',
