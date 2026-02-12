@@ -12,8 +12,9 @@ import type { User } from '~/types'
  * - Initial app hydration (useAuthStore initializes from session data)
  */
 export default defineNuxtRouteMiddleware(async (to) => {
-    const { status, data } = useAuth()
-    const auth = useAuthStore()
+    // Temporarily disabled to debug recursion issue
+    // The auth store initialization from session.data should be enough for now
+    return
 
     // If we already have user data loaded, use it without fetching again
     if (auth.user && auth.user.id) {

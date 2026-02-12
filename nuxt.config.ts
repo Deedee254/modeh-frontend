@@ -15,7 +15,9 @@ export default defineNuxtConfig({
 
   // Route-level code splitting (lazy load pages)
   routeRules: {
-    // This enables auto code-splitting for all routes
+    // Auth routes should NOT be treated as pages - they're API routes only
+    '/api/auth/**': { ssr: false, cache: false },
+    '/api/**': { ssr: false, cache: false },
   },
 
   // Ensure the browser sees the manifest via an explicit <link rel="manifest"> in the HTML head.
@@ -301,7 +303,16 @@ export default defineNuxtConfig({
 
       wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? undefined,
       wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : undefined,
-      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? undefined
+      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? undefined,
+      // Auth provider configuration for @sidebase/nuxt-auth
+      auth: {
+        provider: {
+          type: 'authjs',
+          trustHost: true,
+          defaultProvider: 'google',
+          addDefaultCallbackUrl: true
+        }
+      }
     }
   },
 
@@ -339,13 +350,21 @@ export default defineNuxtConfig({
   },
 
   auth: {
-    // CRITICAL: Set baseURL to the environment variable at RUNTIME
-    // This ensures auth callbacks work correctly in production
-    // When deployed, NUXT_PUBLIC_BASE_URL must be set in your production environment
+    // CRITICAL: baseURL is used for OAuth callbacks (must be the external app URL)
     baseURL: process.env.NUXT_PUBLIC_BASE_URL 
       ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
       : 'https://modeh.co.ke',
+    // CRITICAL: originEnvKey tells NuxtAuth which env var to read for the origin
     originEnvKey: 'NUXT_PUBLIC_BASE_URL',
+    // Disable automatic session fetching to prevent /session route recursion
+    skipCSRFCheck: true,
+    // Add explicit configuration for page redirects
+    pages: {
+      signIn: '/login',
+      signOut: '/login',
+      error: '/auth/error',
+      newUser: '/onboarding'
+    },
     provider: {
       type: 'authjs',
       trustHost: true,

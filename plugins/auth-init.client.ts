@@ -27,13 +27,9 @@ export default defineNuxtPlugin((nuxtApp) => {
         console.warn('[auth-init] CSRF initialization failed (non-fatal):', e)
       }
 
-      try {
-        // Restore the session from JWT/session-token cookie
-        // This triggers the auth.data watcher in auth store which syncs to authStore.user
-        await auth.getSession()
-      } catch (e) {
-        // session restore may fail if auth not ready
-      }
+      // NOTE: Disabled getSession() call to prevent Vue Router recursion issues
+      // The auth middleware will fetch session data when needed via router navigation
+      // and the auth store already watches auth.data for changes automatically
 
       // Load taxonomy data (levels, grades, subjects) globally for resolution
       try {
