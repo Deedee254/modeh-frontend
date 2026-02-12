@@ -344,7 +344,7 @@ export default defineNuxtConfig({
     // When deployed, NUXT_PUBLIC_BASE_URL must be set in your production environment
     baseURL: process.env.NUXT_PUBLIC_BASE_URL 
       ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
-      : 'http://localhost:3000',
+      : 'https://modeh.co.ke',
     originEnvKey: 'NUXT_PUBLIC_BASE_URL',
     provider: {
       type: 'authjs',
