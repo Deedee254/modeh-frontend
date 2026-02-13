@@ -28,9 +28,9 @@
           <span class="text-slate-400">•</span>
           <span class="font-medium">{{ quizzes_count }}</span>
         </div>
-        <NuxtLink 
-          v-if="to" 
-          :to="to" 
+          <NuxtLink 
+            v-if="link" 
+            :to="link" 
           class="inline-flex items-center justify-center rounded px-3 py-1 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
         >
           View
@@ -38,7 +38,7 @@
       </div>
     </div>
     
-    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-label="Explore Subject"></NuxtLink>
+      <NuxtLink v-if="link" :to="link" class="absolute inset-0 z-0" aria-label="Explore Subject"></NuxtLink>
   </div>
 
   <!-- Vertical variant (Desktop) -->
@@ -89,9 +89,9 @@
              </div>
           </div>
 
-          <NuxtLink 
-            v-if="to" 
-            :to="to" 
+        <NuxtLink 
+          v-if="link" 
+          :to="link" 
             class="inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition-colors shadow-sm relative z-10"
           >
             Explore
@@ -100,7 +100,7 @@
     </div>
 
     <!-- Full Clickable Overlay -->
-    <NuxtLink v-if="to" :to="to" class="absolute inset-0 z-0" aria-label="Explore Subject"></NuxtLink>
+    <NuxtLink v-if="link" :to="link" class="absolute inset-0 z-0" aria-label="Explore Subject"></NuxtLink>
   </div>
 </template>
 
@@ -166,4 +166,7 @@ const isCourse = computed(() => {
   if (!g || typeof g !== 'object') return false
   return String(g.type || '').toLowerCase() === 'course'
 })
+
+// Compute preferred link (support both `to` and legacy `startLink` prop)
+const link = computed(() => props.to || props.startLink || null)
 </script>

@@ -224,9 +224,11 @@ const isQuestionValid = computed(() => {
     case 'numeric':
       return form.answers?.[0]?.trim()
     case 'math':
-    case 'code':
       return form.parts?.length > 0 &&
              form.parts.every((p: any) => p.text?.trim())
+    case 'code':
+      // Code questions can be valid with prompt/body only.
+      return true
     default:
       return true
   }

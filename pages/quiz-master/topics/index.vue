@@ -69,9 +69,18 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <main>
           <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
+              <!-- Followed subjects header + view all toggle -->
+              <div v-if="followedSubjectLabels.length > 0" class="flex items-center justify-between mb-4">
+                <div class="text-sm text-slate-700">Topics from your subjects</div>
+                <div>
+                  <button v-if="!showAll" @click="showAll = true" class="text-sm text-brand-600 hover:text-brand-800">View all →</button>
+                  <button v-else @click="showAll = false" class="text-sm text-gray-600 hover:text-gray-800">Show your subjects →</button>
+                </div>
+              </div>
+
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 <TopicCard
-                  v-for="(topic, idx) in (Array.isArray(filteredTopics) ? filteredTopics.filter(Boolean) : [])"
+                  v-for="(topic, idx) in (Array.isArray(visibleTopics) ? visibleTopics.filter(Boolean) : [])"
                   :key="topic?.id || idx"
                   :title="topic?.name"
                   :image="topic?.image || topic?.cover_image || ''"
@@ -89,6 +98,7 @@
                     }
                   }"
                   :startLabel="'Create Quiz'"
+                  :to="`/quiz-master/topics/${topic?.slug}`"
                   @click="topic && handleTopicClick(topic)"
                 />
 
@@ -117,6 +127,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'
 import PageHero from '~/components/ui/PageHero.vue'
@@ -171,6 +182,40 @@ const grades = computed(() => Array.isArray(store.grades) ? store.grades : [])
 const topicsResponse = ref(null)
 const topics = computed(() => topicsResponse.value?.data || [])
 
+// Show only topics from subjects the quiz-master has added to their profile by default.
+const auth = useAuthStore()
+const showAll = ref(false)
+
+const followedSubjectIds = computed(() => {
+  try {
+    const u = (auth && (auth.user && auth.user.value)) ? auth.user.value : auth.user
+    const profile = u?.profile || {}
+    const subjectModels = Array.isArray(profile?.subjectModels) ? profile.subjectModels : Array.isArray(profile?.subjects) ? profile.subjects : []
+    return subjectModels.map(s => (s && (s.id || s.value || s._id)) ? String(s.id ?? s.value ?? s._id) : String(s)).filter(Boolean)
+  } catch (e) {
+    return []
+  }
+})
+
+const followedSubjectLabels = computed(() => {
+  try {
+    const u = (auth && (auth.user && auth.user.value)) ? auth.user.value : auth.user
+    const profile = u?.profile || {}
+    const subjectModels = Array.isArray(profile?.subjectModels) ? profile.subjectModels : Array.isArray(profile?.subjects) ? profile.subjects : []
+    return subjectModels.map(s => (s && (s.name || s.title)) ? (s.name || s.title) : String(s)).filter(Boolean)
+  } catch (e) {
+    return []
+  }
+})
+
+// visibleTopics: either all filteredTopics or only those whose subject is in followed subjects
+const visibleTopics = computed(() => {
+  if (showAll.value) return filteredTopics.value
+  const ids = followedSubjectIds.value || []
+  if (!ids || ids.length === 0) return filteredTopics.value
+  return filteredTopics.value.filter(t => ids.includes(String(t.subject_id || t.subjectId || (t.subject && (t.subject.id || t.subject.value) ) || '')))
+})
+
 onMounted(async () => {
   // Parallelize levels loading and topics fetching
   await Promise.all([
@@ -203,6 +248,10 @@ async function loadTopics() {
     if (selectedSubject.value) params.set('subject_id', selectedSubject.value)
     if (selectedGrade.value) params.set('grade_id', selectedGrade.value)
     if (searchQuery.value) params.set('q', searchQuery.value)
+      // If the user wants only topics from their subjects, ask server to filter
+      if (!showAll.value && Array.isArray(followedSubjectIds.value) && followedSubjectIds.value.length > 0) {
+        params.set('followed', '1')
+      }
     const api = useApi()
     const res = await api.get(`/api/topics?${params.toString()}`)
     if (api.handleAuthStatus(res)) return

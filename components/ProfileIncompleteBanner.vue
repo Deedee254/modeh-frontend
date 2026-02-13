@@ -1,5 +1,6 @@
 <template>
-  <div v-if="show" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 flex flex-col md:flex-row md:items-start md:justify-between w-full gap-4 md:gap-0">
+  <!-- Add left padding on large screens to account for the quiz-master sidebar width -->
+  <div v-if="show" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 flex flex-col md:flex-row md:items-start md:justify-between w-full gap-4 md:gap-0 lg:pl-[var(--sidebar-width,256px)]">
     <div class="mr-0 md:mr-4">
       <p class="text-yellow-800 font-medium">Complete your profile to get a tailored experience.</p>
       <p class="text-sm text-yellow-700">Complete your profile to receive personalized recommendations and content.</p>

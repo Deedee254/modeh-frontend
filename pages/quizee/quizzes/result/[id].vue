@@ -146,13 +146,13 @@
                     <div class="font-semibold">Your Answer</div>
                     <div class="text-sm text-slate-500">{{ pointsForDetail(d) }} pts</div>
                   </div>
-                  <div class="mt-2 text-sm font-mono break-words" v-html="formatProvided(d.provided)"></div>
+                  <div class="mt-2 text-sm font-mono break-words" v-html="formatProvided(d.provided, d.options)"></div>
                   <div class="mt-1 text-xs" :class="d.correct ? 'text-green-700' : 'text-red-600'">{{ d.correct ? 'Correct' : 'Incorrect' }}</div>
                 </div>
 
                 <div v-if="!d.correct" class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
                   <div class="font-semibold">Correct Answer</div>
-                  <div class="mt-2 text-sm font-mono break-words" v-html="formatProvided(d.correct_answers)"></div>
+                  <div class="mt-2 text-sm font-mono break-words" v-html="formatProvided(d.correct_answers, d.options)"></div>
                 </div>
               </div>
 
@@ -360,20 +360,35 @@ onMounted(async () => {
   await fetchResults()
 })
 
-function formatProvided(p) {
+function resolveOptionText(value, options) {
+  if (!Array.isArray(options)) return value
+  const raw = String(value ?? '').trim()
+  if (!/^\d+$/.test(raw)) return value
+  const idx = Number(raw)
+  const option = options[idx]
+  if (option === null || typeof option === 'undefined') return value
+  if (typeof option === 'string') return option
+  if (typeof option === 'object') return option.text || option.body || option.option || value
+  return value
+}
+
+function formatProvided(p, options = []) {
   // Normalize null/undefined
   if (p === null || p === undefined) return 'Not provided'
 
   // Handle arrays: filter out empty entries and render readable fallback when empty
   if (Array.isArray(p)) {
-    const filtered = p.filter(item => item !== null && item !== undefined && String(item).trim() !== '')
+    const filtered = p
+      .map(item => resolveOptionText(item, options))
+      .filter(item => item !== null && item !== undefined && String(item).trim() !== '')
     if (!filtered.length) return 'Not provided'
     return filtered.map(item => `<code>${item}</code>`).join(', ')
   }
 
   // Non-array values
-  if (String(p).trim() === '') return 'Not provided'
-  return `<code>${p}</code>`
+  const resolved = resolveOptionText(p, options)
+  if (String(resolved).trim() === '') return 'Not provided'
+  return `<code>${resolved}</code>`
 }
 
 function marksForDetail(d) {

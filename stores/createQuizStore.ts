@@ -223,6 +223,14 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
     // The backend sends canonical shape with 'body', 'options[].text', 'answers'.
     const question = JSON.parse(JSON.stringify(q || {}))
 
+    // Backend responses can use body/question/text keys; normalize to editor's `body`.
+    if (!question.body) {
+      question.body = question.question || question.text || ''
+    }
+    if (!question.text && question.body) {
+      question.text = question.body
+    }
+
     // Add UI-only helper fields
     if (!question.uid) question.uid = Math.random().toString(36).substring(2)
     if (typeof question.open === 'undefined') question.open = true
@@ -246,6 +254,17 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
 
     // Ensure answers is an array (even if empty)
     if (!Array.isArray(question.answers)) question.answers = []
+
+    // If answers are missing for option-based types but options carry `is_correct`, derive index answers.
+    if (['mcq', 'multi', 'fill_blank'].includes(question.type) && question.answers.length === 0 && Array.isArray(question.options)) {
+      const derived = question.options
+        .map((opt: any, idx: number) => ({ opt, idx }))
+        .filter(({ opt }) => !!(opt && typeof opt === 'object' && opt.is_correct))
+        .map(({ idx }) => String(idx))
+      if (derived.length) {
+        question.answers = derived
+      }
+    }
 
     return question
   }
@@ -1090,8 +1109,16 @@ export const useCreateQuizStore = defineStore('createQuiz', () => {
         if (q && (!q.options || q.options.length < 2) && ['mcq', 'multi'].includes(q.type)) {
           invalidQuestions.push(`Question ${i + 1}: Multiple choice needs at least 2 options`)
         }
-        if (q && (!q.answers || q.answers.length === 0)) {
-          invalidQuestions.push(`Question ${i + 1}: Missing correct answer(s)`)
+        const type = q?.type
+        if (['mcq', 'multi', 'fill_blank', 'short', 'numeric'].includes(type)) {
+          if (!q.answers || q.answers.length === 0) {
+            invalidQuestions.push(`Question ${i + 1}: Missing correct answer(s)`)
+          }
+        }
+        if (type === 'math') {
+          if (!Array.isArray(q.parts) || q.parts.length === 0 || !q.parts.every((p: any) => (p?.text || '').trim())) {
+            invalidQuestions.push(`Question ${i + 1}: Math question requires at least one part with text`)
+          }
         }
       }
       if (invalidQuestions.length > 0) {

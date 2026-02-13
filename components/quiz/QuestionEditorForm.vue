@@ -62,11 +62,24 @@
         </div>
       </template>
       <template v-else>
+        <div class="mb-2 flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+          <div class="text-xs text-gray-600">
+            Editor mode: <span class="font-semibold text-gray-800">{{ isAdvancedEditor ? 'Advanced' : 'Basic' }}</span>
+          </div>
+          <UButton
+            size="xs"
+            :variant="isAdvancedEditor ? 'soft' : 'outline'"
+            color="gray"
+            @click="isAdvancedEditor = !isAdvancedEditor"
+          >
+            {{ isAdvancedEditor ? 'Use Basic' : 'Use Advanced' }}
+          </UButton>
+        </div>
         <RichTextEditor 
           v-model="local.body" 
           @ready="onEditorReady"
           placeholder="Enter your question here..."
-          :features="{ math: true, code: true }"
+          :features="editorFeatures"
         />
       </template>
     </div>
@@ -192,7 +205,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, getCurrentInstance, computed, ref } from 'vue'
+import { watch, computed, ref } from 'vue'
 import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 import { useAppAlert } from '~/composables/useAppAlert'
 
@@ -213,6 +226,7 @@ const uploading = ref(false)
 const alert = useAppAlert()
 const imageInput = ref<HTMLInputElement | null>(null)
 const audioInput = ref<HTMLInputElement | null>(null)
+const isAdvancedEditor = ref(false)
 
 // taxonomy is determined by the parent quiz; no local selectors here
 
@@ -401,6 +415,10 @@ function toggleMathPartAnswer(partIndex: number, answerIndex: string, isCorrect:
 
 const isOptionType = computed(() => optionTypes.includes(local.value.type))
 const isSingleChoiceType = computed(() => singleChoiceTypes.includes(local.value.type))
+const editorFeatures = computed(() => {
+  if (!isAdvancedEditor.value) return { math: false, code: false }
+  return { math: true, code: true }
+})
 const canToggleOptionMode = computed(() => {
   // Can toggle option mode for MCQ, Multi, and FillBlanks
   return ['mcq', 'multi', 'fill_blank'].includes(local.value.type)
@@ -542,4 +560,3 @@ function isValidYoutubeUrl(url: string): boolean {
 <style scoped>
 .drag-handle { cursor: grab; }
 </style>
-

@@ -222,6 +222,11 @@ function buildQuestionFromRow(row) {
     answers: answers.length ? answers : undefined,
     open: true,
   }
+
+  // Provide a `text` field for validation and UI compatibility (some validators
+  // and components expect `question.text` instead of `question.body`). Use
+  // the plain-text CSV value when available, otherwise derive from body.
+  question.text = text || (typeof question.body === 'string' ? question.body : '')
   
   // Debug logging for CSV import
   if (type === 'mcq' && question.options && question.answers) {
