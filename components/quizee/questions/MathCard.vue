@@ -1,5 +1,20 @@
 <template>
   <div class="space-y-2 sm:space-y-3">
+      <!-- Editor Mode Toggle -->
+      <div class="flex items-center gap-2 px-2 sm:px-3 py-2">
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
+          {{ isAdvancedEditor ? 'Advanced' : 'Basic' }}
+        </span>
+        <UButton 
+          size="xs"
+          :variant="isAdvancedEditor ? 'soft' : 'outline'"
+          color="gray"
+          @click="isAdvancedEditor = !isAdvancedEditor"
+        >
+          {{ isAdvancedEditor ? 'Use Basic' : 'Use Advanced' }}
+        </UButton>
+      </div>
+
       <div v-for="(part, idx) in parts" :key="idx" class="p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
           <div class="flex-1 min-w-0">
@@ -8,12 +23,12 @@
             
             <!-- Text-based answer part -->
             <div v-if="part.part_type !== 'mcq' && part.part_type !== 'multi'">
-              <textarea 
+              <RichTextEditor 
                 v-model="localAnswers[idx]" 
-                rows="3" 
-                class="w-full font-mono text-xs sm:text-sm rounded border border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2" 
-                placeholder="Enter answer for {{ partLabel(idx) }}"
-              ></textarea>
+                :features="editorFeatures"
+                class="w-full font-mono text-xs sm:text-sm rounded border border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 min-h-[80px]"
+                :placeholder="`Enter answer for ${partLabel(idx)}`"
+              />
               <div class="mt-1 sm:mt-2 prose-sm text-xs sm:text-sm text-gray-700 dark:text-gray-300 break-words" v-html="previews[idx]"></div>
             </div>
 
@@ -53,6 +68,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import RichTextEditor from '~/components/editor/RichTextEditor.vue'
 import { useQuizMedia } from '~/composables/quiz/useQuizMedia'
 
 let katex = null
@@ -71,6 +87,13 @@ const props = defineProps({ question: { type: Object, required: true }, modelVal
 const emit = defineEmits(['update:modelValue','select'])
 
 const quizMedia = useQuizMedia()
+const isAdvancedEditor = ref(false)
+
+const editorFeatures = computed(() => {
+  return isAdvancedEditor.value 
+    ? { math: true, code: true }
+    : { math: false, code: false }
+})
 
 const hasMedia = computed(() => !!(props.question && (props.question.media_path || props.question.media || props.question.youtube_url || props.question.youtube)))
 const mediaSrc = computed(() => props.question?.media_path || props.question?.media || props.question?.youtube_url || props.question?.youtube || null)

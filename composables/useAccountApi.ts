@@ -55,16 +55,19 @@ export function useAccountApi() {
         // If the server returned an updated user payload, sync it into
         // the central auth store so components relying on `useAuthStore`
         // see the updated values without needing an explicit fetch.
+        let userPayload = parsed
         try {
           const auth = useAuthStore()
           const payload = parsed && (parsed.user || parsed.data || parsed)
           if (payload && typeof payload === 'object' && payload.id) {
             auth.setUser(payload)
+            userPayload = payload
           }
         } catch (e) {
           // non-fatal if syncing fails
         }
-        return parsed
+        // CRITICAL: Return the user payload (not the full response) so callers get the updated user data
+        return userPayload
       } catch (parseErr) {
         console.error('Failed to parse response JSON:', parseErr)
         throw new Error('Failed to parse server response')
