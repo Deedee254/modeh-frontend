@@ -121,6 +121,17 @@ export const useAuthStore = defineStore('auth', () => {
     // This prevents the session watcher from seeing the old user briefly
     clear()
     
+    // CRITICAL: Clear PWA persistent session storage
+    // This ensures the user is fully logged out on all devices
+    try {
+      const { usePwaSession } = await import('~/composables/usePwaSession')
+      const pwaSession = usePwaSession()
+      await pwaSession.clearStoredSession()
+    } catch (e) {
+      // PWA session clear is non-fatal
+      console.warn('[auth] PWA session clear failed:', e)
+    }
+    
     try {
       // useAuth is auto-imported by @sidebase/nuxt-auth
       const auth = useAuth()

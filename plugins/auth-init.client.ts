@@ -2,6 +2,7 @@ import { watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
+import { usePwaSession } from '~/composables/usePwaSession'
 
 // Ensure we only run on client
 export default defineNuxtPlugin((nuxtApp) => {
@@ -13,10 +14,23 @@ export default defineNuxtPlugin((nuxtApp) => {
     const authStore = useAuthStore()
     const taxonomyStore = useTaxonomyStore()
     const api = useApi()
+    const pwaSession = usePwaSession()
 
     // The auth store already watches auth.data and syncs automatically via the watcher
     // This plugin just ensures that initial session load is prioritized
     nuxtApp.hook('app:mounted', async () => {
+      try {
+        // STEP 1: Try to restore PWA session from storage (IndexedDB/localStorage)
+        // This is critical for offline-first PWA support - keeps users logged in
+        // even if they close and reopen the app
+        const sessionRestored = await pwaSession.initializeSession()
+        if (sessionRestored) {
+          console.log('[auth-init] PWA session restored from persistent storage')
+        }
+      } catch (e) {
+        console.warn('[auth-init] PWA session restoration failed (non-fatal):', e)
+      }
+
       try {
         // Initialize CSRF token FIRST before any authenticated requests
         // This ensures the Sanctum cookie is set and XSRF-TOKEN is available
@@ -39,6 +53,20 @@ export default defineNuxtPlugin((nuxtApp) => {
       } catch (e) {
         // Taxonomy load is optional - data will load on-demand in components
       }
+
+      // STEP 2: Watch for user changes and persist to PWA storage
+      // This ensures that when user logs in or their profile updates,
+      // the session is saved for offline-first support
+      watch(
+        () => authStore.user,
+        async (newUser) => {
+          if (newUser) {
+            // User logged in or profile updated - persist to storage
+            await pwaSession.persistSession()
+          }
+        },
+        { deep: true }
+      )
     })
   } catch (e) {
     // silently skip if stores not available
