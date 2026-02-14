@@ -326,10 +326,10 @@ export default defineNuxtConfig({
   },
 
   auth: {
-    baseURL: (process.env.NUXT_AUTH_ORIGIN || process.env.NUXT_PUBLIC_BASE_URL)
-      ? `${(process.env.NUXT_AUTH_ORIGIN || process.env.NUXT_PUBLIC_BASE_URL)}/api/auth`
-      : '/api/auth',
-    originEnvKey: 'NUXT_AUTH_ORIGIN',
+    // Keep build-time default relative, then let runtime env override on server.
+    baseURL: '/api/auth',
+    // Must include full auth endpoint, e.g. https://modeh.co.ke/api/auth
+    originEnvKey: 'NUXT_AUTH_BASE_URL',
     provider: {
       type: 'authjs',
       trustHost: true,
