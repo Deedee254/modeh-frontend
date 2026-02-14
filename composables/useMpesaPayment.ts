@@ -49,25 +49,19 @@ export const useMpesaPayment = () => {
     state.value.lastCheckedAt = new Date().toISOString()
 
     try {
-      console.log('[useMpesaPayment] Making reconcile request for:', checkoutRequestId)
-      
       const resp = await api.postJson('/api/mpesa/reconcile', {
         checkout_request_id: checkoutRequestId,
         source,
       })
 
-      console.log('[useMpesaPayment] Response status:', resp.status, 'OK:', resp.ok)
-
       // Check HTTP status first
       if (!resp.ok) {
-        console.error('[useMpesaPayment] HTTP error:', resp.status, resp.statusText)
         state.value.status = 'manual_reconciliation'
         state.value.errorMessage = `HTTP ${resp.status}: ${resp.statusText}`
         return { ok: false, status: 'manual_reconciliation', httpStatus: resp.status }
       }
 
       const response = await resp.json()
-      console.log('[useMpesaPayment] Reconcile response:', response)
 
       if (response?.ok) {
         const { status, transaction } = response
@@ -82,32 +76,29 @@ export const useMpesaPayment = () => {
 
         if (status === 'success') {
           state.value.errorMessage = null
-          console.log('[useMpesaPayment] ✅ Success')
           return { ok: true, status: 'success', transaction }
         } else if (status === 'failed') {
           state.value.errorMessage = transaction?.result_desc || 'Payment failed'
-          console.log('[useMpesaPayment] ❌ Failed')
           return { ok: false, status: 'failed', transaction }
+        } else if (status === 'cancelled') {
+          state.value.errorMessage = 'User cancelled the payment prompt'
+          return { ok: false, status: 'cancelled', transaction }
         } else if (status === 'pending') {
           // Daraja may still be processing; schedule auto-retry based on nextRetryAt
           state.value.errorMessage = null
-          console.log('[useMpesaPayment] ⏳ Pending')
           return { ok: false, status: 'pending', transaction, nextRetryAt: transaction?.next_retry_at }
         } else {
           // Unknown status returned from backend
-          console.warn('[useMpesaPayment] ⚠️ Unknown status:', status)
           state.value.errorMessage = `Unknown status: ${status}`
           return { ok: true, status: status || 'pending', transaction }
         }
       } else {
         // Response ok but data indicates error
-        console.warn('[useMpesaPayment] API returned not ok:', response)
         state.value.status = 'manual_reconciliation'
         state.value.errorMessage = response?.message || 'Failed to reconcile payment'
         return { ok: false, status: 'manual_reconciliation', message: response?.message }
       }
     } catch (error: any) {
-      console.error('[useMpesaPayment] Error during reconcile:', error)
       state.value.status = 'manual_reconciliation'
       state.value.errorMessage = error?.message || 'Network error during reconciliation'
       return { ok: false, status: 'manual_reconciliation', error: error?.message }

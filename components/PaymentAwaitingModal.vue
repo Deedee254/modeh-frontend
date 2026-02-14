@@ -16,28 +16,11 @@
             : 'Complete the M-PESA prompt on your phone' }}
         </p>
         
-        <div class="mt-3 text-sm text-slate-600 dark:text-slate-400">
-          <div v-if="checkoutRequestId" class="mb-2">
-            <span class="font-medium">✅ Checkout Request ID:</span><br>
-            <span class="font-mono text-xs text-blue-600 dark:text-blue-400">{{ checkoutRequestId }}</span>
-          </div>
-          <div v-else class="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
-            <span class="text-xs font-medium text-yellow-800 dark:text-yellow-200">⚠️ Missing Checkout Request ID</span><br>
-            <span class="text-xs text-yellow-700 dark:text-yellow-300">Backend did not return checkout_request_id. Check backend logs.</span>
-          </div>
-          <div v-if="tx" class="mb-2">
-            <span class="font-medium">M-PESA Receipt:</span><br>
-            <span class="text-xs text-green-600 dark:text-green-400 font-mono">{{ tx }}</span>
-          </div>
-          <div v-if="!tx && !checkoutRequestId" class="text-xs text-slate-500">
-            Initializing payment...
-          </div>
-        </div>
-
         <div v-if="secondsRemaining > 0" class="mt-3 text-xs text-slate-500 dark:text-slate-400">
           Timeout in: {{ formatSeconds(secondsRemaining) }}
         </div>
 
+        
         <button 
           v-if="!isMpesaCheckingStatus && checkoutRequestId"
           @click="onCheckNow" 
@@ -45,8 +28,6 @@
         >
           Check Status Now
         </button>
-
-        <!-- (debug info removed) -->
       </div>
 
       <!-- Success State -->
@@ -173,15 +154,15 @@ const invoiceUrl = ref<string | null>(null)
 const mpesaData = ref<any>(null)
 const isMpesaCheckingStatus = ref(false)
 let intervalId: NodeJS.Timeout | null = null
-let autoCheckInterval: NodeJS.Timeout | null = null
+let statusCheckInterval: NodeJS.Timeout | null = null
 const auth = useAuthStore()
 const { push: pushAlert } = useAppAlert()
 const api = useApi()
 const mpesa = useMpesaPayment()
 let _echoChannels: EchoChannel[] = []
 
-// Debug / runtime tracking
-const autoCheckAttempts = ref(0)
+// Track if we've already done initial check
+let initialCheckDone = false
 
 const getButtonLabel = computed(() => {
   if (status.value === 'active') return 'Done'
@@ -204,8 +185,6 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-// debug toggles removed for production
-
 function maskPhoneNumber(phone: string): string {
   if (!phone) return 'Not provided'
   // Show first 3 and last 3 digits: 254712****78
@@ -222,58 +201,34 @@ function startTimeoutCountdown(): void {
       if (intervalId) clearInterval(intervalId)
       if (status.value === 'pending') {
         status.value = 'timeout'
-        pushAlert({ type: 'warning', message: 'Payment confirmation timeout. Please retry or contact support.' })
+        pushAlert({ type: 'warning', message: 'Payment verification timed out. Please try again or contact support.' })
       }
     }
   }, 1000)
 }
 
 /**
- * Auto-poll M-PESA reconciliation with stepped backoff (3s × 10, then 15s × 6, then stop & mark timeout)
+ * Streamlined polling: check after 15s, then continue checking every 15s
+ * Stops when transaction is resolved or timeout occurs
  */
-function startAutoCheck(): void {
-  if (autoCheckInterval !== null) clearInterval(autoCheckInterval)
+function startStatusChecking(): void {
+  if (statusCheckInterval !== null) clearInterval(statusCheckInterval)
   
-  const pollIntervals = [3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 15000, 15000, 15000, 15000, 15000, 15000]
-  const maxAttempts = pollIntervals.length
-  let attemptIndex = 0
-
-  const tick = async () => {
+  // Initial check after 15 seconds
+  statusCheckInterval = setInterval(async () => {
     if (status.value !== 'pending' || !props.checkoutRequestId) {
-      stopAutoCheck()
+      stopStatusChecking()
       return
     }
-
-    if (attemptIndex >= maxAttempts) {
-      stopAutoCheck()
-      // Mark as timeout/manual_reconciliation after all polls exhausted
-      if (status.value === 'pending') {
-        status.value = 'timeout'
-        pushAlert({
-          type: 'warning',
-          message: 'Payment verification delayed. We will continue checking in background. You can contact support if needed.',
-        })
-      }
-      return
-    }
-
+    
     await reconcilePayment()
-    attemptIndex++
-
-    // Restart interval with next interval duration if there are more attempts
-    if (attemptIndex < maxAttempts) {
-      if (autoCheckInterval !== null) clearInterval(autoCheckInterval)
-      autoCheckInterval = setInterval(tick, pollIntervals[attemptIndex])
-    }
-  }
-
-  autoCheckInterval = setInterval(tick, pollIntervals[attemptIndex])
+  }, 15000)
 }
 
-function stopAutoCheck(): void {
-  if (autoCheckInterval !== null) {
-    clearInterval(autoCheckInterval)
-    autoCheckInterval = null
+function stopStatusChecking(): void {
+  if (statusCheckInterval !== null) {
+    clearInterval(statusCheckInterval)
+    statusCheckInterval = null
   }
 }
 
@@ -286,7 +241,7 @@ async function onCheckNow(): Promise<void> {
 }
 
 /**
- * Reconcile payment with M-PESA backend
+ * Reconcile payment with M-PESA backend and surface errors via toast
  */
 async function reconcilePayment(): Promise<void> {
   // Concurrency guard: skip if already checking
@@ -295,7 +250,6 @@ async function reconcilePayment(): Promise<void> {
   }
 
   if (!props.checkoutRequestId) {
-    console.error('[PaymentAwaitingModal] No checkoutRequestId to reconcile')
     return
   }
   
@@ -314,25 +268,70 @@ async function reconcilePayment(): Promise<void> {
         await fetchAndSetInvoiceUrl()
       }
       status.value = 'active'
-      stopAutoCheck()
+      stopStatusChecking()
       if (intervalId !== null) clearInterval(intervalId)
-      pushAlert({ type: 'success', message: 'Payment confirmed!' })
+      pushAlert({ 
+        type: 'success', 
+        message: `Payment confirmed! Receipt: ${result.transaction?.mpesa_receipt || 'N/A'}` 
+      })
       return
     }
 
-    // Handle failure
+    // Handle failure (e.g., insufficient funds, declined, etc.)
     if (result?.status === 'failed') {
       mpesaData.value = result.transaction
       status.value = 'failed'
-      stopAutoCheck()
+      stopStatusChecking()
       if (intervalId !== null) clearInterval(intervalId)
-      pushAlert({ type: 'error', message: 'Payment failed: ' + (result.transaction?.result_desc || 'Unknown error') })
+      
+      const errorMessage = result.transaction?.result_desc || 'Payment was declined'
+      pushAlert({ 
+        type: 'error', 
+        message: `Payment failed: ${errorMessage}` 
+      })
       return
     }
 
-    // pending or manual_reconciliation -> do nothing, will retry
+    // Handle cancellation (user cancelled the STK prompt)
+    if (result?.status === 'cancelled') {
+      status.value = 'cancelled'
+      stopStatusChecking()
+      if (intervalId !== null) clearInterval(intervalId)
+      pushAlert({ 
+        type: 'warning', 
+        message: 'Payment cancelled. You can retry or contact support.' 
+      })
+      return
+    }
+
+    // Handle pending - still waiting for response or auto-retry
+    if (result?.status === 'pending') {
+      // Still waiting; continue polling
+      return
+    }
+
+    // Handle manual reconciliation needed (network error, timeout, etc.)
+    if (result?.status === 'manual_reconciliation' || !result?.ok) {
+      const httpStatus = result?.httpStatus
+      const errorMsg = result?.errorMessage || result?.message || 'Unable to verify payment status'
+      
+      // If HTTP error or network issue, show warning but continue polling
+      if (httpStatus) {
+        pushAlert({ 
+          type: 'warning', 
+          message: `Network issue (${httpStatus}). Retrying...` 
+        })
+      }
+      return
+    }
+
+    // Unknown status - log but continue
   } catch (error: any) {
-    console.error('[Payment Reconcile] Error checking status:', error?.message || error)
+    // Generic error - show warning but don't fail the transaction
+    pushAlert({ 
+      type: 'warning', 
+      message: 'Network error while checking payment status. Retrying...' 
+    })
   } finally {
     isMpesaCheckingStatus.value = false
   }
@@ -385,7 +384,7 @@ async function fetchAndSetInvoiceUrl(): Promise<void> {
       invoiceUrl.value = `/api/transactions/${data.data[0].id}/download`
     }
   } catch (error) {
-    console.error('Failed to fetch invoice URL:', error)
+    // Silent fail - invoice URL is optional
   }
 }
 
@@ -414,7 +413,6 @@ async function downloadInvoice(): Promise<void> {
     
     pushAlert({ type: 'success', message: 'Invoice downloaded successfully' })
   } catch (error) {
-    console.error('Failed to download invoice:', error)
     pushAlert({ type: 'error', message: 'Failed to download invoice' })
   }
 }
@@ -423,10 +421,10 @@ function onRetry(): void {
   status.value = 'pending'
   secondsRemaining.value = 180
   invoiceUrl.value = null
-  autoCheckAttempts.value = 0
+  initialCheckDone = false
   if (intervalId !== null) clearInterval(intervalId)
   startTimeoutCountdown()
-  startAutoCheck()
+  startStatusChecking()
   pushAlert({ type: 'info', message: 'Retrying payment confirmation...' })
 }
 
@@ -437,7 +435,7 @@ function onClose(): void {
 
 onMounted(() => {
   if (!props.tx && !props.checkoutRequestId) {
-    console.error('[PaymentAwaitingModal] ERROR: No tx or checkoutRequestId provided')
+    pushAlert({ type: 'error', message: 'Payment error: missing transaction data' })
     return
   }
 
@@ -445,15 +443,13 @@ onMounted(() => {
   _attachEchoListeners()
 
   if (props.checkoutRequestId) {
-    startAutoCheck()
-    // immediate first check
-    setTimeout(() => { reconcilePayment() }, 500)
+    startStatusChecking()
   }
 })
 
 onBeforeUnmount(() => {
   if (intervalId !== null) clearInterval(intervalId)
-  stopAutoCheck()
+  stopStatusChecking()
   _detachEchoListeners()
 })
 </script>
