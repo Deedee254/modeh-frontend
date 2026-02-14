@@ -67,6 +67,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const auth = useAuthStore()
 const api = useApi()
 const taxonomy = useTaxonomy()
@@ -117,7 +118,7 @@ async function fetchCourseAndTopics() {
 
 onMounted(() => {
   if (slug.value) {
-    fetchCourseAndTopics()
+    fetchCourseAndTopics().then(() => {
     
     // Setup SEO for course page
     if (course.value?.id && course.value?.slug) {
@@ -129,9 +130,10 @@ onMounted(() => {
           description: course.value.description || course.value.summary
         },
         'subject',
-        window.location.origin
+        config.public.baseUrl
       )
     }
+    })
   }
 })
 </script>

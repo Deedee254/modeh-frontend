@@ -192,7 +192,7 @@ const tournaments = computed(() => {
 // Setup SEO server-side so meta and JSON-LD are present in the initial HTML
 try {
   const seo = useSeo()
-  const base = String(config.public?.baseUrl || '').replace(/\/$/, '') || ''
+  const base = String(config.public?.baseUrl || '')
   const path = pageParam > 1 ? `/tournaments?page=${pageParam}` : '/tournaments'
   seo.setupCollectionSeo(
     'Tournaments — Modeh',

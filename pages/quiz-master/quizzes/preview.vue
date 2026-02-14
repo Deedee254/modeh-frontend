@@ -150,7 +150,7 @@ const shareUrl = computed(() => {
   const config = useRuntimeConfig()
   // Prefer slug-based public route
   const identifier = quiz.value?.slug || quiz.value?.id
-  return `${config.public.siteUrl || window.location.origin}/quizzes/${identifier}`
+  return `${config.public.baseUrl}/quizzes/${identifier}`
 })
 
 const previewQuestions = computed(() => {

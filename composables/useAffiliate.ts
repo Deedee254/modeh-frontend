@@ -21,6 +21,7 @@ interface AffiliateReferral {
 
 export default function useAffiliate() {
   const api = useApi()
+  const config = useRuntimeConfig()
   const stats = ref<AffiliateStats | null>(null)
   const referrals = ref<AffiliateReferral[]>([])
   const loading = ref(false)
@@ -136,7 +137,8 @@ export default function useAffiliate() {
     if (!stats.value?.referralCode) {
       return ''
     }
-    const baseUrl = window.location.origin
+    const baseUrl = config.public.baseUrl
+    if (!baseUrl) return ''
     return `${baseUrl}/?ref=${stats.value.referralCode}`
   }
 

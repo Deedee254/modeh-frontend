@@ -735,7 +735,7 @@ import { useAppAlert } from '~/composables/useAppAlert'
 const auth = useAuthStore()
 
 // SEO: Structured Data (Schema.org)
-const siteUrl = config.public.siteUrl || 'https://modeh.com'
+const siteUrl = config.public.baseUrl
 const siteName = 'Modeh'
 const logoUrl = `${siteUrl}/logo.png`
 

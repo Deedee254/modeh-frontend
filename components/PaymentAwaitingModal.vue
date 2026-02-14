@@ -161,9 +161,6 @@ const api = useApi()
 const mpesa = useMpesaPayment()
 let _echoChannels: EchoChannel[] = []
 
-// Track if we've already done initial check
-let initialCheckDone = false
-
 const getButtonLabel = computed(() => {
   if (status.value === 'active') return 'Done'
   if (['timeout', 'failed', 'cancelled'].includes(status.value)) return 'Close'
@@ -312,14 +309,11 @@ async function reconcilePayment(): Promise<void> {
 
     // Handle manual reconciliation needed (network error, timeout, etc.)
     if (result?.status === 'manual_reconciliation' || !result?.ok) {
-      const httpStatus = result?.httpStatus
-      const errorMsg = result?.errorMessage || result?.message || 'Unable to verify payment status'
-      
-      // If HTTP error or network issue, show warning but continue polling
-      if (httpStatus) {
-        pushAlert({ 
-          type: 'warning', 
-          message: `Network issue (${httpStatus}). Retrying...` 
+      // Narrow the union type before accessing httpStatus to satisfy TypeScript
+      if (result && 'httpStatus' in result && result.httpStatus) {
+        pushAlert({
+          type: 'warning',
+          message: `Network issue (${result.httpStatus}). Retrying...`,
         })
       }
       return
@@ -378,7 +372,7 @@ function _detachEchoListeners(): void {
 
 async function fetchAndSetInvoiceUrl(): Promise<void> {
   try {
-    const response = await api.get('/transactions?page=1&per_page=1&sort_by=created_at&sort_order=desc&status=paid')
+    const response = await api.get('/api/transactions?page=1&per_page=1&sort_by=created_at&sort_order=desc&status=paid')
     const data = await response.json()
     if (data?.data?.[0]) {
       invoiceUrl.value = `/api/transactions/${data.data[0].id}/download`
@@ -395,10 +389,7 @@ async function downloadInvoice(): Promise<void> {
   }
 
   try {
-    const token = (auth as any).token || (auth as any).$state?.token || (auth as any).getToken?.()
-    const response = await fetch(invoiceUrl.value, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    const response = await api.get(invoiceUrl.value)
     if (!response.ok) throw new Error('Download failed')
     
     const blob = await response.blob()
@@ -421,7 +412,7 @@ function onRetry(): void {
   status.value = 'pending'
   secondsRemaining.value = 180
   invoiceUrl.value = null
-  initialCheckDone = false
+  mpesaData.value = null
   if (intervalId !== null) clearInterval(intervalId)
   startTimeoutCountdown()
   startStatusChecking()
@@ -433,24 +424,50 @@ function onClose(): void {
   emits('close')
 }
 
-onMounted(() => {
+function startFlow(): void {
   if (!props.tx && !props.checkoutRequestId) {
     pushAlert({ type: 'error', message: 'Payment error: missing transaction data' })
     return
   }
 
+  status.value = 'pending'
+  secondsRemaining.value = 180
+  invoiceUrl.value = null
+  mpesaData.value = null
+  isMpesaCheckingStatus.value = false
+
+  if (intervalId !== null) clearInterval(intervalId)
+  stopStatusChecking()
   startTimeoutCountdown()
+  _detachEchoListeners()
   _attachEchoListeners()
 
   if (props.checkoutRequestId) {
     startStatusChecking()
+    reconcilePayment()
   }
-})
+}
 
-onBeforeUnmount(() => {
+function stopFlow(): void {
   if (intervalId !== null) clearInterval(intervalId)
   stopStatusChecking()
   _detachEchoListeners()
+}
+
+onMounted(() => {
+  if (props.open) startFlow()
+})
+
+watch(() => props.open, (isOpen) => {
+  if (isOpen) {
+    startFlow()
+    return
+  }
+  stopFlow()
+})
+
+onBeforeUnmount(() => {
+  stopFlow()
 })
 </script>
 

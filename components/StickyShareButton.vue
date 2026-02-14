@@ -97,6 +97,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
+const config = useRuntimeConfig()
 
 interface Props {
   itemType?: string
@@ -109,7 +110,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   itemType: 'Item',
-  baseUrl: typeof window !== 'undefined' ? window.location.origin : '',
+  baseUrl: '',
   disabled: false
 })
 
@@ -133,7 +134,7 @@ const shareTitle = computed(() => {
 
 // Compute a child-facing baseUrl that includes the resource path
 const childBaseUrl = computed(() => {
-  const b = props.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  const b = props.baseUrl || config.public.baseUrl || ''
   if (!b) return ''
   const type = (props.itemType || '').toLowerCase()
   if (type === 'quiz' || type === 'quizzes') {

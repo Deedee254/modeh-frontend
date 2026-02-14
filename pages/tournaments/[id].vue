@@ -282,7 +282,7 @@ const tournament = computed(() => tournamentStore.currentTournament)
 const showLoginModal = ref(false)
 
 const baseUrl = computed(() => {
-  const base = (typeof config.public?.baseUrl === 'string' ? config.public.baseUrl : undefined) || (typeof window !== 'undefined' ? window.location.origin : '')
+  const base = (typeof config.public?.baseUrl === 'string' ? config.public.baseUrl : undefined) || ''
   if (!base) return ''
   return base.endsWith('/') ? `${base}tournaments` : `${base}/tournaments`
 })
@@ -317,7 +317,7 @@ const fetchTournament = async () => {
               start_date: tournament.value.start_date || tournament.value.created_at || undefined
             },
             'tournament',
-            window.location.origin
+            config.public.baseUrl
           )
         }
       } catch (e) {}

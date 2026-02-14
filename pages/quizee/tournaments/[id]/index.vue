@@ -380,7 +380,7 @@ const registerLabel = computed(() => {
 });
 
 const baseUrl = computed(() => {
-  const base = (typeof config.public?.baseUrl === 'string' ? config.public.baseUrl : undefined) || (typeof window !== 'undefined' ? window.location.origin : '')
+  const base = (typeof config.public?.baseUrl === 'string' ? config.public.baseUrl : undefined) || ''
   if (!base) return ''
   return base.endsWith('/') ? `${base}tournaments` : `${base}/tournaments`
 });

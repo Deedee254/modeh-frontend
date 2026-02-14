@@ -399,7 +399,7 @@ const isLoggedIn = computed(() => !!auth.user && !!auth.user.id)
 const showLoginModal = ref(false)
 
 const baseUrl = computed(() => {
-  const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  const base = config.public?.baseUrl || ''
   if (!base) return ''
   return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`
 })
@@ -449,7 +449,7 @@ const structuredData = computed(() => {
   if (!quiz.value || !quiz.value.slug || pending.value) return null
 
   const quizUrl = `${baseUrl.value}/${quiz.value.slug}`
-  const orgUrl = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  const orgUrl = config.public?.baseUrl || ''
 
   const data = {
     '@context': 'https://schema.org',

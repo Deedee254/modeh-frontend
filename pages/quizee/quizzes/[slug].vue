@@ -329,7 +329,7 @@ const route = useRoute()
 const config = useRuntimeConfig()
 
 const baseUrl = computed(() => {
-  const baseRaw = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  const baseRaw = config.public?.baseUrl || ''
   const base = String(baseRaw || '')
   if (!base) return ''
   return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`

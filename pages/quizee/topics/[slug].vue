@@ -119,6 +119,7 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const config = useRuntimeConfig()
 const auth = useAuthStore()
 const api = useApi()
 const seo = useSeo()
@@ -228,7 +229,7 @@ onMounted(async () => {
             description: topic.value.description || topic.value.summary
           },
           'topic',
-          window.location.origin
+          config.public.baseUrl
         )
       }
     }

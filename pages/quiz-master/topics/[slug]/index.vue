@@ -458,7 +458,7 @@ onMounted(async () => {
         description: topic.value.description || topic.value.summary
       },
       'topic',
-      window.location.origin
+      config.public.baseUrl
     )
   }
   

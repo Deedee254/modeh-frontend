@@ -67,6 +67,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const auth = useAuthStore()
 const api = useApi()
 const taxonomy = useTaxonomy()
@@ -122,7 +123,7 @@ async function fetchGradeAndTopics() {
 
 onMounted(() => {
   if (slug.value) {
-    fetchGradeAndTopics()
+    fetchGradeAndTopics().then(() => {
     
     // Setup SEO for grade page
     if (grade.value?.id && grade.value?.slug) {
@@ -134,9 +135,10 @@ onMounted(() => {
           description: grade.value.description || grade.value.summary
         },
         'grade',
-        window.location.origin
+        config.public.baseUrl
       )
     }
+    })
   }
 })
 </script>

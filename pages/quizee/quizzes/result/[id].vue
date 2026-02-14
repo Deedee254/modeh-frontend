@@ -195,6 +195,7 @@ import { normalizeAnswer } from '~/composables/useAnswerNormalization'
 definePageMeta({ layout: 'quizee', meta: [ { name: 'robots', content: 'noindex, nofollow' }, { name: 'description', content: 'View your quiz results and detailed breakdowns on Modeh.' } ] })
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const attemptId = route.params.id
 const attempt = ref({ details: [], score: 0 })
 const badges = ref([])
@@ -407,9 +408,9 @@ function pointsForDetail(d) {
 // share helpers
 function share(provider) {
   // Prefer sharing the quiz's public page rather than the result URL
-  const url = (typeof window !== 'undefined' && quizSlug.value)
-    ? `${window.location.origin}/quizzes/${quizSlug.value}`
-    : window.location.href
+  const url = (quizSlug.value && config.public.baseUrl)
+    ? `${config.public.baseUrl}/quizzes/${quizSlug.value}`
+    : config.public.baseUrl
   const text = `I scored ${attempt.value.score}% on this quiz!`;
   if (provider === 'twitter') {
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer')
@@ -419,9 +420,9 @@ function share(provider) {
 }
 
 function copyLink() {
-  const shareUrl = (typeof window !== 'undefined' && quizSlug.value)
-    ? `${window.location.origin}/quizzes/${quizSlug.value}`
-    : window.location.href
+  const shareUrl = (quizSlug.value && config.public.baseUrl)
+    ? `${config.public.baseUrl}/quizzes/${quizSlug.value}`
+    : config.public.baseUrl
   navigator.clipboard?.writeText(shareUrl)
     .then(() => {
       // You can add a toast notification here to confirm the copy

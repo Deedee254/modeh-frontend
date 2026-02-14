@@ -119,8 +119,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
             if (typeof window !== 'undefined') {
                 window.Pusher = Pusher;
             }
-            const key = config.public.pusherAppKey || config.public.pusherKey || '5a6916ce972fd4a06074';
-            const cluster = config.public.pusherAppCluster || config.public.pusherCluster || 'ap2';
+            const key = config.public.pusherKey;
+            const cluster = config.public.pusherCluster;
+            if (!key || !cluster) return null;
             
             echoInstance = new Echo({
                 broadcaster: 'pusher',

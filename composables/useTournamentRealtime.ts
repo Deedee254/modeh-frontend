@@ -30,15 +30,14 @@ export function useTournamentRealtime(tournamentId: number | string) {
         if (window.Echo) {
             echo.value = window.Echo;
         } else {
-            const key = config.public.pusherKey || config.public.pusherAppKey || '5a6916ce972fd4a06074';
+            const key = config.public.pusherKey;
+            const cluster = config.public.pusherCluster;
+            if (!key || !cluster) return
             echo.value = new Echo({
                 broadcaster: 'pusher',
                 key: key,
-                wsHost: config.public.wsHost,
-                wsPort: config.public.wsPort,
-                wssPort: config.public.wsPort,
-                forceTLS: false,
-                enabledTransports: ['ws', 'wss'],
+                cluster: cluster,
+                forceTLS: true,
                 auth: {
                     headers: authHeaders
                 }

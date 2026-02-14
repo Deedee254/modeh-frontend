@@ -248,8 +248,7 @@ const affiliateCode = computed(() => {
 
 const affiliateLink = computed(() => {
   const config = useRuntimeConfig()
-  const baseFromConfig = config && config.public && config.public.baseUrl
-  const base = baseFromConfig || (typeof window !== 'undefined' ? window.location.origin : '')
+  const base = config.public?.baseUrl || ''
   const code = affiliateCode.value ?? ''
   if (!base) return code ? `?ref=${encodeURIComponent(code)}` : ''
   return code ? `${base}?ref=${encodeURIComponent(code)}` : base

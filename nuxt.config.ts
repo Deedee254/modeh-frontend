@@ -1,8 +1,6 @@
 import { defineNuxtConfig } from 'nuxt/config'
 import { fileURLToPath } from 'node:url'
 
-const stripTrailingSlash = (value?: string) => value?.replace(/\/$/, '') ?? ''
-
 // NOTE: These env vars are intentionally read at build time for specific purposes,
 // but critical auth/api URLs are moved to runtimeConfig so they pick up values at runtime.
 // This is critical for production where env vars may not be available during build.
@@ -280,17 +278,8 @@ export default defineNuxtConfig({
     // Google OAuth credentials (from env) - read at runtime, not build time
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? undefined,
     public: {
-      // CRITICAL: These must use environment variables that are evaluated at RUNTIME
-      // NOT at build time, so they pick up production values correctly
-      apiBase: process.env.NUXT_PUBLIC_API_BASE 
-        ? stripTrailingSlash(process.env.NUXT_PUBLIC_API_BASE)
-        : undefined,
-      baseUrl: process.env.NUXT_PUBLIC_BASE_URL 
-        ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
-        : undefined,
-      siteUrl: process.env.NUXT_PUBLIC_BASE_URL 
-        ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
-        : undefined,
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? undefined,
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL ?? undefined,
 
       // Google OAuth client ID - must be available on client side
       googleClientId: process.env.GOOGLE_CLIENT_ID ?? undefined,
@@ -299,13 +288,7 @@ export default defineNuxtConfig({
       googleTagManagerId: gtmId ?? undefined,
 
       pusherKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? undefined,
-      pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_KEY ?? undefined,
       pusherCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? undefined,
-      pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_CLUSTER ?? undefined,
-
-      wsHost: process.env.NUXT_PUBLIC_WS_HOST ?? undefined,
-      wsPort: process.env.NUXT_PUBLIC_WS_PORT ? parseInt(process.env.NUXT_PUBLIC_WS_PORT) : undefined,
-      wsProtocol: process.env.NUXT_PUBLIC_WS_PROTOCOL ?? undefined
     }
   },
 
@@ -343,14 +326,10 @@ export default defineNuxtConfig({
   },
 
   auth: {
-    // Nuxt Auth API base path; must include `/api/auth` to avoid `/providers` 404s.
-    // Example: http://localhost:3000/api/auth
-    baseURL: process.env.NUXT_AUTH_BASE_URL
-      ? stripTrailingSlash(process.env.NUXT_AUTH_BASE_URL)
+    baseURL: process.env.NUXT_PUBLIC_BASE_URL
+      ? `${process.env.NUXT_PUBLIC_BASE_URL}/api/auth`
       : '/api/auth',
-    // Must point to an auth API URL that includes `/api/auth` (not plain origin),
-    // otherwise server-side internal routing resolves to `/session`.
-    originEnvKey: 'NUXT_AUTH_BASE_URL',
+    originEnvKey: 'NUXT_PUBLIC_BASE_URL',
     provider: {
       type: 'authjs',
       trustHost: true,

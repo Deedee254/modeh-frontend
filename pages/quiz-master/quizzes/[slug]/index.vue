@@ -602,11 +602,11 @@ async function loadQuiz() {
             slug: loaded.slug,
             description: loaded.description || loaded.summary,
             image: loaded.cover_image
-          },
-          'quiz',
-          window.location.origin
-        )
-      }
+        },
+        'quiz',
+        config.public.baseUrl
+      )
+    }
     }
   } catch (e) {
     console.error('Failed to load quiz', e)

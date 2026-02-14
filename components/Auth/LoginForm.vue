@@ -157,10 +157,7 @@ async function signInGoogle() {
   try {
     // Use signIn with redirect: false to catch errors properly
     // Instead of relying on automatic redirect which can hide OAuth errors
-    const result = await signIn('google', { 
-      redirect: false,
-      callbackUrl: '/auth/callback'
-    })
+    const result = await signIn('google', { redirect: false })
     
     if (!result?.ok) {
       // If OAuth fails, redirect to error page with error code

@@ -6,23 +6,45 @@ import { useRuntimeConfig } from '#imports'
 const GoogleProvider: any = (GoogleProviderImport as any).default || GoogleProviderImport
 const CredentialsProvider: any = (CredentialsProviderImport as any).default || CredentialsProviderImport
 
+const createCookieConfig = (name: string, secure: boolean) => ({
+  name,
+  options: {
+    httpOnly: true,
+    secure,
+    sameSite: 'lax' as const,
+    path: '/',
+  }
+})
+
 export default NuxtAuthHandler({
-    // Enable debug when NUXT_AUTH_DEBUG=true in environment
-    debug: process.env.NUXT_AUTH_DEBUG === 'true',
-    secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
-    pages: {
-      signIn: '/login',
-      error: '/auth/error'
-    },
-    trustHost: true,
-    basePath: '/api/auth',
-    providers: [
-      GoogleProvider({
-        // Use runtime config for Google OAuth credentials (read from env at runtime, not build time)
-        clientId: useRuntimeConfig().public.googleClientId,
-        clientSecret: useRuntimeConfig().googleClientSecret,
-        allowDangerousEmailAccountLinking: true,
-      }),
+  ...(() => {
+    const config = useRuntimeConfig()
+    const secure = String(config.public.baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
+
+    return {
+  // Enable debug only in development
+  debug: process.env.NODE_ENV === 'development' && process.env.NUXT_AUTH_DEBUG === 'true',
+  
+  secret: config.auth?.secret || (() => {
+    throw new Error('NUXT_AUTH_SECRET is required')
+  })(),
+  
+  pages: {
+    signIn: '/login',
+    error: '/auth/error',
+    newUser: '/onboarding'
+  },
+  
+  trustHost: true,
+  basePath: '/api/auth',
+
+  providers: [
+    GoogleProvider({
+      clientId: config.public.googleClientId,
+      clientSecret: config.googleClientSecret,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -33,20 +55,13 @@ export default NuxtAuthHandler({
         if (!credentials?.email || !credentials?.password) return null
 
         try {
-          const config = useRuntimeConfig()
           const apiBase = config.public.apiBase
+          if (!apiBase) return null
           
           // First, ensure CSRF cookie is available for Sanctum
           await fetch(`${apiBase}/sanctum/csrf-cookie`, {
             credentials: 'include'
           })
-          
-          // Get CSRF token from cookie (server-side)
-          const getXsrfToken = () => {
-            // In server environment, we can't access document.cookie
-            // The CSRF cookie should be available from the previous request
-            return null // Let Sanctum handle it
-          }
           
           // Call Laravel login endpoint
           const res = await fetch(`${apiBase}/api/login`, {
@@ -85,90 +100,51 @@ export default NuxtAuthHandler({
       }
     })
   ],
+
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60,  // 30 days
-    updateAge: 24 * 60 * 60  // Update session every 24 hours
+    maxAge: 30 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60
   },
-    cookies: {
-      sessionToken: {
-        name: `authjs.session-token`,
-        options: {
-          httpOnly: true,
-          // Set secure based on environment variables and NODE_ENV
-          secure: (() => {
-            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
-            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
-          })(),
-          sameSite: 'lax',
-          path: '/',
-        }
-      },
-      // Ensure state and callback cookies share the same security settings
-      // to avoid "State cookie was missing" errors during OAuth callbacks.
-      state: {
-        name: `authjs.state`,
-        options: {
-          httpOnly: true,
-          sameSite: 'lax',
-          path: '/',
-          secure: (() => {
-            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
-            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
-          })()
-        }
-      },
-      callbackUrl: {
-        name: `authjs.callback-url`,
-        options: {
-          httpOnly: true,
-          sameSite: 'lax',
-          path: '/',
-          secure: (() => {
-            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
-            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
-          })()
-        }
-      },
-      csrfToken: {
-        name: `authjs.csrf-token`,
-        options: {
-          httpOnly: true,
-          sameSite: 'lax',
-          path: '/',
-          secure: (() => {
-            const baseUrl = process.env.NUXT_PUBLIC_BASE_URL || ''
-            return String(baseUrl).startsWith('https') || process.env.NODE_ENV === 'production'
-          })()
-        }
-      }
-    },
-  callbacks: {
-    async jwt({ token, user, account, profile }: any) {
-      // Keep JWT minimal: only `id` and `apiToken` are stored here.
-      if (user) {
-        if (token.id && token.id !== user.id) {
-          // Token id mismatch — reject to avoid overwriting a valid token
-          return null as any
-        }
 
+  cookies: {
+    sessionToken: createCookieConfig('authjs.session-token', secure),
+    state: createCookieConfig('authjs.state', secure),
+    callbackUrl: createCookieConfig('authjs.callback-url', secure),
+    csrfToken: createCookieConfig('authjs.csrf-token', secure)
+  },
+
+  callbacks: {
+    async redirect({ url, baseUrl }: any) {
+      if (url.startsWith('/')) return url
+      try {
+        const urlObj = new URL(url)
+        const baseUrlObj = new URL(baseUrl)
+        if (urlObj.origin === baseUrlObj.origin) return url
+      } catch (e) {
+        // Invalid URL
+      }
+      return baseUrl
+    },
+    async jwt({ token, user, account, profile }: any) {
+      if (user) {
+        if (token.id && token.id !== user.id) return null
         token.id = user.id
         token.apiToken = (user as any).apiToken
       }
 
-      // For Google OAuth, obtain an API token via social-sync if not present
       if (account?.provider === 'google' && (!token.apiToken || token.apiToken === undefined)) {
         try {
-          const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
+          const apiBase = config.public.apiBase
+          if (!apiBase) return token
           
           await fetch(`${apiBase}/sanctum/csrf-cookie`, {
             credentials: 'include'
           })
           
-          // Call the backend to get/create a Sanctum token for this user
           const res = await fetch(`${apiBase}/api/auth/social-sync`, {
             method: 'POST',
-            credentials: 'include', // Include cookies to establish Laravel session
+            credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -186,29 +162,19 @@ export default NuxtAuthHandler({
           if (res.ok) {
             const data = await res.json()
             token.apiToken = data.token
-            // Prefer authoritative id if returned
-            if (data.user && data.user.id) token.id = data.user.id
-          } else {
-            try {
-              await res.text()
-            } catch (e) {
-              // ignore read error
-            }
-            // Don't fail the auth flow, just log the warning
+            if (data.user?.id) token.id = data.user.id
           }
         } catch (e) {
-          // silently continue without apiToken
-          // Continue without apiToken - user may not be registered yet
+          // Continue without apiToken
         }
       }
       
       return token
     },
     async session({ session, token }: any) {
-      // Replace session.user with authoritative profile from the backend (/api/me)
-      // Use personal access token if available to call /api/me; fallback to token id
       try {
-        const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
+        const apiBase = config.public.apiBase
+        if (!apiBase) return session
         if (token?.apiToken) {
           const res = await fetch(`${apiBase}/api/me`, {
             method: 'GET',
@@ -223,19 +189,16 @@ export default NuxtAuthHandler({
             const userData = json && (json.user || json.data || json)
             if (userData) {
               session.user = userData
-              // Ensure apiToken is preserved in the session so client-side useApi can find it
               if (token.apiToken) (session.user as any).apiToken = token.apiToken
-              // Ensure id is present and matches token.id where possible
               if (!session.user.id && token.id) session.user.id = token.id
               return session
             }
           }
         }
       } catch (e) {
-        // ignore and fall back
+        // Fall back to token data
       }
 
-      // Fallback: expose minimal token info to session.user so client can attempt validation
       if (token?.id || token?.apiToken) {
         session.user = session.user || {}
         if (token.id) (session.user as any).id = token.id
@@ -244,6 +207,6 @@ export default NuxtAuthHandler({
       return session
     }
   }
-  ,
-  events: {} as any
+    }
+  })()
 } as any)

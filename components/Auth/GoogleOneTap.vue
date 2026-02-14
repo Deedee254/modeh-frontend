@@ -88,7 +88,7 @@ const dismiss = () => {
 const loginWithGoogle = async () => {
   loading.value = true
   try {
-    const result = await signIn('google', { callbackUrl: '/' })
+    const result = await signIn('google')
     // Track successful login
     if (result?.ok) {
       trackLogin('google')

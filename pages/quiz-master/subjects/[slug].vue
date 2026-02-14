@@ -187,7 +187,7 @@ onMounted(async () => {
         description: subject.value.description || subject.value.summary
       },
       'subject',
-      window.location.origin
+      config.public.baseUrl
     )
   }
   

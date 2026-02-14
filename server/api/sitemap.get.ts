@@ -1,14 +1,13 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
-  // determine base URL — require configured public.siteUrl in runtime config.
-  // For security and correctness we avoid falling back to a hard-coded host.
-  if (!config.public?.siteUrl) {
+  // determine base URL from the canonical frontend URL env.
+  if (!config.public?.baseUrl) {
     // Missing configuration — return a helpful error body instead of a silently wrong sitemap
     event.res.statusCode = 500
-    return 'Sitemap unavailable: `config.public.siteUrl` is not configured. Set NUXT_PUBLIC_SITE_URL in environment.'
+    return 'Sitemap unavailable: `config.public.baseUrl` is not configured. Set NUXT_PUBLIC_BASE_URL in environment.'
   }
-  const baseUrl = String(config.public.siteUrl).replace(/\/$/, '')
+  const baseUrl = String(config.public.baseUrl)
 
   const urls = new Map<string, { lastmod?: string; priority?: string }>()
   const now = new Date().toISOString()
@@ -99,7 +98,7 @@ export default defineEventHandler(async (event) => {
 
   const parts: string[] = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
   for (const [path, meta] of urls) {
-    const loc = `${baseUrl.replace(/\/$/, '')}${path}`
+    const loc = `${baseUrl}${path}`
     parts.push('  <url>')
     parts.push(`    <loc>${esc(loc)}</loc>`)
     if (meta?.lastmod) parts.push(`    <lastmod>${esc(new Date(meta.lastmod).toISOString())}</lastmod>`)

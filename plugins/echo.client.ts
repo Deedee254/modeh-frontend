@@ -169,8 +169,12 @@ function initializeEcho(config: any, isDev: boolean) {
   }
 
   try {
-    const pusherKey = config.public?.pusherKey || '5a6916ce972fd4a06074'
-    const pusherCluster = config.public?.pusherCluster || 'ap2'
+    const pusherKey = config.public?.pusherKey
+    const pusherCluster = config.public?.pusherCluster
+    if (!pusherKey || !pusherCluster) {
+      window.Echo = null
+      return
+    }
     
     const pusher = new Pusher(pusherKey, {
       cluster: pusherCluster,

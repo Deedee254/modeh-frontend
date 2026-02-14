@@ -9,7 +9,7 @@ interface MpesaPaymentOptions {
 }
 
 interface PaymentState {
-  status: 'idle' | 'pending' | 'checking' | 'success' | 'failed' | 'manual_reconciliation'
+  status: 'idle' | 'pending' | 'checking' | 'success' | 'failed' | 'cancelled' | 'manual_reconciliation'
   resultCode: number | null
   resultDesc: string | null
   mpesaReceipt: string | null
@@ -19,6 +19,14 @@ interface PaymentState {
   nextRetryAt: string | null
   lastCheckedAt: string | null
 }
+
+type ReconcileResult =
+  | { ok: true; status: 'success'; transaction: any }
+  | { ok: false; status: 'failed'; transaction: any; errorMessage: string }
+  | { ok: false; status: 'cancelled'; transaction: any; errorMessage: string }
+  | { ok: false; status: 'pending'; transaction: any; nextRetryAt?: string | null }
+  | { ok: false; status: 'manual_reconciliation'; httpStatus?: number; message?: string; error?: string; errorMessage?: string }
+  | { ok: true; status: string; transaction: any }
 
 export const useMpesaPayment = () => {
   const api = useApi()
@@ -44,7 +52,7 @@ export const useMpesaPayment = () => {
    * Poll the reconciliation endpoint until transaction is resolved
    * Calls POST /api/mpesa/reconcile with backoff strategy
    */
-  const reconcile = async (checkoutRequestId: string, source: 'user' | 'admin' | 'worker' = 'user') => {
+  const reconcile = async (checkoutRequestId: string, source: 'user' | 'admin' | 'worker' = 'user'): Promise<ReconcileResult> => {
     state.value.status = 'checking'
     state.value.lastCheckedAt = new Date().toISOString()
 
@@ -58,7 +66,7 @@ export const useMpesaPayment = () => {
       if (!resp.ok) {
         state.value.status = 'manual_reconciliation'
         state.value.errorMessage = `HTTP ${resp.status}: ${resp.statusText}`
-        return { ok: false, status: 'manual_reconciliation', httpStatus: resp.status }
+        return { ok: false, status: 'manual_reconciliation', httpStatus: resp.status, errorMessage: state.value.errorMessage }
       }
 
       const response = await resp.json()
@@ -79,10 +87,10 @@ export const useMpesaPayment = () => {
           return { ok: true, status: 'success', transaction }
         } else if (status === 'failed') {
           state.value.errorMessage = transaction?.result_desc || 'Payment failed'
-          return { ok: false, status: 'failed', transaction }
+          return { ok: false, status: 'failed', transaction, errorMessage: state.value.errorMessage || 'Payment failed' }
         } else if (status === 'cancelled') {
           state.value.errorMessage = 'User cancelled the payment prompt'
-          return { ok: false, status: 'cancelled', transaction }
+          return { ok: false, status: 'cancelled', transaction, errorMessage: state.value.errorMessage || 'User cancelled the payment prompt' }
         } else if (status === 'pending') {
           // Daraja may still be processing; schedule auto-retry based on nextRetryAt
           state.value.errorMessage = null
@@ -96,12 +104,12 @@ export const useMpesaPayment = () => {
         // Response ok but data indicates error
         state.value.status = 'manual_reconciliation'
         state.value.errorMessage = response?.message || 'Failed to reconcile payment'
-        return { ok: false, status: 'manual_reconciliation', message: response?.message }
+        return { ok: false, status: 'manual_reconciliation', message: response?.message, errorMessage: state.value.errorMessage || response?.message }
       }
     } catch (error: any) {
       state.value.status = 'manual_reconciliation'
       state.value.errorMessage = error?.message || 'Network error during reconciliation'
-      return { ok: false, status: 'manual_reconciliation', error: error?.message }
+      return { ok: false, status: 'manual_reconciliation', error: error?.message, errorMessage: state.value.errorMessage || error?.message }
     }
   }
 

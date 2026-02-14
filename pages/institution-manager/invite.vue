@@ -232,7 +232,7 @@ async function sendViaBackend() {
     }
     inviteToken.value = data.invitation_token
     // Reconstruct invite URL pointing to frontend (backend now includes ftoken in email, but we also show link)
-    const frontend = cfg.public?.frontendUrl || cfg.public?.url || ''
+    const frontend = cfg.public?.baseUrl || ''
     inviteUrl.value = data.invite_url || (frontend + '/email-verified?invite=' + data.invitation_token + '&email=' + encodeURIComponent(email.value))
     message.value = data.message || 'Invitation sent via backend email.'
   } catch (e) {

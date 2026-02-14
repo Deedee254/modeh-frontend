@@ -256,10 +256,9 @@ const isInitiator = computed(() => auth.user && battle.value.initiator_id === au
 const isParticipant = computed(() => auth.user && (battle.value.initiator_id === auth.user.id || battle.value.opponent_id === auth.user.id))
 
 const battleBaseUrl = computed(() => {
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}/quizee/battles`
-  }
-  return '/quizee/battles'
+  const base = cfg.public?.baseUrl || ''
+  if (!base) return '/quizee/battles'
+  return `${base}/quizee/battles`
 })
 
 const statusIndicatorClass = computed(() => {

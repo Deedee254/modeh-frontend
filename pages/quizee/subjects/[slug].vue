@@ -119,6 +119,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const auth = useAuthStore()
 const api = useApi()
 const taxonomy = useTaxonomy()
@@ -233,7 +234,7 @@ onMounted(() => {
             description: subject.value.description || subject.value.summary
           },
           'subject',
-          window.location.origin
+          config.public.baseUrl
         )
       }
     } catch (e) {

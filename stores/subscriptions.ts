@@ -57,8 +57,20 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     async function subscribeToPackage(pkg: Package, opts: Record<string, any> = {}) {
         // expects server route POST /api/packages/{package}/subscribe
         const res = await api.postJson(`/api/packages/${pkg.id}/subscribe`, opts)
-        if (!res.ok) throw new Error('Failed to subscribe to package')
-        const data = await res.json()
+        if (!res.ok) {
+            let message = 'Failed to subscribe to package'
+            try {
+                const err = await res.json()
+                message = err?.message || err?.error || message
+            } catch (e) {
+                try {
+                    const txt = await res.text()
+                    if (txt) message = txt
+                } catch (e2) {}
+            }
+            throw new Error(message)
+        }
+        const data = await res.json().catch(() => ({}))
         // Refresh subscription after success
         await fetchMySubscription(true)
         return data

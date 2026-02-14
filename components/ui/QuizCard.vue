@@ -185,7 +185,7 @@ const config = useRuntimeConfig()
 const guestQuizStore = useGuestQuizStore()
 const auth = useAuthStore()
 const baseUrl = computed(() => {
-  const base = config.public?.baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  const base = config.public?.baseUrl || ''
   if (!base) return ''
   return base.endsWith('/') ? `${base}quizzes` : `${base}/quizzes`
 })
