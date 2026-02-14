@@ -277,8 +277,7 @@ export default defineNuxtConfig({
       secret: process.env.NUXT_AUTH_SECRET ?? undefined
     },
     pusherSecret: process.env.NUXT_PUBLIC_PUSHER_SECRET ?? undefined,
-    // Google OAuth credentials (from env)
-    googleClientId: process.env.GOOGLE_CLIENT_ID ?? undefined,
+    // Google OAuth credentials (from env) - read at runtime, not build time
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? undefined,
     public: {
       // CRITICAL: These must use environment variables that are evaluated at RUNTIME
@@ -292,6 +291,9 @@ export default defineNuxtConfig({
       siteUrl: process.env.NUXT_PUBLIC_BASE_URL 
         ? stripTrailingSlash(process.env.NUXT_PUBLIC_BASE_URL)
         : undefined,
+
+      // Google OAuth client ID - must be available on client side
+      googleClientId: process.env.GOOGLE_CLIENT_ID ?? undefined,
 
       googleAnalyticsId: googleAnalyticsId ?? undefined,
       googleTagManagerId: gtmId ?? undefined,

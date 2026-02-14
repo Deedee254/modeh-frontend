@@ -1,12 +1,13 @@
 import { NuxtAuthHandler } from '#auth'
 import GoogleProviderImport from 'next-auth/providers/google'
 import CredentialsProviderImport from 'next-auth/providers/credentials'
+import { useRuntimeConfig } from '#imports'
 
 const GoogleProvider: any = (GoogleProviderImport as any).default || GoogleProviderImport
 const CredentialsProvider: any = (CredentialsProviderImport as any).default || CredentialsProviderImport
 
 export default NuxtAuthHandler({
-    // Enable debug when NUXT_AUTH_DEBUG=true in environment (temporary for diagnostics)
+    // Enable debug when NUXT_AUTH_DEBUG=true in environment
     debug: process.env.NUXT_AUTH_DEBUG === 'true',
     secret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
     pages: {
@@ -14,17 +15,13 @@ export default NuxtAuthHandler({
       error: '/auth/error'
     },
     trustHost: true,
-    // Ensure the base URL is explicitly set for production OAuth
     basePath: '/api/auth',
     providers: [
       GoogleProvider({
-        // CRITICAL: Use environment variables only - do NOT call useRuntimeConfig() here
-        // The provider config is evaluated at build time, not runtime
-        clientId: process.env.GOOGLE_CLIENT_ID || '',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        // Use runtime config for Google OAuth credentials (read from env at runtime, not build time)
+        clientId: useRuntimeConfig().public.googleClientId,
+        clientSecret: useRuntimeConfig().googleClientSecret,
         allowDangerousEmailAccountLinking: true,
-        // Don't set callbackUrl here - let NuxtAuth derive it from the request
-        // at runtime so it respects the actual host the request came from
       }),
     CredentialsProvider({
       name: 'Credentials',
@@ -36,7 +33,8 @@ export default NuxtAuthHandler({
         if (!credentials?.email || !credentials?.password) return null
 
         try {
-          const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'https://admin.modeh.co.ke'
+          const config = useRuntimeConfig()
+          const apiBase = config.public.apiBase
           
           // First, ensure CSRF cookie is available for Sanctum
           await fetch(`${apiBase}/sanctum/csrf-cookie`, {

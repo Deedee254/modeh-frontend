@@ -226,6 +226,8 @@ watch(timeframe, () => {
 watch(selectedLevelId, () => {
   // Reset grade filter when level changes
   selectedGradeId.value = "";
+  // Fetch grades for the selected level
+  fetchGradesByLevel(selectedLevelId.value);
   fetchLeaderboard();
 });
 
