@@ -98,6 +98,26 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">
+          <!-- Leaderboard Section -->
+          <div v-if="quiz?.id" class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Top Performers</h2>
+            <div v-if="leaderboardLoading" class="text-center py-8">
+              <Icon name="heroicons:arrow-path" class="w-8 h-8 animate-spin mx-auto text-gray-400" />
+              <p class="mt-2 text-gray-500">Loading leaderboard...</p>
+            </div>
+            <div v-else-if="leaderboardTopThree.length > 0">
+              <Podium :entries="leaderboardTopThree" />
+              <div class="text-center mt-6">
+                <NuxtLink to="/quizee/leaderboard" class="text-brand-600 hover:text-brand-700 font-medium">
+                  View full leaderboard →
+                </NuxtLink>
+              </div>
+            </div>
+            <div v-else class="p-6 border rounded-xl text-sm text-gray-600 bg-gray-50">
+              No leaderboard data available for this quiz yet.
+            </div>
+          </div>
+
           <!-- Video and caption moved into the Overview tab (below description) -->
           <!-- Enhanced Tabs Section - Better Mobile Experience -->
           <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -277,6 +297,8 @@ import VideoPlayer from '~/components/media/VideoPlayer.vue'
 import { resolveAssetUrl } from '~/composables/useAssets'
 import AffiliateShareButton from '~/components/AffiliateShareButton.vue'
 import useApi from '~/composables/useApi'
+import { useContextLeaderboard } from '~/composables/useContextLeaderboard'
+import Podium from '~/components/leaderboard/Podium.vue'
 import type { Quiz, Level, Grade, Subject, Topic } from '~/types'
 
 // --- Type Definitions ---
@@ -286,6 +308,7 @@ import type { Quiz, Level, Grade, Subject, Topic } from '~/types'
 interface RelatedQuiz {
   id: number;
   title: string;
+  slug: string;
   cover: string | null;
   questions_count: number;
 }
@@ -427,6 +450,9 @@ const heroStyle = computed(() => {
 const related = ref<RelatedQuiz[]>([])
 const relatedLoading = ref(false)
 
+// Leaderboard
+const { topThree: leaderboardTopThree, loading: leaderboardLoading, fetchQuizLeaderboard } = useContextLeaderboard()
+
 async function fetchRelatedQuizzes() {
   if (!quiz.value?.topic?.id && !quiz.value?.topic_id) return
   
@@ -437,11 +463,11 @@ async function fetchRelatedQuizzes() {
     
     if (res.ok) {
       const data = await res.json()
-      let quizzes = data?.data || data?.quizzes?.data || []
+      let quizzes: any[] = data?.data || data?.quizzes?.data || []
       
       if (Array.isArray(quizzes)) {
         // Filter out current quiz and shuffle to get random selection
-        quizzes = quizzes.filter(q => q.id !== quiz.value.id)
+        quizzes = quizzes.filter((q: any) => q.id !== quiz.value.id)
         
         // Fisher-Yates shuffle
         for (let i = quizzes.length - 1; i > 0; i--) {
@@ -450,7 +476,7 @@ async function fetchRelatedQuizzes() {
         }
         
         // Take first 3
-        related.value = quizzes.slice(0, 3).map(q => ({
+        related.value = quizzes.slice(0, 3).map((q: any) => ({
           id: q.id,
           title: q.title,
           slug: q.slug,
@@ -469,6 +495,13 @@ async function fetchRelatedQuizzes() {
 watch(() => quiz.value?.topic?.id || quiz.value?.topic_id, () => {
   if (quiz.value?.topic?.id || quiz.value?.topic_id) {
     fetchRelatedQuizzes()
+  }
+}, { immediate: true })
+
+// Fetch quiz leaderboard when quiz loads
+watch(() => quiz.value?.id, async () => {
+  if (quiz.value?.id) {
+    await fetchQuizLeaderboard(quiz.value.id)
   }
 }, { immediate: true })
 

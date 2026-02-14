@@ -12,6 +12,26 @@
 
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Leaderboard Section -->
+        <div v-if="!loading && subject?.id" class="mb-12">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Top Performers</h2>
+          <div v-if="leaderboardLoading" class="text-center py-8">
+            <Icon name="heroicons:arrow-path" class="w-8 h-8 animate-spin mx-auto text-gray-400" />
+            <p class="mt-2 text-gray-500">Loading leaderboard...</p>
+          </div>
+          <div v-else-if="leaderboardTopThree.length > 0">
+            <Podium :entries="leaderboardTopThree" />
+            <div class="text-center mt-6">
+              <NuxtLink to="/quizee/leaderboard" class="text-brand-600 hover:text-brand-700 font-medium">
+                View full leaderboard →
+              </NuxtLink>
+            </div>
+          </div>
+          <div v-else class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">
+            No leaderboard data available for this subject yet.
+          </div>
+        </div>
+
         <!-- Sort Bar (button group) -->
         <div class="mb-8 flex items-center gap-3">
           <div class="text-sm text-gray-600">Sort:</div>
@@ -85,8 +105,10 @@ import useTaxonomy from '~/composables/useTaxonomy'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
 import useSeo from '~/composables/useSeo'
+import { useContextLeaderboard } from '~/composables/useContextLeaderboard'
 import TopicCard from '~/components/ui/TopicCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
+import Podium from '~/components/leaderboard/Podium.vue'
 
 definePageMeta({
   layout: 'quizee',
@@ -109,6 +131,9 @@ const subject = ref<any>(null)
 const topics = ref<any[]>([])
 const sortOption = ref('newest')
 const taxonomyStore = useTaxonomyStore()
+
+// Leaderboard
+const { topThree: leaderboardTopThree, loading: leaderboardLoading, fetchSubjectLeaderboard } = useContextLeaderboard()
 
 const displayTitle = computed(() => {
   const s = subject.value
@@ -170,6 +195,11 @@ async function fetchSubjectAndTopics() {
     if (topicsRes.ok) {
       const topicsData = await topicsRes.json()
       topics.value = topicsData.data || topicsData.topics || []
+    }
+
+    // Fetch leaderboard for this subject
+    if (subject.value?.id) {
+      await fetchSubjectLeaderboard(subject.value.id)
     }
   } catch (e) {
     error.value = true

@@ -12,22 +12,55 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <!-- Filter Options -->
-      <div class="flex justify-center items-center gap-2 mb-8">
-        <UButton
-          @click="setTimeframe('all-time')"
-          :variant="timeframe === 'all-time' ? 'solid' : 'outline'"
-          >All Time</UButton
-        >
-        <UButton
-          @click="setTimeframe('monthly')"
-          :variant="timeframe === 'monthly' ? 'solid' : 'outline'"
-          >Monthly</UButton
-        >
-        <UButton
-          @click="setTimeframe('weekly')"
-          :variant="timeframe === 'weekly' ? 'solid' : 'outline'"
-          >Weekly</UButton
-        >
+      <div class="space-y-4 mb-8">
+        <!-- Timeframe Buttons -->
+        <div class="flex justify-center items-center gap-2">
+          <UButton
+            @click="setTimeframe('all-time')"
+            :variant="timeframe === 'all-time' ? 'solid' : 'outline'"
+            >All Time</UButton
+          >
+          <UButton
+            @click="setTimeframe('monthly')"
+            :variant="timeframe === 'monthly' ? 'solid' : 'outline'"
+            >Monthly</UButton
+          >
+          <UButton
+            @click="setTimeframe('weekly')"
+            :variant="timeframe === 'weekly' ? 'solid' : 'outline'"
+            >Weekly</UButton
+          >
+        </div>
+
+        <!-- Level and Grade Filters -->
+        <div class="flex justify-center gap-4 flex-wrap">
+          <div class="w-full max-w-sm">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Level</label>
+            <select
+              v-model="selectedLevelId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="">All Levels</option>
+              <option v-for="level in levels" :key="level.id" :value="level.id">
+                {{ level.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="w-full max-w-sm">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Grade</label>
+            <select
+              v-model="selectedGradeId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
+              :disabled="!selectedLevelId && filteredGrades.length === 0"
+            >
+              <option value="">All Grades</option>
+              <option v-for="grade in filteredGrades" :key="grade.id" :value="grade.id">
+                {{ grade.name }}
+              </option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div v-if="pending" class="text-center py-16">
@@ -105,6 +138,7 @@ import Podium from "~/components/leaderboard/Podium.vue";
 import LeaderboardTable from "~/components/leaderboard/LeaderboardTable.vue";
 import PageHero from '~/components/ui/PageHero.vue'
 import { resolveAssetUrl } from '~/composables/useAssets'
+import useTaxonomy from '~/composables/useTaxonomy'
 
 definePageMeta({
   layout: "quizee",
@@ -112,10 +146,15 @@ definePageMeta({
 });
 
 const timeframe = ref("all-time");
+const selectedLevelId = ref("");
+const selectedGradeId = ref("");
 const currentPage = ref(1);
 const itemsPerPage = 20;
 
 const config = useRuntimeConfig();
+
+// Import taxonomy for grades and levels
+const { fetchLevels, fetchGradesByLevel, levels, grades: taxGrades } = useTaxonomy()
 
 // state
 const leaderboard = ref([]);
@@ -126,8 +165,22 @@ async function fetchLeaderboard() {
   pending.value = true;
   error.value = null;
   try {
+    const params = new URLSearchParams({
+      timeframe: timeframe.value,
+    })
+    
+    // Add level filter if selected
+    if (selectedLevelId.value) {
+      params.append('level_id', selectedLevelId.value)
+    }
+    
+    // Add grade filter if selected
+    if (selectedGradeId.value) {
+      params.append('grade_id', selectedGradeId.value)
+    }
+
     const res = await $fetch(
-      config.public.apiBase + `/api/leaderboard?timeframe=${timeframe.value}`,
+      config.public.apiBase + `/api/leaderboard?${params.toString()}`,
       { credentials: "include" },
     );
     // support multiple response shapes used across the app
@@ -160,19 +213,33 @@ function setTimeframe(newTimeframe) {
   timeframe.value = newTimeframe;
 }
 
-onMounted(() => {
-  fetchLeaderboard();
+onMounted(async () => {
+  await fetchLevels()
+  await fetchLeaderboard();
 });
 
-// refetch when timeframe changes
+// refetch when timeframe or grade changes
 watch(timeframe, () => {
   fetchLeaderboard();
 });
 
-const topThree = computed(() => (leaderboard.value || []).slice(0, 3));
-const remainingUsers = computed(() =>
-  (leaderboard.value || []).map((u, i) => ({ ...u, __idx: i })).slice(3),
-);
+watch(selectedLevelId, () => {
+  // Reset grade filter when level changes
+  selectedGradeId.value = "";
+  fetchLeaderboard();
+});
+
+watch(selectedGradeId, () => {
+  fetchLeaderboard();
+});
+
+// Computed for filtering grades by selected level
+const filteredGrades = computed(() => {
+  if (!selectedLevelId.value) return taxGrades.value;
+  return taxGrades.value.filter(grade => 
+    String(grade.level_id) === String(selectedLevelId.value)
+  );
+});
 
 const totalPages = computed(() =>
   Math.ceil((leaderboard.value?.length || 0) / itemsPerPage)

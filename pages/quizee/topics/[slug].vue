@@ -16,6 +16,26 @@
         <div v-else-if="error" class="mt-6 text-red-600">Failed to load this topic.</div>
 
         <div v-else>
+          <!-- Leaderboard Section -->
+          <div v-if="topic?.id" class="mb-12">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">Top Performers</h3>
+            <div v-if="leaderboardLoading" class="text-center py-8">
+              <Icon name="heroicons:arrow-path" class="w-8 h-8 animate-spin mx-auto text-gray-400" />
+              <p class="mt-2 text-gray-500">Loading leaderboard...</p>
+            </div>
+            <div v-else-if="leaderboardTopThree.length > 0">
+              <Podium :entries="leaderboardTopThree" />
+              <div class="text-center mt-6">
+                <NuxtLink to="/quizee/leaderboard" class="text-brand-600 hover:text-brand-700 font-medium">
+                  View full leaderboard →
+                </NuxtLink>
+              </div>
+            </div>
+            <div v-else class="p-6 border rounded-xl text-sm text-gray-600 bg-white shadow-sm">
+              No leaderboard data available for this topic yet.
+            </div>
+          </div>
+
           <!-- Quizzes Grid -->
           <div>
             <h3 class="text-2xl font-bold text-gray-900 mb-6">Available Quizzes</h3>
@@ -83,9 +103,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import useApi from '~/composables/useApi'
 import useSeo from '~/composables/useSeo'
+import { useContextLeaderboard } from '~/composables/useContextLeaderboard'
 import QuizCard from '~/components/ui/QuizCard.vue'
 import UiSkeleton from '~/components/ui/UiSkeleton.vue'
 import Pagination from '~/components/Pagination.vue'
+import Podium from '~/components/leaderboard/Podium.vue'
 
 definePageMeta({
   layout: 'quizee',
@@ -112,6 +134,9 @@ const quizzesLoading = ref(false)
 const quizzesError = ref(false)
 const quizzesPaginator = ref<any>(null)
 const page = ref(Number(route.query.page) || 1)
+
+// Leaderboard
+const { topThree: leaderboardTopThree, loading: leaderboardLoading, fetchTopicLeaderboard } = useContextLeaderboard()
 
 async function fetchTopic() {
   loading.value = true
@@ -187,6 +212,11 @@ onMounted(async () => {
     await fetchTopic()
     if (topic.value) {
       fetchQuizzes(page.value)
+      
+      // Fetch leaderboard for this topic
+      if (topic.value?.id) {
+        await fetchTopicLeaderboard(topic.value.id)
+      }
       
       // Setup SEO for topic page
       if (topic.value?.id && topic.value?.slug) {

@@ -214,17 +214,43 @@ const institutions = ref([])
 const loadingInstitutions = ref(false)
 
 // Fetch institutions from API
+// Note: backend returns a paginated payload (object with `data` array).
+// Support both raw arrays and paginated responses for compatibility.
 const fetchInstitutions = async () => {
   try {
     loadingInstitutions.value = true
     const response = await api.get('/api/institutions')
     if (api.handleAuthStatus(response)) return
     const data = await response.json().catch(() => null)
-    if (response.ok && Array.isArray(data)) {
-      institutions.value = data
+
+    if (!response.ok) {
+      institutions.value = []
+      return
     }
+
+    // If server returned a plain array (legacy), use it
+    if (Array.isArray(data)) {
+      institutions.value = data
+      return
+    }
+
+    // If server returned a paginated resource (Laravel's paginator), use data.data
+    if (data && Array.isArray(data.data)) {
+      institutions.value = data.data
+      return
+    }
+
+    // Some APIs return { items: [...] } or other shapes - try common fallbacks
+    if (data && Array.isArray(data.items)) {
+      institutions.value = data.items
+      return
+    }
+
+    // Fallback to empty list
+    institutions.value = []
   } catch (e) {
     console.error('Failed to load institutions:', e)
+    institutions.value = []
   } finally {
     loadingInstitutions.value = false
   }
