@@ -124,6 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
     // CRITICAL: Clear PWA persistent session storage
     // This ensures the user is fully logged out on all devices
     try {
+      // Dynamic import the composable so it stays code-split.
       const { usePwaSession } = await import('~/composables/usePwaSession')
       const pwaSession = usePwaSession()
       await pwaSession.clearStoredSession()

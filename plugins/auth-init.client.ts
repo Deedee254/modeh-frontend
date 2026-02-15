@@ -2,7 +2,6 @@ import { watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useTaxonomyStore } from '~/stores/taxonomyStore'
 import useApi from '~/composables/useApi'
-import { usePwaSession } from '~/composables/usePwaSession'
 
 // Ensure we only run on client
 export default defineNuxtPlugin((nuxtApp) => {
@@ -19,17 +18,19 @@ export default defineNuxtPlugin((nuxtApp) => {
     // The auth store already watches auth.data and syncs automatically via the watcher
     // This plugin just ensures that initial session load is prioritized
     nuxtApp.hook('app:mounted', async () => {
-      try {
-        // STEP 1: Try to restore PWA session from storage (IndexedDB/localStorage)
-        // This is critical for offline-first PWA support - keeps users logged in
-        // even if they close and reopen the app
-        const sessionRestored = await pwaSession.initializeSession()
-        if (sessionRestored) {
-          console.log('[auth-init] PWA session restored from persistent storage')
+        try {
+          // STEP 1: Try to restore PWA session from storage (IndexedDB/localStorage)
+          // Dynamically import the PWA session composable so the heavy IndexedDB
+          // logic stays in a separate chunk and is loaded only on demand.
+          const { usePwaSession } = await import('~/composables/usePwaSession')
+          const pwaSession = usePwaSession()
+          const sessionRestored = await pwaSession.initializeSession()
+          if (sessionRestored) {
+            console.log('[auth-init] PWA session restored from persistent storage')
+          }
+        } catch (e) {
+          console.warn('[auth-init] PWA session restoration failed (non-fatal):', e)
         }
-      } catch (e) {
-        console.warn('[auth-init] PWA session restoration failed (non-fatal):', e)
-      }
 
       try {
         // Initialize CSRF token FIRST before any authenticated requests
@@ -54,7 +55,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         // Taxonomy load is optional - data will load on-demand in components
       }
 
-      // STEP 2: Watch for user changes and persist to PWA storage
+        // STEP 2: Watch for user changes and persist to PWA storage
       // This ensures that when user logs in or their profile updates,
       // the session is saved for offline-first support
       watch(
@@ -62,7 +63,13 @@ export default defineNuxtPlugin((nuxtApp) => {
         async (newUser) => {
           if (newUser) {
             // User logged in or profile updated - persist to storage
-            await pwaSession.persistSession()
+            try {
+              const { usePwaSession } = await import('~/composables/usePwaSession')
+              const pwaSession = usePwaSession()
+              await pwaSession.persistSession()
+            } catch (e) {
+              console.warn('[auth-init] Failed to persist PWA session (non-fatal):', e)
+            }
           }
         },
         { deep: true }
