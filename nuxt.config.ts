@@ -252,7 +252,11 @@ export default defineNuxtConfig({
             if (id.includes('node_modules/@nuxt/ui')) {
               return 'ui-library'
             }
-            if (id.includes('node_modules/@sidebase/nuxt-auth') || id.includes('node_modules/next-auth')) {
+            // Avoid manual-chunking @sidebase/nuxt-auth runtime middleware.
+            // Nuxt may dynamically import `sidebase-auth` middleware while the
+            // module plugin statically imports it, which triggers Rollup's
+            // "dynamic import will not move module into another chunk" warning.
+            if (id.includes('node_modules/next-auth')) {
               return 'auth'
             }
             if (id.includes('node_modules/@tiptap')) {
