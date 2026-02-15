@@ -1,5 +1,11 @@
-import { defineNuxtConfig } from 'nuxt/config'
 import { fileURLToPath } from 'node:url'
+import { defineNuxtConfig } from 'nuxt/config'
+
+// Force production auth URLs during build to prevent next-auth from falling back to localhost
+if (process.env.NODE_ENV === 'production') {
+  process.env.NUXT_AUTH_BASE_URL = 'https://modeh.co.ke/api/auth'
+  process.env.NEXTAUTH_URL = 'https://modeh.co.ke/api/auth'
+}
 
 // NOTE: These env vars are intentionally read at build time for specific purposes,
 // but critical auth/api URLs are moved to runtimeConfig so they pick up values at runtime.
