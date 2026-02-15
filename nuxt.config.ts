@@ -328,7 +328,9 @@ export default defineNuxtConfig({
   auth: {
     // Use an absolute fallback in production so Auth.js can always resolve an origin
     // even if process env is not injected by the process manager.
-    baseURL: process.env.NUXT_AUTH_BASE_URL || 'https://modeh.co.ke/api/auth',
+    baseURL: (process.env.NODE_ENV === 'production')
+      ? 'https://modeh.co.ke/api/auth'
+      : (process.env.NUXT_AUTH_BASE_URL || 'http://localhost:3000/api/auth'),
     // Must include full auth endpoint, e.g. https://modeh.co.ke/api/auth
     originEnvKey: 'NUXT_AUTH_BASE_URL',
     provider: {
