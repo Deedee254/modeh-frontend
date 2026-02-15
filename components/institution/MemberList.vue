@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 
 type Props = {
   members?: Array<{ id: number; name?: string; email?: string; role?: string; avatar?: string; profile?: any }>;
@@ -14,8 +14,7 @@ const route = useRoute()
 
 // Get avatar URL using asset composable
 const getAvatarUrl = (member: any) => {
-  const val = member?.avatar_url || member?.avatar || member?.image || member?.avatarUrl || member?.photo || null
-  return resolveAvatar(val, member?.name)
+  return resolveUserAvatar(member)
 }
 
 // Generate profile detail link based on role

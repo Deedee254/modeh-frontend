@@ -151,7 +151,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   variant: { type: String, default: "global" },
@@ -166,12 +166,7 @@ const colspan = computed(() => {
 });
 
 function resolvePlayerAvatar(player) {
-  // Backend returns avatar_url (primary DB column) and avatar (accessor)
-  // AuthJS returns image
-  const avatarUrl = player?.avatar_url || player?.avatar || player?.avatarUrl || player?.image || player?.photo || null
-  
-  // Use resolveAvatar which always returns valid avatar (letter-based fallback)
-  return resolveAvatar(avatarUrl, player?.name)
+  return resolveUserAvatar(player)
 }
 
 function rankBadgeClass(index) {

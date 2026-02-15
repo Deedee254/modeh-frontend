@@ -21,7 +21,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 
 const props = defineProps({
   player: { type: Object, required: true },
@@ -31,22 +31,7 @@ const props = defineProps({
   answered: { type: Number, default: null }
 })
 
-// Use resolveAvatar for consistent letter-avatar fallback
-function resolvePlayerAvatar(v) {
-  // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
-  let avatarUrl = null
-  let name = null
-  if (v && typeof v === 'object') {
-    // Prefer the canonical backend field `avatar_url` then `avatar`, `avatarUrl`, `photo`, `image`, etc.
-    avatarUrl = v.avatar_url || v.avatar || v.avatarUrl || v.photo || v.image || (v.profile && (v.profile.avatar || v.profile.profile_image)) || null
-    name = v.first_name || v.name || null
-  } else {
-    avatarUrl = v
-  }
-  return resolveAvatar(avatarUrl, name)
-}
-
 const avatarSrc = computed(() => {
-  return resolvePlayerAvatar(props.player)
+  return resolveUserAvatar(props.player)
 })
 </script>

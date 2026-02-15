@@ -71,7 +71,7 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserRole } from '~/composables/useUserRole'
-import { resolveAssetUrl, resolveAvatar } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveUserAvatar } from '~/composables/useAssets'
 import useApi from '~/composables/useApi'
 
 const props = defineProps({
@@ -124,7 +124,7 @@ async function fetchRecentChats() {
         time: formatTimeAgo(conv.last_at || conv.updated_at),
         unread: (conv.unread_count ?? conv.unread) > 0,
         // Robust avatar resolution chain for recent chats
-        avatar: resolveAvatar(conv.avatar || conv.avatar_url || conv.image || conv.avatarUrl || conv.photo, conv.other_name || conv.otherName || conv.name)
+        avatar: resolveUserAvatar(conv)
       })).slice(0, 5)
     }
   } catch (e) {

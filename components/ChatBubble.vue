@@ -38,7 +38,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 import useApi from '~/composables/useApi'
 
 const open = ref(false)
@@ -55,7 +55,7 @@ async function loadThreads() {
       // Map threads and resolve avatars with fallback to letter avatars
       threads.value = (body.conversations || []).map(t => ({
         ...t,
-        avatar: resolveAvatar(t.avatar || t.avatar_url || t.image || t.avatarUrl || t.photo, t.other_name)
+        avatar: resolveUserAvatar(t)
       }))
       // merge groups as well
       if (body.groups && body.groups.length) {
@@ -67,7 +67,7 @@ async function loadThreads() {
             last_message: g.last_message, 
             last_at: g.last_at, 
             unread_count: g.unread_count, 
-            avatar: resolveAvatar(groupAvatar, g.name)
+            avatar: resolveUserAvatar(g)
           }
         }))
       }

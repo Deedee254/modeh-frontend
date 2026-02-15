@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 import type { PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -171,15 +171,11 @@ const totalPoints = computed(() =>
 )
 
 const player1Avatar = computed(() => {
-  const p1 = (props.battle?.player1) as any
-  const avatar = p1?.avatar_url || p1?.avatar || p1?.avatarUrl || p1?.image || p1?.photo
-  return resolveAvatar(avatar, p1?.name)
+  return resolveUserAvatar(props.battle?.player1)
 })
 
 const player2Avatar = computed(() => {
-  const p2 = (props.battle?.player2) as any
-  const avatar = p2?.avatar_url || p2?.avatar || p2?.avatarUrl || p2?.image || p2?.photo
-  return resolveAvatar(avatar, p2?.name)
+  return resolveUserAvatar(props.battle?.player2)
 })
 
 const handleForfeit = async () => {

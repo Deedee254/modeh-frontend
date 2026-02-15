@@ -11,7 +11,7 @@
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <div class="max-w-4xl mx-auto">
+      <div class="max-w-7xl mx-auto">
         <!-- New Battle Creation Component -->
         <div class="bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <div class="bg-gray-100 dark:bg-gray-900/70 rounded-lg p-1 flex space-x-1">

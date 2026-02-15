@@ -3,7 +3,7 @@
     <!-- Profile Image (Left) - Full Height Rectangle -->
     <div class="flex-shrink-0 -m-6 mr-0 rounded-l-lg overflow-hidden w-40">
       <img 
-        :src="resolveAvatar(quizMaster.avatar_url || quizMaster.avatar || quizMaster.photo || quizMaster.image || quizMaster.profile_image || quizMaster.avatarUrl, quizMaster.name)" 
+        :src="resolveUserAvatar(quizMaster)" 
         :alt="quizMaster.name" 
         class="w-full h-full object-cover"
       >
@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 
 defineProps({
   quizMaster: {

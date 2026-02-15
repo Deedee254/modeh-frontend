@@ -32,8 +32,8 @@
                 :alt="recipientName"
                 class="w-8 h-8 rounded-full object-cover flex-shrink-0"
               />
-              <div class="flex-1 bg-slate-700 rounded-lg p-3">
-                <p class="text-slate-100 text-sm">{{ recipientGreeting }}</p>
+              <div class="flex-1 bg-[#F9B82E] rounded-lg p-3">
+                <p class="text-slate-900 text-sm">{{ recipientGreeting }}</p>
               </div>
             </div>
           </div>
@@ -95,7 +95,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import useApi from '~/composables/useApi'
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 import { useAppAlert } from '~/composables/useAppAlert'
 
 const props = defineProps({
@@ -138,7 +138,7 @@ const api = useApi()
 const { push: pushAlert } = useAppAlert()
 
 const resolvedAvatar = computed(() => {
-  return resolveAvatar(props.recipientAvatar, props.recipientName)
+  return resolveUserAvatar({ avatar: props.recipientAvatar }, props.recipientName)
 })
 
 async function sendMessage() {

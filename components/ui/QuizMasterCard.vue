@@ -126,13 +126,9 @@ const isCourse = computed(() => {
   return String(grade.type || '').toLowerCase() === 'course'
 })
 
-import { resolveAssetUrl } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 
-const avatarSrc = computed(() => {
-  const v = props.quizMaster?.avatar_url || props.quizMaster?.avatar || props.quizMaster?.avatarUrl || props.quizMaster?.image || props.quizMaster?.photo || ''
-  // prefer asset resolution, fall back to raw value if needed
-  return resolveAssetUrl(v) || (v || null)
-})
+const avatarSrc = computed(() => resolveUserAvatar(props.quizMaster))
 
 function simpleSlug(str) {
   try {

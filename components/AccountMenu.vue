@@ -123,7 +123,8 @@ import { useInstitutionsStore } from '~/stores/institutions'
 const props = defineProps({
   isAuthed: { type: Boolean, default: false },
   userInitials: { type: String, default: 'U' },
-  profileLink: { type: [String, Object], default: '/' }
+  profileLink: { type: [String, Object], default: '/' },
+  userAvatar: { type: String, default: null }
 })
 
 const emit = defineEmits(['logout'])
@@ -142,7 +143,12 @@ const auth = useAuthStore()
 
 // Use asset composable to resolve avatar URL with letter fallback
 const userAvatarUrl = computed(() => {
-  return resolveAvatar(auth?.userAvatar || auth?.user?.image || auth?.user?.avatarUrl || auth?.user?.avatar || auth?.user?.avatar_url || auth?.user?.photo, auth.user?.name)
+  // If a resolved avatar was passed as a prop, use it.
+  if (props.userAvatar) return resolveAvatar(props.userAvatar, auth.user?.name)
+  
+  // Otherwise fall back to the auth store's prioritized check.
+  // Note: auth.userAvatar should already be pulling from nested profile etc.
+  return resolveAvatar(auth.userAvatar, auth.user?.name)
 })
 
 const instStore = useInstitutionsStore()

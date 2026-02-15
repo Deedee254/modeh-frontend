@@ -88,7 +88,7 @@
                The institution layout provides its own Topbar with an avatar/menu. -->
           <div id="topbar-user-menu" class="relative" v-if="!route.path.startsWith('/institution-manager')">
             <template v-if="auth.user && auth.user.id">
-              <AccountMenu :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileRoute" @logout="onLogout" />
+              <AccountMenu :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileRoute" :user-avatar="userAvatar" @logout="onLogout" />
             </template>
 
             <template v-else>

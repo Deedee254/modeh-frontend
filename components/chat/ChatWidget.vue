@@ -259,7 +259,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { format } from 'date-fns'
 import { type Ref } from 'vue';
 import useChat from '~/composables/useChat'
-import { resolveAssetUrl, resolveAvatar as resolveAvatarFn } from '~/composables/useAssets'
+import { resolveAssetUrl, resolveUserAvatar } from '~/composables/useAssets'
 import NewChatModal from '~/components/chat/NewChatModal.vue'
 import SupportChatModal from '~/components/SupportChatModal.vue'
 import ChatModal from '~/components/ChatModal.vue'
@@ -337,21 +337,7 @@ const emojis = ['😀','😂','😍','👍','🙏','🎉','😅','🙌','😉','
 
 // Helper function to resolve avatar with proper fallback logic
 function resolveAvatar(chat: any) {
-  try {
-    // If an object is passed, pick the avatar fields in order (prioritize avatar_url)
-    let val = null
-    let name = null
-    if (chat && typeof chat === 'object') {
-      // Prioritize AuthJS and our own standard fields
-      val = chat.avatar_url || chat.avatar || chat.image || chat.avatarUrl || chat.photo || chat.profile_image || null
-      name = chat.name || chat.other_name || null
-    } else {
-      val = chat
-    }
-    return resolveAvatarFn(val, name)
-  } catch {
-    return resolveAvatarFn(typeof chat === 'string' ? chat : null, typeof chat === 'object' ? chat?.name : null)
-  }
+  return resolveUserAvatar(chat)
 }
 
 const filteredConversations = computed(() => {
@@ -653,7 +639,7 @@ onUnmounted(() => {
 }
 
 .chat-bubble.received {
-  background: #f5f5f5;
+  background: #F9B82E;
   color: #111827;
   border-radius: 18px 18px 18px 4px;
   box-shadow: 0 1px 0 rgba(0,0,0,0.05);

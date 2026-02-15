@@ -112,7 +112,7 @@
 
         <!-- Auth buttons and User menu (hidden on institution-manager pages to avoid duplicate profile controls) -->
         <div class="flex items-center gap-3">
-          <AccountMenu v-if="!route.path.startsWith('/institution-manager')" :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileLink" @logout="logout" />
+          <AccountMenu v-if="!route.path.startsWith('/institution-manager')" :is-authed="isAuthed" :user-initials="userInitials" :profile-link="profileLink" :user-avatar="userAvatar" @logout="logout" />
         </div>
 
         <!-- Mobile menu button -->
@@ -239,6 +239,7 @@ import useTaxonomy from '~/composables/useTaxonomy'
 import { useApi } from '~/composables/useApi'
 import { useAuthStore } from '~/stores/auth'
 import { useInstitutionsStore } from '~/stores/institutions'
+import { resolveAvatar } from '~/composables/useAssets'
 
 const auth = useAuthStore()
 const isAuthed = computed(() => !!auth?.user?.id)
@@ -351,6 +352,7 @@ onMounted(async () => {
   }
 })
 
+const userAvatar = computed(() => resolveAvatar(auth.userAvatar, auth.user?.name))
 const userInitials = computed(() => {
   if (!auth?.user) return 'U'
   const name = auth.user.name || auth.user.email || ''

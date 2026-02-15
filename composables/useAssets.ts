@@ -10,11 +10,18 @@ export function resolveAssetUrl(value: string | null | undefined): string | null
     // Already a full URL or data URI
     if (/^(?:https?:)?\/\//.test(value)) return value
     if (/^(?:data:|blob:)/.test(value)) return value
-  } catch (e) {}
-  
+  } catch (e) { }
+
   const config = useRuntimeConfig()
-  const base = config?.public?.apiBase || ''
+  let base = config?.public?.apiBase || ''
   if (!base) return value.startsWith('/') ? value : `/${value}`
+
+  // If apiBase points to an /api subpath, we should strip it for storage assets
+  // which are typically served from the domain root in Laravel/Sanctum.
+  if (base.toLowerCase().endsWith('/api') && (value.startsWith('/storage') || value.startsWith('storage'))) {
+    base = base.slice(0, -4)
+  }
+
   const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
   const cleanPath = value.startsWith('/') ? value : `/${value}`
   return `${cleanBase}${cleanPath}`
@@ -33,7 +40,7 @@ export function generateLetterAvatar(name: string | null | undefined): string {
   }
 
   const letter = name.trim().charAt(0).toUpperCase()
-  
+
   // Color palette - consistent colors based on letter hash
   const colors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
@@ -41,7 +48,7 @@ export function generateLetterAvatar(name: string | null | undefined): string {
     '#F06292', '#29B6F6', '#66BB6A', '#FFCA28', '#EF5350'
   ]
   const bgColor = colors[letter.charCodeAt(0) % colors.length]
-  
+
   // SVG with letter avatar
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'>
     <defs>
@@ -53,7 +60,7 @@ export function generateLetterAvatar(name: string | null | undefined): string {
     <rect class='avatar-bg' width='100%' height='100%'/>
     <text class='avatar-text' x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>${letter}</text>
   </svg>`
-  
+
   // Encode to data URI
   const encoded = encodeURIComponent(svg)
   return `data:image/svg+xml;utf8,${encoded}`
@@ -76,9 +83,34 @@ export function resolveAvatar(
     const resolved = resolveAssetUrl(avatarUrl)
     if (resolved) return resolved
   }
-  
+
   // Fallback to letter-based avatar
   return generateLetterAvatar(name)
+}
+
+/**
+ * Resolve an avatar from a user-like object by checking common fields.
+ * Handles nested profile data and berbagai alias (avatar_url, image, picture, etc.)
+ */
+export function resolveUserAvatar(
+  user: any,
+  name?: string | null
+): string {
+  if (!user) return generateLetterAvatar(name)
+
+  // Extract avatar URL by checking common field names
+  // Prioritize u.avatar_url, u.avatar, u.avatarUrl, u.image, u.picture, u.photo
+  let avatarUrl = user.avatar_url || user.avatar || user.avatarUrl || user.image || user.picture || user.photo || null
+
+  // If not found, check nested profile (likely from Laravel)
+  if (!avatarUrl && user.profile) {
+    const p = user.profile
+    avatarUrl = p.avatar_url || p.avatar || p.image || p.photo || null
+  }
+
+  const userName = name || user.name || user.displayName || user.display_name || null
+
+  return resolveAvatar(avatarUrl, userName)
 }
 
 export default resolveAssetUrl

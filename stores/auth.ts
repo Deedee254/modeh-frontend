@@ -14,7 +14,7 @@ let _auth_beforeunload: (() => void) | null = null
 
 export const useAuthStore = defineStore('auth', () => {
   const { data, status, getSession } = useAuth()
-  
+
   // Initialize from session data if available (use raw API shape)
   // Cast to any first since nuxt-auth data shape may differ from User type
   const initialUser = (data.value?.user as any) || null
@@ -47,30 +47,30 @@ export const useAuthStore = defineStore('auth', () => {
       // Use stateful POST so CSRF cookie and session are established by the backend
       // The backend registers the user and sets the session cookie when 'web' middleware is used
       const res = await api.postJson(endpoint, payload)
-      
+
       // Parse response body once
       let responseData: any = null
       try {
         responseData = await res.json()
       } catch (e) {
         // If we can't parse JSON, try to get text
-        try { 
+        try {
           const txt = await res.text()
           if (txt) responseData = { message: txt }
         } catch (e) { }
       }
-      
+
       if (!res.ok) {
         let message = 'Registration failed'
         let parsedErrors: any = null
-        
+
         if (responseData && responseData.message) message = responseData.message
         else if (responseData && responseData.errors) {
           parsedErrors = responseData.errors
           const vals = Object.values(responseData.errors).flat()
           if (vals.length) message = vals.join('; ')
         }
-        
+
         const err = new Error(message)
         try { ; (err as any).fields = parsedErrors } catch (e) { }
         throw err
@@ -80,13 +80,13 @@ export const useAuthStore = defineStore('auth', () => {
       // 1. Established a Laravel session (Auth::login() called)
       // 2. Created a personal access token ('nuxt-auth')
       // 3. Returned the user data + token in the response
-      
+
       // Directly update the auth store with the user data from registration response
       // This immediately populates the store without waiting for additional API calls
       if (responseData && responseData.user) {
         setUser(responseData.user)
       }
-      
+
       // Fetch fresh user data to ensure we have the latest from the API
       // This also syncs the Nuxt-Auth session if needed
       try {
@@ -120,7 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
     // CRITICAL: Clear local state FIRST before calling signOut
     // This prevents the session watcher from seeing the old user briefly
     clear()
-    
+
     // CRITICAL: Clear PWA persistent session storage
     // This ensures the user is fully logged out on all devices
     try {
@@ -131,7 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
       // PWA session clear is non-fatal
       console.warn('[auth] PWA session clear failed:', e)
     }
-    
+
     try {
       // useAuth is auto-imported by @sidebase/nuxt-auth
       const auth = useAuth()
@@ -160,7 +160,7 @@ export const useAuthStore = defineStore('auth', () => {
         return user.value
       }
     } catch (e) { }
-    
+
     // Prefer server session payload (nuxt-auth) when available and it contains
     // authoritative user fields. This lets the session act as the primary
     // source-of-truth and avoids unnecessary network requests to /api/me.
@@ -168,11 +168,11 @@ export const useAuthStore = defineStore('auth', () => {
       const sessUser = (data && (data.value as any) && (data.value as any).user) ? (data.value as any).user : null
       const hasMeaningfulFields = sessUser && (sessUser.name || sessUser.email || sessUser.profile || sessUser.avatar_url)
       if (!force && hasMeaningfulFields) {
-        try { setUser(sessUser) } catch (e) {}
+        try { setUser(sessUser) } catch (e) { }
         _lastUserFetchedAt = Date.now()
         return user.value
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Avoid concurrent fetches: return the in-flight promise if present
     if (_fetchUserPromise && !force) return _fetchUserPromise
@@ -182,17 +182,17 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         // Store current user ID before fetching to detect mid-flight user switches
         const userIdBeforeFetch = user.value?.id
-        
+
         // Fetch fresh user data from the authoritative API endpoint
         // This is called explicitly from middleware and after login/register, not automatically
-        
+
         // Always fetch fresh user data from the API
         const res = await api.get('/api/me')
         if (res.status === 401) {
           // If API says unauthenticated but nuxt-auth says authenticated, something is out of sync
           if (status.value === 'authenticated') {
-             const { signOut } = useAuth()
-             signOut({ redirect: false }).catch(() => {})
+            const { signOut } = useAuth()
+            signOut({ redirect: false }).catch(() => { })
           }
           clear()
           return user.value
@@ -202,10 +202,10 @@ export const useAuthStore = defineStore('auth', () => {
           return user.value
         }
         if (!res.ok) return user.value
-        
+
         const json = await res.json().catch(() => null)
         const userData = json && (json.user || json.data || json)
-        
+
         if (userData) {
           // If user switched during the fetch, clear the promise guard to allow immediate retry
           const userIdAfterFetch = userData.id
@@ -252,14 +252,25 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Sync guest results if needed
     if (typeof window !== 'undefined' && import.meta.client) {
-       syncGuestQuizResults().catch(() => {})
+      syncGuestQuizResults().catch(() => { })
     }
   }
 
   const userAvatar = computed(() => {
     const u = user.value as any
     if (!u) return null
-    return u.image || u.avatar || u.avatarUrl || u.avatar_url || u.photo || null
+    // Prioritize top-level fields (likely from OAuth or direct user object)
+    // Add 'picture' which is common for Google OAuth in Auth.js
+    const avatar = u.avatar_url || u.avatar || u.avatarUrl || u.image || u.picture || u.photo
+    if (avatar) return avatar
+
+    // Check nested profile fields (likely from Laravel API)
+    const profile = u.profile
+    if (profile) {
+      return profile.avatar_url || profile.avatar || profile.image || profile.photo || null
+    }
+
+    return null
   })
 
   function clear(): void {
@@ -275,7 +286,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
     window.addEventListener('storage', _auth_storage_handler!)
-    
+
     if (localStorage.getItem('modeh:guest:played') === 'true') {
       guestPlayed.value = true
     }
@@ -313,7 +324,7 @@ export const useAuthStore = defineStore('auth', () => {
           }
 
           const res = await api.postJson('/api/quizzes/sync-guest-attempt', payload)
-          
+
           // If sync successful, remove from guest store
           if (res.ok) {
             guestQuizStore.clearQuizResult(result.quiz_id)

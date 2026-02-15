@@ -12,7 +12,8 @@
       />
 
       <!-- Main content -->
-      <div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 py-6">
+        <div class="lg:col-span-8">
           <!-- Header with stat cards -->
           <div class="mb-6">
             <div class="mb-4">
@@ -227,7 +228,7 @@
         </div>
 
         <!-- Aside / Right column -->
-        <aside class="lg:col-span-1 space-y-6">
+        <aside class="lg:col-span-4 space-y-6">
           <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
             <div class="flex flex-col space-y-1.5 p-4 xl:p-6 pb-2">
               <div class="font-semibold tracking-tight text-xl">Rewards &amp; Streaks</div>
@@ -336,7 +337,8 @@
         </aside>
       </div>
     </div>
-  </template>
+  </div>
+</template>
 
 <script setup>
 // Use the quizee layout for this page

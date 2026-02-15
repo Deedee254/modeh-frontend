@@ -1,44 +1,51 @@
 <template>
   <ClientOnly>
     <div class="p-2">
-    <TaxonomyFlowPicker
-      v-model="selection"
-      :includeTopics="true"
-      :multiSelectSubjects="false"
-    />
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Left Column: Taxonomy -->
+        <div>
+          <TaxonomyFlowPicker
+            v-model="selection"
+            :includeTopics="true"
+            :multiSelectSubjects="false"
+          />
+        </div>
 
-    <!-- Error Alert -->
-    <div v-if="errorMessage" class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-      <p class="text-sm text-red-700 dark:text-red-200">{{ errorMessage }}</p>
-    </div>
+        <!-- Right Column: Settings -->
+        <div class="space-y-6">
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Difficulty</label>
+              <USelect v-model="difficulty" :options="difficulties" />
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Number of Questions</label>
+              <USelect v-model="totalQuestions" :options="questionCountOptions" />
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Per-question Time (seconds)</label>
+              <UInput v-model.number="perQuestionSeconds" type="number" min="5" placeholder="e.g., 15" />
+              <p class="text-xs text-gray-500 mt-1">Seconds per question. Defaults to 15s.</p>
+            </div>
+          </div>
 
-    <div class="space-y-4">
-      <div>
-        <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Difficulty</label>
-        <USelect v-model="difficulty" :options="difficulties" />
+          <!-- Error Alert -->
+          <div v-if="errorMessage" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p class="text-sm text-red-700 dark:text-red-200">{{ errorMessage }}</p>
+          </div>
+
+          <div>
+            <button
+              @click="startBattle"
+              :disabled="starting || !canStart"
+              class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 font-bold rounded-xl text-white bg-gradient-to-r from-brand-600 to-brand-950 hover:from-brand-700 hover:to-brand-900 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Create 1 vs 1 Battle
+            </button>
+            <div v-if="starting" class="mt-3 text-sm text-center text-gray-500 dark:text-gray-400">Creating battle...</div>
+          </div>
+        </div>
       </div>
-      <div>
-        <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Number of Questions</label>
-        <USelect v-model="totalQuestions" :options="questionCountOptions" />
-      </div>
-      <div>
-        <label class="text-sm font-medium text-gray-800 dark:text-gray-200">Per-question Time (seconds)</label>
-        <UInput v-model.number="perQuestionSeconds" type="number" min="5" placeholder="e.g., 15" />
-        <p class="text-xs text-gray-500 mt-1">Seconds per question. Defaults to 15s.</p>
-      </div>
-    </div>
-
-    <div class="mt-6">
-      <button
-        @click="startBattle"
-        :disabled="starting || !canStart"
-        class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 font-semibold rounded-lg text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-600 hover:to-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-      >
-        Create 1 vs 1 Battle
-      </button>
-    </div>
-
-    <div v-if="starting" class="mt-3 text-sm text-center text-gray-500 dark:text-gray-400">Creating battle...</div>
     </div>
   </ClientOnly>
 </template>

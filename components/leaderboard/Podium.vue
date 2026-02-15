@@ -77,7 +77,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { resolveAvatar } from '~/composables/useAssets'
+import { resolveUserAvatar } from '~/composables/useAssets'
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   pointsKey: { type: String, default: "points" },
@@ -112,19 +112,15 @@ function displayPoints(p) {
 }
 
 function resolvedAvatar(v) {
-  // Backend returns avatar_url (primary DB column) and avatar (accessor)
-  // AuthJS returns image
-  let avatarUrl = null
-  let name = null
   if (v && typeof v === 'object') {
-    avatarUrl = v.avatar_url || v.avatar || v.avatarUrl || v.image || v.photo || null
-    name = v.name || null
-  } else {
-    avatarUrl = v
+    return resolveUserAvatar(v)
   }
   
-  // Use resolveAvatar which always returns valid avatar (letter-based fallback)
-  return resolveAvatar(avatarUrl, name)
+  // Directly passed URL fallback (older components sometimes do this)
+  const { resolveAvatar } = useAssets ? useAssets() : { resolveAvatar: (u) => u } // safe fallback if needed, but we already have resolveUserAvatar
+  // Actually we imported resolveAvatar earlier if we needed it, but podium has its own logic.
+  // Cleanest way:
+  return resolveUserAvatar(v)
 }
 </script>
 
